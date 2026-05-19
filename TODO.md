@@ -36,7 +36,7 @@ automation cannot reliably perform alone.
 - [x] 👥 Provide canonical Java behaviour examples for edge cases in tricky modules (game rules, scoring, move generation) — initial catalogue in [`typescript/docs/JAVA_EDGE_CASES.md`](typescript/docs/JAVA_EDGE_CASES.md); engine-side entries will accrue as the engine ports land
 - [x] 👥 Perform manual QA on the browser demo (`typescript/packages/browser-player/demo/index.html`) and document UX requirements — static review + browser-test checklist + UX requirements captured in [`typescript/docs/BROWSER_DEMO_QA.md`](typescript/docs/BROWSER_DEMO_QA.md); the live browser walk-through still needs a human pass
 - [x] 👥 Coordinate issue triage: open GitHub Issues for each Track A item above and assign contributors — GitHub Issues are currently **disabled** on the repo (verified via `gh issue list`); an issue-ready backlog covering the open Track A item plus the upcoming MVE-tier ports is staged at [`typescript/docs/ISSUE_BACKLOG.md`](typescript/docs/ISSUE_BACKLOG.md) and can be filed when Issues are enabled
-- [ ] 👥 Decide whether the Java desktop app (`PlayerDesktop/`) remains a supported build target or is maintenance-only 🚧 _in progress_
+- [x] 👥 Decide whether the Java desktop app (`PlayerDesktop/`) remains a supported build target or is maintenance-only — decision: **maintenance-only**, see [`typescript/docs/JAVA_DESKTOP_DECISION.md`](typescript/docs/JAVA_DESKTOP_DECISION.md)
 - [x] 👥 Update `CONTRIBUTING.md` (or add one) with porting conventions, PR checklist, and how to run parity tests — added top-level `CONTRIBUTING.md`
 
 ---
