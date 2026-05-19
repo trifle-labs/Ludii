@@ -177,4 +177,38 @@ describe("Move with action sequence", () => {
     });
     assert.equal(move.decisionAction(), undefined);
   });
+
+  it("delegates Java-shape accessors to the decision action", () => {
+    const move = new Move({
+      id: "p4",
+      label: "place 4",
+      siteIndices: [4],
+      mover: 1,
+      placedOwner: 1,
+      actions: [new ActionAdd({ to: 4, what: 1, count: 3 })],
+    });
+    assert.equal(move.actionType(), "Add");
+    assert.equal(move.to(), 4);
+    assert.equal(move.what(), 1);
+    assert.equal(move.who(), 1);
+    assert.equal(move.count(), 3);
+    assert.equal(move.fromType(), "Cell");
+    assert.equal(move.toType(), "Cell");
+    assert.equal(move.isPass(), false);
+  });
+
+  it("legacy moves fall back to MVE defaults for delegation accessors", () => {
+    const move = new Move({
+      id: "p4",
+      label: "place 4",
+      siteIndices: [4],
+      mover: 2,
+      placedOwner: 2,
+    });
+    assert.equal(move.actionType(), undefined);
+    assert.equal(move.to(), 4);
+    assert.equal(move.what(), 2);
+    assert.equal(move.who(), 2);
+    assert.equal(move.count(), 1);
+  });
 });

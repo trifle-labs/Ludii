@@ -8,7 +8,12 @@
  *   `placedOwner` shortcut so existing call-sites keep working.
  */
 
-import type { Action } from "./action/index.js";
+import {
+  ACTION_OFF,
+  type Action,
+  type ActionType,
+  type SiteType,
+} from "./action/index.js";
 import type { State } from "./state.js";
 
 export interface MoveInit {
@@ -67,5 +72,79 @@ export class Move {
   /** Java parity: `Move.decisionAction()` — the first action, if any. */
   public decisionAction(): Action | undefined {
     return this.actions[0];
+  }
+
+  /**
+   * Java-parity accessors that delegate to the decision action when one
+   * is present. The Java `Move` reads these straight off its first
+   * Action; we mirror that, falling back to MVE defaults so callers
+   * built from the legacy `siteIndices` path still see sensible values.
+   */
+  public actionType(): ActionType | undefined {
+    return this.decisionAction()?.actionType();
+  }
+
+  public from(): number {
+    return this.decisionAction()?.from() ?? ACTION_OFF;
+  }
+
+  public to(): number {
+    return this.decisionAction()?.to() ?? this.siteIndices[0] ?? ACTION_OFF;
+  }
+
+  public what(): number {
+    return this.decisionAction()?.what() ?? this.placedOwner;
+  }
+
+  public who(): number {
+    return this.decisionAction()?.who() ?? this.mover;
+  }
+
+  public count(): number {
+    return this.decisionAction()?.count() ?? 1;
+  }
+
+  public state(): number {
+    return this.decisionAction()?.state() ?? ACTION_OFF;
+  }
+
+  public value(): number {
+    return this.decisionAction()?.value() ?? ACTION_OFF;
+  }
+
+  public rotation(): number {
+    return this.decisionAction()?.rotation() ?? ACTION_OFF;
+  }
+
+  public fromType(): SiteType {
+    return this.decisionAction()?.fromType() ?? "Cell";
+  }
+
+  public toType(): SiteType {
+    return this.decisionAction()?.toType() ?? "Cell";
+  }
+
+  public isPass(): boolean {
+    return this.decisionAction()?.isPass() ?? false;
+  }
+
+  public isForfeit(): boolean {
+    return this.decisionAction()?.isForfeit() ?? false;
+  }
+
+  public isSwap(): boolean {
+    return this.decisionAction()?.isSwap() ?? false;
+  }
+
+  public isVote(): boolean {
+    return this.decisionAction()?.isVote() ?? false;
+  }
+
+  public isPropose(): boolean {
+    return this.decisionAction()?.isPropose() ?? false;
+  }
+
+  public isOtherMove(): boolean {
+    return this.decisionAction()?.isOtherMove() ?? false;
   }
 }
