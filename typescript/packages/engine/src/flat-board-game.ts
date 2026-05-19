@@ -9,6 +9,7 @@
  * with a draw when every cell is filled.
  */
 
+import { ConceptSet } from "./concept.js";
 import { Context } from "./context.js";
 import type { Game } from "./game.js";
 import { Move } from "./move.js";
@@ -143,7 +144,7 @@ export class FlatBoardGame implements Game {
   public start(): Context {
     const cells = new Array<number>(this.siteCount).fill(0);
     const state = new State(1, cells, this.componentLabels);
-    const trial = new Trial([], false, -1);
+    const trial = new Trial([], false, -1).saveState(state);
     return new Context(this, state, trial);
   }
 
@@ -205,12 +206,36 @@ export class FlatBoardGame implements Game {
     const advanced = over
       ? placed
       : placed.withMover(nextMover(placed.mover, this.numPlayers));
-    const trial = context.trial.withMove(move, over, finalWinner);
+    const trial = context.trial
+      .withMove(move, over, finalWinner)
+      .saveState(advanced);
     return new Context(this, advanced, trial);
   }
 
   public over(context: Context): boolean {
     return context.over;
+  }
+
+  /**
+   * Java parity: `Game.concepts()`. Structural concepts for the
+   * "place to make a line" family are constant; plus the concepts
+   * implied by every legal move.
+   */
+  public concepts(context?: Context): ConceptSet {
+    let set = ConceptSet.of(
+      "Add",
+      "AlternatingTurns",
+      "LineWin",
+      "DrawByFill",
+      "PieceOwnership",
+      "DeterministicPlayout",
+    );
+    if (context) {
+      for (const move of this.moves(context)) {
+        set = set.union(move.concepts());
+      }
+    }
+    return set;
   }
 }
 

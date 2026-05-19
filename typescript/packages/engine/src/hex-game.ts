@@ -17,6 +17,7 @@
  * without modification.
  */
 
+import { ConceptSet } from "./concept.js";
 import { Context } from "./context.js";
 import type { Game } from "./game.js";
 import { Move } from "./move.js";
@@ -143,7 +144,7 @@ export class HexGame implements Game {
   public start(): Context {
     const cells = new Array<number>(this.siteCount).fill(0);
     const state = new State(1, cells, this.componentLabels);
-    const trial = new Trial([], false, -1);
+    const trial = new Trial([], false, -1).saveState(state);
     return new Context(this, state, trial);
   }
 
@@ -193,12 +194,31 @@ export class HexGame implements Game {
     const over = win;
     const winner = win ? move.placedOwner : -1;
     const advanced = over ? placed : placed.withMover(move.mover === 1 ? 2 : 1);
-    const trial = context.trial.withMove(move, over, winner);
+    const trial = context.trial
+      .withMove(move, over, winner)
+      .saveState(advanced);
     return new Context(this, advanced, trial);
   }
 
   public over(context: Context): boolean {
     return context.over;
+  }
+
+  /** Java parity: `Game.concepts()` for the connection family. */
+  public concepts(context?: Context): ConceptSet {
+    let set = ConceptSet.of(
+      "Add",
+      "AlternatingTurns",
+      "ConnectionWin",
+      "PieceOwnership",
+      "DeterministicPlayout",
+    );
+    if (context) {
+      for (const move of this.moves(context)) {
+        set = set.union(move.concepts());
+      }
+    }
+    return set;
   }
 }
 

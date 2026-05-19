@@ -5,6 +5,7 @@
  *   the engine reads through Context.
  */
 
+import type { ConceptSet } from "./concept.js";
 import type { Context } from "./context.js";
 import type { Move } from "./move.js";
 
@@ -27,4 +28,11 @@ export interface Game {
   moves(context: Context): readonly Move[];
   apply(context: Context, move: Move): Context;
   over(context: Context): boolean;
+  /**
+   * Java parity: `Game.concepts()` — the union of structural concepts
+   * (e.g. AlternatingTurns, line/connection win) and the concepts of
+   * the moves the game can emit. Optional; defaults to undefined when
+   * a Game doesn't expose concept tracking.
+   */
+  concepts?(context?: Context): ConceptSet;
 }

@@ -70,7 +70,8 @@ test("HashedBitSet.clear folds out every set bit", () => {
   hbs.set(state, 1, true);
   hbs.set(state, 7, true);
   hbs.set(state, 12, true);
-  const expectedHash = hashes[1]! ^ hashes[7]! ^ hashes[12]!;
+  const expectedHash =
+    (hashes[1] ?? 0n) ^ (hashes[7] ?? 0n) ^ (hashes[12] ?? 0n);
   assert.equal(state.hash, expectedHash);
 
   hbs.clear(state);
@@ -121,7 +122,7 @@ test("HashedBitSet.calculateHashAfterRemap mirrors current contents when no rema
   hbs.set(state, 2, true);
   hbs.set(state, 6, true);
 
-  const expected = hashes[2]! ^ hashes[6]!;
+  const expected = (hashes[2] ?? 0n) ^ (hashes[6] ?? 0n);
   assert.equal(hbs.calculateHashAfterRemap(null, false), expected);
 });
 
@@ -132,7 +133,7 @@ test("HashedBitSet.calculateHashAfterRemap honours invert flag", () => {
   hbs.set(state, 1, true);
 
   // Inverted: every bit EXCEPT site 1 is logically set → XOR of hashes[0,2,3].
-  const expected = hashes[0]! ^ hashes[2]! ^ hashes[3]!;
+  const expected = (hashes[0] ?? 0n) ^ (hashes[2] ?? 0n) ^ (hashes[3] ?? 0n);
   assert.equal(hbs.calculateHashAfterRemap(null, true), expected);
 });
 
@@ -146,7 +147,7 @@ test("HashedBitSet.calculateHashAfterRemap remaps which slot each bit contribute
   // Remap: [3, 2, 1, 0] — site 0's value contributes hashes[3], site 2's
   // contributes hashes[1].
   const remap = [3, 2, 1, 0];
-  const expected = hashes[3]! ^ hashes[1]!;
+  const expected = (hashes[3] ?? 0n) ^ (hashes[1] ?? 0n);
   assert.equal(hbs.calculateHashAfterRemap(remap, false), expected);
 });
 
