@@ -6,6 +6,11 @@ export {
   type DecisionTreeNode,
 } from "./decision-tree.js";
 export {
+  DecisionTreeTrainer,
+  type DecisionTreeTrainerOptions,
+  type TrainingSample,
+} from "./decision-tree-trainer.js";
+export {
   CentreFeature,
   CornerFeature,
   defaultGeometricFeatures,
@@ -13,6 +18,13 @@ export {
   FeatureSet,
   FriendlyNeighbourCountFeature,
 } from "./feature.js";
+export {
+  type DiscoveryOptions,
+  type DiscoverySample,
+  discoverFeatures,
+  type Relation,
+  SpatialOffsetFeature,
+} from "./feature-discovery.js";
 export {
   FlatMonteCarloAI,
   type FlatMonteCarloAIOptions,

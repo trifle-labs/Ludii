@@ -90,7 +90,12 @@ export {
   type DecisionTreeInternal,
   type DecisionTreeLeaf,
   type DecisionTreeNode,
+  DecisionTreeTrainer,
+  type DecisionTreeTrainerOptions,
+  type DiscoveryOptions,
+  type DiscoverySample,
   defaultGeometricFeatures,
+  discoverFeatures,
   type Feature,
   FeatureSet,
   FlatMonteCarloAI,
@@ -106,8 +111,11 @@ export {
   type PlayoutStrategy,
   RandomAI,
   RandomPlayout,
+  type Relation,
   type SelectActionOptions,
+  SpatialOffsetFeature,
   scoreForPlayer,
+  type TrainingSample,
 } from "./ai/index.js";
 export { AlternatingMode } from "./alternating-mode.js";
 export type { API } from "./api.js";
