@@ -380,7 +380,14 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     return { kind: "flat", width: 7, height: 7 };
   }
   if (shapeName === "square") {
-    const size = expectInt(inner.items[1], "square size");
+    // `(square N)` or `(square Tiling N)` — Tiling (Diamond/Square/…)
+    // is a render-only modifier; the topology is still an N×N grid.
+    const firstArg = inner.items[1];
+    if (firstArg && isIdent(firstArg)) {
+      const size = expectInt(inner.items[2], "square size");
+      return { kind: "flat", width: size, height: size };
+    }
+    const size = expectInt(firstArg, "square size");
     return { kind: "flat", width: size, height: size };
   }
   if (shapeName === "concentric") {
@@ -425,19 +432,52 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     return { kind: "flat", width, height };
   }
   if (shapeName === "hex") {
-    // (hex N) | (hex Tiling N). Tilings the simplified topology does not
-    // model — Triangle, Hexagon, Prism, Star, … — fall back to a
-    // Diamond-shaped HexGame with the given size. Wrong gameplay-wise
-    // for some games, but lets the compiler exercise the rest of the
-    // pipeline instead of erroring out.
+    // Variants seen in the wild:
+    //   (hex N)            — Diamond-shaped, side N
+    //   (hex Tiling N)     — N-sized variant tiling (Triangle/Hexagon/…)
+    //   (hex W H)          — width/height (asymmetric)
+    //   (hex Tiling W H)   — tiling + width/height
+    //   (hex {a b c d e})  — Limping-style row-size list
+    // Tilings the simplified topology doesn't model fall back to a
+    // Diamond-shaped HexGame with the largest dimension so the game
+    // compiles.
     const firstArg = inner.items[1];
-    if (firstArg && isIdent(firstArg)) {
-      const size = expectInt(inner.items[2], "hex size");
-      return { kind: "hex", size };
+    const firstFolded = evalIntExpr(firstArg);
+    if (firstFolded !== undefined) {
+      const secondFolded = evalIntExpr(inner.items[2]);
+      const size =
+        secondFolded !== undefined
+          ? Math.max(firstFolded, secondFolded)
+          : firstFolded;
+      return { kind: "hex", size: Math.max(2, size) };
     }
-    if (firstArg && isNumber(firstArg)) {
-      const size = expectInt(firstArg, "hex size");
-      return { kind: "hex", size };
+    if (firstArg && isList(firstArg) && firstArg.delimiter === "curly") {
+      // Row-size list — sum the largest two entries so the placeholder
+      // board is large enough to host the cells.
+      let size = 0;
+      for (const item of firstArg.items) {
+        const v = evalIntExpr(item);
+        if (v !== undefined) size = Math.max(size, v);
+      }
+      return { kind: "hex", size: Math.max(2, size) };
+    }
+    if (firstArg && isIdent(firstArg)) {
+      const sizeNode = inner.items[2];
+      const sFolded = evalIntExpr(sizeNode);
+      if (sFolded !== undefined) {
+        const tFolded = evalIntExpr(inner.items[3]);
+        const size =
+          tFolded !== undefined ? Math.max(sFolded, tFolded) : sFolded;
+        return { kind: "hex", size: Math.max(2, size) };
+      }
+      if (sizeNode && isList(sizeNode) && sizeNode.delimiter === "curly") {
+        let size = 0;
+        for (const item of sizeNode.items) {
+          const v = evalIntExpr(item);
+          if (v !== undefined) size = Math.max(size, v);
+        }
+        return { kind: "hex", size: Math.max(2, size) };
+      }
     }
     throw new LudCompileError(
       "Expected (hex N) or (hex Tiling N)",
