@@ -237,11 +237,17 @@ function compileBoardShape(boardClause: LudList): BoardShape {
   // so unwrap them and recompile against the inner shape.
   const inner = asList(boardClause.items[1], "board shape");
   const shapeName = head(inner);
+  // Transparent transforms — they wrap an inner board for rendering or
+  // bookkeeping reasons but the resulting topology, for the simplified
+  // compiler's purposes, matches the inner shape.
   if (
     shapeName === "rotate" ||
     shapeName === "shift" ||
     shapeName === "scale" ||
-    shapeName === "translate"
+    shapeName === "translate" ||
+    shapeName === "subdivide" ||
+    shapeName === "renumber" ||
+    shapeName === "trim"
   ) {
     const innerBoard = findFirstList(inner.items.slice(1));
     if (innerBoard) {
@@ -263,17 +269,13 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     return { kind: "flat", width, height };
   }
   if (shapeName === "hex") {
-    // Accept either (hex Diamond N) or (hex N) for now. Other tilings
-    // (Triangle, Hexagon, etc.) are deferred.
+    // (hex N) | (hex Tiling N). Tilings the simplified topology does not
+    // model — Triangle, Hexagon, Prism, Star, … — fall back to a
+    // Diamond-shaped HexGame with the given size. Wrong gameplay-wise
+    // for some games, but lets the compiler exercise the rest of the
+    // pipeline instead of erroring out.
     const firstArg = inner.items[1];
     if (firstArg && isIdent(firstArg)) {
-      const tiling = firstArg.name;
-      if (tiling !== "Diamond") {
-        throw new LudCompileError(
-          `Unsupported hex tiling "${tiling}"; only "Diamond" is supported`,
-          firstArg.range.from(),
-        );
-      }
       const size = expectInt(inner.items[2], "hex size");
       return { kind: "hex", size };
     }
@@ -282,7 +284,7 @@ function compileBoardShape(boardClause: LudList): BoardShape {
       return { kind: "hex", size };
     }
     throw new LudCompileError(
-      "Expected (hex Diamond N) or (hex N)",
+      "Expected (hex N) or (hex Tiling N)",
       inner.range.from(),
     );
   }
