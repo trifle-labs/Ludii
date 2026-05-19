@@ -303,6 +303,16 @@ function compileEquipment(
         const ownerIdent = ownerNode.name;
         if (ownerIdent === "Each") {
           eachPlayerLabel = name;
+        } else if (
+          ownerIdent === "Neutral" ||
+          ownerIdent === "Shared" ||
+          ownerIdent === "Random" ||
+          ownerIdent === "Stack"
+        ) {
+          // Special owner keywords: Neutral / Shared / Random / Stack pieces
+          // belong to the engine, not to a player. They participate in start
+          // setups and rendering but the simplified compiler doesn't model
+          // them as player-owned components.
         } else {
           const idx = parsePlayerIndex(ownerIdent, ownerNode.range.from());
           while (labels.length < idx) {
