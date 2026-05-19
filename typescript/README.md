@@ -6,7 +6,7 @@ This workspace holds the TypeScript port for this fork of Ludii.
 
 ### `@ludii/typescript-common`
 
-Shared utilities that are being ported from the Java `Common` module.
+Shared utilities that are being ported from the Java `Common` and `Core` modules.
 
 Current coverage includes:
 
@@ -32,18 +32,36 @@ Current coverage includes:
   - `nextSetBit`, `nextClearBit`, `cardinality`, `length`, `intersects`
   - logical combinators `and` / `or` / `xor` / `andNot`
   - Java-parity `equals` / `hashCode` / `toString` and a set-bit iterator
+- `ZobristHashGenerator`
+  - deterministic SplitMix64 PRNG seeded with the same constant as the Java implementation
+  - returns signed 64-bit `bigint` values (Java `long`-compatible)
+  - `getSequencePosition()` for tracking generator state
+  - positional constructor for fast-forwarding to a given offset in the sequence
+- `ZobristHashUtilities`
+  - `getHashGenerator()` — fresh seeded generator
+  - `getSequence(gen, dim)` — 1-D `BigInt64Array`
+  - `getSequence(gen, dim1, dim2)` — 2-D array
+  - `getSequence(gen, dim1, dim2, dim3)` — 3-D array
+  - `INITIAL_VALUE` (`0n`) and `UNKNOWN` (`-1n`) constants
 - `HashedBitSet`
   - `BitSet`-backed Zobrist-hashed state with injected `ZobristState` adapter
   - per-site `bigint` hash sequences (also accepts `BigInt64Array`)
   - mutating ops (`set`, `clear`, `setTo`) maintain the running state hash
   - `calculateHashAfterRemap` for canonical-hash computation
+- Parity-test fixture helpers (`parity-fixture`)
+  - `checkParity(label, expected, actual)` — deep-equal assertion with labelled failure message
+  - `checkParityBigInt(label, expected, actual)` — signed 64-bit bigint comparison with hex display
+  - `checkParityFloat(label, expected, actual, epsilon?)` — floating-point comparison within tolerance
+  - `checkParityBigIntArray(label, expected, actual)` — element-wise array comparison
 
 Primary sources:
 
-- `/home/runner/work/Ludii/Ludii/Common/src/main/collections/FVector.java`
+- `Common/src/main/collections/FVector.java`
 - `Common/src/main/collections/FastArrayList.java`
-- `/home/runner/work/Ludii/Ludii/Common/src/main/collections/ChunkSet.java`
+- `Common/src/main/collections/ChunkSet.java`
 - `java.util.BitSet` (JDK reference; see `BitSet` documentation)
+- `Core/src/other/state/zhash/ZobristHashGenerator.java`
+- `Core/src/other/state/zhash/ZobristHashUtilities.java`
 - `Core/src/other/state/zhash/HashedBitSet.java`
 
 ### `@ludii/typescript-language`
@@ -75,7 +93,7 @@ Current contents:
 
 ## Workspace commands
 
-Run all commands from `/home/runner/work/Ludii/Ludii`:
+Run all commands from the repository root:
 
 ```bash
 npm install
@@ -95,13 +113,29 @@ npm run build --workspace @ludii/typescript-browser-player
 ## Browser demo
 
 ```bash
-cd /home/runner/work/Ludii/Ludii
 npm run build --workspace @ludii/typescript-browser-player
 ```
 
 Then open:
 
-- `/home/runner/work/Ludii/Ludii/typescript/packages/browser-player/demo/index.html`
+- `typescript/packages/browser-player/demo/index.html`
+
+## Parity testing workflow
+
+When porting a Java class:
+
+1. Run the Java class and capture representative outputs (manually or via a small JUnit test that prints to stdout).
+2. Use the helpers from `parity-fixture.ts` to write assertions against those captured values in the TypeScript test file.
+3. The test will fail if the TypeScript implementation drifts from the Java original.
+
+```typescript
+import { checkParity, checkParityBigInt, checkParityFloat } from "@ludii/typescript-common";
+
+// Values captured from the Java run:
+checkParity("FVector.softmax([1,2,3])[2]", 0.6652409076690674, result[2]);
+checkParityBigInt("ZobristHashGenerator.next() #1", -6987234182398721234n, gen.next());
+checkParityFloat("softmax sum", 1.0, result.reduce((a, b) => a + b, 0));
+```
 
 ## Porting expectations
 
@@ -114,6 +148,6 @@ When porting Java classes into this workspace:
 
 ## Near-term follow-up
 
-- expand `@ludii/typescript-common` beyond `FVector`
+- port first parser/description primitive from `Language/` into a new `@ludii/typescript-language` package
 - begin porting parser- and description-oriented primitives from `Language`
 - replace the placeholder browser game with real Ludii-backed browser state and rendering once the engine port is ready

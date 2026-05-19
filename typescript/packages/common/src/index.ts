@@ -8,3 +8,17 @@ export {
   defaultEquals,
   defaultHashCode,
 } from "./object-utils.js";
+export {
+  checkParity,
+  checkParityBigInt,
+  checkParityBigIntArray,
+  checkParityFloat,
+} from "./parity-fixture.js";
+export { ZobristHashGenerator } from "./zobrist-hash-generator.js";
+export {
+  getHashGenerator,
+  getNext,
+  getSequence,
+  INITIAL_VALUE,
+  UNKNOWN,
+} from "./zobrist-hash-utilities.js";
