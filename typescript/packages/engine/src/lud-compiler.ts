@@ -479,7 +479,22 @@ function compileStartClause(
       if (!labelNode || !ownerNode) continue;
       let owner: number;
       if (isString(labelNode) && isIdent(ownerNode)) {
-        owner = parsePlayerIndex(ownerNode.name, ownerNode.range.from());
+        // Keyword args like `coord:` / `state:` / `count:` mean the form
+        // doesn't carry an explicit owner — the piece's name encodes the
+        // owner suffix (e.g. "L1" → P1). Try that first; otherwise skip.
+        if (ownerNode.name.endsWith(":")) {
+          const suffix = /(\d+)$/.exec(labelNode.value)?.[1];
+          if (!suffix) continue;
+          owner = Number(suffix);
+        } else if (
+          ownerNode.name === "Neutral" ||
+          ownerNode.name === "Shared" ||
+          ownerNode.name === "Random"
+        ) {
+          continue;
+        } else {
+          owner = parsePlayerIndex(ownerNode.name, ownerNode.range.from());
+        }
       } else if (isIdent(labelNode)) {
         // (place P1 (sites ...))
         owner = parsePlayerIndex(labelNode.name, labelNode.range.from());
