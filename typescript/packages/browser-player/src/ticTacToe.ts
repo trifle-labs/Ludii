@@ -69,7 +69,7 @@ export class TicTacToeGame {
 
   private computeOutcome(): TicTacToeOutcome {
     for (const [a, b, c] of WINNING_LINES) {
-      const candidate = this.board[a];
+      const candidate = this.board[a] ?? null;
 
       if (
         candidate !== null &&

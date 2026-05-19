@@ -1,5 +1,5 @@
 export class FVector {
-  private readonly floats: Float32Array;
+  private floats: Float32Array;
 
   public constructor(size: number, fillValue?: number);
   public constructor(values: ArrayLike<number>);
