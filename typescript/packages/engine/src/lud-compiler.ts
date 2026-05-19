@@ -188,6 +188,30 @@ function locateGameForm(root: LudNode): CompiledForm {
   throw new LudCompileError("No (game ...) form found", root.range.from());
 }
 
+/**
+ * `(players N)` → N.
+ * `(players { (player Dir) (player Dir) ... })` → the count of (player …)
+ *    sub-forms — Java's extended form where each player gets a direction
+ *    label rather than a numeric index.
+ */
+function parseNumPlayers(playersForm: LudList): number {
+  const arg = playersForm.items[1];
+  if (arg && isNumber(arg) && Number.isInteger(arg.value)) {
+    return arg.value;
+  }
+  if (arg && isList(arg) && arg.delimiter === "curly") {
+    let count = 0;
+    for (const item of arg.items) {
+      if (isList(item) && listHead(item) === "player") count += 1;
+    }
+    if (count > 0) return count;
+  }
+  throw new LudCompileError(
+    "Expected number of players to be an integer literal or a { (player ...) ... } list",
+    arg?.range.from() ?? playersForm.range.from(),
+  );
+}
+
 function parsePlayerIndex(ident: string, offset?: number): number {
   const match = /^P(\d+)$/.exec(ident);
   if (!match) {
@@ -668,7 +692,7 @@ function compileGameForm(form: CompiledForm): Game {
       game.range.from(),
     );
   }
-  const numPlayers = expectInt(playersForm.items[1], "number of players");
+  const numPlayers = parseNumPlayers(playersForm);
 
   const equipmentForm = findChildList(game, "equipment");
   if (!equipmentForm) {
