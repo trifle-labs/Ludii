@@ -1,5 +1,11 @@
 export { AI, type SelectActionOptions } from "./ai.js";
 export {
+  AlphaBetaAI,
+  type AlphaBetaAIOptions,
+  type Evaluator,
+  MaterialEvaluator,
+} from "./alpha-beta-ai.js";
+export {
   DecisionTree,
   type DecisionTreeInternal,
   type DecisionTreeLeaf,

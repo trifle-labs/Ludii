@@ -81,6 +81,8 @@ export {
 } from "./action/index.js";
 export {
   AI,
+  AlphaBetaAI,
+  type AlphaBetaAIOptions,
   BiasedPlayout,
   type BiasedPlayoutOptions,
   BigramStats,
@@ -96,6 +98,7 @@ export {
   type DiscoverySample,
   defaultGeometricFeatures,
   discoverFeatures,
+  type Evaluator,
   type Feature,
   FeatureSet,
   FlatMonteCarloAI,
@@ -103,6 +106,7 @@ export {
   FriendlyNeighbourCountFeature,
   MASTPlayout,
   type MASTPlayoutOptions,
+  MaterialEvaluator,
   MCTSAI,
   type MCTSAIOptions,
   MoveStats,
