@@ -37,7 +37,7 @@ import {
   listHead,
   parseLud,
 } from "@ludii/typescript-language";
-
+import { getBuiltinDefines } from "./builtin-defines.js";
 import { DiceGame, type DiceMode } from "./dice-game.js";
 import { FlatBoardGame } from "./flat-board-game.js";
 import type { Game } from "./game.js";
@@ -827,14 +827,14 @@ function compileGameForm(form: CompiledForm): Game {
 /** Compile a `.lud` source string into a `Game`. */
 export function compileLudSource(source: string): Game {
   const parsed = parseLud(source);
-  const ast = expandDefines(parsed);
+  const ast = expandDefines(parsed, [...getBuiltinDefines()]);
   const form = locateGameForm(ast);
   return compileGameForm(form);
 }
 
 /** Compile a previously-parsed `.lud` AST into a `Game`. */
 export function compileLudAst(root: LudNode): Game {
-  const expanded = expandDefines(root);
+  const expanded = expandDefines(root, [...getBuiltinDefines()]);
   const form = locateGameForm(expanded);
   return compileGameForm(form);
 }

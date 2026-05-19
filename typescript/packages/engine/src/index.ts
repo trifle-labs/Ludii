@@ -123,6 +123,7 @@ export {
 } from "./ai/index.js";
 export { AlternatingMode } from "./alternating-mode.js";
 export type { API } from "./api.js";
+export { getBuiltinDefines } from "./builtin-defines.js";
 export {
   CONCEPT_NAMES,
   type ConceptName,
