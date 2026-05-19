@@ -233,6 +233,25 @@ function findFirstList(items: readonly LudNode[]): LudList | undefined {
   return undefined;
 }
 
+/**
+ * Find the first inner list-with-head — used for unwrapping graph
+ * transforms. Walks into curly-brace `{ … }` blocks (Ludii's "set"
+ * constructor) so combinators like `(union { (square 3) (shift …) … })`
+ * still yield the first concrete board.
+ */
+function findFirstInnerBoard(items: readonly LudNode[]): LudList | undefined {
+  for (const item of items) {
+    if (!item || !isList(item)) continue;
+    if (item.delimiter === "curly") {
+      const nested = findFirstInnerBoard(item.items);
+      if (nested) return nested;
+      continue;
+    }
+    return item;
+  }
+  return undefined;
+}
+
 function compileBoardShape(boardClause: LudList): BoardShape {
   // (board (square N)) | (board (rectangle H W)) | (board (hex Diamond N))
   // Transparent transforms — rotate/shift/scale only change rendering,
@@ -249,9 +268,25 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     shapeName === "translate" ||
     shapeName === "subdivide" ||
     shapeName === "renumber" ||
-    shapeName === "trim"
+    shapeName === "trim" ||
+    // Graph-modification ops the simplified compiler can't model
+    // (add/remove cells, set-theoretic combinators, dual graph, skew/
+    // wedge transforms). For compilation purposes we ignore the
+    // modification and use the inner board's topology directly. Game
+    // logic that depends on exact cell counts may misbehave, but the
+    // game compiles and exercises the rest of the pipeline.
+    shapeName === "add" ||
+    shapeName === "remove" ||
+    shapeName === "union" ||
+    shapeName === "intersect" ||
+    shapeName === "merge" ||
+    shapeName === "dual" ||
+    shapeName === "skew" ||
+    shapeName === "wedge" ||
+    shapeName === "keep" ||
+    shapeName === "graph"
   ) {
-    const innerBoard = findFirstList(inner.items.slice(1));
+    const innerBoard = findFirstInnerBoard(inner.items.slice(1));
     if (innerBoard) {
       return compileBoardShape({
         kind: "list",
@@ -264,6 +299,37 @@ function compileBoardShape(boardClause: LudList): BoardShape {
   if (shapeName === "square") {
     const size = expectInt(inner.items[1], "square size");
     return { kind: "flat", width: size, height: size };
+  }
+  if (shapeName === "concentric") {
+    // (concentric Shape rings:N) — N nested polygons forming Morris-style
+    // boards. The exact topology (8 vertices per ring + connectors)
+    // isn't modelled; we emit a placeholder (2N+1)×(2N+1) flat board so
+    // the game compiles and exercises the rest of the pipeline. Line-
+    // detection will not match Morris-board adjacency precisely.
+    let rings = 1;
+    for (let i = 1; i < inner.items.length; i += 1) {
+      const item = inner.items[i];
+      if (!item) continue;
+      if (isNumber(item) && Number.isInteger(item.value)) {
+        rings = item.value;
+        break;
+      }
+      if (isIdent(item) && item.name.startsWith("rings:")) {
+        const tail = item.name.slice("rings:".length);
+        const parsed = Number.parseInt(tail, 10);
+        if (Number.isFinite(parsed)) rings = parsed;
+        break;
+      }
+      if (isIdent(item) && item.name === "rings:") {
+        const next = inner.items[i + 1];
+        if (next && isNumber(next) && Number.isInteger(next.value)) {
+          rings = next.value;
+        }
+        break;
+      }
+    }
+    const side = Math.max(3, rings * 2 + 1);
+    return { kind: "flat", width: side, height: side };
   }
   if (shapeName === "rectangle" || shapeName === "rect") {
     const height = expectInt(inner.items[1], "rectangle height");
