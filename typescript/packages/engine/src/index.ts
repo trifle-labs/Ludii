@@ -78,6 +78,20 @@ export {
   SITE_TYPES,
   type SiteType,
 } from "./action/index.js";
+export {
+  AI,
+  BiasedPlayout,
+  type BiasedPlayoutOptions,
+  FlatMonteCarloAI,
+  type FlatMonteCarloAIOptions,
+  MCTSAI,
+  type MCTSAIOptions,
+  type PlayoutStrategy,
+  RandomAI,
+  RandomPlayout,
+  type SelectActionOptions,
+  scoreForPlayer,
+} from "./ai/index.js";
 export { AlternatingMode } from "./alternating-mode.js";
 export type { API } from "./api.js";
 export {
