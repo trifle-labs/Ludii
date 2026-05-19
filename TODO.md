@@ -14,7 +14,7 @@ Legend:
 These tasks are self-contained, have a clear Java source of truth, and follow
 the established porting workflow (`typescript/packages/…`).
 
-- [ ] 🤖 Port `Common/src/main/collections/ChunkSet.java` to `@ludii/typescript-common` with parity tests
+- [x] 🤖 Port `Common/src/main/collections/ChunkSet.java` to `@ludii/typescript-common` with parity tests
 - [x] 🤖 Port `Common/src/main/collections/FastArrayList.java` to `@ludii/typescript-common` with parity tests
 - [ ] 🤖 Port `Common/src/main/collections/HashedBitSet.java` to `@ludii/typescript-common` with parity tests
 - [ ] 🤖 Port first parser/description primitive from `Language/` (e.g. token scanner or symbol table) into a new `@ludii/typescript-language` package
