@@ -224,15 +224,40 @@ function parsePlayerIndex(ident: string, offset?: number): number {
   return Number(match[1]);
 }
 
+function findFirstList(items: readonly LudNode[]): LudList | undefined {
+  for (const item of items) {
+    if (item && isList(item)) return item;
+  }
+  return undefined;
+}
+
 function compileBoardShape(boardClause: LudList): BoardShape {
   // (board (square N)) | (board (rectangle H W)) | (board (hex Diamond N))
+  // Transparent transforms — rotate/shift/scale only change rendering,
+  // so unwrap them and recompile against the inner shape.
   const inner = asList(boardClause.items[1], "board shape");
   const shapeName = head(inner);
+  if (
+    shapeName === "rotate" ||
+    shapeName === "shift" ||
+    shapeName === "scale" ||
+    shapeName === "translate"
+  ) {
+    const innerBoard = findFirstList(inner.items.slice(1));
+    if (innerBoard) {
+      return compileBoardShape({
+        kind: "list",
+        delimiter: boardClause.delimiter,
+        items: [boardClause.items[0] as LudNode, innerBoard],
+        range: boardClause.range,
+      });
+    }
+  }
   if (shapeName === "square") {
     const size = expectInt(inner.items[1], "square size");
     return { kind: "flat", width: size, height: size };
   }
-  if (shapeName === "rectangle") {
+  if (shapeName === "rectangle" || shapeName === "rect") {
     const height = expectInt(inner.items[1], "rectangle height");
     const width = expectInt(inner.items[2], "rectangle width");
     return { kind: "flat", width, height };
@@ -753,10 +778,15 @@ function compileGameForm(form: CompiledForm): Game {
     );
   }
 
-  const defaultLineLength =
+  // FlatBoardGame insists lineLength >= 2; some games (Cram on a 1xN
+  // board, etc.) end on (no Moves Next) so a line never triggers — clamp
+  // the placeholder so construction succeeds.
+  const defaultLineLength = Math.max(
+    2,
     equipment.board.kind === "hex"
       ? equipment.board.size
-      : Math.min(equipment.board.width, equipment.board.height);
+      : Math.min(equipment.board.width, equipment.board.height),
+  );
   const win = compileWinRule(rulesForm, defaultLineLength);
 
   if (equipment.board.kind === "hex") {
