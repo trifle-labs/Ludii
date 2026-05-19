@@ -135,9 +135,11 @@ function expandItem(
 ): LudNode | LudNode[] {
   if (!isList(node)) return node;
 
-  // Detect a define invocation: a list whose first item is a string.
+  // Detect a define invocation: a round-paren list whose first item is a
+  // string. Curly `{ "Name" … }` lists are groups, not call sites — Ludii
+  // only treats `("Name" args…)` as a macro call.
   const head = node.items[0];
-  if (head && isString(head)) {
+  if (node.delimiter === "round" && head && isString(head)) {
     const entry = defines.get(head.value);
     if (entry && !expanding.has(entry.name)) {
       // Expand each call-site token, then group `kwname:` ident +

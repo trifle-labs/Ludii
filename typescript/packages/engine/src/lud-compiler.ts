@@ -1045,6 +1045,8 @@ function findEndClause(rules: LudList): LudList | undefined {
   const phasesList: LudList[] = [];
   const direct2 = findChildList(rules, "phases");
   if (direct2) phasesList.push(direct2);
+  // `phases:` followed by a single bare `(phase …)` (not wrapped in `{…}`).
+  const baresPhases: LudList[] = [];
   for (let i = 0; i < rules.items.length; i += 1) {
     const cur = rules.items[i];
     const nxt = rules.items[i + 1];
@@ -1053,13 +1055,16 @@ function findEndClause(rules: LudList): LudList | undefined {
       isIdent(cur) &&
       cur.name === "phases:" &&
       nxt &&
-      isList(nxt) &&
-      nxt.delimiter === "curly"
+      isList(nxt)
     ) {
-      phasesList.push(nxt);
+      if (nxt.delimiter === "curly") {
+        phasesList.push(nxt);
+      } else if (listHead(nxt) === "phase") {
+        baresPhases.push(nxt);
+      }
     }
   }
-  if (phasesList.length === 0) return undefined;
+  if (phasesList.length === 0 && baresPhases.length === 0) return undefined;
   const visit = (parent: LudList): LudList | undefined => {
     for (const item of parent.items) {
       if (!isList(item)) continue;
@@ -1076,6 +1081,10 @@ function findEndClause(rules: LudList): LudList | undefined {
   for (const p of phasesList) {
     const found = visit(p);
     if (found) return found;
+  }
+  for (const phase of baresPhases) {
+    const inner = findChildList(phase, "end");
+    if (inner) return inner;
   }
   return undefined;
 }
