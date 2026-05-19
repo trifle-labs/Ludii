@@ -12,7 +12,10 @@ function assertAlmostEqual(actual: number, expected: number): void {
   );
 }
 
-function assertVectorAlmostEqual(actual: FVector, expected: readonly number[]): void {
+function assertVectorAlmostEqual(
+  actual: FVector,
+  expected: readonly number[],
+): void {
   assert.equal(actual.dim(), expected.length);
 
   expected.forEach((value, index) => {
