@@ -5,6 +5,7 @@ export {
   ticTacToeGame,
 } from "./flat-board-game.js";
 export type { Game } from "./game.js";
+export { HexGame, type HexGameOptions, hexGame } from "./hex-game.js";
 export {
   compileLudAst,
   compileLudSource,
