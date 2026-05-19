@@ -9,7 +9,7 @@ This directory contains the first incremental TypeScript workspace for Ludii.
 
 ## Commands
 
-Run these commands from `/home/runner/work/Ludii/Ludii`:
+Run these commands from the repository root:
 
 - `npm install`
 - `npm run lint`
@@ -21,12 +21,12 @@ Run these commands from `/home/runner/work/Ludii/Ludii`:
 Build the browser package:
 
 ```bash
-cd /home/runner/work/Ludii/Ludii
+cd .
 npm install
 npm run build --workspace @ludii/typescript-browser-player
 ```
 
-Then open `/home/runner/work/Ludii/Ludii/typescript/packages/browser-player/demo/index.html` in a browser.
+Then open `typescript/packages/browser-player/demo/index.html` in a browser.
 
 The current browser milestone is intentionally small: it provides an embeddable, browser-playable game surface so the migration has a concrete web target while the larger engine port proceeds module by module.
 

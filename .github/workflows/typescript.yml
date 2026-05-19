@@ -9,6 +9,8 @@ on:
 jobs:
   validate-typescript:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
