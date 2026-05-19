@@ -36,10 +36,22 @@ export {
   type FlatMonteCarloAIOptions,
   scoreForPlayer,
 } from "./flat-monte-carlo-ai.js";
+export {
+  HeuristicPlayout,
+  type HeuristicPlayoutOptions,
+} from "./heuristic-playout.js";
+export {
+  HeuristicSampling,
+  type HeuristicSamplingOptions,
+} from "./heuristic-sampling.js";
 export { MASTPlayout, type MASTPlayoutOptions } from "./mast-playout.js";
 export { MCTSAI, type MCTSAIOptions } from "./mcts-ai.js";
 export { BigramStats, MoveStats } from "./move-stats.js";
 export { NSTPlayout, type NSTPlayoutOptions } from "./nst-playout.js";
+export {
+  OnePlyNoHeuristic,
+  type OnePlyNoHeuristicOptions,
+} from "./one-ply-no-heuristic.js";
 export {
   BiasedPlayout,
   type BiasedPlayoutOptions,
