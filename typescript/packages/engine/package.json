@@ -11,5 +11,8 @@
     "test": "npm run build && node --test dist/test/*.test.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "description": "TypeScript-native engine surface (Move/State/Trial/Context/Game) for the Ludii browser-player."
+  "description": "TypeScript-native engine surface (Move/State/Trial/Context/Game) for the Ludii browser-player.",
+  "dependencies": {
+    "@ludii/typescript-language": "*"
+  }
 }
