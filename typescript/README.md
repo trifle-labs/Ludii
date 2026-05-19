@@ -27,12 +27,24 @@ Current coverage includes:
   - bitset-style single-bit and range operations
   - packed chunk read/write helpers for powers-of-two chunk sizes up to 32 bits
   - logical combinators, shifting, and chunk-resolution helpers used by CSP-style state encodings
+- `BitSet`
+  - point and range `set` / `clear` / `flip`, automatic word-array growth
+  - `nextSetBit`, `nextClearBit`, `cardinality`, `length`, `intersects`
+  - logical combinators `and` / `or` / `xor` / `andNot`
+  - Java-parity `equals` / `hashCode` / `toString` and a set-bit iterator
+- `HashedBitSet`
+  - `BitSet`-backed Zobrist-hashed state with injected `ZobristState` adapter
+  - per-site `bigint` hash sequences (also accepts `BigInt64Array`)
+  - mutating ops (`set`, `clear`, `setTo`) maintain the running state hash
+  - `calculateHashAfterRemap` for canonical-hash computation
 
 Primary sources:
 
 - `/home/runner/work/Ludii/Ludii/Common/src/main/collections/FVector.java`
 - `Common/src/main/collections/FastArrayList.java`
 - `/home/runner/work/Ludii/Ludii/Common/src/main/collections/ChunkSet.java`
+- `java.util.BitSet` (JDK reference; see `BitSet` documentation)
+- `Core/src/other/state/zhash/HashedBitSet.java`
 
 ### `@ludii/typescript-browser-player`
 
