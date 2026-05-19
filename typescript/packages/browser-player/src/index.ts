@@ -1,11 +1,11 @@
 export {
-  EmbeddedTicTacToe,
   createTicTacToeEmbed,
+  EmbeddedTicTacToe,
   type EmbeddedTicTacToeOptions,
 } from "./embed.js";
 export {
-  TicTacToeGame,
   type TicTacToeCell,
+  TicTacToeGame,
   type TicTacToeOutcome,
   type TicTacToePlayer,
   type TicTacToeState,

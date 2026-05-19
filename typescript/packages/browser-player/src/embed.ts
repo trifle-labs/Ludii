@@ -1,4 +1,8 @@
-import { TicTacToeGame, type TicTacToeCell, type TicTacToeState } from "./ticTacToe.js";
+import {
+  type TicTacToeCell,
+  TicTacToeGame,
+  type TicTacToeState,
+} from "./ticTacToe.js";
 
 export interface EmbeddedTicTacToeOptions {
   readonly title?: string;
@@ -89,7 +93,10 @@ export class EmbeddedTicTacToe {
   private readonly board: HTMLDivElement;
   private readonly resetButton: HTMLButtonElement;
 
-  public constructor(container: HTMLElement | string, options: EmbeddedTicTacToeOptions = {}) {
+  public constructor(
+    container: HTMLElement | string,
+    options: EmbeddedTicTacToeOptions = {},
+  ) {
     ensureStyles();
 
     this.container = resolveContainer(container);
@@ -128,7 +135,9 @@ export class EmbeddedTicTacToe {
   private render(): void {
     const state = this.game.getState();
     this.status.textContent = outcomeLabel(state);
-    this.board.replaceChildren(...state.board.map((cell, index) => this.renderCell(cell, index, state)));
+    this.board.replaceChildren(
+      ...state.board.map((cell, index) => this.renderCell(cell, index, state)),
+    );
   }
 
   private renderCell(

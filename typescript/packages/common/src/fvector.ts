@@ -91,7 +91,11 @@ export class FVector {
     this.floats[entry] = Math.fround(value);
   }
 
-  public fill(startInclusive: number, endExclusive: number, value: number): void {
+  public fill(
+    startInclusive: number,
+    endExclusive: number,
+    value: number,
+  ): void {
     this.floats.fill(Math.fround(value), startInclusive, endExclusive);
   }
 
@@ -106,7 +110,9 @@ export class FVector {
   }
 
   public mean(): number {
-    return this.floats.length === 0 ? Number.NaN : this.sum() / this.floats.length;
+    return this.floats.length === 0
+      ? Number.NaN
+      : this.sum() / this.floats.length;
   }
 
   public norm(): number {

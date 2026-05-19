@@ -71,7 +71,11 @@ export class TicTacToeGame {
     for (const [a, b, c] of WINNING_LINES) {
       const candidate = this.board[a];
 
-      if (candidate !== null && candidate === this.board[b] && candidate === this.board[c]) {
+      if (
+        candidate !== null &&
+        candidate === this.board[b] &&
+        candidate === this.board[c]
+      ) {
         return candidate;
       }
     }

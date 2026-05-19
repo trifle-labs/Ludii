@@ -6,7 +6,10 @@ import { FVector } from "../src/index.js";
 const FLOAT_TOLERANCE = 0.0001;
 
 function assertAlmostEqual(actual: number, expected: number): void {
-  assert.ok(Math.abs(actual - expected) <= FLOAT_TOLERANCE, `${actual} != ${expected}`);
+  assert.ok(
+    Math.abs(actual - expected) <= FLOAT_TOLERANCE,
+    `${actual} != ${expected}`,
+  );
 }
 
 test("FVector.linspace() matches the inclusive Java contract", () => {

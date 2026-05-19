@@ -4,7 +4,9 @@ const mount = (): void => {
   const app = document.getElementById("app");
 
   if (app !== null) {
-    createTicTacToeEmbed(app, { title: "Embeddable browser-playable milestone" });
+    createTicTacToeEmbed(app, {
+      title: "Embeddable browser-playable milestone",
+    });
   }
 };
 
