@@ -109,13 +109,16 @@ export class State {
     componentLabels: readonly string[],
     options: StateOptions = {},
   ) {
-    if (!Number.isInteger(mover) || mover < 1) {
-      throw new Error(`mover must be a 1-based integer; got ${mover}.`);
+    // mover == 0 is reserved for 0-player simulation games (no side to move).
+    if (!Number.isInteger(mover) || mover < 0) {
+      throw new Error(
+        `mover must be a non-negative integer (0 = no mover); got ${mover}.`,
+      );
     }
     const numPlayers = options.numPlayers ?? componentLabels.length;
-    if (!Number.isInteger(numPlayers) || numPlayers < 1) {
+    if (!Number.isInteger(numPlayers) || numPlayers < 0) {
       throw new Error(
-        `numPlayers must be a positive integer; got ${numPlayers}.`,
+        `numPlayers must be a non-negative integer; got ${numPlayers}.`,
       );
     }
     const n = cells.length;

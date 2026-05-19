@@ -184,10 +184,26 @@ describe("FlatBoardGame: configurable shapes", () => {
   });
 
   it("State construction validates mover", () => {
-    assert.throws(() => new State(0, [0, 0], ["X"]));
+    // -1 is invalid (not a valid mover); 0 is now allowed for 0-player sims.
+    assert.throws(() => new State(-1, [0, 0], ["X"]));
   });
 
   it("Trial construction validates non-terminal winner", () => {
     assert.throws(() => new Trial([], false, 1));
+  });
+
+  it("supports 0-player simulations (Game of Life shape)", () => {
+    const game = new FlatBoardGame({
+      id: "sim",
+      name: "Sim",
+      width: 3,
+      height: 3,
+      numPlayers: 0,
+      lineLength: 3,
+    });
+    const ctx = game.start();
+    assert.equal(ctx.over, true);
+    assert.equal(ctx.mover, 0);
+    assert.equal(game.moves(ctx).length, 0);
   });
 });

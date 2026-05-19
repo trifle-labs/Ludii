@@ -169,7 +169,9 @@ function evalIntExpr(node: LudNode | undefined): number | undefined {
         ? Math.trunc(args[0]! / args[1]!)
         : undefined;
     case "%":
-      return args.length === 2 && args[1] !== 0 ? args[0]! % args[1]! : undefined;
+      return args.length === 2 && args[1] !== 0
+        ? args[0]! % args[1]!
+        : undefined;
     case "^":
     case "**":
     case "pow":
@@ -284,10 +286,7 @@ function matchPlaceholderGame(matchForm: LudList): LudList {
     list("round", [
       id("equipment"),
       list("curly", [
-        list("round", [
-          id("board"),
-          list("round", [id("square"), num(3)]),
-        ]),
+        list("round", [id("board"), list("round", [id("square"), num(3)])]),
         list("round", [id("piece"), str("X"), id("Each")]),
       ]),
     ]),
@@ -596,11 +595,7 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     const firstAsInt = evalIntExpr(firstArg);
     if (firstAsInt !== undefined) {
       size = firstAsInt;
-    } else if (
-      firstArg &&
-      isList(firstArg) &&
-      firstArg.delimiter === "curly"
-    ) {
+    } else if (firstArg && isList(firstArg) && firstArg.delimiter === "curly") {
       // Bare (tri {sizes…}) — sum the row-size list.
       for (const item of firstArg.items) {
         const v = evalIntExpr(item);
@@ -743,7 +738,11 @@ function compileEquipment(
         rows = 2;
         cols = aVal;
       }
-      board = { kind: "flat", width: Math.max(1, cols), height: Math.max(1, rows) };
+      board = {
+        kind: "flat",
+        width: Math.max(1, cols),
+        height: Math.max(1, rows),
+      };
     } else if (headName === "surakartaBoard") {
       // (surakartaBoard N …) — a Surakarta-style board with loop tracks
       // for capture. Use an N×N flat placeholder.
@@ -906,7 +905,8 @@ function compileStartClause(
   siteCount: number,
 ): StartSpec {
   const placement = new Array<number>(siteCount).fill(0);
-  let mover = 1;
+  // 0-player simulations have no mover (Game of Life etc.).
+  let mover = numPlayers === 0 ? 0 : 1;
 
   // (start ...) body may be { (place ...) (place ...) (set Mover P2) } or flat.
   const body = collectStartEntries(start);
@@ -1050,13 +1050,7 @@ function findEndClause(rules: LudList): LudList | undefined {
   for (let i = 0; i < rules.items.length; i += 1) {
     const cur = rules.items[i];
     const nxt = rules.items[i + 1];
-    if (
-      cur &&
-      isIdent(cur) &&
-      cur.name === "phases:" &&
-      nxt &&
-      isList(nxt)
-    ) {
+    if (cur && isIdent(cur) && cur.name === "phases:" && nxt && isList(nxt)) {
       if (nxt.delimiter === "curly") {
         phasesList.push(nxt);
       } else if (listHead(nxt) === "phase") {
@@ -1215,10 +1209,11 @@ function detectStepWinMode(rules: LudList): StepWinMode | undefined {
 function compileWinRule(rules: LudList, boardSize: number): WinKind {
   const end = findEndClause(rules);
   if (!end) {
-    throw new LudCompileError(
-      "Rules block is missing an (end ...) clause",
-      rules.range.from(),
-    );
+    // Some games (notably wip and simulation entries) declare no
+    // `(end …)` at all. Fall back to the default board-spanning line —
+    // an undefined end condition means the game has no defined
+    // terminator, which the engine treats as never-ending.
+    return { kind: "line", lineLength: boardSize };
   }
   // Look at every (if …) clause under (end …), including those nested
   // inside curly-brace blocks, and inside (or …)/(and …) wrappers.

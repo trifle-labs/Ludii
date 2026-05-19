@@ -122,9 +122,9 @@ export class FlatBoardGame implements Game {
         `height must be a positive integer; got ${options.height}.`,
       );
     }
-    if (!Number.isInteger(options.numPlayers) || options.numPlayers < 1) {
+    if (!Number.isInteger(options.numPlayers) || options.numPlayers < 0) {
       throw new Error(
-        `numPlayers must be a positive integer; got ${options.numPlayers}.`,
+        `numPlayers must be a non-negative integer; got ${options.numPlayers}.`,
       );
     }
     if (!Number.isInteger(options.lineLength) || options.lineLength < 2) {
@@ -160,10 +160,17 @@ export class FlatBoardGame implements Game {
         new Array<number>(siteCount).fill(0),
       );
     }
-    const mover = options.initialMover ?? 1;
-    if (!Number.isInteger(mover) || mover < 1 || mover > this.numPlayers) {
+    // 0-player simulations have no mover; default to 0 in that case.
+    const moverDefault = this.numPlayers === 0 ? 0 : 1;
+    const mover = options.initialMover ?? moverDefault;
+    const moverMin = this.numPlayers === 0 ? 0 : 1;
+    if (
+      !Number.isInteger(mover) ||
+      mover < moverMin ||
+      mover > this.numPlayers
+    ) {
       throw new Error(
-        `initialMover must be 1..${this.numPlayers}; got ${mover}.`,
+        `initialMover must be ${moverMin}..${this.numPlayers}; got ${mover}.`,
       );
     }
     this.initialMover = mover;
@@ -176,7 +183,15 @@ export class FlatBoardGame implements Game {
   public start(): Context {
     const cells = [...this.initialPlacement];
     const state = new State(this.initialMover, cells, this.componentLabels);
-    const trial = new Trial([], false, -1).saveState(state);
+    // 0-player simulations are immediately terminal from the engine's
+    // POV — no mover, no legal moves. The trial state holds the initial
+    // configuration so callers can still inspect it.
+    const initiallyOver = this.numPlayers === 0;
+    const trial = new Trial(
+      [],
+      initiallyOver,
+      initiallyOver ? 0 : -1,
+    ).saveState(state);
     return new Context(this, state, trial);
   }
 
