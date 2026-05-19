@@ -1,7 +1,8 @@
 /**
  * Java parity:
  * - Core/src/game/Game.java — only the subset the browser-player calls
- *   (start / apply / moves / over).
+ *   (start / apply / moves / over) plus a handful of Java-shape getters
+ *   the engine reads through Context.
  */
 
 import type { Context } from "./context.js";
@@ -15,6 +16,13 @@ export interface Game {
   readonly width: number;
   /** Board height in cells. */
   readonly height: number;
+  /**
+   * Total number of cells/sites on the board.
+   * Java parity: `Game.numSites()`. Defaults to width × height.
+   */
+  readonly numSites: number;
+  /** Optional human-readable description; Java parity: `Game.description()`. */
+  readonly description?: string;
   start(): Context;
   moves(context: Context): readonly Move[];
   apply(context: Context, move: Move): Context;

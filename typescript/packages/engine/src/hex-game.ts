@@ -136,6 +136,10 @@ export class HexGame implements Game {
     return this.size * this.size;
   }
 
+  public get numSites(): number {
+    return this.size * this.size;
+  }
+
   public start(): Context {
     const cells = new Array<number>(this.siteCount).fill(0);
     const state = new State(1, cells, this.componentLabels);

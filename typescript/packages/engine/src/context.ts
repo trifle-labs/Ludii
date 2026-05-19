@@ -3,7 +3,9 @@
  * - Core/src/other/context/Context.java
  *
  * Holds a `Game` + `Trial` + `State`. Immutable in the TS port: every
- * `apply()` produces a new Context.
+ * `apply()` produces a new Context. The Java surface is broad
+ * (RNG, completed trials, owned components, ranking); the methods
+ * pinned here are the ones the engine + browser-player actually call.
  */
 
 import type { Game } from "./game.js";
@@ -39,5 +41,30 @@ export class Context {
 
   public get winner(): number {
     return this.trial.winner;
+  }
+
+  /** Java parity: `Context.game()`. Kept as a method for shape parity. */
+  public getGame(): Game {
+    return this.game;
+  }
+
+  /** Java parity: `Context.state()`. */
+  public getState(): State {
+    return this.state;
+  }
+
+  /** Java parity: `Context.trial()`. */
+  public getTrial(): Trial {
+    return this.trial;
+  }
+
+  /** Java parity: `Context.numPlayers()`. */
+  public numPlayers(): number {
+    return this.game.numPlayers;
+  }
+
+  /** Java parity: `Context.score(pid)`. */
+  public score(pid: number): number {
+    return this.state.score(pid);
   }
 }

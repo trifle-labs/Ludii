@@ -94,6 +94,10 @@ export class FlatBoardGame implements Game {
   public readonly lineLength: number;
   public readonly componentLabels: readonly string[];
 
+  public get numSites(): number {
+    return this.width * this.height;
+  }
+
   public constructor(options: FlatBoardGameOptions) {
     if (!Number.isInteger(options.width) || options.width <= 0) {
       throw new Error(

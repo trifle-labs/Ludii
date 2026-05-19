@@ -16,6 +16,7 @@ export {
   SITE_TYPES,
   type SiteType,
 } from "./action/index.js";
+export { AlternatingMode } from "./alternating-mode.js";
 export type { API } from "./api.js";
 export { Context } from "./context.js";
 export {
@@ -24,6 +25,7 @@ export {
   ticTacToeGame,
 } from "./flat-board-game.js";
 export type { Game } from "./game.js";
+export { GameLoader } from "./game-loader.js";
 export { HexGame, type HexGameOptions, hexGame } from "./hex-game.js";
 export {
   compileLudAst,
@@ -31,5 +33,15 @@ export {
   LudCompileError,
 } from "./lud-compiler.js";
 export { Move, type MoveInit } from "./move.js";
-export { type CellView, State } from "./state.js";
+export {
+  type CellView,
+  type ContainerStateView,
+  State,
+} from "./state.js";
+export {
+  FlatTopology,
+  type TopologyCell,
+  type TopologyEdge,
+  type TopologyVertex,
+} from "./topology.js";
 export { Trial, type TrialStatus } from "./trial.js";
