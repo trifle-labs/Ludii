@@ -4,9 +4,79 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Ludii browser migration demo</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 56rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .demo-layout {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+      .demo-source {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .demo-source textarea {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.85rem;
+        width: 100%;
+        min-height: 16rem;
+        padding: 0.5rem;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        box-sizing: border-box;
+      }
+      .demo-source button {
+        align-self: flex-start;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        cursor: pointer;
+        border-radius: 8px;
+        border: 1px solid #8c959f;
+        background: #f6f8fa;
+      }
+      .demo-source button:hover {
+        background: #eaecef;
+      }
+      .demo-error {
+        color: #cf222e;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+      }
+      @media (max-width: 50rem) {
+        .demo-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
   </head>
   <body>
-    <main id="app"></main>
+    <h1>Ludii TypeScript browser demo</h1>
+    <p>
+      Paste a <code>.lud</code> game definition below and click
+      <em>Load game</em> to play it in the browser. The compiler
+      currently understands the tic-tac-toe-shaped subset of
+      <code>.lud</code> syntax — see
+      <code>typescript/packages/engine/src/lud-compiler.ts</code>.
+    </p>
+    <div class="demo-layout">
+      <div class="demo-source">
+        <label for="ludSource"><strong>.lud source</strong></label>
+        <textarea id="ludSource" spellcheck="false"></textarea>
+        <button type="button" id="loadGame">Load game</button>
+        <p class="demo-error" id="error" aria-live="polite"></p>
+      </div>
+      <div id="board"></div>
+    </div>
     <script type="module" src="../dist/src/demo.js"></script>
   </body>
 </html>

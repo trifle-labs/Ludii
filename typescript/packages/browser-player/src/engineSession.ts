@@ -1,5 +1,6 @@
 import {
   type Context,
+  compileLudSource,
   type FlatBoardGame,
   type Move,
   ticTacToeGame,
@@ -130,4 +131,13 @@ export function createSessionForGame(game: FlatBoardGame): BrowserGameSession {
 
 export function createTicTacToeSession(): BrowserGameSession {
   return createSessionForGame(ticTacToeGame());
+}
+
+/**
+ * Compile a `.lud` source string into a playable session. Bridges the
+ * Phase 3 roadmap entry: the browser-player can take a `.lud` string
+ * and play it without an intermediate engine build step.
+ */
+export function createSessionFromLud(ludSource: string): BrowserGameSession {
+  return createSessionForGame(compileLudSource(ludSource));
 }

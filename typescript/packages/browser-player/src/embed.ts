@@ -3,7 +3,10 @@ import type {
   BrowserMove,
   BrowserTrialEntry,
 } from "./contract.js";
-import { createTicTacToeSession } from "./engineSession.js";
+import {
+  createSessionFromLud,
+  createTicTacToeSession,
+} from "./engineSession.js";
 
 export interface EmbeddedLudiiOptions {
   readonly title?: string;
@@ -339,4 +342,16 @@ export function createLudiiEmbed(
   options?: EmbeddedLudiiOptions,
 ): EmbeddedLudii {
   return new EmbeddedLudii(container, session, options);
+}
+
+/**
+ * Compile a `.lud` source string into a session and embed it. The
+ * Phase 3 entry-point on the browser-player roadmap.
+ */
+export function createLudGameEmbed(
+  container: HTMLElement | string,
+  ludSource: string,
+  options?: EmbeddedLudiiOptions,
+): EmbeddedLudii {
+  return new EmbeddedLudii(container, createSessionFromLud(ludSource), options);
 }

@@ -8,6 +8,7 @@ export type {
   CellView,
 } from "./contract.js";
 export {
+  createLudGameEmbed,
   createLudiiEmbed,
   createTicTacToeEmbed,
   EmbeddedLudii,
@@ -17,6 +18,7 @@ export {
 } from "./embed.js";
 export {
   createSessionForGame,
+  createSessionFromLud,
   createTicTacToeSession,
   EngineSession,
 } from "./engineSession.js";
