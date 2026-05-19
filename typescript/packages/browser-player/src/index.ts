@@ -1,12 +1,22 @@
+export type {
+  BrowserGame,
+  BrowserGameSession,
+  BrowserMove,
+  BrowserState,
+  BrowserTrial,
+  BrowserTrialEntry,
+  CellView,
+} from "./contract.js";
 export {
+  createLudiiEmbed,
   createTicTacToeEmbed,
-  EmbeddedTicTacToe,
+  EmbeddedLudii,
+  type EmbeddedLudiiOptions,
+  type EmbeddedTicTacToe,
   type EmbeddedTicTacToeOptions,
 } from "./embed.js";
 export {
-  type TicTacToeCell,
-  TicTacToeGame,
-  type TicTacToeOutcome,
-  type TicTacToePlayer,
-  type TicTacToeState,
-} from "./ticTacToe.js";
+  createSessionForGame,
+  createTicTacToeSession,
+  EngineSession,
+} from "./engineSession.js";
