@@ -43,6 +43,7 @@ import { FlatBoardGame } from "./flat-board-game.js";
 import type { Game } from "./game.js";
 import { HexGame } from "./hex-game.js";
 import { expandDefines } from "./lud-defines.js";
+import { applyOptions } from "./lud-options.js";
 import { StackGame } from "./stack-game.js";
 import { StepGame, type StepWinMode } from "./step-game.js";
 
@@ -861,14 +862,16 @@ function compileGameForm(form: CompiledForm): Game {
 /** Compile a `.lud` source string into a `Game`. */
 export function compileLudSource(source: string): Game {
   const parsed = parseLud(source);
-  const ast = expandDefines(parsed, [...getBuiltinDefines()]);
+  const resolved = applyOptions(parsed);
+  const ast = expandDefines(resolved, [...getBuiltinDefines()]);
   const form = locateGameForm(ast);
   return compileGameForm(form);
 }
 
 /** Compile a previously-parsed `.lud` AST into a `Game`. */
 export function compileLudAst(root: LudNode): Game {
-  const expanded = expandDefines(root, [...getBuiltinDefines()]);
+  const resolved = applyOptions(root);
+  const expanded = expandDefines(resolved, [...getBuiltinDefines()]);
   const form = locateGameForm(expanded);
   return compileGameForm(form);
 }
