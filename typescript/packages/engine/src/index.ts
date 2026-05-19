@@ -32,4 +32,4 @@ export {
 } from "./lud-compiler.js";
 export { Move, type MoveInit } from "./move.js";
 export { type CellView, State } from "./state.js";
-export { Trial } from "./trial.js";
+export { Trial, type TrialStatus } from "./trial.js";
