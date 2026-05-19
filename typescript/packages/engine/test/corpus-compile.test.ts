@@ -177,13 +177,13 @@ describe("corpus: bulk compile statistics", () => {
         fail += 1;
       }
     }
-    // Pin a regression floor. The current baseline is ~113 successes;
-    // we set the floor conservatively at 100 so unrelated additions
-    // to the corpus don't shift the bar, but a real coverage regression
+    // Pin a regression floor. Current baseline is ~617/723 across the
+    // sampled directories; we set the floor at 550 so unrelated corpus
+    // additions don't shift the bar, but a real coverage regression
     // (e.g. an over-strict piece parser) trips the test.
     assert.ok(
-      ok >= 100,
-      `expected ≥100 .lud files to compile, got ${ok} (fail=${fail})`,
+      ok >= 550,
+      `expected ≥550 .lud files to compile, got ${ok} (fail=${fail})`,
     );
     assert.ok(
       roundTripped >= ok - 2,
