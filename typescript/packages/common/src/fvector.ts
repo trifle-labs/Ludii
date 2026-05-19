@@ -1,3 +1,15 @@
+function toFloat32(value: number): number {
+  return Math.fround(value);
+}
+
+function toFloat32Array(values: ArrayLike<number>): Float32Array {
+  return values instanceof Float32Array ? new Float32Array(values) : Float32Array.from(values);
+}
+
+function randomIndex(upperExclusive: number): number {
+  return Math.floor(Math.random() * upperExclusive);
+}
+
 export class FVector {
   private floats: Float32Array;
 
@@ -12,19 +24,29 @@ export class FVector {
       this.floats = new Float32Array(sizeOrValues);
 
       if (fillValue !== 0) {
-        this.floats.fill(Math.fround(fillValue));
+        this.floats.fill(toFloat32(fillValue));
       }
 
       return;
     }
 
-    this.floats = Float32Array.from(sizeOrValues);
+    this.floats = toFloat32Array(sizeOrValues);
   }
 
   private static fromRaw(values: Float32Array): FVector {
     const vector = Object.create(FVector.prototype) as FVector;
     vector.floats = values;
     return vector;
+  }
+
+  private static resolveValues(values: FVector | ArrayLike<number>): Float32Array {
+    return values instanceof FVector ? values.floats : values instanceof Float32Array ? values : Float32Array.from(values);
+  }
+
+  private static requireNonEmpty(vectors: readonly FVector[]): void {
+    if (vectors.length === 0) {
+      throw new RangeError("At least one vector is required.");
+    }
   }
 
   public static ones(dimension: number): FVector {
@@ -38,9 +60,63 @@ export class FVector {
   }
 
   public static wrap(values: Float32Array | ArrayLike<number>): FVector {
-    return FVector.fromRaw(
-      values instanceof Float32Array ? values : Float32Array.from(values),
-    );
+    return FVector.fromRaw(values instanceof Float32Array ? values : Float32Array.from(values));
+  }
+
+  public static concat(a: FVector, b: FVector): FVector {
+    const result = new Float32Array(a.dim() + b.dim());
+    result.set(a.floats, 0);
+    result.set(b.floats, a.dim());
+    return FVector.wrap(result);
+  }
+
+  public static crossEntropy(trueDist: FVector, estDist: FVector): number {
+    let result = 0;
+
+    for (let index = 0; index < trueDist.dim(); index += 1) {
+      result -= trueDist.floats[index]! * Math.log(estDist.floats[index]!);
+    }
+
+    return result;
+  }
+
+  public static elementwiseMax(a: FVector, b: FVector): FVector {
+    const result = new Float32Array(a.dim());
+
+    for (let index = 0; index < result.length; index += 1) {
+      result[index] = toFloat32(Math.max(a.floats[index]!, b.floats[index]!));
+    }
+
+    return FVector.wrap(result);
+  }
+
+  public static klDivergence(trueDist: FVector, estDist: FVector): number {
+    let result = 0;
+
+    for (let index = 0; index < trueDist.dim(); index += 1) {
+      const trueValue = trueDist.floats[index]!;
+
+      if (trueValue !== 0) {
+        result -= trueValue * Math.log(estDist.floats[index]! / trueValue);
+      }
+    }
+
+    return result;
+  }
+
+  public static mean(vectors: readonly FVector[]): FVector {
+    FVector.requireNonEmpty(vectors);
+    const means = new Float32Array(vectors[0]!.dim());
+
+    for (const vector of vectors) {
+      for (let index = 0; index < means.length; index += 1) {
+        means[index] = toFloat32(means[index]! + vector.floats[index]!);
+      }
+    }
+
+    const meanVector = FVector.wrap(means);
+    meanVector.mult(1 / vectors.length);
+    return meanVector;
   }
 
   public static linspace(
@@ -64,12 +140,10 @@ export class FVector {
       return result;
     }
 
-    const step = endInclusive
-      ? (stop - start) / (num - 1)
-      : (stop - start) / num;
+    const step = endInclusive ? (stop - start) / (num - 1) : (stop - start) / num;
 
-    for (let i = 0; i < num; i += 1) {
-      result.set(i, start + i * step);
+    for (let index = 0; index < num; index += 1) {
+      result.set(index, start + index * step);
     }
 
     return result;
@@ -88,15 +162,79 @@ export class FVector {
   }
 
   public set(entry: number, value: number): void {
-    this.floats[entry] = Math.fround(value);
+    this.floats[entry] = toFloat32(value);
   }
 
-  public fill(
-    startInclusive: number,
-    endExclusive: number,
-    value: number,
-  ): void {
-    this.floats.fill(Math.fround(value), startInclusive, endExclusive);
+  public argMax(): number {
+    let max = Number.NEGATIVE_INFINITY;
+    let maxIndex = -1;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      if (this.floats[index]! > max) {
+        max = this.floats[index]!;
+        maxIndex = index;
+      }
+    }
+
+    return maxIndex;
+  }
+
+  public argMaxRand(): number {
+    let max = Number.NEGATIVE_INFINITY;
+    let maxIndex = -1;
+    let numMaxFound = 0;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      const value = this.floats[index]!;
+
+      if (value > max) {
+        max = value;
+        maxIndex = index;
+        numMaxFound = 1;
+      } else if (value === max && randomIndex(++numMaxFound) === 0) {
+        maxIndex = index;
+      }
+    }
+
+    return maxIndex;
+  }
+
+  public argMin(): number {
+    let min = Number.POSITIVE_INFINITY;
+    let minIndex = -1;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      if (this.floats[index]! < min) {
+        min = this.floats[index]!;
+        minIndex = index;
+      }
+    }
+
+    return minIndex;
+  }
+
+  public argMinRand(): number {
+    let min = Number.POSITIVE_INFINITY;
+    let minIndex = -1;
+    let numMinFound = 0;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      const value = this.floats[index]!;
+
+      if (value < min) {
+        min = value;
+        minIndex = index;
+        numMinFound = 1;
+      } else if (value === min && randomIndex(++numMinFound) === 0) {
+        minIndex = index;
+      }
+    }
+
+    return minIndex;
+  }
+
+  public fill(startInclusive: number, endExclusive: number, value: number): void {
+    this.floats.fill(toFloat32(value), startInclusive, endExclusive);
   }
 
   public sum(): number {
@@ -110,9 +248,7 @@ export class FVector {
   }
 
   public mean(): number {
-    return this.floats.length === 0
-      ? Number.NaN
-      : this.sum() / this.floats.length;
+    return this.floats.length === 0 ? Number.NaN : this.sum() / this.floats.length;
   }
 
   public norm(): number {
@@ -145,7 +281,291 @@ export class FVector {
     return min;
   }
 
+  public abs(): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(Math.abs(this.floats[index]!));
+    }
+  }
+
+  public add(value: number | ArrayLike<number> | FVector): void {
+    if (typeof value === "number") {
+      for (let index = 0; index < this.floats.length; index += 1) {
+        this.floats[index] = toFloat32(this.floats[index]! + value);
+      }
+
+      return;
+    }
+
+    const values = FVector.resolveValues(value);
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(this.floats[index]! + values[index]!);
+    }
+  }
+
+  public addToEntry(entry: number, value: number): void {
+    this.floats[entry] = toFloat32(this.floats[entry]! + value);
+  }
+
+  public addScaled(other: FVector, scalar: number): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(this.floats[index]! + other.floats[index]! * scalar);
+    }
+  }
+
+  public div(scalar: number): void {
+    const multiplier = 1 / scalar;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(this.floats[index]! * multiplier);
+    }
+  }
+
+  public elementwiseDivision(other: FVector): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(this.floats[index]! / other.floats[index]!);
+    }
+  }
+
+  public hadamardProduct(other: FVector): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(this.floats[index]! * other.floats[index]!);
+    }
+  }
+
+  public log(): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(Math.log(this.floats[index]!));
+    }
+  }
+
+  public mult(scalar: number): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(this.floats[index]! * scalar);
+    }
+  }
+
+  public raiseToPower(power: number): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(Math.pow(this.floats[index]!, power));
+    }
+  }
+
+  public normalise(): void {
+    const sum = this.sum();
+
+    if (sum === 0) {
+      if (this.floats.length === 0) {
+        return;
+      }
+
+      this.floats.fill(toFloat32(1 / this.floats.length));
+      return;
+    }
+
+    const scalar = 1 / sum;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(this.floats[index]! * scalar);
+    }
+  }
+
+  public sign(): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      const value = this.floats[index]!;
+      this.floats[index] = value > 0 ? 1 : value < 0 ? -1 : 0;
+    }
+  }
+
+  public softmax(temperature = 1): void {
+    const max = this.max();
+    let sumExponents = 0;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      const exponent = Math.exp((this.floats[index]! - max) / temperature);
+      sumExponents += exponent;
+      this.floats[index] = toFloat32(exponent);
+    }
+
+    this.div(sumExponents);
+  }
+
+  public updateSoftmaxInvalidate(invalidEntry: number): void {
+    const invalidProbability = this.floats[invalidEntry] ?? 0;
+    this.floats[invalidEntry] = 0;
+
+    if (invalidProbability < 1) {
+      const scalar = 1 / (1 - invalidProbability);
+
+      for (let index = 0; index < this.floats.length; index += 1) {
+        this.floats[index] = toFloat32(this.floats[index]! * scalar);
+      }
+    }
+  }
+
+  public sqrt(): void {
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(Math.sqrt(this.floats[index]!));
+    }
+  }
+
+  public subtract(value: number | ArrayLike<number> | FVector): void {
+    if (typeof value === "number") {
+      for (let index = 0; index < this.floats.length; index += 1) {
+        this.floats[index] = toFloat32(this.floats[index]! - value);
+      }
+
+      return;
+    }
+
+    const values = FVector.resolveValues(value);
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      this.floats[index] = toFloat32(this.floats[index]! - values[index]!);
+    }
+  }
+
+  public sampleFromDistribution(): number {
+    const random = Math.random();
+    let accumulated = 0;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      accumulated += this.floats[index]!;
+
+      if (random < accumulated) {
+        return index;
+      }
+    }
+
+    for (let index = this.floats.length - 1; index > 0; index -= 1) {
+      if (this.floats[index]! > 0) {
+        return index;
+      }
+    }
+
+    return 0;
+  }
+
+  public sampleProportionally(): number {
+    const sum = this.sum();
+
+    if (sum === 0) {
+      return randomIndex(this.floats.length);
+    }
+
+    const random = Math.random();
+    let accumulated = 0;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      accumulated += this.floats[index]! / sum;
+
+      if (random < accumulated) {
+        return index;
+      }
+    }
+
+    return this.floats.length - 1;
+  }
+
+  public dot(other: FVector): number {
+    let sum = 0;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      sum += this.floats[index]! * other.floats[index]!;
+    }
+
+    return sum;
+  }
+
+  public dotSparse(sparseBinary: ArrayLike<number>, offset = 0): number {
+    let sum = 0;
+
+    for (let index = 0; index < sparseBinary.length; index += 1) {
+      sum += this.floats[sparseBinary[index]! + offset] ?? 0;
+    }
+
+    return sum;
+  }
+
+  public normalisedEntropy(): number {
+    const dimension = this.dim();
+
+    if (dimension <= 1) {
+      return 0;
+    }
+
+    let entropy = 0;
+
+    for (let index = 0; index < dimension; index += 1) {
+      const probability = this.floats[index]!;
+
+      if (probability > 0) {
+        entropy -= probability * Math.log(probability);
+      }
+    }
+
+    return entropy / Math.log(dimension);
+  }
+
+  public containsNaN(): boolean {
+    return this.floats.some((value) => Number.isNaN(value));
+  }
+
+  public copyFrom(src: FVector, srcPos: number, destPos: number, length: number): void {
+    this.floats.set(src.floats.subarray(srcPos, srcPos + length), destPos);
+  }
+
+  public range(fromInclusive: number, toExclusive: number): FVector {
+    return FVector.wrap(this.floats.slice(fromInclusive, toExclusive));
+  }
+
+  public append(newValue: number): FVector {
+    const next = new Float32Array(this.floats.length + 1);
+    next.set(this.floats, 0);
+    next[this.floats.length] = toFloat32(newValue);
+    return FVector.wrap(next);
+  }
+
+  public cut(entry: number): FVector;
+  public cut(startEntryInclusive: number, endEntryExclusive: number): FVector;
+  public cut(startEntryInclusive: number, endEntryExclusive = startEntryInclusive + 1): FVector {
+    const result = new Float32Array(this.floats.length - (endEntryExclusive - startEntryInclusive));
+    result.set(this.floats.subarray(0, startEntryInclusive), 0);
+    result.set(
+      this.floats.subarray(endEntryExclusive),
+      startEntryInclusive,
+    );
+    return FVector.wrap(result);
+  }
+
+  public insert(index: number, value: number): FVector;
+  public insert(index: number, values: ArrayLike<number>): FVector;
+  public insert(index: number, valueOrValues: number | ArrayLike<number>): FVector {
+    const values = typeof valueOrValues === "number" ? Float32Array.of(toFloat32(valueOrValues)) : toFloat32Array(valueOrValues);
+    const result = new Float32Array(this.floats.length + values.length);
+    result.set(this.floats.subarray(0, index), 0);
+    result.set(values, index);
+    result.set(this.floats.subarray(index), index + values.length);
+    return FVector.wrap(result);
+  }
+
   public toArray(): number[] {
     return Array.from(this.floats);
+  }
+
+  public toLine(): string {
+    return this.toArray().join(",");
+  }
+
+  public equals(other: unknown): boolean {
+    if (!(other instanceof FVector) || other.dim() !== this.dim()) {
+      return false;
+    }
+
+    return this.floats.every((value, index) => value === other.floats[index]);
+  }
+
+  public toString(): string {
+    return `[${this.toLine()}]`;
   }
 }

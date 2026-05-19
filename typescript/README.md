@@ -1,37 +1,77 @@
-# Ludii TypeScript Migration Workspace
+# Ludii TypeScript Workspace
 
-This directory contains the first incremental TypeScript workspace for Ludii.
+This workspace holds the TypeScript port for this fork of Ludii.
 
-## Current scope
+## Packages
 
-- `packages/common`: initial ports of foundational utilities from the Java `Common` module
-- `packages/browser-player`: an embeddable browser game surface to prove the web-play requirement
+### `@ludii/typescript-common`
 
-## Commands
+Shared utilities that are being ported from the Java `Common` module.
 
-Run these commands from the repository root:
+Current coverage includes:
 
-- `npm install`
-- `npm run lint`
-- `npm run build`
-- `npm test`
+- `FVector`
+  - constructors for zero-filled, filled, copied, and wrapped vectors
+  - vector arithmetic and scalar transforms
+  - softmax, normalisation, entropy, and sampling helpers
+  - structural editing helpers such as `range()`, `append()`, `cut()`, and `insert()`
+  - cross-vector helpers such as `concat()`, `crossEntropy()`, `klDivergence()`, and `mean()`
 
-## Browser demo
+Primary source:
 
-Build the browser package:
+- `/home/runner/work/Ludii/Ludii/Common/src/main/collections/FVector.java`
+
+### `@ludii/typescript-browser-player`
+
+A browser-focused package that proves the port can target a web runtime now, before the full engine is available.
+
+Current contents:
+
+- `TicTacToeGame`: a small deterministic game model used for package and UI validation
+- `EmbeddedTicTacToe`: a DOM-driven embeddable surface
+- `demo/index.html`: a zero-build demo page for quick manual checks
+
+## Workspace commands
+
+Run all commands from `/home/runner/work/Ludii/Ludii`:
 
 ```bash
 npm install
+npm run lint
+npm run build
+npm test
+```
+
+Additional useful commands:
+
+```bash
+npm run typecheck
+npm run build --workspace @ludii/typescript-common
 npm run build --workspace @ludii/typescript-browser-player
 ```
 
-Then open `typescript/packages/browser-player/demo/index.html` in a browser.
+## Browser demo
 
-The current browser milestone is intentionally small: it provides an embeddable, browser-playable game surface so the migration has a concrete web target while the larger engine port proceeds module by module.
+```bash
+cd /home/runner/work/Ludii/Ludii
+npm run build --workspace @ludii/typescript-browser-player
+```
 
-## Near-term migration path
+Then open:
 
-1. Expand `packages/common` with additional Java `Common` utilities and parity tests.
-2. Port game-description and parsing primitives from `Language`.
-3. Port game state, move generation, and trial/state transitions from `Core`.
-4. Replace the temporary browser demo with a real Ludii-backed browser renderer as engine parity grows.
+- `/home/runner/work/Ludii/Ludii/typescript/packages/browser-player/demo/index.html`
+
+## Porting expectations
+
+When porting Java classes into this workspace:
+
+1. Preserve the Java API shape where it remains natural in TypeScript.
+2. Keep parity-sensitive behavior covered by automated tests.
+3. Prefer small, self-contained packages over cross-cutting edits across the repository.
+4. Document the originating Java source file in the package README or code review notes.
+
+## Near-term follow-up
+
+- expand `@ludii/typescript-common` beyond `FVector`
+- begin porting parser- and description-oriented primitives from `Language`
+- replace the placeholder browser game with real Ludii-backed browser state and rendering once the engine port is ready
