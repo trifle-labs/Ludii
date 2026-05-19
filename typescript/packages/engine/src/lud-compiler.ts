@@ -149,16 +149,6 @@ function expectString(node: LudNode | undefined, label: string): string {
   return node.value;
 }
 
-function expectIdent(node: LudNode | undefined, label: string): string {
-  if (!node || !isIdent(node)) {
-    throw new LudCompileError(
-      `Expected ${label} to be an identifier`,
-      node?.range.from(),
-    );
-  }
-  return node.name;
-}
-
 function locateGameForm(root: LudNode): CompiledForm {
   if (!isList(root)) {
     throw new LudCompileError(
@@ -280,15 +270,21 @@ function compileEquipment(
     } else if (headName === "piece") {
       const name = expectString(entry.items[1], "piece name");
       const ownerNode = entry.items[2];
-      const ownerIdent = expectIdent(ownerNode, "piece owner");
-      if (ownerIdent === "Each") {
+      // `(piece "Name")` with no owner is a corpus shorthand for a piece
+      // shared by every player; treat it as `Each`.
+      if (!ownerNode || !isIdent(ownerNode)) {
         eachPlayerLabel = name;
       } else {
-        const idx = parsePlayerIndex(ownerIdent, ownerNode?.range.from());
-        while (labels.length < idx) {
-          labels.push("");
+        const ownerIdent = ownerNode.name;
+        if (ownerIdent === "Each") {
+          eachPlayerLabel = name;
+        } else {
+          const idx = parsePlayerIndex(ownerIdent, ownerNode.range.from());
+          while (labels.length < idx) {
+            labels.push("");
+          }
+          labels[idx - 1] = name;
         }
-        labels[idx - 1] = name;
       }
     } else if (
       headName === "regions" ||
