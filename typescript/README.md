@@ -23,11 +23,16 @@ Current coverage includes:
   - value semantics: `equals` (with fail-fast `ConcurrentModificationException`), Java-compatible `hashCode`, and `toString`
   - both an idiomatic JavaScript `[Symbol.iterator]` and a Java-style `iterator()` exposing `hasNext` / `next`
 - Shared `ConcurrentModificationException` plus `defaultEquals` and `defaultHashCode` helpers for cross-port parity
+- `ChunkSet`
+  - bitset-style single-bit and range operations
+  - packed chunk read/write helpers for powers-of-two chunk sizes up to 32 bits
+  - logical combinators, shifting, and chunk-resolution helpers used by CSP-style state encodings
 
 Primary sources:
 
-- `Common/src/main/collections/FVector.java`
+- `/home/runner/work/Ludii/Ludii/Common/src/main/collections/FVector.java`
 - `Common/src/main/collections/FastArrayList.java`
+- `/home/runner/work/Ludii/Ludii/Common/src/main/collections/ChunkSet.java`
 
 ### `@ludii/typescript-browser-player`
 
