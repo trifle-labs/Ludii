@@ -46,4 +46,5 @@ export {
   type PlayoutStrategy,
   RandomPlayout,
 } from "./playout.js";
+export { PNSAI, type PNSAIOptions, type ProofGoal } from "./pns-ai.js";
 export { RandomAI } from "./random-ai.js";
