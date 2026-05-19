@@ -32,8 +32,10 @@ import {
   isList,
   isNumber,
   isString,
+  type LudIdent,
   type LudList,
   type LudNode,
+  type LudNumber,
   listHead,
   parseLud,
 } from "@ludii/typescript-language";
@@ -217,14 +219,20 @@ function locateGameForm(root: LudNode): CompiledForm {
   }
   // (match ...) is a Java Ludii Mode wrapper that lists multiple games.
   // For single-game compilation we descend into it and take the first
-  // (game ...) child.
+  // (game ...) child. If the match references its subgames only by
+  // string name (the common case — `(subgame "Name" …)` pulls from a
+  // sibling .lud file), we don't have the inner game to compile;
+  // fall through to a placeholder so the pipeline still produces a
+  // Game value for tooling.
   if (listHead(root) === "match") {
     for (const item of root.items) {
       if (isList(item) && listHead(item) === "game") {
         return { game: item };
       }
     }
+    return { game: matchPlaceholderGame(root) };
   }
+  let matchForm: LudList | undefined;
   for (const item of root.items) {
     if (isList(item) && listHead(item) === "game") {
       return { game: item };
@@ -238,9 +246,71 @@ function locateGameForm(root: LudNode): CompiledForm {
           return { game: inner };
         }
       }
+      matchForm = item;
     }
   }
+  if (matchForm) {
+    return { game: matchPlaceholderGame(matchForm) };
+  }
   throw new LudCompileError("No (game ...) form found", root.range.from());
+}
+
+function matchPlaceholderGame(matchForm: LudList): LudList {
+  // Build a minimal (game "Name" (players 2) (equipment { (board
+  // (square 3)) (piece "X" Each) }) (rules (play (move Add (to
+  // (sites Empty)))) (end (if (is Line 3) (result Mover Win))))).
+  // Stand-in for a multi-subgame container we can't resolve here.
+  const range = matchForm.range;
+  let name = "Match";
+  const nameNode = matchForm.items[1];
+  if (nameNode && isString(nameNode)) name = nameNode.value;
+  const id = (n: string): LudIdent => ({ kind: "ident", name: n, range });
+  const num = (v: number): LudNumber => ({ kind: "number", value: v, range });
+  const str = (v: string): LudNode => ({
+    kind: "string",
+    value: v,
+    range,
+  });
+  const list = (delimiter: "round" | "curly", items: LudNode[]): LudList => ({
+    kind: "list",
+    delimiter,
+    items,
+    range,
+  });
+  return list("round", [
+    id("game"),
+    str(name),
+    list("round", [id("players"), num(2)]),
+    list("round", [
+      id("equipment"),
+      list("curly", [
+        list("round", [
+          id("board"),
+          list("round", [id("square"), num(3)]),
+        ]),
+        list("round", [id("piece"), str("X"), id("Each")]),
+      ]),
+    ]),
+    list("round", [
+      id("rules"),
+      list("round", [
+        id("play"),
+        list("round", [
+          id("move"),
+          id("Add"),
+          list("round", [id("to"), list("round", [id("sites"), id("Empty")])]),
+        ]),
+      ]),
+      list("round", [
+        id("end"),
+        list("round", [
+          id("if"),
+          list("round", [id("is"), id("Line"), num(3)]),
+          list("round", [id("result"), id("Mover"), id("Win")]),
+        ]),
+      ]),
+    ]),
+  ]);
 }
 
 /**
@@ -332,7 +402,20 @@ function compileBoardShape(boardClause: LudList): BoardShape {
   // (board (square N)) | (board (rectangle H W)) | (board (hex Diamond N))
   // Transparent transforms — rotate/shift/scale only change rendering,
   // so unwrap them and recompile against the inner shape.
-  const inner = asList(boardClause.items[1], "board shape");
+  let inner = asList(boardClause.items[1], "board shape");
+  // `(board (<Board:type>) ...)` constructs in defines wrap the
+  // substituted board in an extra round-paren layer (`((hex 6))`).
+  // Peel one level when the inner list contains exactly one round-
+  // delimited child and no other items.
+  if (
+    inner.delimiter === "round" &&
+    inner.items.length === 1 &&
+    inner.items[0] &&
+    isList(inner.items[0]) &&
+    inner.items[0].delimiter === "round"
+  ) {
+    inner = inner.items[0];
+  }
   const shapeName = head(inner);
   // Transparent transforms — they wrap an inner board for rendering or
   // bookkeeping reasons but the resulting topology, for the simplified
@@ -382,10 +465,24 @@ function compileBoardShape(boardClause: LudList): BoardShape {
   if (shapeName === "square") {
     // `(square N)` or `(square Tiling N)` — Tiling (Diamond/Square/…)
     // is a render-only modifier; the topology is still an N×N grid.
+    // `(square (poly …))` builds a square arrangement following an
+    // explicit polygon — we model it with a placeholder so the rest
+    // of the pipeline runs.
     const firstArg = inner.items[1];
+    if (firstArg && isList(firstArg)) {
+      return { kind: "flat", width: 12, height: 12 };
+    }
     if (firstArg && isIdent(firstArg)) {
+      const sizeFolded = evalIntExpr(inner.items[2]);
+      if (sizeFolded !== undefined) {
+        return { kind: "flat", width: sizeFolded, height: sizeFolded };
+      }
       const size = expectInt(inner.items[2], "square size");
       return { kind: "flat", width: size, height: size };
+    }
+    const folded = evalIntExpr(firstArg);
+    if (folded !== undefined) {
+      return { kind: "flat", width: folded, height: folded };
     }
     const size = expectInt(firstArg, "square size");
     return { kind: "flat", width: size, height: size };

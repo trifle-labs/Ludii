@@ -168,22 +168,58 @@ function normalizeAngleTokens(items: readonly LudNode[]): LudNode[] {
       out.push(item);
       continue;
     }
-    const startsLT = name.startsWith("<");
-    const endsGT = name.endsWith(">");
-    if (startsLT && endsGT) {
-      // `<X>` — keep as-is for unwrapAngles to handle.
-      out.push(item);
-      continue;
-    }
-    if (startsLT && !endsGT) {
-      out.push({ kind: "ident", name: "<", range: item.range });
-      out.push(identOrNumber(name.slice(1), item.range));
-      continue;
-    }
-    if (!startsLT && endsGT) {
-      out.push(identOrNumber(name.slice(0, -1), item.range));
-      out.push({ kind: "ident", name: ">", range: item.range });
-      continue;
+    // General case: split a name composed of `<X>` paired tokens
+    // and bare angle delimiters (`<`, `>`). Handles every fusion the
+    // tokenizer can produce — `<12><14><4>` (all paired),
+    // `<0><` (paired + opening), `><X>` (closing + paired),
+    // `<7` (opening + bare), `7>` (bare + closing).
+    if (name.includes("<") || name.includes(">")) {
+      const tokens: { name: string; }[] = [];
+      let i = 0;
+      let buf = "";
+      while (i < name.length) {
+        const ch = name[i];
+        if (ch === "<") {
+          if (buf.length > 0) {
+            tokens.push({ name: buf });
+            buf = "";
+          }
+          // Look for a matching `>` to form a paired `<X>` token.
+          const closeAt = name.indexOf(">", i + 1);
+          if (closeAt < 0) {
+            tokens.push({ name: "<" });
+            i += 1;
+            continue;
+          }
+          tokens.push({ name: name.slice(i, closeAt + 1) });
+          i = closeAt + 1;
+          continue;
+        }
+        if (ch === ">") {
+          if (buf.length > 0) {
+            tokens.push({ name: buf });
+            buf = "";
+          }
+          tokens.push({ name: ">" });
+          i += 1;
+          continue;
+        }
+        buf += ch;
+        i += 1;
+      }
+      if (buf.length > 0) tokens.push({ name: buf });
+      if (tokens.length > 1 || (tokens[0] && tokens[0].name !== name)) {
+        for (const t of tokens) {
+          if (t.name === "<" || t.name === ">") {
+            out.push({ kind: "ident", name: t.name, range: item.range });
+          } else if (t.name.startsWith("<") && t.name.endsWith(">")) {
+            out.push({ kind: "ident", name: t.name, range: item.range });
+          } else {
+            out.push(identOrNumber(t.name, item.range));
+          }
+        }
+        continue;
+      }
     }
     out.push(item);
   }
