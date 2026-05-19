@@ -89,7 +89,13 @@ test("FVector reports extrema, aggregate values, and NaN presence", () => {
   const vector = new FVector([-5, 3, 3, 0]);
 
   assert.equal(vector.argMax(), 1);
-  assert.equal(vector.argMaxRand(), 1);
+
+  const randMax = vector.argMaxRand();
+  assert.ok(
+    randMax === 1 || randMax === 2,
+    "argMaxRand() must return the index of a max element",
+  );
+
   assert.equal(vector.argMin(), 0);
   assert.equal(vector.argMinRand(), 0);
   assert.equal(vector.max(), 3);
@@ -183,4 +189,13 @@ test("FVector string helpers match the Java-style textual format", () => {
   assert.equal(vector.equals(new FVector([1, 2, 3])), true);
   assert.equal(vector.equals(new FVector([1, 2, 4])), false);
   assertAlmostEqual(new FVector([0.5, 0.5]).normalisedEntropy(), 1);
+});
+
+test("FVector.hashCode() returns a consistent integer", () => {
+  const vector = new FVector([1, 2, 3]);
+
+  assert.equal(typeof vector.hashCode(), "number");
+  assert.equal(vector.hashCode(), vector.hashCode());
+  assert.equal(vector.hashCode(), new FVector([1, 2, 3]).hashCode());
+  assert.notEqual(vector.hashCode(), new FVector([1, 2, 4]).hashCode());
 });

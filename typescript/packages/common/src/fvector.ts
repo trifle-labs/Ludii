@@ -614,6 +614,22 @@ export class FVector {
     return this.toArray().join(",");
   }
 
+  public hashCode(): number {
+    const view = new DataView(
+      this.floats.buffer,
+      this.floats.byteOffset,
+      this.floats.byteLength,
+    );
+    let innerHash = 1;
+
+    for (let index = 0; index < this.floats.length; index += 1) {
+      const bits = view.getInt32(index * 4, true);
+      innerHash = (Math.imul(31, innerHash) + bits) | 0;
+    }
+
+    return (Math.imul(31, 1) + innerHash) | 0;
+  }
+
   public equals(other: unknown): boolean {
     if (!(other instanceof FVector) || other.dim() !== this.dim()) {
       return false;
