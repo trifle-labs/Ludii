@@ -426,7 +426,11 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     // skips trailing keyword args (`diagonals:Alternating`). When the
     // width slot is missing or non-numeric (e.g. an unbound `#2` left
     // by a single-arg define call), treat the rectangle as square.
-    const height = expectInt(inner.items[1], "rectangle height");
+    const heightFolded = evalIntExpr(inner.items[1]);
+    const height =
+      heightFolded !== undefined
+        ? heightFolded
+        : expectInt(inner.items[1], "rectangle height");
     const widthFolded = evalIntExpr(inner.items[2]);
     const width = widthFolded !== undefined ? widthFolded : height;
     return { kind: "flat", width, height };

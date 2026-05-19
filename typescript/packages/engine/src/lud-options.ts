@@ -296,6 +296,7 @@ function stripOptions(node: LudNode): LudNode {
   if (!isList(node)) return node;
   const out: LudNode[] = [];
   let changed = false;
+  let prev: LudNode | undefined;
   for (const item of node.items) {
     if (
       isList(item) &&
@@ -304,15 +305,30 @@ function stripOptions(node: LudNode): LudNode {
       item.items[0].name === "option"
     ) {
       changed = true;
+      prev = item;
       continue;
     }
-    if (isIdent(item) && /^\*+$/.test(item.name)) {
+    // Default-item markers (`*`, `**`, even `****`) appear as a bare
+    // ident sibling immediately after an `(item …)` form inside an
+    // option's curly block. We strip them only in that context so we
+    // don't accidentally drop arithmetic `*` from non-option lists.
+    if (
+      isIdent(item) &&
+      /^\*+$/.test(item.name) &&
+      prev &&
+      isList(prev) &&
+      prev.items[0] &&
+      isIdent(prev.items[0]) &&
+      prev.items[0].name === "item"
+    ) {
       changed = true;
+      prev = item;
       continue;
     }
     const sub = stripOptions(item);
     if (sub !== item) changed = true;
     out.push(sub);
+    prev = item;
   }
   if (!changed) return node;
   return {

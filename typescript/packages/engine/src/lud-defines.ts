@@ -140,9 +140,34 @@ function expandItem(
   if (head && isString(head)) {
     const entry = defines.get(head.value);
     if (entry && !expanding.has(entry.name)) {
-      const args = node.items
+      // Expand each call-site token, then group `kwname:` ident +
+      // following value into a single argument so a single `#k`
+      // reference splices both tokens back in at use site. Without
+      // this, calls like `("X" (square 8) cells:{0..3 8 9})` would
+      // mis-align — `#2` would bind only to `cells:` and the curly
+      // list would leak past the end of the parameter list.
+      const expanded = node.items
         .slice(1)
         .map((arg) => expandSingle(arg, defines, expanding));
+      const args: LudNode[][] = [];
+      for (let i = 0; i < expanded.length; i += 1) {
+        const tok = expanded[i];
+        if (!tok) continue;
+        if (
+          isIdent(tok) &&
+          tok.name.endsWith(":") &&
+          tok.name.length > 1 &&
+          i + 1 < expanded.length
+        ) {
+          const next = expanded[i + 1];
+          if (next) {
+            args.push([tok, next]);
+            i += 1;
+            continue;
+          }
+        }
+        args.push([tok]);
+      }
       const substituted = substitute(entry.body, args);
       // Re-walk in case the substituted body has its own invocations.
       // Mark this define as in-progress so a recursive self-call is left
@@ -223,15 +248,23 @@ function expandSingle(
 /**
  * Replace `#k` identifiers in `node` with `args[k-1]`. A `#k` reference
  * with no corresponding arg is left as-is (matches Java parity where
- * unbound placeholders fall through to the next pass).
+ * unbound placeholders fall through to the next pass). Each arg is
+ * a sequence of tokens so a keyword-arg pair (`cells:` + value) can be
+ * spliced back in as two tokens from a single `#k`.
  */
-function substitute(node: LudNode, args: readonly LudNode[]): LudNode {
+function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNode {
   if (isIdent(node)) {
     const match = /^#(\d+)$/.exec(node.name);
     if (match) {
       const idx = Number.parseInt(match[1] ?? "0", 10) - 1;
       const replacement = args[idx];
-      if (replacement) return replacement;
+      if (replacement && replacement.length > 0) {
+        // Top-level (non-list-child) — return the first token. The
+        // remaining tokens of a multi-token arg are only meaningful
+        // when spliced into a surrounding list; outside one there's
+        // nothing they can attach to.
+        return replacement[0] ?? node;
+      }
     }
     return node;
   }
@@ -239,6 +272,18 @@ function substitute(node: LudNode, args: readonly LudNode[]): LudNode {
   let changed = false;
   const out: LudNode[] = [];
   for (const item of node.items) {
+    if (isIdent(item)) {
+      const m = /^#(\d+)$/.exec(item.name);
+      if (m) {
+        const idx = Number.parseInt(m[1] ?? "0", 10) - 1;
+        const replacement = args[idx];
+        if (replacement && replacement.length > 0) {
+          for (const r of replacement) out.push(r);
+          changed = true;
+          continue;
+        }
+      }
+    }
     const sub = substitute(item, args);
     if (sub !== item) changed = true;
     out.push(sub);
