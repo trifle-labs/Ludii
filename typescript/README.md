@@ -109,6 +109,10 @@ Current coverage includes:
   any number of players, configurable component labels, and any line
   length K
 - `ticTacToeGame()` — convenience factory wired for the 3×3, K=3 case
+- `HexGame` / `hexGame(size)` — concrete `Game` for the classic Hex
+  connection game on an NxN rhombic board. Phase 2 of the browser-
+  player roadmap: confirms the contract holds for a non-square-
+  topology game without modification
 - `compileLudSource` / `compileLudAst` — minimal `.lud` compiler that
   walks an AST produced by `@ludii/typescript-language` and builds a
   matching `FlatBoardGame`; `LudCompileError` reports offending source
@@ -136,15 +140,21 @@ Current contents:
   `@ludii/typescript-engine` to satisfy the contract; supports
   `apply`, `legalMovesAtSite`, `reset`, and `truncate` (read-only
   history scrubbing)
-- `createTicTacToeSession` / `createSessionFromLud` factories
+- `createTicTacToeSession` / `createHexSession` /
+  `createSessionFromLud` factories
 - `EmbeddedLudii` — DOM surface that renders any `BrowserGameSession`,
   with status region (`role=status`, `aria-live=polite`), live cell
-  buttons, a move-history sidebar driven by `Trial`, and focus
-  restoration after Reset
-- `createTicTacToeEmbed` / `createLudiiEmbed` / `createLudGameEmbed`
-  helpers
-- `demo/index.html` — zero-build demo with a `.lud` textarea + Load
-  button so any tic-tac-toe-shaped `.lud` source can be played
+  buttons, a move-history sidebar driven by `Trial`, Undo/Redo
+  buttons, arrow-key grid navigation, and focus restoration after
+  Reset
+- Theming hooks via CSS custom properties on `.ludii-embed`
+  (`--ludii-bg`, `--ludii-cell-bg`, `--ludii-cell-border`,
+  `--ludii-cell-radius`, `--ludii-focus`, `--ludii-font`, ...)
+- `createTicTacToeEmbed` / `createHexEmbed` / `createLudiiEmbed` /
+  `createLudGameEmbed` helpers
+- `demo/index.html` — zero-build demo with a game switcher (built-in
+  Tic-Tac-Toe, built-in Hex with selectable size, or a `.lud`
+  textarea + Load button)
 
 ## Workspace commands
 
@@ -204,9 +214,11 @@ When porting Java classes into this workspace:
 ## Near-term follow-up
 
 - expand the `.lud` compiler beyond the tic-tac-toe-shaped subset
-  (stacking pieces, non-square topologies, conditional rules)
+  (stacking pieces, conditional rules, the connection rules used by
+  Hex, etc.)
 - begin the byte-for-byte Java engine ports tracked in
-  [`docs/ISSUE_BACKLOG.md`](docs/ISSUE_BACKLOG.md), then swap
-  `FlatBoardGame` for the real ported `Game`/`State`/`Trial`/`Context`
-- add a second concrete game (Phase 2 of the browser-player roadmap)
-  to confirm the contract holds without modification
+  [`docs/ISSUE_BACKLOG.md`](docs/ISSUE_BACKLOG.md), then swap the
+  TS-native `Game` implementations for the real ported
+  `Game`/`State`/`Trial`/`Context`
+- animation between states (the last remaining Phase 4 item on
+  [`docs/BROWSER_PLAYER_ROADMAP.md`](docs/BROWSER_PLAYER_ROADMAP.md))

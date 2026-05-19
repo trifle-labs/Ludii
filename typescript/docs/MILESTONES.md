@@ -18,8 +18,15 @@ Legend:
 **Status:** Milestones 1–7 all landed. The vertical slice from
 TS-native engine through `.lud` loading to a move-history-equipped
 browser demo is complete on `copilot/port-library-to-typescript`. The
-follow-up surface (Phase 2 second game, byte-for-byte Java engine
-ports, expanded `.lud` syntax) is tracked in
+follow-up roadmap then landed:
+
+- Phase 2 (second concrete game): ✅ `HexGame` + `createHexEmbed`
+- Phase 4 (UX surface) now down to one remaining item — animation
+  between states. Undo/Redo, arrow-key grid navigation, and theming
+  hooks (CSS custom properties on `.ludii-embed`) are all in place.
+
+The remaining follow-up surface (byte-for-byte Java engine ports,
+expanded `.lud` syntax, animations) is tracked in
 [`BROWSER_PLAYER_ROADMAP.md`](BROWSER_PLAYER_ROADMAP.md) and
 [`ISSUE_BACKLOG.md`](ISSUE_BACKLOG.md).
 

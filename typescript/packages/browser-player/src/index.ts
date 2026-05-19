@@ -8,6 +8,7 @@ export type {
   CellView,
 } from "./contract.js";
 export {
+  createHexEmbed,
   createLudGameEmbed,
   createLudiiEmbed,
   createTicTacToeEmbed,
@@ -17,6 +18,7 @@ export {
   type EmbeddedTicTacToeOptions,
 } from "./embed.js";
 export {
+  createHexSession,
   createSessionForGame,
   createSessionFromLud,
   createTicTacToeSession,

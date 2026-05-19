@@ -14,6 +14,23 @@
       h1 {
         font-size: 1.5rem;
       }
+      .demo-controls {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+      .demo-controls label {
+        font-weight: 600;
+      }
+      .demo-controls select,
+      .demo-controls input[type="number"] {
+        padding: 0.35rem 0.5rem;
+        font-size: 1rem;
+        border: 1px solid #8c959f;
+        border-radius: 6px;
+      }
       .demo-layout {
         display: grid;
         gap: 1.5rem;
@@ -52,6 +69,11 @@
         font-size: 0.85rem;
         white-space: pre-wrap;
       }
+      .demo-hex-panel {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
       @media (max-width: 50rem) {
         .demo-layout {
           grid-template-columns: 1fr;
@@ -62,21 +84,32 @@
   <body>
     <h1>Ludii TypeScript browser demo</h1>
     <p>
-      Paste a <code>.lud</code> game definition below and click
-      <em>Load game</em> to play it in the browser. The compiler
-      currently understands the tic-tac-toe-shaped subset of
-      <code>.lud</code> syntax — see
-      <code>typescript/packages/engine/src/lud-compiler.ts</code>.
+      Pick a built-in game, or paste a <code>.lud</code> definition
+      below and click <em>Load game</em>. The compiler currently
+      understands the tic-tac-toe-shaped subset of <code>.lud</code>
+      syntax — see <code>typescript/packages/engine/src/lud-compiler.ts</code>.
     </p>
+    <div class="demo-controls">
+      <label for="gameSelect">Game</label>
+      <select id="gameSelect">
+        <option value="lud" selected>From .lud source</option>
+        <option value="tic-tac-toe">Tic-Tac-Toe (built-in)</option>
+        <option value="hex">Hex (built-in)</option>
+      </select>
+      <span id="hexPanel" class="demo-hex-panel" style="display: none">
+        <label for="hexSize">Size</label>
+        <input id="hexSize" type="number" min="2" max="19" value="7" />
+      </span>
+    </div>
     <div class="demo-layout">
-      <div class="demo-source">
+      <div id="ludPanel" class="demo-source">
         <label for="ludSource"><strong>.lud source</strong></label>
         <textarea id="ludSource" spellcheck="false"></textarea>
         <button type="button" id="loadGame">Load game</button>
-        <p class="demo-error" id="error" aria-live="polite"></p>
       </div>
       <div id="board"></div>
     </div>
+    <p class="demo-error" id="error" aria-live="polite"></p>
     <script type="module" src="../dist/src/demo.js"></script>
   </body>
 </html>

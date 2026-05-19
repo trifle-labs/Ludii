@@ -159,11 +159,20 @@ Status:
   byte-for-byte engine ports land (`ISSUE_BACKLOG.md`); the MVE engine
   is TS-native, not Java-cross-checked.
 
-### Phase 2 — ⬜ open (second concrete game)
+### Phase 2 — ✅ done (second concrete game)
 
-Pick something with stacking or non-square topology (e.g. Hex). Confirm
-the contract holds without modification. If it doesn't, capture the
-delta here and update the contract.
+Hex (Piet Hein, 1942; unbranded connection game) lands as
+`HexGame` in `@ludii/typescript-engine`, surfaced through
+`createHexSession(size)` / `createHexEmbed(container, size)`. The
+board is a rhombic NxN with 6-neighbour adjacency; P1 connects top to
+bottom, P2 connects left to right; win detection is a BFS from the
+owning player's home edge.
+
+The `BrowserGameSession` contract held without modification —
+`Game.width`/`height` and the flat siteIndex view were enough for a
+non-square-topology game. The only delta is that `Game` itself now
+declares `width`/`height` (it previously only had them on
+`FlatBoardGame`).
 
 ### Phase 3 — ✅ done (load games from `.lud`)
 
@@ -179,10 +188,16 @@ subset of `.lud` syntax; extending the compiler is the next priority.
 - ✅ Status region with `role=status` and `aria-live=polite`.
 - ✅ Focus restoration on Reset.
 - ✅ 44×44px minimum touch targets.
-- ⬜ Undo/redo (the contract supports it via `truncate` + `apply`;
-  surface still needs a UI).
-- ⬜ Arrow-key grid navigation across cells.
-- ⬜ Animation between states, theming hooks.
+- ✅ Undo/redo UI: Undo truncates the live session by one and pushes
+  the popped move onto a redo stack; Redo re-applies the top of the
+  stack; applying a fresh move clears the stack.
+- ✅ Arrow-key grid navigation across cells (Arrow keys / Home / End
+  move focus by `data-x` / `data-y`).
+- ✅ Theming hooks via CSS custom properties (`--ludii-cell-bg`,
+  `--ludii-cell-border`, `--ludii-cell-radius`, `--ludii-focus`,
+  `--ludii-font`, ...). Override on `.ludii-embed` or a wrapping
+  element to restyle.
+- ⬜ Animation between states.
 
 ## How the contract is enforced
 

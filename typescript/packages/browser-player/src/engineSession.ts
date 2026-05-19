@@ -1,7 +1,8 @@
 import {
   type Context,
   compileLudSource,
-  type FlatBoardGame,
+  type Game,
+  hexGame,
   type Move,
   ticTacToeGame,
 } from "@ludii/typescript-engine";
@@ -55,10 +56,10 @@ export class EngineSession implements BrowserGameSession {
   public readonly state: BrowserState;
   public readonly trial: BrowserTrial;
 
-  private readonly engineGame: FlatBoardGame;
+  private readonly engineGame: Game;
   private readonly context: Context;
 
-  public constructor(engineGame: FlatBoardGame, context: Context) {
+  public constructor(engineGame: Game, context: Context) {
     this.engineGame = engineGame;
     this.context = context;
     this.game = {
@@ -125,12 +126,16 @@ export class EngineSession implements BrowserGameSession {
   }
 }
 
-export function createSessionForGame(game: FlatBoardGame): BrowserGameSession {
+export function createSessionForGame(game: Game): BrowserGameSession {
   return new EngineSession(game, game.start());
 }
 
 export function createTicTacToeSession(): BrowserGameSession {
   return createSessionForGame(ticTacToeGame());
+}
+
+export function createHexSession(size = 7): BrowserGameSession {
+  return createSessionForGame(hexGame(size));
 }
 
 /**

@@ -11,6 +11,10 @@ export interface Game {
   readonly id: string;
   readonly name: string;
   readonly numPlayers: number;
+  /** Board width in cells (1-cell-per-site grid). */
+  readonly width: number;
+  /** Board height in cells. */
+  readonly height: number;
   start(): Context;
   moves(context: Context): readonly Move[];
   apply(context: Context, move: Move): Context;

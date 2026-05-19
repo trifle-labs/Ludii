@@ -4,6 +4,7 @@ import type {
   BrowserTrialEntry,
 } from "./contract.js";
 import {
+  createHexSession,
   createSessionFromLud,
   createTicTacToeSession,
 } from "./engineSession.js";
@@ -12,6 +13,8 @@ export interface EmbeddedLudiiOptions {
   readonly title?: string;
   /** Show the move-history sidebar (default: true). */
   readonly showHistory?: boolean;
+  /** Show Undo / Redo buttons (default: true). */
+  readonly showUndoRedo?: boolean;
 }
 
 export type EmbeddedTicTacToeOptions = EmbeddedLudiiOptions;
@@ -46,8 +49,6 @@ function statusLabel(session: BrowserGameSession): string {
 }
 
 function moverLabel(session: BrowserGameSession): string {
-  // Look up a component label for the mover via any owned cell or a
-  // placeholder probe of legal moves.
   for (let i = 0; i < session.state.siteCount; i += 1) {
     const view = session.state.cellAt(i);
     if (view.owner === session.mover && view.componentLabel !== undefined) {
@@ -65,9 +66,24 @@ function ensureStyles(): void {
   style.id = STYLE_ID;
   style.textContent = `
     .ludii-embed {
-      border: 1px solid #d0d7de;
+      --ludii-bg: #ffffff;
+      --ludii-border: #d0d7de;
+      --ludii-cell-bg: #ffffff;
+      --ludii-cell-border: #8c959f;
+      --ludii-cell-radius: 10px;
+      --ludii-cell-disabled-opacity: 0.85;
+      --ludii-text: #1f2328;
+      --ludii-muted: #6e7781;
+      --ludii-focus: #0969da;
+      --ludii-history-active: #d0d7de;
+      --ludii-history-hover: #eef0f3;
+      --ludii-font: system-ui, sans-serif;
+      --ludii-cell-font-size: 2rem;
+      background: var(--ludii-bg);
+      border: 1px solid var(--ludii-border);
       border-radius: 12px;
-      font-family: system-ui, sans-serif;
+      color: var(--ludii-text);
+      font-family: var(--ludii-font);
       max-width: 32rem;
       padding: 1rem;
       display: grid;
@@ -80,7 +96,7 @@ function ensureStyles(): void {
     }
 
     .ludii-embed__history {
-      border-left: 1px solid #d0d7de;
+      border-left: 1px solid var(--ludii-border);
       padding-left: 1rem;
       font-size: 0.9rem;
       max-height: 16rem;
@@ -108,17 +124,17 @@ function ensureStyles(): void {
 
     .ludii-embed__history-entry:hover,
     .ludii-embed__history-entry:focus {
-      background: #eef0f3;
+      background: var(--ludii-history-hover);
       outline: 2px solid transparent;
     }
 
     .ludii-embed__history-entry[aria-current="true"] {
-      background: #d0d7de;
+      background: var(--ludii-history-active);
       font-weight: 600;
     }
 
     .ludii-embed__history-empty {
-      color: #6e7781;
+      color: var(--ludii-muted);
       font-style: italic;
     }
 
@@ -130,11 +146,12 @@ function ensureStyles(): void {
 
     .ludii-embed__cell {
       aspect-ratio: 1 / 1;
-      background: #ffffff;
-      border: 1px solid #8c959f;
-      border-radius: 10px;
+      background: var(--ludii-cell-bg);
+      border: 1px solid var(--ludii-cell-border);
+      border-radius: var(--ludii-cell-radius);
+      color: inherit;
       cursor: pointer;
-      font-size: 2rem;
+      font-size: var(--ludii-cell-font-size);
       font-weight: 700;
       min-width: 44px;
       min-height: 44px;
@@ -142,7 +159,13 @@ function ensureStyles(): void {
 
     .ludii-embed__cell:disabled {
       cursor: default;
-      opacity: 0.85;
+      opacity: var(--ludii-cell-disabled-opacity);
+    }
+
+    .ludii-embed__cell:focus-visible,
+    .ludii-embed__history-entry:focus-visible {
+      outline: 2px solid var(--ludii-focus);
+      outline-offset: 2px;
     }
 
     .ludii-embed__actions {
@@ -150,27 +173,43 @@ function ensureStyles(): void {
       justify-content: space-between;
       align-items: center;
       gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .ludii-embed__buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .ludii-embed__buttons button[disabled] {
+      opacity: 0.5;
+      cursor: default;
     }
   `;
   document.head.append(style);
 }
 
 export class EmbeddedLudii {
-  private session: BrowserGameSession;
-  /** Live session, ignoring history scrubbing. */
   private liveSession: BrowserGameSession;
-  /** Number of moves the visible board reflects (for history scrubbing). */
+  private session: BrowserGameSession;
   private visibleMoves: number;
+  /** Moves popped via Undo, in order they would be re-applied by Redo. */
+  private readonly redoStack: BrowserMove[] = [];
 
   private readonly container: HTMLElement;
   private readonly root: HTMLElement;
   private readonly status: HTMLParagraphElement;
   private readonly board: HTMLDivElement;
   private readonly resetButton: HTMLButtonElement;
+  private readonly undoButton: HTMLButtonElement;
+  private readonly redoButton: HTMLButtonElement;
   private readonly historyContainer: HTMLElement;
   private readonly historyList: HTMLOListElement;
   private readonly historyEmpty: HTMLParagraphElement;
   private readonly showHistory: boolean;
+  private readonly showUndoRedo: boolean;
+  private readonly width: number;
+  private readonly height: number;
 
   public constructor(
     container: HTMLElement | string,
@@ -183,6 +222,9 @@ export class EmbeddedLudii {
     this.session = session;
     this.visibleMoves = session.trial.entries.length;
     this.showHistory = options.showHistory ?? true;
+    this.showUndoRedo = options.showUndoRedo ?? true;
+    this.width = session.game.width;
+    this.height = session.game.height;
 
     this.container = resolveContainer(container);
     this.root = document.createElement("section");
@@ -200,7 +242,21 @@ export class EmbeddedLudii {
 
     this.board = document.createElement("div");
     this.board.className = "ludii-embed__board";
-    this.board.style.gridTemplateColumns = `repeat(${session.game.width}, minmax(0, 1fr))`;
+    this.board.setAttribute("role", "grid");
+    this.board.style.gridTemplateColumns = `repeat(${this.width}, minmax(0, 1fr))`;
+    this.board.addEventListener("keydown", (event) =>
+      this.handleBoardKeydown(event),
+    );
+
+    this.undoButton = document.createElement("button");
+    this.undoButton.type = "button";
+    this.undoButton.textContent = "Undo";
+    this.undoButton.addEventListener("click", () => this.undo());
+
+    this.redoButton = document.createElement("button");
+    this.redoButton.type = "button";
+    this.redoButton.textContent = "Redo";
+    this.redoButton.addEventListener("click", () => this.redo());
 
     this.resetButton = document.createElement("button");
     this.resetButton.type = "button";
@@ -209,14 +265,22 @@ export class EmbeddedLudii {
       this.liveSession = this.liveSession.reset();
       this.session = this.liveSession;
       this.visibleMoves = 0;
+      this.redoStack.length = 0;
       this.render();
       const first = this.board.querySelector<HTMLButtonElement>("button");
       first?.focus();
     });
 
+    const buttons = document.createElement("div");
+    buttons.className = "ludii-embed__buttons";
+    if (this.showUndoRedo) {
+      buttons.append(this.undoButton, this.redoButton);
+    }
+    buttons.append(this.resetButton);
+
     const actions = document.createElement("div");
     actions.className = "ludii-embed__actions";
-    actions.append(this.status, this.resetButton);
+    actions.append(this.status, buttons);
 
     main.append(heading, this.board, actions);
 
@@ -247,6 +311,38 @@ export class EmbeddedLudii {
     return this.session;
   }
 
+  public undo(): void {
+    if (this.liveSession.trial.entries.length === 0) {
+      return;
+    }
+    const entries = this.liveSession.trial.entries;
+    const last = entries[entries.length - 1];
+    if (last === undefined) {
+      return;
+    }
+    this.redoStack.push(last.move);
+    this.liveSession = this.liveSession.truncate(entries.length - 1);
+    this.session = this.liveSession;
+    this.visibleMoves = this.liveSession.trial.entries.length;
+    this.render();
+  }
+
+  public redo(): void {
+    const move = this.redoStack.pop();
+    if (move === undefined) {
+      return;
+    }
+    // Bring the session back to the live tip before reapplying.
+    if (this.visibleMoves !== this.liveSession.trial.entries.length) {
+      this.session = this.liveSession;
+      this.visibleMoves = this.liveSession.trial.entries.length;
+    }
+    this.liveSession = this.liveSession.apply(move.id);
+    this.session = this.liveSession;
+    this.visibleMoves = this.liveSession.trial.entries.length;
+    this.render();
+  }
+
   private render(): void {
     this.status.textContent = statusLabel(this.session);
     this.board.replaceChildren(
@@ -255,12 +351,19 @@ export class EmbeddedLudii {
       ),
     );
     this.renderHistory();
+    this.undoButton.disabled = this.liveSession.trial.entries.length === 0;
+    this.redoButton.disabled = this.redoStack.length === 0;
   }
 
   private renderCell(siteIndex: number): HTMLButtonElement {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "ludii-embed__cell";
+    button.dataset.siteIndex = String(siteIndex);
+    const x = siteIndex % this.width;
+    const y = Math.floor(siteIndex / this.width);
+    button.dataset.x = String(x);
+    button.dataset.y = String(y);
     const view = this.session.state.cellAt(siteIndex);
     button.textContent = view.componentLabel ?? "";
     const isLiveView =
@@ -281,10 +384,61 @@ export class EmbeddedLudii {
         this.liveSession = this.liveSession.apply(firstLegal.id);
         this.session = this.liveSession;
         this.visibleMoves = this.liveSession.trial.entries.length;
+        this.redoStack.length = 0;
         this.render();
       });
     }
     return button;
+  }
+
+  private handleBoardKeydown(event: KeyboardEvent): void {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+    const xRaw = target.dataset.x;
+    const yRaw = target.dataset.y;
+    if (xRaw === undefined || yRaw === undefined) {
+      return;
+    }
+    const x = Number.parseInt(xRaw, 10);
+    const y = Number.parseInt(yRaw, 10);
+    let nx = x;
+    let ny = y;
+    switch (event.key) {
+      case "ArrowLeft":
+        nx = x - 1;
+        break;
+      case "ArrowRight":
+        nx = x + 1;
+        break;
+      case "ArrowUp":
+        ny = y - 1;
+        break;
+      case "ArrowDown":
+        ny = y + 1;
+        break;
+      case "Home":
+        nx = 0;
+        break;
+      case "End":
+        nx = this.width - 1;
+        break;
+      default:
+        return;
+    }
+    if (nx < 0 || nx >= this.width || ny < 0 || ny >= this.height) {
+      event.preventDefault();
+      return;
+    }
+    const targetIndex = ny * this.width + nx;
+    const next = this.board.querySelector<HTMLButtonElement>(
+      `button[data-site-index="${targetIndex}"]`,
+    );
+    if (next !== null) {
+      event.preventDefault();
+      next.focus();
+    }
   }
 
   private renderHistory(): void {
@@ -334,6 +488,14 @@ export function createTicTacToeEmbed(
   options?: EmbeddedTicTacToeOptions,
 ): EmbeddedTicTacToe {
   return new EmbeddedLudii(container, createTicTacToeSession(), options);
+}
+
+export function createHexEmbed(
+  container: HTMLElement | string,
+  size = 7,
+  options?: EmbeddedLudiiOptions,
+): EmbeddedLudii {
+  return new EmbeddedLudii(container, createHexSession(size), options);
 }
 
 export function createLudiiEmbed(
