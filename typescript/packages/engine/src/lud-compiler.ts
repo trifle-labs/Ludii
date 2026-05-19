@@ -6,6 +6,8 @@
  *
  * Board shapes:
  *   - `(board (square N))` → `FlatBoardGame` (N×N).
+ *   - `(board (rectangle H W))` → `FlatBoardGame` (W×H). Java convention
+ *     lists rows then columns, so the first arg is height.
  *   - `(board (hex Diamond N))` → `HexGame` (N×N rhombic).
  *
  * Pieces / players:
@@ -55,7 +57,7 @@ interface CompiledForm {
 }
 
 type BoardShape =
-  | { kind: "square"; size: number }
+  | { kind: "flat"; width: number; height: number }
   | { kind: "hex"; size: number };
 
 interface EquipmentSpec {
@@ -99,8 +101,20 @@ function findChildList(parent: LudList, name: string): LudList | undefined {
 function findAllChildLists(parent: LudList, name: string): LudList[] {
   const out: LudList[] = [];
   for (const item of parent.items) {
-    if (isList(item) && listHead(item) === name) {
+    if (!isList(item)) continue;
+    if (listHead(item) === name) {
       out.push(item);
+      continue;
+    }
+    // Java .lud uses curly-brace blocks (e.g. `(end { (if ...) (if ...) })`)
+    // to group children; the parser exposes those as a list with delimiter
+    // "curly" and no head. Descend into them so callers see the inner forms.
+    if (item.delimiter === "curly") {
+      for (const inner of item.items) {
+        if (isList(inner) && listHead(inner) === name) {
+          out.push(inner);
+        }
+      }
     }
   }
   return out;
@@ -166,12 +180,17 @@ function parsePlayerIndex(ident: string, offset?: number): number {
 }
 
 function compileBoardShape(boardClause: LudList): BoardShape {
-  // (board (square N)) or (board (hex Diamond N))
+  // (board (square N)) | (board (rectangle H W)) | (board (hex Diamond N))
   const inner = asList(boardClause.items[1], "board shape");
   const shapeName = head(inner);
   if (shapeName === "square") {
     const size = expectInt(inner.items[1], "square size");
-    return { kind: "square", size };
+    return { kind: "flat", width: size, height: size };
+  }
+  if (shapeName === "rectangle") {
+    const height = expectInt(inner.items[1], "rectangle height");
+    const width = expectInt(inner.items[2], "rectangle width");
+    return { kind: "flat", width, height };
   }
   if (shapeName === "hex") {
     // Accept either (hex Diamond N) or (hex N) for now. Other tilings
@@ -198,7 +217,7 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     );
   }
   throw new LudCompileError(
-    `Unsupported board shape "${shapeName}"; only "square" and "hex" are supported`,
+    `Unsupported board shape "${shapeName}"; only "square", "rectangle", and "hex" are supported`,
     inner.range.from(),
   );
 }
@@ -279,6 +298,9 @@ function compileWinRule(rules: LudList, boardSize: number): WinKind {
       rules.range.from(),
     );
   }
+  // `(end ...)` may be either `(end (if ...))` or `(end { (if ...) (if ...) })`.
+  // findAllChildLists descends through one level of curly delimiters so both
+  // shapes return the inner `if` clauses.
   const ifs = findAllChildLists(end, "if");
   for (const ifNode of ifs) {
     const cond = ifNode.items[1];
@@ -331,7 +353,11 @@ function compileGameForm(form: CompiledForm): Game {
       game.range.from(),
     );
   }
-  const win = compileWinRule(rulesForm, equipment.board.size);
+  const defaultLineLength =
+    equipment.board.kind === "hex"
+      ? equipment.board.size
+      : Math.min(equipment.board.width, equipment.board.height);
+  const win = compileWinRule(rulesForm, defaultLineLength);
 
   const labels: string[] = [];
   for (let i = 0; i < numPlayers; i += 1) {
@@ -355,7 +381,7 @@ function compileGameForm(form: CompiledForm): Game {
 
   if (win.kind !== "line") {
     throw new LudCompileError(
-      "Square board requires an (is Line K) win rule",
+      "Square/rectangular board requires an (is Line K) win rule",
       rulesForm.range.from(),
     );
   }
@@ -363,8 +389,8 @@ function compileGameForm(form: CompiledForm): Game {
   return new FlatBoardGame({
     id: name.toLowerCase().replace(/\s+/g, "-"),
     name,
-    width: equipment.board.size,
-    height: equipment.board.size,
+    width: equipment.board.width,
+    height: equipment.board.height,
     numPlayers,
     lineLength: win.lineLength,
     componentLabels: labels,

@@ -132,4 +132,45 @@ describe("compileLudSource", () => {
     assert.ok(game instanceof FlatBoardGame);
     assert.equal(game.lineLength, 4);
   });
+
+  it("builds a FlatBoardGame from a (board (rectangle H W)) .lud string", () => {
+    const src = `(game "Rect4x3"
+      (players 2)
+      (equipment {
+        (board (rectangle 3 4))
+        (piece "D" P1) (piece "C" P2)
+      })
+      (rules (play (move Add (to (sites Empty)))) (end (if (is Line 3) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+    assert.equal(game.width, 4);
+    assert.equal(game.height, 3);
+    assert.equal(game.lineLength, 3);
+  });
+
+  it("recognises curly-brace (end { (if ...) (if ...) }) blocks", () => {
+    const src = `(game "TTT"
+      (players 2)
+      (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+      (rules
+        (play (move Add (to (sites Empty))))
+        (end {
+          (if (no Moves Next) (result Mover Draw))
+          (if (is Line 3) (result Mover Win))
+        })))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+    assert.equal(game.lineLength, 3);
+  });
+
+  it("defaults the rectangular line length to the shorter side", () => {
+    const src = `(game "X" (players 2)
+      (equipment { (board (rectangle 2 5)) (piece "D" P1) (piece "C" P2) })
+      (rules (end (if (no Moves Next) (result Mover Draw)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+    assert.equal(game.width, 5);
+    assert.equal(game.height, 2);
+    assert.equal(game.lineLength, 2);
+  });
 });
