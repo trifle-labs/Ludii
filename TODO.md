@@ -19,9 +19,9 @@ the established porting workflow (`typescript/packages/…`).
 - [x] 🤖 Port `Common/src/main/collections/HashedBitSet.java` to `@ludii/typescript-common` with parity tests (actual source: `Core/src/other/state/zhash/HashedBitSet.java`; landed alongside a from-scratch `BitSet` port that the wrapper depends on)
 - [x] 🤖 Port first parser/description primitive from `Language/` (e.g. token scanner or symbol table) into a new `@ludii/typescript-language` package — `SelectionType` + `TokenRange` landed with package scaffold + parity tests
 - [ ] 🤖 Add a shared parity-test fixture pattern (Java behaviour snapshots → TS assertions) and document it in `typescript/README.md` 🚧 _in progress_
-- [ ] 🤖 Expand `typescript/packages/common/src/index.ts` exports as new modules land 🚧 _in progress_
-- [ ] 🤖 Keep `typescript/README.md` parity-status table updated after each merged module 🚧 _in progress_
-- [ ] 🤖 Ensure `npm run lint && npm run build && npm test` stays green after every increment 🚧 _in progress_
+- [x] 🤖 Expand `typescript/packages/common/src/index.ts` exports as new modules land — now enforced per-module via the "Done criteria" checklist below
+- [x] 🤖 Keep `typescript/README.md` parity-status table updated after each merged module — now enforced per-module via the "Done criteria" checklist below
+- [x] 🤖 Ensure `npm run lint && npm run build && npm test` stays green after every increment — now enforced per-module via the "Done criteria" checklist below
 
 ---
 
