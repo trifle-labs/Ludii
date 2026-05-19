@@ -29,6 +29,50 @@ export interface ContainerStateView {
   readonly size: number;
 }
 
+export interface StateOptions {
+  readonly scores?: readonly number[];
+  readonly valuesPlayer?: readonly number[];
+  readonly numPlayers?: number;
+  readonly hiddenForPlayer?: readonly (readonly boolean[])[];
+  readonly stacks?: readonly (readonly number[])[];
+  /** Per-site state value (Java: ContainerState.state[i]). */
+  readonly stateAt?: readonly number[];
+  /** Per-site value (Java: ContainerState.value[i]). */
+  readonly valueAt?: readonly number[];
+  /** Per-site rotation (Java: ContainerState.rotation[i]). */
+  readonly rotationAt?: readonly number[];
+  /** Per-site count for non-stacking games (Java: ContainerState.count[i]). */
+  readonly countAt?: readonly number[];
+  /** 1-based player phase indices (Java: State.phases[pid]). */
+  readonly phases?: readonly number[];
+  /** Per-player temporary value (Java: State.temp[pid]). */
+  readonly temps?: readonly number[];
+  /** Per-player amount (Java: State.amount[pid]). */
+  readonly amounts?: readonly number[];
+  /** Game-level counter (Java: State.counter). */
+  readonly counter?: number;
+  /** Game-level pot (Java: State.pot). */
+  readonly pot?: number;
+  /** Game-level pending sites (Java: State.pendingValues / pendingStates). */
+  readonly pending?: ReadonlySet<number>;
+  /** Named variables (Java: State.variables HashMap). */
+  readonly vars?: ReadonlyMap<string, number>;
+  /**
+   * Remembered values keyed by name (Java: State.rememberValues
+   * HashMap<String, FastTIntArrayList>).
+   */
+  readonly remembered?: ReadonlyMap<string, readonly number[]>;
+  /** Trump suit (Java: State.trumpSuit). */
+  readonly trumpSuit?: number;
+  /** Next-mover override (Java: State.next). */
+  readonly next?: number;
+  /**
+   * Java parity: State.diceAllEqual flag (true if last dice roll were
+   * all identical, used for win conditions in dice games).
+   */
+  readonly diceAllEqual?: boolean;
+}
+
 export class State {
   public readonly mover: number;
   public readonly cells: readonly number[];
@@ -36,27 +80,28 @@ export class State {
   public readonly scores: readonly number[];
   public readonly valuesPlayer: readonly number[];
   public readonly hiddenForPlayer: readonly (readonly boolean[])[];
-  /**
-   * Java parity: per-site piece stacks
-   * (`ContainerState.whoStack[siteIndex][level]`).
-   * For non-stacking games every stack has length ≤ 1 and the top is
-   * mirrored in `cells[siteIndex]`. For stacking games the stacks
-   * carry full multi-piece state; `cells[i]` continues to point at
-   * the top piece so single-piece readers keep working unchanged.
-   */
   public readonly stacks: readonly (readonly number[])[];
+  public readonly stateAt: readonly number[];
+  public readonly valueAt: readonly number[];
+  public readonly rotationAt: readonly number[];
+  public readonly countAt: readonly number[];
+  public readonly phases: readonly number[];
+  public readonly temps: readonly number[];
+  public readonly amounts: readonly number[];
+  public readonly counter: number;
+  public readonly pot: number;
+  public readonly pending: ReadonlySet<number>;
+  public readonly vars: ReadonlyMap<string, number>;
+  public readonly remembered: ReadonlyMap<string, readonly number[]>;
+  public readonly trumpSuit: number;
+  public readonly next: number;
+  public readonly diceAllEqual: boolean;
 
   public constructor(
     mover: number,
     cells: readonly number[],
     componentLabels: readonly string[],
-    options: {
-      readonly scores?: readonly number[];
-      readonly valuesPlayer?: readonly number[];
-      readonly numPlayers?: number;
-      readonly hiddenForPlayer?: readonly (readonly boolean[])[];
-      readonly stacks?: readonly (readonly number[])[];
-    } = {},
+    options: StateOptions = {},
   ) {
     if (!Number.isInteger(mover) || mover < 1) {
       throw new Error(`mover must be a 1-based integer; got ${mover}.`);
@@ -67,6 +112,7 @@ export class State {
         `numPlayers must be a positive integer; got ${numPlayers}.`,
       );
     }
+    const n = cells.length;
     this.mover = mover;
     this.cells = Object.freeze([...cells]);
     this.componentLabels = Object.freeze([...componentLabels]);
@@ -75,9 +121,41 @@ export class State {
       fillSlot(options.valuesPlayer, numPlayers + 1, 0),
     );
     this.hiddenForPlayer = Object.freeze(
-      fillHidden(options.hiddenForPlayer, numPlayers + 1, cells.length),
+      fillHidden(options.hiddenForPlayer, numPlayers + 1, n),
     );
     this.stacks = Object.freeze(fillStacks(options.stacks, this.cells));
+    this.stateAt = Object.freeze(fillSlot(options.stateAt, n, 0));
+    this.valueAt = Object.freeze(fillSlot(options.valueAt, n, 0));
+    this.rotationAt = Object.freeze(fillSlot(options.rotationAt, n, 0));
+    this.countAt = Object.freeze(
+      options.countAt
+        ? fillSlot(options.countAt, n, 0)
+        : this.cells.map((c) => (c === 0 ? 0 : 1)),
+    );
+    this.phases = Object.freeze(fillSlot(options.phases, numPlayers + 1, 0));
+    this.temps = Object.freeze(fillSlot(options.temps, numPlayers + 1, 0));
+    this.amounts = Object.freeze(fillSlot(options.amounts, numPlayers + 1, 0));
+    this.counter = options.counter ?? 0;
+    this.pot = options.pot ?? 0;
+    this.pending = options.pending
+      ? Object.freeze(new Set(options.pending))
+      : Object.freeze(new Set<number>());
+    this.vars = options.vars
+      ? Object.freeze(new Map(options.vars))
+      : Object.freeze(new Map<string, number>());
+    this.remembered = options.remembered
+      ? Object.freeze(
+          new Map(
+            Array.from(options.remembered, ([k, v]) => [
+              k,
+              Object.freeze([...v]),
+            ]),
+          ),
+        )
+      : Object.freeze(new Map<string, readonly number[]>());
+    this.trumpSuit = options.trumpSuit ?? 0;
+    this.next = options.next ?? 0;
+    this.diceAllEqual = options.diceAllEqual ?? false;
   }
 
   /** Java parity: `State.isHidden(pid, siteIndex)`. */
@@ -265,17 +343,164 @@ export class State {
     return this.with({ cells: nextCells, stacks: nextStacks });
   }
 
-  private with(patch: {
-    mover?: number;
-    cells?: readonly number[];
-    scores?: readonly number[];
-    valuesPlayer?: readonly number[];
-    hiddenForPlayer?: readonly (readonly boolean[])[];
-    stacks?: readonly (readonly number[])[];
-  }): State {
-    // When cells change without an explicit stacks patch, keep the
-    // stacks in sync with the new top (so non-stacking games stay
-    // consistent without the caller having to bookkeep both arrays).
+  // ---- Per-site value / state / rotation / count -----------------------
+
+  public stateAtSite(siteIndex: number): number {
+    return this.stateAt[siteIndex] ?? 0;
+  }
+  public valueAtSite(siteIndex: number): number {
+    return this.valueAt[siteIndex] ?? 0;
+  }
+  public rotationAtSite(siteIndex: number): number {
+    return this.rotationAt[siteIndex] ?? 0;
+  }
+  public countAtSite(siteIndex: number): number {
+    return this.countAt[siteIndex] ?? 0;
+  }
+
+  public withStateAt(siteIndex: number, value: number): State {
+    this.requireSite(siteIndex);
+    const next = [...this.stateAt];
+    next[siteIndex] = value;
+    return this.with({ stateAt: next });
+  }
+  public withValueAt(siteIndex: number, value: number): State {
+    this.requireSite(siteIndex);
+    const next = [...this.valueAt];
+    next[siteIndex] = value;
+    return this.with({ valueAt: next });
+  }
+  public withRotationAt(siteIndex: number, value: number): State {
+    this.requireSite(siteIndex);
+    const next = [...this.rotationAt];
+    next[siteIndex] = value;
+    return this.with({ rotationAt: next });
+  }
+  public withCountAt(siteIndex: number, value: number): State {
+    this.requireSite(siteIndex);
+    const next = [...this.countAt];
+    next[siteIndex] = value;
+    return this.with({ countAt: next });
+  }
+
+  // ---- Per-player phase / temp / amount --------------------------------
+
+  public phase(pid: number): number {
+    return this.phases[pid] ?? 0;
+  }
+  public temp(pid: number): number {
+    return this.temps[pid] ?? 0;
+  }
+  public amount(pid: number): number {
+    return this.amounts[pid] ?? 0;
+  }
+
+  public withPhase(pid: number, value: number): State {
+    this.requirePid(pid);
+    const next = [...this.phases];
+    next[pid] = value;
+    return this.with({ phases: next });
+  }
+  public withTemp(pid: number, value: number): State {
+    this.requirePid(pid);
+    const next = [...this.temps];
+    next[pid] = value;
+    return this.with({ temps: next });
+  }
+  public withAmount(pid: number, value: number): State {
+    this.requirePid(pid);
+    const next = [...this.amounts];
+    next[pid] = value;
+    return this.with({ amounts: next });
+  }
+
+  // ---- Game-level scalars ----------------------------------------------
+
+  public withCounter(value: number): State {
+    return this.with({ counter: value });
+  }
+  public withPot(value: number): State {
+    return this.with({ pot: value });
+  }
+  public withTrumpSuit(value: number): State {
+    return this.with({ trumpSuit: value });
+  }
+  public withNext(value: number): State {
+    return this.with({ next: value });
+  }
+  public withDiceAllEqual(value: boolean): State {
+    return this.with({ diceAllEqual: value });
+  }
+
+  // ---- Pending sites ---------------------------------------------------
+
+  public isPending(siteIndex: number): boolean {
+    return this.pending.has(siteIndex);
+  }
+  public withPendingAdd(siteIndex: number): State {
+    const next = new Set(this.pending);
+    next.add(siteIndex);
+    return this.with({ pending: next });
+  }
+  public withPendingClear(): State {
+    return this.with({ pending: new Set<number>() });
+  }
+
+  // ---- Named variables -------------------------------------------------
+
+  public getVar(name: string): number {
+    return this.vars.get(name) ?? 0;
+  }
+  public withVar(name: string, value: number): State {
+    const next = new Map(this.vars);
+    next.set(name, value);
+    return this.with({ vars: next });
+  }
+
+  // ---- Remembered values -----------------------------------------------
+
+  public rememberedFor(name: string): readonly number[] {
+    return this.remembered.get(name) ?? [];
+  }
+  public withRemember(name: string, value: number): State {
+    const next = new Map(this.remembered);
+    const cur = next.get(name) ?? [];
+    next.set(name, Object.freeze([...cur, value]));
+    return this.with({ remembered: next });
+  }
+  public withForget(name: string, value: number): State {
+    const next = new Map(this.remembered);
+    const cur = next.get(name);
+    if (cur) {
+      const filtered = cur.filter((v) => v !== value);
+      if (filtered.length === 0) next.delete(name);
+      else next.set(name, Object.freeze(filtered));
+    }
+    return this.with({ remembered: next });
+  }
+
+  private requireSite(siteIndex: number): void {
+    if (siteIndex < 0 || siteIndex >= this.cells.length) {
+      throw new RangeError(
+        `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
+      );
+    }
+  }
+
+  private requirePid(pid: number): void {
+    if (!Number.isInteger(pid) || pid < 0 || pid >= this.scores.length) {
+      throw new RangeError(
+        `pid ${pid} out of range [0, ${this.scores.length}).`,
+      );
+    }
+  }
+
+  private with(
+    patch: Partial<StateOptions> & {
+      mover?: number;
+      cells?: readonly number[];
+    },
+  ): State {
     const nextCells = patch.cells ?? this.cells;
     const nextStacks =
       patch.stacks ??
@@ -289,6 +514,21 @@ export class State {
         valuesPlayer: patch.valuesPlayer ?? this.valuesPlayer,
         hiddenForPlayer: patch.hiddenForPlayer ?? this.hiddenForPlayer,
         stacks: nextStacks,
+        stateAt: patch.stateAt ?? this.stateAt,
+        valueAt: patch.valueAt ?? this.valueAt,
+        rotationAt: patch.rotationAt ?? this.rotationAt,
+        countAt: patch.countAt ?? this.countAt,
+        phases: patch.phases ?? this.phases,
+        temps: patch.temps ?? this.temps,
+        amounts: patch.amounts ?? this.amounts,
+        counter: patch.counter ?? this.counter,
+        pot: patch.pot ?? this.pot,
+        pending: patch.pending ?? this.pending,
+        vars: patch.vars ?? this.vars,
+        remembered: patch.remembered ?? this.remembered,
+        trumpSuit: patch.trumpSuit ?? this.trumpSuit,
+        next: patch.next ?? this.next,
+        diceAllEqual: patch.diceAllEqual ?? this.diceAllEqual,
         numPlayers: this.scores.length - 1,
       },
     );
