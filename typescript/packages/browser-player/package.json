@@ -1,13 +1,15 @@
 {
-  "name": "browser-player",
-  "version": "1.0.0",
-  "main": "index.js",
-  "devDependencies": {},
+  "name": "@ludii/typescript-browser-player",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf dist",
+    "test": "npm run build && node --test dist/test/**/*.test.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": ""
+  "description": "Embeddable browser game surface for the Ludii TypeScript migration."
 }

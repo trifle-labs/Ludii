@@ -1,16 +1,28 @@
 {
   "name": "ludii",
   "version": "1.0.0",
-  "description": "<img align=\"right\" src=\"./resources/ludii-logo-64x64.png\">",
-  "main": "index.js",
+  "private": true,
+  "description": "Experimental TypeScript migration workspace for Ludii.",
+  "type": "module",
+  "packageManager": "npm@10.8.2",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "npm run build --workspaces",
+    "lint": "biome check package.json biome.json tsconfig.base.json typescript .github/workflows/typescript.yml",
+    "format": "biome format --write package.json biome.json tsconfig.base.json typescript .github/workflows/typescript.yml",
+    "test": "npm run test --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "workspaces": [
     "typescript/packages/common",
     "typescript/packages/browser-player"
+  ],
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
+    "@types/node": "^25.9.0",
+    "typescript": "^6.0.3"
+  },
+  "keywords": [
+    "ludii",
+    "typescript"
   ]
 }
