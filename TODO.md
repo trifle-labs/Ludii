@@ -17,7 +17,7 @@ the established porting workflow (`typescript/packages/…`).
 - [x] 🤖 Port `Common/src/main/collections/ChunkSet.java` to `@ludii/typescript-common` with parity tests
 - [x] 🤖 Port `Common/src/main/collections/FastArrayList.java` to `@ludii/typescript-common` with parity tests
 - [x] 🤖 Port `Common/src/main/collections/HashedBitSet.java` to `@ludii/typescript-common` with parity tests (actual source: `Core/src/other/state/zhash/HashedBitSet.java`; landed alongside a from-scratch `BitSet` port that the wrapper depends on)
-- [ ] 🤖 Port first parser/description primitive from `Language/` (e.g. token scanner or symbol table) into a new `@ludii/typescript-language` package
+- [ ] 🤖 Port first parser/description primitive from `Language/` (e.g. token scanner or symbol table) into a new `@ludii/typescript-language` package 🚧 _in progress_
 - [ ] 🤖 Add a shared parity-test fixture pattern (Java behaviour snapshots → TS assertions) and document it in `typescript/README.md` 🚧 _in progress_
 - [ ] 🤖 Expand `typescript/packages/common/src/index.ts` exports as new modules land
 - [ ] 🤖 Keep `typescript/README.md` parity-status table updated after each merged module
