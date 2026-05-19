@@ -98,6 +98,10 @@ function connectsForPlayer(
 export interface HexGameOptions {
   readonly size?: number;
   readonly componentLabels?: readonly [string, string];
+  /** Override the game id. Defaults to `hex-${size}`. */
+  readonly id?: string;
+  /** Override the game name. Defaults to `Hex (size×size)`. */
+  readonly name?: string;
 }
 
 export class HexGame implements Game {
@@ -113,8 +117,8 @@ export class HexGame implements Game {
       throw new Error(`size must be an integer >= 2; got ${size}.`);
     }
     this.size = size;
-    this.id = `hex-${size}`;
-    this.name = `Hex (${size}×${size})`;
+    this.id = options.id ?? `hex-${size}`;
+    this.name = options.name ?? `Hex (${size}×${size})`;
     this.componentLabels = Object.freeze([
       ...(options.componentLabels ?? HEX_LABELS),
     ]);

@@ -4,16 +4,15 @@ import {
   createTicTacToeEmbed,
 } from "./embed.js";
 
-const DEFAULT_LUD = `(game "Tic-Tac-Toe"
+const DEFAULT_LUD = `(game "Hex"
     (players 2)
     (equipment {
-        (board (square 3))
-        (piece "X" P1)
-        (piece "O" P2)
+        (board (hex Diamond 7))
+        (piece "Marker" Each)
     })
     (rules
         (play (move Add (to (sites Empty))))
-        (end (if (is Line 3) (result Mover Win)))
+        (end (if (is Connected Mover) (result Mover Win)))
     )
 )`;
 

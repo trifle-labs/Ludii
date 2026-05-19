@@ -2,10 +2,27 @@
  * Minimal `.lud` → engine compiler.
  *
  * Walks an AST produced by `@ludii/typescript-language`'s parser and
- * constructs a concrete `FlatBoardGame`. Only the syntactic subset
- * needed by the tic-tac-toe-shaped `.lud` files in
- * `Common/res/lud/test/` is supported. Anything outside that subset
- * raises a `LudCompileError` so the failure mode is loud.
+ * constructs a concrete `Game`. The syntactic subset covered:
+ *
+ * Board shapes:
+ *   - `(board (square N))` → `FlatBoardGame` (N×N).
+ *   - `(board (hex Diamond N))` → `HexGame` (N×N rhombic).
+ *
+ * Pieces / players:
+ *   - `(piece "Label" Pn)` → component label for player N.
+ *   - `(piece "Label" Each)` → same label for every player.
+ *
+ * Rules:
+ *   - `(play (move Add (to (sites Empty))))` is the default play; any
+ *     explicit `(play ...)` matching that shape is accepted.
+ *   - `(end (if (is Line K) (result Mover Win)))` → line-of-K win on a
+ *     `FlatBoardGame`. Without an explicit K, falls back to board size.
+ *   - `(end (if (is Connected Mover) (result Mover Win)))` → connection
+ *     win on a `HexGame`; the topology already encodes which edges
+ *     belong to which player.
+ *
+ * Anything outside this subset raises a `LudCompileError` so the
+ * failure mode is loud and labelled.
  */
 
 import {
@@ -20,6 +37,8 @@ import {
 } from "@ludii/typescript-language";
 
 import { FlatBoardGame } from "./flat-board-game.js";
+import type { Game } from "./game.js";
+import { HexGame } from "./hex-game.js";
 
 export class LudCompileError extends Error {
   public readonly offset: number | undefined;
@@ -34,6 +53,18 @@ export class LudCompileError extends Error {
 interface CompiledForm {
   readonly game: LudList;
 }
+
+type BoardShape =
+  | { kind: "square"; size: number }
+  | { kind: "hex"; size: number };
+
+interface EquipmentSpec {
+  readonly board: BoardShape;
+  readonly componentLabels: string[];
+  readonly eachPlayerLabel: string | undefined;
+}
+
+type WinKind = { kind: "line"; lineLength: number } | { kind: "connected" };
 
 function asList(node: LudNode | undefined, label: string): LudList {
   if (!node || !isList(node)) {
@@ -106,9 +137,6 @@ function expectIdent(node: LudNode | undefined, label: string): string {
 }
 
 function locateGameForm(root: LudNode): CompiledForm {
-  // The top-level can be either a single (game ...) form or a wrapper
-  // list produced by parseLud when there are multiple top-level forms
-  // (e.g. game + metadata).
   if (!isList(root)) {
     throw new LudCompileError(
       "Top-level form must be a list",
@@ -126,71 +154,6 @@ function locateGameForm(root: LudNode): CompiledForm {
   throw new LudCompileError("No (game ...) form found", root.range.from());
 }
 
-function compileEquipment(equipment: LudList): {
-  width: number;
-  height: number;
-  componentLabels: string[];
-} {
-  // (equipment { (board (square N)) (piece "X" P1) ... })
-  // The Java parser accepts either a parens list or a curly list of
-  // entries. We accept both: skip the head, then iterate either nested
-  // curly children or successive paren children.
-  let body: readonly LudNode[];
-  const inner = equipment.items[1];
-  if (inner && isList(inner) && inner.delimiter === "curly") {
-    body = inner.items;
-  } else {
-    body = equipment.items.slice(1);
-  }
-
-  let width = 0;
-  let height = 0;
-  const labels: string[] = [];
-
-  for (const entry of body) {
-    if (!isList(entry)) {
-      continue;
-    }
-    const headName = listHead(entry);
-    if (headName === "board") {
-      // (board (square N))
-      const inner2 = asList(entry.items[1], "board shape");
-      const shapeName = head(inner2);
-      if (shapeName !== "square") {
-        throw new LudCompileError(
-          `Unsupported board shape "${shapeName}"; only "square" is supported`,
-          inner2.range.from(),
-        );
-      }
-      const size = expectInt(inner2.items[1], "square size");
-      width = size;
-      height = size;
-    } else if (headName === "piece") {
-      // (piece "Disc" P1)
-      const name = expectString(entry.items[1], "piece name");
-      const playerIdent = expectIdent(entry.items[2], "piece owner");
-      const idx = parsePlayerIndex(playerIdent, entry.items[2]?.range.from());
-      while (labels.length < idx) {
-        labels.push("");
-      }
-      labels[idx - 1] = name;
-    } else {
-      // Unsupported equipment entry — silently ignore for now so that
-      // metadata-style entries don't trip the compiler. Could be made
-      // stricter later.
-    }
-  }
-
-  if (width === 0 || height === 0) {
-    throw new LudCompileError(
-      "Equipment is missing a (board (square N)) clause",
-      equipment.range.from(),
-    );
-  }
-
-  return { width, height, componentLabels: labels };
-}
-
 function parsePlayerIndex(ident: string, offset?: number): number {
   const match = /^P(\d+)$/.exec(ident);
   if (!match) {
@@ -202,8 +165,113 @@ function parsePlayerIndex(ident: string, offset?: number): number {
   return Number(match[1]);
 }
 
-function compileRules(rules: LudList, boardSize: number): number {
-  // Look for (end (if (is Line K) (result Mover Win))) and extract K.
+function compileBoardShape(boardClause: LudList): BoardShape {
+  // (board (square N)) or (board (hex Diamond N))
+  const inner = asList(boardClause.items[1], "board shape");
+  const shapeName = head(inner);
+  if (shapeName === "square") {
+    const size = expectInt(inner.items[1], "square size");
+    return { kind: "square", size };
+  }
+  if (shapeName === "hex") {
+    // Accept either (hex Diamond N) or (hex N) for now. Other tilings
+    // (Triangle, Hexagon, etc.) are deferred.
+    const firstArg = inner.items[1];
+    if (firstArg && isIdent(firstArg)) {
+      const tiling = firstArg.name;
+      if (tiling !== "Diamond") {
+        throw new LudCompileError(
+          `Unsupported hex tiling "${tiling}"; only "Diamond" is supported`,
+          firstArg.range.from(),
+        );
+      }
+      const size = expectInt(inner.items[2], "hex size");
+      return { kind: "hex", size };
+    }
+    if (firstArg && isNumber(firstArg)) {
+      const size = expectInt(firstArg, "hex size");
+      return { kind: "hex", size };
+    }
+    throw new LudCompileError(
+      "Expected (hex Diamond N) or (hex N)",
+      inner.range.from(),
+    );
+  }
+  throw new LudCompileError(
+    `Unsupported board shape "${shapeName}"; only "square" and "hex" are supported`,
+    inner.range.from(),
+  );
+}
+
+function compileEquipment(
+  equipment: LudList,
+  numPlayers: number,
+): EquipmentSpec {
+  let body: readonly LudNode[];
+  const inner = equipment.items[1];
+  if (inner && isList(inner) && inner.delimiter === "curly") {
+    body = inner.items;
+  } else {
+    body = equipment.items.slice(1);
+  }
+
+  let board: BoardShape | undefined;
+  const labels: string[] = [];
+  let eachPlayerLabel: string | undefined;
+
+  for (const entry of body) {
+    if (!isList(entry)) {
+      continue;
+    }
+    const headName = listHead(entry);
+    if (headName === "board") {
+      board = compileBoardShape(entry);
+    } else if (headName === "piece") {
+      const name = expectString(entry.items[1], "piece name");
+      const ownerNode = entry.items[2];
+      const ownerIdent = expectIdent(ownerNode, "piece owner");
+      if (ownerIdent === "Each") {
+        eachPlayerLabel = name;
+      } else {
+        const idx = parsePlayerIndex(ownerIdent, ownerNode?.range.from());
+        while (labels.length < idx) {
+          labels.push("");
+        }
+        labels[idx - 1] = name;
+      }
+    } else if (
+      headName === "regions" ||
+      headName === "hand" ||
+      headName === "track"
+    ) {
+      // Known equipment entries not exercised by the MVE compiler.
+      // They contribute to the play space (e.g. region annotations for
+      // graphics) but don't affect the engine's win/move logic for our
+      // tic-tac-toe + Hex subset, so we silently accept them.
+    }
+    // Unknown entries are silently accepted to keep the compiler
+    // forgiving on metadata-style clauses.
+  }
+
+  if (board === undefined) {
+    throw new LudCompileError(
+      "Equipment is missing a (board ...) clause",
+      equipment.range.from(),
+    );
+  }
+
+  if (eachPlayerLabel !== undefined) {
+    for (let i = 0; i < numPlayers; i += 1) {
+      if (!labels[i]) {
+        labels[i] = eachPlayerLabel;
+      }
+    }
+  }
+
+  return { board, componentLabels: labels, eachPlayerLabel };
+}
+
+function compileWinRule(rules: LudList, boardSize: number): WinKind {
   const end = findChildList(rules, "end");
   if (!end) {
     throw new LudCompileError(
@@ -214,21 +282,26 @@ function compileRules(rules: LudList, boardSize: number): number {
   const ifs = findAllChildLists(end, "if");
   for (const ifNode of ifs) {
     const cond = ifNode.items[1];
-    if (cond && isList(cond) && listHead(cond) === "is") {
-      const what = expectIdent(cond.items[1], "is condition kind");
-      if (what !== "Line") {
-        continue;
-      }
+    if (!cond || !isList(cond) || listHead(cond) !== "is") {
+      continue;
+    }
+    const what = expectIdent(cond.items[1], "is condition kind");
+    if (what === "Line") {
       const k = expectInt(cond.items[2], "line length K");
-      return k;
+      return { kind: "line", lineLength: k };
+    }
+    if (what === "Connected") {
+      // `(is Connected Mover)` (the second arg is the player; we
+      // ignore it because the engine already knows the mover).
+      return { kind: "connected" };
     }
   }
-  // Default to the full board size if no explicit line length found,
-  // matching the rule "you win by lining the whole row".
-  return boardSize;
+  // No explicit end condition we recognise → default to a line of the
+  // full board width on a square board.
+  return { kind: "line", lineLength: boardSize };
 }
 
-function compileGameForm(form: CompiledForm): FlatBoardGame {
+function compileGameForm(form: CompiledForm): Game {
   const game = form.game;
   const nameNode = game.items[1];
   const name = nameNode && isString(nameNode) ? nameNode.value : "Untitled";
@@ -249,7 +322,7 @@ function compileGameForm(form: CompiledForm): FlatBoardGame {
       game.range.from(),
     );
   }
-  const equipment = compileEquipment(equipmentForm);
+  const equipment = compileEquipment(equipmentForm, numPlayers);
 
   const rulesForm = findChildList(game, "rules");
   if (!rulesForm) {
@@ -258,33 +331,55 @@ function compileGameForm(form: CompiledForm): FlatBoardGame {
       game.range.from(),
     );
   }
-  const lineLength = compileRules(rulesForm, equipment.width);
+  const win = compileWinRule(rulesForm, equipment.board.size);
 
   const labels: string[] = [];
   for (let i = 0; i < numPlayers; i += 1) {
     labels.push(equipment.componentLabels[i] ?? `P${i + 1}`);
   }
 
+  if (equipment.board.kind === "hex") {
+    if (win.kind !== "connected") {
+      throw new LudCompileError(
+        "Hex board requires an (is Connected ...) win rule",
+        rulesForm.range.from(),
+      );
+    }
+    return new HexGame({
+      size: equipment.board.size,
+      componentLabels: [labels[0] ?? "P1", labels[1] ?? "P2"],
+      id: name.toLowerCase().replace(/\s+/g, "-"),
+      name,
+    });
+  }
+
+  if (win.kind !== "line") {
+    throw new LudCompileError(
+      "Square board requires an (is Line K) win rule",
+      rulesForm.range.from(),
+    );
+  }
+
   return new FlatBoardGame({
     id: name.toLowerCase().replace(/\s+/g, "-"),
     name,
-    width: equipment.width,
-    height: equipment.height,
+    width: equipment.board.size,
+    height: equipment.board.size,
     numPlayers,
-    lineLength,
+    lineLength: win.lineLength,
     componentLabels: labels,
   });
 }
 
-/** Compile a `.lud` source string into a `FlatBoardGame`. */
-export function compileLudSource(source: string): FlatBoardGame {
+/** Compile a `.lud` source string into a `Game`. */
+export function compileLudSource(source: string): Game {
   const ast = parseLud(source);
   const form = locateGameForm(ast);
   return compileGameForm(form);
 }
 
-/** Compile a previously-parsed `.lud` AST into a `FlatBoardGame`. */
-export function compileLudAst(root: LudNode): FlatBoardGame {
+/** Compile a previously-parsed `.lud` AST into a `Game`. */
+export function compileLudAst(root: LudNode): Game {
   const form = locateGameForm(root);
   return compileGameForm(form);
 }

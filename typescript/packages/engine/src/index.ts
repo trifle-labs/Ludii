@@ -1,3 +1,4 @@
+export type { API } from "./api.js";
 export { Context } from "./context.js";
 export {
   FlatBoardGame,
