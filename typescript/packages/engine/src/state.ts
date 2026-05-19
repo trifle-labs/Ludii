@@ -35,6 +35,16 @@ export class State {
   public readonly componentLabels: readonly string[];
   public readonly scores: readonly number[];
   public readonly valuesPlayer: readonly number[];
+  public readonly hiddenForPlayer: readonly (readonly boolean[])[];
+  /**
+   * Java parity: per-site piece stacks
+   * (`ContainerState.whoStack[siteIndex][level]`).
+   * For non-stacking games every stack has length ≤ 1 and the top is
+   * mirrored in `cells[siteIndex]`. For stacking games the stacks
+   * carry full multi-piece state; `cells[i]` continues to point at
+   * the top piece so single-piece readers keep working unchanged.
+   */
+  public readonly stacks: readonly (readonly number[])[];
 
   public constructor(
     mover: number,
@@ -44,6 +54,8 @@ export class State {
       readonly scores?: readonly number[];
       readonly valuesPlayer?: readonly number[];
       readonly numPlayers?: number;
+      readonly hiddenForPlayer?: readonly (readonly boolean[])[];
+      readonly stacks?: readonly (readonly number[])[];
     } = {},
   ) {
     if (!Number.isInteger(mover) || mover < 1) {
@@ -62,6 +74,42 @@ export class State {
     this.valuesPlayer = Object.freeze(
       fillSlot(options.valuesPlayer, numPlayers + 1, 0),
     );
+    this.hiddenForPlayer = Object.freeze(
+      fillHidden(options.hiddenForPlayer, numPlayers + 1, cells.length),
+    );
+    this.stacks = Object.freeze(fillStacks(options.stacks, this.cells));
+  }
+
+  /** Java parity: `State.isHidden(pid, siteIndex)`. */
+  public isHidden(pid: number, siteIndex: number): boolean {
+    const row = this.hiddenForPlayer[pid];
+    if (!row) return false;
+    return row[siteIndex] ?? false;
+  }
+
+  /** Java parity: `State.setHidden(pid, siteIndex, hidden)`. */
+  public withHidden(pid: number, siteIndex: number, hidden: boolean): State {
+    if (
+      !Number.isInteger(pid) ||
+      pid < 0 ||
+      pid >= this.hiddenForPlayer.length
+    ) {
+      throw new RangeError(
+        `pid ${pid} out of range [0, ${this.hiddenForPlayer.length}).`,
+      );
+    }
+    if (siteIndex < 0 || siteIndex >= this.cells.length) {
+      throw new RangeError(
+        `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
+      );
+    }
+    const grid: boolean[][] = this.hiddenForPlayer.map((row) => [...row]);
+    const target = grid[pid];
+    if (!target) {
+      throw new RangeError(`pid ${pid} row missing.`);
+    }
+    target[siteIndex] = hidden;
+    return this.with({ hiddenForPlayer: grid });
   }
 
   public withCell(siteIndex: number, owner: number): State {
@@ -129,16 +177,92 @@ export class State {
     return this.cells.length;
   }
 
+  /**
+   * Java parity: `State.fullHash()` — a deterministic 32-bit fingerprint
+   * of the visible state used as the keys in `Trial.previousStates`.
+   * The TS port uses FNV-1a over the public data members so two states
+   * with identical observable shape collide.
+   */
+  public hash(): number {
+    let h = 0x811c9dc5;
+    const mix = (n: number): void => {
+      h ^= n & 0xff;
+      h = Math.imul(h, 0x01000193);
+      h ^= (n >>> 8) & 0xff;
+      h = Math.imul(h, 0x01000193);
+      h ^= (n >>> 16) & 0xff;
+      h = Math.imul(h, 0x01000193);
+      h ^= (n >>> 24) & 0xff;
+      h = Math.imul(h, 0x01000193);
+    };
+    mix(this.mover);
+    for (const c of this.cells) mix(c);
+    for (const s of this.scores) mix(s);
+    for (const v of this.valuesPlayer) mix(v);
+    return h >>> 0;
+  }
+
   /** Returns the conceptual ContainerState slice for the board. */
   public containerState(): ContainerStateView {
     const cells = this.cells;
+    const stacks = this.stacks;
     return Object.freeze({
       size: cells.length,
       who: (i: number) => cells[i] ?? 0,
       what: (i: number) => cells[i] ?? 0,
-      count: (i: number) => ((cells[i] ?? 0) === 0 ? 0 : 1),
-      isEmpty: (i: number) => (cells[i] ?? 0) === 0,
+      count: (i: number) => stacks[i]?.length ?? 0,
+      isEmpty: (i: number) => (stacks[i]?.length ?? 0) === 0,
     });
+  }
+
+  /** Java parity: `ContainerState.sizeStack(siteIndex)`. */
+  public stackSize(siteIndex: number): number {
+    return this.stacks[siteIndex]?.length ?? 0;
+  }
+
+  /**
+   * Java parity: `ContainerState.who(siteIndex, level)`. Returns the
+   * owner at the given stack level, or 0 if empty.
+   */
+  public stackAt(siteIndex: number, level: number): number {
+    const stack = this.stacks[siteIndex];
+    if (!stack) return 0;
+    return stack[level] ?? 0;
+  }
+
+  /** Java parity: `ContainerState.push(siteIndex, what)`. */
+  public withStackPush(siteIndex: number, owner: number): State {
+    if (siteIndex < 0 || siteIndex >= this.cells.length) {
+      throw new RangeError(
+        `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
+      );
+    }
+    if (!Number.isInteger(owner) || owner < 1) {
+      throw new Error(`owner must be a 1-based integer; got ${owner}.`);
+    }
+    const nextStacks = this.stacks.map((s) => [...s]);
+    const target = nextStacks[siteIndex] ?? [];
+    target.push(owner);
+    nextStacks[siteIndex] = target;
+    const nextCells = [...this.cells];
+    nextCells[siteIndex] = owner;
+    return this.with({ cells: nextCells, stacks: nextStacks });
+  }
+
+  /** Java parity: `ContainerState.pop(siteIndex)`. */
+  public withStackPop(siteIndex: number): State {
+    if (siteIndex < 0 || siteIndex >= this.cells.length) {
+      throw new RangeError(
+        `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
+      );
+    }
+    const nextStacks = this.stacks.map((s) => [...s]);
+    const target = nextStacks[siteIndex] ?? [];
+    target.pop();
+    nextStacks[siteIndex] = target;
+    const nextCells = [...this.cells];
+    nextCells[siteIndex] = target[target.length - 1] ?? 0;
+    return this.with({ cells: nextCells, stacks: nextStacks });
   }
 
   private with(patch: {
@@ -146,18 +270,80 @@ export class State {
     cells?: readonly number[];
     scores?: readonly number[];
     valuesPlayer?: readonly number[];
+    hiddenForPlayer?: readonly (readonly boolean[])[];
+    stacks?: readonly (readonly number[])[];
   }): State {
+    // When cells change without an explicit stacks patch, keep the
+    // stacks in sync with the new top (so non-stacking games stay
+    // consistent without the caller having to bookkeep both arrays).
+    const nextCells = patch.cells ?? this.cells;
+    const nextStacks =
+      patch.stacks ??
+      (patch.cells ? syncStacks(this.stacks, nextCells) : this.stacks);
     return new State(
       patch.mover ?? this.mover,
-      patch.cells ?? this.cells,
+      nextCells,
       this.componentLabels,
       {
         scores: patch.scores ?? this.scores,
         valuesPlayer: patch.valuesPlayer ?? this.valuesPlayer,
+        hiddenForPlayer: patch.hiddenForPlayer ?? this.hiddenForPlayer,
+        stacks: nextStacks,
         numPlayers: this.scores.length - 1,
       },
     );
   }
+}
+
+function syncStacks(
+  previous: readonly (readonly number[])[],
+  cells: readonly number[],
+): (readonly number[])[] {
+  const out: (readonly number[])[] = [];
+  for (let i = 0; i < cells.length; i += 1) {
+    const top = cells[i] ?? 0;
+    const prev = previous[i];
+    if (top === 0) {
+      out.push([]);
+    } else if (!prev || prev.length === 0) {
+      out.push([top]);
+    } else {
+      // Replace the visible top while keeping any buried pieces.
+      const copy = [...prev];
+      copy[copy.length - 1] = top;
+      out.push(copy);
+    }
+  }
+  return out;
+}
+
+function fillStacks(
+  source: readonly (readonly number[])[] | undefined,
+  cells: readonly number[],
+): (readonly number[])[] {
+  if (source !== undefined) {
+    return source.map((s) => Object.freeze([...s]));
+  }
+  return cells.map((c) => Object.freeze(c === 0 ? [] : [c]));
+}
+
+function fillHidden(
+  source: readonly (readonly boolean[])[] | undefined,
+  rows: number,
+  cols: number,
+): boolean[][] {
+  const out: boolean[][] = [];
+  for (let r = 0; r < rows; r += 1) {
+    const src = source?.[r];
+    const row = new Array<boolean>(cols).fill(false);
+    if (src) {
+      for (let c = 0; c < Math.min(cols, src.length); c += 1) {
+        row[c] = src[c] ?? false;
+      }
+    }
+    out.push(row);
+  }
+  return out;
 }
 
 function fillSlot(

@@ -9,6 +9,7 @@
  */
 
 import type { Game } from "./game.js";
+import { SeededRng } from "./rng.js";
 import type { State } from "./state.js";
 import type { Trial } from "./trial.js";
 
@@ -16,19 +17,35 @@ export class Context {
   public readonly game: Game;
   public readonly state: State;
   public readonly trial: Trial;
+  public readonly rng: SeededRng;
 
-  public constructor(game: Game, state: State, trial: Trial) {
+  public constructor(game: Game, state: State, trial: Trial, rng?: SeededRng) {
     this.game = game;
     this.state = state;
     this.trial = trial;
+    this.rng = rng ?? new SeededRng(0x9e3779b1);
   }
 
   public withState(state: State): Context {
-    return new Context(this.game, state, this.trial);
+    return new Context(this.game, state, this.trial, this.rng);
   }
 
   public withTrial(trial: Trial): Context {
-    return new Context(this.game, this.state, trial);
+    return new Context(this.game, this.state, trial, this.rng);
+  }
+
+  public withRng(rng: SeededRng): Context {
+    return new Context(this.game, this.state, this.trial, rng);
+  }
+
+  /** Java parity: `Context.rng()`. */
+  public getRng(): SeededRng {
+    return this.rng;
+  }
+
+  /** Java parity: `Context.trial().ranking()`. */
+  public ranking(): readonly number[] {
+    return this.trial.ranking;
   }
 
   public get mover(): number {

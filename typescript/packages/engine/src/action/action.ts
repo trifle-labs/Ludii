@@ -20,12 +20,27 @@ export const ACTION_UNDEFINED = -1;
 export const ACTION_OFF = -1;
 
 /**
+ * Per-player previous hidden-info snapshot — what each Action recorded
+ * before applying, so it can be restored on undo. Java parity:
+ * `ActionAdd.previousHidden*` family. The MVE doesn't yet use hidden
+ * info in any compiled game; the fields are present so the API shape
+ * matches Java and undo can be filled in later without breaking
+ * callers.
+ */
+export interface PreviousHiddenSnapshot {
+  readonly hidden?: readonly boolean[];
+  readonly hiddenWhat?: readonly boolean[];
+  readonly hiddenWho?: readonly boolean[];
+  readonly hiddenState?: readonly boolean[];
+  readonly hiddenRotation?: readonly boolean[];
+  readonly hiddenValue?: readonly boolean[];
+  readonly hiddenCount?: readonly boolean[];
+}
+
+/**
  * Action (or actions) making up a player move.
  *
- * This is the trimmed TS-shape of `other.action.Action`. Methods that
- * the engine doesn't yet exercise — `undo`, hidden-information
- * tracking, GUI integration, concept BitSet computation — are
- * intentionally absent. They are tracked as follow-up ports.
+ * This is the trimmed TS-shape of `other.action.Action`.
  */
 export interface Action {
   /**
@@ -81,6 +96,14 @@ export interface Action {
   vote(): string;
   message(): string;
   getDescription(): string;
+
+  /**
+   * Java parity: `Action.getPreviousHidden*()` accessor family. Returns
+   * the snapshot captured before this action was applied; `undefined`
+   * means "no hidden-info state recorded" (the default for the MVE).
+   */
+  previousHidden(): PreviousHiddenSnapshot | undefined;
+  setPreviousHidden(snapshot: PreviousHiddenSnapshot | undefined): void;
 }
 
 /**
@@ -92,6 +115,7 @@ export abstract class BaseAction implements Action {
   protected decision = false;
   protected levelFromValue = ACTION_UNDEFINED;
   protected levelToValue = ACTION_UNDEFINED;
+  protected previousHiddenSnapshot: PreviousHiddenSnapshot | undefined;
 
   public abstract apply(state: State): State;
   public abstract actionType(): ActionType;
@@ -199,5 +223,13 @@ export abstract class BaseAction implements Action {
   }
   public getDescription(): string {
     return this.actionType();
+  }
+
+  public previousHidden(): PreviousHiddenSnapshot | undefined {
+    return this.previousHiddenSnapshot;
+  }
+
+  public setPreviousHidden(snapshot: PreviousHiddenSnapshot | undefined): void {
+    this.previousHiddenSnapshot = snapshot;
   }
 }

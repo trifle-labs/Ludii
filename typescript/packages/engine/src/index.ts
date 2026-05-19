@@ -13,11 +13,18 @@ export {
   BaseAction,
   isActionType,
   isSiteType,
+  type PreviousHiddenSnapshot,
   SITE_TYPES,
   type SiteType,
 } from "./action/index.js";
 export { AlternatingMode } from "./alternating-mode.js";
 export type { API } from "./api.js";
+export {
+  CONCEPT_NAMES,
+  type ConceptName,
+  ConceptSet,
+  isConceptName,
+} from "./concept.js";
 export { Context } from "./context.js";
 export {
   FlatBoardGame,
@@ -33,6 +40,7 @@ export {
   LudCompileError,
 } from "./lud-compiler.js";
 export { Move, type MoveInit } from "./move.js";
+export { SeededRng } from "./rng.js";
 export {
   type CellView,
   type ContainerStateView,
@@ -44,4 +52,4 @@ export {
   type TopologyEdge,
   type TopologyVertex,
 } from "./topology.js";
-export { Trial, type TrialStatus } from "./trial.js";
+export { Trial, type TrialOptions, type TrialStatus } from "./trial.js";

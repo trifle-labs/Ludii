@@ -3,13 +3,16 @@
  * - Core/src/other/trial/Trial.java
  *
  * Records the sequence of moves played. The TS slice keeps the move log
- * + over/winner flags, plus the Java-shape accessors the engine
- * actually exercises (lastMove, getMove, generate*MovesList,
- * numInitialPlacementMoves, ranking, status). The undo-bookkeeping
- * surface (previousStates, RNGStates, AuxilTrialData) is deferred.
+ * + over/winner flags + the Java-shape accessors the engine actually
+ * exercises (lastMove, getMove, generate*MovesList,
+ * numInitialPlacementMoves, ranking, status). State-history hashes
+ * (`previousStates`, `previousStatesWithinATurn`) are tracked
+ * immutably; AuxilTrialData and the GUI-side legal-moves history
+ * remain deferred.
  */
 
 import type { Move } from "./move.js";
+import type { State } from "./state.js";
 
 /**
  * Java parity: `other.trial.Trial.Status`. The MVE only needs to know
@@ -21,18 +24,36 @@ export interface TrialStatus {
   readonly winner: number;
 }
 
+export interface TrialOptions {
+  readonly numInitialPlacementMoves?: number;
+  readonly previousStates?: readonly number[];
+  readonly previousStatesWithinATurn?: readonly number[];
+  readonly ranking?: readonly number[];
+}
+
 export class Trial {
   public readonly moves: readonly Move[];
   public readonly over: boolean;
   public readonly winner: number;
   public readonly numInitialPlacementMoves: number;
+  public readonly previousStates: readonly number[];
+  public readonly previousStatesWithinATurn: readonly number[];
+  public readonly ranking: readonly number[];
 
   public constructor(
     moves: readonly Move[],
     over: boolean,
     winner: number,
-    numInitialPlacementMoves = 0,
+    options: TrialOptions | number = 0,
   ) {
+    // The earlier signature took `numInitialPlacementMoves` as a positional
+    // 4th arg; accept either shape for backwards-compat.
+    const opts: TrialOptions =
+      typeof options === "number"
+        ? { numInitialPlacementMoves: options }
+        : options;
+    const numInitialPlacementMoves = opts.numInitialPlacementMoves ?? 0;
+
     if (!Number.isInteger(winner) || winner < -1) {
       throw new Error(`winner must be >= -1; got ${winner}.`);
     }
@@ -51,6 +72,11 @@ export class Trial {
     this.over = over;
     this.winner = winner;
     this.numInitialPlacementMoves = numInitialPlacementMoves;
+    this.previousStates = Object.freeze([...(opts.previousStates ?? [])]);
+    this.previousStatesWithinATurn = Object.freeze([
+      ...(opts.previousStatesWithinATurn ?? []),
+    ]);
+    this.ranking = Object.freeze([...(opts.ranking ?? [])]);
   }
 
   public get numMoves(): number {
@@ -58,12 +84,50 @@ export class Trial {
   }
 
   public withMove(move: Move, over: boolean, winner: number): Trial {
-    return new Trial(
-      [...this.moves, move],
-      over,
-      winner,
-      this.numInitialPlacementMoves,
-    );
+    return new Trial([...this.moves, move], over, winner, {
+      numInitialPlacementMoves: this.numInitialPlacementMoves,
+      previousStates: this.previousStates,
+      previousStatesWithinATurn: this.previousStatesWithinATurn,
+      ranking: this.ranking,
+    });
+  }
+
+  /**
+   * Java parity: `Trial.storeStates()` / `Trial.saveState(state)`.
+   * Returns a new Trial with `state.hash()` appended to both history
+   * arrays. The TS port is immutable so each call yields a new value.
+   */
+  public saveState(state: State): Trial {
+    const hash = state.hash();
+    return new Trial(this.moves, this.over, this.winner, {
+      numInitialPlacementMoves: this.numInitialPlacementMoves,
+      previousStates: [...this.previousStates, hash],
+      previousStatesWithinATurn: [...this.previousStatesWithinATurn, hash],
+      ranking: this.ranking,
+    });
+  }
+
+  /**
+   * Java parity: `Trial.clearLegalMoves()` resets per-turn caches; here
+   * the analogous reset clears only `previousStatesWithinATurn` (kept
+   * for repetition detection across consecutive turns).
+   */
+  public newTurn(): Trial {
+    return new Trial(this.moves, this.over, this.winner, {
+      numInitialPlacementMoves: this.numInitialPlacementMoves,
+      previousStates: this.previousStates,
+      previousStatesWithinATurn: [],
+      ranking: this.ranking,
+    });
+  }
+
+  public withRanking(ranking: readonly number[]): Trial {
+    return new Trial(this.moves, this.over, this.winner, {
+      numInitialPlacementMoves: this.numInitialPlacementMoves,
+      previousStates: this.previousStates,
+      previousStatesWithinATurn: this.previousStatesWithinATurn,
+      ranking,
+    });
   }
 
   /** Java parity: `Trial.lastMove()` — undefined when no moves yet. */

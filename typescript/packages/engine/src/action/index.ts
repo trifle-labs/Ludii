@@ -3,6 +3,7 @@ export {
   ACTION_UNDEFINED,
   type Action,
   BaseAction,
+  type PreviousHiddenSnapshot,
 } from "./action.js";
 export { ActionAdd, type ActionAddOptions } from "./action-add.js";
 export { ActionMove, type ActionMoveOptions } from "./action-move.js";
