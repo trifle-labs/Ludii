@@ -37,7 +37,7 @@ automation cannot reliably perform alone.
 - [ ] 👥 Perform manual QA on the browser demo (`typescript/packages/browser-player/demo/index.html`) and document UX requirements
 - [ ] 👥 Coordinate issue triage: open GitHub Issues for each Track A item above and assign contributors
 - [ ] 👥 Decide whether the Java desktop app (`PlayerDesktop/`) remains a supported build target or is maintenance-only
-- [ ] 👥 Update `CONTRIBUTING.md` (or add one) with porting conventions, PR checklist, and how to run parity tests 🚧 _in progress_
+- [x] 👥 Update `CONTRIBUTING.md` (or add one) with porting conventions, PR checklist, and how to run parity tests — added top-level `CONTRIBUTING.md`
 
 ---
 
