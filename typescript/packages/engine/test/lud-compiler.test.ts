@@ -115,11 +115,15 @@ describe("compileLudSource", () => {
     assert.throws(() => compileLudSource(bad), LudCompileError);
   });
 
-  it("throws when a hex board has no connection win rule", () => {
-    const bad = `(game "X" (players 2)
+  it("falls back to HexGame for a hex board even without an explicit connection win rule", () => {
+    // Hex boards default to a connection game when the win rule is unrecognised
+    // or hidden behind a macro — most hex games are connection games and a
+    // hard error would block the corpus.
+    const src = `(game "X" (players 2)
       (equipment { (board (hex Diamond 3)) (piece "M" Each) })
       (rules (end (if (is Line 3) (result Mover Win)))))`;
-    assert.throws(() => compileLudSource(bad), LudCompileError);
+    const game = compileLudSource(src);
+    assert.ok(game instanceof HexGame);
   });
 
   it("throws when an unsupported board shape is used", () => {

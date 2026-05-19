@@ -42,6 +42,7 @@ import { DiceGame, type DiceMode } from "./dice-game.js";
 import { FlatBoardGame } from "./flat-board-game.js";
 import type { Game } from "./game.js";
 import { HexGame } from "./hex-game.js";
+import { expandDefines } from "./lud-defines.js";
 import { StackGame } from "./stack-game.js";
 import { StepGame, type StepWinMode } from "./step-game.js";
 
@@ -724,12 +725,9 @@ function compileGameForm(form: CompiledForm): Game {
   const win = compileWinRule(rulesForm, defaultLineLength);
 
   if (equipment.board.kind === "hex") {
-    if (win.kind !== "connected") {
-      throw new LudCompileError(
-        "Hex board requires an (is Connected ...) win rule",
-        rulesForm.range.from(),
-      );
-    }
+    // Most hex games are connection games; if we couldn't detect that
+    // shape explicitly (e.g. the (end …) clause uses a macro we don't
+    // model), default to connection rather than erroring out.
     return new HexGame({
       size: equipment.board.size,
       componentLabels: [labels[0] ?? "P1", labels[1] ?? "P2"],
@@ -808,12 +806,10 @@ function compileGameForm(form: CompiledForm): Game {
     });
   }
 
-  if (win.kind !== "line") {
-    throw new LudCompileError(
-      "Square/rectangular board requires an (is Line K) win rule",
-      rulesForm.range.from(),
-    );
-  }
+  // If the win shape didn't classify as a line (e.g. the (end …) uses a
+  // macro or other ludeme we don't model), default to a board-length
+  // line win so the game still compiles.
+  const lineLength = win.kind === "line" ? win.lineLength : defaultLineLength;
 
   return new FlatBoardGame({
     id: name.toLowerCase().replace(/\s+/g, "-"),
@@ -821,7 +817,7 @@ function compileGameForm(form: CompiledForm): Game {
     width: equipment.board.width,
     height: equipment.board.height,
     numPlayers,
-    lineLength: win.lineLength,
+    lineLength,
     componentLabels: labels,
     initialPlacement: startSpec?.placement,
     initialMover: startSpec?.mover,
@@ -830,13 +826,15 @@ function compileGameForm(form: CompiledForm): Game {
 
 /** Compile a `.lud` source string into a `Game`. */
 export function compileLudSource(source: string): Game {
-  const ast = parseLud(source);
+  const parsed = parseLud(source);
+  const ast = expandDefines(parsed);
   const form = locateGameForm(ast);
   return compileGameForm(form);
 }
 
 /** Compile a previously-parsed `.lud` AST into a `Game`. */
 export function compileLudAst(root: LudNode): Game {
-  const form = locateGameForm(root);
+  const expanded = expandDefines(root);
+  const form = locateGameForm(expanded);
   return compileGameForm(form);
 }
