@@ -46,6 +46,23 @@ Primary sources:
 - `java.util.BitSet` (JDK reference; see `BitSet` documentation)
 - `Core/src/other/state/zhash/HashedBitSet.java`
 
+### `@ludii/typescript-language`
+
+First slice of the Java `Language/` module (parser/description primitives).
+
+Current coverage includes:
+
+- `SelectionType` — string-literal-union mirror of the Java enum (CONTEXT,
+  SELECTION, TYPING), plus a frozen `SELECTION_TYPE_VALUES` array in Java
+  declaration order
+- `TokenRange` — `from()` / `to()` accessor-style value object for half-open
+  token ranges within a source string
+
+Primary sources:
+
+- `Language/src/parser/SelectionType.java`
+- `Language/src/parser/TokenRange.java`
+
 ### `@ludii/typescript-browser-player`
 
 A browser-focused package that proves the port can target a web runtime now, before the full engine is available.
