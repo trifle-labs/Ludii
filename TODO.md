@@ -34,7 +34,7 @@ automation cannot reliably perform alone.
 - [x] 👥 Review and ratify API-shape decisions where TypeScript ergonomics diverge from Java (e.g. generics, null handling, checked exceptions) — see [`typescript/docs/API_SHAPE.md`](typescript/docs/API_SHAPE.md)
 - [x] 👥 Write the browser-player roadmap: specify what "real Ludii-backed game state" must expose to the DOM layer — see [`typescript/docs/BROWSER_PLAYER_ROADMAP.md`](typescript/docs/BROWSER_PLAYER_ROADMAP.md)
 - [x] 👥 Provide canonical Java behaviour examples for edge cases in tricky modules (game rules, scoring, move generation) — initial catalogue in [`typescript/docs/JAVA_EDGE_CASES.md`](typescript/docs/JAVA_EDGE_CASES.md); engine-side entries will accrue as the engine ports land
-- [ ] 👥 Perform manual QA on the browser demo (`typescript/packages/browser-player/demo/index.html`) and document UX requirements
+- [ ] 👥 Perform manual QA on the browser demo (`typescript/packages/browser-player/demo/index.html`) and document UX requirements 🚧 _in progress_
 - [ ] 👥 Coordinate issue triage: open GitHub Issues for each Track A item above and assign contributors
 - [ ] 👥 Decide whether the Java desktop app (`PlayerDesktop/`) remains a supported build target or is maintenance-only
 - [x] 👥 Update `CONTRIBUTING.md` (or add one) with porting conventions, PR checklist, and how to run parity tests — added top-level `CONTRIBUTING.md`
