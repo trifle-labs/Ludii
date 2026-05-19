@@ -16,10 +16,18 @@ Current coverage includes:
   - softmax, normalisation, entropy, and sampling helpers
   - structural editing helpers such as `range()`, `append()`, `cut()`, and `insert()`
   - cross-vector helpers such as `concat()`, `crossEntropy()`, `klDivergence()`, and `mean()`
+- `FastArrayList`
+  - all constructors (default, sized, copy, varargs/array)
+  - mutators: `add`, `add(index, e)`, `addAll`, `remove`, `removeSwap`, `set`, `clear`, `retainAll`
+  - accessors: `get`, `size`, `isEmpty`, `contains`, `indexOf`, `toArray`
+  - value semantics: `equals` (with fail-fast `ConcurrentModificationException`), Java-compatible `hashCode`, and `toString`
+  - both an idiomatic JavaScript `[Symbol.iterator]` and a Java-style `iterator()` exposing `hasNext` / `next`
+- Shared `ConcurrentModificationException` plus `defaultEquals` and `defaultHashCode` helpers for cross-port parity
 
-Primary source:
+Primary sources:
 
-- `/home/runner/work/Ludii/Ludii/Common/src/main/collections/FVector.java`
+- `Common/src/main/collections/FVector.java`
+- `Common/src/main/collections/FastArrayList.java`
 
 ### `@ludii/typescript-browser-player`
 
