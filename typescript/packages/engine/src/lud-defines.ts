@@ -170,6 +170,22 @@ function expandList(
       changed = true;
       continue;
     }
+    // Bare string referencing a zero-arg define — Ludii allows
+    // `"DefName"` to stand in for `("DefName")` when the define has no
+    // parameters. Expand here so equipment slots like a single
+    // `"BoardUsed"` resolve to their full board definition.
+    if (isString(item)) {
+      const entry = defines.get(item.value);
+      if (entry && !expanding.has(entry.name)) {
+        const substituted = substitute(entry.body, []);
+        const nextExpanding = new Set(expanding);
+        nextExpanding.add(entry.name);
+        const expanded = expandSingle(substituted, defines, nextExpanding);
+        changed = true;
+        out.push(expanded);
+        continue;
+      }
+    }
     const expanded = expandItem(item, defines, expanding);
     if (expanded !== item) changed = true;
     if (Array.isArray(expanded)) {

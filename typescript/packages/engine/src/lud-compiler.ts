@@ -133,7 +133,59 @@ function findAllChildLists(parent: LudList, name: string): LudList[] {
   return out;
 }
 
+/**
+ * Compile-time int expression evaluator. Folds the prefix arithmetic
+ * Ludii uses inside size slots: `(+ a b)`, `(- a b)`, `(* a b)`,
+ * `(^ a b)`, `(min a b)`, `(max a b)`, plus unary `(- a)`. Returns
+ * `undefined` when the node isn't a constant integer expression.
+ */
+function evalIntExpr(node: LudNode | undefined): number | undefined {
+  if (!node) return undefined;
+  if (isNumber(node)) {
+    return Number.isInteger(node.value) ? node.value : undefined;
+  }
+  if (!isList(node) || node.delimiter !== "round") return undefined;
+  const head = node.items[0];
+  if (!head || !isIdent(head)) return undefined;
+  const op = head.name;
+  const args: number[] = [];
+  for (let i = 1; i < node.items.length; i += 1) {
+    const v = evalIntExpr(node.items[i]);
+    if (v === undefined) return undefined;
+    args.push(v);
+  }
+  if (args.length === 0) return undefined;
+  switch (op) {
+    case "+":
+      return args.reduce((a, b) => a + b);
+    case "-":
+      return args.length === 1 ? -args[0]! : args.reduce((a, b) => a - b);
+    case "*":
+      return args.reduce((a, b) => a * b);
+    case "/":
+      return args.length === 2 && args[1] !== 0
+        ? Math.trunc(args[0]! / args[1]!)
+        : undefined;
+    case "%":
+      return args.length === 2 && args[1] !== 0 ? args[0]! % args[1]! : undefined;
+    case "^":
+    case "**":
+    case "pow":
+      return args.length === 2 ? args[0]! ** args[1]! : undefined;
+    case "min":
+      return Math.min(...args);
+    case "max":
+      return Math.max(...args);
+    case "abs":
+      return args.length === 1 ? Math.abs(args[0]!) : undefined;
+    default:
+      return undefined;
+  }
+}
+
 function expectInt(node: LudNode | undefined, label: string): number {
+  const folded = evalIntExpr(node);
+  if (folded !== undefined && Number.isInteger(folded)) return folded;
   if (!node || !isNumber(node) || !Number.isInteger(node.value)) {
     throw new LudCompileError(
       `Expected ${label} to be an integer literal`,
@@ -239,6 +291,26 @@ function findFirstList(items: readonly LudNode[]): LudList | undefined {
  * constructor) so combinators like `(union { (square 3) (shift …) … })`
  * still yield the first concrete board.
  */
+const ARITHMETIC_OPS = new Set([
+  "+",
+  "-",
+  "*",
+  "/",
+  "%",
+  "^",
+  "**",
+  "pow",
+  "min",
+  "max",
+  "abs",
+  "<",
+  ">",
+  "<=",
+  ">=",
+  "=",
+  "!=",
+]);
+
 function findFirstInnerBoard(items: readonly LudNode[]): LudList | undefined {
   for (const item of items) {
     if (!item || !isList(item)) continue;
@@ -247,6 +319,10 @@ function findFirstInnerBoard(items: readonly LudNode[]): LudList | undefined {
       if (nested) return nested;
       continue;
     }
+    // Skip embedded arithmetic / comparison expressions used for
+    // coordinate offsets — `(shift (/ (- #2 #1) 2) 0 (rectangle …))`.
+    const head = item.items[0];
+    if (head && isIdent(head) && ARITHMETIC_OPS.has(head.name)) continue;
     return item;
   }
   return undefined;
@@ -271,7 +347,7 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     shapeName === "trim" ||
     // Graph-modification ops the simplified compiler can't model
     // (add/remove cells, set-theoretic combinators, dual graph, skew/
-    // wedge transforms). For compilation purposes we ignore the
+    // wedge transforms, etc.). For compilation purposes we ignore the
     // modification and use the inner board's topology directly. Game
     // logic that depends on exact cell counts may misbehave, but the
     // game compiles and exercises the rest of the pipeline.
@@ -282,9 +358,13 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     shapeName === "merge" ||
     shapeName === "dual" ||
     shapeName === "skew" ||
-    shapeName === "wedge" ||
     shapeName === "keep" ||
-    shapeName === "graph"
+    shapeName === "clip" ||
+    shapeName === "splitCrossings" ||
+    shapeName === "makeFaces" ||
+    shapeName === "complete" ||
+    shapeName === "hole" ||
+    shapeName === "repeat"
   ) {
     const innerBoard = findFirstInnerBoard(inner.items.slice(1));
     if (innerBoard) {
@@ -295,6 +375,9 @@ function compileBoardShape(boardClause: LudList): BoardShape {
         range: boardClause.range,
       });
     }
+    // No inner board (e.g. raw graph data) — fall through to a
+    // placeholder so the rest of the pipeline still exercises.
+    return { kind: "flat", width: 7, height: 7 };
   }
   if (shapeName === "square") {
     const size = expectInt(inner.items[1], "square size");
@@ -332,8 +415,13 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     return { kind: "flat", width: side, height: side };
   }
   if (shapeName === "rectangle" || shapeName === "rect") {
+    // Ludii allows partial-arity calls like `(rectangle N)` (square) and
+    // skips trailing keyword args (`diagonals:Alternating`). When the
+    // width slot is missing or non-numeric (e.g. an unbound `#2` left
+    // by a single-arg define call), treat the rectangle as square.
     const height = expectInt(inner.items[1], "rectangle height");
-    const width = expectInt(inner.items[2], "rectangle width");
+    const widthFolded = evalIntExpr(inner.items[2]);
+    const width = widthFolded !== undefined ? widthFolded : height;
     return { kind: "flat", width, height };
   }
   if (shapeName === "hex") {
@@ -357,29 +445,40 @@ function compileBoardShape(boardClause: LudList): BoardShape {
     );
   }
   if (shapeName === "tri") {
-    // (tri N) | (tri Shape N) | (tri Shape {sizes…}). Modelled as an
-    // N-row Y-style triangle in `TriGame`. Variant shapes (Hexagon,
-    // Diamond, Star, Limping, …) collapse to the same connection-game
-    // topology; gameplay is correct for the dominant Y-family.
+    // (tri N) | (tri Shape N) | (tri Shape {sizes…}) | (tri {sizes…}).
+    // Modelled as an N-row Y-style triangle in `TriGame`. Variant
+    // shapes (Hexagon, Diamond, Star, Limping, …) collapse to the same
+    // connection-game topology; gameplay is correct for the dominant
+    // Y-family.
     const firstArg = inner.items[1];
     let size: number | undefined;
-    if (firstArg && isNumber(firstArg) && Number.isInteger(firstArg.value)) {
-      size = firstArg.value;
+    const firstAsInt = evalIntExpr(firstArg);
+    if (firstAsInt !== undefined) {
+      size = firstAsInt;
+    } else if (
+      firstArg &&
+      isList(firstArg) &&
+      firstArg.delimiter === "curly"
+    ) {
+      // Bare (tri {sizes…}) — sum the row-size list.
+      for (const item of firstArg.items) {
+        const v = evalIntExpr(item);
+        if (v !== undefined) size = (size ?? 0) + v;
+      }
     } else if (firstArg && isIdent(firstArg)) {
       const sizeNode = inner.items[2];
-      if (sizeNode && isNumber(sizeNode) && Number.isInteger(sizeNode.value)) {
-        size = sizeNode.value;
+      const sizeFolded = evalIntExpr(sizeNode);
+      if (sizeFolded !== undefined) {
+        size = sizeFolded;
       } else if (
         sizeNode &&
         isList(sizeNode) &&
         sizeNode.delimiter === "curly"
       ) {
-        // (tri Shape {a b c …}) — use the count of size entries as a
-        // proxy. Roughly matches the "N-row triangle" intuition.
+        // (tri Shape {a b c …}) — use the sum of size entries.
         for (const item of sizeNode.items) {
-          if (item && isNumber(item) && Number.isInteger(item.value)) {
-            size = (size ?? 0) + item.value;
-          }
+          const v = evalIntExpr(item);
+          if (v !== undefined) size = (size ?? 0) + v;
         }
       }
     }
@@ -390,6 +489,42 @@ function compileBoardShape(boardClause: LudList): BoardShape {
       );
     }
     return { kind: "tri", size };
+  }
+  // `(wedge W H)` — a triangle-shaped board. Use the explicit dimensions
+  // when present; otherwise default to a 7×7 placeholder so the game
+  // compiles. The connection/line logic against this placeholder won't
+  // mirror the original wedge adjacency exactly.
+  if (shapeName === "wedge") {
+    const a = inner.items[1];
+    const b = inner.items[2];
+    const w =
+      a && isNumber(a) && Number.isInteger(a.value) && a.value > 0
+        ? a.value
+        : 7;
+    const h =
+      b && isNumber(b) && Number.isInteger(b.value) && b.value > 0
+        ? b.value
+        : w;
+    return { kind: "flat", width: w, height: h };
+  }
+  // Graph constructors that build adjacency from raw vertex/edge data
+  // (`(graph vertices:{…} edges:{…})`, `(tiling …)`, `(celtic …)`,
+  // `(mesh …)`, `(spiral …)`, `(shape …)`, `(morris N)`, `(quadhex …)`).
+  // We can't model their exact topology, so emit a generic placeholder
+  // flat board to keep the rest of the pipeline alive.
+  if (
+    shapeName === "graph" ||
+    shapeName === "tiling" ||
+    shapeName === "celtic" ||
+    shapeName === "mesh" ||
+    shapeName === "spiral" ||
+    shapeName === "shape" ||
+    shapeName === "morris" ||
+    shapeName === "quadhex" ||
+    shapeName === "regular" ||
+    shapeName === "poly"
+  ) {
+    return { kind: "flat", width: 7, height: 7 };
   }
   throw new LudCompileError(
     `Unsupported board shape "${shapeName}"; only "square", "rectangle", "hex", and "tri" are supported`,
@@ -421,6 +556,47 @@ function compileEquipment(
     const headName = listHead(entry);
     if (headName === "board") {
       board = compileBoardShape(entry);
+    } else if (headName === "mancalaBoard") {
+      // Mancala-family boards. Forms in the wild:
+      //   (mancalaBoard N "Rows" …)    — N columns
+      //   (mancalaBoard N "Columns" …) — N rows
+      //   (mancalaBoard R C …)         — R×C grid
+      // We model the topology as a flat rectangle big enough to host
+      // the cells; cycle-style sow logic isn't simulated, but the rest
+      // of the pipeline (pieces/rules/win) still compiles.
+      const a = entry.items[1];
+      const b = entry.items[2];
+      const aVal = evalIntExpr(a);
+      const bVal = evalIntExpr(b);
+      let rows = 2;
+      let cols = 6;
+      if (aVal !== undefined && bVal !== undefined) {
+        rows = aVal;
+        cols = bVal;
+      } else if (aVal !== undefined && b && isString(b)) {
+        if (b.value === "Rows") {
+          cols = aVal;
+        } else {
+          rows = aVal;
+        }
+      } else if (aVal !== undefined) {
+        rows = 2;
+        cols = aVal;
+      }
+      board = { kind: "flat", width: Math.max(1, cols), height: Math.max(1, rows) };
+    } else if (headName === "surakartaBoard") {
+      // (surakartaBoard N …) — a Surakarta-style board with loop tracks
+      // for capture. Use an N×N flat placeholder.
+      const n = evalIntExpr(entry.items[1]) ?? 6;
+      board = { kind: "flat", width: n, height: n };
+    } else if (headName === "boardless") {
+      // Tile-laying games (Andantino, Bravalath, Trax, …) play on an
+      // unbounded grid that grows with placement. The simplified
+      // compiler can't model the infinite topology, so we emit a
+      // placeholder 9×9 flat board to keep the rest of the pipeline
+      // alive. Game logic that depends on the exact growable board
+      // (region detection, line lengths) won't behave correctly.
+      board = { kind: "flat", width: 9, height: 9 };
     } else if (headName === "dice") {
       dice = compileDiceSpec(entry);
     } else if (headName === "piece") {
@@ -590,7 +766,14 @@ function compileStartClause(
         // Some kwargs come tokenised with their value attached (e.g.
         // `coord:<Board:centralPoint>`) — we treat any ident containing
         // a colon as a kwarg-style positional.
-        if (ownerNode.name.includes(":")) {
+        if (
+          ownerNode.name.includes(":") ||
+          ownerNode.name === "Cell" ||
+          ownerNode.name === "Edge" ||
+          ownerNode.name === "Vertex"
+        ) {
+          // Site-type qualifier (Cell/Edge/Vertex) or kwarg-style ident
+          // (e.g. `coord:<…>`). Infer owner from the label suffix.
           const suffix = /(\d+)$/.exec(labelNode.value)?.[1];
           if (!suffix) continue;
           const n = Number(suffix);
@@ -771,6 +954,18 @@ function detectPlayModeIn(node: LudNode): PlayMode | undefined {
     }
     if (verb && isList(verb) && listHead(verb) === "stack") {
       return { kind: "stack" };
+    }
+    // `(move (from …) (to …) …)` — a generic from/to move. Nested
+    // `(move Step …)` actions inside `(then …)` clauses don't promote
+    // the outer move to Step semantics; classify the top-level form
+    // as a placement-style move so the StepGame seed requirement
+    // doesn't fire on hand-piece games like Gekitai.
+    if (
+      verb &&
+      isList(verb) &&
+      (listHead(verb) === "from" || listHead(verb) === "to")
+    ) {
+      return { kind: "add" };
     }
   }
   if (headName === "roll") {
@@ -1003,16 +1198,22 @@ function compileGameForm(form: CompiledForm): Game {
     playMode.kind === "hop"
   ) {
     if (!startSpec || startSpec.placement.every((c) => c === 0)) {
-      const verb =
-        playMode.kind === "slide"
-          ? "Slide"
-          : playMode.kind === "hop"
-            ? "Hop"
-            : "Step";
-      throw new LudCompileError(
-        `(move ${verb} …) requires a (start (place …)) clause that seeds the board.`,
-        rulesForm.range.from(),
-      );
+      // No on-board seed — likely a hand-placement game whose Step/Hop
+      // verb only fires after a hand drop (e.g. Moxie). Fall through to
+      // a placement-style flat board so the game still compiles.
+      const lineLength =
+        win.kind === "line" ? win.lineLength : defaultLineLength;
+      return new FlatBoardGame({
+        id: name.toLowerCase().replace(/\s+/g, "-"),
+        name,
+        width: equipment.board.width,
+        height: equipment.board.height,
+        numPlayers,
+        lineLength,
+        componentLabels: labels,
+        initialPlacement: startSpec?.placement,
+        initialMover: startSpec?.mover,
+      });
     }
     const stepWinMode: StepWinMode =
       win.kind === "line"
