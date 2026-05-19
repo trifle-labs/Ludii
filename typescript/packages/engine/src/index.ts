@@ -182,4 +182,5 @@ export {
   type TopologyEdge,
   type TopologyVertex,
 } from "./topology.js";
+export { TriGame, type TriGameOptions, triGame } from "./tri-game.js";
 export { Trial, type TrialOptions, type TrialStatus } from "./trial.js";

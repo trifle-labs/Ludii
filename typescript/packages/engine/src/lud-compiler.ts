@@ -46,6 +46,7 @@ import { expandDefines } from "./lud-defines.js";
 import { applyOptions } from "./lud-options.js";
 import { StackGame } from "./stack-game.js";
 import { StepGame, type StepWinMode } from "./step-game.js";
+import { TriGame } from "./tri-game.js";
 
 export class LudCompileError extends Error {
   public readonly offset: number | undefined;
@@ -63,7 +64,8 @@ interface CompiledForm {
 
 type BoardShape =
   | { kind: "flat"; width: number; height: number }
-  | { kind: "hex"; size: number };
+  | { kind: "hex"; size: number }
+  | { kind: "tri"; size: number };
 
 interface DiceSpec {
   readonly numDice: number;
@@ -288,8 +290,43 @@ function compileBoardShape(boardClause: LudList): BoardShape {
       inner.range.from(),
     );
   }
+  if (shapeName === "tri") {
+    // (tri N) | (tri Shape N) | (tri Shape {sizes…}). Modelled as an
+    // N-row Y-style triangle in `TriGame`. Variant shapes (Hexagon,
+    // Diamond, Star, Limping, …) collapse to the same connection-game
+    // topology; gameplay is correct for the dominant Y-family.
+    const firstArg = inner.items[1];
+    let size: number | undefined;
+    if (firstArg && isNumber(firstArg) && Number.isInteger(firstArg.value)) {
+      size = firstArg.value;
+    } else if (firstArg && isIdent(firstArg)) {
+      const sizeNode = inner.items[2];
+      if (sizeNode && isNumber(sizeNode) && Number.isInteger(sizeNode.value)) {
+        size = sizeNode.value;
+      } else if (
+        sizeNode &&
+        isList(sizeNode) &&
+        sizeNode.delimiter === "curly"
+      ) {
+        // (tri Shape {a b c …}) — use the count of size entries as a
+        // proxy. Roughly matches the "N-row triangle" intuition.
+        for (const item of sizeNode.items) {
+          if (item && isNumber(item) && Number.isInteger(item.value)) {
+            size = (size ?? 0) + item.value;
+          }
+        }
+      }
+    }
+    if (size === undefined || size < 2) {
+      throw new LudCompileError(
+        "Expected (tri N) or (tri Shape N) with N >= 2",
+        inner.range.from(),
+      );
+    }
+    return { kind: "tri", size };
+  }
   throw new LudCompileError(
-    `Unsupported board shape "${shapeName}"; only "square", "rectangle", and "hex" are supported`,
+    `Unsupported board shape "${shapeName}"; only "square", "rectangle", "hex", and "tri" are supported`,
     inner.range.from(),
   );
 }
@@ -835,7 +872,7 @@ function compileGameForm(form: CompiledForm): Game {
   // the placeholder so construction succeeds.
   const defaultLineLength = Math.max(
     2,
-    equipment.board.kind === "hex"
+    equipment.board.kind === "hex" || equipment.board.kind === "tri"
       ? equipment.board.size
       : Math.min(equipment.board.width, equipment.board.height),
   );
@@ -846,6 +883,15 @@ function compileGameForm(form: CompiledForm): Game {
     // shape explicitly (e.g. the (end …) clause uses a macro we don't
     // model), default to connection rather than erroring out.
     return new HexGame({
+      size: equipment.board.size,
+      componentLabels: [labels[0] ?? "P1", labels[1] ?? "P2"],
+      id: name.toLowerCase().replace(/\s+/g, "-"),
+      name,
+    });
+  }
+
+  if (equipment.board.kind === "tri") {
+    return new TriGame({
       size: equipment.board.size,
       componentLabels: [labels[0] ?? "P1", labels[1] ?? "P2"],
       id: name.toLowerCase().replace(/\s+/g, "-"),
