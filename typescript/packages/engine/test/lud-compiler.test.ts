@@ -163,6 +163,43 @@ describe("compileLudSource", () => {
     assert.equal(game.lineLength, 3);
   });
 
+  it("compiles a (start (place ...)) clause into initial cells", () => {
+    const src = `(game "X" (players 2)
+      (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+      (rules
+        (start { (place "D" P1 (sites {0 4})) (place "C" P2 (sites {8})) })
+        (play (move Add (to (sites Empty))))
+        (end (if (is Line 3) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    const ctx = game.start();
+    assert.equal(ctx.state.cellAt(0).owner, 1);
+    assert.equal(ctx.state.cellAt(4).owner, 1);
+    assert.equal(ctx.state.cellAt(8).owner, 2);
+    assert.equal(ctx.state.cellAt(1).owner, 0);
+  });
+
+  it("compiles (start (set Mover P2)) to start with player 2", () => {
+    const src = `(game "X" (players 2)
+      (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+      (rules
+        (start (set Mover P2))
+        (play (move Add (to (sites Empty))))
+        (end (if (is Line 3) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.equal(game.start().state.mover, 2);
+  });
+
+  it("recognises (is Line K) buried inside (or { ... }) wrappers", () => {
+    const src = `(game "X" (players 2)
+      (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+      (rules
+        (play (move Add (to (sites Empty))))
+        (end (if (or { (is Line 3) (no Moves Next) }) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+    assert.equal(game.lineLength, 3);
+  });
+
   it("defaults the rectangular line length to the shorter side", () => {
     const src = `(game "X" (players 2)
       (equipment { (board (rectangle 2 5)) (piece "D" P1) (piece "C" P2) })

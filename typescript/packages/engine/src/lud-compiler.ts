@@ -290,6 +290,151 @@ function compileEquipment(
   return { board, componentLabels: labels, eachPlayerLabel };
 }
 
+interface StartSpec {
+  /** Per-site initial owner (0 = empty). */
+  readonly placement: number[];
+  /** Initial mover (1-based). */
+  readonly mover: number;
+}
+
+function siteIndicesFromNode(
+  node: LudNode | undefined,
+  siteCount: number,
+): number[] {
+  // Accepts: (sites { 0 1 2 })  |  (sites 5)  |  { 0 1 2 }  |  5 (a single site)
+  if (!node) return [];
+  if (isNumber(node)) {
+    const v = node.value;
+    if (Number.isInteger(v) && v >= 0 && v < siteCount) return [v];
+    throw new LudCompileError(
+      `Invalid site index ${v}; must be in [0, ${siteCount}).`,
+      node.range.from(),
+    );
+  }
+  if (isList(node)) {
+    if (listHead(node) === "sites") {
+      return siteIndicesFromNode(node.items[1], siteCount);
+    }
+    const out: number[] = [];
+    for (const item of node.items) {
+      if (isNumber(item)) {
+        const v = item.value;
+        if (!Number.isInteger(v) || v < 0 || v >= siteCount) {
+          throw new LudCompileError(
+            `Invalid site index ${v}; must be in [0, ${siteCount}).`,
+            item.range.from(),
+          );
+        }
+        out.push(v);
+      }
+    }
+    return out;
+  }
+  return [];
+}
+
+function compileStartClause(
+  start: LudList,
+  equipment: EquipmentSpec,
+  numPlayers: number,
+  siteCount: number,
+): StartSpec {
+  const placement = new Array<number>(siteCount).fill(0);
+  let mover = 1;
+
+  // (start ...) body may be { (place ...) (place ...) (set Mover P2) } or flat.
+  const body = collectStartEntries(start);
+
+  for (const entry of body) {
+    const headName = listHead(entry);
+    if (headName === "place") {
+      // (place "Label" Pn (sites { 0 1 2 })) | (place "Label" Pn 5)
+      const labelNode = entry.items[1];
+      const ownerNode = entry.items[2];
+      if (!labelNode || !ownerNode) continue;
+      let owner: number;
+      if (isString(labelNode) && isIdent(ownerNode)) {
+        owner = parsePlayerIndex(ownerNode.name, ownerNode.range.from());
+      } else if (isIdent(labelNode)) {
+        // (place P1 (sites ...))
+        owner = parsePlayerIndex(labelNode.name, labelNode.range.from());
+      } else {
+        continue;
+      }
+      if (owner < 1 || owner > numPlayers) {
+        throw new LudCompileError(
+          `(place) targets player ${owner}, but the game has ${numPlayers} players.`,
+          entry.range.from(),
+        );
+      }
+      const sitesNode =
+        entry.items[3] !== undefined ? entry.items[3] : entry.items[2];
+      const sites = siteIndicesFromNode(sitesNode, siteCount);
+      for (const idx of sites) placement[idx] = owner;
+    } else if (headName === "set") {
+      const what = entry.items[1];
+      if (what && isIdent(what) && what.name === "Mover") {
+        const who = entry.items[2];
+        if (who && isIdent(who)) {
+          mover = parsePlayerIndex(who.name, who.range.from());
+        }
+      }
+    }
+    // Any other start-clause entries (board.shape, hands, …) are ignored.
+  }
+
+  // The `equipment` argument is reserved for future use (e.g. validating
+  // piece labels against (piece ...) declarations). Reference it so the
+  // unused-parameter check stays happy.
+  void equipment;
+
+  return { placement, mover };
+}
+
+function collectStartEntries(start: LudList): LudList[] {
+  const inner = start.items[1];
+  const body: LudList[] = [];
+  const tryAdd = (node: LudNode): void => {
+    if (isList(node) && listHead(node) !== undefined) body.push(node);
+  };
+  if (inner && isList(inner) && inner.delimiter === "curly") {
+    for (const child of inner.items) tryAdd(child);
+  } else {
+    for (let i = 1; i < start.items.length; i += 1) {
+      const child = start.items[i];
+      if (child) tryAdd(child);
+    }
+  }
+  return body;
+}
+
+function findWinInCondition(node: LudNode): WinKind | undefined {
+  if (!isList(node)) return undefined;
+  const headName = listHead(node);
+  if (headName === "is") {
+    const what = node.items[1];
+    if (what && isIdent(what)) {
+      if (what.name === "Line") {
+        const kNode = node.items[2];
+        if (kNode && isNumber(kNode) && Number.isInteger(kNode.value)) {
+          return { kind: "line", lineLength: kNode.value };
+        }
+      }
+      if (what.name === "Connected") {
+        return { kind: "connected" };
+      }
+    }
+    return undefined;
+  }
+  // Recurse through structural combinators commonly used in .lud:
+  //   (and …), (or …), (not …), (if …), (all …), curly groups
+  for (const child of node.items) {
+    const inner = findWinInCondition(child);
+    if (inner) return inner;
+  }
+  return undefined;
+}
+
 function compileWinRule(rules: LudList, boardSize: number): WinKind {
   const end = findChildList(rules, "end");
   if (!end) {
@@ -298,28 +443,18 @@ function compileWinRule(rules: LudList, boardSize: number): WinKind {
       rules.range.from(),
     );
   }
-  // `(end ...)` may be either `(end (if ...))` or `(end { (if ...) (if ...) })`.
-  // findAllChildLists descends through one level of curly delimiters so both
-  // shapes return the inner `if` clauses.
+  // Look at every (if …) clause under (end …), including those nested
+  // inside curly-brace blocks, and inside (or …)/(and …) wrappers.
   const ifs = findAllChildLists(end, "if");
   for (const ifNode of ifs) {
     const cond = ifNode.items[1];
-    if (!cond || !isList(cond) || listHead(cond) !== "is") {
-      continue;
-    }
-    const what = expectIdent(cond.items[1], "is condition kind");
-    if (what === "Line") {
-      const k = expectInt(cond.items[2], "line length K");
-      return { kind: "line", lineLength: k };
-    }
-    if (what === "Connected") {
-      // `(is Connected Mover)` (the second arg is the player; we
-      // ignore it because the engine already knows the mover).
-      return { kind: "connected" };
-    }
+    if (!cond) continue;
+    const found = findWinInCondition(cond);
+    if (found) return found;
   }
-  // No explicit end condition we recognise → default to a line of the
-  // full board width on a square board.
+  // Walk the entire (end …) form so even (end (is Line 3)) style works.
+  const direct = findWinInCondition(end);
+  if (direct) return direct;
   return { kind: "line", lineLength: boardSize };
 }
 
@@ -386,6 +521,13 @@ function compileGameForm(form: CompiledForm): Game {
     );
   }
 
+  const siteCount = equipment.board.width * equipment.board.height;
+  const startForm =
+    findChildList(game, "start") ?? findChildList(rulesForm, "start");
+  const startSpec = startForm
+    ? compileStartClause(startForm, equipment, numPlayers, siteCount)
+    : undefined;
+
   return new FlatBoardGame({
     id: name.toLowerCase().replace(/\s+/g, "-"),
     name,
@@ -394,6 +536,8 @@ function compileGameForm(form: CompiledForm): Game {
     numPlayers,
     lineLength: win.lineLength,
     componentLabels: labels,
+    initialPlacement: startSpec?.placement,
+    initialMover: startSpec?.mover,
   });
 }
 

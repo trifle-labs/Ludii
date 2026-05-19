@@ -24,6 +24,16 @@ export interface FlatBoardGameOptions {
   readonly numPlayers: number;
   readonly lineLength: number;
   readonly componentLabels?: readonly string[];
+  /**
+   * Optional initial placement, indexed by site. A value of 0 means
+   * empty; a value of N (1-based) means "owned by player N". When
+   * omitted, the board starts empty.
+   */
+  readonly initialPlacement?: readonly number[];
+  /**
+   * Optional initial mover index. Defaults to player 1.
+   */
+  readonly initialMover?: number;
 }
 
 const DEFAULT_COMPONENT_LABELS = ["X", "O", "△", "□", "◇", "★", "●", "■"];
@@ -94,6 +104,8 @@ export class FlatBoardGame implements Game {
   public readonly height: number;
   public readonly lineLength: number;
   public readonly componentLabels: readonly string[];
+  private readonly initialPlacement: readonly number[];
+  private readonly initialMover: number;
 
   public get numSites(): number {
     return this.width * this.height;
@@ -135,6 +147,26 @@ export class FlatBoardGame implements Game {
       );
     }
     this.componentLabels = Object.freeze([...labels]);
+    const siteCount = this.width * this.height;
+    if (options.initialPlacement !== undefined) {
+      if (options.initialPlacement.length !== siteCount) {
+        throw new Error(
+          `initialPlacement must have ${siteCount} entries; got ${options.initialPlacement.length}.`,
+        );
+      }
+      this.initialPlacement = Object.freeze([...options.initialPlacement]);
+    } else {
+      this.initialPlacement = Object.freeze(
+        new Array<number>(siteCount).fill(0),
+      );
+    }
+    const mover = options.initialMover ?? 1;
+    if (!Number.isInteger(mover) || mover < 1 || mover > this.numPlayers) {
+      throw new Error(
+        `initialMover must be 1..${this.numPlayers}; got ${mover}.`,
+      );
+    }
+    this.initialMover = mover;
   }
 
   public get siteCount(): number {
@@ -142,8 +174,8 @@ export class FlatBoardGame implements Game {
   }
 
   public start(): Context {
-    const cells = new Array<number>(this.siteCount).fill(0);
-    const state = new State(1, cells, this.componentLabels);
+    const cells = [...this.initialPlacement];
+    const state = new State(this.initialMover, cells, this.componentLabels);
     const trial = new Trial([], false, -1).saveState(state);
     return new Context(this, state, trial);
   }
