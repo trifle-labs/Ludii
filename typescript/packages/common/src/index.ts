@@ -1,5 +1,5 @@
-export { FastArrayList } from "./fast-array-list.js";
 export { ChunkSet } from "./chunk-set.js";
+export { FastArrayList } from "./fast-array-list.js";
 export { FVector } from "./fvector.js";
 export {
   ConcurrentModificationException,
