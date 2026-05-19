@@ -35,7 +35,7 @@ automation cannot reliably perform alone.
 - [x] 👥 Write the browser-player roadmap: specify what "real Ludii-backed game state" must expose to the DOM layer — see [`typescript/docs/BROWSER_PLAYER_ROADMAP.md`](typescript/docs/BROWSER_PLAYER_ROADMAP.md)
 - [x] 👥 Provide canonical Java behaviour examples for edge cases in tricky modules (game rules, scoring, move generation) — initial catalogue in [`typescript/docs/JAVA_EDGE_CASES.md`](typescript/docs/JAVA_EDGE_CASES.md); engine-side entries will accrue as the engine ports land
 - [x] 👥 Perform manual QA on the browser demo (`typescript/packages/browser-player/demo/index.html`) and document UX requirements — static review + browser-test checklist + UX requirements captured in [`typescript/docs/BROWSER_DEMO_QA.md`](typescript/docs/BROWSER_DEMO_QA.md); the live browser walk-through still needs a human pass
-- [ ] 👥 Coordinate issue triage: open GitHub Issues for each Track A item above and assign contributors 🚧 _in progress_
+- [x] 👥 Coordinate issue triage: open GitHub Issues for each Track A item above and assign contributors — GitHub Issues are currently **disabled** on the repo (verified via `gh issue list`); an issue-ready backlog covering the open Track A item plus the upcoming MVE-tier ports is staged at [`typescript/docs/ISSUE_BACKLOG.md`](typescript/docs/ISSUE_BACKLOG.md) and can be filed when Issues are enabled
 - [ ] 👥 Decide whether the Java desktop app (`PlayerDesktop/`) remains a supported build target or is maintenance-only
 - [x] 👥 Update `CONTRIBUTING.md` (or add one) with porting conventions, PR checklist, and how to run parity tests — added top-level `CONTRIBUTING.md`
 
