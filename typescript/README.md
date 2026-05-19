@@ -21,7 +21,6 @@ Run these commands from the repository root:
 Build the browser package:
 
 ```bash
-cd .
 npm install
 npm run build --workspace @ludii/typescript-browser-player
 ```
