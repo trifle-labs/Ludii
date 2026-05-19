@@ -239,7 +239,14 @@ function extractItemValues(itemNode: LudList): LudNode[][] {
       if (stripped !== undefined) {
         // <value> inline ident — numeric strings become number literals so
         // downstream parsers (e.g. expectInt for board sizes) accept them.
-        out.push([identOrNumber(stripped, node.range)]);
+        // `<>` represents an empty substitution — push the slot with no
+        // tokens so the placeholder evaporates rather than leaving an
+        // empty-named ident downstream.
+        if (stripped === "") {
+          out.push([]);
+        } else {
+          out.push([identOrNumber(stripped, node.range)]);
+        }
         i += 1;
         continue;
       }

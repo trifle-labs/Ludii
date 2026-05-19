@@ -122,9 +122,9 @@ export class FlatBoardGame implements Game {
         `height must be a positive integer; got ${options.height}.`,
       );
     }
-    if (!Number.isInteger(options.numPlayers) || options.numPlayers < 2) {
+    if (!Number.isInteger(options.numPlayers) || options.numPlayers < 1) {
       throw new Error(
-        `numPlayers must be an integer >= 2; got ${options.numPlayers}.`,
+        `numPlayers must be a positive integer; got ${options.numPlayers}.`,
       );
     }
     if (!Number.isInteger(options.lineLength) || options.lineLength < 2) {

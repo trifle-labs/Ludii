@@ -549,7 +549,26 @@ function compileEquipment(
   const labels: string[] = [];
   let eachPlayerLabel: string | undefined;
 
+  // Equipment items may be wrapped in an extra round of parentheses by
+  // option substitution (e.g. `(<Board:type>)` becomes `((board …))`).
+  // Flatten one level when the entry's only child is a list.
+  const normalizedBody: LudNode[] = [];
   for (const entry of body) {
+    if (
+      entry &&
+      isList(entry) &&
+      entry.delimiter === "round" &&
+      entry.items.length === 1 &&
+      entry.items[0] &&
+      isList(entry.items[0])
+    ) {
+      normalizedBody.push(entry.items[0]);
+    } else if (entry) {
+      normalizedBody.push(entry);
+    }
+  }
+
+  for (const entry of normalizedBody) {
     if (!isList(entry)) {
       continue;
     }
