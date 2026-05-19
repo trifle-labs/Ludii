@@ -614,6 +614,12 @@ export class FVector {
     return this.toArray().join(",");
   }
 
+  /**
+   * Computes a hash code consistent with Java's Arrays.hashCode wrapping
+   * pattern:
+   *   outerResult = 31 * 1 + Arrays.hashCode(floats)
+   * where each float's raw IEEE 754 bits are treated as an int32.
+   */
   public hashCode(): number {
     const view = new DataView(
       this.floats.buffer,
@@ -627,7 +633,8 @@ export class FVector {
       innerHash = (Math.imul(31, innerHash) + bits) | 0;
     }
 
-    return (Math.imul(31, 1) + innerHash) | 0;
+    // Mirror Java's outer hashCode wrapper: prime * 1 + innerHash
+    return (31 + innerHash) | 0;
   }
 
   public equals(other: unknown): boolean {

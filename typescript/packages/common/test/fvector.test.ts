@@ -109,6 +109,35 @@ test("FVector reports extrema, aggregate values, and NaN presence", () => {
   assert.equal(withNaN.containsNaN(), true);
 });
 
+test("FVector.argMaxRand() and argMinRand() break ties with randomisation", () => {
+  // With many ties, both valid indices should eventually be selected.
+  const tied = new FVector([0, 1, 1]);
+  const seenMax = new Set<number>();
+
+  for (let trial = 0; trial < 200; trial += 1) {
+    seenMax.add(tied.argMaxRand());
+  }
+
+  assert.deepEqual(
+    [...seenMax].sort((a, b) => a - b),
+    [1, 2],
+    "argMaxRand() should select each tied max index at least once across many draws",
+  );
+
+  const tiedMin = new FVector([0, 0, 1]);
+  const seenMin = new Set<number>();
+
+  for (let trial = 0; trial < 200; trial += 1) {
+    seenMin.add(tiedMin.argMinRand());
+  }
+
+  assert.deepEqual(
+    [...seenMin].sort((a, b) => a - b),
+    [0, 1],
+    "argMinRand() should select each tied min index at least once across many draws",
+  );
+});
+
 test("FVector normalise() and softmax() preserve probability semantics", () => {
   const zeroVector = new FVector(4);
   zeroVector.normalise();
