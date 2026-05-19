@@ -32,7 +32,7 @@ automation cannot reliably perform alone.
 
 - [x] 👥 Define and prioritize the "minimum viable engine" module list — which 10–15 Java classes must be ported before real game state is possible in the browser — see [`typescript/docs/MVE.md`](typescript/docs/MVE.md)
 - [x] 👥 Review and ratify API-shape decisions where TypeScript ergonomics diverge from Java (e.g. generics, null handling, checked exceptions) — see [`typescript/docs/API_SHAPE.md`](typescript/docs/API_SHAPE.md)
-- [ ] 👥 Write the browser-player roadmap: specify what "real Ludii-backed game state" must expose to the DOM layer 🚧 _in progress_
+- [x] 👥 Write the browser-player roadmap: specify what "real Ludii-backed game state" must expose to the DOM layer — see [`typescript/docs/BROWSER_PLAYER_ROADMAP.md`](typescript/docs/BROWSER_PLAYER_ROADMAP.md)
 - [ ] 👥 Provide canonical Java behaviour examples for edge cases in tricky modules (game rules, scoring, move generation)
 - [ ] 👥 Perform manual QA on the browser demo (`typescript/packages/browser-player/demo/index.html`) and document UX requirements
 - [ ] 👥 Coordinate issue triage: open GitHub Issues for each Track A item above and assign contributors
