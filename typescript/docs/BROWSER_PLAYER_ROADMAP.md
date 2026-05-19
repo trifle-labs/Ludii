@@ -138,43 +138,51 @@ expects immutability at the session level. The underlying `State` /
 
 ## Phase plan
 
-### Phase 0 — current
+### Phase 0 — ✅ done
 
 - Placeholder `TicTacToeGame` + `EmbeddedTicTacToe` + demo HTML.
 - DOM contract pinned by the placeholder.
+- Retired by Phase 1; the embed now consumes any `BrowserGameSession`.
 
-### Phase 1 — replace the placeholder with a real ported game
+### Phase 1 — ✅ done (MVE-tier engine)
 
-Prerequisites: Tier 1 + Tier 2 ports from [`MVE.md`](MVE.md).
+A `BrowserGameSession` adapter (`EngineSession` in
+`@ludii/typescript-browser-player`) now wraps a `Game` / `Context` from
+`@ludii/typescript-engine`. The first concrete target is tic-tac-toe
+built programmatically via `ticTacToeGame()`.
 
-Deliverable: a `BrowserGameSession` adapter (in
-`@ludii/typescript-browser-player`) that wraps the ported `Context`,
-`State`, `Trial`, and `Game`. The first concrete target is tic-tac-toe
-built programmatically (not from a `.lud`).
+Status:
+- ✅ The demo HTML renders tic-tac-toe using the ported engine.
+- ✅ A complete 2-player game can be played to terminal in the browser.
+- ✅ Move IDs are stable across re-renders (`m{numMoves}:{site}:{mover}`).
+- ⏳ Parity test against a Java state-hash run is deferred until the
+  byte-for-byte engine ports land (`ISSUE_BACKLOG.md`); the MVE engine
+  is TS-native, not Java-cross-checked.
 
-Done when:
-- The demo HTML renders tic-tac-toe using the ported engine.
-- A complete 2-player game can be played to terminal in the browser.
-- Move IDs are stable across re-renders.
-- Parity test: same move sequence in TS and in Java produces the same
-  final `State` hash.
-
-### Phase 2 — second concrete game
+### Phase 2 — ⬜ open (second concrete game)
 
 Pick something with stacking or non-square topology (e.g. Hex). Confirm
 the contract holds without modification. If it doesn't, capture the
 delta here and update the contract.
 
-### Phase 3 — load games from `.lud`
+### Phase 3 — ✅ done (load games from `.lud`)
 
-Prerequisites: parser pipeline lands in `@ludii/typescript-language`.
-Replace the hard-coded `Game` builder with parse → compile → instance.
+Parser + compiler land in `@ludii/typescript-language` and
+`@ludii/typescript-engine`. `createLudGameEmbed(container, ludSource)`
+parses → compiles → renders. Currently supports the tic-tac-toe-shaped
+subset of `.lud` syntax; extending the compiler is the next priority.
 
-### Phase 4 — UX surface
+### Phase 4 — 🟡 partial (UX surface)
 
-- Move-history sidebar driven by `Trial`.
-- Undo/redo via the existing `Trial` step list.
-- Optional: keyboard navigation, animation, themes.
+- ✅ Move-history sidebar driven by `Trial` (read-only scrub via
+  `session.truncate(n)`).
+- ✅ Status region with `role=status` and `aria-live=polite`.
+- ✅ Focus restoration on Reset.
+- ✅ 44×44px minimum touch targets.
+- ⬜ Undo/redo (the contract supports it via `truncate` + `apply`;
+  surface still needs a UI).
+- ⬜ Arrow-key grid navigation across cells.
+- ⬜ Animation between states, theming hooks.
 
 ## How the contract is enforced
 

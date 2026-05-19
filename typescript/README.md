@@ -66,7 +66,8 @@ Primary sources:
 
 ### `@ludii/typescript-language`
 
-First slice of the Java `Language/` module (parser/description primitives).
+First slice of the Java `Language/` module (parser/description primitives) plus
+a minimal `.lud` reader.
 
 Current coverage includes:
 
@@ -75,21 +76,75 @@ Current coverage includes:
   declaration order
 - `TokenRange` — `from()` / `to()` accessor-style value object for half-open
   token ranges within a source string
+- `lexLud` — S-expression lexer (round + curly parens, double-quoted
+  strings, signed numeric literals, identifiers, `//` line comments)
+- `parseLud` — recursive-descent parser producing a tagged AST
+  (`LudNode = LudList | LudIdent | LudString | LudNumber`), with
+  `LudParseError` reporting offending source offsets
+- `LudAst` helpers (`isList`, `isIdent`, `isString`, `isNumber`,
+  `listHead`) for walking the parsed tree
 
 Primary sources:
 
 - `Language/src/parser/SelectionType.java`
 - `Language/src/parser/TokenRange.java`
+- `Common/res/lud/test/Tic-Tac-Toe Renamed.lud` (corpus reference used
+  in parser tests)
+
+### `@ludii/typescript-engine`
+
+A TypeScript-native engine surface that satisfies the
+`BrowserGameSession` contract pinned in
+[`docs/BROWSER_PLAYER_ROADMAP.md`](docs/BROWSER_PLAYER_ROADMAP.md). It
+is the MVE-tier predecessor to a byte-for-byte port of the Java engine
+(tracked in [`docs/ISSUE_BACKLOG.md`](docs/ISSUE_BACKLOG.md)).
+
+Current coverage includes:
+
+- `Move`, `State`, `Trial`, `Context`, `Game` — immutable value
+  classes mirroring the subset of the Java engine that the
+  browser-player calls
+- `FlatBoardGame` — concrete `Game` for rectangular boards with the
+  "place on empty until N-in-a-row" rule; supports any width/height,
+  any number of players, configurable component labels, and any line
+  length K
+- `ticTacToeGame()` — convenience factory wired for the 3×3, K=3 case
+- `compileLudSource` / `compileLudAst` — minimal `.lud` compiler that
+  walks an AST produced by `@ludii/typescript-language` and builds a
+  matching `FlatBoardGame`; `LudCompileError` reports offending source
+  positions
+
+Primary sources:
+
+- `Core/src/other/move/Move.java` (conceptual)
+- `Core/src/other/state/State.java` (conceptual)
+- `Core/src/other/trial/Trial.java` (conceptual)
+- `Core/src/other/context/Context.java` (conceptual)
+- `Core/src/game/Game.java` (subset)
 
 ### `@ludii/typescript-browser-player`
 
-A browser-focused package that proves the port can target a web runtime now, before the full engine is available.
+A browser-focused package that drives the ported engine in a real
+DOM environment.
 
 Current contents:
 
-- `TicTacToeGame`: a small deterministic game model used for package and UI validation
-- `EmbeddedTicTacToe`: a DOM-driven embeddable surface
-- `demo/index.html`: a zero-build demo page for quick manual checks
+- `BrowserGame` / `BrowserGameSession` / `BrowserMove` / `BrowserState`
+  contract types (the DOM-layer API surface defined in
+  [`docs/BROWSER_PLAYER_ROADMAP.md`](docs/BROWSER_PLAYER_ROADMAP.md))
+- `EngineSession` — adapter that wraps a `Game` / `Context` from
+  `@ludii/typescript-engine` to satisfy the contract; supports
+  `apply`, `legalMovesAtSite`, `reset`, and `truncate` (read-only
+  history scrubbing)
+- `createTicTacToeSession` / `createSessionFromLud` factories
+- `EmbeddedLudii` — DOM surface that renders any `BrowserGameSession`,
+  with status region (`role=status`, `aria-live=polite`), live cell
+  buttons, a move-history sidebar driven by `Trial`, and focus
+  restoration after Reset
+- `createTicTacToeEmbed` / `createLudiiEmbed` / `createLudGameEmbed`
+  helpers
+- `demo/index.html` — zero-build demo with a `.lud` textarea + Load
+  button so any tic-tac-toe-shaped `.lud` source can be played
 
 ## Workspace commands
 
@@ -148,6 +203,10 @@ When porting Java classes into this workspace:
 
 ## Near-term follow-up
 
-- port first parser/description primitive from `Language/` into a new `@ludii/typescript-language` package
-- begin porting parser- and description-oriented primitives from `Language`
-- replace the placeholder browser game with real Ludii-backed browser state and rendering once the engine port is ready
+- expand the `.lud` compiler beyond the tic-tac-toe-shaped subset
+  (stacking pieces, non-square topologies, conditional rules)
+- begin the byte-for-byte Java engine ports tracked in
+  [`docs/ISSUE_BACKLOG.md`](docs/ISSUE_BACKLOG.md), then swap
+  `FlatBoardGame` for the real ported `Game`/`State`/`Trial`/`Context`
+- add a second concrete game (Phase 2 of the browser-player roadmap)
+  to confirm the contract holds without modification

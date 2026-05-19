@@ -15,11 +15,19 @@ Legend:
 - ✅ done
 - ⬜ open
 
+**Status:** Milestones 1–7 all landed. The vertical slice from
+TS-native engine through `.lud` loading to a move-history-equipped
+browser demo is complete on `copilot/port-library-to-typescript`. The
+follow-up surface (Phase 2 second game, byte-for-byte Java engine
+ports, expanded `.lud` syntax) is tracked in
+[`BROWSER_PLAYER_ROADMAP.md`](BROWSER_PLAYER_ROADMAP.md) and
+[`ISSUE_BACKLOG.md`](ISSUE_BACKLOG.md).
+
 ---
 
 ## Milestone 1 — Engine package skeleton
 
-⬜ Create `@ludii/typescript-engine` with the minimum surface to satisfy
+✅ Created `@ludii/typescript-engine` with the minimum surface to satisfy
 the `BrowserGameSession` contract:
 
 - `Move` (immutable value object with `id`, `label`, `siteIndices`,
@@ -36,7 +44,7 @@ Acceptance:
 
 ## Milestone 2 — Browser adapter for ported engine
 
-⬜ Replace the `TicTacToeGame` placeholder with a real adapter:
+✅ Replaced the `TicTacToeGame` placeholder with a real adapter:
 
 - `BrowserGameSession` implementation that wraps a `Context`
 - `EmbeddedLudii` (renamed from `EmbeddedTicTacToe`) that takes a
@@ -51,7 +59,7 @@ Acceptance:
 
 ## Milestone 3 — `.lud` parser primitives
 
-⬜ Add a minimal S-expression parser to
+✅ Added a minimal S-expression parser to
 `@ludii/typescript-language`:
 
 - Lexer: tokens for parens (round + curly), strings, numbers,
@@ -69,7 +77,7 @@ Acceptance:
 
 ## Milestone 4 — Lud compiler for the tic-tac-toe subset
 
-⬜ Walk the AST and instantiate engine objects.
+✅ Walks the AST and instantiates engine objects.
 
 - Recognise the `(game name (players N) (equipment {...}) (rules
   ...))` shape.
@@ -86,8 +94,9 @@ Acceptance:
 
 ## Milestone 5 — Browser demo loads `.lud` strings
 
-⬜ Update `demo/index.html` so the user can paste a `.lud` string and
-play it.
+✅ Demo updated. `demo/index.html` exposes a `.lud` textarea + Load
+button; `createLudGameEmbed(container, ludSource)` parses → compiles →
+renders.
 
 Acceptance:
 - `createLudGameEmbed(container, ludSource)` exists and works.
@@ -95,7 +104,8 @@ Acceptance:
 
 ## Milestone 6 — Move-history sidebar (Phase 4 partial)
 
-⬜ Add a read-only list driven by `Trial`.
+✅ Read-only list driven by `Trial`; rows scrub the board via
+`session.truncate(n)`.
 
 Acceptance:
 - Each move shows up as a row.
@@ -104,7 +114,7 @@ Acceptance:
 
 ## Milestone 7 — Document the new surface
 
-⬜ Update:
+✅ Updated:
 - Root `typescript/README.md` parity table with the engine package
 - `BROWSER_PLAYER_ROADMAP.md` — mark Phases 1–3 done, Phase 4 partial
 - `MILESTONES.md` (this file) — mark each milestone ✅
