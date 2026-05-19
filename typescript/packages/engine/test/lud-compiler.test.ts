@@ -4,9 +4,12 @@ import { describe, it } from "node:test";
 
 import {
   compileLudSource,
+  DiceGame,
   FlatBoardGame,
   HexGame,
   LudCompileError,
+  StackGame,
+  StepGame,
 } from "../src/index.js";
 
 const TIC_TAC_TOE_LUD = `
@@ -198,6 +201,131 @@ describe("compileLudSource", () => {
     const game = compileLudSource(src);
     assert.ok(game instanceof FlatBoardGame);
     assert.equal(game.lineLength, 3);
+  });
+
+  it("compiles a (move Step ...) play clause into a StepGame", () => {
+    const src = `(game "Stepper" (players 2)
+      (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+      (rules
+        (start { (place "D" P1 (sites {4})) (place "C" P2 (sites {0})) })
+        (play (move Step (from (sites Occupied by:Mover)) (to (sites Empty))))
+        (end (if (no Moves Next) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof StepGame);
+    assert.equal(game.width, 3);
+    assert.equal(game.height, 3);
+    assert.equal(game.allowCapture, false);
+  });
+
+  it("compiles a (move Step ...) with capture (via embedded remove) clause", () => {
+    const src = `(game "StepCap" (players 2)
+      (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+      (rules
+        (start { (place "D" P1 (sites {4})) (place "C" P2 (sites {0})) })
+        (play (move Step (from) (to (sites Empty)) (then (remove (to)))))
+        (end (if (no Pieces Next) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof StepGame);
+    assert.equal(game.allowCapture, true);
+  });
+
+  it("descends into (match ...) wrappers to find the inner (game ...)", () => {
+    const src = `(match "Tournament"
+      (game "TTT" (players 2)
+        (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+        (rules (play (move Add (to (sites Empty)))) (end (if (is Line 3) (result Mover Win))))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+    assert.equal(game.name, "TTT");
+  });
+
+  it("accepts a (metadata ...) sibling alongside (game ...)", () => {
+    const src = `(metadata (info { (description "test") }))
+      (game "TTT" (players 2)
+        (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+        (rules (play (move Add (to (sites Empty)))) (end (if (is Line 3) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+  });
+
+  it("accepts (hands ...) and (no Repeat ...) entries silently", () => {
+    const src = `(game "TTT" (players 2)
+      (equipment {
+        (board (square 3))
+        (piece "D" P1)
+        (piece "C" P2)
+        (hands Each)
+      })
+      (rules
+        (play (move Add (to (sites Empty))))
+        (no Repeat PositionalInTurn)
+        (end (if (is Line 3) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+    assert.equal(game.lineLength, 3);
+  });
+
+  it("descends into (phases (phase ... (end ...))) for the win rule", () => {
+    const src = `(game "X" (players 2)
+      (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+      (rules
+        (play (move Add (to (sites Empty))))
+        (phases
+          (phase "P1"
+            (end (if (is Line 3) (result Mover Win)))))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+    assert.equal(game.lineLength, 3);
+  });
+
+  it("accepts a (forEach Site ...) play wrapper", () => {
+    const src = `(game "X" (players 2)
+      (equipment { (board (square 3)) (piece "D" P1) (piece "C" P2) })
+      (rules
+        (play (forEach Site (sites Empty) (move Add (to (site)))))
+        (end (if (is Line 3) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof FlatBoardGame);
+    assert.equal(game.lineLength, 3);
+  });
+
+  it("compiles a (dice ...) equipment + (move (roll)) clause into a DiceGame", () => {
+    const src = `(game "Pig" (players 2)
+      (equipment { (dice "Die" 2 6) (piece "Pawn" Each) })
+      (rules
+        (play (or (move (roll)) (move Pass)))
+        (end (if (>= (score Mover) 50) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof DiceGame);
+    assert.equal(game.numDice, 2);
+    assert.equal(game.diceFaces, 6);
+    assert.equal(game.mode, "pig");
+  });
+
+  it("parses (dice d6 num:N)-style declarations", () => {
+    const src = `(game "Pig" (players 2)
+      (equipment { (dice d6 3) (piece "Pawn" Each) })
+      (rules
+        (play (move (roll)))
+        (end (if (>= (score Mover) 25) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof DiceGame);
+    assert.equal(game.diceFaces, 6);
+    assert.equal(game.numDice, 3);
+  });
+
+  it("compiles a (move (stack ...)) play clause into a StackGame", () => {
+    const src = `(game "Stacker" (players 2)
+      (equipment { (board (square 3)) (piece "M" Each) })
+      (rules
+        (play (move (stack (to (sites Empty)))))
+        (end (if (is Line 3) (result Mover Win)))))`;
+    const game = compileLudSource(src);
+    assert.ok(game instanceof StackGame);
+    assert.equal(game.width, 3);
+    assert.equal(game.height, 3);
+    assert.equal(game.lineLength, 3);
+    assert.equal(game.winMode, "line");
   });
 
   it("defaults the rectangular line length to the shorter side", () => {

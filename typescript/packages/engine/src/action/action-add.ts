@@ -65,6 +65,9 @@ export class ActionAdd extends BaseAction {
   }
 
   public override apply(state: State): State {
+    if (this.onStack) {
+      return state.withStackPush(this.toIndex, this.whatIndex);
+    }
     return state.withCell(this.toIndex, this.whatIndex);
   }
 

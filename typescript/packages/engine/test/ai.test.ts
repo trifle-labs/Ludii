@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  BigramStats,
   FlatMonteCarloAI,
+  MASTPlayout,
   MCTSAI,
   type Move,
+  MoveStats,
+  NSTPlayout,
   RandomAI,
   RandomPlayout,
   scoreForPlayer,
@@ -114,6 +118,90 @@ describe("RandomPlayout", () => {
     const playout = new RandomPlayout();
     const move = requireMove(playout.selectMove(ctx, ctx.rng));
     assert.ok(game.moves(ctx).some((m) => m.id === move.id));
+  });
+});
+
+describe("MAST / NST / ProgressiveHistory / AlphaGoBackprop", () => {
+  it("MoveStats records a running per-move mean", () => {
+    const game = ticTacToeGame();
+    const ctx = game.start();
+    const stats = new MoveStats();
+    const [a, b] = game.moves(ctx);
+    if (!a || !b) throw new Error("expected at least 2 moves");
+    stats.update(a, 1);
+    stats.update(a, -1);
+    stats.update(b, 1);
+    assert.equal(stats.mean(a), 0);
+    assert.equal(stats.mean(b), 1);
+    assert.equal(stats.visits(a), 2);
+  });
+
+  it("MASTPlayout returns a legal move", () => {
+    const game = ticTacToeGame();
+    const ctx = game.start();
+    const stats = new MoveStats();
+    // Seed the stats so softmax has a clear preference.
+    const moves = game.moves(ctx);
+    if (!moves[0]) throw new Error("no moves");
+    stats.update(moves[0], 10);
+    const playout = new MASTPlayout({ stats, epsilon: 0 });
+    const move = playout.selectMove(ctx, ctx.rng);
+    assert.ok(move);
+    assert.ok(moves.some((m) => m.id === move.id));
+  });
+
+  it("NSTPlayout returns a legal move", () => {
+    const game = ticTacToeGame();
+    const ctx = game.start();
+    const stats = new MoveStats();
+    const bigram = new BigramStats();
+    const playout = new NSTPlayout({
+      stats,
+      bigramStats: bigram,
+      epsilon: 0,
+    });
+    const move = playout.selectMove(ctx, ctx.rng);
+    assert.ok(move);
+    assert.ok(game.moves(ctx).some((m) => m.id === move.id));
+  });
+
+  it("MCTSAI with ProgressiveHistory and shared MoveStats still picks a legal move", () => {
+    const game = ticTacToeGame();
+    const ctx = game.start();
+    const stats = new MoveStats();
+    const ai = new MCTSAI({
+      seed: 17,
+      moveStats: stats,
+      progressiveHistoryWeight: 0.5,
+    });
+    const move = ai.selectAction(ctx, { maxIterations: 128 });
+    assert.ok(move);
+    assert.ok(game.moves(ctx).some((m) => m.id === move.id));
+    // Stats should have been populated by playouts.
+    assert.ok(stats.size() > 0);
+  });
+
+  it("MCTSAI with AlphaGo-style blend (alpha=0.5) still finds the winning move", () => {
+    const game = ticTacToeGame();
+    let ctx = game.start();
+    const applySite = (site: number): void => {
+      const move = game.moves(ctx).find((m) => m.siteIndices[0] === site);
+      if (!move) throw new Error(`No legal move at site ${site}`);
+      ctx = game.apply(ctx, move);
+    };
+    applySite(0);
+    applySite(4);
+    applySite(1);
+    applySite(8);
+
+    const stats = new MoveStats();
+    const ai = new MCTSAI({
+      seed: 21,
+      moveStats: stats,
+      alphaGoBlend: 0.5,
+    });
+    const move = ai.selectAction(ctx, { maxIterations: 1024 });
+    assert.equal(move?.siteIndices[0], 2);
   });
 });
 

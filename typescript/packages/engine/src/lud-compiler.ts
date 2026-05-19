@@ -38,9 +38,12 @@ import {
   parseLud,
 } from "@ludii/typescript-language";
 
+import { DiceGame, type DiceMode } from "./dice-game.js";
 import { FlatBoardGame } from "./flat-board-game.js";
 import type { Game } from "./game.js";
 import { HexGame } from "./hex-game.js";
+import { StackGame } from "./stack-game.js";
+import { StepGame, type StepWinMode } from "./step-game.js";
 
 export class LudCompileError extends Error {
   public readonly offset: number | undefined;
@@ -60,10 +63,16 @@ type BoardShape =
   | { kind: "flat"; width: number; height: number }
   | { kind: "hex"; size: number };
 
+interface DiceSpec {
+  readonly numDice: number;
+  readonly diceFaces: number;
+}
+
 interface EquipmentSpec {
-  readonly board: BoardShape;
+  readonly board: BoardShape | undefined;
   readonly componentLabels: string[];
   readonly eachPlayerLabel: string | undefined;
+  readonly dice: DiceSpec | undefined;
 }
 
 type WinKind = { kind: "line"; lineLength: number } | { kind: "connected" };
@@ -160,9 +169,29 @@ function locateGameForm(root: LudNode): CompiledForm {
   if (listHead(root) === "game") {
     return { game: root };
   }
+  // (match ...) is a Java Ludii Mode wrapper that lists multiple games.
+  // For single-game compilation we descend into it and take the first
+  // (game ...) child.
+  if (listHead(root) === "match") {
+    for (const item of root.items) {
+      if (isList(item) && listHead(item) === "game") {
+        return { game: item };
+      }
+    }
+  }
   for (const item of root.items) {
     if (isList(item) && listHead(item) === "game") {
       return { game: item };
+    }
+    // Top-level sibling forms like (metadata ...) or another (match ...)
+    // are scanned recursively so a `(metadata ...) (game ...)` document
+    // still compiles.
+    if (isList(item) && listHead(item) === "match") {
+      for (const inner of item.items) {
+        if (isList(inner) && listHead(inner) === "game") {
+          return { game: inner };
+        }
+      }
     }
   }
   throw new LudCompileError("No (game ...) form found", root.range.from());
@@ -235,6 +264,7 @@ function compileEquipment(
   }
 
   let board: BoardShape | undefined;
+  let dice: DiceSpec | undefined;
   const labels: string[] = [];
   let eachPlayerLabel: string | undefined;
 
@@ -245,6 +275,8 @@ function compileEquipment(
     const headName = listHead(entry);
     if (headName === "board") {
       board = compileBoardShape(entry);
+    } else if (headName === "dice") {
+      dice = compileDiceSpec(entry);
     } else if (headName === "piece") {
       const name = expectString(entry.items[1], "piece name");
       const ownerNode = entry.items[2];
@@ -272,7 +304,7 @@ function compileEquipment(
     // forgiving on metadata-style clauses.
   }
 
-  if (board === undefined) {
+  if (board === undefined && dice === undefined) {
     throw new LudCompileError(
       "Equipment is missing a (board ...) clause",
       equipment.range.from(),
@@ -287,7 +319,43 @@ function compileEquipment(
     }
   }
 
-  return { board, componentLabels: labels, eachPlayerLabel };
+  return { board, componentLabels: labels, eachPlayerLabel, dice };
+}
+
+function compileDiceSpec(entry: LudList): DiceSpec {
+  // Accepts:
+  //   (dice "Die" N M)            → N dice with M faces
+  //   (dice d6 num:N)             → N d6 dice (face count from "d6" suffix)
+  //   (dice N M)                  → N dice with M faces
+  let numDice = 2;
+  let faces = 6;
+  // First scan: numbered args after the head/name slot.
+  const nums: number[] = [];
+  for (let i = 1; i < entry.items.length; i += 1) {
+    const item = entry.items[i];
+    if (item && isNumber(item) && Number.isInteger(item.value)) {
+      nums.push(item.value);
+    } else if (item && isIdent(item)) {
+      const m = /^d(\d+)$/i.exec(item.name);
+      if (m) {
+        const parsed = Number.parseInt(m[1] ?? "6", 10);
+        if (Number.isFinite(parsed)) faces = parsed;
+      }
+    }
+  }
+  if (nums.length >= 2) {
+    numDice = nums[0] ?? numDice;
+    faces = nums[1] ?? faces;
+  } else if (nums.length === 1) {
+    numDice = nums[0] ?? numDice;
+  }
+  if (numDice < 1 || faces < 2) {
+    throw new LudCompileError(
+      `(dice …) requires numDice >= 1 and diceFaces >= 2; got ${numDice}/${faces}`,
+      entry.range.from(),
+    );
+  }
+  return { numDice, diceFaces: faces };
 }
 
 interface StartSpec {
@@ -435,8 +503,141 @@ function findWinInCondition(node: LudNode): WinKind | undefined {
   return undefined;
 }
 
+function findEndClause(rules: LudList): LudList | undefined {
+  // Java .lud may nest (end …) inside (phases (phase "Name" … (end …))).
+  const direct = findChildList(rules, "end");
+  if (direct) return direct;
+  const phases = findChildList(rules, "phases");
+  if (!phases) return undefined;
+  const visit = (parent: LudList): LudList | undefined => {
+    for (const item of parent.items) {
+      if (!isList(item)) continue;
+      if (listHead(item) === "phase") {
+        const inner = findChildList(item, "end");
+        if (inner) return inner;
+      } else if (item.delimiter === "curly") {
+        const inner = visit(item);
+        if (inner) return inner;
+      }
+    }
+    return undefined;
+  };
+  return visit(phases);
+}
+
+type PlayMode =
+  | { kind: "add" }
+  | { kind: "step"; allowCapture: boolean }
+  | { kind: "slide"; allowCapture: boolean }
+  | { kind: "hop"; allowCapture: boolean }
+  | { kind: "roll" }
+  | { kind: "stack" };
+
+function detectPlayModeIn(node: LudNode): PlayMode | undefined {
+  if (!isList(node)) return undefined;
+  const headName = listHead(node);
+  if (headName === "move") {
+    const verb = node.items[1];
+    if (verb && isIdent(verb)) {
+      // `(move Step …)`, `(move Slide …)`, `(move Hop …)`, or `(move Add …)`.
+      if (verb.name === "Step") {
+        return { kind: "step", allowCapture: detectCaptureFlag(node) };
+      }
+      if (verb.name === "Slide") {
+        return { kind: "slide", allowCapture: detectCaptureFlag(node) };
+      }
+      if (verb.name === "Hop") {
+        return { kind: "hop", allowCapture: true };
+      }
+      if (verb.name === "Add") {
+        return { kind: "add" };
+      }
+    }
+    // `(move (roll))` / `(move (stack …))` — a parenthesised verb.
+    if (verb && isList(verb) && listHead(verb) === "roll") {
+      return { kind: "roll" };
+    }
+    if (verb && isList(verb) && listHead(verb) === "stack") {
+      return { kind: "stack" };
+    }
+  }
+  if (headName === "roll") {
+    return { kind: "roll" };
+  }
+  if (headName === "stack") {
+    return { kind: "stack" };
+  }
+  for (const child of node.items) {
+    const inner = detectPlayModeIn(child);
+    if (inner) return inner;
+  }
+  return undefined;
+}
+
+function detectCaptureFlag(moveNode: LudList): boolean {
+  // A `(then (remove (to)))` clause or `(to … (if (is Enemy …)))` filter
+  // signals capture. Looser heuristic: any descendant `(remove …)`.
+  const visit = (n: LudNode): boolean => {
+    if (!isList(n)) return false;
+    if (listHead(n) === "remove") return true;
+    for (const child of n.items) if (visit(child)) return true;
+    return false;
+  };
+  return visit(moveNode);
+}
+
+function detectDiceMode(rules: LudList): DiceMode {
+  // Heuristic: presence of a (score …) reference inside the end-clause
+  // suggests a banking game (Pig). Otherwise default to "pig" since the
+  // race-style flavour requires explicit (track …) wiring we don't yet
+  // parse.
+  const end = findEndClause(rules);
+  if (!end) return "pig";
+  const containsRace = (n: LudNode): boolean => {
+    if (!isList(n)) return false;
+    const h = listHead(n);
+    if (h === "track" || h === "Track") return true;
+    for (const child of n.items) if (containsRace(child)) return true;
+    return false;
+  };
+  return containsRace(end) ? "race" : "pig";
+}
+
+function detectStepWinMode(rules: LudList): StepWinMode | undefined {
+  const end = findEndClause(rules);
+  if (!end) return undefined;
+  // (is Empty …) → eliminate-style "no opponent pieces left" check.
+  const elim = (() => {
+    const visit = (n: LudNode): boolean => {
+      if (!isList(n)) return false;
+      if (listHead(n) === "no") {
+        const arg = n.items[1];
+        if (arg && isIdent(arg) && arg.name === "Pieces") return true;
+      }
+      for (const child of n.items) if (visit(child)) return true;
+      return false;
+    };
+    return visit(end);
+  })();
+  if (elim) return "eliminate";
+  const noMoves = (() => {
+    const visit = (n: LudNode): boolean => {
+      if (!isList(n)) return false;
+      if (listHead(n) === "no") {
+        const arg = n.items[1];
+        if (arg && isIdent(arg) && arg.name === "Moves") return true;
+      }
+      for (const child of n.items) if (visit(child)) return true;
+      return false;
+    };
+    return visit(end);
+  })();
+  if (noMoves) return "noMoves";
+  return undefined;
+}
+
 function compileWinRule(rules: LudList, boardSize: number): WinKind {
-  const end = findChildList(rules, "end");
+  const end = findEndClause(rules);
   if (!end) {
     throw new LudCompileError(
       "Rules block is missing an (end ...) clause",
@@ -488,16 +689,43 @@ function compileGameForm(form: CompiledForm): Game {
       game.range.from(),
     );
   }
-  const defaultLineLength =
-    equipment.board.kind === "hex"
-      ? equipment.board.size
-      : Math.min(equipment.board.width, equipment.board.height);
-  const win = compileWinRule(rulesForm, defaultLineLength);
 
   const labels: string[] = [];
   for (let i = 0; i < numPlayers; i += 1) {
     labels.push(equipment.componentLabels[i] ?? `P${i + 1}`);
   }
+
+  const playClauseEarly = findChildList(rulesForm, "play");
+  const earlyPlayMode: PlayMode = playClauseEarly
+    ? (detectPlayModeIn(playClauseEarly) ?? { kind: "add" })
+    : { kind: "add" };
+
+  if (earlyPlayMode.kind === "roll" || equipment.dice !== undefined) {
+    // Dice-driven game. Board is optional; mode chosen by end rule shape.
+    const diceMode: DiceMode = detectDiceMode(rulesForm);
+    return new DiceGame({
+      id: name.toLowerCase().replace(/\s+/g, "-"),
+      name,
+      numPlayers,
+      numDice: equipment.dice?.numDice ?? 2,
+      diceFaces: equipment.dice?.diceFaces ?? 6,
+      mode: diceMode,
+      componentLabels: labels,
+    });
+  }
+
+  if (equipment.board === undefined) {
+    throw new LudCompileError(
+      "Equipment is missing a (board ...) clause",
+      equipmentForm.range.from(),
+    );
+  }
+
+  const defaultLineLength =
+    equipment.board.kind === "hex"
+      ? equipment.board.size
+      : Math.min(equipment.board.width, equipment.board.height);
+  const win = compileWinRule(rulesForm, defaultLineLength);
 
   if (equipment.board.kind === "hex") {
     if (win.kind !== "connected") {
@@ -514,12 +742,10 @@ function compileGameForm(form: CompiledForm): Game {
     });
   }
 
-  if (win.kind !== "line") {
-    throw new LudCompileError(
-      "Square/rectangular board requires an (is Line K) win rule",
-      rulesForm.range.from(),
-    );
-  }
+  const playClause = findChildList(rulesForm, "play");
+  const playMode: PlayMode = playClause
+    ? (detectPlayModeIn(playClause) ?? { kind: "add" })
+    : { kind: "add" };
 
   const siteCount = equipment.board.width * equipment.board.height;
   const startForm =
@@ -527,6 +753,71 @@ function compileGameForm(form: CompiledForm): Game {
   const startSpec = startForm
     ? compileStartClause(startForm, equipment, numPlayers, siteCount)
     : undefined;
+
+  if (playMode.kind === "stack") {
+    if (win.kind !== "line") {
+      throw new LudCompileError(
+        "(move (stack …)) requires an (is Line K) win rule",
+        rulesForm.range.from(),
+      );
+    }
+    return new StackGame({
+      id: name.toLowerCase().replace(/\s+/g, "-"),
+      name,
+      width: equipment.board.width,
+      height: equipment.board.height,
+      numPlayers,
+      componentLabels: labels,
+      winMode: "line",
+      lineLength: win.lineLength,
+      initialMover: startSpec?.mover,
+    });
+  }
+
+  if (
+    playMode.kind === "step" ||
+    playMode.kind === "slide" ||
+    playMode.kind === "hop"
+  ) {
+    if (!startSpec || startSpec.placement.every((c) => c === 0)) {
+      const verb =
+        playMode.kind === "slide"
+          ? "Slide"
+          : playMode.kind === "hop"
+            ? "Hop"
+            : "Step";
+      throw new LudCompileError(
+        `(move ${verb} …) requires a (start (place …)) clause that seeds the board.`,
+        rulesForm.range.from(),
+      );
+    }
+    const stepWinMode: StepWinMode =
+      win.kind === "line"
+        ? "line"
+        : (detectStepWinMode(rulesForm) ?? "noMoves");
+    return new StepGame({
+      id: name.toLowerCase().replace(/\s+/g, "-"),
+      name,
+      width: equipment.board.width,
+      height: equipment.board.height,
+      numPlayers,
+      componentLabels: labels,
+      initialPlacement: startSpec.placement,
+      initialMover: startSpec.mover,
+      adjacency: "orthogonal",
+      allowCapture: playMode.kind === "hop" ? true : playMode.allowCapture,
+      winMode: stepWinMode,
+      lineLength: win.kind === "line" ? win.lineLength : undefined,
+      movementKind: playMode.kind,
+    });
+  }
+
+  if (win.kind !== "line") {
+    throw new LudCompileError(
+      "Square/rectangular board requires an (is Line K) win rule",
+      rulesForm.range.from(),
+    );
+  }
 
   return new FlatBoardGame({
     id: name.toLowerCase().replace(/\s+/g, "-"),

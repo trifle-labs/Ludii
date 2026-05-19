@@ -12,6 +12,8 @@ import type { Move } from "../move.js";
 import { SeededRng } from "../rng.js";
 import { AI, type SelectActionOptions } from "./ai.js";
 import { scoreForPlayer } from "./flat-monte-carlo-ai.js";
+import type { BigramStats, MoveStats } from "./move-stats.js";
+import { NSTPlayout } from "./nst-playout.js";
 import { type PlayoutStrategy, RandomPlayout } from "./playout.js";
 
 export interface MCTSAIOptions {
@@ -25,6 +27,27 @@ export interface MCTSAIOptions {
   readonly playout?: PlayoutStrategy;
   /** RNG seed. */
   readonly seed?: number;
+  /**
+   * Shared per-move stats. When supplied, MCTS records playout rewards
+   * for each move played and consults the stats for Progressive History
+   * (UCB selection bias). Lets a MAST playout share the same stats so
+   * tree selection and rollout both benefit.
+   */
+  readonly moveStats?: MoveStats;
+  /** Shared bigram stats; recorded only when supplied. */
+  readonly bigramStats?: BigramStats;
+  /**
+   * Progressive History bias weight. UCB(v) += W * mean(v.move) /
+   * (v.visits + 1). Java parity: ProgressiveHistory.java. Default 0.
+   */
+  readonly progressiveHistoryWeight?: number;
+  /**
+   * AlphaGo-style backprop blend. Final backpropagated reward becomes
+   *   α * simReward + (1 − α) * stats.mean(node.moveFromParent).
+   * Java parity: AI/src/search/mcts/backpropagation/AlphaGoBackprop.java.
+   * Default 1 (pure simulation reward).
+   */
+  readonly alphaGoBlend?: number;
 }
 
 const DEFAULT_EXPLORATION = Math.SQRT2;
@@ -56,14 +79,28 @@ class MCTSNode {
     return this.untried.length > 0 || this.children.length === 0;
   }
 
-  public bestChild(c: number): MCTSNode {
+  public bestChild(
+    c: number,
+    progressiveHistoryWeight = 0,
+    moveStats?: MoveStats,
+  ): MCTSNode {
     let best: MCTSNode | undefined;
     let bestScore = Number.NEGATIVE_INFINITY;
     const logN = Math.log(Math.max(1, this.visits));
     for (const child of this.children) {
       const exploit = child.visits > 0 ? child.totalReward / child.visits : 0;
       const explore = c * Math.sqrt(logN / Math.max(1, child.visits));
-      const score = exploit + explore;
+      let bias = 0;
+      if (
+        progressiveHistoryWeight > 0 &&
+        moveStats !== undefined &&
+        child.moveFromParent !== undefined
+      ) {
+        bias =
+          (progressiveHistoryWeight * moveStats.mean(child.moveFromParent)) /
+          (child.visits + 1);
+      }
+      const score = exploit + explore + bias;
       if (score > bestScore) {
         bestScore = score;
         best = child;
@@ -90,6 +127,10 @@ export class MCTSAI extends AI {
   private readonly maxPlayoutLength: number;
   private readonly defaultIterations: number;
   private readonly playout: PlayoutStrategy;
+  private readonly moveStats: MoveStats | undefined;
+  private readonly bigramStats: BigramStats | undefined;
+  private readonly progressiveHistoryWeight: number;
+  private readonly alphaGoBlend: number;
   private rng: SeededRng;
 
   public constructor(options: MCTSAIOptions = {}) {
@@ -100,6 +141,10 @@ export class MCTSAI extends AI {
       options.maxPlayoutLength ?? DEFAULT_MAX_PLAYOUT_LENGTH;
     this.defaultIterations = options.defaultIterations ?? DEFAULT_ITERATIONS;
     this.playout = options.playout ?? new RandomPlayout();
+    this.moveStats = options.moveStats;
+    this.bigramStats = options.bigramStats;
+    this.progressiveHistoryWeight = options.progressiveHistoryWeight ?? 0;
+    this.alphaGoBlend = Math.max(0, Math.min(1, options.alphaGoBlend ?? 1));
     this.rng = new SeededRng(options.seed ?? 0xb16b00b5);
   }
 
@@ -141,13 +186,20 @@ export class MCTSAI extends AI {
     // ---- Selection ----------------------------------------------------
     let node = root;
     let depth = 0;
+    const playedMoves: Move[] = [];
     while (
       node.untried.length === 0 &&
       node.children.length > 0 &&
       !node.context.over &&
       depth < depthLimit
     ) {
-      node = node.bestChild(this.c);
+      node = node.bestChild(
+        this.c,
+        this.progressiveHistoryWeight,
+        this.moveStats,
+      );
+      if (node.moveFromParent !== undefined)
+        playedMoves.push(node.moveFromParent);
       depth += 1;
     }
 
@@ -159,32 +211,55 @@ export class MCTSAI extends AI {
       const childCtx = node.context.game.apply(node.context, move);
       const child = new MCTSNode(childCtx, node, move);
       node.children.push(child);
+      playedMoves.push(move);
       node = child;
     }
 
     // ---- Simulation ---------------------------------------------------
-    const simReward = this.simulate(node.context);
+    if (this.playout instanceof NSTPlayout) this.playout.resetHistory();
+    const simReward = this.simulate(node.context, playedMoves);
+
+    // ---- Stats update -------------------------------------------------
+    // Update MAST/NST tables with each move played, from that player's
+    // perspective.
+    if (this.moveStats !== undefined || this.bigramStats !== undefined) {
+      let prevHash = 0;
+      for (const move of playedMoves) {
+        const reward = signedRewardFor(simReward, move.mover);
+        if (this.moveStats !== undefined) this.moveStats.update(move, reward);
+        if (this.bigramStats !== undefined)
+          this.bigramStats.update(prevHash, move, reward);
+        prevHash = move.hash();
+      }
+    }
 
     // ---- Backpropagation ----------------------------------------------
     let cursor: MCTSNode | undefined = node;
     while (cursor !== undefined) {
       cursor.visits += 1;
-      // Each node's `totalReward` is from `moverAtNode`'s perspective —
-      // i.e. the player about to move at that node. The simulation
-      // gives us the rollout's outcome for each player; convert by
-      // signing the reward by parity of the mover.
       const moverHere = cursor.moverAtNode;
-      cursor.totalReward += signedRewardFor(simReward, moverHere);
+      const signed = signedRewardFor(simReward, moverHere);
+      let blended = signed;
+      if (
+        this.alphaGoBlend < 1 &&
+        this.moveStats !== undefined &&
+        cursor.moveFromParent !== undefined
+      ) {
+        const prior = this.moveStats.mean(cursor.moveFromParent);
+        blended = this.alphaGoBlend * signed + (1 - this.alphaGoBlend) * prior;
+      }
+      cursor.totalReward += blended;
       cursor = cursor.parent;
     }
   }
 
-  private simulate(context: Context): SimReward {
+  private simulate(context: Context, playedMoves: Move[]): SimReward {
     let cur = context;
     for (let depth = 0; depth < this.maxPlayoutLength; depth += 1) {
       if (cur.over) break;
       const m = this.playout.selectMove(cur, this.rng);
       if (m === undefined) break;
+      playedMoves.push(m);
       cur = cur.game.apply(cur, m);
     }
     // Return a per-player reward map (for 2-player games we just need

@@ -11,7 +11,7 @@ import {
   ActionRemoveLevel,
   ActionRemoveTopPiece,
   ActionSelect,
-  ActionStackMove,
+  ActionSubStackMove,
   State,
 } from "../src/index.js";
 
@@ -81,12 +81,12 @@ describe("move-family actions", () => {
     assert.equal(after.stackSize(0), 1);
   });
 
-  it("ActionStackMove moves a sub-stack preserving order", () => {
+  it("ActionSubStackMove moves a sub-stack preserving order", () => {
     let s = emptyState(9)
       .withStackPush(0, 1)
       .withStackPush(0, 2)
       .withStackPush(0, 3);
-    s = new ActionStackMove(0, 1, 5).apply(s);
+    s = new ActionSubStackMove(0, 1, 5).apply(s);
     assert.equal(s.stackSize(0), 1);
     assert.equal(s.stackSize(5), 2);
     assert.equal(s.stackAt(5, 0), 2);

@@ -35,6 +35,7 @@ export {
   ActionRemoveTopPiece,
   ActionReset,
   ActionSelect,
+  ActionSet,
   ActionSetAmount,
   ActionSetCost,
   ActionSetCount,
@@ -60,17 +61,17 @@ export {
   ActionSetTrumpSuit,
   ActionSetValue,
   ActionSetValueOfPlayer,
-  ActionSetValuePuzzle,
   ActionSetVar,
   ActionSetVisible,
-  ActionStackMove,
   ActionStoreStateInContext,
+  ActionSubStackMove,
   ActionSwap,
   ActionToggle,
   ActionTrigger,
   type ActionType,
   ActionUpdateDice,
   ActionUseDie,
+  ActionVote,
   BaseAction,
   isActionType,
   isSiteType,
@@ -82,10 +83,26 @@ export {
   AI,
   BiasedPlayout,
   type BiasedPlayoutOptions,
+  BigramStats,
+  CentreFeature,
+  CornerFeature,
+  DecisionTree,
+  type DecisionTreeInternal,
+  type DecisionTreeLeaf,
+  type DecisionTreeNode,
+  defaultGeometricFeatures,
+  type Feature,
+  FeatureSet,
   FlatMonteCarloAI,
   type FlatMonteCarloAIOptions,
+  FriendlyNeighbourCountFeature,
+  MASTPlayout,
+  type MASTPlayoutOptions,
   MCTSAI,
   type MCTSAIOptions,
+  MoveStats,
+  NSTPlayout,
+  type NSTPlayoutOptions,
   type PlayoutStrategy,
   RandomAI,
   RandomPlayout,
@@ -102,6 +119,11 @@ export {
 } from "./concept.js";
 export { Context } from "./context.js";
 export {
+  DiceGame,
+  type DiceGameOptions,
+  type DiceMode,
+} from "./dice-game.js";
+export {
   FlatBoardGame,
   type FlatBoardGameOptions,
   ticTacToeGame,
@@ -117,10 +139,22 @@ export {
 export { Move, type MoveInit } from "./move.js";
 export { SeededRng } from "./rng.js";
 export {
+  StackGame,
+  type StackGameOptions,
+  type StackWinMode,
+} from "./stack-game.js";
+export {
   type CellView,
   type ContainerStateView,
   State,
 } from "./state.js";
+export {
+  type MovementKind,
+  type StepAdjacency,
+  StepGame,
+  type StepGameOptions,
+  type StepWinMode,
+} from "./step-game.js";
 export {
   FlatTopology,
   type TopologyCell,

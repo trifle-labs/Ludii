@@ -71,6 +71,11 @@ export interface StateOptions {
    * all identical, used for win conditions in dice games).
    */
   readonly diceAllEqual?: boolean;
+  /**
+   * Java parity: per-die face values from the most recent roll.
+   * `Container.dice[i]` in Java; size = number of dice in the equipment.
+   */
+  readonly diceValues?: readonly number[];
 }
 
 export class State {
@@ -96,6 +101,7 @@ export class State {
   public readonly trumpSuit: number;
   public readonly next: number;
   public readonly diceAllEqual: boolean;
+  public readonly diceValues: readonly number[];
 
   public constructor(
     mover: number,
@@ -156,6 +162,7 @@ export class State {
     this.trumpSuit = options.trumpSuit ?? 0;
     this.next = options.next ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
+    this.diceValues = Object.freeze([...(options.diceValues ?? [])]);
   }
 
   /** Java parity: `State.isHidden(pid, siteIndex)`. */
@@ -431,6 +438,14 @@ export class State {
   public withDiceAllEqual(value: boolean): State {
     return this.with({ diceAllEqual: value });
   }
+  /** Java parity: replace per-die face values from a fresh roll. */
+  public withDiceValues(values: readonly number[]): State {
+    const allEqual = values.length >= 2 && values.every((v) => v === values[0]);
+    return this.with({
+      diceValues: [...values],
+      diceAllEqual: values.length >= 2 ? allEqual : this.diceAllEqual,
+    });
+  }
 
   // ---- Pending sites ---------------------------------------------------
 
@@ -529,6 +544,7 @@ export class State {
         trumpSuit: patch.trumpSuit ?? this.trumpSuit,
         next: patch.next ?? this.next,
         diceAllEqual: patch.diceAllEqual ?? this.diceAllEqual,
+        diceValues: patch.diceValues ?? this.diceValues,
         numPlayers: this.scores.length - 1,
       },
     );

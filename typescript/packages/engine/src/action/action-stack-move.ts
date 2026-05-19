@@ -11,7 +11,7 @@ import type { State } from "../state.js";
 import { BaseAction } from "./action.js";
 import type { ActionType } from "./action-type.js";
 
-export class ActionStackMove extends BaseAction {
+export class ActionSubStackMove extends BaseAction {
   public static readonly TYPE: ActionType = "StackMove";
 
   private readonly fromIndex: number;
@@ -52,7 +52,7 @@ export class ActionStackMove extends BaseAction {
     return next;
   }
   public override actionType(): ActionType {
-    return ActionStackMove.TYPE;
+    return ActionSubStackMove.TYPE;
   }
   public override from(): number {
     return this.fromIndex;
