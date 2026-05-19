@@ -484,10 +484,15 @@ function compileStartClause(
         // Keyword args like `coord:` / `state:` / `count:` mean the form
         // doesn't carry an explicit owner — the piece's name encodes the
         // owner suffix (e.g. "L1" → P1). Try that first; otherwise skip.
-        if (ownerNode.name.endsWith(":")) {
+        // Some kwargs come tokenised with their value attached (e.g.
+        // `coord:<Board:centralPoint>`) — we treat any ident containing
+        // a colon as a kwarg-style positional.
+        if (ownerNode.name.includes(":")) {
           const suffix = /(\d+)$/.exec(labelNode.value)?.[1];
           if (!suffix) continue;
-          owner = Number(suffix);
+          const n = Number(suffix);
+          if (n < 1 || n > numPlayers) continue;
+          owner = n;
         } else if (
           ownerNode.name === "Neutral" ||
           ownerNode.name === "Shared" ||
@@ -499,6 +504,14 @@ function compileStartClause(
         }
       } else if (isIdent(labelNode)) {
         // (place P1 (sites ...))
+        if (
+          labelNode.name === "Neutral" ||
+          labelNode.name === "Shared" ||
+          labelNode.name === "Random" ||
+          labelNode.name === "Stack"
+        ) {
+          continue;
+        }
         owner = parsePlayerIndex(labelNode.name, labelNode.range.from());
       } else {
         continue;
@@ -581,8 +594,26 @@ function findEndClause(rules: LudList): LudList | undefined {
   // Java .lud may nest (end …) inside (phases (phase "Name" … (end …))).
   const direct = findChildList(rules, "end");
   if (direct) return direct;
-  const phases = findChildList(rules, "phases");
-  if (!phases) return undefined;
+  // Either (phases { (phase …) … }) form or the keyword-arg form
+  // `phases:{ (phase …) … }` (a bare `phases:` ident followed by a curly).
+  const phasesList: LudList[] = [];
+  const direct2 = findChildList(rules, "phases");
+  if (direct2) phasesList.push(direct2);
+  for (let i = 0; i < rules.items.length; i += 1) {
+    const cur = rules.items[i];
+    const nxt = rules.items[i + 1];
+    if (
+      cur &&
+      isIdent(cur) &&
+      cur.name === "phases:" &&
+      nxt &&
+      isList(nxt) &&
+      nxt.delimiter === "curly"
+    ) {
+      phasesList.push(nxt);
+    }
+  }
+  if (phasesList.length === 0) return undefined;
   const visit = (parent: LudList): LudList | undefined => {
     for (const item of parent.items) {
       if (!isList(item)) continue;
@@ -596,7 +627,11 @@ function findEndClause(rules: LudList): LudList | undefined {
     }
     return undefined;
   };
-  return visit(phases);
+  for (const p of phasesList) {
+    const found = visit(p);
+    if (found) return found;
+  }
+  return undefined;
 }
 
 type PlayMode =

@@ -142,9 +142,50 @@ function collectItems(itemsList: LudList): ItemBlock[] {
     if (!head || !isIdent(head) || head.name !== "item") continue;
     const values = extractItemValues(node);
     const nextSibling = children[i + 1];
+    // Default-item markers in the wild are written as `*` or `**` (and
+    // occasionally even `****`). Accept any run of asterisks.
     const isDefault =
-      !!nextSibling && isIdent(nextSibling) && nextSibling.name === "**";
+      !!nextSibling && isIdent(nextSibling) && /^\*+$/.test(nextSibling.name);
     out.push({ isDefault, values });
+  }
+  return out;
+}
+
+function normalizeAngleTokens(items: readonly LudNode[]): LudNode[] {
+  // Ludii's lexer may glue the angle delimiters onto their neighbours
+  // (e.g. `<7 7>` tokenises as `<7`, `7`, `>`). Split such idents back
+  // into a standalone `<` / `>` plus the bare token so the block parser
+  // can pair them. `<X>` paired tokens are left intact — `unwrapAngles`
+  // handles those as inline single-value blocks.
+  const out: LudNode[] = [];
+  for (const item of items) {
+    if (!item || !isIdent(item)) {
+      if (item) out.push(item);
+      continue;
+    }
+    const name = item.name;
+    if (name.length <= 1) {
+      out.push(item);
+      continue;
+    }
+    const startsLT = name.startsWith("<");
+    const endsGT = name.endsWith(">");
+    if (startsLT && endsGT) {
+      // `<X>` — keep as-is for unwrapAngles to handle.
+      out.push(item);
+      continue;
+    }
+    if (startsLT && !endsGT) {
+      out.push({ kind: "ident", name: "<", range: item.range });
+      out.push(identOrNumber(name.slice(1), item.range));
+      continue;
+    }
+    if (!startsLT && endsGT) {
+      out.push(identOrNumber(name.slice(0, -1), item.range));
+      out.push({ kind: "ident", name: ">", range: item.range });
+      continue;
+    }
+    out.push(item);
   }
   return out;
 }
@@ -154,7 +195,7 @@ function extractItemValues(itemNode: LudList): LudNode[][] {
   //   - simple cases: one ident `<5>` per slot
   //   - block cases: `<` … `>` ident tokens flanking inline nodes
   const out: LudNode[][] = [];
-  const items = itemNode.items;
+  const items = normalizeAngleTokens(itemNode.items);
   // Skip the leading `item` head and string label.
   let i = items[1] && isString(items[1]) ? 2 : 1;
   while (i < items.length) {
@@ -258,7 +299,7 @@ function stripOptions(node: LudNode): LudNode {
       changed = true;
       continue;
     }
-    if (isIdent(item) && item.name === "**") {
+    if (isIdent(item) && /^\*+$/.test(item.name)) {
       changed = true;
       continue;
     }
