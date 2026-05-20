@@ -65,9 +65,19 @@ export class ActionMove extends BaseAction {
         `ActionMove.apply: source site ${this.fromIndex} is empty.`,
       );
     }
-    return state
-      .withCell(this.fromIndex, 0)
-      .withCell(this.toIndex, movingOwner);
+    // When the source carries a stacked count — e.g. a hand seeded with
+    // `(place … "Hand" count:N)` from which pieces are placed one at a time —
+    // move a single piece out and leave the rest, so the site stays occupied
+    // until exhausted. A plain piece (count 0 or 1) is cleared as before.
+    const fromCount = state.countAtSite(this.fromIndex);
+    let next = state;
+    if (fromCount > 1) {
+      next = next.withCountAt(this.fromIndex, fromCount - 1);
+    } else {
+      next = next.withCell(this.fromIndex, 0);
+      if (fromCount === 1) next = next.withCountAt(this.fromIndex, 0);
+    }
+    return next.withCell(this.toIndex, movingOwner);
   }
 
   public override actionType(): ActionType {

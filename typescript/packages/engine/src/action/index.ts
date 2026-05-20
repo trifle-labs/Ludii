@@ -6,6 +6,7 @@ export {
   type PreviousHiddenSnapshot,
 } from "./action.js";
 export { ActionAdd, type ActionAddOptions } from "./action-add.js";
+export { ActionAddCount } from "./action-add-count.js";
 export { ActionAddPlayerToTeam } from "./action-add-player-to-team.js";
 export { ActionBet } from "./action-bet.js";
 export { ActionCopy } from "./action-copy.js";

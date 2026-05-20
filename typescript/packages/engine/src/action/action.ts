@@ -10,6 +10,7 @@
  * stubbed.
  */
 
+import type { SeededRng } from "../rng.js";
 import type { State } from "../state.js";
 import type { ActionType } from "./action-type.js";
 import type { SiteType } from "./site-type.js";
@@ -46,9 +47,11 @@ export interface Action {
   /**
    * Apply this action to the given state, returning a new state. The
    * Java method mutates a `Context`; here the action is pure: it
-   * derives a new immutable `State` from the input.
+   * derives a new immutable `State` from the input. A few stochastic
+   * actions (dice rolls) consume the optional `rng`; deterministic
+   * actions ignore it.
    */
-  apply(state: State): State;
+  apply(state: State, rng?: SeededRng): State;
 
   // ---- ActionType / category --------------------------------------------
 
@@ -117,7 +120,7 @@ export abstract class BaseAction implements Action {
   protected levelToValue = ACTION_UNDEFINED;
   protected previousHiddenSnapshot: PreviousHiddenSnapshot | undefined;
 
-  public abstract apply(state: State): State;
+  public abstract apply(state: State, rng?: SeededRng): State;
   public abstract actionType(): ActionType;
 
   public isDecision(): boolean {

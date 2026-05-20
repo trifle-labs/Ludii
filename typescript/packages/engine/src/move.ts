@@ -15,6 +15,7 @@ import {
   type SiteType,
 } from "./action/index.js";
 import { ConceptSet } from "./concept.js";
+import type { SeededRng } from "./rng.js";
 import type { State } from "./state.js";
 
 export interface MoveInit {
@@ -27,6 +28,12 @@ export interface MoveInit {
   readonly actions?: readonly Action[];
   /** Java parity: subsequent moves to play after this one (the `then` field). */
   readonly then?: readonly Move[];
+  /**
+   * Turn-model flag: when set, the mover keeps the turn after this move
+   * instead of passing to the next player. This is the MVE realisation of
+   * `(then (moveAgain))`, which in Java schedules a same-player re-move.
+   */
+  readonly moveAgain?: boolean;
 }
 
 export class Move {
@@ -38,6 +45,7 @@ export class Move {
   public readonly actions: readonly Action[];
   // biome-ignore lint/suspicious/noThenProperty: Java-parity field name from `other.move.Move.then`.
   public readonly then: readonly Move[];
+  public readonly moveAgain: boolean;
 
   public constructor(init: MoveInit) {
     if (init.siteIndices.length === 0) {
@@ -59,13 +67,14 @@ export class Move {
     this.actions = Object.freeze(init.actions ? [...init.actions] : []);
     // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
     this.then = Object.freeze(init.then ? [...init.then] : []);
+    this.moveAgain = init.moveAgain ?? false;
   }
 
-  public applyTo(state: State): State {
+  public applyTo(state: State, rng?: SeededRng): State {
     let next = state;
     if (this.actions.length > 0) {
       for (const action of this.actions) {
-        next = action.apply(next);
+        next = action.apply(next, rng);
       }
     } else {
       const site = this.siteIndices[0];
@@ -77,7 +86,7 @@ export class Move {
     // Java parity: subsequent moves chained via `then` apply after the
     // main move's actions, in declaration order.
     for (const subsequent of this.then) {
-      next = subsequent.applyTo(next);
+      next = subsequent.applyTo(next, rng);
     }
     return next;
   }
@@ -96,7 +105,8 @@ export class Move {
       this.placedOwner !== other.placedOwner ||
       this.siteIndices.length !== other.siteIndices.length ||
       this.actions.length !== other.actions.length ||
-      this.then.length !== other.then.length
+      this.then.length !== other.then.length ||
+      this.moveAgain !== other.moveAgain
     ) {
       return false;
     }
@@ -161,6 +171,25 @@ export class Move {
   /** Java parity: `Move.decisionAction()` — the first action, if any. */
   public decisionAction(): Action | undefined {
     return this.actions[0];
+  }
+
+  /**
+   * Return a copy of this move carrying a `(then …)` consequence: extra
+   * actions appended after the move's own actions, and/or the `moveAgain`
+   * turn flag.
+   */
+  public withConsequence(extraActions: readonly Action[], moveAgain: boolean): Move {
+    return new Move({
+      id: this.id,
+      label: this.label,
+      siteIndices: this.siteIndices,
+      mover: this.mover,
+      placedOwner: this.placedOwner,
+      actions: [...this.actions, ...extraActions],
+      // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
+      then: this.then,
+      moveAgain: moveAgain || this.moveAgain,
+    });
   }
 
   /**

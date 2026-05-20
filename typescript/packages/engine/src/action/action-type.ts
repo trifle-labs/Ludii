@@ -19,6 +19,7 @@ export const ACTION_TYPES = [
   "SetValueOfPlayer",
   "SetTrumpSuit",
   "UseDie",
+  "RollDice",
   "SetDiceAllEqual",
   "SetStateAndUpdateDice",
   "SetCost",

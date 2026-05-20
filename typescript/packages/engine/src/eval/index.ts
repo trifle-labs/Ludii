@@ -32,3 +32,15 @@ export {
   compileLudemeSource,
   LudemeGame,
 } from "./ludeme-game.js";
+export {
+  HEX_TILING,
+  SQUARE_TILING,
+  TRI_TILING,
+  type Tiling,
+  type TilingKind,
+  hexagonMask,
+  rhombusMask,
+  triangleMask,
+  triHexagonMask,
+  triRectangleMask,
+} from "./tilings.js";

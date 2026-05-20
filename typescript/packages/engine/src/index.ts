@@ -172,6 +172,16 @@ export {
   resolveDirection,
   resolveDirectionGroup,
   resolveDirectionTokens,
+  type Tiling,
+  type TilingKind,
+  HEX_TILING,
+  SQUARE_TILING,
+  TRI_TILING,
+  hexagonMask,
+  rhombusMask,
+  triangleMask,
+  triHexagonMask,
+  triRectangleMask,
 } from "./eval/index.js";
 export {
   FlatBoardGame,

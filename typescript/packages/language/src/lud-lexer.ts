@@ -127,8 +127,17 @@ export function lexLud(source: string): LudToken[] {
       const start = i;
       i += 1;
       let body = "";
-      while (i < length && source[i] !== '"') {
-        body += source[i];
+      // A quote ends the string only when it is *not* preceded by a
+      // backslash. This matches Ludii, where HTML metadata escapes quotes as
+      // `\"` (and sometimes `\\"`); collapsing the backslashes would let the
+      // following quote terminate the string early. Backslashes are kept
+      // literally in the body — the MVE never inspects escaped metadata text.
+      while (i < length) {
+        const c = source[i];
+        if (c === '"' && source[i - 1] !== "\\") {
+          break;
+        }
+        body += c;
         i += 1;
       }
       if (i >= length) {
@@ -170,7 +179,18 @@ export function lexLud(source: string): LudToken[] {
 
     if (isIdentChar(ch)) {
       const start = i;
+      // Option references like `<Tag:argName>` carry an internal `:` that is
+      // not a named-argument key, so keep angle-bracketed tokens whole.
+      const isOptionRef = ch === "<";
       while (i < length && isIdentChar(source[i] ?? "")) {
+        // A `:` ends a named-argument key (e.g. `at:`, `if:`). Stop right
+        // after it so `at:#1` lexes as `at:` + `#1`, matching how `at:(to)`
+        // already splits when a paren follows. Without this, `key:value`
+        // glued tokens hide the `#n` placeholder from define expansion.
+        if (!isOptionRef && source[i] === ":") {
+          i += 1;
+          break;
+        }
         i += 1;
       }
       const lexeme = source.slice(start, i);

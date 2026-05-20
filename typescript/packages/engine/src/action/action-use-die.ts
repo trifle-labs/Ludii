@@ -17,10 +17,14 @@ export class ActionUseDie extends BaseAction {
   }
 
   public override apply(state: State): State {
-    // Marking a die as used is recorded in the engine's container state
-    // (which the MVE does not yet model in detail). The state remains
-    // unchanged here; the action is still useful for move bookkeeping.
-    return state;
+    // Mark the die used by zeroing its face value, so a later `(forEach Die)`
+    // in the same turn skips it (Java sets the die's current value to 0).
+    if (this.dieIndex < 0 || this.dieIndex >= state.diceValues.length) {
+      return state;
+    }
+    const next = [...state.diceValues];
+    next[this.dieIndex] = 0;
+    return state.withDiceValues(next);
   }
   public override actionType(): ActionType {
     return ActionUseDie.TYPE;

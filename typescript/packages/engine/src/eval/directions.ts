@@ -15,46 +15,7 @@
  */
 
 import type { Dir, EvalContext } from "./eval-context.js";
-
-const ABSOLUTE: Record<string, Dir> = {
-  N: { dx: 0, dy: 1 },
-  S: { dx: 0, dy: -1 },
-  E: { dx: 1, dy: 0 },
-  W: { dx: -1, dy: 0 },
-  NE: { dx: 1, dy: 1 },
-  NW: { dx: -1, dy: 1 },
-  SE: { dx: 1, dy: -1 },
-  SW: { dx: -1, dy: -1 },
-};
-
-/** Canonical North-facing offsets for the relative direction family. */
-const RELATIVE_NORTH: Record<string, Dir> = {
-  Forward: { dx: 0, dy: 1 },
-  Forwards: { dx: 0, dy: 1 },
-  Backward: { dx: 0, dy: -1 },
-  Backwards: { dx: 0, dy: -1 },
-  Rightward: { dx: 1, dy: 0 },
-  Rightwards: { dx: 1, dy: 0 },
-  Leftward: { dx: -1, dy: 0 },
-  Leftwards: { dx: -1, dy: 0 },
-  FR: { dx: 1, dy: 1 },
-  FL: { dx: -1, dy: 1 },
-  BR: { dx: 1, dy: -1 },
-  BL: { dx: -1, dy: -1 },
-};
-
-function group(...names: string[]): Dir[] {
-  const out: Dir[] = [];
-  for (const n of names) {
-    const d = ABSOLUTE[n];
-    if (d) out.push(d);
-  }
-  return out;
-}
-
-const ORTHOGONAL = group("N", "E", "S", "W");
-const DIAGONAL = group("NE", "SE", "SW", "NW");
-const ALL = [...ORTHOGONAL, ...DIAGONAL];
+import { type Tiling, SQUARE_TILING } from "./tilings.js";
 
 /**
  * Rotate a canonical North-facing offset for the given player's facing.
@@ -69,50 +30,50 @@ function rotateForPlayer(dir: Dir, player: number): Dir {
   return dir;
 }
 
-/** Resolve a single direction token to its step offset for `player`. */
+/**
+ * Resolve a single direction token to its step offset for `player` on the
+ * given tiling (square by default).
+ */
 export function resolveDirection(
   name: string,
   player: number,
+  tiling: Tiling = SQUARE_TILING,
 ): Dir | undefined {
-  const abs = ABSOLUTE[name];
+  const abs = tiling.absolute[name];
   if (abs) return abs;
-  const rel = RELATIVE_NORTH[name];
+  const rel = tiling.relative[name];
   if (rel) return rotateForPlayer(rel, player);
   return undefined;
 }
 
-/** Resolve a grouped direction set keyword to its member offsets. */
-export function resolveDirectionGroup(name: string): Dir[] | undefined {
-  switch (name) {
-    case "Orthogonal":
-    case "Adjacent":
-      return [...ORTHOGONAL];
-    case "Diagonal":
-      return [...DIAGONAL];
-    case "All":
-      return [...ALL];
-    default:
-      return undefined;
-  }
+/** Resolve a grouped direction-set keyword to its member offsets. */
+export function resolveDirectionGroup(
+  name: string,
+  tiling: Tiling = SQUARE_TILING,
+): Dir[] | undefined {
+  const g = tiling.groups[name];
+  return g ? [...g] : undefined;
 }
 
 /**
  * Resolve a list of direction tokens (a `(directions {…})` body or a bare
- * group keyword) into concrete offsets for the context's mover.
+ * group keyword) into concrete offsets for the context's mover, using the
+ * board's tiling.
  */
 export function resolveDirectionTokens(
   tokens: readonly string[],
   ctx: EvalContext,
 ): Dir[] {
   const player = ctx.player;
+  const tiling = ctx.board.tiling;
   const out: Dir[] = [];
   for (const token of tokens) {
-    const grouped = resolveDirectionGroup(token);
+    const grouped = resolveDirectionGroup(token, tiling);
     if (grouped) {
       out.push(...grouped);
       continue;
     }
-    const single = resolveDirection(token, player);
+    const single = resolveDirection(token, player, tiling);
     if (single) out.push(single);
   }
   return out;

@@ -18,6 +18,8 @@ import type { Context } from "../context.js";
 import type { Move } from "../move.js";
 import type { State } from "../state.js";
 import { FlatTopology } from "../topology.js";
+import type { Trajectories } from "./graph/trajectories.js";
+import { type Tiling, SQUARE_TILING } from "./tilings.js";
 
 /** Sentinel for "no site" (Java: Constants.OFF = -1). */
 export const OFF = -1;
@@ -48,6 +50,18 @@ export interface EvalFrame {
 }
 
 /**
+ * A mancala sowing track: an ordered ring (or line) of site indices that
+ * `(sow)` walks and `(sites Track)` / `(trackSite)` read. `owner` is the
+ * player the track belongs to (0 = shared / unowned).
+ */
+export interface MancalaTrack {
+  readonly name: string;
+  readonly sites: readonly number[];
+  readonly loop: boolean;
+  readonly owner: number;
+}
+
+/**
  * Flat rectangular board view the interpreter evaluates against. Wraps
  * `FlatTopology` and adds the x/y ⇄ site conversions ludeme functions need
  * for direction stepping.
@@ -56,31 +70,130 @@ export class InterpBoard {
   public readonly topo: FlatTopology;
   public readonly width: number;
   public readonly height: number;
+  /** Tiling (square / hex) — supplies the direction offset tables. */
+  public readonly tiling: Tiling;
+  /**
+   * On-board mask for non-rectangular shapes (e.g. a hexagonal outline laid
+   * on a square bounding box). `width*height` flags; undefined ⇒ every cell
+   * in the bounding box is on-board.
+   */
+  public readonly onBoard?: readonly boolean[];
+  /** Global cell index where player p's hand begins (1-based; [0] unused). */
+  public readonly handStart: readonly number[];
+  /** Number of sites in player p's hand (1-based; [0] unused). */
+  public readonly handSizes: readonly number[];
+  /** Mancala sowing tracks declared on the board (empty for non-sow games). */
+  public readonly tracks: readonly MancalaTrack[];
+  /**
+   * Global cell indices of a mancala board's store cells (the captured-seed
+   * holes), in declaration order. `FirstSite` / `LastSite` and a player-store
+   * `(map …)` resolve through these. Empty for `store:None` and non-sow games.
+   */
+  public readonly stores: readonly number[];
+  /**
+   * When the board was built from the graph algebra (merge / dual / concentric
+   * / …), this carries the geometric adjacency. Site geometry and direction
+   * stepping delegate here instead of to the rectangular lattice.
+   */
+  public readonly traj?: Trajectories;
 
-  public constructor(width: number, height: number) {
+  public constructor(
+    width: number,
+    height: number,
+    handStart: readonly number[] = [],
+    handSizes: readonly number[] = [],
+    tiling: Tiling = SQUARE_TILING,
+    onBoard?: readonly boolean[],
+    tracks: readonly MancalaTrack[] = [],
+    stores: readonly number[] = [],
+    traj?: Trajectories,
+  ) {
     this.topo = new FlatTopology(width, height);
     this.width = width;
     this.height = height;
+    this.tiling = tiling;
+    this.onBoard = onBoard;
+    this.handStart = handStart;
+    this.handSizes = handSizes;
+    this.tracks = tracks;
+    this.stores = stores;
+    this.traj = traj;
   }
 
+  /** Board sites only (used for topology queries). Hand sites are appended
+   * to `State.cells` beyond this index. Holes in the bounding box are still
+   * counted here (state stays rectangular); use `isOnBoard` to skip them. */
   public get numSites(): number {
-    return this.width * this.height;
+    return this.traj ? this.traj.numSites : this.width * this.height;
+  }
+
+  /** True if `site` is a real board cell (false for bounding-box holes). */
+  public isOnBoard(site: number): boolean {
+    if (site < 0 || site >= this.numSites) return false;
+    if (this.traj) return true;
+    return this.onBoard ? this.onBoard[site] === true : true;
+  }
+
+  /** Single step in a named compass direction (graph boards only). */
+  public stepDir(site: number, dir: string): number {
+    return this.traj ? this.traj.step(site, dir) : OFF;
+  }
+
+  /** Ray of sites in a named compass direction (graph boards only). */
+  public rayDir(site: number, dir: string): number[] {
+    return this.traj ? this.traj.ray(site, dir) : [];
+  }
+
+  /** Global cell index for player p's hand slot k, or OFF if absent. */
+  public handSite(player: number, idx: number): number {
+    const start = this.handStart[player];
+    if (start === undefined) return OFF;
+    const size = this.handSizes[player] ?? 0;
+    if (idx < 0 || idx >= size) return OFF;
+    return start + idx;
+  }
+
+  /** All global cell indices in player p's hand. */
+  public handSites(player: number): number[] {
+    const start = this.handStart[player];
+    if (start === undefined) return [];
+    const size = this.handSizes[player] ?? 0;
+    const out: number[] = [];
+    for (let i = 0; i < size; i += 1) out.push(start + i);
+    return out;
   }
 
   public xOf(site: number): number {
-    return site % this.width;
+    return this.traj ? this.traj.xOf(site) : site % this.width;
   }
 
   public yOf(site: number): number {
-    return Math.floor(site / this.width);
+    return this.traj ? this.traj.yOf(site) : Math.floor(site / this.width);
   }
 
-  /** Site index at (x, y), or OFF if the coordinate lies off the board. */
+  /** Site index at (x, y), or OFF if off the bounding box or a masked hole.
+   * For graph boards this returns the nearest site within half a unit. */
   public siteAt(x: number, y: number): number {
+    if (this.traj) {
+      let best = OFF;
+      let bestD = 0.25; // within half a unit
+      for (let s = 0; s < this.traj.numSites; s += 1) {
+        const dx = this.traj.xOf(s) - x;
+        const dy = this.traj.yOf(s) - y;
+        const d = dx * dx + dy * dy;
+        if (d < bestD) {
+          bestD = d;
+          best = s;
+        }
+      }
+      return best;
+    }
     if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
       return OFF;
     }
-    return y * this.width + x;
+    const idx = y * this.width + x;
+    if (this.onBoard && this.onBoard[idx] !== true) return OFF;
+    return idx;
   }
 }
 
@@ -127,6 +240,22 @@ export class EvalContext {
 
   public withContext(context: Context): EvalContext {
     return new EvalContext(context, this.board, this.frame);
+  }
+
+  /**
+   * The evaluation context that would result from applying `move` to the
+   * current state, *without* advancing the mover. The move is recorded in a
+   * throwaway trial so `(last …)` resolves. Used by `(do … ifAfterwards:)`
+   * and `(satisfy …)` to test a board predicate on the post-move position.
+   */
+  public applyHypothetical(move: Move): EvalContext {
+    const state = move.applyTo(this.context.state);
+    const trial = this.context.trial.withMove(move, false, -1);
+    return new EvalContext(
+      this.context.withState(state).withTrial(trial),
+      this.board,
+      this.frame,
+    );
   }
 }
 
