@@ -1,3 +1,4 @@
+// @java Core/src/other/action/ActionType.java ActionType
 /**
  * Java parity:
  * - Core/src/other/action/ActionType.java — enum-shape port (one

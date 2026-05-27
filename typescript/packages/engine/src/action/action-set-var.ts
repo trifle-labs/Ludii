@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionSetVar.java ActionSetVar
 /** Java parity: Core/src/other/action/state/ActionSetVar.java. */
 
 import type { State } from "../state.js";

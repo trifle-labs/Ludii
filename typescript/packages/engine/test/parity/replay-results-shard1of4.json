@@ -1,0 +1,837 @@
+{
+  "summary": {
+    "totalTrials": 62,
+    "elapsed_s": 227.7,
+    "buckets": {
+      "COMPILE_FAIL": 1,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 38,
+      "WINNER_MISMATCH": 1,
+      "OUTCOME_OK": 9,
+      "REPLAY_OK_NO_OUTCOME": 13
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [
+      [
+        "ENOENT: no such file or directory, open '/Users/billy/GitHub",
+        1
+      ]
+    ],
+    "MOVE_MISMATCH": [
+      [
+        "board/war/replacement/checkmate/chaturanga/Main Chator",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chaturanga/Sarvatobhadra",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chaturanga/Shatranj (Iraq)",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chaturanga/Shatranj al-Kabir",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chaturanga/Shatranj ar-Rumiya",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chaturanga/Shatren",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chaturanga/Sittuyin",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chess/Acedrex (Alfonso)",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chess/Alice Chess",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chess/Atomic Chess",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chess/Brusky Chess",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chess/De Vasa Chess",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chess/Fischer Random Chess",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chess/Four-Player Chess",
+        1
+      ],
+      [
+        "board/war/replacement/checkmate/chess/Grande Acedrex",
+        1
+      ]
+    ]
+  },
+  "exampleMismatches": [
+    {
+      "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
+      "ply": 77,
+      "recMove": "mover=2,from=43,to=35",
+      "tsMoveCount": 29,
+      "sampleTsMoves": [
+        "mover=2,from=2,to=19,isPass=false",
+        "mover=2,from=2,to=8,isPass=false",
+        "mover=2,from=2,to=17,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/war/replacement/checkmate/chaturanga/Sarvatobhadra",
+      "ply": 4,
+      "recMove": "mover=1,from=-1,to=-1",
+      "tsMoveCount": 15,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=0,isPass=false",
+        "mover=1,from=2,to=18,isPass=false",
+        "mover=1,from=2,to=0,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj (Iraq)",
+      "ply": 165,
+      "recMove": "mover=2,from=31,to=22",
+      "tsMoveCount": 21,
+      "sampleTsMoves": [
+        "mover=2,from=12,to=20,isPass=false",
+        "mover=2,from=12,to=13,isPass=false",
+        "mover=2,from=12,to=14,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj al-Kabir",
+      "ply": 1,
+      "recMove": "mover=2,from=116,to=119",
+      "tsMoveCount": 26,
+      "sampleTsMoves": [
+        "mover=2,from=89,to=78,isPass=false",
+        "mover=2,from=90,to=79,isPass=false",
+        "mover=2,from=91,to=80,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj ar-Rumiya",
+      "ply": 0,
+      "recMove": "mover=1,from=19,to=18",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
+  "perTrial": [
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Chandaraki",
+      "plyReplayed": 510,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chandaraki/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Chatur",
+      "plyReplayed": 321,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chatur/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1124",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
+      "plyReplayed": 577,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (al-Adli)",
+      "plyReplayed": 393,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (al-Adli)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
+      "plyReplayed": 72,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 72",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
+      "ply": 77,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=43,to=35",
+      "tsMoveCount": 29,
+      "sampleTsMoves": [
+        "mover=2,from=2,to=19,isPass=false",
+        "mover=2,from=2,to=8,isPass=false",
+        "mover=2,from=2,to=17,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Main Chator (Selangor)",
+      "plyReplayed": 150,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator (Selangor)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Ouk Chatrang",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Ouk Chatrang/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Persian Chess with a Queen",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Persian Chess with a Queen/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Rumi Shatranj",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2504",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Rumi Shatranj/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Sarvatobhadra",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=-1,to=-1",
+      "tsMoveCount": 15,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=0,isPass=false",
+        "mover=1,from=2,to=18,isPass=false",
+        "mover=1,from=2,to=0,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Sarvatobhadra/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Shataranja",
+      "plyReplayed": 400,
+      "recWinner": 2,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        2,
+        1
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shataranja/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj",
+      "plyReplayed": 355,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj (14x14)",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj (14x14)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj (Iraq)",
+      "ply": 165,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=31,to=22",
+      "tsMoveCount": 21,
+      "sampleTsMoves": [
+        "mover=2,from=12,to=20,isPass=false",
+        "mover=2,from=12,to=13,isPass=false",
+        "mover=2,from=12,to=14,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj (Iraq)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj Diwana Shah",
+      "plyReplayed": 303,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj Diwana Shah/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj al-Kabir",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=116,to=119",
+      "tsMoveCount": 26,
+      "sampleTsMoves": [
+        "mover=2,from=89,to=78,isPass=false",
+        "mover=2,from=90,to=79,isPass=false",
+        "mover=2,from=91,to=80,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj al-Kabir/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj ar-Rumiya",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=19,to=18",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj ar-Rumiya/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatren",
+      "ply": 199,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=2,to=9",
+      "tsMoveCount": 15,
+      "sampleTsMoves": [
+        "mover=2,from=17,to=34,isPass=false",
+        "mover=2,from=17,to=11,isPass=false",
+        "mover=2,from=17,to=0,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatren/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Sittuyin",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=64,to=14",
+      "tsMoveCount": 5,
+      "sampleTsMoves": [
+        "mover=1,from=64,to=1,isPass=false",
+        "mover=1,from=65,to=1,isPass=false",
+        "mover=1,from=66,to=1,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Sittuyin/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Tsatsarandi",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Tsatsarandi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Acedrex (Alfonso)",
+      "ply": 213,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=1,to=10",
+      "tsMoveCount": 14,
+      "sampleTsMoves": [
+        "mover=2,from=5,to=22,isPass=false",
+        "mover=2,from=5,to=11,isPass=false",
+        "mover=2,from=5,to=20,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Acedrex (Alfonso)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Alice Chess",
+      "ply": 3,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=63,to=15",
+      "tsMoveCount": 19,
+      "sampleTsMoves": [
+        "mover=2,from=47,to=39,isPass=false",
+        "mover=2,from=48,to=32,isPass=false",
+        "mover=2,from=48,to=40,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Atomic Chess",
+      "ply": 34,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=2,to=11",
+      "tsMoveCount": 27,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=8,isPass=false",
+        "mover=1,from=0,to=16,isPass=false",
+        "mover=1,from=0,to=24,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Atomic Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Brusky Chess",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=7,to=39",
+      "tsMoveCount": 43,
+      "sampleTsMoves": [
+        "mover=1,from=2,to=22,isPass=false",
+        "mover=1,from=2,to=46,isPass=false",
+        "mover=1,from=2,to=68,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Brusky Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "COMPILE_FAIL",
+      "game": "board/war/replacement/checkmate/chess/Chessense",
+      "detail": "ENOENT: no such file or directory, open '/Users/billy/GitHub/trifle-labs/Ludii/Common/res/lud/board/war/replacement/checkmate/chess/Chessense.lud'",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Chessence/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chess/Currierspiel",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Currierspiel/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/De Vasa Chess",
+      "ply": 13,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=79,to=64",
+      "tsMoveCount": 46,
+      "sampleTsMoves": [
+        "mover=2,from=27,to=20,isPass=false",
+        "mover=2,from=27,to=14,isPass=false",
+        "mover=2,from=32,to=18,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/De Vasa Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chess/Double Chess",
+      "plyReplayed": 97,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 97",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Fischer Random Chess",
+      "ply": 5,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=61,to=54",
+      "tsMoveCount": 14,
+      "sampleTsMoves": [
+        "mover=2,from=38,to=30,isPass=false",
+        "mover=2,from=40,to=32,isPass=false",
+        "mover=2,from=49,to=41,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Fischer Random Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Four-Player Chess",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=129,to=7",
+      "tsMoveCount": 20,
+      "sampleTsMoves": [
+        "mover=1,from=129,to=8,isPass=false",
+        "mover=1,from=129,to=4,isPass=false",
+        "mover=1,from=134,to=18,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Four-Player Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Grande Acedrex",
+      "ply": 3,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=137,to=128",
+      "tsMoveCount": 424,
+      "sampleTsMoves": [
+        "mover=2,from=90,to=78,isPass=false",
+        "mover=2,from=96,to=84,isPass=false",
+        "mover=2,from=97,to=85,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Grande Acedrex/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Horde Chess",
+      "ply": 79,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=19,to=18",
+      "tsMoveCount": 3,
+      "sampleTsMoves": [
+        "mover=1,from=4,to=12,isPass=false",
+        "mover=1,from=4,to=13,isPass=false",
+        "mover=1,from=4,to=11,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Horde Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Kriegspiel (Chess)",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=0,to=60",
+      "tsMoveCount": 768,
+      "sampleTsMoves": [
+        "mover=2,from=48,to=16,isPass=false",
+        "mover=2,from=48,to=17,isPass=false",
+        "mover=2,from=48,to=18,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Kriegspiel (Chess)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Lombard Chess",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=60,to=44",
+      "tsMoveCount": 30,
+      "sampleTsMoves": [
+        "mover=2,from=48,to=40,isPass=false",
+        "mover=2,from=48,to=32,isPass=false",
+        "mover=2,from=49,to=41,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Lombard Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Loop Chess",
+      "ply": 49,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=70,to=42",
+      "tsMoveCount": 39,
+      "sampleTsMoves": [
+        "mover=2,from=33,to=25,isPass=false",
+        "mover=2,from=33,to=24,isPass=false",
+        "mover=2,from=34,to=26,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Loop Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chess/Maharajah Chess",
+      "plyReplayed": 111,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Maharajah Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chess/Medieval Chess",
+      "plyReplayed": 600,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Medieval Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Nodal Chess",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=6,to=12",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Nodal Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Omega Chess",
+      "ply": 16,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=22,to=42",
+      "tsMoveCount": 61,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=4,isPass=false",
+        "mover=1,from=0,to=2,isPass=false",
+        "mover=1,from=1,to=9,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Omega Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Promotion Chess",
+      "ply": 96,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=26,to=19",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=2,from=26,to=58,isPass=false",
+        "mover=2,from=26,to=62,isPass=false",
+        "mover=2,from=63,to=55,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Promotion Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Russian Fortress Chess",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=194,to=152",
+      "tsMoveCount": 48,
+      "sampleTsMoves": [
+        "mover=1,from=192,to=136,isPass=false",
+        "mover=1,from=192,to=137,isPass=false",
+        "mover=1,from=192,to=148,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Russian Fortress Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Schachzabel",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=8,to=24",
+      "tsMoveCount": 20,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=18,isPass=false",
+        "mover=1,from=1,to=16,isPass=false",
+        "mover=1,from=2,to=20,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Schachzabel/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Shakhmaty",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=13,to=29",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=31,isPass=false",
+        "mover=1,from=-1,to=31,isPass=false",
+        "mover=1,from=-1,to=31,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Shakhmaty/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Short Assize",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=43,to=35",
+      "tsMoveCount": 20,
+      "sampleTsMoves": [
+        "mover=2,from=40,to=32,isPass=false",
+        "mover=2,from=41,to=33,isPass=false",
+        "mover=2,from=42,to=34,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Short Assize/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Spartan Chess",
+      "ply": 5,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=51,to=33",
+      "tsMoveCount": 26,
+      "sampleTsMoves": [
+        "mover=2,from=40,to=33,isPass=false",
+        "mover=2,from=45,to=38,isPass=false",
+        "mover=2,from=45,to=36,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Spartan Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Stratomic",
+      "ply": 39,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=83,to=38",
+      "tsMoveCount": 51,
+      "sampleTsMoves": [
+        "mover=2,from=54,to=44,isPass=false",
+        "mover=2,from=54,to=43,isPass=false",
+        "mover=2,from=54,to=45,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Stratomic/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Ultimate Chess",
+      "ply": 55,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=54,to=37",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=42,to=33,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Ultimate Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Viking Chess",
+      "ply": 133,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=81,to=56",
+      "tsMoveCount": 41,
+      "sampleTsMoves": [
+        "mover=2,from=8,to=21,isPass=false",
+        "mover=2,from=18,to=29,isPass=false",
+        "mover=2,from=19,to=30,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Viking Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chess/Welschschach",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Welschschach/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
+      "ply": 6,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=208,to=179",
+      "tsMoveCount": 56,
+      "sampleTsMoves": [
+        "mover=2,from=150,to=135,isPass=false",
+        "mover=2,from=151,to=136,isPass=false",
+        "mover=2,from=152,to=137,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/shogi/Hasami Shogi",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/954",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hasami Shogi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/shogi/Kyoto Shogi",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=0,to=1",
+      "tsMoveCount": 10,
+      "sampleTsMoves": [
+        "mover=1,from=2,to=3,isPass=false",
+        "mover=1,from=2,to=1,isPass=false",
+        "mover=1,from=2,to=8,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Kyoto Shogi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/shogi/Seireigi",
+      "ply": 16,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=1,to=18",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=1,from=2,to=11,isPass=false",
+        "mover=1,from=2,to=12,isPass=false",
+        "mover=1,from=3,to=12,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Seireigi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/shogi/Tai Shogi",
+      "plyReplayed": 5,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 5",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Tai Shogi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/shogi/Tenjiku Shogi",
+      "ply": 5,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=198,to=70",
+      "tsMoveCount": 68,
+      "sampleTsMoves": [
+        "mover=2,from=164,to=148,isPass=false",
+        "mover=2,from=169,to=154,isPass=false",
+        "mover=2,from=169,to=154,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Tenjiku Shogi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/shogi/Unashogi",
+      "plyReplayed": 1,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 1",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Unashogi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/xiangqi/Janggi",
+      "ply": 3,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=88,to=69",
+      "tsMoveCount": 36,
+      "sampleTsMoves": [
+        "mover=2,from=55,to=46,isPass=false",
+        "mover=2,from=55,to=54,isPass=false",
+        "mover=2,from=56,to=47,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Janggi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/xiangqi/Manzhouqi",
+      "ply": 12,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=37,to=56",
+      "tsMoveCount": 42,
+      "sampleTsMoves": [
+        "mover=1,from=2,to=22,isPass=false",
+        "mover=1,from=2,to=18,isPass=false",
+        "mover=1,from=3,to=13,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Manzhouqi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=114,to=41",
+      "tsMoveCount": 46,
+      "sampleTsMoves": [
+        "mover=1,from=154,to=136,isPass=false",
+        "mover=1,from=173,to=213,isPass=false",
+        "mover=1,from=173,to=137,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/xiangqi/Xiangqi",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=1,to=20",
+      "tsMoveCount": 40,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=9,isPass=false",
+        "mover=1,from=0,to=18,isPass=false",
+        "mover=1,from=2,to=22,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Xiangqi/RandomTrial_1.txt"
+    }
+  ]
+}

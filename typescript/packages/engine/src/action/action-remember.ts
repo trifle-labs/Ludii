@@ -1,3 +1,5 @@
+// @java Core/src/other/action/state/ActionRememberValue.java ActionRememberValue
+// @java Core/src/other/action/state/ActionForgetValue.java ActionForgetValue
 /**
  * Java parity:
  * - Core/src/other/action/state/ActionRememberValue.java

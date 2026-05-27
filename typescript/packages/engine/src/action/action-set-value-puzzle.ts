@@ -1,3 +1,4 @@
+// @java Core/src/other/action/puzzle/ActionSet.java ActionSet
 /**
  * Java parity: Core/src/other/action/puzzle/ActionSet.java —
  * sets one of the puzzle's allowable values at a site; yields

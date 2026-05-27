@@ -1,3 +1,4 @@
+// @java Core/src/other/action/move/ActionMoveN.java ActionMoveN
 /**
  * Java parity: Core/src/other/action/move/ActionMoveN.java — move N
  * pieces from a stack/site to another.

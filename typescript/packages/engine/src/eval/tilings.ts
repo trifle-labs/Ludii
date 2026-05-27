@@ -80,9 +80,34 @@ export const SQUARE_TILING: Tiling = {
   groups: {
     Orthogonal: SQUARE_ORTHOGONAL,
     Diagonal: SQUARE_DIAGONAL,
-    // Java (Face.stepsTo): on a square board `Adjacent` tags both edge- and
-    // vertex-sharing neighbours, i.e. all 8 directions.
+    // Java (Face.adjacent / Topology.supportedAdjacentDirections for SiteType.Cell):
+    // on a square board a *cell's* `Adjacent` relation tags both edge- and corner-
+    // sharing faces, i.e. all 8 directions — which is why Amazons' bare `(move
+    // Slide)` (whose Java default is `AbsoluteDirection.Adjacent`) moves like a
+    // chess queen.
     Adjacent: SQUARE_ALL,
+    All: SQUARE_ALL,
+  },
+};
+
+/**
+ * Square tiling for a `use:Vertex` board (Go-style intersections). Unlike a
+ * *cell* board, a square *vertex* graph has edges only along the grid lines, so
+ * Java's `Topology.supportedAdjacentDirections(SiteType.Vertex)` is the four
+ * orthogonal neighbours — there is no diagonal edge between intersections. A
+ * bare `(move Slide)` / `(move Step)` (default direction `AbsoluteDirection.
+ * Adjacent`) therefore runs orthogonally only, not like a queen. `Diagonal` and
+ * `All` keep the full compass set: a game that explicitly asks for `Diagonal`
+ * directions still resolves the corner neighbours geometrically.
+ */
+export const SQUARE_VERTEX_TILING: Tiling = {
+  kind: "square",
+  absolute: SQUARE_ABSOLUTE,
+  relative: SQUARE_RELATIVE,
+  groups: {
+    Orthogonal: SQUARE_ORTHOGONAL,
+    Diagonal: SQUARE_DIAGONAL,
+    Adjacent: SQUARE_ORTHOGONAL,
     All: SQUARE_ALL,
   },
 };

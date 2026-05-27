@@ -1,3 +1,4 @@
+// @java Core/src/other/action/cards/ActionSetTrumpSuit.java ActionSetTrumpSuit
 /** Java parity: Core/src/other/action/state/ActionSetTrumpSuit.java. */
 
 import type { State } from "../state.js";

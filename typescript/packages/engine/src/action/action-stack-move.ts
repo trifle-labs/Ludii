@@ -1,3 +1,4 @@
+// @java Core/src/other/action/move/ActionSubStackMove.java ActionSubStackMove
 /**
  * Java parity:
  * - Core/src/other/action/move/ActionSubStackMove.java

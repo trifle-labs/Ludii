@@ -1,3 +1,4 @@
+// @java Core/src/other/action/graph/ActionSetPhase.java ActionSetPhase
 /** Java parity: Core/src/other/action/state/ActionSetPhase.java (player phase). */
 
 import type { State } from "../state.js";

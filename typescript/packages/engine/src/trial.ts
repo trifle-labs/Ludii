@@ -1,3 +1,4 @@
+// @java Core/src/other/trial/Trial.java Trial
 /**
  * Java parity:
  * - Core/src/other/trial/Trial.java

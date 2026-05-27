@@ -1,3 +1,4 @@
+// @java Core/src/other/action/others/ActionSwap.java ActionSwap
 /** Java parity: Core/src/other/action/move/ActionSwap.java. */
 
 import type { State } from "../state.js";

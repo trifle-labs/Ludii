@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionAddPlayerToTeam.java ActionAddPlayerToTeam
 /** Java parity: Core/src/other/action/state/ActionAddPlayerToTeam.java. */
 
 import type { State } from "../state.js";

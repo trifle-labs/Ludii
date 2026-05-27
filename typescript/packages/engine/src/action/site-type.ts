@@ -1,3 +1,4 @@
+// @java Core/src/game/types/board/SiteType.java SiteType
 /**
  * Java parity:
  * - Core/src/game/types/board/SiteType.java — the enum-shape port.

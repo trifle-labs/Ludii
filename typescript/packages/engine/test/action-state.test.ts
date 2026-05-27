@@ -156,9 +156,22 @@ describe("state-channel actions", () => {
     assert.equal(back.cellAt(3).owner, 0);
   });
 
-  it("ActionTrigger / ActionStoreStateInContext are no-ops on state", () => {
+  it("ActionTrigger sets the player's trigger bit (Java triggers(player, true))", () => {
     const s = emptyState(9);
-    assert.equal(new ActionTrigger("ev", 1).apply(s), s);
-    assert.equal(new ActionStoreStateInContext().apply(s), s);
+    assert.equal(s.isTriggered(1), false);
+    const after = new ActionTrigger("ev", 1).apply(s);
+    // Java ActionTrigger.apply → state.triggers(player, true); isTriggered
+    // ignores the event name and tests only the player's bit.
+    assert.equal(after.isTriggered(1), true);
+    assert.equal(after.isTriggered(2), false);
+    assert.equal(s.isTriggered(1), false); // original unchanged (immutable)
+  });
+
+  it("ActionStoreStateInContext records the state hash (Java storeCurrentState)", () => {
+    const s = emptyState(9);
+    const after = new ActionStoreStateInContext().apply(s);
+    // Faithful to Java: storedState = state.stateHash() at apply time.
+    assert.equal(after.storedState, s.hash());
+    assert.equal(s.storedState, 0); // default before any store
   });
 });

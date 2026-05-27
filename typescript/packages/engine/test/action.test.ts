@@ -84,9 +84,13 @@ describe("ActionMove", () => {
     assert.equal(moved.cellAt(4).owner, 1);
   });
 
-  it("throws if the source is empty", () => {
+  it("is a no-op if the source is empty (Java parity)", () => {
+    // Java ActionMoveTopPiece.apply: "If the origin is empty we do not apply
+    // this action" → returns the state unchanged rather than throwing.
     const s = emptyState(9);
-    assert.throws(() => new ActionMove({ from: 0, to: 4 }).apply(s));
+    const after = new ActionMove({ from: 0, to: 4 }).apply(s);
+    assert.equal(after.cellAt(0).owner, 0);
+    assert.equal(after.cellAt(4).owner, 0);
   });
 
   it("reports the action type and from/to", () => {

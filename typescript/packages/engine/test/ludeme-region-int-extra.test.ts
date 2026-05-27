@@ -33,19 +33,22 @@ function applyCentre(src: string) {
 }
 
 describe("LudemeGame: (regionSite …)/(max …)/(min …) ints", () => {
+  // Probe the resolved int via `set Value` (not `set Counter`): the automatic
+  // per-move counter increment (Java Counter.java) would off-by-one a counter
+  // probe, whereas the per-player value layer is untouched by it.
   it("(regionSite <region> index:<n>) reads the nth site", () => {
-    const next = applyCentre(game(`(set Counter (regionSite (sites {3 5 7}) index:1))`));
-    assert.equal(next.state.counter, 5, "index 1 of {3 5 7} is 5");
+    const next = applyCentre(game(`(set Value Mover (regionSite (sites {3 5 7}) index:1))`));
+    assert.equal(next.state.valuePlayer(1), 5, "index 1 of {3 5 7} is 5");
   });
 
   it("(max <region>) is the largest site index", () => {
-    const next = applyCentre(game(`(set Counter (max (sites {3 5 7})))`));
-    assert.equal(next.state.counter, 7);
+    const next = applyCentre(game(`(set Value Mover (max (sites {3 5 7})))`));
+    assert.equal(next.state.valuePlayer(1), 7);
   });
 
   it("(min <region>) is the smallest site index", () => {
-    const next = applyCentre(game(`(set Counter (min (sites {3 5 7})))`));
-    assert.equal(next.state.counter, 3);
+    const next = applyCentre(game(`(set Value Mover (min (sites {3 5 7})))`));
+    assert.equal(next.state.valuePlayer(1), 3);
   });
 });
 

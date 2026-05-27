@@ -78,8 +78,24 @@ describe("LudemeGame: interprets Tic-Tac-Toe", () => {
   });
 
   it("reports a draw when the board fills with no line", () => {
+    // Java parity: a full board with no line does not end immediately. Both
+    // players forced-pass in turn (the play rules yield no move), and the
+    // implicit all-pass terminator then declares a draw. The recorded Java
+    // trial closes with two `forced=true` Pass moves followed by winner=0.
     const game = compileLudemeSource(TIC_TAC_TOE);
-    const ctx = playSites(game, [0, 1, 2, 4, 3, 5, 7, 6, 8]);
+    let ctx = playSites(game, [0, 1, 2, 4, 3, 5, 7, 6, 8]);
+    assert.equal(ctx.over, false, "board full but no all-pass yet");
+    // Player 2 forced-passes.
+    const pass2 = game.moves(ctx);
+    assert.equal(pass2.length, 1);
+    assert.equal(pass2[0]?.isPass(), true);
+    ctx = game.apply(ctx, pass2[0] as Move);
+    assert.equal(ctx.over, false, "one pass is not all-pass");
+    // Player 1 forced-passes → all players passed → draw.
+    const pass1 = game.moves(ctx);
+    assert.equal(pass1.length, 1);
+    assert.equal(pass1[0]?.isPass(), true);
+    ctx = game.apply(ctx, pass1[0] as Move);
     assert.equal(ctx.over, true);
     assert.equal(ctx.winner, 0);
   });
@@ -127,6 +143,23 @@ describe("LudemeGame: parity with FlatBoardGame", () => {
           tctx.state.cells,
           `cells diverged after site ${site}`,
         );
+        if (tctx.over) {
+          // Terminal step. FlatBoardGame ends the turn in place (mover frozen);
+          // the Java-faithful interpreter instead rotates the mover and, for a
+          // board-full draw, does not end until both players forced-pass and
+          // the implicit all-pass terminator fires. Reconcile here: play out
+          // the interpreter's forced passes (a win ends immediately on both
+          // sides, so only the draw needs this), then confirm the outcome.
+          if (tctx.winner === 0) {
+            let guard = 0;
+            while (!ictx.over && guard++ < 8) {
+              ictx = interp.apply(ictx, interp.moves(ictx)[0] as Move);
+            }
+          }
+          assert.equal(ictx.over, true, `interp not over after site ${site}`);
+          assert.equal(ictx.winner, tctx.winner, `winner diverged after ${site}`);
+          break;
+        }
         assert.equal(ictx.over, tctx.over, `over diverged after ${site}`);
         assert.equal(ictx.winner, tctx.winner, `winner diverged after ${site}`);
         assert.equal(ictx.mover, tctx.mover, `mover diverged after ${site}`);

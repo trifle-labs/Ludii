@@ -1,3 +1,4 @@
+// @java Core/src/other/action/move/move/ActionMoveTopPiece.java ActionMoveTopPiece
 /**
  * Java parity: Core/src/other/action/move/move/ActionMoveTopPiece.java
  * — move only the piece on the top of a stack to another site.

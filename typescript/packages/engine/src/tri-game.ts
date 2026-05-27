@@ -1,3 +1,4 @@
+// @java Core/src/game/Game.java Game (TS template subset)
 /**
  * Concrete `Game` for Y-style connection games played on a triangular
  * board of hexagonal cells — Y by Schensted & Titus (1953), and its

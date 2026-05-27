@@ -1,3 +1,4 @@
+// @java Core/src/other/action/die/ActionUseDie.java ActionUseDie
 /** Java parity: Core/src/other/action/die/ActionUseDie.java. */
 
 import type { State } from "../state.js";

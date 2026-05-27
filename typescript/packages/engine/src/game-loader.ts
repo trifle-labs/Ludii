@@ -1,3 +1,4 @@
+// @java Core/src/other/GameLoader.java GameLoader
 /**
  * Java parity:
  * - Core/src/game/util/GameLoader.java

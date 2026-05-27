@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionSetValue.java ActionSetValue
 /**
  * Java parity: Core/src/other/action/state/ActionSetValue.java.
  * Sets the value of a site (distinct from the piece's owner).

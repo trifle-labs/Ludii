@@ -1,3 +1,4 @@
+// @java Language/src/compiler/Compiler.java Compiler
 /**
  * Java parity: Compiler/src/compiler/Compiler.java uses Ludii's
  * `Common/res/def/**.def` library as an implicit prelude when expanding

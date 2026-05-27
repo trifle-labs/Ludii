@@ -1,3 +1,4 @@
+// @java Core/src/game/Game.java Game (TS template subset)
 /**
  * Java parity: a focused TS port of the stacking-piece family — equivalent
  * to a Java Ludii game configured with

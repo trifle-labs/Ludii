@@ -1,3 +1,4 @@
+// @java Core/src/other/action/others/ActionSetValueOfPlayer.java ActionSetValueOfPlayer
 /** Java parity: Core/src/other/action/state/ActionSetValueOfPlayer.java. */
 
 import type { State } from "../state.js";

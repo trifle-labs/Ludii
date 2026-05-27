@@ -267,9 +267,12 @@ describe("LudemeGame: (id <role>), (var …), (count …) variants", () => {
     assert.ok(winsAfterFirstMove(probeEnd("(= (count Columns) 3)")));
   });
 
-  it("(count Turns) is floor(moves / players)", () => {
-    // One move made, two players → floor(1/2) = 0.
-    assert.ok(winsAfterFirstMove(probeEnd("(= (count Turns) 0)")));
+  it("(count Turns) is the Java numTurn counter (1-based)", () => {
+    // Java parity: `state.numTurn()` starts at 1 and counts the current turn.
+    // The end rule is evaluated right after the first move resolves (before the
+    // turn passes to player 2), so it reads 1 — not 0.
+    assert.ok(winsAfterFirstMove(probeEnd("(= (count Turns) 1)")));
+    assert.ok(!winsAfterFirstMove(probeEnd("(= (count Turns) 0)")));
   });
 
   it("(state at:0) reads a site's local state (0 by default)", () => {
@@ -487,33 +490,43 @@ describe("LudemeGame: triangular board topology", () => {
     }
   });
 
-  it("(tri n) compiles to a triangular board with the right cell count", () => {
-    const src = `
+  it("(tri n) compiles to a triangular board with the right site count", () => {
+    const board = (eq: string): string => `
 (game "TriFill"
     (players 2)
-    (equipment { (board (tri 4)) (piece "Disc" Each) })
+    (equipment { (board ${eq}) (piece "Disc" Each) })
     (rules
         (play (move Add (to (sites Empty))))
         (end (if (= 1 0) (result Mover Draw)))
     )
 )`;
-    const game = compileLudemeSource(src);
-    // Side-4 triangle = 4·5/2 = 10 cells.
-    assert.equal(game.moves(game.start()).length, 10);
+    // Java Board.defaultSite = Cell when `use:` is absent (Board.java:112), so a
+    // side-4 triangle on the triangular tiling is its 4² = 16 triangular faces
+    // (TriangleOnTri Cell sizing). With `use:Vertex` the play sites are instead
+    // the 4·5/2 = 10 lattice vertices.
+    const triC = compileLudemeSource(board("(tri 4)"));
+    assert.equal(triC.moves(triC.start()).length, 16);
+    const triV = compileLudemeSource(board("(tri 4) use:Vertex"));
+    assert.equal(triV.moves(triV.start()).length, 10);
   });
 
   it("(tri Hexagon n) compiles to a hexagonal tri board", () => {
-    const src = `
+    const board = (eq: string): string => `
 (game "TriHex"
     (players 2)
-    (equipment { (board (tri Hexagon 3)) (piece "Disc" Each) })
+    (equipment { (board ${eq}) (piece "Disc" Each) })
     (rules
         (play (move Add (to (sites Empty))))
         (end (if (= 1 0) (result Mover Draw)))
     )
 )`;
-    const game = compileLudemeSource(src);
-    assert.equal(game.moves(game.start()).length, 19);
+    // Cell default: a hexagon of side 3 on the triangular tiling has 6·3² = 54
+    // triangular faces (HexagonOnTri Cell sizing). Vertex play gives the
+    // 3·3²−3·3+1 = 19 lattice vertices, numbered 0…18 by Java's reorder().
+    const hexC = compileLudemeSource(board("(tri Hexagon 3)"));
+    assert.equal(hexC.moves(hexC.start()).length, 54);
+    const hexV = compileLudemeSource(board("(tri Hexagon 3) use:Vertex"));
+    assert.equal(hexV.moves(hexV.start()).length, 19);
   });
 });
 

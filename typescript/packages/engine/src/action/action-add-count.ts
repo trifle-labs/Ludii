@@ -1,3 +1,4 @@
+// @java (none) — TS-only, mancala seed-count semantics
 /**
  * Adjusts the seed count at a site by a (possibly negative) delta, keeping the
  * cell's occupancy in sync so `(is Empty)` / `(is Occupied)` stay correct.

@@ -1,0 +1,10 @@
+import { readFileSync } from 'node:fs';
+import { compileLudemeSource } from './dist/src/index.js';
+const abs='/Users/billy/GitHub/trifle-labs/Ludii/Common/res/lud/board/race/reach/Murus Gallicus.lud';
+const game=compileLudemeSource(readFileSync(abs,'utf8'));
+console.log('game keys:', Object.keys(game));
+const ctx=game.start();
+console.log('ctx keys:', Object.keys(ctx));
+console.log('ctx.state keys:', ctx.state?Object.keys(ctx.state):'none');
+console.log('game.board?', !!game.board, 'game.equipment?', !!game.equipment);
+if(game.board) console.log('game.board keys:', Object.keys(game.board));

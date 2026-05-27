@@ -1,3 +1,4 @@
+// @java Core/src/game/API.java API
 /**
  * Java parity:
  * - Core/src/game/API.java — the interface the engine exposes to the

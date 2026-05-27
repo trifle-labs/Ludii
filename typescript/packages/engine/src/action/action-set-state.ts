@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionSetState.java ActionSetState
 /**
  * Java parity: Core/src/other/action/state/ActionSetState.java.
  * Sets the local "state" property of a site (e.g. orientation).

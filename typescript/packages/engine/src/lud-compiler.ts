@@ -1,3 +1,4 @@
+// @java (none) — TS-only routing/dispatch layer
 /**
  * Minimal `.lud` → engine compiler.
  *

@@ -1,3 +1,4 @@
+// @java Core/src/game/Game.java Game (TS template subset)
 /**
  * Java parity:
  * - Conceptually a hand-rolled subset of `Core/src/game/Game.java`

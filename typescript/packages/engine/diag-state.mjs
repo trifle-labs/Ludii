@@ -1,0 +1,13 @@
+import { readFileSync } from 'node:fs';
+import { compileLudemeSource } from './dist/src/index.js';
+const abs='/Users/billy/GitHub/trifle-labs/Ludii/Common/res/lud/board/race/reach/Murus Gallicus.lud';
+const game=compileLudemeSource(readFileSync(abs,'utf8'));
+console.log('placements:', JSON.stringify(game.placements,null,1).slice(0,800));
+const ctx=game.start();
+const st=ctx.state;
+console.log('cells type:', Array.isArray(st.cells)?'array len '+st.cells.length:typeof st.cells);
+console.log('cells nonzero:', st.cells?.map((v,i)=>[i,v]).filter(x=>x[1]).slice(0,16));
+console.log('whats nonzero:', st.whats?.map((v,i)=>[i,v]).filter(x=>x[1]).slice(0,16));
+console.log('countAt nonzero:', st.countAt?.map((v,i)=>[i,v]).filter(x=>x[1]).slice(0,16));
+console.log('stacks type:', Array.isArray(st.stacks)?'array len '+st.stacks.length:typeof st.stacks);
+console.log('stacks nonempty:', st.stacks?.map((v,i)=>[i,v]).filter(x=>x[1]&&x[1].length).slice(0,16));

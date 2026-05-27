@@ -1,3 +1,4 @@
+// @java Core/src/other/action/die/ActionSetDiceAllEqual.java ActionSetDiceAllEqual
 /** Java parity: Core/src/other/action/die/ActionSetDiceAllEqual.java. */
 
 import type { State } from "../state.js";

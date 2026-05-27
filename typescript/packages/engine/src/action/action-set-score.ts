@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionSetScore.java ActionSetScore
 /**
  * Java parity: Core/src/other/action/state/ActionSetScore.java.
  * Sets (or adds to) a player's score.

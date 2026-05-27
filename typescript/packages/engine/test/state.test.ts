@@ -10,7 +10,9 @@ describe("State scores / values per player", () => {
     assert.equal(s.scores.length, 3);
     assert.equal(s.valuesPlayer.length, 3);
     assert.equal(s.score(1), 0);
-    assert.equal(s.valuePlayer(2), 0);
+    // Java parity (State.java:491): the per-player value array is filled with
+    // UNDEFINED (-1), not 0, until `(set Value …)` / `(set Team …)` assigns it.
+    assert.equal(s.valuePlayer(2), -1);
   });
 
   it("withScore returns a new state with the score updated", () => {
@@ -25,7 +27,7 @@ describe("State scores / values per player", () => {
     const s0 = new State(1, new Array(9).fill(0), ["X", "O"]);
     const s1 = s0.withValuePlayer(1, 7);
     assert.equal(s1.valuePlayer(1), 7);
-    assert.equal(s0.valuePlayer(1), 0);
+    assert.equal(s0.valuePlayer(1), -1); // immutable; unset default is -1 (Java UNDEFINED)
   });
 
   it("withCell preserves scores / values", () => {

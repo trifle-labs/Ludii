@@ -1,3 +1,4 @@
+// @java Core/src/other/action/others/ActionPropose.java ActionPropose
 /** Java parity: Core/src/other/action/others/ActionPropose.java. */
 
 import type { State } from "../state.js";

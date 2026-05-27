@@ -1,3 +1,4 @@
+// @java Core/src/other/action/move/remove/ActionRemoveLevel.java ActionRemoveLevel
 /**
  * Java parity: Core/src/other/action/move/remove/ActionRemoveLevel.java
  * — remove a piece at a specific stack level. The TS stack model is
@@ -25,7 +26,9 @@ export class ActionRemoveLevel extends BaseAction {
   public override apply(state: State): State {
     const stackSize = state.stackSize(this.siteIndex);
     if (stackSize > 0) return state.withStackPop(this.siteIndex);
-    return state.withCell(this.siteIndex, 0);
+    // What-based occupancy: clear the component so the emptied site does not
+    // read as occupied via a stale `what` (Java updates the empty-set here).
+    return state.withCell(this.siteIndex, 0).withWhatAt(this.siteIndex, 0);
   }
   public override actionType(): ActionType {
     return ActionRemoveLevel.TYPE;

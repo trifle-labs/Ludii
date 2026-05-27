@@ -1,3 +1,6 @@
+// @java Core/src/other/action/move/move/ActionMoveLevelFrom.java ActionMoveLevelFrom
+// @java Core/src/other/action/move/move/ActionMoveLevelTo.java ActionMoveLevelTo
+// @java Core/src/other/action/move/move/ActionMoveLevelFromLevelTo.java ActionMoveLevelFromLevelTo
 /**
  * Java parity:
  * - Core/src/other/action/move/move/ActionMoveLevelFrom.java
@@ -26,13 +29,36 @@ abstract class ActionMoveLevelBase extends BaseAction {
   }
 
   public override apply(state: State): State {
-    const fromTop =
-      state.stackSize(this.fromIndex) > 0
-        ? state.stackAt(this.fromIndex, state.stackSize(this.fromIndex) - 1)
+    const stackSize = state.stackSize(this.fromIndex);
+    const topLevel = stackSize - 1;
+    const stackLen = state.stacks[this.fromIndex]?.length ?? 0;
+    const movingOwner =
+      stackSize > 0
+        ? state.whoAtSiteLevel(this.fromIndex, topLevel)
         : (state.cells[this.fromIndex] ?? 0);
-    if (fromTop === 0) return state;
+    if (movingOwner === 0) return state;
+    const movingWhat =
+      stackSize > 0
+        ? state.whatAtSiteLevel(this.fromIndex, topLevel)
+        : state.whatAtSite(this.fromIndex);
+    const countedLevels = state.countAtSite(this.fromIndex);
+    const countBacked = countedLevels > 0 && stackLen <= 1;
+    if (countBacked) {
+      const fromCount = countedLevels;
+      const toCount = state.countAtSite(this.toIndex);
+      let next = state
+        .withCountAt(this.fromIndex, Math.max(0, fromCount - 1))
+        .withCountAt(this.toIndex, toCount + 1);
+      if ((next.cells[this.toIndex] ?? 0) === 0) {
+        next = next.withCell(this.toIndex, movingOwner);
+      }
+      if (fromCount === 1 && (stackLen <= 1 || stackLen === fromCount)) {
+        next = next.withCell(this.fromIndex, 0);
+      }
+      return next;
+    }
     const popped = state.withStackPop(this.fromIndex);
-    return popped.withStackPush(this.toIndex, fromTop);
+    return popped.withStackPush(this.toIndex, movingOwner, movingWhat);
   }
   public override actionType(): ActionType {
     return "Move";

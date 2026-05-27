@@ -1,3 +1,4 @@
+// @java Core/src/other/action/others/ActionVote.java ActionVote
 /** Java parity: Core/src/other/action/others/ActionVote.java. */
 
 import type { State } from "../state.js";

@@ -27,11 +27,16 @@ describe("Graph generators", () => {
   });
 
   it("concentric Square rings:3 → 24 vertices (Nine Men's Morris)", () => {
-    const g = genConcentricPolygon("Square", 3, false, false);
+    // NMM omits joinMidpoints; Java defaults it True (resolved in board-graph,
+    // not the generator), so the in-game call is (…, joinCorners:false,
+    // joinMidpoints:true). Pass the resolved value here to mirror the board.
+    const g = genConcentricPolygon("Square", 3, false, true);
     assert.equal(g.vertices.length, 24, "3 rings × 8 points");
-    // Default join connects the four midpoint spokes between rings: 4 per gap.
-    // Perimeter edges: each ring has 8 edges → 24; spokes: 2 gaps × 4 = 8.
+    // Perimeter edges: each ring has 8 edges → 24; midpoint spokes: 2 gaps × 4 = 8.
     assert.equal(g.edges.length, 24 + 8, "perimeter + midpoint spokes");
+    // joinMidpoints:False (explicit) ⇒ no spokes, perimeter only.
+    const bare = genConcentricPolygon("Square", 3, false, false);
+    assert.equal(bare.edges.length, 24, "perimeter only when joinMidpoints False");
   });
 
   it("concentric Square rings:3 joinCorners adds corner spokes", () => {

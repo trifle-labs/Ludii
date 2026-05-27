@@ -1,3 +1,4 @@
+// @java Core/src/other/action/move/move/ActionMoveStacking.java ActionMoveStacking
 /**
  * Java parity: Core/src/other/action/move/move/ActionMoveStacking.java —
  * move a piece from one site to another, stacking on top of the

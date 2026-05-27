@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionStoreStateInContext.java ActionStoreStateInContext
 /** Java parity: Core/src/other/action/state/ActionStoreStateInContext.java. */
 
 import type { State } from "../state.js";
@@ -8,10 +9,11 @@ export class ActionStoreStateInContext extends BaseAction {
   public static readonly TYPE: ActionType = "StoreState";
 
   public override apply(state: State): State {
-    // The TS port doesn't yet carry an explicit "stored state slot" on
-    // Context; this action is a no-op placeholder so .lud games that
-    // declare (storeState) compile and apply.
-    return state;
+    // Java parity: ActionStoreStateInContext.apply →
+    // context.state().storeCurrentState(context.state()), recording the
+    // current state's hash in the stored-state slot. Read by
+    // (avoidStoredState …) to reject moves that reproduce this position.
+    return state.storeCurrentState();
   }
   public override actionType(): ActionType {
     return ActionStoreStateInContext.TYPE;

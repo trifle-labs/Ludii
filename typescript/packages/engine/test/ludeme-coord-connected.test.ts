@@ -56,12 +56,15 @@ describe("LudemeGame: (column …)/(row …)/(coord …) int ludemes", () => {
   });
 
   it("(coord \"B1\") maps a coordinate to its site index", () => {
-    // B1 → column 1, row 0 → site 1 on a 3x3 board.
+    // B1 → column 1, row 0 → site 1 on a 3x3 board. Probe via `set Value`
+    // (not `set Counter`) so the assertion reads the raw resolved index — the
+    // automatic per-move counter increment (Java Counter.java) would otherwise
+    // off-by-one a `(set Counter …)` probe.
     const next = applyTo(
-      game("(rectangle 3 3)", "0", "4", `(set Counter (coord "B1"))`),
+      game("(rectangle 3 3)", "0", "4", `(set Value Mover (coord "B1"))`),
       4,
     );
-    assert.equal(next.state.counter, 1, "B1 resolves to site index 1");
+    assert.equal(next.state.valuePlayer(1), 1, "B1 resolves to site index 1");
   });
 
   it("(coord row:<n> column:<n>) maps row/column to a site index", () => {
@@ -70,11 +73,40 @@ describe("LudemeGame: (column …)/(row …)/(coord …) int ludemes", () => {
         "(rectangle 3 3)",
         "0",
         "4",
-        `(set Counter (coord row:2 column:1))`,
+        `(set Value Mover (coord row:2 column:1))`,
       ),
       4,
     );
-    assert.equal(next.state.counter, 7, "row 2, column 1 is site 7");
+    assert.equal(next.state.valuePlayer(1), 7, "row 2, column 1 is site 7");
+  });
+
+  it("the automatic game counter increments once per applied move (Java parity)", () => {
+    // Java State.counter starts at UNDEFINED (-1) and incrCounter() runs once
+    // per applied play move (Game.java:3142). With no `(set Counter …)` rule it
+    // reads -1 at start, 0 after one move, 1 after two, …. (Open Add board so
+    // successive moves stay legal.)
+    const src = `
+(game "CounterTick"
+    (players 2)
+    (equipment { (board (rectangle 3 3)) (piece "Disc" Each) })
+    (rules
+        (play (move Add (to (sites Empty))))
+        (end (if (= (count Pieces P1) 99) (result P1 Win)))
+    )
+)`;
+    const compiled = compileLudemeSource(src);
+    let ctx = compiled.start();
+    assert.equal(ctx.state.counter, -1, "fresh game counter is UNDEFINED (-1)");
+    for (let expected = 0; expected <= 2; expected++) {
+      const mv = compiled.moves(ctx)[0];
+      assert.ok(mv, "a legal Add move exists");
+      ctx = compiled.apply(ctx, mv);
+      assert.equal(
+        ctx.state.counter,
+        expected,
+        `counter is ${expected} after ${expected + 1} move(s)`,
+      );
+    }
   });
 });
 

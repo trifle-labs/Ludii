@@ -1,3 +1,4 @@
+// @java Core/src/other/topology/Topology.java Topology
 /**
  * Java parity:
  * - Core/src/game/util/graph/Topology.java — the graph layer that holds

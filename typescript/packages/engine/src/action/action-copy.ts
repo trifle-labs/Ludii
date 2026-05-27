@@ -1,3 +1,4 @@
+// @java Core/src/other/action/move/ActionCopy.java ActionCopy
 /** Java parity: Core/src/other/action/move/ActionCopy.java. */
 
 import type { State } from "../state.js";
@@ -17,9 +18,17 @@ export class ActionCopy extends BaseAction {
   }
 
   public override apply(state: State): State {
+    // Java parity: ActionCopy moves the source piece to `to` then restores the
+    // source to its original who/what/count — net effect is that `to` carries a
+    // copy of the source's owner *and* component, while the source is unchanged.
     const owner = state.cells[this.fromIndex] ?? 0;
     if (owner === 0) return state;
-    return state.withCell(this.toIndex, owner);
+    const what = state.whatAtSite(this.fromIndex);
+    const count = state.countAtSite(this.fromIndex) || 1;
+    let next = state.withCell(this.toIndex, owner);
+    if (what !== 0) next = next.withWhatAt(this.toIndex, what);
+    next = next.withCountAt(this.toIndex, count);
+    return next;
   }
   public override actionType(): ActionType {
     return ActionCopy.TYPE;

@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionTrigger.java ActionTrigger
 /** Java parity: Core/src/other/action/state/ActionTrigger.java. */
 
 import type { State } from "../state.js";
@@ -17,9 +18,10 @@ export class ActionTrigger extends BaseAction {
   }
 
   public override apply(state: State): State {
-    // Trigger fires an event handler; the State here is unchanged. Game
-    // rules consume the event via the Move's `then`-chain.
-    return state;
+    // Java ActionTrigger.apply: `context.state().triggers(player, true)` — set
+    // the player's trigger bit. `(is Triggered …)` later reads it (the event
+    // name is cosmetic; Java's isTriggered tests only the player bit).
+    return state.withTriggered(this.player, true);
   }
   public override actionType(): ActionType {
     return ActionTrigger.TYPE;

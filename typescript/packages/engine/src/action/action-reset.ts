@@ -1,3 +1,4 @@
+// @java Core/src/other/action/puzzle/ActionReset.java ActionReset
 /** Java parity: Core/src/other/action/puzzle/ActionReset.java. */
 
 import type { State } from "../state.js";

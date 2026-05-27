@@ -1,3 +1,4 @@
+// @java Core/src/other/move/Move.java Move
 /**
  * Java parity:
  * - Core/src/other/move/Move.java — the conceptual ancestor. A Java Move
@@ -34,6 +35,27 @@ export interface MoveInit {
    * `(then (moveAgain))`, which in Java schedules a same-player re-move.
    */
   readonly moveAgain?: boolean;
+  /**
+   * Index of the decision action within `actions` (default 0 — the first
+   * action). Java's `Move.from()/to()` read off the action flagged
+   * `isDecision()`; prologue actions prepended by `(do …)` (e.g. a `(roll)`)
+   * are not decisions and must be skipped. Since the MVE does not flag every
+   * primary action, we instead track where the decision baseline sits: it is
+   * `length(prepended-prologue)`. See {@link Move.withPrependedActions}.
+   */
+  readonly decisionIndex?: number;
+  /**
+   * Optional explicit from/to sites used by {@link Move.from}/{@link Move.to}
+   * when the move carries no `isDecision()` action to read them off. A `(sow …)`
+   * move's actions are all `ActionAddCount` (site-only, `from = -1`), so without
+   * this its `from()` would report OFF — breaking `(last From)` for a do's
+   * `(then …)` capture that walks `(sites Track from:(last From) …)` (two-row
+   * mancala reach-N captures). Java's Sow restores `origFrom/origTo` (the
+   * selected hole) so the consequence resolves `(last From)` to the sow origin;
+   * setting these mirrors that.
+   */
+  readonly fromSite?: number;
+  readonly toSite?: number;
 }
 
 export class Move {
@@ -46,6 +68,11 @@ export class Move {
   // biome-ignore lint/suspicious/noThenProperty: Java-parity field name from `other.move.Move.then`.
   public readonly then: readonly Move[];
   public readonly moveAgain: boolean;
+  /** Index of the decision action; see {@link MoveInit.decisionIndex}. */
+  public readonly decisionIndex: number;
+  /** Explicit from/to fallback; see {@link MoveInit.fromSite}/{@link MoveInit.toSite}. */
+  public readonly fromSite?: number;
+  public readonly toSite?: number;
 
   public constructor(init: MoveInit) {
     if (init.siteIndices.length === 0) {
@@ -68,6 +95,9 @@ export class Move {
     // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
     this.then = Object.freeze(init.then ? [...init.then] : []);
     this.moveAgain = init.moveAgain ?? false;
+    this.decisionIndex = init.decisionIndex ?? 0;
+    this.fromSite = init.fromSite;
+    this.toSite = init.toSite;
   }
 
   public applyTo(state: State, rng?: SeededRng): State {
@@ -168,9 +198,16 @@ export class Move {
     return h >>> 0;
   }
 
-  /** Java parity: `Move.decisionAction()` — the first action, if any. */
+  /**
+   * Java parity: the move's decision action — the one `Move.from()/to()` etc.
+   * read off. Java flags it with `isDecision()`; we honour that flag when set,
+   * otherwise fall back to the decision baseline at {@link decisionIndex}
+   * (0 for a plain move, shifted past any prologue actions prepended by a
+   * `(do …)`), then to the very first action.
+   */
   public decisionAction(): Action | undefined {
-    return this.actions[0];
+    for (const a of this.actions) if (a.isDecision()) return a;
+    return this.actions[this.decisionIndex] ?? this.actions[0];
   }
 
   /**
@@ -189,6 +226,38 @@ export class Move {
       // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
       then: this.then,
       moveAgain: moveAgain || this.moveAgain,
+      // `(then …)` actions are appended after the move's own, so the decision
+      // baseline is unchanged.
+      decisionIndex: this.decisionIndex,
+      fromSite: this.fromSite,
+      toSite: this.toSite,
+    });
+  }
+
+  /**
+   * Return a copy of this move with `extraActions` inserted *before* its own
+   * actions. Java parity: `Do.prependPreMoves` prepends the prologue move's
+   * actions to each follow-up (`next:`) move so applying the chosen move first
+   * re-runs the prologue side effects (e.g. a `(remember …)`), then the move.
+   */
+  public withPrependedActions(extraActions: readonly Action[]): Move {
+    if (extraActions.length === 0) return this;
+    return new Move({
+      id: this.id,
+      label: this.label,
+      siteIndices: this.siteIndices,
+      mover: this.mover,
+      placedOwner: this.placedOwner,
+      actions: [...extraActions, ...this.actions],
+      // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
+      then: this.then,
+      moveAgain: this.moveAgain,
+      // Prologue actions are prepended, so the decision action shifts right by
+      // their count — keeping `from()/to()` reading off the real move action,
+      // not the prologue (e.g. a `(roll)`), matching Java's `isDecision()` skip.
+      decisionIndex: this.decisionIndex + extraActions.length,
+      fromSite: this.fromSite,
+      toSite: this.toSite,
     });
   }
 
@@ -243,11 +312,25 @@ export class Move {
   }
 
   public from(): number {
-    return this.decisionAction()?.from() ?? ACTION_OFF;
+    // A real `isDecision()` action's from wins. Otherwise prefer the explicit
+    // `fromSite` (set on sow moves) over the fallback action's from — a sow's
+    // pickup ActionAddCount reports `from = -1` (site-only), which would
+    // otherwise shadow the origin and break `(last From)`.
+    const decided = this.actions.find((a) => a.isDecision());
+    if (decided) return decided.from();
+    if (this.fromSite !== undefined) return this.fromSite;
+    return (this.actions[this.decisionIndex] ?? this.actions[0])?.from() ?? ACTION_OFF;
   }
 
   public to(): number {
-    return this.decisionAction()?.to() ?? this.siteIndices[0] ?? ACTION_OFF;
+    const decided = this.actions.find((a) => a.isDecision());
+    if (decided) return decided.to();
+    if (this.toSite !== undefined) return this.toSite;
+    return (
+      (this.actions[this.decisionIndex] ?? this.actions[0])?.to() ??
+      this.siteIndices[0] ??
+      ACTION_OFF
+    );
   }
 
   public what(): number {

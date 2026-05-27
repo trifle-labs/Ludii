@@ -1,3 +1,4 @@
+// @java Core/src/game/Game.java Game (TS template subset)
 /**
  * Java parity: a focused TS port of the "place pieces, then move them
  * around the board" family of games — equivalent to the Java Game class

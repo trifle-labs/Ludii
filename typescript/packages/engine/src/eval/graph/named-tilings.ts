@@ -53,6 +53,10 @@ function buildTiling(spec: TilingSpec): Graph {
     }
   }
   g.makeFaces();
+  // Java parity: Tiling generators canonicalise indices via graph.reorder()
+  // after building faces, so site numbering matches Java. Without it, hex/tri
+  // shape clips and (remove … cells:{…}) hit the wrong sites.
+  g.reorder();
   return g;
 }
 
@@ -100,6 +104,141 @@ const dim = (n: number, dflt = 3): number => (Number.isFinite(n) ? n : dflt);
 /** Triangle clip used by tri/hex Triangle shapes: lower-left triangle. */
 const triClip: Keep = (row, col) => row <= col;
 
+// ---------------------------------------------------------------------------
+// Custom / Limping hexagon  — @java CustomOnHex.eval + main.math.Polygon
+//
+// `(hex a b)` (two dims, no shape keyword) routes in Java to
+// `new CustomOnHex({a, b})` (Hex.construct:80-84). It is a *polygon* board: a
+// hexagonal boundary is walked side-by-side with `polygonFromSides`, inflated
+// outwards by 0.1, then every hex-tiling cell whose centroid falls inside is
+// kept. This is NOT a regular hexagon — e.g. `(hex 5 6)` is a 63-cell limping
+// hexagon, not the 61-cell regular hexagon `(hex 5)` produces. Stargazers'
+// 12-Star carves this 63-cell base down to 39.
+// ---------------------------------------------------------------------------
+
+/** Hex.xy(row,col) centroid — @java Hex.xy (unit = 1). */
+const hexXY = (row: number, col: number): [number, number] => [
+  SQRT3 * (col - 0.5 * row),
+  1.5 * row,
+];
+
+/**
+ * @java CustomOnHex.polygonFromSides — walk the boundary, turning at each
+ * corner. Each side length is reduced by one before stepping (the cell-vs-edge
+ * fudge), and a zero-length side only turns. Returns boundary points in xy.
+ */
+function polygonFromSides(sides: readonly number[]): [number, number][] {
+  const steps: readonly [number, number][] = [
+    [1, 0], [1, 1], [0, 1], [-1, 0], [-1, -1], [0, -1],
+  ];
+  let step = 1;
+  let row = 0;
+  let col = 0;
+  const pts: [number, number][] = [hexXY(row, col)];
+  const n = Math.max(5, sides.length);
+  for (let i = 0; i < n; i += 1) {
+    let nextStep = sides[i % sides.length] as number;
+    nextStep += nextStep < 0 ? 1 : -1;
+    step += nextStep < 0 ? -1 : 1;
+    step = (step + 6) % 6;
+    if (nextStep > 0) {
+      const s = steps[step] as [number, number];
+      row += nextStep * s[0];
+      col += nextStep * s[1];
+      pts.push(hexXY(row, col));
+    }
+  }
+  return pts;
+}
+
+/**
+ * @java main.math.Polygon.inflate — push every vertex outward along its edge
+ * bisector by `amount`, so cell centroids never sit exactly on the boundary.
+ */
+function inflatePolygon(pts: [number, number][], amount: number): void {
+  const m = pts.length;
+  const adj: [number, number][] = [];
+  const norm = (vx: number, vy: number): [number, number] => {
+    const len = Math.hypot(vx, vy);
+    return len === 0 ? [0, 0] : [(vx / len) * amount, (vy / len) * amount];
+  };
+  for (let i = 0; i < m; i += 1) {
+    const a = pts[i] as [number, number];
+    const b = pts[(i + 1) % m] as [number, number];
+    const c = pts[(i + 2) % m] as [number, number];
+    // @java MathRoutines.clockwise: cross product < EPSILON.
+    const cross = (b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1]);
+    const cw = cross < 1e-7;
+    const [ix, iy] = cw ? norm(b[0] - a[0], b[1] - a[1]) : norm(a[0] - b[0], a[1] - b[1]);
+    const [ox, oy] = cw ? norm(b[0] - c[0], b[1] - c[1]) : norm(c[0] - b[0], c[1] - b[1]);
+    adj.push([(ix + ox) * 0.5, (iy + oy) * 0.5]);
+  }
+  for (let i = 0; i < m; i += 1) {
+    const a = adj[(i - 1 + m) % m] as [number, number];
+    const p = pts[i] as [number, number];
+    pts[i] = [p[0] + a[0], p[1] + a[1]];
+  }
+}
+
+/** @java main.math.Polygon.contains — even-odd ray cast. */
+function polygonContains(pts: readonly [number, number][], x: number, y: number): boolean {
+  let j = pts.length - 1;
+  let odd = false;
+  for (let i = 0; i < pts.length; i += 1) {
+    const [ix, iy] = pts[i] as [number, number];
+    const [jx, jy] = pts[j] as [number, number];
+    if (((iy < y && jy >= y) || (jy < y && iy >= y)) && (ix <= x || jx <= x)) {
+      if (ix + ((y - iy) / (jy - iy)) * (jx - ix) < x) odd = !odd;
+    }
+    j = i;
+  }
+  return odd;
+}
+
+/**
+ * `(hex a b)` Custom/Limping hexagon — @java CustomOnHex.eval. Builds the
+ * boundary polygon, inflates it, and stamps the six hex corners of every cell
+ * whose centroid lies inside, then joins unit-apart corners and reorders.
+ */
+function genHexCustom(
+  sides: readonly number[],
+  ref: readonly (readonly [number, number])[],
+): Graph {
+  const poly = polygonFromSides(sides);
+  inflatePolygon(poly, 0.1);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [px, py] of poly) {
+    if (px < minX) minX = px;
+    if (py < minY) minY = py;
+    if (px > maxX) maxX = px;
+    if (py > maxY) maxY = py;
+  }
+  // @java bounds → integer row/col scan window, padded by 3, filtered by contains.
+  const fromCol = Math.trunc(minX) - 3;
+  const fromRow = Math.trunc(minY) - 3;
+  const toCol = Math.trunc(maxX) + 3;
+  const toRow = Math.trunc(maxY) + 3;
+  const g = new Graph();
+  for (let r = fromRow; r <= toRow; r += 1) {
+    for (let c = fromCol; c <= toCol; c += 1) {
+      const [px, py] = hexXY(r, c);
+      if (!polygonContains(poly, px, py)) continue;
+      for (const [dx, dy] of ref) g.addVertex(px + dx, py + dy, DEDUP);
+    }
+  }
+  const vs = g.vertices;
+  for (let a = 0; a < vs.length; a += 1) {
+    const va = vs[a]!;
+    for (let b = a + 1; b < vs.length; b += 1) {
+      const vb = vs[b]!;
+      if (Math.abs(Math.hypot(va.x - vb.x, va.y - vb.y) - UNIT) < 0.01) g.addEdge(a, b);
+    }
+  }
+  g.makeFaces();
+  g.reorder();
+  return g;
+}
+
 /**
  * `(hex [shape] dimA [dimB])` — board on a regular hexagonal tiling (cells are
  * hexagons). Java: hex/Hex.java + shape variants.
@@ -126,15 +265,71 @@ export function genHex(
   const st = (shape ?? "Hexagon").toLowerCase();
   switch (st) {
     case "rectangle":
-    case "square":
-      return buildTiling({ ref, rows: a, cols: b ?? a, xy });
+    case "square": {
+      // @java RectangleOnHex.eval — NOT a full rows×cols grid. Each row r keeps
+      // the staggered column band `c ∈ [(r+1)/2, cols + r/2)` (integer floor
+      // division), so even rows hold `cols` hexes and odd rows `cols−1`. For
+      // `(hex Rectangle 13 12)` that is 7·12 + 6·11 = 150 cells (a plain grid
+      // would wrongly give 156). Reorder afterwards to match Java's
+      // `graph.reorder()` (line 96) canonical centroid numbering.
+      const cols = b ?? a;
+      const g = buildTiling({
+        ref,
+        rows: a,
+        cols: cols + a,
+        xy,
+        keep: (row, col) =>
+          !(col < Math.floor((row + 1) / 2) || col >= cols + Math.floor(row / 2)),
+      });
+      g.reorder();
+      return g;
+    }
     case "diamond":
     case "prism":
-    case "rhombus":
-      return buildTiling({ ref, rows: a, cols: b ?? a, xy });
+    case "rhombus": {
+      // @java DiamondOnHex.eval — a rhombus (Hex's diamond) on the hex tiling.
+      // Java uses a *transposed* placement that differs from the hexagon path:
+      //   xy(row,col) = (hy·(col−row), hx·(row+col)·0.5),  hx=√3·unit, hy=1.5·unit
+      // and swaps the corner-ref components when stamping each cell
+      //   x += Hex.ref[n][1];  y += Hex.ref[n][0];
+      // i.e. the diamond ref is Hex.ref with its two columns exchanged. For a
+      // Diamond (dimB absent) it lays a full rows×rows lattice; for a Prism
+      // (dimB given) it lays a (rows+cols−1)² lattice clipped to |row−col| <
+      // rows. Finally `graph.reorder()` gives the canonical y·100+x numbering
+      // the recorded trials use. Using the plain hexagon `ref`/`xy` here gave a
+      // parallelogram with a different site numbering than Java.
+      const rows = a;
+      const cols = b ?? a;
+      const isPrism = b !== undefined;
+      const span = isPrism ? rows + cols - 1 : rows;
+      const hx = SQRT3;
+      const hy = 3 / 2;
+      const dxy: XY = (r, c) => [hy * (c - r), hx * (r + c) * 0.5];
+      const dref: [number, number][] = [
+        [1.0, 0.0 * ux],
+        [0.5, 1.0 * ux],
+        [-0.5, 1.0 * ux],
+        [-1.0, 0.0 * ux],
+        [-0.5, -1.0 * ux],
+        [0.5, -1.0 * ux],
+      ];
+      const g = buildTiling({
+        ref: dref,
+        rows: span,
+        cols: span,
+        xy: dxy,
+        keep: isPrism ? (r, c) => Math.abs(r - c) < rows : undefined,
+      });
+      g.reorder();
+      return g;
+    }
     case "triangle":
       return buildTiling({ ref, rows: a, cols: a, xy, keep: triClip });
     default: {
+      // @java Hex.construct: two dims with no shape keyword → CustomOnHex({a,b})
+      // (a polygon/limping hexagon), NOT a regular hexagon. Single dim →
+      // HexagonOnHex (regular hexagon, side a).
+      if (b !== undefined) return genHexCustom([a, b], ref);
       const rows = 2 * a - 1;
       return buildTiling({ ref, rows, cols: rows, xy, keep: hexClipDiff });
     }
@@ -149,25 +344,73 @@ export function genTri(
   shape: string | undefined,
   dimA: number,
   dimB?: number,
+  vertexMode = false,
 ): Graph {
   const a = dim(dimA);
   const b = dimB !== undefined && Number.isFinite(dimB) ? dimB : undefined;
+  // @java every *OnTri.eval adds `+ (siteType == SiteType.Cell ? 1 : 0)` to its
+  // dims, so vertex-played boards are one unit smaller than cell-played ones.
+  const cell = vertexMode ? 0 : 1;
   const ref: [number, number][] = [[0, 0]];
+  // @java Tri.xy(row,col).
   const xy: XY = (r, c) => [c - 0.5 * r, (SQRT3 / 2) * r];
   const st = (shape ?? "Triangle").toLowerCase();
   switch (st) {
     case "hexagon": {
-      const rows = 2 * (a + 1) - 1;
+      // @java HexagonOnTri.eval — d = dim + cell; rows = cols = 2d−1; keep
+      // `col ≤ cols/2 + row && row − col ≤ cols/2` (= hexClipDiff).
+      const d = a + cell;
+      const rows = 2 * d - 1;
       return buildTiling({ ref, rows, cols: rows, xy, keep: hexClipDiff });
     }
     case "rectangle":
-    case "square":
+    case "square": {
+      // @java RectangleOnTri.eval — rows = dimA+cell, cols = dimB+cell; the
+      // column index runs `[0, cols+rows)` and keeps the staggered band
+      // `(r+1)/2 ≤ c < cols + r/2` (integer floor division).
+      const rows = a + cell;
+      const cols = (b ?? a) + cell;
+      return buildTiling({
+        ref,
+        rows,
+        cols: cols + rows,
+        xy,
+        keep: (row, col) =>
+          !(
+            col < Math.floor((row + 1) / 2) ||
+            col >= cols + Math.floor(row / 2)
+          ),
+      });
+    }
     case "diamond":
     case "prism":
-    case "rhombus":
-      return buildTiling({ ref, rows: a + 1, cols: (b ?? a) + 1, xy });
-    default:
-      return buildTiling({ ref, rows: a + 1, cols: a + 1, xy, keep: triClip });
+    case "rhombus": {
+      // @java DiamondOnTri.eval — a *different* mapping than the other tri
+      // shapes: xy(r,c) = (hy·(c−r), hx·(r+c)·0.5) with hx=unit=1, hy=√3/2.
+      // Diamond: a full rows×cols lattice. Prism: a (rows+cols−1)² lattice
+      // clipped to |r−c| < rows.
+      const isPrism = st === "prism";
+      const rows = a + cell;
+      const cols = (isPrism ? (b ?? a) : a) + cell;
+      const hy = SQRT3 / 2;
+      const dxy: XY = (r, c) => [hy * (c - r), (r + c) * 0.5];
+      if (isPrism) {
+        const span = rows + cols - 1;
+        return buildTiling({
+          ref,
+          rows: span,
+          cols: span,
+          xy: dxy,
+          keep: (row, col) => Math.abs(row - col) < rows,
+        });
+      }
+      return buildTiling({ ref, rows, cols, xy: dxy });
+    }
+    default: {
+      // @java TriangleOnTri.eval — rows = cols = dim+cell; keep `r ≤ c`.
+      const n = a + cell;
+      return buildTiling({ ref, rows: n, cols: n, xy, keep: triClip });
+    }
   }
 }
 
@@ -405,6 +648,9 @@ export function genRegular(star: boolean, numSides: number): Graph {
   } else {
     for (let i = 0; i < n; i += 1) g.addEdge(i, (i + 1) % n);
   }
+  // @java generators/shape/Regular.java reorders vertices by y*100+x before
+  // use, so star/regular site indices match the engine's canonical numbering.
+  g.reorder();
   g.makeFaces();
   return g;
 }

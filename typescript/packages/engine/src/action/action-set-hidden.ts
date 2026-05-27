@@ -1,3 +1,10 @@
+// @java Core/src/other/action/hidden/ActionSetHidden.java ActionSetHidden
+// @java Core/src/other/action/hidden/ActionSetHiddenCount.java ActionSetHiddenCount
+// @java Core/src/other/action/hidden/ActionSetHiddenRotation.java ActionSetHiddenRotation
+// @java Core/src/other/action/hidden/ActionSetHiddenState.java ActionSetHiddenState
+// @java Core/src/other/action/hidden/ActionSetHiddenValue.java ActionSetHiddenValue
+// @java Core/src/other/action/hidden/ActionSetHiddenWhat.java ActionSetHiddenWhat
+// @java Core/src/other/action/hidden/ActionSetHiddenWho.java ActionSetHiddenWho
 /**
  * Java parity:
  * - Core/src/other/action/hidden/ActionSetHidden.java

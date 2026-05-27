@@ -1,3 +1,4 @@
+// @java Core/src/other/action/others/ActionNextInstance.java ActionNextInstance
 /** Java parity: Core/src/other/action/others/ActionNextInstance.java. */
 
 import type { State } from "../state.js";

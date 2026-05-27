@@ -1,3 +1,5 @@
+// @java Common/src/main/grammar/Define.java Define
+// @java Language/src/parser/Expander.java Expander
 /**
  * Java parity: Compiler/src/compiler/Define.java + Expander.java —
  * `(define "Name" body)` macros and their `("Name" arg1 arg2 …)`
@@ -91,8 +93,19 @@ function collectDefines(node: LudNode, into: Map<string, DefineEntry>): void {
         };
       }
       into.set(nameNode.value, { name: nameNode.value, body });
-    } else if (item.delimiter === "curly") {
-      // Some corpus files place top-level defines inside a curly block.
+    } else {
+      // Defines can be nested anywhere in the (post-option) tree, not just at
+      // the file top level or inside a curly block. Java's `Expander` extracts
+      // every `(define …)` token from the whole expanded source regardless of
+      // nesting. In particular an `(option … args:{ … <rules> } …)` whose
+      // selected item supplies `(define "X" …) (rules …)` in its `<rules>` slot
+      // injects that define as a *direct child of `(game …)`* once
+      // `applyOptions` substitutes the placeholder — a round-paren list we must
+      // descend into. (58 Holes / Hounds-and-Jackals declare `"Teleportation"`
+      // this way; without recursing here, `("Teleportation")` never expands and
+      // the teleport-on-landing consequence is silently dropped.) Recurse into
+      // every list child (the `(define …)` branch above already collected and
+      // intentionally does not recurse into a define's own body).
       collectDefines(item, into);
     }
   }
@@ -248,11 +261,25 @@ function expandSingle(
 }
 
 /**
- * Replace `#k` identifiers in `node` with `args[k-1]`. A `#k` reference
- * with no corresponding arg is left as-is (matches Java parity where
- * unbound placeholders fall through to the next pass). Each arg is
- * a sequence of tokens so a keyword-arg pair (`cells:` + value) can be
- * spliced back in as two tokens from a single `#k`.
+ * A define argument that should be deleted at the use site: either no arg was
+ * supplied for this `#k`, or the supplied arg is the explicit null placeholder
+ * `~` (Java `Expander.DEFINE_PARAMETER_PLACEHOLDER`). Java replaces both with
+ * `<DELETE_ME>` and then strips it, so an unfilled trailing parameter such as
+ * the `#4` in `(if cond (moveAgain) #4)` vanishes rather than surviving as a
+ * literal token. Keeping it would, e.g., give `(if …)` a bogus else branch.
+ */
+function isDeletedArg(replacement: readonly LudNode[] | undefined): boolean {
+  if (!replacement || replacement.length === 0) return true;
+  const only = replacement.length === 1 ? replacement[0] : undefined;
+  return only !== undefined && isIdent(only) && only.name === "~";
+}
+
+/**
+ * Replace `#k` identifiers in `node` with `args[k-1]`. A `#k` reference whose
+ * argument is missing (or the explicit `~` placeholder) is deleted, matching
+ * Java's `<DELETE_ME>` handling in `Expander.expandDefineArgs`. Each arg is a
+ * sequence of tokens so a keyword-arg pair (`cells:` + value) can be spliced
+ * back in as two tokens from a single `#k`.
  */
 function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNode {
   if (isIdent(node)) {
@@ -260,13 +287,16 @@ function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNo
     if (match) {
       const idx = Number.parseInt(match[1] ?? "0", 10) - 1;
       const replacement = args[idx];
-      if (replacement && replacement.length > 0) {
+      if (!isDeletedArg(replacement)) {
         // Top-level (non-list-child) — return the first token. The
         // remaining tokens of a multi-token arg are only meaningful
         // when spliced into a surrounding list; outside one there's
         // nothing they can attach to.
-        return replacement[0] ?? node;
+        return replacement?.[0] ?? node;
       }
+      // A deleted root-level `#k` has nothing to attach to; leave it for the
+      // placeholder filter (this only arises for a define body that is a bare
+      // `#k`, which is vanishingly rare).
     }
     return node;
   }
@@ -279,11 +309,14 @@ function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNo
       if (m) {
         const idx = Number.parseInt(m[1] ?? "0", 10) - 1;
         const replacement = args[idx];
-        if (replacement && replacement.length > 0) {
-          for (const r of replacement) out.push(r);
+        if (isDeletedArg(replacement)) {
+          // Unfilled / `~` argument: drop the token entirely (Java `<DELETE_ME>`).
           changed = true;
           continue;
         }
+        for (const r of replacement as readonly LudNode[]) out.push(r);
+        changed = true;
+        continue;
       }
     }
     const sub = substitute(item, args);

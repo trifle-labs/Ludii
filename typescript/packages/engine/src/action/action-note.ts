@@ -1,3 +1,4 @@
+// @java Core/src/other/action/others/ActionNote.java ActionNote
 /** Java parity: Core/src/other/action/others/ActionNote.java. */
 
 import type { State } from "../state.js";

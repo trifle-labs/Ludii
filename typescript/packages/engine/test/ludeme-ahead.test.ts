@@ -23,7 +23,10 @@ const mk = (cond: string): string => `
 
 function legalCount(cond: string): number {
   const game = compileLudemeSource(mk(cond));
-  return game.moves(game.start()).length;
+  // Count the *raw* play-rule moves, not `moves()`: when the gate fails the
+  // play rules yield nothing and `moves()` would substitute a forced Pass
+  // (Java Trial.setLegalMoves), which is not what this probe is measuring.
+  return game.legalMovesRaw(game.start()).length;
 }
 
 describe("LudemeGame: (ahead <site> <direction>)", () => {

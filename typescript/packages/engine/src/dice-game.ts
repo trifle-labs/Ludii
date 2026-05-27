@@ -1,3 +1,4 @@
+// @java Core/src/game/Game.java Game (TS template subset)
 /**
  * Java parity: a focused port of the dice-driven race / push-your-luck
  * family — equivalent to Java Ludii's `(equipment { (dice "Die" N M) })`

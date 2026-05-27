@@ -16,7 +16,7 @@ const ROOK = `
         (piece "Rook" Each
             (move Slide
                 Orthogonal
-                (to if:(or (is Empty (to)) ("IsEnemyAt" (to)))
+                (to if:("IsEnemyAt" (to))
                     (apply (remove (to)))
                 )
             )

@@ -1,3 +1,4 @@
+// @java Core/src/other/action/others/ActionPass.java ActionPass
 /**
  * Java parity:
  * - Core/src/other/action/others/ActionPass.java — the "skip your turn"

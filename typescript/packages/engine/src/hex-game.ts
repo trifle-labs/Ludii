@@ -1,3 +1,4 @@
+// @java Core/src/game/Game.java Game (TS template subset)
 /**
  * Concrete `Game` for the classic Hex connection game on a rhombic
  * NxN board (Piet Hein, 1942; rediscovered by John Nash). Open rules

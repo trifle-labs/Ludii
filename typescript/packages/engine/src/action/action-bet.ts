@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionBet.java ActionBet
 /** Java parity: Core/src/other/action/state/ActionBet.java. */
 
 import type { State } from "../state.js";

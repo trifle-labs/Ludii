@@ -203,6 +203,7 @@ export {
 export { applyOptions, collectDefaultOptions } from "./lud-options.js";
 export { Move, type MoveInit } from "./move.js";
 export { SeededRng } from "./rng.js";
+export { SplitMix64 } from "./eval/split-mix64.js";
 export {
   StackGame,
   type StackGameOptions,

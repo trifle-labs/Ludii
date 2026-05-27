@@ -1,3 +1,4 @@
+// @java Core/src/other/action/others/ActionForfeit.java ActionForfeit
 /**
  * Java parity:
  * - Core/src/other/action/others/ActionForfeit.java — a player

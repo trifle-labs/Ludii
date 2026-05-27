@@ -105,6 +105,12 @@ describe("LudemeGame: generic (move (from …) (to …))", () => {
 )`;
     const game = compileLudemeSource(src);
     const ctx: Context = game.start();
-    assert.equal(game.moves(ctx).length, 0, "no orthogonal enemy to capture");
+    // Raw play moves: with no capturable enemy the play rules yield nothing.
+    // (`moves()` would substitute a forced Pass per Java Trial.setLegalMoves.)
+    assert.equal(
+      game.legalMovesRaw(ctx).length,
+      0,
+      "no orthogonal enemy to capture",
+    );
   });
 });

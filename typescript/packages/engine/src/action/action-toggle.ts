@@ -1,3 +1,4 @@
+// @java Core/src/other/action/puzzle/ActionToggle.java ActionToggle
 /** Java parity: Core/src/other/action/puzzle/ActionToggle.java. */
 
 import type { State } from "../state.js";

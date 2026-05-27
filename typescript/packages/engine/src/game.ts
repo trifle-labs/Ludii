@@ -1,3 +1,4 @@
+// @java Core/src/game/Game.java Game
 /**
  * Java parity:
  * - Core/src/game/Game.java — only the subset the browser-player calls
@@ -8,6 +9,7 @@
 import type { ConceptSet } from "./concept.js";
 import type { Context } from "./context.js";
 import type { Move } from "./move.js";
+import type { SeededRng } from "./rng.js";
 
 export interface Game {
   readonly id: string;
@@ -24,8 +26,24 @@ export interface Game {
   readonly numSites: number;
   /** Optional human-readable description; Java parity: `Game.description()`. */
   readonly description?: string;
-  start(): Context;
+  /**
+   * Build the initial context. `rng`, when supplied, seeds any stochastic start
+   * rule (`(place Random …)`): the draw sequence is consumed from it so a replay
+   * harness can reproduce Java's recorded initial placement by passing the
+   * trial's RNG. Omitted for ordinary play (deterministic starts ignore it).
+   */
+  start(rng?: SeededRng): Context;
   moves(context: Context): readonly Move[];
+  /**
+   * The mover's *raw* legal moves — what the play rules generate, WITHOUT the
+   * synthetic forced Pass that {@link moves} appends when a player has rolled
+   * but cannot move. Java parity: `Phase.play().moves().eval()` /
+   * `canMove()`, the path `computeStalemated` and `(no Moves …)` use, as
+   * opposed to `Game.moves()` which routes through `Trial.setLegalMoves` and
+   * adds the forced pass. Optional: implementations that never synthesise a
+   * forced pass may omit it, and callers fall back to {@link moves}.
+   */
+  legalMovesRaw?(context: Context): readonly Move[];
   apply(context: Context, move: Move): Context;
   over(context: Context): boolean;
   /**

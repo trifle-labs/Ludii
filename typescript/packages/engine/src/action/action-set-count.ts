@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionSetCount.java ActionSetCount
 /**
  * Java parity: Core/src/other/action/state/ActionSetCount.java.
  * Sets the count of pieces at a site.

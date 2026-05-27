@@ -1,3 +1,4 @@
+// @java Core/src/other/concept/Concept.java Concept
 /**
  * Java parity:
  * - Core/src/game/types/state/Concept.java enumerates ~600 named

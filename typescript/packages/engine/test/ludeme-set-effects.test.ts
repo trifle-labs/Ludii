@@ -55,9 +55,12 @@ describe("LudemeGame: (set …) effects", () => {
     assert.equal(next.state.valueAtSite(0), 4, "site value updated");
   });
 
-  it("(set Counter <n>) writes the game counter", () => {
+  it("(set Counter <n>) writes the game counter, then auto-increments", () => {
+    // Java parity: ActionSetCounter sets the counter during the move, then
+    // Game.java:3142 `incrCounter()` runs once after the end rules — so the
+    // saved state reads n + 1 (9 → 10), not n.
     const next = applyCentreAdd(game(`(set Counter 9)`));
-    assert.equal(next.state.counter, 9, "counter updated");
+    assert.equal(next.state.counter, 10, "counter set to 9, then incremented");
   });
 
   it("(set RememberValue …) and (set Hidden …) compile as no-op-safe", () => {

@@ -1,3 +1,5 @@
+// @java Core/src/other/action/Action.java Action
+// @java Core/src/other/action/BaseAction.java BaseAction
 /**
  * Java parity:
  * - Core/src/other/action/Action.java — the action interface.

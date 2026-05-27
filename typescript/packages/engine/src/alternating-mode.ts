@@ -1,3 +1,4 @@
+// @java Core/src/game/mode/Mode.java Mode
 /**
  * Java parity:
  * - Core/src/game/mode/Mode.java

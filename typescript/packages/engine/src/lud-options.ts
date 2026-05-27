@@ -1,3 +1,4 @@
+// @java Language/src/compiler/Compiler.java Compiler
 /**
  * Java parity: Compiler/src/compiler/Compiler.java's option-resolution
  * pass — `(option "Title" <Tag> args:{<arg1> <arg2> …} { (item …)** (item …) … })`
@@ -32,7 +33,10 @@ import {
 } from "@ludii/typescript-language";
 
 interface OptionInfo {
+  /** Category tag used by `<Tag>` / `<Tag:arg>` placeholders. */
   readonly tag: string;
+  /** Human-facing option heading ("Board Size", "Play Rules", ...). */
+  readonly heading: string;
   readonly args: readonly string[];
   /** values[argIndex] is the chosen item's value block for that arg. */
   readonly values: readonly (readonly LudNode[])[];
@@ -42,32 +46,40 @@ interface OptionInfo {
  * Apply default-option substitution to `ast` and return a new tree with
  * `(option …)` forms removed.
  */
-export function applyOptions(ast: LudNode): LudNode {
+export function applyOptions(
+  ast: LudNode,
+  optionsOverride?: readonly OptionInfo[],
+): LudNode {
   if (!isList(ast)) return ast;
-  const options = new Map<string, OptionInfo>();
-  collectOptions(ast, options);
-  if (options.size === 0) return stripOptions(ast);
-  return substitute(stripOptions(ast), options);
+  const options = optionsOverride ? [...optionsOverride] : collectDefaultOptions(ast);
+  const stripped = stripOptions(ast);
+  let current = stripped;
+  for (const option of options) current = substitute(current, option);
+  return current;
 }
 
 /** Test helper: enumerate option entries with their chosen values. */
 export function collectDefaultOptions(ast: LudNode): OptionInfo[] {
-  const map = new Map<string, OptionInfo>();
-  if (isList(ast)) collectOptions(ast, map);
-  return [...map.values()];
+  const out: OptionInfo[] = [];
+  if (isList(ast)) collectOptions(ast, out);
+  return out;
 }
 
-function collectOptions(node: LudNode, into: Map<string, OptionInfo>): void {
+function collectOptions(node: LudNode, into: OptionInfo[]): void {
   if (!isList(node)) return;
   for (const item of node.items) {
     if (!isList(item)) continue;
     const head = item.items[0];
     if (head && isIdent(head) && head.name === "option") {
       const info = parseOption(item);
-      if (info) into.set(info.tag, info);
+      if (info) into.push(info);
       continue;
     }
-    if (item.delimiter === "curly") collectOptions(item, into);
+    // Java extracts option categories from the fully realised source, so nested
+    // round-paren wrappers count too. Recursing only into `{ ... }` misses
+    // options embedded in ordinary lists and leaves placeholders like
+    // `<Row:tracks>` unresolved in option-driven board declarations.
+    collectOptions(item, into);
   }
 }
 
@@ -75,7 +87,9 @@ function parseOption(node: LudList): OptionInfo | undefined {
   // (option "Title" <Tag> args:{<a> <b> ...} { (item …)** (item …) ... })
   // The "args:" prefix is a Ludii keyword-argument token parsed as a
   // bare identifier preceding the args list.
+  const headingNode = node.items[1];
   const tagNode = node.items[2];
+  const heading = headingNode && isString(headingNode) ? headingNode.value : "";
   if (!tagNode || !isIdent(tagNode)) return undefined;
   const tag = unwrapAngles(tagNode.name);
   if (!tag) return undefined;
@@ -104,7 +118,12 @@ function parseOption(node: LudList): OptionInfo | undefined {
 
   const argNames: string[] = [];
   if (argsList) {
-    for (const a of argsList.items) {
+    // The tokenizer can glue adjacent angle-params, e.g. Katro Bevohoka's
+    // `args:{ <rowSize> <R1><S1><T1><R2><S2><T2> <CCW2> }` lexes the middle as
+    // one fused ident. Split them the same way item values are (extractItemValues
+    // already calls normalizeAngleTokens), so every `<name>` registers as its
+    // own arg — otherwise the trailing params never substitute.
+    for (const a of normalizeAngleTokens(argsList.items)) {
       if (isIdent(a)) {
         const name = unwrapAngles(a.name);
         if (name) argNames.push(name);
@@ -114,7 +133,17 @@ function parseOption(node: LudList): OptionInfo | undefined {
 
   const items = collectItems(itemsList);
   if (items.length === 0) return undefined;
-  const chosen = items.find((it) => it.isDefault) ?? items[0];
+  // Java GameOptions.computeOptionSelections: when no option is explicitly
+  // selected, take the one with the highest priority (number of trailing
+  // asterisks), first wins on a tie. Items with no asterisk have priority 0.
+  let chosen = items[0];
+  let maxPriority = -1;
+  for (const it of items) {
+    if (it.priority > maxPriority) {
+      maxPriority = it.priority;
+      chosen = it;
+    }
+  }
   if (!chosen) return undefined;
 
   const values: LudNode[][] = chosen.values.slice(
@@ -124,11 +153,12 @@ function parseOption(node: LudList): OptionInfo | undefined {
   // Pad to args length so lookups by index don't undershoot.
   while (values.length < argNames.length) values.push([]);
 
-  return { tag, args: argNames, values };
+  return { tag, heading, args: argNames, values };
 }
 
 interface ItemBlock {
-  readonly isDefault: boolean;
+  /** Number of trailing asterisks — Java Option.priority (default 0). */
+  readonly priority: number;
   readonly values: LudNode[][];
 }
 
@@ -142,11 +172,14 @@ function collectItems(itemsList: LudList): ItemBlock[] {
     if (!head || !isIdent(head) || head.name !== "item") continue;
     const values = extractItemValues(node);
     const nextSibling = children[i + 1];
-    // Default-item markers in the wild are written as `*` or `**` (and
-    // occasionally even `****`). Accept any run of asterisks.
-    const isDefault =
-      !!nextSibling && isIdent(nextSibling) && /^\*+$/.test(nextSibling.name);
-    out.push({ isDefault, values });
+    // Java Option strips trailing asterisks and counts them as `priority`
+    // (Option.java: "Extract priority (number of asterisks appended)"). An
+    // item with no asterisk has priority 0; `*`=1, `**`=2, etc.
+    const priority =
+      !!nextSibling && isIdent(nextSibling) && /^\*+$/.test(nextSibling.name)
+        ? nextSibling.name.length
+        : 0;
+    out.push({ priority, values });
   }
   return out;
 }
@@ -375,13 +408,13 @@ function stripOptions(node: LudNode): LudNode {
   };
 }
 
-function substitute(node: LudNode, options: Map<string, OptionInfo>): LudNode {
+function substitute(node: LudNode, option: OptionInfo): LudNode {
   if (!isList(node)) return node;
   const out: LudNode[] = [];
   let changed = false;
   for (const item of node.items) {
     if (isIdent(item)) {
-      const replacement = resolvePlaceholder(item, options);
+      const replacement = resolvePlaceholder(item, option);
       if (replacement) {
         changed = true;
         out.push(...replacement);
@@ -390,7 +423,7 @@ function substitute(node: LudNode, options: Map<string, OptionInfo>): LudNode {
       out.push(item);
       continue;
     }
-    const sub = substitute(item, options);
+    const sub = substitute(item, option);
     if (sub !== item) changed = true;
     out.push(sub);
   }
@@ -405,7 +438,7 @@ function substitute(node: LudNode, options: Map<string, OptionInfo>): LudNode {
 
 function resolvePlaceholder(
   ident: LudIdent,
-  options: Map<string, OptionInfo>,
+  option: OptionInfo,
 ): LudNode[] | undefined {
   const inner = unwrapAngles(ident.name);
   if (inner === undefined) return undefined;
@@ -413,12 +446,11 @@ function resolvePlaceholder(
   const colonIdx = inner.indexOf(":");
   const tag = colonIdx < 0 ? inner : inner.slice(0, colonIdx);
   const argName = colonIdx < 0 ? undefined : inner.slice(colonIdx + 1);
-  const info = options.get(tag);
-  if (!info) return undefined;
+  if (option.tag !== tag) return undefined;
   if (argName === undefined) {
-    return [...(info.values[0] ?? [])];
+    return [...(option.values[0] ?? [])];
   }
-  const idx = info.args.indexOf(argName);
+  const idx = option.args.indexOf(argName);
   if (idx < 0) return undefined;
-  return [...(info.values[idx] ?? [])];
+  return [...(option.values[idx] ?? [])];
 }

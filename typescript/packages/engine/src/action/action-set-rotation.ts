@@ -1,3 +1,4 @@
+// @java Core/src/other/action/state/ActionSetRotation.java ActionSetRotation
 /** Java parity: Core/src/other/action/state/ActionSetRotation.java. */
 
 import type { State } from "../state.js";

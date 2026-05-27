@@ -3,11 +3,12 @@ import { describe, it } from "node:test";
 
 import { type Context, compileLudemeSource } from "../src/index.js";
 
-// Default-store ("Outer") two-row mancala. Java indexes a left store at cell 0,
-// shifting the playing holes up by one; track literals carry that offset and
-// the engine translates them back onto its 0-based playing-hole lattice. The
-// two stores are appended after the board, mapped to each player via
-// (map {(pair P1 FirstSite) (pair P2 LastSite)}).
+// Default-store ("Outer") two-row mancala. We build the faithful Java
+// MancalaBoard graph — Union(leftStore, bottomRow, topRow, rightStore,
+// connect:True) on SiteType.Vertex — so site numbering is Java's: the left
+// store is cell 0, the 12 playing holes are cells 1..12 (bottom row 1..6, top
+// row 7..12), and the right store is cell 13. FirstSite/LastSite map to the two
+// stores via (map {(pair P1 FirstSite) (pair P2 LastSite)}).
 const DAS_BOHNENSPIEL = `
 (define "PiecesOwnedBy" (+ (count at:(mapEntry #1)) (count in:(sites #1))))
 (game "Das Bohnenspiel"
@@ -48,15 +49,16 @@ const seedTotal = (ctx: Context): number => {
 };
 
 describe("LudemeGame: default-store mancala (map / mapEntry / sow)", () => {
-  it("seeds all 12 playing holes with 6 each (track offset applied)", () => {
+  it("seeds all 12 playing holes with 6 each (Java numbering)", () => {
     const game = compileLudemeSource(DAS_BOHNENSPIEL);
     const ctx = game.start();
-    // 12 playing holes + 2 store cells.
-    assert.equal(ctx.state.cells.length, 14, "12 holes + 2 stores");
-    for (let i = 0; i < 12; i += 1) {
+    // 12 playing holes (cells 1..12) + 2 store cells (0 and 13), plus the two
+    // appended Hand sites (14, 15).
+    assert.ok(ctx.state.cells.length >= 14, "12 holes + 2 stores + hands");
+    for (let i = 1; i <= 12; i += 1) {
       assert.equal(ctx.state.countAtSite(i), 6, `hole ${i} seeded with 6`);
     }
-    assert.equal(ctx.state.countAtSite(12), 0, "left store starts empty");
+    assert.equal(ctx.state.countAtSite(0), 0, "left store starts empty");
     assert.equal(ctx.state.countAtSite(13), 0, "right store starts empty");
     assert.equal(seedTotal(ctx), 72, "72 seeds total at start");
   });
@@ -65,10 +67,10 @@ describe("LudemeGame: default-store mancala (map / mapEntry / sow)", () => {
     const game = compileLudemeSource(DAS_BOHNENSPIEL);
     const ctx = game.start();
     const moves = game.moves(ctx);
-    // P1 home = bottom row = holes 0..5, all non-empty.
+    // P1 home = bottom row = holes 1..6, all non-empty.
     assert.equal(moves.length, 6, "six pickup moves");
     const froms = moves.map((m) => m.from()).sort((a, b) => a - b);
-    assert.deepEqual(froms, [0, 1, 2, 3, 4, 5]);
+    assert.deepEqual(froms, [1, 2, 3, 4, 5, 6]);
   });
 
   it("conserves all seeds and reaches a scored terminal state", () => {
@@ -106,7 +108,7 @@ describe("LudemeGame: default-store mancala (map / mapEntry / sow)", () => {
       ctx = game.apply(ctx, m);
       n += 1;
     }
-    const stored = ctx.state.countAtSite(12) + ctx.state.countAtSite(13);
+    const stored = ctx.state.countAtSite(0) + ctx.state.countAtSite(13);
     assert.ok(stored > 0, "captures accumulated in the stores");
   });
 });

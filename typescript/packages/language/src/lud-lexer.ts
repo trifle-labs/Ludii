@@ -161,6 +161,44 @@ export function lexLud(source: string): LudToken[] {
       while (i < length && isDigit(source[i] ?? "")) {
         i += 1;
       }
+      // Integer range `A..B` (Ludii shorthand, e.g. `(sites { 0..7 })`):
+      // two dots between integers expand inline to the inclusive sequence of
+      // number tokens, ascending or descending. Must be tested before the
+      // decimal-point case below so `0..7` is not mis-read as `0.` + `.7`.
+      if (source[i] === "." && source[i + 1] === ".") {
+        const startVal = Number(source.slice(start, i));
+        const dotsAt = i;
+        let j = i + 2;
+        const endStart = j;
+        if (source[j] === "-") j += 1;
+        while (j < length && isDigit(source[j] ?? "")) j += 1;
+        const endVal = Number(source.slice(endStart, j));
+        if (
+          j > endStart &&
+          Number.isInteger(startVal) &&
+          Number.isInteger(endVal)
+        ) {
+          const step = endVal >= startVal ? 1 : -1;
+          for (
+            let v = startVal;
+            step > 0 ? v <= endVal : v >= endVal;
+            v += step
+          ) {
+            const lexeme = String(v);
+            tokens.push({
+              kind: "number",
+              text: lexeme,
+              lexeme,
+              range: new TokenRange(start, j),
+            });
+          }
+          i = j;
+          continue;
+        }
+        // Not a valid range (e.g. trailing `..`); fall through leaving i at the
+        // dots so they lex as an identifier, preserving prior behaviour.
+        i = dotsAt;
+      }
       if (source[i] === ".") {
         i += 1;
         while (i < length && isDigit(source[i] ?? "")) {

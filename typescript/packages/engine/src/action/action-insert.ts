@@ -1,3 +1,4 @@
+// @java Core/src/other/action/move/ActionInsert.java ActionInsert
 /**
  * Java parity: Core/src/other/action/move/ActionInsert.java —
  * insert a piece into a stack at a specific level.

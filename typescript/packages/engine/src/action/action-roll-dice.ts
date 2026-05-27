@@ -1,3 +1,4 @@
+// @java Core/src/other/action/die/ActionUpdateDice.java ActionUpdateDice
 /**
  * Re-roll every die, writing fresh face values into the state. The roll is
  * deferred to apply-time so move *generation* stays pure (enumerating moves

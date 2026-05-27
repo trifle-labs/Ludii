@@ -1,3 +1,4 @@
+// @java Core/src/other/action/move/ActionAdd.java ActionAdd
 /**
  * Java parity:
  * - Core/src/other/action/move/ActionAdd.java — the "add one or more
@@ -19,8 +20,15 @@ import type { SiteType } from "./site-type.js";
 export interface ActionAddOptions {
   /** Target site index. */
   readonly to: number;
-  /** Piece/component index to place (i.e. the owner index in our MVE). */
+  /** Component index to place (Java: ContainerState.what). */
   readonly what: number;
+  /**
+   * Owner index to record at the site (Java: ContainerState.who). Defaults to
+   * `what` for the common single-component-per-player case; heterogeneous-piece
+   * games (chess) pass a distinct component id as `what` and the player as
+   * `owner`.
+   */
+  readonly owner?: number;
   /** Repeat count. Defaults to 1. */
   readonly count?: number;
   readonly state?: number;
@@ -28,6 +36,18 @@ export interface ActionAddOptions {
   readonly value?: number;
   readonly onStack?: boolean;
   readonly type?: SiteType;
+  /**
+   * Extra cells a large piece covers beyond {@link to} (the anchor). Java's
+   * `ActionAdd.applyLargePiece` walks `Component.locs` and, for every covered
+   * cell, calls `cs.removeFromEmpty(loc)` + `cs.setCount(loc, 1)` — the cells
+   * leave the empty set so no later placement overlaps, but their who/what stay
+   * 0 (only the anchor carries the piece). We mirror that exactly: each covered
+   * cell (anchor included) gets `count = 1` and no owner, so count-aware
+   * `isOccupiedSite` keeps them out of `(sites Empty)` while owner-filtered
+   * `(sites Occupied by:…)` does not treat the body as separate pieces. Absent
+   * ⇒ ordinary single-cell.
+   */
+  readonly footprint?: readonly number[];
 }
 
 export class ActionAdd extends BaseAction {
@@ -35,12 +55,14 @@ export class ActionAdd extends BaseAction {
 
   private readonly toIndex: number;
   private readonly whatIndex: number;
+  private readonly ownerIndex: number;
   private readonly countValue: number;
   private readonly stateValue: number;
   private readonly rotationValue: number;
   private readonly valueValue: number;
   private readonly onStack: boolean;
   private readonly siteType: SiteType;
+  private readonly footprint: readonly number[];
   /** Defaults to Constants.UNDEFINED on the Java side. */
   private level: number = ACTION_UNDEFINED;
 
@@ -56,23 +78,54 @@ export class ActionAdd extends BaseAction {
     }
     this.toIndex = options.to;
     this.whatIndex = options.what;
+    this.ownerIndex = options.owner ?? options.what;
     this.countValue = options.count ?? 1;
     this.stateValue = options.state ?? ACTION_OFF;
     this.rotationValue = options.rotation ?? ACTION_OFF;
     this.valueValue = options.value ?? ACTION_OFF;
     this.onStack = options.onStack ?? false;
     this.siteType = options.type ?? "Cell";
+    this.footprint = options.footprint ?? [];
   }
 
   public override apply(state: State): State {
     if (this.onStack) {
-      return state.withStackPush(this.toIndex, this.whatIndex);
+      let next = state
+        .withStackPush(this.toIndex, this.ownerIndex)
+        .withWhatAt(this.toIndex, this.whatIndex);
+      if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
+        next = next.withStateAt(this.toIndex, this.stateValue);
+      }
+      return next;
     }
-    return state.withCell(this.toIndex, this.whatIndex);
+    // Java parity: ActionAdd.apply → cs.setSite(.., who, what, count, state, ..)
+    // writes the site state alongside who/what (ActionAdd.java:292).
+    let next = state
+      .withCell(this.toIndex, this.ownerIndex)
+      .withWhatAt(this.toIndex, this.whatIndex);
+    if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
+      next = next.withStateAt(this.toIndex, this.stateValue);
+    }
+    // Large-piece footprint: every covered cell (anchor included) gets count=1
+    // and no owner, matching Java applyLargePiece (removeFromEmpty + setCount).
+    // The count keeps the cell out of `(sites Empty)`; the absent owner keeps
+    // the body out of owner-filtered `(sites Occupied by:…)`.
+    if (this.footprint.length > 0) {
+      for (const loc of this.footprint) {
+        if (loc >= 0) next = next.withCountAt(loc, 1);
+      }
+    }
+    return next;
   }
 
   public override actionType(): ActionType {
     return ActionAdd.TYPE;
+  }
+
+  public override from(): number {
+    // Java parity: ActionAdd.from() returns `to` (Core/.../ActionAdd.java:734).
+    // A placement move reports from()==to()==site, not OFF.
+    return this.toIndex;
   }
 
   public override to(): number {
@@ -84,11 +137,7 @@ export class ActionAdd extends BaseAction {
   }
 
   public override who(): number {
-    // For an Add action, the placing player is the piece owner: the
-    // MVE engine uses 1-based owner indices and that's identical to
-    // `what`. The Java implementation tracks `who` separately so it
-    // can support neutral pieces; the MVE doesn't yet.
-    return this.whatIndex;
+    return this.ownerIndex;
   }
 
   public override count(): number {

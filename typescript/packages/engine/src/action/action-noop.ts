@@ -1,3 +1,4 @@
+// @java (none) — TS-only wrapper for ActionType.Noop enum member; no dedicated Java class
 /**
  * Java parity: `ActionType.Noop` enum member — no dedicated class in
  * Java; the engine constructs `Noop` actions from various places. We
