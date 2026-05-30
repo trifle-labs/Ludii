@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 264.4,
+    "elapsed_s": 262.1,
     "buckets": {
       "COMPILE_FAIL": 1,
       "START_FAIL": 0,
@@ -382,8 +382,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/fill/Suffragetto",
-      "plyReplayed": 118,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 118",
+      "plyReplayed": 122,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 122",
       "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_0.txt"
     },
     {
@@ -925,8 +925,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/connection/Scaffold",
-      "plyReplayed": 43,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 43",
+      "plyReplayed": 44,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 44",
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Scaffold/RandomTrial_0.txt"
     },
     {
@@ -1236,8 +1236,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Patok",
-      "plyReplayed": 154,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 154",
+      "plyReplayed": 155,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 155",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Patok/RandomTrial_0.txt"
     },
     {
@@ -1436,8 +1436,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)",
-      "plyReplayed": 248,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 248",
+      "plyReplayed": 253,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 253",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)/RandomTrial_0.txt"
     },
     {
@@ -1568,15 +1568,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Symmetric Chess",
-      "plyReplayed": 101,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 101",
+      "plyReplayed": 97,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 97",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Symmetric Chess/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Chu Seireigi",
-      "plyReplayed": 33,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 33",
+      "plyReplayed": 34,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 34",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Chu Seireigi/RandomTrial_0.txt"
     },
     {

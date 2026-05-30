@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 334.5,
+    "elapsed_s": 332.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1338,8 +1338,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 395,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 395",
+      "plyReplayed": 400,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 400",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_1.txt"
     },
     {

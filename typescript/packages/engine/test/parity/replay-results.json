@@ -1,33 +1,60 @@
 {
   "summary": {
     "totalTrials": 2,
-    "elapsed_s": 0.6,
+    "elapsed_s": 33.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 0,
+      "MOVE_MISMATCH": 1,
       "WINNER_MISMATCH": 0,
-      "OUTCOME_OK": 2,
-      "REPLAY_OK_NO_OUTCOME": 0
+      "OUTCOME_OK": 0,
+      "REPLAY_OK_NO_OUTCOME": 1
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": []
+    "MOVE_MISMATCH": [
+      [
+        "board/war/replacement/eliminate/all/Tibetan Jiuqi",
+        1
+      ]
+    ]
   },
-  "exampleMismatches": [],
+  "exampleMismatches": [
+    {
+      "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
+      "ply": 377,
+      "recMove": "mover=2,from=11,to=9",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=2,from=1,to=0,isPass=false",
+        "mover=2,from=1,to=2,isPass=false",
+        "mover=2,from=1,to=9,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
   "perTrial": [
     {
-      "bucket": "OUTCOME_OK",
-      "game": "board/space/group/Hermit",
-      "plyReplayed": 46,
-      "trialFile": "../../../Player/res/random_trials/board/space/group/Hermit/RandomTrial_0.txt"
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
+      "ply": 377,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=11,to=9",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=2,from=1,to=0,isPass=false",
+        "mover=2,from=1,to=2,isPass=false",
+        "mover=2,from=1,to=9,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_0.txt"
     },
     {
-      "bucket": "OUTCOME_OK",
-      "game": "board/space/group/Hermit",
-      "plyReplayed": 52,
-      "trialFile": "../../../Player/res/random_trials/board/space/group/Hermit/RandomTrial_1.txt"
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
+      "plyReplayed": 560,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 560",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_1.txt"
     }
   ]
 }

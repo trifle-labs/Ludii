@@ -1342,9 +1342,13 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
       // (size Array <intArray>) → element count of the array/region.
       // (size Stack [type] at:<site> | in:<region>) → sum of stack heights.
       // (size Group at:<site>) → connected same-owner component size.
-      // Territory / LargePiece are not yet modelled (best-effort 0).
+      // LargePiece is not yet modelled (best-effort 0).
       const sub = positional[0];
       const subName = sub && isIdent(sub) ? sub.name : "";
+      if (subName === "Territory") {
+        const territory = lookupLudeme("int", "Territory");
+        if (territory) return territory(node, env) as IntFn;
+      }
       if (subName === "Array") {
         const arrNode = positional[1] ?? named.get("array");
         if (arrNode && isList(arrNode)) {
@@ -4251,6 +4255,10 @@ function compileSites(node: LudList, env: CompileEnv): RegionFn {
   if (arg && isIdent(arg)) {
     const name = arg.name;
     const { positional, named } = parseArgs(node.items.slice(2));
+    if (name === "Pattern") {
+      const pattern = lookupLudeme("region", "Pattern");
+      if (pattern) return pattern(node, env) as RegionFn;
+    }
     switch (name) {
       case "Empty":
         // Java parity: what-based emptiness — neutral pieces (who 0, what>0)
