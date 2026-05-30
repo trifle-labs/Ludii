@@ -3705,7 +3705,7 @@ export function dropSiteType(positional: readonly LudNode[]): readonly LudNode[]
  * matching Java's ContainerState. Returns undefined when the label is not a
  * known component, so the caller falls back to the dynamic `what`.
  */
-function resolveAddedPiece(
+export function resolveAddedPiece(
   label: string,
   env: CompileEnv,
 ): { what: number; owner: number } | undefined {
@@ -12448,6 +12448,10 @@ export function compileEffectAction(
 
 function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
   const second = node.items[1];
+  if (second && isIdent(second)) {
+    const _r = lookupLudeme("moves", second.name.toLowerCase());
+    if (_r) return _r(node, env) as MovesFn;
+  }
   // (move Step <dir> (to if:<bool> (apply <effect>)))
   if (second && isIdent(second) && second.name === "Step") {
     return compileStep(node, env);

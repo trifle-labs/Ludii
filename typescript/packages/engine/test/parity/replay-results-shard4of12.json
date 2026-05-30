@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 317.7,
+    "elapsed_s": 317.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -648,12 +648,12 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/sow/two_rows/Duene",
-      "ply": 19,
+      "ply": 12,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=9,to=9",
+      "recMove": "mover=2,from=3,to=3",
       "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=2,from=2,to=2,isPass=false"
+        "mover=2,from=4,to=4,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Duene/RandomTrial_0.txt"
     },
@@ -1484,8 +1484,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 427,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 427",
+      "plyReplayed": 421,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 421",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_0.txt"
     },
     {
@@ -1511,8 +1511,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Cylinder Chess",
-      "plyReplayed": 198,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 198",
+      "plyReplayed": 214,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 214",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Cylinder Chess/RandomTrial_0.txt"
     },
     {
@@ -1525,8 +1525,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Korkserschach",
-      "plyReplayed": 112,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 112",
+      "plyReplayed": 115,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 115",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Korkserschach/RandomTrial_0.txt"
     },
     {
@@ -1590,8 +1590,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "plyReplayed": 54,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 54",
+      "plyReplayed": 53,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 53",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {
