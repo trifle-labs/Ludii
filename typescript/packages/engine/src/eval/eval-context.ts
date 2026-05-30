@@ -66,6 +66,12 @@ export interface EvalFrame {
    * the *previous ply's* mover, regardless of the hypothetical apply on top.
    */
   readonly prevMover?: number;
+  /**
+   * End-rule role resolution needs Java's stored `state.next()` value. Java
+   * evaluates `(end ...)` before Game.applyInternal rotates mover/next, so a
+   * just-applied `(moveAgain)` is still visible to `RoleType.Next`.
+   */
+  readonly roleNextFromState?: boolean;
   /** Piece type currently being moved (Java: `piece()`). */
   readonly piece?: number;
   /**

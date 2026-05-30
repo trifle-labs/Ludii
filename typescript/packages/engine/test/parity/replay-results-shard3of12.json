@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 367.4,
+    "elapsed_s": 362.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 69,
-      "WINNER_MISMATCH": 11,
+      "WINNER_MISMATCH": 12,
       "OUTCOME_OK": 107,
-      "REPLAY_OK_NO_OUTCOME": 26
+      "REPLAY_OK_NO_OUTCOME": 25
     }
   },
   "top15FailureReasons": {
@@ -1240,7 +1240,7 @@
       "ply": 16,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=12,to=12",
-      "tsMoveCount": 145,
+      "tsMoveCount": 134,
       "sampleTsMoves": [
         "mover=1,from=0,to=0,isPass=false",
         "mover=1,from=1,to=1,isPass=false",
@@ -1333,8 +1333,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 218,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 218",
+      "plyReplayed": 219,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 219",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_1.txt"
     },
     {
@@ -1490,15 +1490,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 88,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 88",
+      "plyReplayed": 87,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 87",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
-      "plyReplayed": 268,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 268",
+      "plyReplayed": 258,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 258",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_1.txt"
     },
     {
@@ -1591,10 +1591,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Horde Chess/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/war/replacement/checkmate/chess/Loop Chess",
-      "plyReplayed": 110,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 110",
+      "plyReplayed": 111,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Loop Chess/RandomTrial_1.txt"
     },
     {
@@ -1773,7 +1780,7 @@
     {
       "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Siryu (War)",
-      "plyReplayed": 515,
+      "plyReplayed": 516,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Siryu (War)/RandomTrial_1.txt"
     },
     {

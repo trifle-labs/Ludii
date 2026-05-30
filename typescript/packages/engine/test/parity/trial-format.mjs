@@ -49,6 +49,20 @@ function parseAction(str) {
     fields.set(key, val);
   }
 
+  // Placement trials record the chosen component as `what`, but many placement
+  // actions have no separate `state` field. The replay harness already narrows
+  // same-site candidates by recorded decision state; mirroring `what` into that
+  // discriminator preserves Java's chosen colour/piece for games that allow two
+  // sibling Add moves at the same site.
+  if (
+    (actionType === 'Add' || actionType === 'Move') &&
+    fields.get('decision') === 'true' &&
+    fields.has('what') &&
+    !fields.has('state')
+  ) {
+    fields.set('state', fields.get('what'));
+  }
+
   return { actionType, fields };
 }
 

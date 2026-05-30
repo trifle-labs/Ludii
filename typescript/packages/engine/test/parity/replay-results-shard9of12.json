@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 258.7,
+    "elapsed_s": 257.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 81,
-      "WINNER_MISMATCH": 11,
-      "OUTCOME_OK": 96,
+      "WINNER_MISMATCH": 9,
+      "OUTCOME_OK": 98,
       "REPLAY_OK_NO_OUTCOME": 25
     }
   },
@@ -872,14 +872,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/blocking/Duidoku",
-      "ply": 61,
+      "ply": 51,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=73,to=73",
-      "tsMoveCount": 14,
+      "recMove": "mover=2,from=78,to=78",
+      "tsMoveCount": 53,
       "sampleTsMoves": [
-        "mover=2,from=46,to=46,isPass=false",
-        "mover=2,from=70,to=70,isPass=false",
-        "mover=2,from=43,to=43,isPass=false"
+        "mover=2,from=10,to=10,isPass=false",
+        "mover=2,from=31,to=31,isPass=false",
+        "mover=2,from=23,to=23,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Duidoku/RandomTrial_1.txt"
     },
@@ -963,17 +963,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/connection/ConHex/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/connection/Esa Hex",
       "plyReplayed": 99,
-      "recWinner": 2,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Esa Hex/RandomTrial_1.txt"
     },
     {
@@ -1041,17 +1033,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/group/Make Muster/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/group/Omega",
-      "plyReplayed": 58,
-      "recWinner": 1,
-      "tsWinner": 2,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
+      "plyReplayed": 60,
       "trialFile": "../../../Player/res/random_trials/board/space/group/Omega/RandomTrial_1.txt"
     },
     {
@@ -1640,8 +1624,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 290,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 290",
+      "plyReplayed": 277,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 277",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
     },
     {
@@ -1737,8 +1721,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 66,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 66",
+      "plyReplayed": 62,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 62",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {

@@ -157,7 +157,9 @@ export class ActionAdd extends BaseAction {
   }
 
   public override state(): number {
-    return this.stateValue;
+    return this.stateValue === ACTION_OFF || this.stateValue === ACTION_UNDEFINED
+      ? this.whatIndex
+      : this.stateValue;
   }
 
   public override rotation(): number {

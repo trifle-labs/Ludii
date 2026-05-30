@@ -148,6 +148,18 @@ export class Trial {
     return undefined;
   }
 
+  /**
+   * Java parity: `Trial.lastTurnMover(moverId)` — scan backward and return the
+   * most recent mover that differs from the current same-turn mover.
+   */
+  public lastTurnMover(moverId: number): number {
+    for (let i = this.moves.length - 1; i >= 0; i -= 1) {
+      const mover = this.moves[i]?.mover;
+      if (mover !== undefined && mover !== moverId) return mover;
+    }
+    return -1;
+  }
+
   /** Java parity: `Trial.getMove(idx)`. Returns undefined if out of range. */
   public getMove(idx: number): Move | undefined {
     if (!Number.isInteger(idx) || idx < 0) return undefined;

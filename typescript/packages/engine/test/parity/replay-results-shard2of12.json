@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 345,
+    "elapsed_s": 346.5,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1224,10 +1224,10 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/territory/Flower Shop",
-      "ply": 24,
+      "ply": 16,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=42,to=42",
-      "tsMoveCount": 89,
+      "recMove": "mover=1,from=101,to=101",
+      "tsMoveCount": 139,
       "sampleTsMoves": [
         "mover=1,from=0,to=0,isPass=false",
         "mover=1,from=1,to=1,isPass=false",
@@ -1312,8 +1312,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 221,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 221",
+      "plyReplayed": 224,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 224",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_0.txt"
     },
     {
@@ -1637,8 +1637,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Seireigi",
-      "plyReplayed": 52,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 52",
+      "plyReplayed": 50,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 50",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1743,7 +1743,7 @@
     {
       "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Siryu (War)",
-      "plyReplayed": 329,
+      "plyReplayed": 330,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Siryu (War)/RandomTrial_0.txt"
     },
     {

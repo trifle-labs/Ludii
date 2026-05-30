@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-30T18:13:15.909Z
+**Date:** 2026-05-30T20:22:19.194Z
 **Trials processed:** 214  
-**Wall time:** 269.8s
+**Wall time:** 269.4s
 
 ## Bucket Summary
 
@@ -10,10 +10,10 @@
 |--------|-------|---|
 | COMPILE_FAIL | 1 | 0.5% |
 | START_FAIL | 0 | 0.0% |
-| MOVE_MISMATCH | 53 | 24.8% |
-| WINNER_MISMATCH | 14 | 6.5% |
-| OUTCOME_OK | 113 | 52.8% |
-| REPLAY_OK_NO_OUTCOME | 33 | 15.4% |
+| MOVE_MISMATCH | 52 | 24.3% |
+| WINNER_MISMATCH | 12 | 5.6% |
+| OUTCOME_OK | 117 | 54.7% |
+| REPLAY_OK_NO_OUTCOME | 32 | 15.0% |
 
 ## Top 15 COMPILE_FAIL Reasons
 
@@ -68,8 +68,8 @@
 - **Detail:** No matching TS move
 
 ### Example 5: `board/race/escape/Tokkadille`
-- **Ply:** 39
-- **Recorded move:** `mover=2,from=17,to=13`
-- **TS moves available:** 13
-- **Sample TS moves:** mover=1,from=4,to=2,isPass=false, mover=1,from=5,to=3,isPass=false, mover=1,from=5,to=1,isPass=false
+- **Ply:** 53
+- **Recorded move:** `mover=1,from=3,to=0`
+- **TS moves available:** 4
+- **Sample TS moves:** mover=1,from=8,to=2,isPass=false, mover=1,from=9,to=3,isPass=false, mover=1,from=10,to=4,isPass=false
 - **Detail:** No matching TS move

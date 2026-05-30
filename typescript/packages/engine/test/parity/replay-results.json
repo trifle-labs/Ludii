@@ -1,67 +1,33 @@
 {
   "summary": {
     "totalTrials": 2,
-    "elapsed_s": 0,
+    "elapsed_s": 0.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 1,
-      "WINNER_MISMATCH": 1,
-      "OUTCOME_OK": 0,
+      "MOVE_MISMATCH": 0,
+      "WINNER_MISMATCH": 0,
+      "OUTCOME_OK": 2,
       "REPLAY_OK_NO_OUTCOME": 0
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": [
-      [
-        "board/war/leaping/lines/Spoing",
-        1
-      ]
-    ]
+    "MOVE_MISMATCH": []
   },
-  "exampleMismatches": [
-    {
-      "game": "board/war/leaping/lines/Spoing",
-      "ply": 1,
-      "recMove": "mover=2,from=28,to=10",
-      "tsMoveCount": 7,
-      "sampleTsMoves": [
-        "mover=2,from=17,to=0,isPass=false",
-        "mover=2,from=18,to=1,isPass=false",
-        "mover=2,from=26,to=28,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    }
-  ],
+  "exampleMismatches": [],
   "perTrial": [
     {
-      "bucket": "WINNER_MISMATCH",
-      "game": "board/war/leaping/lines/Spoing",
-      "plyReplayed": 5,
-      "recWinner": 2,
-      "tsWinner": 0,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
-      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Spoing/RandomTrial_0.txt"
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/Spodd",
+      "plyReplayed": 30,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Spodd/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/war/leaping/lines/Spoing",
-      "ply": 1,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=28,to=10",
-      "tsMoveCount": 7,
-      "sampleTsMoves": [
-        "mover=2,from=17,to=0,isPass=false",
-        "mover=2,from=18,to=1,isPass=false",
-        "mover=2,from=26,to=28,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Spoing/RandomTrial_1.txt"
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/Spodd",
+      "plyReplayed": 28,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Spodd/RandomTrial_1.txt"
     }
   ]
 }

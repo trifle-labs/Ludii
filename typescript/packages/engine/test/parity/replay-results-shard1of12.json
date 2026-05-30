@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 261.2,
+    "elapsed_s": 259.6,
     "buckets": {
       "COMPILE_FAIL": 1,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 51,
-      "WINNER_MISMATCH": 20,
-      "OUTCOME_OK": 109,
+      "WINNER_MISMATCH": 18,
+      "OUTCOME_OK": 111,
       "REPLAY_OK_NO_OUTCOME": 33
     }
   },
@@ -389,8 +389,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/fill/Suffragetto",
-      "plyReplayed": 422,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 422",
+      "plyReplayed": 436,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 436",
       "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_1.txt"
     },
     {
@@ -924,24 +924,16 @@
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Gale/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/connection/Master Y",
       "plyReplayed": 77,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Master Y/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/connection/Scaffold",
-      "plyReplayed": 41,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 41",
+      "plyReplayed": 42,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 42",
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Scaffold/RandomTrial_1.txt"
     },
     {
@@ -1169,17 +1161,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/line/Tsoro Yemutatu (Triangle)/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/line/Unfair",
-      "plyReplayed": 41,
-      "recWinner": 2,
-      "tsWinner": 1,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
+      "plyReplayed": 59,
       "trialFile": "../../../Player/res/random_trials/board/space/line/Unfair/RandomTrial_1.txt"
     },
     {
@@ -1251,8 +1235,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Patok",
-      "plyReplayed": 150,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 150",
+      "plyReplayed": 146,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 146",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Patok/RandomTrial_1.txt"
     },
     {
@@ -1452,8 +1436,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)",
-      "plyReplayed": 273,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 273",
+      "plyReplayed": 275,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 275",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)/RandomTrial_1.txt"
     },
     {

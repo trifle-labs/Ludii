@@ -97,6 +97,12 @@ export interface StateOptions {
    */
   readonly numTurn?: number;
   /**
+   * Java parity: `State.numTurnSamePlayer` (the field returned by
+   * `(count MovesThisTurn)`). Counts same-player continuations in the current
+   * turn; reset to 0 when a new turn starts.
+   */
+  readonly numTurnSamePlayer?: number;
+  /**
    * Java parity: State.diceAllEqual flag (true if last dice roll were
    * all identical, used for win conditions in dice games).
    */
@@ -211,6 +217,8 @@ export class State {
   public readonly next: number;
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
   public readonly numTurn: number;
+  /** Java parity: `State.numTurnSamePlayer`. */
+  public readonly numTurnSamePlayer: number;
   public readonly diceAllEqual: boolean;
   public readonly diceValues: readonly number[];
   public readonly stalemated: readonly boolean[];
@@ -300,6 +308,7 @@ export class State {
     this.trumpSuit = options.trumpSuit ?? 0;
     this.next = options.next ?? 0;
     this.numTurn = options.numTurn ?? 1;
+    this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
     this.diceValues = Object.freeze([...(options.diceValues ?? [])]);
     this.stalemated = Object.freeze(
@@ -864,6 +873,9 @@ export class State {
   public withNewTurn(): State {
     return this.with({ numTurn: this.numTurn + 1 });
   }
+  public withNumTurnSamePlayer(value: number): State {
+    return this.with({ numTurnSamePlayer: value });
+  }
   public withDiceAllEqual(value: boolean): State {
     return this.with({ diceAllEqual: value });
   }
@@ -1012,6 +1024,8 @@ export class State {
         trumpSuit: patch.trumpSuit ?? this.trumpSuit,
         next: patch.next ?? this.next,
         numTurn: patch.numTurn ?? this.numTurn,
+        numTurnSamePlayer:
+          patch.numTurnSamePlayer ?? this.numTurnSamePlayer,
         diceAllEqual: patch.diceAllEqual ?? this.diceAllEqual,
         diceValues: patch.diceValues ?? this.diceValues,
         stalemated: patch.stalemated ?? this.stalemated,

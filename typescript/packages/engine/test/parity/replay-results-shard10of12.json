@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 315.1,
+    "elapsed_s": 320.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1286,11 +1286,11 @@
       "ply": 157,
       "detail": "No matching TS move",
       "recMove": "mover=2,from=144,to=144",
-      "tsMoveCount": 29,
+      "tsMoveCount": 27,
       "sampleTsMoves": [
         "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=10,to=10,isPass=false",
-        "mover=2,from=12,to=12,isPass=false"
+        "mover=2,from=12,to=12,isPass=false",
+        "mover=2,from=19,to=19,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Redstone/RandomTrial_0.txt"
     },
@@ -1467,15 +1467,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 169,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 169",
+      "plyReplayed": 171,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 171",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 30,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 30",
+      "plyReplayed": 29,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 29",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_0.txt"
     },
     {
@@ -1502,8 +1502,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj (14x14)",
-      "plyReplayed": 471,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 471",
+      "plyReplayed": 435,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 435",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj (14x14)/RandomTrial_0.txt"
     },
     {
@@ -1530,8 +1530,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 97,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 97",
+      "plyReplayed": 95,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 95",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_0.txt"
     },
     {
@@ -1551,8 +1551,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 19,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 19",
+      "plyReplayed": 18,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 18",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {
@@ -1565,8 +1565,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Lombard Chess",
-      "plyReplayed": 562,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 562",
+      "plyReplayed": 383,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 383",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Lombard Chess/RandomTrial_0.txt"
     },
     {
@@ -1671,7 +1671,7 @@
     {
       "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Bheri Bakhri",
-      "plyReplayed": 202,
+      "plyReplayed": 204,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Bheri Bakhri/RandomTrial_0.txt"
     },
     {
@@ -1721,7 +1721,7 @@
       "recMove": "mover=1,from=14,to=29",
       "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=2,from=-1,to=-1,isPass=true"
+        "mover=1,from=-1,to=-1,isPass=true"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Sahkku/RandomTrial_0.txt"
     },

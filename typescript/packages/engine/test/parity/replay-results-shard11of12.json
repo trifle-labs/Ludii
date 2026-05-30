@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 288,
+    "elapsed_s": 294.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1283,11 +1283,11 @@
       "ply": 143,
       "detail": "No matching TS move",
       "recMove": "mover=2,from=8,to=8",
-      "tsMoveCount": 39,
+      "tsMoveCount": 38,
       "sampleTsMoves": [
         "mover=2,from=5,to=5,isPass=false",
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=12,to=12,isPass=false"
+        "mover=2,from=21,to=21,isPass=false",
+        "mover=2,from=27,to=27,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Redstone/RandomTrial_1.txt"
     },
@@ -1470,15 +1470,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 166,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 166",
+      "plyReplayed": 160,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 160",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 28,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 28",
+      "plyReplayed": 27,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 27",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_1.txt"
     },
     {
@@ -1540,8 +1540,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 124,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 124",
+      "plyReplayed": 115,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 115",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
     },
     {
@@ -1699,7 +1699,7 @@
     {
       "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Bheri Bakhri",
-      "plyReplayed": 200,
+      "plyReplayed": 201,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Bheri Bakhri/RandomTrial_1.txt"
     },
     {

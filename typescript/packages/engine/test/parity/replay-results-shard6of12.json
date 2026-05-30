@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 301.2,
+    "elapsed_s": 302.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 62,
-      "WINNER_MISMATCH": 13,
-      "OUTCOME_OK": 106,
+      "WINNER_MISMATCH": 12,
+      "OUTCOME_OK": 107,
       "REPLAY_OK_NO_OUTCOME": 32
     }
   },
@@ -417,14 +417,12 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/race/reach/Chonpa",
-      "ply": 1,
+      "ply": 22,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=61,to=58",
-      "tsMoveCount": 12,
+      "recMove": "mover=4,from=32,to=48",
+      "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=2,from=21,to=20,isPass=false",
-        "mover=2,from=21,to=20,isPass=false",
-        "mover=2,from=21,to=20,isPass=false"
+        "mover=4,from=-1,to=-1,isPass=true"
       ],
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Chonpa/RandomTrial_0.txt"
     },
@@ -889,8 +887,8 @@
       "recMove": "mover=1,from=83,to=83",
       "tsMoveCount": 2,
       "sampleTsMoves": [
-        "mover=2,from=-1,to=-1,isPass=false",
-        "mover=2,from=-1,to=-1,isPass=true"
+        "mover=1,from=-1,to=-1,isPass=false",
+        "mover=1,from=-1,to=-1,isPass=true"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Coil/RandomTrial_0.txt"
     },
@@ -1007,17 +1005,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/group/Signum/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/group/Taiji",
       "plyReplayed": 78,
-      "recWinner": 1,
-      "tsWinner": 2,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/group/Taiji/RandomTrial_0.txt"
     },
     {
@@ -1239,8 +1229,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Go",
-      "plyReplayed": 189,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 189",
+      "plyReplayed": 191,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 191",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Go/RandomTrial_0.txt"
     },
     {
@@ -1260,8 +1250,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/One-Eyed Go",
-      "plyReplayed": 147,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 147",
+      "plyReplayed": 148,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 148",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/One-Eyed Go/RandomTrial_0.txt"
     },
     {
@@ -1305,8 +1295,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Bizingo",
-      "plyReplayed": 151,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 151",
+      "plyReplayed": 153,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 153",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Bizingo/RandomTrial_0.txt"
     },
     {
@@ -1485,8 +1475,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chatur",
-      "plyReplayed": 264,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 264",
+      "plyReplayed": 257,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 257",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chatur/RandomTrial_0.txt"
     },
     {
@@ -1552,15 +1542,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Brusky Chess",
-      "plyReplayed": 90,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 90",
+      "plyReplayed": 89,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 89",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Brusky Chess/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/De Vasa Chess",
-      "plyReplayed": 89,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 89",
+      "plyReplayed": 92,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 92",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/De Vasa Chess/RandomTrial_0.txt"
     },
     {
@@ -1661,8 +1651,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Xiangqi",
-      "plyReplayed": 257,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 257",
+      "plyReplayed": 246,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 246",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Xiangqi/RandomTrial_0.txt"
     },
     {
@@ -1730,7 +1720,7 @@
       "ply": 8,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=26,to=12",
-      "tsMoveCount": 120,
+      "tsMoveCount": 128,
       "sampleTsMoves": [
         "mover=1,from=6,to=6,isPass=false",
         "mover=1,from=14,to=14,isPass=false",
@@ -1932,9 +1922,9 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "math/graph/Contagion",
-      "ply": 5,
+      "ply": 7,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=26,to=26",
+      "recMove": "mover=1,from=50,to=50",
       "tsMoveCount": 1,
       "sampleTsMoves": [
         "mover=1,from=-1,to=-1,isPass=true"

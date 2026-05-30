@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 282.6,
+    "elapsed_s": 283.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -424,14 +424,12 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/race/reach/Chonpa",
-      "ply": 1,
+      "ply": 9,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=64,to=61",
-      "tsMoveCount": 6,
+      "recMove": "mover=4,from=31,to=49",
+      "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=2,from=21,to=3,isPass=false",
-        "mover=2,from=21,to=2,isPass=false",
-        "mover=2,from=21,to=20,isPass=false"
+        "mover=4,from=-1,to=-1,isPass=true"
       ],
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Chonpa/RandomTrial_1.txt"
     },
@@ -1210,8 +1208,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Go",
-      "plyReplayed": 186,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 186",
+      "plyReplayed": 188,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 188",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Go/RandomTrial_1.txt"
     },
     {
@@ -1231,8 +1229,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/One-Eyed Go",
-      "plyReplayed": 146,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 146",
+      "plyReplayed": 148,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 148",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/One-Eyed Go/RandomTrial_1.txt"
     },
     {
@@ -1276,8 +1274,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Bizingo",
-      "plyReplayed": 148,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 148",
+      "plyReplayed": 149,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 149",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Bizingo/RandomTrial_1.txt"
     },
     {
@@ -1467,8 +1465,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chatur",
-      "plyReplayed": 163,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 163",
+      "plyReplayed": 156,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 156",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chatur/RandomTrial_1.txt"
     },
     {
@@ -1526,15 +1524,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Brusky Chess",
-      "plyReplayed": 65,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 65",
+      "plyReplayed": 64,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 64",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Brusky Chess/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/De Vasa Chess",
-      "plyReplayed": 85,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 85",
+      "plyReplayed": 87,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 87",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/De Vasa Chess/RandomTrial_1.txt"
     },
     {
@@ -1642,8 +1640,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Xiangqi",
-      "plyReplayed": 234,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 234",
+      "plyReplayed": 233,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 233",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Xiangqi/RandomTrial_1.txt"
     },
     {
@@ -1711,7 +1709,7 @@
       "ply": 21,
       "detail": "No matching TS move",
       "recMove": "mover=2,from=41,to=43",
-      "tsMoveCount": 98,
+      "tsMoveCount": 92,
       "sampleTsMoves": [
         "mover=2,from=1,to=1,isPass=false",
         "mover=2,from=8,to=8,isPass=false",

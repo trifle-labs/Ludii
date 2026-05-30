@@ -335,6 +335,11 @@ export function resolveRole(name: string, ctx: EvalContext): number {
       // Bound by `(forEach Player …)` via frame.player; falls back to mover.
       return ctx.player;
     case "Next":
+      if (ctx.frame.roleNextFromState) {
+        return ctx.state.next > 0
+          ? ctx.state.next
+          : (ctx.mover % ctx.context.game.numPlayers) + 1;
+      }
       // NOTE: Java `Id.eval(Next)` is `state.next()`, which after a
       // `(moveAgain)` override equals the mover. But applying that override here
       // is UNFAITHFUL for `(sites Next)` evaluated inside a move's `(then …)`
@@ -875,6 +880,8 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
           const dir = parseGroupDirectionArg(positional, pi);
           const ifNode = named.get("If") ?? named.get("if");
           const cond = ifNode ? compileBool(ifNode, env) : undefined;
+          const visibleNode = named.get("isVisible");
+          const isVisible = visibleNode ? compileBool(visibleNode, env) : undefined;
           const minNode = named.get("min");
           const minFn = minNode ? compileInt(minNode, env) : undefined;
           if (kind.name === "Groups") {
@@ -884,6 +891,7 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
                 return javaStyleGroupFlood(ctx, {
                   dirTokens: dir.dirTokens,
                   condition: cond,
+                  isVisible,
                   min,
                   mode: "conditionOnly",
                 }).length;
@@ -896,6 +904,7 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
               for (const g of javaStyleGroupFlood(ctx, {
                 dirTokens: dir.dirTokens,
                 condition: cond,
+                isVisible,
                 mode: "conditionOnly",
               }))
                 if (g.size > max) max = g.size;
@@ -1647,11 +1656,14 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
       };
     }
     case "prev": {
-      // (prev) — the player who made the most recent move (Java: Prev.java).
-      // Falls back to the cyclic predecessor of the current mover before any
-      // move has been made.
+      const type = positional[0];
+      const moverLastTurn =
+        type && isIdent(type) && type.name === "MoverLastTurn";
+      // Java Prev.eval: default PrevType.Mover returns state.prev(); the
+      // MoverLastTurn arm calls trial.lastTurnMover(state.mover()).
       return {
         eval: (ctx) => {
+          if (moverLastTurn) return ctx.context.trial.lastTurnMover(ctx.mover);
           const last = ctx.context.trial.lastMove();
           if (last) return last.mover;
           const n = ctx.context.game.numPlayers;
@@ -5847,6 +5859,7 @@ interface JavaStyleGroupFloodOptions {
   readonly dirTokens?: readonly string[];
   readonly seeds?: readonly number[];
   readonly condition?: BoolFn;
+  readonly isVisible?: BoolFn;
   readonly min?: number;
   readonly mode: JavaStyleGroupFloodMode;
 }
@@ -5874,8 +5887,43 @@ function javaStyleGroupFlood(
   opts: JavaStyleGroupFloodOptions,
 ): Set<number>[] {
   const n = ctx.state.cells.length;
+  const visible = opts.isVisible?.eval(ctx) === true;
+  const occupiedUpward = (site: number): Set<number> => {
+    const out = new Set<number>();
+    for (const up of ctx.board.traj?.steps(site, "Upward") ?? []) {
+      if (ctx.state.whatAtSite(up) !== 0) out.add(up);
+    }
+    return out;
+  };
+  const covered = (site: number): boolean => {
+    if (!visible) return false;
+    const x = ctx.board.xOf(site);
+    const y = ctx.board.yOf(site);
+    for (let other = 0; other < n; other += 1) {
+      if (other <= site || ctx.state.whatAtSite(other) === 0) continue;
+      if (
+        Math.abs(ctx.board.xOf(other) - x) < 1e-9 &&
+        Math.abs(ctx.board.yOf(other) - y) < 1e-9
+      ) {
+        return true;
+      }
+    }
+    return false;
+  };
+  const hiddenConnection = (from: number, to: number): boolean => {
+    if (!visible) return false;
+    const fromUp = occupiedUpward(from);
+    if (fromUp.size < 2) return false;
+    let common = 0;
+    for (const up of occupiedUpward(to)) {
+      if (fromUp.has(up)) common += 1;
+      if (common >= 2) return true;
+    }
+    return false;
+  };
   const evalCondition = (site: number, seed?: number): boolean => {
     if (site < 0 || site >= n) return false;
+    if (covered(site)) return false;
     if (!opts.condition) return ctx.state.isOccupiedSite(site);
     const frame =
       seed === undefined
@@ -5889,6 +5937,7 @@ function javaStyleGroupFlood(
     seed?: number,
   ): boolean => {
     if (site < 0 || site >= n) return false;
+    if (covered(site)) return false;
     if (opts.condition || opts.mode === "conditionOnly") {
       return evalCondition(site, seed);
     }
@@ -5910,6 +5959,7 @@ function javaStyleGroupFlood(
       const s = stack.pop() as number;
       for (const nb of javaStyleGroupNeighbours(ctx, s, opts.dirTokens)) {
         if (comp.has(nb) || sharedSeen?.has(nb)) continue;
+        if (hiddenConnection(s, nb)) continue;
         if (!accepts(nb, seedWhat, start)) continue;
         comp.add(nb);
         sharedSeen?.add(nb);
@@ -6063,16 +6113,9 @@ function stepDistance(
   return OFF;
 }
 
-/** Moves played so far in the current turn — the run of trailing moves by the mover. */
+/** Java CountMovesThisTurn.eval returns state.numTurnSamePlayer(). */
 function movesThisTurn(ctx: EvalContext): number {
-  const moves = ctx.context.trial.moves;
-  const mover = ctx.mover;
-  let n = 0;
-  for (let i = moves.length - 1; i >= 0; i -= 1) {
-    if (moves[i]?.mover === mover) n += 1;
-    else break;
-  }
-  return n;
+  return ctx.state.numTurnSamePlayer;
 }
 
 export function aroundSites(
@@ -6733,6 +6776,7 @@ export function compileMoves(node: LudNode, env: CompileEnv): MovesFn {
           const mover = ctx.mover;
           const what = whatFn.eval(ctx);
           const effectiveWhat = what > 0 ? what : mover;
+          const owner = env.componentOwnerById?.[effectiveWhat] ?? mover;
           const count = countFn.eval(ctx);
           for (const site of addRegion.eval(ctx)) {
             if (site < 0) continue;
@@ -6743,7 +6787,13 @@ export function compileMoves(node: LudNode, env: CompileEnv): MovesFn {
               mover,
               placedOwner: mover,
               actions: [
-                new ActionAdd({ to: site, what: effectiveWhat, count, onStack }),
+                new ActionAdd({
+                  to: site,
+                  what: effectiveWhat,
+                  owner,
+                  count,
+                  onStack,
+                }),
               ],
             });
             if (addThenEffect) {
@@ -12773,8 +12823,10 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
         const what = staticPiece ? staticPiece.what : whatFn.eval(ctx);
         const effectiveWhat = what > 0 ? what : mover;
         // Neutral/Shared placements keep who == 0; only default the owner to the
-        // mover when the piece label did not carry one.
-        const owner = staticPiece ? staticPiece.owner : mover;
+        // mover when the component table cannot identify the dynamic piece.
+        const owner = staticPiece
+          ? staticPiece.owner
+          : (env.componentOwnerById?.[effectiveWhat] ?? mover);
         // Large piece (`(tile …)` with a turtle walk): its placement covers the
         // whole footprint, so only an anchor where every covered cell is on the
         // board and empty is legal — Java's `Component.locs` returns [] (illegal)

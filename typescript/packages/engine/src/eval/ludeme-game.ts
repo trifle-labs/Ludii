@@ -3599,7 +3599,9 @@ export class LudemeGame implements Game {
     // move recorded in a throwaway trial so `(last To)` etc. resolve.
     const evalTrial = context.trial.withMove(move, false, -1);
     const evalContext = new Context(this, placed, evalTrial, context.rng);
-    const evalCtx = new EvalContext(evalContext, this.board);
+    const evalCtx = new EvalContext(evalContext, this.board, {
+      roleNextFromState: true,
+    });
 
     // Java (Game.java:3063): the mover's current-phase `(end …)` is evaluated
     // first, then the game-level `(end …)`. `placed.mover` is still the player
@@ -3686,13 +3688,15 @@ export class LudemeGame implements Game {
             ? phased.mover
             : (phased.mover % this.numPlayers) + 1;
       advanced = phased.withMover(nextMover).withNext(0);
-      // Java parity (Game.java:3203-3208): after `setMover(next)`, a *new* turn
-      // begins (`reinitNumTurnSamePlayer` → `++numTurn`) unless the same player
-      // keeps moving and the move was not a swap. `(count Turns)` reads this
-      // counter, which Java initialises to 1. A `(moveAgain)` continuation keeps
-      // the same mover and so stays within the same turn.
-      if (nextMover !== phased.mover || move.isSwap()) {
-        advanced = advanced.withNewTurn();
+      // Java parity (Game.java:3200-3206): after `setMover(next)`, same-player
+      // continuations increment `numTurnSamePlayer`; a real turn change (or
+      // swap) resets it and bumps `numTurn` via `reinitNumTurnSamePlayer`.
+      if (nextMover === phased.mover && !move.isSwap()) {
+        advanced = advanced.withNumTurnSamePlayer(
+          advanced.numTurnSamePlayer + 1,
+        );
+      } else {
+        advanced = advanced.withNewTurn().withNumTurnSamePlayer(0);
       }
       // Java parity (Game.java:3180-3195, `if (requiresVisited())`): maintain
       // the per-turn visited-site set. When the turn passes to a different

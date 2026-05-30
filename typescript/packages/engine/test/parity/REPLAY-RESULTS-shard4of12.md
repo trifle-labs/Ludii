@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-30T18:14:08.703Z
+**Date:** 2026-05-30T20:23:09.516Z
 **Trials processed:** 213  
-**Wall time:** 322.6s
+**Wall time:** 319.8s
 
 ## Bucket Summary
 
@@ -53,10 +53,10 @@
 - **Detail:** No matching TS move
 
 ### Example 3: `board/race/escape/Garanguet`
-- **Ply:** 4
-- **Recorded move:** `mover=1,from=24,to=24`
-- **TS moves available:** 1
-- **Sample TS moves:** mover=2,from=25,to=18,isPass=false
+- **Ply:** 138
+- **Recorded move:** `mover=2,from=25,to=22`
+- **TS moves available:** 5
+- **Sample TS moves:** mover=2,from=2,to=2,isPass=false, mover=2,from=15,to=15,isPass=false, mover=2,from=21,to=21,isPass=false
 - **Detail:** No matching TS move
 
 ### Example 4: `board/race/escape/Knossos Game`

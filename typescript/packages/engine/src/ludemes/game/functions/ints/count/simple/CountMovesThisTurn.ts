@@ -17,12 +17,7 @@ export function compileCountMovesThisTurn(
 }
 
 function movesThisTurn(ctx: EvalContext): number {
-  let n = 0;
-  for (let i = ctx.context.trial.moves.length - 1; i >= 0; i -= 1) {
-    if (ctx.context.trial.moves[i]?.mover === ctx.mover) n += 1;
-    else break;
-  }
-  return n;
+  return ctx.state.numTurnSamePlayer;
 }
 
 register("int", "count:MovesThisTurn", compileCountMovesThisTurn as any);
