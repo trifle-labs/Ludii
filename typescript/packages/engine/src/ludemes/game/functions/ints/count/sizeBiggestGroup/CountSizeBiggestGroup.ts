@@ -25,10 +25,14 @@ export function compileCountSizeBiggestGroup(node: LudList, env: CompileEnv): In
   const typeNode = positional[index];
   if (typeNode && isIdent(typeNode) && SITE_TYPES.has(typeNode.name)) index += 1;
   const dirNode = positional[index];
-  const dir = dirNode && isIdent(dirNode) && DIRECTIONS.has(dirNode.name)
-    ? [dirNode.name]
-    : ["Adjacent"];
-  const throughAnyNode = named.get("throughAny");
+  const hasDir = dirNode && isIdent(dirNode) && DIRECTIONS.has(dirNode.name);
+  const dir = hasDir ? [dirNode.name] : ["Adjacent"];
+  if (hasDir) index += 1;
+  // Java constructor argument order is `(count SizeBiggestGroup [type]
+  // [directions] [throughAny] If:... isVisible:...)`; Spuzzle uses the
+  // positional region form `(count SizeBiggestGroup (sites Around (to)) if:...)`.
+  // @java Core/src/game/functions/ints/count/sizeBiggestGroup/CountSizeBiggestGroup.java:55-73
+  const throughAnyNode = named.get("throughAny") ?? positional[index];
   const throughAny = throughAnyNode ? compileRegion(throughAnyNode, env) : undefined;
   const ifNode = named.get("If") ?? named.get("if");
   const cond = ifNode ? compileBool(ifNode, env) : undefined;

@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 279.9,
+    "elapsed_s": 292.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 61,
-      "WINNER_MISMATCH": 11,
-      "OUTCOME_OK": 108,
+      "WINNER_MISMATCH": 10,
+      "OUTCOME_OK": 109,
       "REPLAY_OK_NO_OUTCOME": 33
     }
   },
@@ -1208,8 +1208,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Go",
-      "plyReplayed": 186,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 186",
+      "plyReplayed": 172,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 172",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Go/RandomTrial_1.txt"
     },
     {
@@ -1229,8 +1229,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/One-Eyed Go",
-      "plyReplayed": 146,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 146",
+      "plyReplayed": 135,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 135",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/One-Eyed Go/RandomTrial_1.txt"
     },
     {
@@ -1274,8 +1274,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Bizingo",
-      "plyReplayed": 148,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 148",
+      "plyReplayed": 141,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 141",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Bizingo/RandomTrial_1.txt"
     },
     {
@@ -1465,8 +1465,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chatur",
-      "plyReplayed": 163,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 163",
+      "plyReplayed": 159,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 159",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chatur/RandomTrial_1.txt"
     },
     {
@@ -1531,8 +1531,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/De Vasa Chess",
-      "plyReplayed": 89,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 89",
+      "plyReplayed": 86,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 86",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/De Vasa Chess/RandomTrial_1.txt"
     },
     {
@@ -1640,8 +1640,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Xiangqi",
-      "plyReplayed": 248,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 248",
+      "plyReplayed": 210,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 210",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Xiangqi/RandomTrial_1.txt"
     },
     {
@@ -1981,16 +1981,9 @@
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Peg Solitaire/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "puzzle/planning/Spuzzle",
       "plyReplayed": 18,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Spuzzle/RandomTrial_1.txt"
     },
     {

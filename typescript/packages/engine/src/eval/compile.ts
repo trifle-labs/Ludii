@@ -3771,6 +3771,18 @@ export function resolveAddedPiece(
   if (!idByLabel) return undefined;
   let what = idByLabel.get(label);
   let owner = env.pieceOwner.get(label);
+  // Java's Piece constructor defaults a missing role to RoleType.Each. In a
+  // one-player game this port registers the concrete component as
+  // "<label>1"; allow move-time adds to use the bare label just like start
+  // placements do. This matters when the label itself ends in a digit
+  // (`"Ball1"`), where stripping trailing digits would otherwise look for
+  // base `"Ball"` and fall back to the mover's primary component.
+  // @java Core/src/game/equipment/component/Piece.java
+  if (what === undefined && env.numPlayers === 1) {
+    const onlyLabel = `${label}1`;
+    what = idByLabel.get(onlyLabel);
+    if (owner === undefined) owner = env.pieceOwner.get(onlyLabel);
+  }
   const m = /^(.*?)(\d+)$/.exec(label);
   if (m?.[1] !== undefined && m[2] !== undefined) {
     if (what === undefined) what = idByLabel.get(m[1]);

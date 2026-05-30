@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-05-30T22:36:50.639Z",
+  "recorded": "2026-05-30T22:55:48.378Z",
   "java": {
     "Core/src/other/action/state/ActionAddPlayerToTeam.java": {
       "hash": "14f0e9e4b9d5bfa0",
@@ -433,6 +433,14 @@
         "src/ludemes/game/functions/ints/iterator/Edge.ts"
       ]
     },
+    "Core/src/game/equipment/component/Piece.java": {
+      "hash": "c09b67d08603f14e",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/eval/ludeme-game.ts",
+        "src/ludemes/game/equipment/component/Piece.ts"
+      ]
+    },
     "Core/src/game/functions/region/sites/moves/SitesTo.java": {
       "hash": "4805f2e8f37ed879",
       "ts": [
@@ -573,13 +581,6 @@
       "ts": [
         "src/eval/ludeme-game.ts",
         "src/ludemes/game/equipment/container/board/Track.ts"
-      ]
-    },
-    "Core/src/game/equipment/component/Piece.java": {
-      "hash": "c09b67d08603f14e",
-      "ts": [
-        "src/eval/ludeme-game.ts",
-        "src/ludemes/game/equipment/component/Piece.ts"
       ]
     },
     "Core/src/other/GameLoader.java": {
@@ -10706,6 +10707,7 @@
       "hash": "c09b67d08603f14e",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/eval/ludeme-game.ts",
         "src/ludemes/game/equipment/component/Piece.ts"
       ]
