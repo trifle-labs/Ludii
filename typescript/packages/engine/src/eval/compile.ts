@@ -493,6 +493,52 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
       return { eval: (ctx) => ctx.frame.between ?? OFF };
     case "site":
       return { eval: (ctx) => ctx.frame.site ?? OFF };
+    case "edge": {
+      // @java Core/src/game/functions/ints/iterator/Edge.java
+      // With no args, return the context edge; with two vertex ids, find the
+      // topology edge joining them and return its index, else Constants.OFF.
+      if (positional.length === 0) {
+        return { eval: (ctx) => (ctx.frame as { edge?: number }).edge ?? OFF };
+      }
+      if (positional.length !== 2) {
+        throw new LudemeCompileError("(edge ...) needs zero args or two vertices.");
+      }
+      const aFn = compileInt(positional[0]!, env);
+      const bFn = compileInt(positional[1]!, env);
+      return {
+        eval: (ctx) => {
+          const va = aFn.eval(ctx);
+          const vb = bFn.eval(ctx);
+          if (va < 0 || vb < 0) return OFF;
+
+          const edgeEls = ((ctx.board.traj as unknown as {
+            core?: { topo?: { edgeEls?: readonly unknown[] } };
+          })?.core?.topo?.edgeEls ?? []) as readonly {
+            id: number;
+            va: { id: number };
+            vb: { id: number };
+          }[];
+          for (const edge of edgeEls) {
+            if (
+              (edge.va.id === va && edge.vb.id === vb) ||
+              (edge.va.id === vb && edge.vb.id === va)
+            ) {
+              return edge.id;
+            }
+          }
+
+          for (const edge of ctx.board.topo.edges) {
+            if (
+              (edge.a === va && edge.b === vb) ||
+              (edge.a === vb && edge.b === va)
+            ) {
+              return edge.index;
+            }
+          }
+          return OFF;
+        },
+      };
+    }
     case "value": {
       // (value Player <role>) → the player's stored integer value, set by
       // (set Value <player> <int>). Java: ints.value.player.ValuePlayer →
@@ -5416,7 +5462,7 @@ function lineOfSightSites(
         if (farthest && prevTo !== -1) out.add(prevTo);
         break;
       }
-      const occupied = (ctx.state.cells[s] ?? 0) !== 0;
+      const occupied = ctx.state.isOccupiedSite(s);
       if (empty) {
         if (!occupied) out.add(s);
       } else if (farthest) {

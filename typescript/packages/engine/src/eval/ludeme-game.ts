@@ -880,6 +880,11 @@ function parseTrackString(
         break;
       }
       if (tok === "Off") break;
+      if (/^<[^>]+:end>$/.test(tok)) {
+        cur = width === 1 ? height - 1 : width * height - 1;
+        sites.push(cur);
+        continue;
+      }
       if (/^-?\d+$/.test(tok)) {
         cur = Number(tok) - indexOffset;
         sites.push(cur);
@@ -890,7 +895,15 @@ function parseTrackString(
       const dir = m[1];
       const limit = m[2] ? Number(m[2]) : Number.POSITIVE_INFINITY;
       for (let k = 0; k < limit; k += 1) {
-        const nx = stepper(cur, dir);
+        let nx = stepper(cur, dir);
+        // @java Core/src/game/equipment/container/board/Track.java
+        // Linear vertex tracks on `(rectangle 1 N)` are written as `"N,W"` in
+        // mancala-style puzzles such as Tchoukaillon. The graph trajectory has
+        // no geometric west edge on a one-column board, but Java's track parser
+        // still walks the linear site ids downward. Mirror that narrow case so
+        // the declared track is `N,N-1,...,0` instead of empty after its start.
+        if (nx < 0 && width === 1 && dir === "W" && cur > 0) nx = cur - 1;
+        if (nx < 0 && width === 1 && dir === "E" && cur < height - 1) nx = cur + 1;
         if (nx < 0) break;
         cur = nx;
         sites.push(cur);
@@ -904,6 +917,13 @@ function parseTrackString(
     if (tok === "End") {
       sites.push(END);
       break;
+    }
+    if (/^<[^>]+:end>$/.test(tok)) {
+      const idx = width === 1 ? height - 1 : width * height - 1;
+      cx = idx % width;
+      cy = Math.floor(idx / width);
+      sites.push(idx);
+      continue;
     }
     if (/^\d+$/.test(tok)) {
       // Track literals reference Java's cell indices, where a leading store
@@ -2276,6 +2296,14 @@ function resolvePlacementOwner(
 ): number | undefined {
   const direct = env.pieceOwner.get(label);
   if (direct !== undefined) return direct;
+  // @java Core/src/game/equipment/component/Piece.java
+  // A missing role means RoleType.Each. In a one-player game Java still lets
+  // placements use the bare component name; this port registers the concrete
+  // component as "<label>1", so bridge that unambiguous case here.
+  if (env.numPlayers === 1) {
+    const onlyPlayer = env.pieceOwner.get(`${label}1`);
+    if (onlyPlayer !== undefined) return onlyPlayer;
+  }
   const m = /^(.*?)(\d+)$/.exec(label);
   if (m?.[1] !== undefined && m[2] !== undefined && env.pieceOwner.has(m[1])) {
     return Number(m[2]);
@@ -2297,6 +2325,13 @@ function resolvePlacementWhat(
   if (!map) return undefined;
   const direct = map.get(label);
   if (direct !== undefined) return direct;
+  // @java Core/src/game/equipment/component/Piece.java
+  // Bare labels for one-player RoleType.Each pieces resolve to that sole
+  // player's component, mirroring resolvePlacementOwner() above.
+  if (env.numPlayers === 1) {
+    const onlyPlayer = map.get(`${label}1`);
+    if (onlyPlayer !== undefined) return onlyPlayer;
+  }
   // The Ludii convention names the placement `"<base><playerIndex>"` even when
   // the component is registered under the bare base label — e.g. a Neutral
   // `(piece "Disc" …)` is registered as "Disc" but placed as "Disc0", and a

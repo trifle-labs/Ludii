@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 283,
+    "elapsed_s": 284.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1316,8 +1316,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 60,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 60",
+      "plyReplayed": 59,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 59",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1472,15 +1472,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 160,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 160",
+      "plyReplayed": 167,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 167",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 27,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 27",
+      "plyReplayed": 28,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 28",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_1.txt"
     },
     {
@@ -1542,8 +1542,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 130,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 130",
+      "plyReplayed": 124,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 124",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
     },
     {
@@ -2009,14 +2009,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "puzzle/planning/Labirintus",
-      "ply": 0,
+      "ply": 4,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=170,to=250",
-      "tsMoveCount": 8,
+      "recMove": "mover=1,from=149,to=145",
+      "tsMoveCount": 3,
       "sampleTsMoves": [
-        "mover=1,from=149,to=9,isPass=false",
-        "mover=1,from=149,to=140,isPass=false",
-        "mover=1,from=149,to=159,isPass=false"
+        "mover=1,from=254,to=34,isPass=false",
+        "mover=1,from=254,to=243,isPass=false",
+        "mover=1,from=254,to=294,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Labirintus/RandomTrial_1.txt"
     },

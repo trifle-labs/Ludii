@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 249.4,
+    "elapsed_s": 254.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 81,
+      "MOVE_MISMATCH": 80,
       "WINNER_MISMATCH": 9,
       "OUTCOME_OK": 99,
-      "REPLAY_OK_NO_OUTCOME": 24
+      "REPLAY_OK_NO_OUTCOME": 25
     }
   },
   "top15FailureReasons": {
@@ -1624,9 +1624,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Dice Chess/RandomTrial_1.txt"
     },
     {
-      "bucket": "OUTCOME_OK",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 440,
+      "plyReplayed": 302,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 302",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
     },
     {
@@ -1701,8 +1702,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 31,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 31",
+      "plyReplayed": 29,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 29",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_1.txt"
     },
     {
@@ -1722,8 +1723,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 68,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 68",
+      "plyReplayed": 65,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 65",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {
@@ -2102,16 +2103,9 @@
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Pentalpha/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "puzzle/planning/Tchoukaillon",
-      "ply": 2,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=3,to=3",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=1,from=2,to=2,isPass=false",
-        "mover=1,from=4,to=4,isPass=false"
-      ],
+      "plyReplayed": 5,
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Tchoukaillon/RandomTrial_1.txt"
     },
     {

@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-05-30T20:45:31.195Z",
+  "recorded": "2026-05-30T22:36:50.639Z",
   "java": {
     "Core/src/other/action/state/ActionAddPlayerToTeam.java": {
       "hash": "14f0e9e4b9d5bfa0",
@@ -426,6 +426,13 @@
         "src/tri-game.ts"
       ]
     },
+    "Core/src/game/functions/ints/iterator/Edge.java": {
+      "hash": "45f908c0f8ad79c4",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/ints/iterator/Edge.ts"
+      ]
+    },
     "Core/src/game/functions/region/sites/moves/SitesTo.java": {
       "hash": "4805f2e8f37ed879",
       "ts": [
@@ -561,6 +568,20 @@
         "src/eval/graph/trajectory/trajectories.ts"
       ]
     },
+    "Core/src/game/equipment/container/board/Track.java": {
+      "hash": "76ac30c2e971b7e5",
+      "ts": [
+        "src/eval/ludeme-game.ts",
+        "src/ludemes/game/equipment/container/board/Track.ts"
+      ]
+    },
+    "Core/src/game/equipment/component/Piece.java": {
+      "hash": "c09b67d08603f14e",
+      "ts": [
+        "src/eval/ludeme-game.ts",
+        "src/ludemes/game/equipment/component/Piece.ts"
+      ]
+    },
     "Core/src/other/GameLoader.java": {
       "hash": "d9992aa70b30df25",
       "ts": [
@@ -609,12 +630,6 @@
         "src/ludemes/game/equipment/component/Die.ts"
       ]
     },
-    "Core/src/game/equipment/component/Piece.java": {
-      "hash": "c09b67d08603f14e",
-      "ts": [
-        "src/ludemes/game/equipment/component/Piece.ts"
-      ]
-    },
     "Core/src/game/equipment/component/tile/Domino.java": {
       "hash": "4857b89f11792281",
       "ts": [
@@ -649,12 +664,6 @@
       "hash": "8ce4d29ca305fec6",
       "ts": [
         "src/ludemes/game/equipment/container/board/Boardless.ts"
-      ]
-    },
-    "Core/src/game/equipment/container/board/Track.java": {
-      "hash": "76ac30c2e971b7e5",
-      "ts": [
-        "src/ludemes/game/equipment/container/board/Track.ts"
       ]
     },
     "Core/src/game/equipment/container/board/custom/MancalaBoard.java": {
@@ -2773,12 +2782,6 @@
       "hash": "31c550d7bad6c000",
       "ts": [
         "src/ludemes/game/functions/ints/iterator/Between.ts"
-      ]
-    },
-    "Core/src/game/functions/ints/iterator/Edge.java": {
-      "hash": "45f908c0f8ad79c4",
-      "ts": [
-        "src/ludemes/game/functions/ints/iterator/Edge.ts"
       ]
     },
     "Core/src/game/functions/ints/iterator/From.java": {
@@ -7728,6 +7731,7 @@
       "hash": "45f908c0f8ad79c4",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/ints/iterator/Edge.ts"
       ]
     },
@@ -10702,6 +10706,7 @@
       "hash": "c09b67d08603f14e",
       "ported": true,
       "ts": [
+        "src/eval/ludeme-game.ts",
         "src/ludemes/game/equipment/component/Piece.ts"
       ]
     },
@@ -10761,6 +10766,7 @@
       "hash": "76ac30c2e971b7e5",
       "ported": true,
       "ts": [
+        "src/eval/ludeme-game.ts",
         "src/ludemes/game/equipment/container/board/Track.ts"
       ]
     },

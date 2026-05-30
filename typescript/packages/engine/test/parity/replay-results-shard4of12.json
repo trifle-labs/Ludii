@@ -1,12 +1,12 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 315.2,
+    "elapsed_s": 317.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 57,
-      "WINNER_MISMATCH": 13,
+      "MOVE_MISMATCH": 56,
+      "WINNER_MISMATCH": 14,
       "OUTCOME_OK": 111,
       "REPLAY_OK_NO_OUTCOME": 32
     }
@@ -238,8 +238,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 44,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 44",
+      "plyReplayed": 43,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 43",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_0.txt"
     },
     {
@@ -1488,8 +1488,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 448,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 448",
+      "plyReplayed": 411,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 411",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_0.txt"
     },
     {
@@ -1515,8 +1515,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Cylinder Chess",
-      "plyReplayed": 220,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 220",
+      "plyReplayed": 217,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 217",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Cylinder Chess/RandomTrial_0.txt"
     },
     {
@@ -1713,8 +1713,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "plyReplayed": 375,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 375",
+      "plyReplayed": 373,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 373",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_0.txt"
     },
     {
@@ -1952,15 +1952,16 @@
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Nao Gutiya Baithaneka/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "puzzle/planning/Spalone",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=30,to=28",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+      "plyReplayed": 22,
+      "recWinner": 0,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        0
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Spalone/RandomTrial_0.txt"
     },
     {

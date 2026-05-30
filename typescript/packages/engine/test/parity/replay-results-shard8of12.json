@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 274.4,
+    "elapsed_s": 276.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 77,
+      "MOVE_MISMATCH": 76,
       "WINNER_MISMATCH": 8,
       "OUTCOME_OK": 104,
-      "REPLAY_OK_NO_OUTCOME": 24
+      "REPLAY_OK_NO_OUTCOME": 25
     }
   },
   "top15FailureReasons": {
@@ -1591,17 +1591,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Dice Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 489,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
+      "plyReplayed": 488,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 488",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_0.txt"
     },
     {
@@ -1675,8 +1668,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 64,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 64",
+      "plyReplayed": 65,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 65",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_0.txt"
     },
     {
@@ -1696,8 +1689,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 115,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 115",
+      "plyReplayed": 112,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 112",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_0.txt"
     },
     {
@@ -2052,16 +2045,16 @@
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Pentalpha/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "puzzle/planning/Tchoukaillon",
-      "ply": 1,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=1,to=1",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=1,from=2,to=2,isPass=false",
-        "mover=1,from=4,to=4,isPass=false"
+      "plyReplayed": 8,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Tchoukaillon/RandomTrial_0.txt"
     },
     {

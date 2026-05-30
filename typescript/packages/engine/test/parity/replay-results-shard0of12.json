@@ -1,23 +1,18 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 266,
+    "elapsed_s": 269.2,
     "buckets": {
-      "COMPILE_FAIL": 1,
+      "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 51,
+      "MOVE_MISMATCH": 52,
       "WINNER_MISMATCH": 12,
       "OUTCOME_OK": 117,
       "REPLAY_OK_NO_OUTCOME": 33
     }
   },
   "top15FailureReasons": {
-    "COMPILE_FAIL": [
-      [
-        "Unsupported int ludeme: (edge …).",
-        1
-      ]
-    ],
+    "COMPILE_FAIL": [],
     "MOVE_MISMATCH": [
       [
         "board/race/escape/Ashta-kashte",
@@ -382,8 +377,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/fill/Suffragetto",
-      "plyReplayed": 380,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 380",
+      "plyReplayed": 375,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 375",
       "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_0.txt"
     },
     {
@@ -914,8 +909,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/connection/Scaffold",
-      "plyReplayed": 43,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 43",
+      "plyReplayed": 41,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 41",
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Scaffold/RandomTrial_0.txt"
     },
     {
@@ -1217,8 +1212,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Patok",
-      "plyReplayed": 151,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 151",
+      "plyReplayed": 142,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 142",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Patok/RandomTrial_0.txt"
     },
     {
@@ -1411,8 +1406,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)",
-      "plyReplayed": 247,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 247",
+      "plyReplayed": 245,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 245",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)/RandomTrial_0.txt"
     },
     {
@@ -1543,8 +1538,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Symmetric Chess",
-      "plyReplayed": 98,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 98",
+      "plyReplayed": 99,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 99",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Symmetric Chess/RandomTrial_0.txt"
     },
     {
@@ -1899,9 +1894,15 @@
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Lam Turki/RandomTrial_0.txt"
     },
     {
-      "bucket": "COMPILE_FAIL",
+      "bucket": "MOVE_MISMATCH",
       "game": "puzzle/planning/Morpion Solitaire",
-      "detail": "Unsupported int ludeme: (edge …).",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=292,to=291",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Morpion Solitaire/RandomTrial_0.txt"
     },
     {
