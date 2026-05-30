@@ -24,6 +24,8 @@ export function compileBoolIf(node: LudList, env: CompileEnv): BoolFn {
   const elseFn = elseNode
     ? compileBool(elseNode, env)
     : { eval: () => false };
+  // Java evaluates only the selected branch; a missing else returns false
+  // (If.java:55-65).
   return { eval: (ctx) => (cond.eval(ctx) ? thenFn : elseFn).eval(ctx) };
 }
 

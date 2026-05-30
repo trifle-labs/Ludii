@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 240.9,
+    "elapsed_s": 238.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 82,
       "WINNER_MISMATCH": 12,
-      "OUTCOME_OK": 94,
-      "REPLAY_OK_NO_OUTCOME": 25
+      "OUTCOME_OK": 95,
+      "REPLAY_OK_NO_OUTCOME": 24
     }
   },
   "top15FailureReasons": {
@@ -1645,10 +1645,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Dice Chess/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 347,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 347",
+      "plyReplayed": 440,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
     },
     {
@@ -1744,8 +1743,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 124,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 124",
+      "plyReplayed": 132,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 132",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {

@@ -1,3 +1,7 @@
 // @java Core/src/game/functions/booleans/all/AllSitesType.java
 
-// TODO Phase 2: faithful port from AllSitesType.java (currently handled in compile.ts compileBool shared all logic).
+// Java enum values only; runtime dispatch is implemented by All.ts / sites/*
+// (AllSitesType.java:9-15). No registry entry: enum declarations are not
+// standalone ludemes in the current TS dispatcher.
+export const ALL_SITES_TYPES = ["Sites", "Different"] as const;
+export type AllSitesType = (typeof ALL_SITES_TYPES)[number];

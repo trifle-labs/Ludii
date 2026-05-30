@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 279.5,
+    "elapsed_s": 281.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1237,8 +1237,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Go",
-      "plyReplayed": 202,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 202",
+      "plyReplayed": 201,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 201",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Go/RandomTrial_0.txt"
     },
     {
@@ -1258,8 +1258,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/One-Eyed Go",
-      "plyReplayed": 152,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 152",
+      "plyReplayed": 155,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 155",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/One-Eyed Go/RandomTrial_0.txt"
     },
     {
@@ -1303,8 +1303,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Bizingo",
-      "plyReplayed": 161,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 161",
+      "plyReplayed": 159,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 159",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Bizingo/RandomTrial_0.txt"
     },
     {
@@ -1483,8 +1483,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chatur",
-      "plyReplayed": 296,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 296",
+      "plyReplayed": 282,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 282",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chatur/RandomTrial_0.txt"
     },
     {
@@ -1550,15 +1550,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Brusky Chess",
-      "plyReplayed": 98,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 98",
+      "plyReplayed": 96,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 96",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Brusky Chess/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/De Vasa Chess",
-      "plyReplayed": 104,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 104",
+      "plyReplayed": 97,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 97",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/De Vasa Chess/RandomTrial_0.txt"
     },
     {

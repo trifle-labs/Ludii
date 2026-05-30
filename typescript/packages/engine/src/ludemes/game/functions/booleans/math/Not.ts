@@ -14,6 +14,8 @@ export function compileNot(node: LudList, env: CompileEnv): BoolFn {
   const arg = rest[0];
   if (!arg) throw new LudemeCompileError("(not ...) needs an argument.");
   const inner = compileBool(arg, env);
+  // Java returns the negated child result after any static-cache check
+  // (Not.java:43-50).
   return { eval: (ctx) => !inner.eval(ctx) };
 }
 

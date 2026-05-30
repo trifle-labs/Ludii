@@ -69,6 +69,12 @@ const DENY = new Set<string>([
   'int:who',
   'int:state',
   'int:where',
+  // wave 1: root-family dispatchers that intercept the whole (all …)/(no …)
+  // family — the legacy compile.ts compileAll/compileNo handle the subtypes
+  // correctly; the faithful root ports diverged on (all Sites if:(is Occupied)).
+  'bool:all',
+  'bool:no',
+  'bool:Sites',
 ]);
 
 /** Every ludeme that called register() — the 1:1 mapping surface (live or not). */
