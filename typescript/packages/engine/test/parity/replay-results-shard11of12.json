@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 272,
+    "elapsed_s": 285.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -956,8 +956,9 @@
       "ply": 1,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=18,to=18",
-      "tsMoveCount": 1,
+      "tsMoveCount": 2,
       "sampleTsMoves": [
+        "mover=1,from=20,to=20,isPass=false",
         "mover=1,from=-1,to=-1,isPass=true"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Madrod/RandomTrial_1.txt"
@@ -1013,14 +1014,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/group/Feed the Ducks",
-      "ply": 2,
+      "ply": 3,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=45,to=39",
-      "tsMoveCount": 16,
+      "recMove": "mover=2,from=39,to=49",
+      "tsMoveCount": 20,
       "sampleTsMoves": [
-        "mover=1,from=45,to=6,isPass=false",
-        "mover=1,from=45,to=7,isPass=false",
-        "mover=1,from=45,to=8,isPass=false"
+        "mover=2,from=39,to=7,isPass=false",
+        "mover=2,from=39,to=8,isPass=false",
+        "mover=2,from=39,to=9,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/group/Feed the Ducks/RandomTrial_1.txt"
     },
@@ -1313,8 +1314,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 66,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 66",
+      "plyReplayed": 61,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 61",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1469,8 +1470,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 168,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 168",
+      "plyReplayed": 166,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 166",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
@@ -1539,8 +1540,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 121,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 121",
+      "plyReplayed": 122,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 122",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
     },
     {

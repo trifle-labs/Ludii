@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 246.4,
+    "elapsed_s": 274.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 79,
+      "MOVE_MISMATCH": 77,
       "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 102,
-      "REPLAY_OK_NO_OUTCOME": 23
+      "OUTCOME_OK": 103,
+      "REPLAY_OK_NO_OUTCOME": 24
     }
   },
   "top15FailureReasons": {
@@ -525,12 +525,13 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/race/score/Splastwo",
-      "ply": 1,
+      "ply": 4,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=22,to=22",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=8,to=8",
+      "tsMoveCount": 2,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=2,from=2,to=2,isPass=false",
+        "mover=2,from=-1,to=-1,isPass=true"
       ],
       "trialFile": "../../../Player/res/random_trials/board/race/score/Splastwo/RandomTrial_0.txt"
     },
@@ -1231,17 +1232,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Atari Go/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/territory/Chucka",
-      "ply": 34,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=15,to=19",
-      "tsMoveCount": 19,
-      "sampleTsMoves": [
-        "mover=1,from=10,to=11,isPass=false",
-        "mover=1,from=15,to=22,isPass=false",
-        "mover=1,from=16,to=22,isPass=false"
-      ],
+      "plyReplayed": 182,
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Chucka/RandomTrial_0.txt"
     },
     {
@@ -1688,8 +1681,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 63,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 63",
+      "plyReplayed": 65,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 65",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_0.txt"
     },
     {
@@ -1707,9 +1700,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Taikyoku Shogi/RandomTrial_0.txt"
     },
     {
-      "bucket": "OUTCOME_OK",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 126,
+      "plyReplayed": 113,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 113",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_0.txt"
     },
     {
@@ -1765,17 +1759,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Chaturaji/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Diagonals (2002)",
-      "ply": 2,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=7,to=7",
-      "tsMoveCount": 3,
-      "sampleTsMoves": [
-        "mover=1,from=27,to=27,isPass=false",
-        "mover=1,from=36,to=36,isPass=false",
-        "mover=1,from=45,to=45,isPass=false"
-      ],
+      "plyReplayed": 61,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Diagonals (2002)/RandomTrial_0.txt"
     },
     {
@@ -1819,12 +1805,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/eliminate/all/Sweep Burrow",
-      "ply": 1,
+      "ply": 10,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=35,to=27",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=25,to=43",
+      "tsMoveCount": 62,
       "sampleTsMoves": [
-        "mover=1,from=41,to=57,isPass=false"
+        "mover=2,from=3,to=11,isPass=false",
+        "mover=2,from=3,to=4,isPass=false",
+        "mover=2,from=3,to=2,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Sweep Burrow/RandomTrial_0.txt"
     },

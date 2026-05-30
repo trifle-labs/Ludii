@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 244.1,
+    "elapsed_s": 250.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 82,
+      "MOVE_MISMATCH": 81,
       "WINNER_MISMATCH": 11,
-      "OUTCOME_OK": 95,
+      "OUTCOME_OK": 96,
       "REPLAY_OK_NO_OUTCOME": 25
     }
   },
@@ -543,8 +543,9 @@
       "ply": 1,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=8,to=8",
-      "tsMoveCount": 1,
+      "tsMoveCount": 2,
       "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false",
         "mover=1,from=-1,to=-1,isPass=true"
       ],
       "trialFile": "../../../Player/res/random_trials/board/race/score/Splastwo/RandomTrial_1.txt"
@@ -1639,8 +1640,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 336,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 336",
+      "plyReplayed": 349,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 349",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
     },
     {
@@ -1715,8 +1716,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 27,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 27",
+      "plyReplayed": 30,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 30",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_1.txt"
     },
     {
@@ -1736,8 +1737,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 129,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 129",
+      "plyReplayed": 65,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 65",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {
@@ -1793,17 +1794,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Chaturaji/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Diagonals (2002)",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=46,to=46",
-      "tsMoveCount": 4,
-      "sampleTsMoves": [
-        "mover=1,from=18,to=18,isPass=false",
-        "mover=1,from=27,to=27,isPass=false",
-        "mover=1,from=36,to=36,isPass=false"
-      ],
+      "plyReplayed": 59,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Diagonals (2002)/RandomTrial_1.txt"
     },
     {
@@ -1847,12 +1840,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/eliminate/all/Sweep Burrow",
-      "ply": 1,
+      "ply": 5,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=60,to=52",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=45,to=54",
+      "tsMoveCount": 65,
       "sampleTsMoves": [
-        "mover=1,from=23,to=7,isPass=false"
+        "mover=2,from=2,to=10,isPass=false",
+        "mover=2,from=2,to=1,isPass=false",
+        "mover=2,from=3,to=11,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Sweep Burrow/RandomTrial_1.txt"
     },

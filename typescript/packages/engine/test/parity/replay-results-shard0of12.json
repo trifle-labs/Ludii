@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 262.9,
+    "elapsed_s": 264.6,
     "buckets": {
       "COMPILE_FAIL": 1,
       "START_FAIL": 0,
@@ -382,8 +382,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/fill/Suffragetto",
-      "plyReplayed": 124,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 124",
+      "plyReplayed": 396,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 396",
       "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_0.txt"
     },
     {
@@ -1430,8 +1430,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)",
-      "plyReplayed": 252,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 252",
+      "plyReplayed": 248,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 248",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)/RandomTrial_0.txt"
     },
     {
@@ -1562,15 +1562,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Symmetric Chess",
-      "plyReplayed": 100,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 100",
+      "plyReplayed": 99,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 99",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Symmetric Chess/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Chu Seireigi",
-      "plyReplayed": 33,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 33",
+      "plyReplayed": 23,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 23",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Chu Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1785,7 +1785,7 @@
       "ply": 33,
       "detail": "No matching TS move",
       "recMove": "mover=2,from=40,to=40",
-      "tsMoveCount": 15,
+      "tsMoveCount": 16,
       "sampleTsMoves": [
         "mover=2,from=4,to=4,isPass=false",
         "mover=2,from=6,to=6,isPass=false",

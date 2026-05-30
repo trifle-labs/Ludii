@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 307.4,
+    "elapsed_s": 313.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 59,
-      "WINNER_MISMATCH": 14,
-      "OUTCOME_OK": 109,
-      "REPLAY_OK_NO_OUTCOME": 31
+      "MOVE_MISMATCH": 57,
+      "WINNER_MISMATCH": 13,
+      "OUTCOME_OK": 111,
+      "REPLAY_OK_NO_OUTCOME": 32
     }
   },
   "top15FailureReasons": {
@@ -236,8 +236,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 46,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 46",
+      "plyReplayed": 45,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 45",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_0.txt"
     },
     {
@@ -781,14 +781,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/blocking/4 Squared",
-      "ply": 22,
+      "ply": 21,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=68,to=56",
-      "tsMoveCount": 82,
+      "recMove": "mover=2,from=30,to=35",
+      "tsMoveCount": 84,
       "sampleTsMoves": [
-        "mover=1,from=93,to=99,isPass=false",
-        "mover=1,from=93,to=97,isPass=false",
-        "mover=1,from=100,to=1,isPass=false"
+        "mover=2,from=7,to=1,isPass=false",
+        "mover=2,from=31,to=36,isPass=false",
+        "mover=2,from=37,to=42,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/4 Squared/RandomTrial_0.txt"
     },
@@ -834,14 +834,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/blocking/Overflow",
-      "ply": 5,
+      "ply": 26,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=7,to=1",
-      "tsMoveCount": 158,
+      "recMove": "mover=1,from=2,to=7",
+      "tsMoveCount": 13,
       "sampleTsMoves": [
-        "mover=2,from=0,to=6,isPass=false",
-        "mover=2,from=0,to=7,isPass=false",
-        "mover=2,from=2,to=3,isPass=false"
+        "mover=1,from=0,to=1,isPass=false",
+        "mover=1,from=2,to=1,isPass=false",
+        "mover=1,from=2,to=3,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Overflow/RandomTrial_0.txt"
     },
@@ -963,15 +963,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/group/Mono/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/group/Sibling",
-      "ply": 1,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=54,to=54",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=2,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 60,
       "trialFile": "../../../Player/res/random_trials/board/space/group/Sibling/RandomTrial_0.txt"
     },
     {
@@ -1196,17 +1190,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Inkblots/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Mity",
       "plyReplayed": 56,
-      "recWinner": 2,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Mity/RandomTrial_0.txt"
     },
     {
@@ -1498,8 +1484,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 493,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 493",
+      "plyReplayed": 488,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 488",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_0.txt"
     },
     {
@@ -1525,8 +1511,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Cylinder Chess",
-      "plyReplayed": 225,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 225",
+      "plyReplayed": 230,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 230",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Cylinder Chess/RandomTrial_0.txt"
     },
     {
@@ -1539,8 +1525,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Korkserschach",
-      "plyReplayed": 116,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 116",
+      "plyReplayed": 117,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 117",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Korkserschach/RandomTrial_0.txt"
     },
     {
@@ -1604,15 +1590,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "plyReplayed": 63,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 63",
+      "plyReplayed": 55,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 55",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 15,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 15",
+      "plyReplayed": 14,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 14",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1721,17 +1707,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Skirmish (GDL)/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "ply": 377,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=11,to=9",
-      "tsMoveCount": 32,
-      "sampleTsMoves": [
-        "mover=2,from=1,to=0,isPass=false",
-        "mover=2,from=1,to=2,isPass=false",
-        "mover=2,from=1,to=9,isPass=false"
-      ],
+      "plyReplayed": 376,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 376",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_0.txt"
     },
     {
@@ -1746,7 +1725,7 @@
       "ply": 4,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=22,to=23",
-      "tsMoveCount": 40,
+      "tsMoveCount": 43,
       "sampleTsMoves": [
         "mover=1,from=21,to=10,isPass=false",
         "mover=1,from=21,to=11,isPass=false",
