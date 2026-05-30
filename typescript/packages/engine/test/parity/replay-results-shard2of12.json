@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 341.2,
+    "elapsed_s": 345,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -337,12 +337,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/race/escape/Senet",
-      "ply": 13,
+      "ply": 45,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=18,to=16",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=28,to=29",
+      "tsMoveCount": 8,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=false"
+        "mover=2,from=12,to=11,isPass=false",
+        "mover=2,from=19,to=18,isPass=false",
+        "mover=2,from=21,to=22,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Senet/RandomTrial_0.txt"
     },
@@ -1474,8 +1476,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
-      "plyReplayed": 164,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 164",
+      "plyReplayed": 162,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 162",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_0.txt"
     },
     {
@@ -1635,8 +1637,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Seireigi",
-      "plyReplayed": 51,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 51",
+      "plyReplayed": 52,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 52",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Seireigi/RandomTrial_0.txt"
     },
     {

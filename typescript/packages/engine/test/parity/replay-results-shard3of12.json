@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 361.8,
+    "elapsed_s": 367.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 69,
-      "WINNER_MISMATCH": 12,
+      "WINNER_MISMATCH": 11,
       "OUTCOME_OK": 107,
-      "REPLAY_OK_NO_OUTCOME": 25
+      "REPLAY_OK_NO_OUTCOME": 26
     }
   },
   "top15FailureReasons": {
@@ -338,12 +338,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/race/escape/Senet",
-      "ply": 2,
+      "ply": 15,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=23,to=24",
-      "tsMoveCount": 1,
+      "recMove": "mover=1,from=28,to=29",
+      "tsMoveCount": 8,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=false"
+        "mover=1,from=14,to=13,isPass=false",
+        "mover=1,from=17,to=16,isPass=false",
+        "mover=1,from=20,to=21,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Senet/RandomTrial_1.txt"
     },
@@ -1331,8 +1333,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 220,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 220",
+      "plyReplayed": 218,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 218",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_1.txt"
     },
     {
@@ -1589,17 +1591,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Horde Chess/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Loop Chess",
-      "plyReplayed": 111,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
+      "plyReplayed": 110,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 110",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Loop Chess/RandomTrial_1.txt"
     },
     {

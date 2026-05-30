@@ -3817,7 +3817,7 @@ const REGION_HEADS = new Set([
 ]);
 
 /** True for nodes that produce a region rather than a single site. */
-function isRegionNode(node: LudNode): boolean {
+export function isRegionNode(node: LudNode): boolean {
   if (!isList(node)) return false;
   if (node.delimiter === "curly") return true;
   return REGION_HEADS.has(listHead(node) ?? "");
