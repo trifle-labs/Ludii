@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 259,
+    "elapsed_s": 246.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 79,
-      "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 101,
-      "REPLAY_OK_NO_OUTCOME": 25
+      "WINNER_MISMATCH": 9,
+      "OUTCOME_OK": 102,
+      "REPLAY_OK_NO_OUTCOME": 23
     }
   },
   "top15FailureReasons": {
@@ -1604,10 +1604,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Dice Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 458,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 458",
+      "plyReplayed": 489,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_0.txt"
     },
     {
@@ -1618,10 +1625,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/McCooey Chess",
-      "plyReplayed": 576,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 576",
+      "plyReplayed": 586,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/McCooey Chess/RandomTrial_0.txt"
     },
     {
@@ -1682,8 +1688,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 61,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 61",
+      "plyReplayed": 63,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 63",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_0.txt"
     },
     {
