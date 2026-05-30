@@ -436,7 +436,7 @@ export function unwrapParens(node: LudNode): LudNode {
 }
 
 /** A move generator that never produces anything. */
-const EMPTY_MOVES: MovesFn = { generate: () => [] };
+export const EMPTY_MOVES: MovesFn = { generate: () => [] };
 
 /** Java: main.Constants.MAX_NUM_ITERATION — the infinite-loop guard `(while …)`
  * uses to bound the temp-context iteration. */
@@ -8984,7 +8984,7 @@ function stepNeighbours(
 }
 
 /** An effect block: `(apply <effect>)` → extra actions for the move. */
-type EffectFn = (ctx: EvalContext) => Action[];
+export type EffectFn = (ctx: EvalContext) => Action[];
 
 /**
  * Parsed `(custodial …)` ludeme: the anchor, direction tokens, the bounded
@@ -9227,7 +9227,10 @@ function compileApply(node: LudList, env: CompileEnv): EffectFn {
 export function compileEffect(node: LudList, env: CompileEnv): EffectFn {
   const head = listHead(node);
   const _r = head ? lookupLudeme("effect", head) : undefined;
-  if (_r) return _r(node, env) as EffectFn;
+  if (_r) {
+    const compiled = _r(node, env) as EffectFn | undefined;
+    if (compiled) return compiled;
+  }
   // A curly `{ eff … }` block is an implicit sequence of sub-effects, as is
   // `(and { … })` where the `and` takes a single curly-list argument. Flatten
   // either into a lenient sequence so one unsupported member doesn't fail the
@@ -11213,7 +11216,12 @@ export function compileEffectAction(
 ): EffectFn | undefined {
   const head = listHead(node);
   const _r = head ? lookupLudeme("effect", head) : undefined;
-  if (_r) return _r(node, env, inThen, allowForEachSite) as EffectFn;
+  if (_r) {
+    const compiled = _r(node, env, inThen, allowForEachSite) as
+      | EffectFn
+      | undefined;
+    if (compiled) return compiled;
+  }
   if (head === "moveAgain") {
     // As an effect (e.g. inside `(if … (moveAgain))`): schedule the current
     // mover to play again by overriding the next player. Java: MoveAgain emits

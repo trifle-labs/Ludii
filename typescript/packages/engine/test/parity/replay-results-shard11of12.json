@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 280.8,
+    "elapsed_s": 282.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1314,8 +1314,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 60,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 60",
+      "plyReplayed": 59,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 59",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1470,8 +1470,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 171,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 171",
+      "plyReplayed": 166,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 166",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
@@ -1540,8 +1540,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 128,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 128",
+      "plyReplayed": 129,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 129",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
     },
     {

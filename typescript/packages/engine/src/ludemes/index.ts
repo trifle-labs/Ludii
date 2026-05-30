@@ -750,3 +750,4 @@ import './game/rules/start/set/sites/SetPhase.js';
 import './game/rules/start/set/sites/SetSite.js';
 import './game/rules/start/split/Split.js';
 import './game/rules/start/split/SplitType.js';
+import './game/util/moves/Flips.js';

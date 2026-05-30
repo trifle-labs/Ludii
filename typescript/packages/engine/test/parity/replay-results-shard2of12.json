@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 338.5,
+    "elapsed_s": 341.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1310,8 +1310,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 225,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 225",
+      "plyReplayed": 223,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 223",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_0.txt"
     },
     {
@@ -1474,8 +1474,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
-      "plyReplayed": 166,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 166",
+      "plyReplayed": 165,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 165",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_0.txt"
     },
     {
@@ -1635,8 +1635,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Seireigi",
-      "plyReplayed": 52,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 52",
+      "plyReplayed": 51,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 51",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Seireigi/RandomTrial_0.txt"
     },
     {
