@@ -3300,6 +3300,14 @@ function hasLineThrough(
   const board = ctx.board;
   const traj = board.traj;
   if (traj !== undefined) {
+    if (
+      radialDirNames.includes("SameLayer") &&
+      hasGeometricSameLayerLineThrough(
+        ctx, len, pivot, matches, exact, whats, meetsThrough, useOpposites,
+      )
+    ) {
+      return true;
+    }
     // Pivot-centric bidirectional walk, mirroring Java IsLine: for each distinct
     // radial from the pivot, count the contiguous owned run outward, then extend
     // through each opposite radial. Non-exact succeeds as soon as the run
@@ -3378,6 +3386,105 @@ function hasLineThrough(
       }
     }
     if ((exact ? count === len : count >= len) && meetsThrough(seen)) return true;
+  }
+  return false;
+}
+
+function hasGeometricSameLayerLineThrough(
+  ctx: EvalContext,
+  len: number,
+  pivot: number,
+  matches: (cell: number) => boolean,
+  exact: boolean,
+  whats: readonly number[],
+  meetsThrough: (seen: Set<number>) => boolean,
+  useOpposites: boolean,
+): boolean {
+  const board = ctx.board;
+  const pivotZ = board.zOf(pivot);
+  if (Math.abs(pivotZ) < 1e-9) {
+    let hasRaisedSite = false;
+    for (let s = 0; s < board.numSites; s += 1) {
+      if (Math.abs(board.zOf(s)) > 1e-9) {
+        hasRaisedSite = true;
+        break;
+      }
+    }
+    if (!hasRaisedSite) return false;
+  }
+
+  const px = board.xOf(pivot);
+  const py = board.yOf(pivot);
+  const sameLayer: number[] = [];
+  for (let s = 0; s < board.numSites; s += 1) {
+    if (s === pivot) continue;
+    if (Math.abs(board.zOf(s) - pivotZ) > 1e-6) continue;
+    const dx = board.xOf(s) - px;
+    const dy = board.yOf(s) - py;
+    if (Math.hypot(dx, dy) <= 1e-9) continue;
+    sameLayer.push(s);
+  }
+  if (sameLayer.length === 0) return false;
+
+  const axes = new Map<string, { ux: number; uy: number }>();
+  for (const s of sameLayer) {
+    const dx = board.xOf(s) - px;
+    const dy = board.yOf(s) - py;
+    const mag = Math.hypot(dx, dy);
+    let ux = dx / mag;
+    let uy = dy / mag;
+    if (ux < -1e-9 || (Math.abs(ux) <= 1e-9 && uy < -1e-9)) {
+      ux = -ux;
+      uy = -uy;
+    }
+    const key = `${Math.round(ux * 1e6)}:${Math.round(uy * 1e6)}`;
+    axes.set(key, { ux, uy });
+  }
+
+  const walk = (axis: { ux: number; uy: number }, sign: 1 | -1): number[] => {
+    const ray: { site: number; dist: number }[] = [];
+    for (const s of sameLayer) {
+      const dx = board.xOf(s) - px;
+      const dy = board.yOf(s) - py;
+      const projection = sign * (dx * axis.ux + dy * axis.uy);
+      if (projection <= 1e-7) continue;
+      const cross = Math.abs(dx * axis.uy - dy * axis.ux);
+      if (cross > 1e-6) continue;
+      ray.push({ site: s, dist: projection });
+    }
+    ray.sort((a, b) => a.dist - b.dist);
+    const out: number[] = [];
+    for (const { site } of ray) {
+      if (!matches(site)) break;
+      out.push(site);
+    }
+    return out;
+  };
+
+  for (const axis of axes.values()) {
+    const seen = new Set<number>([whats[pivot] ?? 0]);
+    let count = 1;
+    for (const s of walk(axis, 1)) {
+      count += 1;
+      seen.add(whats[s] ?? 0);
+    }
+    if (!exact && count >= len && meetsThrough(seen)) return true;
+    if (!useOpposites) {
+      if (count === len && meetsThrough(seen)) return true;
+      continue;
+    }
+    const oppSeen = new Set<number>(seen);
+    let oppositeCount = count;
+    for (const s of walk(axis, -1)) {
+      oppositeCount += 1;
+      oppSeen.add(whats[s] ?? 0);
+    }
+    if (
+      (exact ? oppositeCount === len : oppositeCount >= len) &&
+      meetsThrough(oppSeen)
+    ) {
+      return true;
+    }
   }
   return false;
 }

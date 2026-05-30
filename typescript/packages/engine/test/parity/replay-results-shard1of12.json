@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 257,
+    "elapsed_s": 259.9,
     "buckets": {
       "COMPILE_FAIL": 1,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 52,
+      "MOVE_MISMATCH": 51,
       "WINNER_MISMATCH": 21,
-      "OUTCOME_OK": 107,
+      "OUTCOME_OK": 108,
       "REPLAY_OK_NO_OUTCOME": 33
     }
   },
@@ -389,8 +389,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/fill/Suffragetto",
-      "plyReplayed": 113,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 113",
+      "plyReplayed": 109,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 109",
       "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_1.txt"
     },
     {
@@ -940,8 +940,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/connection/Scaffold",
-      "plyReplayed": 42,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 42",
+      "plyReplayed": 41,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 41",
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Scaffold/RandomTrial_1.txt"
     },
     {
@@ -1251,8 +1251,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Patok",
-      "plyReplayed": 153,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 153",
+      "plyReplayed": 146,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 146",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Patok/RandomTrial_1.txt"
     },
     {
@@ -1270,15 +1270,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Refugia/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/territory/Spodd",
-      "ply": 13,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=6,to=6",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 28,
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Spodd/RandomTrial_1.txt"
     },
     {
@@ -1458,8 +1452,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)",
-      "plyReplayed": 278,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 278",
+      "plyReplayed": 273,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 273",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)/RandomTrial_1.txt"
     },
     {
@@ -1471,8 +1465,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Parsi Chess",
-      "plyReplayed": 130,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 130",
+      "plyReplayed": 128,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 128",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Parsi Chess/RandomTrial_1.txt"
     },
     {

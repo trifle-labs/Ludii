@@ -214,52 +214,119 @@ function stepsToFor(element: GElement, steps: Steps): void {
 
 /**
  * @java Trajectories.mapAngleToAbsoluteDirection
- * Bin a step's planar angle into a compass direction. `intercardinal` selects
- * the 16-point set (used when two steps collide in the 8-point set). Planar
- * boards have elevation 0, so only the 2-D branch is reachable here.
+ * Bin a step's angle into a compass/spatial direction. `intercardinal` selects
+ * the 16-point set (used when two steps collide in the 8-point set). Java uses
+ * z-delta to classify pyramidal Shibumi support steps as upward/downward, so
+ * they are not SameLayer line continuations.
  */
 function mapAngleToAbsoluteDirection(
   step: Step,
-  _unit: number,
+  unit: number,
   intercardinal: boolean,
 ): AbsoluteDirection {
   const a = step.from.pt;
   const b = step.to.pt;
-  // 2-D planar boards: elevation is always 0 (z === 0), so omit the U/D branch.
+  let elevation = 0;
+  if (b.z - a.z < -0.1 * unit) elevation = -1;
+  else if (b.z - a.z > 0.1 * unit) elevation = 1;
+  if (elevation !== 0 && Math.hypot(b.x - a.x, b.y - a.y) < 0.1 * unit) {
+    return elevation < 0 ? AbsoluteDirection.D : AbsoluteDirection.U;
+  }
+
   let angle = Math.atan2(b.y - a.y, b.x - a.x);
   while (angle < 0) angle += 2 * Math.PI;
   while (angle > 2 * Math.PI) angle -= 2 * Math.PI;
 
   if (!intercardinal) {
     const off = (2 * Math.PI) / 16;
-    if (angle < off) return AbsoluteDirection.E;
-    if (angle < off + (2 * Math.PI) / 8) return AbsoluteDirection.NE;
-    if (angle < off + (4 * Math.PI) / 8) return AbsoluteDirection.N;
-    if (angle < off + (6 * Math.PI) / 8) return AbsoluteDirection.NW;
-    if (angle < off + (8 * Math.PI) / 8) return AbsoluteDirection.W;
-    if (angle < off + (10 * Math.PI) / 8) return AbsoluteDirection.SW;
-    if (angle < off + (12 * Math.PI) / 8) return AbsoluteDirection.S;
-    if (angle < off + (14 * Math.PI) / 8) return AbsoluteDirection.SE;
-    return AbsoluteDirection.E;
+    if (elevation === 0) {
+      if (angle < off) return AbsoluteDirection.E;
+      if (angle < off + (2 * Math.PI) / 8) return AbsoluteDirection.NE;
+      if (angle < off + (4 * Math.PI) / 8) return AbsoluteDirection.N;
+      if (angle < off + (6 * Math.PI) / 8) return AbsoluteDirection.NW;
+      if (angle < off + (8 * Math.PI) / 8) return AbsoluteDirection.W;
+      if (angle < off + (10 * Math.PI) / 8) return AbsoluteDirection.SW;
+      if (angle < off + (12 * Math.PI) / 8) return AbsoluteDirection.S;
+      if (angle < off + (14 * Math.PI) / 8) return AbsoluteDirection.SE;
+      return AbsoluteDirection.E;
+    }
+    if (elevation < 0) {
+      if (angle < off) return AbsoluteDirection.DE;
+      if (angle < off + (2 * Math.PI) / 8) return AbsoluteDirection.DNE;
+      if (angle < off + (4 * Math.PI) / 8) return AbsoluteDirection.DN;
+      if (angle < off + (6 * Math.PI) / 8) return AbsoluteDirection.DNW;
+      if (angle < off + (8 * Math.PI) / 8) return AbsoluteDirection.DW;
+      if (angle < off + (10 * Math.PI) / 8) return AbsoluteDirection.DSW;
+      if (angle < off + (12 * Math.PI) / 8) return AbsoluteDirection.DS;
+      if (angle < off + (14 * Math.PI) / 8) return AbsoluteDirection.DSE;
+      return AbsoluteDirection.DE;
+    }
+    if (angle < off) return AbsoluteDirection.UE;
+    if (angle < off + (2 * Math.PI) / 8) return AbsoluteDirection.UNE;
+    if (angle < off + (4 * Math.PI) / 8) return AbsoluteDirection.UN;
+    if (angle < off + (6 * Math.PI) / 8) return AbsoluteDirection.UNW;
+    if (angle < off + (8 * Math.PI) / 8) return AbsoluteDirection.UW;
+    if (angle < off + (10 * Math.PI) / 8) return AbsoluteDirection.USW;
+    if (angle < off + (12 * Math.PI) / 8) return AbsoluteDirection.US;
+    if (angle < off + (14 * Math.PI) / 8) return AbsoluteDirection.USE;
+    return AbsoluteDirection.UE;
   }
   const off = (2 * Math.PI) / 32;
-  if (angle < off) return AbsoluteDirection.E;
-  if (angle < off + (2 * Math.PI) / 16) return AbsoluteDirection.ENE;
-  if (angle < off + (4 * Math.PI) / 16) return AbsoluteDirection.NE;
-  if (angle < off + (6 * Math.PI) / 16) return AbsoluteDirection.NNE;
-  if (angle < off + (8 * Math.PI) / 16) return AbsoluteDirection.N;
-  if (angle < off + (10 * Math.PI) / 16) return AbsoluteDirection.NNW;
-  if (angle < off + (12 * Math.PI) / 16) return AbsoluteDirection.NW;
-  if (angle < off + (14 * Math.PI) / 16) return AbsoluteDirection.WNW;
-  if (angle < off + (16 * Math.PI) / 16) return AbsoluteDirection.W;
-  if (angle < off + (18 * Math.PI) / 16) return AbsoluteDirection.WSW;
-  if (angle < off + (20 * Math.PI) / 16) return AbsoluteDirection.SW;
-  if (angle < off + (22 * Math.PI) / 16) return AbsoluteDirection.SSW;
-  if (angle < off + (24 * Math.PI) / 16) return AbsoluteDirection.S;
-  if (angle < off + (26 * Math.PI) / 16) return AbsoluteDirection.SSE;
-  if (angle < off + (28 * Math.PI) / 16) return AbsoluteDirection.SE;
-  if (angle < off + (30 * Math.PI) / 16) return AbsoluteDirection.ESE;
-  return AbsoluteDirection.E;
+  if (elevation === 0) {
+    if (angle < off) return AbsoluteDirection.E;
+    if (angle < off + (2 * Math.PI) / 16) return AbsoluteDirection.ENE;
+    if (angle < off + (4 * Math.PI) / 16) return AbsoluteDirection.NE;
+    if (angle < off + (6 * Math.PI) / 16) return AbsoluteDirection.NNE;
+    if (angle < off + (8 * Math.PI) / 16) return AbsoluteDirection.N;
+    if (angle < off + (10 * Math.PI) / 16) return AbsoluteDirection.NNW;
+    if (angle < off + (12 * Math.PI) / 16) return AbsoluteDirection.NW;
+    if (angle < off + (14 * Math.PI) / 16) return AbsoluteDirection.WNW;
+    if (angle < off + (16 * Math.PI) / 16) return AbsoluteDirection.W;
+    if (angle < off + (18 * Math.PI) / 16) return AbsoluteDirection.WSW;
+    if (angle < off + (20 * Math.PI) / 16) return AbsoluteDirection.SW;
+    if (angle < off + (22 * Math.PI) / 16) return AbsoluteDirection.SSW;
+    if (angle < off + (24 * Math.PI) / 16) return AbsoluteDirection.S;
+    if (angle < off + (26 * Math.PI) / 16) return AbsoluteDirection.SSE;
+    if (angle < off + (28 * Math.PI) / 16) return AbsoluteDirection.SE;
+    if (angle < off + (30 * Math.PI) / 16) return AbsoluteDirection.ESE;
+    return AbsoluteDirection.E;
+  }
+  if (elevation < 0) {
+    if (angle < off) return AbsoluteDirection.DE;
+    if (angle < off + (2 * Math.PI) / 16) return AbsoluteDirection.DNE;
+    if (angle < off + (4 * Math.PI) / 16) return AbsoluteDirection.DNE;
+    if (angle < off + (6 * Math.PI) / 16) return AbsoluteDirection.DNE;
+    if (angle < off + (8 * Math.PI) / 16) return AbsoluteDirection.DN;
+    if (angle < off + (10 * Math.PI) / 16) return AbsoluteDirection.DNW;
+    if (angle < off + (12 * Math.PI) / 16) return AbsoluteDirection.DNW;
+    if (angle < off + (14 * Math.PI) / 16) return AbsoluteDirection.DNW;
+    if (angle < off + (16 * Math.PI) / 16) return AbsoluteDirection.DW;
+    if (angle < off + (18 * Math.PI) / 16) return AbsoluteDirection.DSW;
+    if (angle < off + (20 * Math.PI) / 16) return AbsoluteDirection.DSW;
+    if (angle < off + (22 * Math.PI) / 16) return AbsoluteDirection.DSW;
+    if (angle < off + (24 * Math.PI) / 16) return AbsoluteDirection.DS;
+    if (angle < off + (26 * Math.PI) / 16) return AbsoluteDirection.DSE;
+    if (angle < off + (28 * Math.PI) / 16) return AbsoluteDirection.DSE;
+    if (angle < off + (30 * Math.PI) / 16) return AbsoluteDirection.DSE;
+    return AbsoluteDirection.DE;
+  }
+  if (angle < off) return AbsoluteDirection.UE;
+  if (angle < off + (2 * Math.PI) / 16) return AbsoluteDirection.UNE;
+  if (angle < off + (4 * Math.PI) / 16) return AbsoluteDirection.UNE;
+  if (angle < off + (6 * Math.PI) / 16) return AbsoluteDirection.UNE;
+  if (angle < off + (8 * Math.PI) / 16) return AbsoluteDirection.UN;
+  if (angle < off + (10 * Math.PI) / 16) return AbsoluteDirection.UNW;
+  if (angle < off + (12 * Math.PI) / 16) return AbsoluteDirection.UNW;
+  if (angle < off + (14 * Math.PI) / 16) return AbsoluteDirection.UNW;
+  if (angle < off + (16 * Math.PI) / 16) return AbsoluteDirection.UW;
+  if (angle < off + (18 * Math.PI) / 16) return AbsoluteDirection.USW;
+  if (angle < off + (20 * Math.PI) / 16) return AbsoluteDirection.USW;
+  if (angle < off + (22 * Math.PI) / 16) return AbsoluteDirection.USW;
+  if (angle < off + (24 * Math.PI) / 16) return AbsoluteDirection.US;
+  if (angle < off + (26 * Math.PI) / 16) return AbsoluteDirection.USE;
+  if (angle < off + (28 * Math.PI) / 16) return AbsoluteDirection.USE;
+  if (angle < off + (30 * Math.PI) / 16) return AbsoluteDirection.USE;
+  return AbsoluteDirection.UE;
 }
 
 const COMPASS_SAME_LAYER = new Set<AbsoluteDirection>([
@@ -267,6 +334,16 @@ const COMPASS_SAME_LAYER = new Set<AbsoluteDirection>([
   AbsoluteDirection.NE, AbsoluteDirection.SE, AbsoluteDirection.SW, AbsoluteDirection.NW,
   AbsoluteDirection.NNE, AbsoluteDirection.ENE, AbsoluteDirection.ESE, AbsoluteDirection.SSE,
   AbsoluteDirection.SSW, AbsoluteDirection.WSW, AbsoluteDirection.WNW, AbsoluteDirection.NNW,
+]);
+const COMPASS_UPWARD = new Set<AbsoluteDirection>([
+  AbsoluteDirection.U, AbsoluteDirection.UN, AbsoluteDirection.UE, AbsoluteDirection.US,
+  AbsoluteDirection.UW, AbsoluteDirection.UNE, AbsoluteDirection.USE,
+  AbsoluteDirection.USW, AbsoluteDirection.UNW,
+]);
+const COMPASS_DOWNWARD = new Set<AbsoluteDirection>([
+  AbsoluteDirection.D, AbsoluteDirection.DN, AbsoluteDirection.DE, AbsoluteDirection.DS,
+  AbsoluteDirection.DW, AbsoluteDirection.DNE, AbsoluteDirection.DSE,
+  AbsoluteDirection.DSW, AbsoluteDirection.DNW,
 ]);
 
 // -- the engine --------------------------------------------------------------
@@ -385,7 +462,12 @@ export class TrajectoriesCore {
           if (COMPASS_SAME_LAYER.has(dirn)) {
             stepsFrom.addInDirection(AbsoluteDirection.SameLayer, step);
           }
-          // Upward/Downward families are unreachable on planar boards (z = 0).
+          if (COMPASS_UPWARD.has(dirn)) {
+            stepsFrom.addInDirection(AbsoluteDirection.Upward, step);
+          }
+          if (COMPASS_DOWNWARD.has(dirn)) {
+            stepsFrom.addInDirection(AbsoluteDirection.Downward, step);
+          }
         }
       }
     }

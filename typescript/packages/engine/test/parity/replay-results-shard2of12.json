@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 336.6,
+    "elapsed_s": 339.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 67,
-      "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 110,
+      "MOVE_MISMATCH": 66,
+      "WINNER_MISMATCH": 8,
+      "OUTCOME_OK": 112,
       "REPLAY_OK_NO_OUTCOME": 27
     }
   },
@@ -453,14 +453,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/race/reach/Pylos",
-      "ply": 74,
+      "ply": 79,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=-1,to=-1[Pass]",
-      "tsMoveCount": 9,
+      "recMove": "mover=2,from=31,to=19",
+      "tsMoveCount": 4,
       "sampleTsMoves": [
-        "mover=1,from=1,to=25,isPass=false",
-        "mover=1,from=3,to=25,isPass=false",
-        "mover=1,from=7,to=25,isPass=false"
+        "mover=1,from=11,to=30,isPass=false",
+        "mover=1,from=13,to=30,isPass=false",
+        "mover=1,from=21,to=30,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Pylos/RandomTrial_0.txt"
     },
@@ -940,15 +940,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Nex/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/connection/Spaji",
-      "ply": 21,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=21,to=21",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=6,to=6,isPass=false"
-      ],
+      "plyReplayed": 31,
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Spaji/RandomTrial_0.txt"
     },
     {
@@ -1020,13 +1014,13 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/group/Spice",
-      "ply": 29,
+      "ply": 32,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=3,to=3",
+      "recMove": "mover=2,from=6,to=6",
       "tsMoveCount": 2,
       "sampleTsMoves": [
-        "mover=1,from=11,to=11,isPass=false",
-        "mover=1,from=21,to=21,isPass=false"
+        "mover=2,from=3,to=3,isPass=false",
+        "mover=2,from=11,to=11,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/group/Spice/RandomTrial_0.txt"
     },
@@ -1288,17 +1282,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Residuel/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/territory/Sprite",
       "plyReplayed": 30,
-      "recWinner": 2,
-      "tsWinner": 0,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Sprite/RandomTrial_0.txt"
     },
     {
@@ -1324,8 +1310,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 410,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 410",
+      "plyReplayed": 401,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 401",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_0.txt"
     },
     {
@@ -1488,8 +1474,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
-      "plyReplayed": 165,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 165",
+      "plyReplayed": 163,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 163",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_0.txt"
     },
     {
@@ -1642,15 +1628,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 10,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 10",
+      "plyReplayed": 9,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 9",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Seireigi",
-      "plyReplayed": 57,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 57",
+      "plyReplayed": 56,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 56",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Seireigi/RandomTrial_0.txt"
     },
     {

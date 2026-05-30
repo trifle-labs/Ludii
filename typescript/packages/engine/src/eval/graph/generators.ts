@@ -27,14 +27,13 @@ export function genSquare(
  * `RectangleOnSquare.eval` (pyramidal branch): an n×n base layer of vertices at
  * z = 0, then successively smaller layers (n−1)², (n−2)², … 1² stacked in the
  * dimples above, each layer offset by (½, ½) and raised by `layer/√2` (so every
- * tetrahedral edge has unit length). Vertices are then renumbered by Java's
- * `reorder` score `y·100 + x` — which uses only the 2-D projection, so the
- * stacked layers interleave by column/row. We emit them already in that final
- * order (stable, lower layer first on a tie) and join only *within-layer*
- * orthogonal neighbours; the cross-layer "support" relation that `(is Flat)`
- * needs is recovered geometrically from the per-vertex z, not stored as edges
- * (keeping the 2-D trajectory/face machinery free of phantom diagonal hops
- * between the overlapping projections).
+ * tetrahedral edge has unit length). Java then calls `Graph.makeEdges()`, which
+ * connects every pair of vertices at unit 3-D distance: same-layer orthogonal
+ * neighbours and, for each upper vertex, its four supports on the layer below.
+ * Vertices are finally renumbered by Java's `reorder` score `y·100 + x` —
+ * which uses only the 2-D projection, so the stacked layers interleave by
+ * column/row. We emit them already in that final order (stable, lower layer
+ * first on a tie) and wire the same unit-distance edge set explicitly.
  */
 export function genSquarePyramidal(n: number): Graph {
   const N = Math.max(1, Math.floor(n));
@@ -81,8 +80,7 @@ export function genSquarePyramidal(n: number): Graph {
     idOf.set(`${v.layer}:${v.col}:${v.row}`, finalId);
   });
   // Within-layer orthogonal edges (the only structural edges, exactly as Java's
-  // `makeEdges` keeps for a flat grid — the tetrahedral support edges are unit
-  // length too, but we deliberately omit them from the graph; see header).
+  // `makeEdges` keeps for a flat grid).
   for (let layer = 0; layer < N; layer += 1) {
     const size = N - layer;
     for (let row = 0; row < size; row += 1)
@@ -99,6 +97,24 @@ export function genSquarePyramidal(n: number): Graph {
         }
       }
   }
+
+  // Cross-layer support edges. A vertex at (layer,col,row) is centred above
+  // the four vertices (col,row), (col+1,row), (col,row+1), (col+1,row+1) on the
+  // layer immediately below; all four 3-D distances are exactly one, so Java's
+  // `Graph.makeEdges()` adds these edges.
+  for (let layer = 1; layer < N; layer += 1) {
+    const size = N - layer;
+    for (let row = 0; row < size; row += 1)
+      for (let col = 0; col < size; col += 1) {
+        const upper = idOf.get(`${layer}:${col}:${row}`);
+        if (upper === undefined) continue;
+        for (const [dc, dr] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) {
+          const lower = idOf.get(`${layer - 1}:${col + dc}:${row + dr}`);
+          if (lower !== undefined) g.addEdge(upper, lower);
+        }
+      }
+  }
+
   g.makeFaces();
   return g;
 }

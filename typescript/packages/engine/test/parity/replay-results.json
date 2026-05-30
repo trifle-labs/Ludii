@@ -5,28 +5,40 @@
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 0,
+      "MOVE_MISMATCH": 1,
       "WINNER_MISMATCH": 1,
-      "OUTCOME_OK": 1,
+      "OUTCOME_OK": 0,
       "REPLAY_OK_NO_OUTCOME": 0
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": []
+    "MOVE_MISMATCH": [
+      [
+        "board/war/leaping/lines/Spoing",
+        1
+      ]
+    ]
   },
-  "exampleMismatches": [],
+  "exampleMismatches": [
+    {
+      "game": "board/war/leaping/lines/Spoing",
+      "ply": 1,
+      "recMove": "mover=2,from=28,to=10",
+      "tsMoveCount": 7,
+      "sampleTsMoves": [
+        "mover=2,from=17,to=0,isPass=false",
+        "mover=2,from=18,to=1,isPass=false",
+        "mover=2,from=26,to=28,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
   "perTrial": [
     {
-      "bucket": "OUTCOME_OK",
-      "game": "board/war/leaping/lines/Game of Solomon",
-      "plyReplayed": 26,
-      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Game of Solomon/RandomTrial_0.txt"
-    },
-    {
       "bucket": "WINNER_MISMATCH",
-      "game": "board/war/leaping/lines/Game of Solomon",
-      "plyReplayed": 15,
+      "game": "board/war/leaping/lines/Spoing",
+      "plyReplayed": 5,
       "recWinner": 2,
       "tsWinner": 0,
       "recRankings": [
@@ -35,7 +47,21 @@
         1
       ],
       "tsRankings": [],
-      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Game of Solomon/RandomTrial_1.txt"
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Spoing/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/lines/Spoing",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=28,to=10",
+      "tsMoveCount": 7,
+      "sampleTsMoves": [
+        "mover=2,from=17,to=0,isPass=false",
+        "mover=2,from=18,to=1,isPass=false",
+        "mover=2,from=26,to=28,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Spoing/RandomTrial_1.txt"
     }
   ]
 }
