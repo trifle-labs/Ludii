@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 346.5,
+    "elapsed_s": 340.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 66,
+      "MOVE_MISMATCH": 65,
       "WINNER_MISMATCH": 8,
       "OUTCOME_OK": 112,
-      "REPLAY_OK_NO_OUTCOME": 27
+      "REPLAY_OK_NO_OUTCOME": 28
     }
   },
   "top15FailureReasons": {
@@ -701,15 +701,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Galatjang/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/two_rows/Hufesay",
-      "ply": 92,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=12,to=1",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=12,to=0,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/10000",
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Hufesay/RandomTrial_0.txt"
     },
     {
@@ -771,12 +766,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/sow/two_rows/Qelat",
-      "ply": 99,
+      "ply": 103,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=12,to=3",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=5,to=5",
+      "tsMoveCount": 6,
       "sampleTsMoves": [
-        "mover=1,from=12,to=4,isPass=false"
+        "mover=2,from=7,to=7,isPass=false",
+        "mover=2,from=8,to=8,isPass=false",
+        "mover=2,from=9,to=9,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Qelat/RandomTrial_0.txt"
     },
@@ -1312,8 +1309,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 224,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 224",
+      "plyReplayed": 225,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 225",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_0.txt"
     },
     {
@@ -1469,15 +1466,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 79,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 79",
+      "plyReplayed": 80,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 80",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
-      "plyReplayed": 162,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 162",
+      "plyReplayed": 165,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 165",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_0.txt"
     },
     {
@@ -1637,8 +1634,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Seireigi",
-      "plyReplayed": 50,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 50",
+      "plyReplayed": 51,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 51",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Seireigi/RandomTrial_0.txt"
     },
     {

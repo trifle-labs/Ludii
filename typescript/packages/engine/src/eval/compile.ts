@@ -11424,7 +11424,7 @@ export function compileEffectAction(
       // already-advanced ctx, so they read it directly rather than re-applying
       // (which would double the move). In an `(apply …)` effect (`inThen=false`)
       // there is no recorded move, so guard and branches read ctx unchanged.
-      const nestedInThen = inThen && !allowForEachSite;
+      const nestedInThen = false;
       const nestedAllowForEachSite = allowForEachSite || inThen;
       const thenEff = compileEffectAction(
         thenNode,

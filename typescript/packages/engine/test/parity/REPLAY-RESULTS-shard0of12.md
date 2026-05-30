@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-30T20:22:19.194Z
+**Date:** 2026-05-30T20:43:22.567Z
 **Trials processed:** 214  
-**Wall time:** 269.4s
+**Wall time:** 266.0s
 
 ## Bucket Summary
 
@@ -10,10 +10,10 @@
 |--------|-------|---|
 | COMPILE_FAIL | 1 | 0.5% |
 | START_FAIL | 0 | 0.0% |
-| MOVE_MISMATCH | 52 | 24.3% |
+| MOVE_MISMATCH | 51 | 23.8% |
 | WINNER_MISMATCH | 12 | 5.6% |
 | OUTCOME_OK | 117 | 54.7% |
-| REPLAY_OK_NO_OUTCOME | 32 | 15.0% |
+| REPLAY_OK_NO_OUTCOME | 33 | 15.4% |
 
 ## Top 15 COMPILE_FAIL Reasons
 

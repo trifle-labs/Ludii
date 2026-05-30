@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 269.4,
+    "elapsed_s": 266,
     "buckets": {
       "COMPILE_FAIL": 1,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 52,
+      "MOVE_MISMATCH": 51,
       "WINNER_MISMATCH": 12,
       "OUTCOME_OK": 117,
-      "REPLAY_OK_NO_OUTCOME": 32
+      "REPLAY_OK_NO_OUTCOME": 33
     }
   },
   "top15FailureReasons": {
@@ -382,8 +382,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/fill/Suffragetto",
-      "plyReplayed": 383,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 383",
+      "plyReplayed": 380,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 380",
       "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_0.txt"
     },
     {
@@ -658,15 +658,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Gabata (Adegrat)/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/two_rows/Gabata (Wuqro)",
-      "ply": 240,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=13,to=10",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=2,from=13,to=11,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1731",
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Gabata (Wuqro)/RandomTrial_0.txt"
     },
     {
@@ -765,9 +760,11 @@
       "ply": 101,
       "detail": "No matching TS move",
       "recMove": "mover=2,from=9,to=9",
-      "tsMoveCount": 1,
+      "tsMoveCount": 5,
       "sampleTsMoves": [
-        "mover=2,from=-1,to=-1,isPass=true"
+        "mover=2,from=6,to=6,isPass=false",
+        "mover=2,from=7,to=7,isPass=false",
+        "mover=2,from=8,to=8,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Tuz/RandomTrial_0.txt"
     },
@@ -1220,8 +1217,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Patok",
-      "plyReplayed": 147,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 147",
+      "plyReplayed": 151,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 151",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Patok/RandomTrial_0.txt"
     },
     {
@@ -1414,8 +1411,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)",
-      "plyReplayed": 243,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 243",
+      "plyReplayed": 247,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 247",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)/RandomTrial_0.txt"
     },
     {
@@ -1553,8 +1550,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Chu Seireigi",
-      "plyReplayed": 21,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 21",
+      "plyReplayed": 22,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 22",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Chu Seireigi/RandomTrial_0.txt"
     },
     {

@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 319.8,
+    "elapsed_s": 315.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1488,8 +1488,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 390,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 390",
+      "plyReplayed": 448,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 448",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_0.txt"
     },
     {
@@ -1515,8 +1515,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Cylinder Chess",
-      "plyReplayed": 203,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 203",
+      "plyReplayed": 220,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 220",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Cylinder Chess/RandomTrial_0.txt"
     },
     {
@@ -1529,8 +1529,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Korkserschach",
-      "plyReplayed": 113,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 113",
+      "plyReplayed": 115,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 115",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Korkserschach/RandomTrial_0.txt"
     },
     {
@@ -1594,15 +1594,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "plyReplayed": 53,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 53",
+      "plyReplayed": 54,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 54",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 13,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 13",
+      "plyReplayed": 14,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 14",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1713,8 +1713,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "plyReplayed": 364,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 364",
+      "plyReplayed": 375,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 375",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_0.txt"
     },
     {

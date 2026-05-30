@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 281.8,
+    "elapsed_s": 274.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 76,
-      "WINNER_MISMATCH": 7,
-      "OUTCOME_OK": 103,
-      "REPLAY_OK_NO_OUTCOME": 27
+      "MOVE_MISMATCH": 77,
+      "WINNER_MISMATCH": 8,
+      "OUTCOME_OK": 104,
+      "REPLAY_OK_NO_OUTCOME": 24
     }
   },
   "top15FailureReasons": {
@@ -685,12 +685,12 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/sow/two_rows/Gabata (Shoa I)",
-      "ply": 55,
+      "ply": 62,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=13,to=3",
+      "recMove": "mover=2,from=0,to=0",
       "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=2,from=13,to=4,isPass=false"
+        "mover=1,from=4,to=4,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Gabata (Shoa I)/RandomTrial_0.txt"
     },
@@ -758,12 +758,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/sow/two_rows/Mewegae",
-      "ply": 102,
+      "ply": 103,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=10,to=10",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=6,to=6",
+      "tsMoveCount": 4,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=1,from=5,to=5,isPass=false",
+        "mover=1,from=4,to=4,isPass=false",
+        "mover=1,from=3,to=3,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Mewegae/RandomTrial_0.txt"
     },
@@ -1589,10 +1591,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Dice Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 390,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 390",
+      "plyReplayed": 489,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_0.txt"
     },
     {
@@ -1603,10 +1612,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/McCooey Chess",
-      "plyReplayed": 505,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 505",
+      "plyReplayed": 586,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/McCooey Chess/RandomTrial_0.txt"
     },
     {
@@ -1623,10 +1631,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Phase Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/checkmate/chess/Shafran Chess",
-      "plyReplayed": 129,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 129",
+      "ply": 131,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=63,to=63",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=2,from=12,to=5,isPass=false",
+        "mover=2,from=12,to=20,isPass=false",
+        "mover=2,from=12,to=19,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Shafran Chess/RandomTrial_0.txt"
     },
     {
@@ -1660,8 +1675,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 63,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 63",
+      "plyReplayed": 64,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 64",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_0.txt"
     },
     {
@@ -1681,8 +1696,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 110,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 110",
+      "plyReplayed": 115,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 115",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_0.txt"
     },
     {
