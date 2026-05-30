@@ -648,7 +648,7 @@ export function genRegular(star: boolean, numSides: number): Graph {
   } else {
     for (let i = 0; i < n; i += 1) g.addEdge(i, (i + 1) % n);
   }
-  // @java generators/shape/Regular.java reorders vertices by y*100+x before
+  // @java Core/src/game/functions/graph/generators/shape/Regular.java reorders vertices by y*100+x before
   // use, so star/regular site indices match the engine's canonical numbering.
   g.reorder();
   g.makeFaces();

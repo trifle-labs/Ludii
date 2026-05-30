@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-25T23:08:27.494Z
+**Date:** 2026-05-29T18:53:14.052Z
 **Trials processed:** 852  
-**Wall time:** 886.5s
+**Wall time:** 991.9s
 
 ## Bucket Summary
 
@@ -10,10 +10,10 @@
 |--------|-------|---|
 | COMPILE_FAIL | 0 | 0.0% |
 | START_FAIL | 0 | 0.0% |
-| MOVE_MISMATCH | 311 | 36.5% |
-| WINNER_MISMATCH | 65 | 7.6% |
-| OUTCOME_OK | 388 | 45.5% |
-| REPLAY_OK_NO_OUTCOME | 88 | 10.3% |
+| MOVE_MISMATCH | 281 | 33.0% |
+| WINNER_MISMATCH | 46 | 5.4% |
+| OUTCOME_OK | 426 | 50.0% |
+| REPLAY_OK_NO_OUTCOME | 99 | 11.6% |
 
 ## Top 15 COMPILE_FAIL Reasons
 
@@ -25,16 +25,16 @@
 - `board/hunt/Hyvn aetter Hare`: **1** mismatches
 - `board/hunt/Ludus Coriovalli`: **1** mismatches
 - `board/hunt/Shui Yen Ho-Shang`: **1** mismatches
-- `board/race/escape/Ashtapada`: **1** mismatches
 - `board/race/escape/Asi Keliya`: **1** mismatches
 - `board/race/escape/Chaupar`: **1** mismatches
 - `board/race/escape/Contrare Puff`: **1** mismatches
-- `board/race/escape/Dubblets`: **1** mismatches
 - `board/race/escape/Garanguet`: **1** mismatches
 - `board/race/escape/Grand Trictrac`: **1** mismatches
 - `board/race/escape/Kawade Kelia`: **1** mismatches
 - `board/race/escape/Kiz Tavlasi`: **1** mismatches
 - `board/race/escape/Knossos Game`: **1** mismatches
+- `board/race/escape/Lange Puff`: **1** mismatches
+- `board/race/escape/Mahbouseh`: **1** mismatches
 
 ## 5 Concrete MOVE_MISMATCH Examples
 

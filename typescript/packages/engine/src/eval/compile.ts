@@ -38,6 +38,7 @@ import {
 } from "../action/action-move-level.js";
 import { ActionPass } from "../action/action-pass.js";
 import { ActionPromote } from "../action/action-promote.js";
+import { SplitMix64 } from "./split-mix64.js";
 import {
   ActionForgetValue,
   ActionRememberValue,
@@ -63,6 +64,7 @@ import { ActionTrigger } from "../action/action-trigger.js";
 import { ActionUseDie } from "../action/action-use-die.js";
 import { ActionSetTemp } from "../action/action-set-temp.js";
 import { ActionUpdateDice } from "../action/action-update-dice.js";
+import type { SiteType } from "../action/site-type.js";
 import { Move } from "../move.js";
 import type { Context } from "../context.js";
 import {
@@ -89,6 +91,7 @@ import {
   OFF,
   type RegionFn,
 } from "./eval-context.js";
+import { lookupLudeme } from "../ludemes/registry.js";
 
 export class LudemeCompileError extends Error {
   public constructor(message: string) {
@@ -107,6 +110,21 @@ export class LudemeCompileError extends Error {
 // instances returned by the fallback; `forEach Die`'s emit() checks membership of
 // the un-wrapped inner move before deciding which thens apply. WeakSet → no leak.
 const foreachSiteNoMoveYetMoves = new WeakSet<Move>();
+type CompiledThen = {
+  moveAgain: boolean;
+  moveAgainCond?: BoolFn;
+  effect?: EffectFn;
+};
+// Trial-replay parity: a small set of games uses `(value Random (range ...))` in
+// ordinary move consequents (not dice). The replay harness injects Java's pre-start
+// SplitMix64 bytes into the Context RNG; surface the same generator here when
+// available so those random draws can match Java exactly.
+function rngNextInt(ctx: EvalContext, bound: number): number {
+  if (bound <= 0) return 0;
+  const live = (ctx.context.rng as { _sm64?: SplitMix64 })._sm64;
+  if (live instanceof SplitMix64) return live.nextIntBound(bound);
+  return ctx.context.rng.nextInt(bound);
+}
 
 /** Game-wide facts the compiler needs while building evaluables. */
 export interface CompileEnv {
@@ -252,6 +270,12 @@ export interface CompileEnv {
    */
   readonly notAllPassFlag?: { required: boolean };
   /**
+   * Runtime-only handoff used while compiling the body of `(forEach Die ...)`:
+   * branch-local dice replay thens are tagged on the generated Move so the die
+   * handler can evaluate them after appending ActionUseDie.
+   */
+  readonly deferredDiceThens?: WeakMap<Move, CompiledThen[]>;
+  /**
    * Java `Game.isStacking()`. When `false` the game uses flat count-piles
    * (mancala pits, backgammon points), so `(remove)` clears the WHOLE site
    * (Java `ContainerFlatState.remove` → `setSite(…,0,0,0,0,0,0)`); when `true`
@@ -270,7 +294,7 @@ export interface DiceDef {
 
 // ---- named-argument parsing ----------------------------------------------
 
-interface ParsedArgs {
+export interface ParsedArgs {
   /** Positional (non-keyword) child nodes. */
   readonly positional: readonly LudNode[];
   /** Keyword args: `if:(…)` etc. The trailing `:` is stripped from keys. */
@@ -282,7 +306,7 @@ interface ParsedArgs {
  * The lexer emits `if:` as a bare ident immediately preceding its value
  * node, so a token whose name ends in `:` consumes the following node.
  */
-function parseArgs(items: readonly LudNode[]): ParsedArgs {
+export function parseArgs(items: readonly LudNode[]): ParsedArgs {
   const positional: LudNode[] = [];
   const named = new Map<string, LudNode>();
   for (let i = 0; i < items.length; i += 1) {
@@ -303,7 +327,7 @@ function parseArgs(items: readonly LudNode[]): ParsedArgs {
 }
 
 /** Resolve a role/player token (Mover, Next, P1…, All, Each) to a player id. */
-function resolveRole(name: string, ctx: EvalContext): number {
+export function resolveRole(name: string, ctx: EvalContext): number {
   switch (name) {
     case "Mover":
       return ctx.mover;
@@ -401,7 +425,7 @@ function resolveHandRole(name: string, ctx: EvalContext): number {
  * the inner item is itself a list — a singleton like `(pass)` or `(Mover)`
  * is a real ludeme call and is left intact.
  */
-function unwrapParens(node: LudNode): LudNode {
+export function unwrapParens(node: LudNode): LudNode {
   let n = node;
   while (isList(n) && n.delimiter === "round" && n.items.length === 1) {
     const only = n.items[0];
@@ -446,6 +470,8 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
     throw new LudemeCompileError(`Cannot compile int from ${node.kind}.`);
   }
   const head = listHead(node);
+  const _r = head ? lookupLudeme("int", head) : undefined;
+  if (_r) return _r(node, env) as IntFn;
   const { positional, named } = parseArgs(node.items.slice(1));
   switch (head) {
     case "to":
@@ -812,11 +838,17 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
         if (kind && isIdent(kind) && kind.name === "Sites") {
           return { eval: (ctx) => region.eval(ctx).length };
         }
+        const countStacks =
+          kind && isIdent(kind) && (kind.name === "Cell" || kind.name === "Stack");
         return {
           eval: (ctx) => {
             let n = 0;
             for (const s of region.eval(ctx)) {
               if (s < 0 || s >= ctx.state.cells.length) continue;
+              if (countStacks) {
+                n += ctx.state.stackSize(s);
+                continue;
+              }
               const c = ctx.state.countAtSite(s);
               n += c > 0 ? c : (ctx.state.cells[s] ?? 0) !== 0 ? 1 : 0;
             }
@@ -825,27 +857,41 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
         };
       }
       if (kind && isIdent(kind)) {
-        // (count Groups [dir] [if:]) / (count SizeBiggestGroup [dir] [if:]) —
-        // connected components of sites satisfying the per-site condition
-        // (default: occupied), orthogonally connected. The optional `if:`
-        // condition is evaluated with `(to)` bound to each candidate site.
+        // (count Groups [dir] [if:] [min:]) / (count SizeBiggestGroup [dir] [if:])
+        // Java CountGroups.java:63-76 stores direction/min/condition; eval
+        // walks converted directions at :135-152 and counts only size >= min
+        // at :163. CountSizeBiggestGroup uses the same condition-only flood.
         if (kind.name === "Groups" || kind.name === "SizeBiggestGroup") {
-          const ifNode = named.get("if");
+          let pi = 1;
+          const typeNode = positional[pi];
+          if (typeNode && isIdent(typeNode) && SITE_TYPE_IDENTS.has(typeNode.name))
+            pi += 1;
+          const dir = parseGroupDirectionArg(positional, pi);
+          const ifNode = named.get("If") ?? named.get("if");
           const cond = ifNode ? compileBool(ifNode, env) : undefined;
-          const member = (ctx: EvalContext, site: number): boolean =>
-            cond
-              ? cond.eval(ctx.withFrame({ to: site, site }))
-              : (ctx.state.cells[site] ?? 0) !== 0;
+          const minNode = named.get("min");
+          const minFn = minNode ? compileInt(minNode, env) : undefined;
           if (kind.name === "Groups") {
             return {
-              eval: (ctx) =>
-                groupComponents(ctx, (s) => member(ctx, s)).length,
+              eval: (ctx) => {
+                const min = minFn ? minFn.eval(ctx) : 0;
+                return javaStyleGroupFlood(ctx, {
+                  dirTokens: dir.dirTokens,
+                  condition: cond,
+                  min,
+                  mode: "conditionOnly",
+                }).length;
+              },
             };
           }
           return {
             eval: (ctx) => {
               let max = 0;
-              for (const g of groupComponents(ctx, (s) => member(ctx, s)))
+              for (const g of javaStyleGroupFlood(ctx, {
+                dirTokens: dir.dirTokens,
+                condition: cond,
+                mode: "conditionOnly",
+              }))
                 if (g.size > max) max = g.size;
               return max;
             },
@@ -1127,7 +1173,10 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
           }
           return {
             eval: (ctx) => {
-              const pid = resolveRole(roleName, ctx);
+              const pid =
+                roleName === "Shared" || roleName === "Neutral"
+                  ? env.numPlayers + 1
+                  : resolveRole(roleName, ctx);
               for (const c of candidates) if (c.owner === pid) return c.what;
               return OFF;
             },
@@ -1332,11 +1381,30 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
         };
       }
       if (subName === "Group") {
+        // Java SizeGroup.java:60-69 accepts at:, optional direction, and if:;
+        // eval starts from at (:77), then floods neighbours via converted
+        // directions (:99-121), joining by same what when no condition exists.
         const atNode = named.get("at") ?? positional[1];
         const siteFn = atNode ? compileInt(atNode, env) : undefined;
+        let pi = 1;
+        const typeNode = positional[pi];
+        if (typeNode && isIdent(typeNode) && SITE_TYPE_IDENTS.has(typeNode.name))
+          pi += 1;
+        if (atNode === positional[pi]) pi += 1;
+        const dir = parseGroupDirectionArg(positional, pi);
+        const ifNode = named.get("If") ?? named.get("if");
+        const cond = ifNode ? compileBool(ifNode, env) : undefined;
         return {
-          eval: (ctx) =>
-            groupSizeAt(ctx, siteFn ? siteFn.eval(ctx) : lastToSite(ctx)),
+          eval: (ctx) => {
+            const seed = siteFn ? siteFn.eval(ctx) : lastToSite(ctx);
+            const [group] = javaStyleGroupFlood(ctx, {
+              dirTokens: dir.dirTokens,
+              seeds: [seed],
+              condition: cond,
+              mode: "sameWhatWhenNoCondition",
+            });
+            return group?.size ?? 0;
+          },
         };
       }
       return { eval: () => 0 };
@@ -1579,6 +1647,33 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
         },
       };
     }
+    case "Random": {
+      // `(value Random (range a b))` / `(Random (range a b))` — Java's random
+      // int draw used by between-round first-player selection in two-row mancala.
+      // Uses the context RNG so the replay harness can reproduce Java's scripted
+      // RNG state. Bare `(Random)` is unsupported; only the ranged form appears
+      // in the parity corpus here.
+      const rangeNode = positional[0];
+      if (!rangeNode || !isList(rangeNode) || listHead(rangeNode) !== "range") {
+        return { eval: () => OFF };
+      }
+      const loNode = rangeNode.items[1];
+      const hiNode = rangeNode.items[2];
+      if (!loNode || !hiNode) return { eval: () => OFF };
+      const loFn = compileInt(loNode, env);
+      const hiFn = compileInt(hiNode, env);
+      return {
+        eval: (ctx) => {
+          const lo = loFn.eval(ctx);
+          const hi = hiFn.eval(ctx);
+          const min = Math.min(lo, hi);
+          const max = Math.max(lo, hi);
+          const span = max - min + 1;
+          if (span <= 0) return min;
+          return min + rngNextInt(ctx, span);
+        },
+      };
+    }
     case "arrayValue": {
       // (arrayValue <intArray> index:<n>) — the nth element of an int array
       // (e.g. (values Remembered "Name")). OFF when out of range.
@@ -1718,6 +1813,8 @@ export function compileBool(node: LudNode, env: CompileEnv): BoolFn {
     throw new LudemeCompileError(`Cannot compile bool from ${node.kind}.`);
   }
   const head = listHead(node);
+  const _r = head ? lookupLudeme("bool", head) : undefined;
+  if (_r) return _r(node, env) as BoolFn;
   const rest = node.items.slice(1);
   switch (head) {
     case "and": {
@@ -1740,8 +1837,28 @@ export function compileBool(node: LudNode, env: CompileEnv): BoolFn {
     case ">":
     case "<=":
     case ">=": {
-      const a = rest[0];
-      const b = rest[1];
+      let a = rest[0];
+      let b = rest[1];
+      // Java parity: a redundant-paren grouping like `(!= ((x) (y)))` — which
+      // arises when a zero-arg define call sits as the first operand, e.g.
+      // `(!= (("LeftMostEmpty") (to)))` (Ceelkoqyuqkoqiji / O An Quan) — wraps
+      // both operands in an extra round list whose head is NOT a ludeme symbol
+      // (its first item is itself a list). Ludii's reflective compiler treats a
+      // non-symbol-headed group as a transparent grouping and binds its children
+      // as the two operands. Splice it so the two operands surface instead of
+      // throwing "needs two arguments" (which silently drops the expression).
+      if (
+        b === undefined &&
+        a &&
+        isList(a) &&
+        a.delimiter === "round" &&
+        a.items.length === 2 &&
+        a.items[0] &&
+        !isIdent(a.items[0])
+      ) {
+        b = a.items[1];
+        a = a.items[0];
+      }
       if (!a || !b)
         throw new LudemeCompileError(`(${head} …) needs two arguments.`);
       // Region-vs-region comparison: `(= (sites Occupied by:Mover) <region>)`
@@ -1905,6 +2022,8 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
     throw new LudemeCompileError("(is …) needs a kind keyword.");
   }
   const kind = kindNode.name;
+  const _r = lookupLudeme("bool", kind);
+  if (_r) return _r(node, env) as BoolFn;
   const rest = node.items.slice(2);
   const { positional, named } = parseArgs(rest);
   switch (kind) {
@@ -2402,150 +2521,6 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
         },
       };
     }
-    case "Connected": {
-      // (is Connected [<count>] [<direction>] [at:<site>] [<role>|{<regions>}|Sides])
-      // A connected group of one owner's pieces must touch at least <count> of
-      // the goal regions (Java IsConnected). Goal regions are: an explicit
-      // `{…}` set; otherwise the regions OWNED by the named role (each declared
-      // `(regions <Role> {A B})` region counts separately); otherwise the four
-      // board sides. <count> defaults to the number of goal regions. The
-      // direction arg (Adjacent/Orthogonal/All/…) drives the connectivity walk
-      // — `All` lets the group flood across diagonals (e.g. Crossway).
-      const DIRS = new Set([
-        "Orthogonal",
-        "Diagonal",
-        "Adjacent",
-        "All",
-        "Diagonals",
-        "Orthogonals",
-        "OffDiagonal",
-        "SameLayer",
-      ]);
-      let countTarget: number | undefined;
-      let ownerName: string | undefined;
-      let regionFns: RegionFn[] | undefined;
-      let useSides = false;
-      let sidesNoCorners = false;
-      const dirTokens: string[] = [];
-      for (const p of positional) {
-        if (isNumber(p)) {
-          countTarget = p.value;
-        } else if (isList(p) && p.delimiter === "curly") {
-          regionFns = p.items
-            .filter((it) => isList(it))
-            .map((it) => compileRegion(it, env));
-        } else if (isIdent(p)) {
-          if (p.name === "Sides" || p.name === "SidesNoCorners") {
-            useSides = true;
-            sidesNoCorners = p.name === "SidesNoCorners";
-          } else if (DIRS.has(p.name)) {
-            dirTokens.push(p.name);
-          } else {
-            ownerName = p.name;
-          }
-        }
-      }
-      // Board sides as goal regions (Java `RegionTypeStatic.Sides` →
-      // `Regions.convertStaticRegionOnLocs` → one region per NON-EMPTY entry of
-      // `Topology.sides`). On a triangle Y board that's 3 sides (NW/S/NE), a
-      // square 4 (N/E/S/W), a hexagon 6 — not the fixed compass quartet. Resolve
-      // at eval-time from the board's measured perimeter sides; only lattice
-      // boards lacking `sideRegions` fall back to the bounding-box compass edges.
-      // `SidesNoCorners` drops corner sites: a corner cell sits on two adjacent
-      // sides, so it is exactly a site appearing in ≥2 side regions (faithful to
-      // measureSides, where a corner vertex carries both adjacent sides).
-      const sidesRegionsFn = (ctx: EvalContext, noCorners: boolean): RegionFn[] => {
-        const sr = ctx.board.sideRegions;
-        if (sr) {
-          const lists = Object.keys(sr)
-            .map((k) => sr[k])
-            .filter((ids): ids is readonly number[] => !!ids && ids.length > 0);
-          if (lists.length > 0) {
-            let usable = lists;
-            if (noCorners) {
-              const seen = new Map<number, number>();
-              for (const ids of lists)
-                for (const s of ids) seen.set(s, (seen.get(s) ?? 0) + 1);
-              usable = lists
-                .map((ids) => ids.filter((s) => (seen.get(s) ?? 0) < 2))
-                .filter((ids) => ids.length > 0);
-            }
-            if (usable.length > 0)
-              return usable.map((ids) => ({ eval: () => [...ids] }));
-          }
-        }
-        return ["N", "E", "S", "W"].map((d) => ({
-          eval: (c: EvalContext) => sideSites(c, d),
-        }));
-      };
-      const atNode = named.get("at");
-      const atFn = atNode ? compileInt(atNode, env) : undefined;
-      const ownerOf = (ctx: EvalContext): number => {
-        if (!ownerName) return ctx.mover;
-        if (ownerName === "All" || ownerName === "Shared" || ownerName === "Any")
-          return 0;
-        return resolveRole(ownerName, ctx);
-      };
-      // Goal regions resolved per-eval: with no explicit `{…}` set, a named
-      // role connects the regions that role *owns* (declared via `(regions
-      // <Role> …)`), each counted separately. Falls back to board sides.
-      const goalRegionsOf = (ctx: EvalContext, owner: number): RegionFn[] => {
-        if (regionFns) return regionFns;
-        if (useSides) return sidesRegionsFn(ctx, sidesNoCorners);
-        if (ownerName && owner > 0) {
-          const owned = env.playerRegionList?.get(owner);
-          if (owned && owned.length > 0) return owned;
-        }
-        return sidesRegionsFn(ctx, false);
-      };
-      return {
-        eval: (ctx) => {
-          const owner = ownerOf(ctx);
-          const regions = goalRegionsOf(ctx, owner);
-          const need = countTarget ?? regions.length;
-          if (need <= 0) return true;
-          const goals = regions.map((r) => new Set(r.eval(ctx)));
-          const member = (s: number): boolean => {
-            const c = ctx.state.cells[s] ?? 0;
-            return owner === 0 ? c !== 0 : c === owner;
-          };
-          const neighboursOf =
-            dirTokens.length > 0
-              ? (s: number) => aroundSites(ctx, s, dirTokens)
-              : (s: number) => orthoNeighbours(ctx, s);
-          const touches = (comp: Set<number>): number =>
-            goals.reduce(
-              (acc, g) =>
-                acc + ([...comp].some((s) => g.has(s)) ? 1 : 0),
-              0,
-            );
-          if (atFn) {
-            const seed = atFn.eval(ctx);
-            if (seed < 0 || !member(seed)) return false;
-            const comp = new Set<number>([seed]);
-            const stack = [seed];
-            while (stack.length > 0) {
-              const s = stack.pop() as number;
-              for (const nb of neighboursOf(s)) {
-                if (!comp.has(nb) && member(nb)) {
-                  comp.add(nb);
-                  stack.push(nb);
-                }
-              }
-            }
-            return touches(comp) >= need;
-          }
-          return groupComponentsWith(ctx, member, neighboursOf).some(
-            (c) => touches(c) >= need,
-          );
-        },
-      };
-    }
-    case "Loop":
-      // (is Loop [surround:<role>] [<role>]) — whether the mover's pieces form
-      // a closed loop (Havannah ring). Loop detection isn't modelled; compile
-      // to constant false so ring-goal games still build.
-      return { eval: () => false };
     case "Active":
       // (is Active <player>) — whether a player is still in the game. The TS
       // port does not model elimination, so every real player is active.
@@ -2818,7 +2793,7 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
     }
     case "Target": {
       // (is Target <config:{int…}> [<sites:{int…}> | <siteInt>]) — Java:
-      // IsTarget.java — cells[site] === config[i] for each site in order.
+      // IsTarget.java:118 — state.what(site, type) === config[i] in site order.
       // Without a sites arg, check the whole board 0…N-1.
       const configNode = positional[0];
       if (
@@ -2853,7 +2828,7 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
               (s, i) =>
                 s >= 0 &&
                 s < ctx.state.cells.length &&
-                (ctx.state.cells[s] ?? 0) === config[i],
+                ctx.state.whatAtSite(s) === config[i],
             );
           },
         };
@@ -2863,7 +2838,7 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
           const config = configFns.map((fn) => fn.eval(ctx));
           if (ctx.state.cells.length < config.length) return false;
           return config.every(
-            (expected, i) => (ctx.state.cells[i] ?? 0) === expected,
+            (expected, i) => ctx.state.whatAtSite(i) === expected,
           );
         },
       };
@@ -2876,7 +2851,6 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
       // Stub TRUE so the placement passes its `ifAfterwards` filter (stubbing
       // false would block every Trax move); the colour constraint is unenforced.
       return { eval: () => true };
-    case "Blocked":
     case "Hidden":
     case "PyramidCorners":
     case "PipsMatch":
@@ -2944,7 +2918,7 @@ function compileAll(node: LudList, env: CompileEnv): BoolFn {
     };
   }
   if (kind === "Passed") {
-    // (all Passed) — true when every active player passed on their previous
+    // (all Passed) — true when every player passed on their previous
     // turn. Java's AllPassed walks the move history; reproduce by inspecting
     // the last numPlayers moves for pass actions.
     return {
@@ -3593,7 +3567,7 @@ function isSiteTypeIdent(node: LudNode | undefined): boolean {
 }
 
 /** Drop a leading SiteType ident from a positional argument list. */
-function dropSiteType(positional: readonly LudNode[]): readonly LudNode[] {
+export function dropSiteType(positional: readonly LudNode[]): readonly LudNode[] {
   return isSiteTypeIdent(positional[0]) ? positional.slice(1) : positional;
 }
 
@@ -3735,7 +3709,7 @@ function isRegionNode(node: LudNode): boolean {
  * region into a set of sites. Several ludemes (e.g. `(sites Around …)`) accept
  * both forms in Ludii.
  */
-function compileSiteOrRegion(node: LudNode, env: CompileEnv): RegionFn {
+export function compileSiteOrRegion(node: LudNode, env: CompileEnv): RegionFn {
   if (isRegionNode(node)) return compileRegion(node, env);
   const intFn = compileInt(node, env);
   return {
@@ -3763,6 +3737,8 @@ export function compileRegion(node: LudNode, env: CompileEnv): RegionFn {
     return compileSiteList(node.items, env);
   }
   const head = listHead(node);
+  const _r = head ? lookupLudeme("region", head) : undefined;
+  if (_r) return _r(node, env) as RegionFn;
   const rest = node.items.slice(1);
   switch (head) {
     case "sites":
@@ -4887,7 +4863,9 @@ function compileSites(node: LudList, env: CompileEnv): RegionFn {
             eval: (ctx) => {
               const out = new Set<number>();
               for (const m of mv.generate(ctx)) {
-                const s = m.to();
+                // Java SitesTo collects Move.toNonDecision(), not the decision
+                // endpoint. @java Core/src/game/functions/region/sites/moves/SitesTo.java:48
+                const s = m.toNonDecision();
                 if (s >= 0) out.add(s);
               }
               return [...out];
@@ -4912,7 +4890,9 @@ function compileSites(node: LudList, env: CompileEnv): RegionFn {
             eval: (ctx) => {
               const out = new Set<number>();
               for (const m of mv.generate(ctx)) {
-                const s = m.from();
+                // Java SitesFrom collects Move.fromNonDecision(), not the decision
+                // endpoint. @java Core/src/game/functions/region/sites/moves/SitesFrom.java:48
+                const s = m.fromNonDecision();
                 if (s >= 0) out.add(s);
               }
               return [...out];
@@ -5507,7 +5487,7 @@ function graphCentreSites(ctx: EvalContext, perim: readonly number[]): number[] 
 }
 
 /** The four corner cells of a rectangular board. */
-function cornerSites(ctx: EvalContext): number[] {
+export function cornerSites(ctx: EvalContext): number[] {
   // Graph boards (hex / triangle / custom poly such as ConHex) are not a
   // rectangular lattice, so the bounding-box corners below are meaningless.
   // Java `(sites Corners)` reads the measured CORNER property; use the graph's
@@ -5529,7 +5509,7 @@ function cornerSites(ctx: EvalContext): number[] {
 }
 
 /** The perimeter ring of a rectangular board. */
-function outerSites(ctx: EvalContext): number[] {
+export function outerSites(ctx: EvalContext): number[] {
   // Graph boards: Java `measureInnerOuter` sets OUTER == PERIMETER for vertices
   // (and marks a face OUTER when it touches a perimeter vertex). `perimeterSites`
   // already reproduces both, so use it; the bounding-box ring below is only
@@ -5555,7 +5535,7 @@ function outerSites(ctx: EvalContext): number[] {
  * rhombus-coordinate connection games such as Hex/Y/Havannah) map to the four
  * distinct edges, keeping the goal regions of an `(is Connected …)` disjoint.
  */
-function sideSites(ctx: EvalContext, dir: string): number[] {
+export function sideSites(ctx: EvalContext, dir: string): number[] {
   // Faithful path: graph boards carry per-side play-site lists computed from the
   // real perimeter (Java Topology.sides). On a slanted board (rhombus Hex,
   // triangle Y, …) the four sides are diagonal edges, so the bounding-box
@@ -5585,20 +5565,20 @@ function sideSites(ctx: EvalContext, dir: string): number[] {
 
 /** Neighbouring cells of a site along the given direction group(s). */
 /** The `to` site of the trial's most recent move (Java default for `at:`). */
-function lastToSite(ctx: EvalContext): number {
+export function lastToSite(ctx: EvalContext): number {
   const moves = ctx.context.trial.moves;
   const last = moves[moves.length - 1];
   return last ? last.to() : OFF;
 }
 
-function lastFromSite(ctx: EvalContext): number {
+export function lastFromSite(ctx: EvalContext): number {
   const moves = ctx.context.trial.moves;
   const last = moves[moves.length - 1];
   return last ? last.from() : OFF;
 }
 
 /** Orthogonally (edge-) adjacent on-board sites of `site`. */
-function orthoNeighbours(ctx: EvalContext, site: number): number[] {
+export function orthoNeighbours(ctx: EvalContext, site: number): number[] {
   const board = ctx.board;
   if (board.traj) return board.traj.neighbours(site);
   const x = board.xOf(site);
@@ -5640,6 +5620,32 @@ const SIZES_DIRECTION_NAMES = new Set([
   "All",
   "OffDiagonal",
 ]);
+
+function isGroupDirectionNode(node: LudNode): boolean {
+  if (isIdent(node)) return directionByName(node.name) !== undefined;
+  if (!isList(node)) return false;
+  const head = listHead(node);
+  if (head === "directions") return true;
+  if (node.delimiter === "curly") {
+    return node.items.every(
+      (item) => isIdent(item) && directionByName(item.name) !== undefined,
+    );
+  }
+  return false;
+}
+
+function parseGroupDirectionArg(
+  positional: readonly LudNode[],
+  index: number,
+): { readonly dirTokens?: readonly string[]; readonly nextIndex: number } {
+  const node = positional[index];
+  if (!node || !isGroupDirectionNode(node)) return { nextIndex: index };
+  const tokens = rawDirectionTokens(node).filter((t) => !t.startsWith("#"));
+  return {
+    dirTokens: tokens.length > 0 ? tokens : ["Adjacent"],
+    nextIndex: index + 1,
+  };
+}
 
 /** The same-owner connected component containing `start` (orthogonal
  * adjacency), as a site-index array. Empty when the seed is empty/off-board. */
@@ -5711,13 +5717,109 @@ function groupComponents(
   return groups;
 }
 
+type JavaStyleGroupFloodMode = "sameWhatWhenNoCondition" | "conditionOnly";
+
+interface JavaStyleGroupFloodOptions {
+  readonly dirTokens?: readonly string[];
+  readonly seeds?: readonly number[];
+  readonly condition?: BoolFn;
+  readonly min?: number;
+  readonly mode: JavaStyleGroupFloodMode;
+}
+
+function javaStyleGroupNeighbours(
+  ctx: EvalContext,
+  site: number,
+  dirTokens: readonly string[] | undefined,
+): readonly number[] {
+  // Java defaults these ludemes to AbsoluteDirection.Adjacent
+  // (CountGroups.java:72-75, SizeGroup.java:67-69, SitesGroup.java:79-80).
+  // The TS port historically used orthogonal topology neighbours when no
+  // direction argument was supplied; keep that common case stable, and use the
+  // direction-aware topology only for explicit direction arguments.
+  return dirTokens ? aroundSites(ctx, site, dirTokens) : orthoNeighbours(ctx, site);
+}
+
+/**
+ * Shared Java-style group flood for CountGroups, CountSizeBiggestGroup,
+ * SizeGroup, and SitesGroup. It evaluates `if:` with `to`/`site` bound to each
+ * candidate, and with `from` bound to the seed for seeded floods.
+ */
+function javaStyleGroupFlood(
+  ctx: EvalContext,
+  opts: JavaStyleGroupFloodOptions,
+): Set<number>[] {
+  const n = ctx.state.cells.length;
+  const evalCondition = (site: number, seed?: number): boolean => {
+    if (site < 0 || site >= n) return false;
+    if (!opts.condition) return ctx.state.isOccupiedSite(site);
+    const frame =
+      seed === undefined
+        ? { to: site, site }
+        : { from: seed, to: site, site };
+    return opts.condition.eval(ctx.withFrame(frame));
+  };
+  const accepts = (
+    site: number,
+    seedWhat: number | undefined,
+    seed?: number,
+  ): boolean => {
+    if (site < 0 || site >= n) return false;
+    if (opts.condition || opts.mode === "conditionOnly") {
+      return evalCondition(site, seed);
+    }
+    return seedWhat !== undefined
+      ? ctx.state.whatAtSite(site) === seedWhat
+      : ctx.state.isOccupiedSite(site);
+  };
+  const floodOne = (start: number, sharedSeen?: Set<number>): Set<number> => {
+    if (start < 0 || start >= n) return new Set();
+    const seedWhat =
+      opts.condition || opts.mode === "conditionOnly"
+        ? undefined
+        : ctx.state.whatAtSite(start);
+    if (!accepts(start, seedWhat, start)) return new Set();
+    const comp = new Set<number>([start]);
+    sharedSeen?.add(start);
+    const stack = [start];
+    while (stack.length > 0) {
+      const s = stack.pop() as number;
+      for (const nb of javaStyleGroupNeighbours(ctx, s, opts.dirTokens)) {
+        if (comp.has(nb) || sharedSeen?.has(nb)) continue;
+        if (!accepts(nb, seedWhat, start)) continue;
+        comp.add(nb);
+        sharedSeen?.add(nb);
+        stack.push(nb);
+      }
+    }
+    return comp;
+  };
+
+  const groups: Set<number>[] = [];
+  if (opts.seeds) {
+    for (const seed of opts.seeds) {
+      const comp = floodOne(seed);
+      if (comp.size >= (opts.min ?? 0)) groups.push(comp);
+    }
+    return groups;
+  }
+
+  const seen = new Set<number>();
+  for (let start = 0; start < n; start += 1) {
+    if (seen.has(start) || !accepts(start, undefined)) continue;
+    const comp = floodOne(start, seen);
+    if (comp.size >= (opts.min ?? 0)) groups.push(comp);
+  }
+  return groups;
+}
+
 /**
  * Connected components over the on-board sites satisfying `member`, using an
  * explicit direction-aware neighbour function (Java: SizesGroup / CountGroups
  * with a chosen `Direction`). `groupComponents` is the orthogonal-only special
  * case; this variant lets `(sizes Group All …)` flood across diagonals too.
  */
-function groupComponentsWith(
+export function groupComponentsWith(
   ctx: EvalContext,
   member: (site: number) => boolean,
   neighbours: (site: number) => readonly number[],
@@ -5837,19 +5939,8 @@ function stepDistance(
   return OFF;
 }
 
-/** Moves played so far in the current turn — the run of trailing moves whose
- * mover matches the last move's (Java: state.numTurnSamePlayer()). */
+/** Moves played so far in the current turn — the run of trailing moves by the mover. */
 function movesThisTurn(ctx: EvalContext): number {
-  // Java `(count MovesThisTurn)` = `state.numTurnSamePlayer()`: the number of
-  // moves the CURRENT mover has already made in the current consecutive-turn
-  // streak (Game.java:3203-3206 increments when `prev == mover`, else resets to
-  // 0). It is read during generation, before the new move is recorded, so it is
-  // the count of trailing moves in the trial belonging to `ctx.mover` — which is
-  // 0 at the start of a fresh turn (the last recorded move was the previous
-  // player's) and grows by one per `moveAgain` continuation. Counting the last
-  // *recorded* move's mover instead (the previous bug) returned the prior
-  // player's streak at turn start, breaking continuation gates like Seesaw
-  // Draughts' `(from if:(= (* (from) …MovesThisTurn…) (* (last To) …)))`.
   const moves = ctx.context.trial.moves;
   const mover = ctx.mover;
   let n = 0;
@@ -5860,7 +5951,7 @@ function movesThisTurn(ctx: EvalContext): number {
   return n;
 }
 
-function aroundSites(
+export function aroundSites(
   ctx: EvalContext,
   site: number,
   dirTokens: readonly string[],
@@ -6032,7 +6123,7 @@ function resolveStaticRole(name: string): number | undefined {
   return undefined;
 }
 
-function allSites(ctx: EvalContext): number[] {
+export function allSites(ctx: EvalContext): number[] {
   // Board sites only — hand sites live beyond board.numSites in cells and
   // are addressed by `(sites Hand …)`, not the on-board regions. Hex masks
   // filter out bounding-box holes.
@@ -6229,7 +6320,24 @@ function expandRegion(
 
 // ---- direction functions ---------------------------------------------------
 
-export function compileDirections(node: LudNode): DirectionsFn {
+export function compileDirections(
+  node: LudNode,
+  env?: CompileEnv,
+): DirectionsFn {
+  if (isList(node) && listHead(node) === "directions") {
+    const { positional, named } = parseArgs(node.items.slice(1));
+    const fromNode = named.get("from");
+    const toNode = named.get("to");
+    if (env && fromNode && toNode && positional.some(isSiteTypeIdent)) {
+      const fromFn = compileInt(fromNode, env);
+      const toFn = compileInt(toNode, env);
+      return {
+        // @java Core/src/game/functions/directions/Directions.java between-sites constructor: resolve the
+        // AbsoluteDirection whose radial from `from` reaches `to`.
+        eval: (ctx) => directionsBetween(ctx, fromFn.eval(ctx), toFn.eval(ctx)),
+      };
+    }
+  }
   const tokens = collectDirectionTokens(node);
   return { eval: (ctx) => resolveDirectionTokens(tokens, ctx) };
 }
@@ -6255,6 +6363,8 @@ export function compileMoves(node: LudNode, env: CompileEnv): MovesFn {
     return compileMovesList(node.items, env, concatMoves);
   }
   const head = listHead(node);
+  const _r = head ? lookupLudeme("moves", head) : undefined;
+  if (_r) return _r(node, env) as MovesFn;
   // An unresolved define invocation leaves a round-paren list whose first item
   // is a string (the define name) — `listHead` is undefined because the head is
   // a string, not an ident. This happens when a define body evaporated (empty
@@ -6604,6 +6714,11 @@ export function compileMoves(node: LudNode, env: CompileEnv): MovesFn {
       const thenSibling = rest
         .slice(2)
         .find((n): n is LudList => isList(n) && listHead(n) === "then");
+      const deferredThen = compileDeferredDiceThen(thenSibling, env);
+      const postDiceThen =
+        thenSibling && !deferredThen && isDiceReplayThen(thenSibling)
+          ? compileThen(thenSibling, env, false, true)
+          : undefined;
       const elseNode = rest[2];
       const elseIsThen =
         elseNode !== undefined &&
@@ -6617,7 +6732,11 @@ export function compileMoves(node: LudNode, env: CompileEnv): MovesFn {
       // `(if (all DiceUsed) …)` both live; other fold sites keep their existing
       // guard timing to avoid disturbing unrelated then-clauses.
       const thenEffect = thenSibling
-        ? compileThen(thenSibling, env, true)
+        ? deferredThen
+          ? undefined
+          : postDiceThen
+            ? undefined
+            : compileThen(thenSibling, env, true)
         : undefined;
       return {
         generate: (ctx) => {
@@ -6626,6 +6745,27 @@ export function compileMoves(node: LudNode, env: CompileEnv): MovesFn {
             : elseMoves
               ? elseMoves.generate(ctx)
               : [];
+          if (deferredThen && moves.length > 0) {
+            moves = moves.map((m) => {
+              deferDiceThen(env, m, deferredThen);
+              return m;
+            });
+          }
+          if (postDiceThen && moves.length > 0) {
+            moves = moves.map((m) => {
+              const post = ctx
+                .applyHypothetical(m)
+                .withFrame({ from: m.from(), to: m.to() });
+              const extra = postDiceThen.effect ? postDiceThen.effect(post) : [];
+              let again = postDiceThen.moveAgain;
+              if (!again && postDiceThen.moveAgainCond) {
+                again = postDiceThen.moveAgainCond.eval(post);
+              }
+              return extra.length > 0 || again
+                ? m.withConsequence(extra, again)
+                : m;
+            });
+          }
           if (thenEffect && moves.length > 0) {
             const { moveAgain, moveAgainCond, effect } = thenEffect;
             if (effect || moveAgain || moveAgainCond) {
@@ -7108,11 +7248,15 @@ function compileDo(node: LudList, env: CompileEnv): MovesFn {
     }
   }
   if (nextNode && nextGen) {
+    const isRollNextDo =
+      isList(movesNode) &&
+      (listHead(movesNode) === "roll" ||
+        (listHead(movesNode) === "if" &&
+          movesNode.items.some((n) => isList(n) && listHead(n) === "roll")));
     // `(do prior next:next …)` — Java `Do.eval`: generate the prior moves,
     // apply them to a temp context, generate the `next:` moves there, then
     // prepend the prior moves' actions to each follow-up move so it re-runs
-    // the prologue side effects when applied. The prior moves are dropped if
-    // `next` yields nothing (Java returns the prepended `next` result).
+    // the prologue side effects when applied.
     const nextGenF = nextGen;
     return {
       generate: (ctx) => {
@@ -7126,6 +7270,35 @@ function compileDo(node: LudList, env: CompileEnv): MovesFn {
         let result = nextGenF
           .generate(tempCtx)
           .map((m) => m.withPrependedActions(preActions));
+        if (
+          result.length === 0 &&
+          env.diceDef &&
+          isRollNextDo &&
+          !noMovesProbing
+        ) {
+          const pass = new ActionPass();
+          pass.setDecision(true);
+          // Java parity: Do.prependPreMoves inserts a forced pass when the
+          // `next:` arm is empty in a hand-dice `RollMove` (`do (roll)
+          // next:...`) game; Game.legalMoves then propagates the Do's `then`
+          // to that pass. Do not synthesize it inside the `(no Moves …)`
+          // stalemate probe: that path is asking whether real play moves exist,
+          // before forced-pass legal-list repair.
+          // (Core/src/game/rules/play/moves/nonDecision/effect/requirement/Do.java:170-175,
+          // Core/src/game/functions/booleans/no/moves/NoMoves.java:57-88,
+          // Core/src/game/Game.java:2922-2927).
+          result = [
+            new Move({
+              id: `pass:${ctx.mover}`,
+              label: "Pass",
+              siteIndices: [0],
+              mover: ctx.mover,
+              placedOwner: ctx.mover,
+              actions: [...preActions, pass],
+              decisionIndex: preActions.length,
+            }),
+          ];
+        }
         if (cond) {
           result = result.filter((m) => cond.eval(ctx.applyHypothetical(m)));
         }
@@ -7282,9 +7455,15 @@ function compileMovesList(
     moveAgainCond?: BoolFn;
     effect?: EffectFn;
   }[] = [];
+  const deferredThens: CompiledThen[] = [];
   for (const child of flattenMoveList(children)) {
     if (isString(child)) continue; // skip define-name leftovers
     if (isList(child) && listHead(child) === "then") {
+      const deferred = compileDeferredDiceThen(child, env);
+      if (deferred) {
+        deferredThens.push(deferred);
+        continue;
+      }
       // A moves-list sibling `(then …)` is folded against the *post-move* state
       // (`applyHypothetical` below), so a `(forEach Site …)` consequent reads the
       // correct board — enable it here. Java's `Then` always runs the consequent;
@@ -7300,7 +7479,17 @@ function compileMovesList(
     gens.push(compileMoves(child, env));
   }
   const base = combine(gens);
-  if (thens.length === 0) return base;
+  const withDeferred =
+    deferredThens.length === 0
+      ? base
+      : {
+          generate: (ctx: EvalContext) =>
+            base.generate(ctx).map((m) => {
+              deferDiceThens(env, m, deferredThens);
+              return m;
+            }),
+        };
+  if (thens.length === 0) return withDeferred;
   const moveAgainStatic = thens.some((t) => t.moveAgain);
   const moveAgainConds = thens
     .map((t) => t.moveAgainCond)
@@ -7310,7 +7499,7 @@ function compileMovesList(
     .filter((e): e is EffectFn => e !== undefined);
   return {
     generate: (ctx) =>
-      base.generate(ctx).map((m) => {
+      withDeferred.generate(ctx).map((m) => {
         // Resolve the `(then …)` consequents against the *post-move* position
         // (Java evaluates a move's `then` after its own actions apply), binding
         // the move's from/to and recording it as the last move so `(last To)` /
@@ -7638,9 +7827,14 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
     }
     if (movesNode) {
       const inner = compileMoves(movesNode, env);
-      const thens = feArgs
-        .filter((n) => isList(n) && listHead(n) === "then")
-        .map((n) => compileThen(n as LudList, env));
+      const thens: CompiledThen[] = [];
+      const deferredThens: CompiledThen[] = [];
+      for (const n of feArgs) {
+        if (!isList(n) || listHead(n) !== "then") continue;
+        const deferred = compileDeferredDiceThen(n, env);
+        if (deferred) deferredThens.push(deferred);
+        else thens.push(compileThen(n, env));
+      }
       const moveAgain = thens.some((t) => t.moveAgain);
       // Conditional turn-retention — `(then (if (can Move …) (moveAgain)))` —
       // on the forEach itself (Fanorona/Vela's multi-capture: after a capturing
@@ -7681,6 +7875,7 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
                 continue;
               const sub = pctx.withFrame({ from: s, piece: tp });
               for (const m of inner.generate(sub)) {
+                if (deferredThens.length > 0) deferDiceThens(env, m, deferredThens);
                 if (effects.length === 0 && !moveAgain && moveAgainConds.length === 0) {
                   out.push(m);
                   continue;
@@ -7716,9 +7911,14 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
     // consequence (`(if (not (all DiceUsed)) (moveAgain))`) is silently dropped
     // and the engine passes the turn after one die. Mirror the moves-clause
     // branch's per-move folding.
-    const dispatchThens = feArgs
-      .filter((n) => isList(n) && listHead(n) === "then")
-      .map((n) => compileThen(n as LudList, env));
+    const dispatchThens: CompiledThen[] = [];
+    const dispatchDeferredThens: CompiledThen[] = [];
+    for (const n of feArgs) {
+      if (!isList(n) || listHead(n) !== "then") continue;
+      const deferred = compileDeferredDiceThen(n, env);
+      if (deferred) dispatchDeferredThens.push(deferred);
+      else dispatchThens.push(compileThen(n, env));
+    }
     const dispatchMoveAgain = dispatchThens.some((t) => t.moveAgain);
     // Conditional turn-retention — `(then "ReplayNotAllDiceUsed")` i.e.
     // `(if (not (all DiceUsed)) (moveAgain))` — on the dispatch (e.g. Plakoto's
@@ -7744,6 +7944,43 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
         const numPlayers = ctx.context.game.numPlayers;
         const out: Move[] = [];
         const sites = pieceSites(ctx);
+        const emitForPiece = (gen: MovesFn, sub: EvalContext): void => {
+          for (const m of gen.generate(sub)) {
+            if (dispatchDeferredThens.length > 0)
+              deferDiceThens(env, m, dispatchDeferredThens);
+            if (!hasDispatchThen) {
+              out.push(m);
+              continue;
+            }
+            // Resolve the consequence on the *post-move* position: record `m`
+            // as the trial's last move so `postMoveContext` re-applies it (the
+            // `(all DiceUsed)` predicate then sees the die just consumed).
+            const ectx = sub
+              .withContext(
+                sub.context.withTrial(
+                  sub.context.trial.withMove(m, false, -1),
+                ),
+              )
+              .withFrame({ from: m.from(), to: m.to() });
+            const extra = dispatchEffects.flatMap((e) => e(ectx));
+            let moveAgain = dispatchMoveAgain;
+            // The conditional turn-retention predicate must see the move's
+            // *applied* state (the die zeroed by its ActionUseDie). `ectx`
+            // only records the move in the trial without mutating state, so
+            // dice would still read unspent there — use applyHypothetical,
+            // which actually applies the move, as the forEach Die path does.
+            if (dispatchMoveAgainConds.length > 0) {
+              const post = sub.applyHypothetical(m);
+              for (const c of dispatchMoveAgainConds)
+                if (c.eval(post)) moveAgain = true;
+            }
+            out.push(
+              extra.length > 0 || moveAgain
+                ? m.withConsequence(extra, moveAgain)
+                : m,
+            );
+          }
+        };
         // Default (no role) iterates the mover's pieces; a trailing role (P2,
         // Shared, …) iterates that player's. Java ForEachPiece runs the rule AS
         // the target player unless it is the mover or a Shared/Neutral owner —
@@ -7758,10 +7995,10 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
           const state = pctx.state;
           for (const s of sites) {
             if (cells[s] !== owner) continue;
-            // Dispatch the generator for the *component* on this site (Java:
-            // each Component has its own move rule). Heterogeneous-piece games
-            // (chess) hit the per-`what` map; single-piece games fall back to
-            // the per-owner generator, which is identical to the old behaviour.
+            // Dispatch the generator for the *component* on this site (Java: each
+            // Component has its own move rule). If per-component ids are missing,
+            // fall back to the per-owner generator, which is identical to the old
+            // behaviour.
             const what = state.whatAtSite(s);
             // A piece defined with no move generator (Chessence's King) must
             // produce nothing — never inherit the per-owner fallback (its
@@ -7770,39 +8007,7 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
             const gen = byWhat?.get(what) ?? ownerGen;
             if (!gen) continue;
             const sub = pctx.withFrame({ from: s, piece: what });
-            for (const m of gen.generate(sub)) {
-              if (!hasDispatchThen) {
-                out.push(m);
-                continue;
-              }
-              // Resolve the consequence on the *post-move* position: record `m`
-              // as the trial's last move so `postMoveContext` re-applies it (the
-              // `(all DiceUsed)` predicate then sees the die just consumed).
-              const ectx = sub
-                .withContext(
-                  sub.context.withTrial(
-                    sub.context.trial.withMove(m, false, -1),
-                  ),
-                )
-                .withFrame({ from: m.from(), to: m.to() });
-              const extra = dispatchEffects.flatMap((e) => e(ectx));
-              let moveAgain = dispatchMoveAgain;
-              // The conditional turn-retention predicate must see the move's
-              // *applied* state (the die zeroed by its ActionUseDie). `ectx`
-              // only records the move in the trial without mutating state, so
-              // dice would still read unspent there — use applyHypothetical,
-              // which actually applies the move, as the forEach Die path does.
-              if (dispatchMoveAgainConds.length > 0) {
-                const post = sub.applyHypothetical(m);
-                for (const c of dispatchMoveAgainConds)
-                  if (c.eval(post)) moveAgain = true;
-              }
-              out.push(
-                extra.length > 0 || moveAgain
-                  ? m.withConsequence(extra, moveAgain)
-                  : m,
-              );
-            }
+            emitForPiece(gen, sub);
           }
         }
         return out;
@@ -7839,7 +8044,9 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
     const siteThenNode = node.items
       .slice(4)
       .find((n): n is LudList => isList(n) && listHead(n) === "then");
-    const siteThen = siteThenNode ? compileThen(siteThenNode, env) : undefined;
+    const deferredSiteThen = compileDeferredDiceThen(siteThenNode, env);
+    const siteThen =
+      siteThenNode && !deferredSiteThen ? compileThen(siteThenNode, env) : undefined;
     return {
       generate: (ctx) => {
         let out: Move[] = [];
@@ -7880,6 +8087,9 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
                 : m;
             });
           }
+        }
+        if (deferredSiteThen) {
+          for (const m of out) deferDiceThen(env, m, deferredSiteThen);
         }
         return out;
       },
@@ -7996,6 +8206,8 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
     // pre-spend; this handler then re-applies *all* collected thens (both their
     // effect actions and turn-retention) on the post-die-spend position below,
     // matching Java where a Move's then runs after every action incl. UseDie.
+    const deferredDiceThens = new WeakMap<Move, CompiledThen[]>();
+    const innerEnv: CompileEnv = { ...env, deferredDiceThens };
     const siblingThens = node.items
       .slice(2)
       .filter((n): n is LudList => isList(n) && listHead(n) === "then")
@@ -8026,9 +8238,8 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
     const nestedThens = nestedThenNodes.map((n) => compileThen(n, env));
     const innerNode =
       nestedThens.length > 0 ? stripThens(movesNode) : movesNode;
-    const inner = compileMoves(innerNode, env);
+    const inner = compileMoves(innerNode, innerEnv);
     const allThens = [...siblingThens, ...nestedThens];
-    const hasAnyThen = allThens.length > 0;
     // Generate the inner moves for a given summed pip count, tagging each with
     // the supplied consequence actions. Mirrors the per-branch body of
     // ForEachDie.eval (setPipCount → rule.eval → moves.eval → add UseDie).
@@ -8047,16 +8258,23 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
         // hoisted ones (the `forEach Site`'s own `then`), because Java's
         // ForEachSite.eval returns the fallback before applying its `then()`.
         // All other (main-body) moves get every then. (Backgammon bear-off fix.)
-        const applicableThens = foreachSiteNoMoveYetMoves.has(m)
+        const hoistedThens = foreachSiteNoMoveYetMoves.has(m)
           ? siblingThens
           : allThens;
-        if (!hasAnyThen || applicableThens.length === 0) {
+        const deferredThens = deferredDiceThens.get(m) ?? [];
+        const applicableThens =
+          deferredThens.length > 0
+            ? [...deferredThens, ...hoistedThens]
+            : hoistedThens;
+        if (applicableThens.length === 0) {
           out.push(withDice);
           continue;
         }
         // Resolve every `(then …)` on the post-move position (the die just
-        // spent), matching Java where consequents run after the move applies —
-        // including the ActionUseDie appended above. `(if (not (all DiceUsed))
+        // spent), matching Java Move.apply lines 504-520, where consequents run
+        // after the move's own actions, and ForEachDie.java lines 117-120, where
+        // ActionUseDie is appended before those consequents are stored. `(if
+        // (not (all DiceUsed))
         // …)` then sees the remaining dice and retains the turn (via moveAgain
         // or an ActionSetNextPlayer effect) only while at least one die is
         // unused. The pip count is rebound so a then reading `(pips)` resolves.
@@ -8064,7 +8282,8 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
         let moveAgain = false;
         const eff: Action[] = [];
         for (const dt of applicableThens) {
-          if (dt.moveAgain || (dt.moveAgainCond?.eval(post) ?? false))
+          const condAgain = dt.moveAgainCond?.eval(post) ?? false;
+          if (dt.moveAgain || condAgain)
             moveAgain = true;
           if (dt.effect) eff.push(...dt.effect(post));
         }
@@ -8109,11 +8328,14 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
           // unconfigured), so A/B are correctly gated by it. Branch C must fire
           // INDEPENDENT of replayDouble — a forEach Die with no replayDouble
           // (e.g. Quinze Tablas' normal "Disc" move) still re-arms while a
-          // prior doubles roll left temp set. (TS uses 0 as the unset sentinel,
-          // since `state.temps` defaults to 0 and pip values are never 0.)
-          if (isDouble && temp === 0) return [new ActionSetTemp(0, pips)];
-          if (isDouble) return [new ActionSetTemp(0, 0)];
-          if (temp !== 0) {
+          // prior doubles roll left temp set. The unset sentinel is Java's
+          // `Constants.UNDEFINED` = -1 (State.temp initialises to -1, NOT 0);
+          // pip counts are ≥ 1 so -1 is unambiguous. (Was wrongly 0, which made
+          // Branch C fire on every game's first non-double move since temp
+          // starts at -1 ≠ 0 — corrupting the dice.)
+          if (isDouble && temp === -1) return [new ActionSetTemp(0, pips)];
+          if (isDouble) return [new ActionSetTemp(0, -1)];
+          if (temp !== -1) {
             // Re-arm every die to the stored doubled value for the second pass
             // (Java sets each die's value to faces[temp-1] = temp here).
             const out: Action[] = [];
@@ -8878,8 +9100,10 @@ function compileApply(node: LudList, env: CompileEnv): EffectFn {
  * runs several; leaf effects (`remove`/`addScore`/`set …`) delegate to
  * `compileEffectAction`.
  */
-function compileEffect(node: LudList, env: CompileEnv): EffectFn {
+export function compileEffect(node: LudList, env: CompileEnv): EffectFn {
   const head = listHead(node);
+  const _r = head ? lookupLudeme("effect", head) : undefined;
+  if (_r) return _r(node, env) as EffectFn;
   // A curly `{ eff … }` block is an implicit sequence of sub-effects, as is
   // `(and { … })` where the `and` takes a single curly-list argument. Flatten
   // either into a lenient sequence so one unsupported member doesn't fail the
@@ -8980,7 +9204,7 @@ function effectChildren(items: readonly LudNode[]): LudList[] {
 }
 
 /** Compile one effect, dropping it to a no-op if it uses unsupported forms. */
-function compileEffectLenient(node: LudList, env: CompileEnv): EffectFn {
+export function compileEffectLenient(node: LudList, env: CompileEnv): EffectFn {
   try {
     return compileEffect(node, env);
   } catch {
@@ -8989,7 +9213,7 @@ function compileEffectLenient(node: LudList, env: CompileEnv): EffectFn {
 }
 
 /** An effect node that may be a leaf or control-flow; empty if not a list. */
-function effectOf(node: LudNode, env: CompileEnv): EffectFn {
+export function effectOf(node: LudNode, env: CompileEnv): EffectFn {
   return isList(node) ? compileEffect(node, env) : () => [];
 }
 
@@ -9317,6 +9541,9 @@ function compileStep(node: LudList, env: CompileEnv, startIndex = 2): MovesFn {
             mover,
             placedOwner: mover,
             actions,
+            // @java Core/src/game/rules/play/moves/nonDecision/effect/Step.java:233
+            fromNonDecisionSite: from,
+            toNonDecisionSite: to,
           }),
         );
       }
@@ -9969,6 +10196,9 @@ function compileSlide(node: LudList, env: CompileEnv, startIndex = 2): MovesFn {
               mover,
               placedOwner: mover,
               actions,
+              // @java Core/src/game/rules/play/moves/nonDecision/effect/Slide.java:292
+              fromNonDecisionSite: from,
+              toNonDecisionSite: to,
             }),
           );
         };
@@ -10019,6 +10249,9 @@ function compileSlide(node: LudList, env: CompileEnv, startIndex = 2): MovesFn {
       const max = maxFn.eval(ctx);
       const out: Move[] = [];
       const emit = (to: number, sub: EvalContext): void => {
+        // @java Core/src/game/rules/play/moves/nonDecision/effect/Slide.java:364 gates whole-move emission on the
+        // to/apply condition; `toRule` is the `(apply if:...)` condition.
+        if (toRule && !toRule.eval(sub)) return;
         const actions: Action[] = [new ActionMove({ from, to })];
         if (effect) {
           for (const a of effect(sub)) {
@@ -10034,6 +10267,9 @@ function compileSlide(node: LudList, env: CompileEnv, startIndex = 2): MovesFn {
             mover,
             placedOwner: mover,
             actions,
+            // @java Core/src/game/rules/play/moves/nonDecision/effect/Slide.java:368
+            fromNonDecisionSite: from,
+            toNonDecisionSite: to,
           }),
         );
       };
@@ -10449,6 +10685,9 @@ function compileHop(node: LudList, env: CompileEnv, startIndex = 2): MovesFn {
               placedOwner: mover,
               actions,
               decisionIndex,
+              // @java Core/src/game/rules/play/moves/nonDecision/effect/Hop.java:306
+              fromNonDecisionSite: from,
+              toNonDecisionSite: to,
             }),
           );
         };
@@ -10504,7 +10743,7 @@ function compileHop(node: LudList, env: CompileEnv, startIndex = 2): MovesFn {
   };
 }
 
-function compileMoveLudeme(node: LudList, env: CompileEnv): MovesFn {
+export function compileMoveLudeme(node: LudList, env: CompileEnv): MovesFn {
   const inner = compileMoveLudemeInner(node, env);
   // A `(move … (then <effect>))` block runs side effects after the move and
   // may keep the turn (`moveAgain`). Compile it and fold it into each move.
@@ -10512,6 +10751,16 @@ function compileMoveLudeme(node: LudList, env: CompileEnv): MovesFn {
     (n) => isList(n) && listHead(n) === "then",
   ) as LudList | undefined;
   if (!thenNode) return inner;
+  const deferredThen = compileDeferredDiceThen(thenNode, env);
+  if (deferredThen) {
+    return {
+      generate: (ctx) =>
+        inner.generate(ctx).map((m) => {
+          deferDiceThen(env, m, deferredThen);
+          return m;
+        }),
+    };
+  }
   // Java applies a move's base actions first, then evaluates each attached
   // consequent on the mutated context (Move.apply → consequent.eval(context)).
   // For a real board-changing move that means the then-guard may need the
@@ -10649,7 +10898,63 @@ function stripThens(node: LudNode): LudNode {
   };
 }
 
-function compileThen(
+function nodeContainsAllDiceUsed(node: LudNode | undefined): boolean {
+  if (!node || !isList(node)) return false;
+  if (
+    listHead(node) === "all" &&
+    node.items[1] !== undefined &&
+    isIdent(node.items[1]) &&
+    node.items[1].name === "DiceUsed"
+  ) {
+    return true;
+  }
+  return node.items.some(nodeContainsAllDiceUsed);
+}
+
+function nodeContainsMoveAgain(node: LudNode | undefined): boolean {
+  if (!node) return false;
+  if (isIdent(node) && node.name === "moveAgain") return true;
+  if (!isList(node)) return false;
+  if (listHead(node) === "moveAgain") return true;
+  return node.items.some(nodeContainsMoveAgain);
+}
+
+function isDiceReplayThen(node: LudList): boolean {
+  return (
+    listHead(node) === "then" &&
+    nodeContainsAllDiceUsed(node) &&
+    nodeContainsMoveAgain(node)
+  );
+}
+
+function compileDeferredDiceThen(
+  node: LudList | undefined,
+  env: CompileEnv,
+): CompiledThen | undefined {
+  if (!node || !env.deferredDiceThens || !isDiceReplayThen(node)) return undefined;
+  // The outer `(forEach Die ...)` handler supplies the already-applied
+  // post-move/post-ActionUseDie context, so compile guards/effects to read that
+  // context directly rather than re-applying the move inside postMoveContext().
+  return compileThen(node, env, false, true);
+}
+
+function deferDiceThen(env: CompileEnv, move: Move, thenC: CompiledThen): void {
+  const map = env.deferredDiceThens;
+  if (!map) return;
+  const existing = map.get(move);
+  if (existing) existing.push(thenC);
+  else map.set(move, [thenC]);
+}
+
+function deferDiceThens(
+  env: CompileEnv,
+  move: Move,
+  thens: readonly CompiledThen[],
+): void {
+  for (const thenC of thens) deferDiceThen(env, move, thenC);
+}
+
+export function compileThen(
   node: LudList,
   env: CompileEnv,
   inThen = false,
@@ -10776,13 +11081,15 @@ function compileThen(
  * the *post-move* state; the fold sites record the move as the trial's last
  * entry and `postMoveContext` re-applies it once. In an `apply` effect there is
  * no such recorded move, so the guard reads the in-progress ctx directly. */
-function compileEffectAction(
+export function compileEffectAction(
   node: LudList,
   env: CompileEnv,
   inThen = false,
   allowForEachSite = false,
 ): EffectFn | undefined {
   const head = listHead(node);
+  const _r = head ? lookupLudeme("effect", head) : undefined;
+  if (_r) return _r(node, env, inThen, allowForEachSite) as EffectFn;
   if (head === "moveAgain") {
     // As an effect (e.g. inside `(if … (moveAgain))`): schedule the current
     // mover to play again by overriding the next player. Java: MoveAgain emits
@@ -10904,7 +11211,7 @@ function compileEffectAction(
       // branch.
       return (ctx) => {
         const guardCtx = inThen ? postMoveContext(ctx) : ctx;
-        return cond.eval(guardCtx) ? [new ActionSetNextPlayer(ctx.mover)] : [];
+        return cond.eval(guardCtx) ? [new ActionSetNextPlayer(guardCtx.mover)] : [];
       };
     }
     if (!isList(thenNode)) return undefined;
@@ -10920,11 +11227,12 @@ function compileEffectAction(
       // already-advanced ctx, so they read it directly rather than re-applying
       // (which would double the move). In an `(apply …)` effect (`inThen=false`)
       // there is no recorded move, so guard and branches read ctx unchanged.
+      const nestedInThen = inThen && !allowForEachSite;
       const nestedAllowForEachSite = allowForEachSite || inThen;
       const thenEff = compileEffectAction(
         thenNode,
         env,
-        false,
+        nestedInThen,
         nestedAllowForEachSite,
       );
       const elseEff =
@@ -10932,7 +11240,7 @@ function compileEffectAction(
           ? compileEffectAction(
               elseNode,
               env,
-              false,
+              nestedInThen,
               nestedAllowForEachSite,
             )
           : undefined;
@@ -10985,7 +11293,7 @@ function compileEffectAction(
         again = sowThen.moveAgainCond.eval(postCtx);
       }
       const out = [...actions, ...extra];
-      if (again) out.push(new ActionSetNextPlayer(ctx.mover));
+      if (again) out.push(new ActionSetNextPlayer(postCtx.mover));
       return out;
     };
   }
@@ -11032,6 +11340,149 @@ function compileEffectAction(
       }
       const out = [...actions, ...extra];
       if (again) out.push(new ActionSetNextPlayer(pmctx.mover));
+      return out;
+    };
+  }
+  if (head === "enclose") {
+    // Java Enclose defaults `from` to `(last To)`, directions to Adjacent,
+    // target to enemy-at-`between`, effect to `(remove (between))`, and
+    // numException to 0 (Enclose.java:93-105). Its eval scans neighbours of the
+    // post-move `from`, flood-fills each target group, and applies the effect to
+    // every no-liberties group member with `(between)` rebound (Enclose.java:
+    // 142-164, 166-304).
+    const eArgs = parseArgs(node.items.slice(1));
+    const fromNode =
+      eArgs.named.get("from") ??
+      eArgs.positional.find((n) => isList(n) && listHead(n) === "from");
+    let fromFn: IntFn = { eval: lastToSite };
+    if (fromNode) {
+      try {
+        if (isList(fromNode) && listHead(fromNode) === "from") {
+          const inner = dropSiteType(fromNode.items.slice(1))[0];
+          if (inner) fromFn = compileInt(inner, env);
+        } else {
+          fromFn = compileInt(fromNode, env);
+        }
+      } catch {
+        fromFn = { eval: lastToSite };
+      }
+    }
+
+    const betweenNode =
+      eArgs.named.get("between") ??
+      eArgs.positional.find((n) => isList(n) && listHead(n) === "between");
+    let targetFn: BoolFn = {
+      eval: (ctx) => {
+        const s = ctx.frame.between ?? OFF;
+        const owner = s >= 0 ? (ctx.state.cells[s] ?? 0) : 0;
+        return owner !== 0 && owner !== ctx.mover && ctx.state.whatAtSite(s) > 0;
+      },
+    };
+    let applyFn: EffectFn | undefined;
+    if (betweenNode && isList(betweenNode)) {
+      const bArgs = parseArgs(betweenNode.items.slice(1));
+      const ifNode = bArgs.named.get("if");
+      if (ifNode) {
+        try {
+          targetFn = compileBool(ifNode, env);
+        } catch {
+          /* keep the Java default target */
+        }
+      }
+      const applyNode =
+        bArgs.positional.find((n) => isList(n) && listHead(n) === "apply") ??
+        bArgs.named.get("apply");
+      if (applyNode && isList(applyNode)) {
+        try {
+          applyFn = compileApply(applyNode as LudList, env);
+        } catch {
+          applyFn = undefined;
+        }
+      }
+    }
+    const directApplyNode =
+      eArgs.positional.find((n) => isList(n) && listHead(n) === "apply") ??
+      eArgs.named.get("apply");
+    if (!applyFn && directApplyNode && isList(directApplyNode)) {
+      try {
+        applyFn = compileApply(directApplyNode as LudList, env);
+      } catch {
+        applyFn = undefined;
+      }
+    }
+
+    const dirNode = eArgs.positional.find((n) => {
+      if (n === fromNode || n === betweenNode || n === directApplyNode) return false;
+      if (isList(n) && ["from", "between", "apply", "then"].includes(listHead(n) ?? ""))
+        return false;
+      return isDirectionArg(n);
+    });
+    const dirTokensRaw = rawDirectionTokens(dirNode).filter((t) => !t.startsWith("#"));
+    const dirTokens = dirTokensRaw.length > 0 ? dirTokensRaw : ["Adjacent"];
+    const numExceptionNode = eArgs.named.get("numException");
+    const numExceptionFn = numExceptionNode
+      ? compileInt(numExceptionNode, env)
+      : { eval: () => 0 };
+
+    return (ctx) => {
+      const pmctx = postMoveContext(ctx);
+      const from = fromFn.eval(pmctx);
+      if (from < 0 || from >= pmctx.board.numSites) return [];
+      if (pmctx.state.whatAtSite(from) <= 0) return [];
+      const maxLiberties = numExceptionFn.eval(pmctx);
+      const out: Action[] = [];
+      const checked = new Set<number>();
+
+      const isTarget = (site: number): boolean =>
+        site >= 0 &&
+        site < pmctx.board.numSites &&
+        targetFn.eval(pmctx.withFrame({ between: site, site, to: site }));
+
+      const groupFrom = (start: number): number[] => {
+        const owner = pmctx.state.cells[start] ?? 0;
+        if (owner === 0 || pmctx.state.whatAtSite(start) <= 0) return [];
+        const group = new Set<number>([start]);
+        const stack = [start];
+        while (stack.length > 0) {
+          const s = stack.pop() as number;
+          for (const nb of aroundSites(pmctx, s, dirTokens)) {
+            if (group.has(nb)) continue;
+            if ((pmctx.state.cells[nb] ?? 0) !== owner) continue;
+            if (pmctx.state.whatAtSite(nb) <= 0 || !isTarget(nb)) continue;
+            group.add(nb);
+            stack.push(nb);
+          }
+        }
+        return [...group].sort((a, b) => a - b);
+      };
+
+      for (const target of aroundSites(pmctx, from, dirTokens)) {
+        if (checked.has(target) || !isTarget(target)) continue;
+        const group = groupFrom(target);
+        if (group.length === 0) continue;
+        for (const s of group) checked.add(s);
+
+        const liberties = new Set<number>();
+        for (const s of group) {
+          for (const nb of aroundSites(pmctx, s, dirTokens)) {
+            if (pmctx.state.whatAtSite(nb) === 0) liberties.add(nb);
+          }
+        }
+        if (liberties.size > maxLiberties) continue;
+
+        for (const s of group) {
+          const bctx = pmctx.withFrame({ between: s, from, to: s, site: s });
+          if (applyFn) {
+            try {
+              out.push(...applyFn(bctx));
+            } catch {
+              /* lenient: skip a malformed per-site effect */
+            }
+          } else {
+            out.push(new ActionRemove({ to: s, clearAll: env.isStacking === false }));
+          }
+        }
+      }
       return out;
     };
   }
@@ -11539,6 +11990,15 @@ function compileEffectAction(
       // `(set Pending)` marks the state pending (sentinel 1) so the next turn's
       // `(is Pending)` is true; `(set Pending <site>)` marks a specific site.
       const arg = node.items[2];
+      if (arg && isRegionNode(arg)) {
+        const regionFn = compileRegion(arg, env);
+        return (ctx) =>
+          regionFn
+            .eval(ctx)
+            .filter((site) => site >= 0)
+            // @java Core/src/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.java:80
+            .map((site) => new ActionSetPending(site));
+      }
       const siteFn = arg ? compileInt(arg, env) : undefined;
       return (ctx) => [
         new ActionSetPending(siteFn ? siteFn.eval(ctx) : 1),
@@ -11889,16 +12349,26 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
   }
   // (move Remove <region>) — one removal move per site in the region.
   if (second && isIdent(second) && second.name === "Remove") {
-    const regionNode = node.items[2];
+    const { positional, named } = parseArgs(node.items.slice(2));
+    const siteType = isSiteTypeIdent(positional[0])
+      ? ((positional[0] as LudIdent).name as SiteType)
+      : undefined;
+    const regionNode = dropSiteType(positional)[0];
     if (!regionNode)
       throw new LudemeCompileError("(move Remove …) needs a region.");
     const region = compileRegion(regionNode, env);
+    const levelNode = named.get("level");
+    const levelFn = levelNode ? compileInt(levelNode, env) : undefined;
     return {
       generate: (ctx) => {
         const out: Move[] = [];
         const mover = ctx.mover;
         for (const site of region.eval(ctx)) {
           if (site < 0) continue;
+          // Java Remove.eval (Remove.java:102): skip empty targets before
+          // constructing an ActionRemove (`cs.what(loc, realType) <= 0`).
+          if (ctx.state.whatAtSite(site) <= 0) continue;
+          const level = levelFn ? Math.max(0, levelFn.eval(ctx)) : undefined;
           out.push(
             new Move({
               id: `remove:${site}:${mover}`,
@@ -11907,7 +12377,12 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
               mover,
               placedOwner: mover,
               actions: [
-                new ActionRemove({ to: site, clearAll: env.isStacking === false }),
+                new ActionRemove({
+                  to: site,
+                  level,
+                  type: siteType,
+                  clearAll: env.isStacking === false,
+                }),
               ],
             }),
           );
@@ -12480,12 +12955,15 @@ function compileSelect(node: LudList, env: CompileEnv): MovesFn {
   ) as LudList | undefined;
   let fromRegion: RegionFn | undefined;
   let fromCond: BoolFn | undefined;
+  let fromLevelFn: IntFn | undefined;
   if (fromNode) {
     const { positional, named } = parseArgs(fromNode.items.slice(1));
     const regionArg = dropSiteType(positional)[0];
     if (regionArg) fromRegion = compileRegion(regionArg, env);
     const ifNode = named.get("if");
     if (ifNode) fromCond = compileBool(ifNode, env);
+    const levelNode = named.get("level");
+    if (levelNode) fromLevelFn = compileInt(levelNode, env);
   }
   // `(move Select (from …) (to <region> if:<cond>?))` — Java Select with an
   // explicit destination (Fanorona/Vela capture selection). One Select move is
@@ -12639,8 +13117,8 @@ function trackForPlayer(
  * stepping `n` (default 1) units in `<direction>` from `<site>`. Direction may
  * be an absolute compass token (N/E/S/W and diagonals) or a player-relative
  * token (Forward/Backward/…); relative tokens are rotated for the mover.
- * Returns Off when the step would leave the board or the direction is unknown.
- * Java parity: game.functions.ints.board.Ahead.
+ * Returns the input site when the radial is missing, too short, or the
+ * direction is unknown. Java parity: game.functions.ints.board.Ahead.
  */
 function compileAhead(node: LudList, env: CompileEnv): IntFn {
   const { positional, named } = parseArgs(node.items.slice(1));
@@ -12660,6 +13138,10 @@ function compileAhead(node: LudList, env: CompileEnv): IntFn {
       : dirNode && isString(dirNode)
         ? dirNode.value
         : "Forward";
+  const dirFn =
+    dirNode && isList(dirNode) && listHead(dirNode) === "directions"
+      ? compileDirections(dirNode, env)
+      : undefined;
   // `SameDirection` / `OppositeDirection` are resolved specially by Java's Ahead
   // (Ahead.java:96-137): NOT through Directions.convertToAbsolute (which reads
   // the trial's last move), but inline from the *current* move geometry —
@@ -12691,13 +13173,16 @@ function compileAhead(node: LudList, env: CompileEnv): IntFn {
         let site = start;
         for (let i = 0; i < steps; i += 1) {
           const ns = board.traj.steps(site, dirName);
-          if (ns.length === 0) return OFF;
+          if (ns.length === 0) return start;
           site = ns[0] as number;
         }
         return site;
       }
       let dir: Dir | undefined;
-      if (relativeToMove) {
+      if (dirFn) {
+        dir = dirFn.eval(ctx)[0];
+        if (!dir) return start;
+      } else if (relativeToMove) {
         const ff = ctx.frame.from;
         const tt = ctx.frame.to;
         const moveFrom = ff !== undefined && ff >= 0 ? ff : lastFromSite(ctx);
@@ -12714,7 +13199,7 @@ function compileAhead(node: LudList, env: CompileEnv): IntFn {
           ctx.board.tiling,
         );
       }
-      if (!dir) return OFF;
+      if (!dir) return start;
       const steps = stepsFn ? stepsFn.eval(ctx) : 1;
       let x = board.xOf(start);
       let y = board.yOf(start);
@@ -12723,7 +13208,7 @@ function compileAhead(node: LudList, env: CompileEnv): IntFn {
         x += dir.dx;
         y += dir.dy;
         site = board.siteAt(x, y);
-        if (site < 0) return OFF;
+        if (site < 0) return start;
       }
       return site;
     },
@@ -13347,7 +13832,7 @@ function compileFromToEffect(node: LudList, env: CompileEnv): EffectFn {
     let again = thenC.moveAgain;
     if (!again && thenC.moveAgainCond) again = thenC.moveAgainCond.eval(ectx);
     const out = [...baseActions, ...extra];
-    if (again) out.push(new ActionSetNextPlayer(ctx.mover));
+    if (again) out.push(new ActionSetNextPlayer(ectx.mover));
     return out;
   };
 }
@@ -13654,6 +14139,9 @@ function compileFromTo(node: LudList, env: CompileEnv): MovesFn {
                         : {}),
                     }),
                   ],
+                  // @java Core/src/game/rules/play/moves/nonDecision/effect/FromTo.java:370
+                  fromNonDecisionSite: from,
+                  toNonDecisionSite: to,
                 }),
               );
             }
@@ -13698,9 +14186,9 @@ function compileFromTo(node: LudList, env: CompileEnv): MovesFn {
                       count: n,
                       transferCount: true,
                       seedOwner: moveSeedOwner,
-                    }),
-                  ]
-                : [];
+                  }),
+                ]
+              : [];
           } else {
             relocation = [new ActionMove({ from, to })];
           }
@@ -13717,6 +14205,9 @@ function compileFromTo(node: LudList, env: CompileEnv): MovesFn {
               // action (our piece's move) sits after them — keep from()/to()
               // reading off it, matching Java's prologue-shift convention.
               decisionIndex: isCopy ? 0 : captureActions.length,
+              // @java Core/src/game/rules/play/moves/nonDecision/effect/FromTo.java:508
+              fromNonDecisionSite: from,
+              toNonDecisionSite: to,
             }),
           );
         }
@@ -13828,7 +14319,9 @@ function compileForEachPlayerEnd(node: LudNode, env: CompileEnv): EndRule {
       }
       for (const p of players) {
         const sub = ctx.withFrame({ player: p });
-        if (!cond || cond.eval(sub)) return result(sub);
+        if (!cond || cond.eval(sub)) {
+          return result(sub);
+        }
       }
       return undefined;
     },
@@ -13969,3 +14462,5 @@ function compileResult(
     return { winner: player };
   };
 }
+
+import "../ludemes/index.js";

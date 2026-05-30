@@ -1,0 +1,2152 @@
+{
+  "summary": {
+    "totalTrials": 213,
+    "elapsed_s": 243.5,
+    "buckets": {
+      "COMPILE_FAIL": 0,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 82,
+      "WINNER_MISMATCH": 12,
+      "OUTCOME_OK": 94,
+      "REPLAY_OK_NO_OUTCOME": 25
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [],
+    "MOVE_MISMATCH": [
+      [
+        "board/hunt/Go with the Floe",
+        1
+      ],
+      [
+        "board/hunt/Hyvn aetter Hare",
+        1
+      ],
+      [
+        "board/hunt/To Kinegi tou Lagou",
+        1
+      ],
+      [
+        "board/race/escape/Chaupar",
+        1
+      ],
+      [
+        "board/race/escape/Grand Trictrac",
+        1
+      ],
+      [
+        "board/race/escape/Kawade Kelia",
+        1
+      ],
+      [
+        "board/race/escape/Pagade Kayi Ata (Sixteen-handed)",
+        1
+      ],
+      [
+        "board/race/escape/Petol",
+        1
+      ],
+      [
+        "board/race/escape/Romavoa",
+        1
+      ],
+      [
+        "board/race/escape/Thaayam",
+        1
+      ],
+      [
+        "board/race/reach/Aime",
+        1
+      ],
+      [
+        "board/race/reach/BreakBeer",
+        1
+      ],
+      [
+        "board/race/reach/Diaballik",
+        1
+      ],
+      [
+        "board/race/reach/Gavalata",
+        1
+      ],
+      [
+        "board/race/reach/Main Pacheh",
+        1
+      ]
+    ]
+  },
+  "exampleMismatches": [
+    {
+      "game": "board/hunt/Go with the Floe",
+      "ply": 35,
+      "recMove": "mover=2,from=-1,to=-1[Pass]",
+      "tsMoveCount": 9,
+      "sampleTsMoves": [
+        "mover=2,from=26,to=18,isPass=false",
+        "mover=2,from=26,to=10,isPass=false",
+        "mover=2,from=26,to=27,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/hunt/Hyvn aetter Hare",
+      "ply": 0,
+      "recMove": "mover=1,from=16,to=3",
+      "tsMoveCount": 12,
+      "sampleTsMoves": [
+        "mover=1,from=12,to=0,isPass=false",
+        "mover=1,from=12,to=1,isPass=false",
+        "mover=1,from=12,to=2,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/hunt/To Kinegi tou Lagou",
+      "ply": 2,
+      "recMove": "mover=1,from=41,to=2",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=2,from=0,to=2,isPass=false",
+        "mover=2,from=0,to=4,isPass=false",
+        "mover=2,from=0,to=6,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/race/escape/Chaupar",
+      "ply": 72,
+      "recMove": "mover=1,from=61,to=55",
+      "tsMoveCount": 6,
+      "sampleTsMoves": [
+        "mover=1,from=17,to=48,isPass=false",
+        "mover=1,from=17,to=48,isPass=false",
+        "mover=1,from=17,to=34,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/race/escape/Grand Trictrac",
+      "ply": 0,
+      "recMove": "mover=1,from=12,to=5",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
+  "perTrial": [
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Bagh Guti",
+      "plyReplayed": 305,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Bagh Guti/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Coyote",
+      "plyReplayed": 26,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Coyote/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Fox and Geese",
+      "plyReplayed": 377,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Fox and Geese/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/hunt/Go with the Floe",
+      "ply": 35,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=-1,to=-1[Pass]",
+      "tsMoveCount": 9,
+      "sampleTsMoves": [
+        "mover=2,from=26,to=18,isPass=false",
+        "mover=2,from=26,to=10,isPass=false",
+        "mover=2,from=26,to=27,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Go with the Floe/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/hunt/Hyvn aetter Hare",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=16,to=3",
+      "tsMoveCount": 12,
+      "sampleTsMoves": [
+        "mover=1,from=12,to=0,isPass=false",
+        "mover=1,from=12,to=1,isPass=false",
+        "mover=1,from=12,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Hyvn aetter Hare/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Juroku Musashi",
+      "plyReplayed": 486,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Juroku Musashi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/La Liebre Perseguida",
+      "plyReplayed": 17,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/La Liebre Perseguida/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Mao Naga Tiger Game",
+      "plyReplayed": 252,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Mao Naga Tiger Game/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/hunt/Mysore Tiger Game (Two Tigers)",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/857",
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Mysore Tiger Game (Two Tigers)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Pulijudamu",
+      "plyReplayed": 61,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Pulijudamu/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Sher Bakar",
+      "plyReplayed": 270,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Sher Bakar/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/hunt/To Kinegi tou Lagou",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=41,to=2",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=2,from=0,to=2,isPass=false",
+        "mover=2,from=0,to=4,isPass=false",
+        "mover=2,from=0,to=6,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/hunt/To Kinegi tou Lagou/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/20 Squares",
+      "plyReplayed": 120,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/20 Squares/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Backgammon",
+      "plyReplayed": 165,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Backgammon/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/escape/Chaupar",
+      "ply": 72,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=61,to=55",
+      "tsMoveCount": 6,
+      "sampleTsMoves": [
+        "mover=1,from=17,to=48,isPass=false",
+        "mover=1,from=17,to=48,isPass=false",
+        "mover=1,from=17,to=34,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Chaupar/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Emperador",
+      "plyReplayed": 368,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Emperador/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/escape/Grand Trictrac",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=12,to=5",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Grand Trictrac/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/escape/Kawade Kelia",
+      "ply": 8,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=3,to=12",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=71,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Kawade Kelia/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Kotra",
+      "plyReplayed": 473,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Kotra/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Ludus Lombardorum",
+      "plyReplayed": 181,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Ludus Lombardorum/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Nard",
+      "plyReplayed": 390,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Nard/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/escape/Pagade Kayi Ata (Sixteen-handed)",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=-1,to=-1",
+      "tsMoveCount": 3,
+      "sampleTsMoves": [
+        "mover=1,from=384,to=3,isPass=false",
+        "mover=1,from=384,to=13,isPass=false",
+        "mover=1,from=384,to=6,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Pagade Kayi Ata (Sixteen-handed)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/escape/Petol",
+      "ply": 56,
+      "detail": "No matching TS move",
+      "recMove": "mover=6,from=21,to=26",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=6,from=67,to=35,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Petol/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/escape/Romavoa",
+      "ply": 9,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=47,to=28",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=42,to=21,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Romavoa/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/race/escape/Ssang-Ryouk",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/664",
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Ssang-Ryouk/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/escape/Thaayam",
+      "ply": 48,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=20,to=5",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=4,to=7,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Thaayam/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Verquere",
+      "plyReplayed": 301,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Verquere/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/fill/Bajr",
+      "plyReplayed": 77,
+      "trialFile": "../../../Player/res/random_trials/board/race/fill/Bajr/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/race/fill/Conspirateurs",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2674",
+      "trialFile": "../../../Player/res/random_trials/board/race/fill/Conspirateurs/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/race/fill/Salta",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/3726",
+      "trialFile": "../../../Player/res/random_trials/board/race/fill/Salta/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/reach/Aime",
+      "ply": 6,
+      "detail": "No matching TS move",
+      "recMove": "mover=3,from=40,to=40",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "mover=4,from=41,to=41,isPass=false",
+        "mover=4,from=42,to=42,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Aime/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/reach/BreakBeer",
+      "ply": 13,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=47,to=39",
+      "tsMoveCount": 24,
+      "sampleTsMoves": [
+        "mover=2,from=32,to=24,isPass=false",
+        "mover=2,from=32,to=25,isPass=false",
+        "mover=2,from=45,to=37,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/BreakBeer/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/reach/Diaballik",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=3,to=2",
+      "tsMoveCount": 11,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=2,isPass=false",
+        "mover=1,from=1,to=8,isPass=false",
+        "mover=1,from=4,to=3,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Diaballik/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/reach/Gavalata",
+      "ply": 26,
+      "detail": "No matching TS move",
+      "recMove": "mover=3,from=2,to=5",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=3,from=20,to=23,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Gavalata/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/Jungle",
+      "plyReplayed": 219,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Jungle/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/reach/Main Pacheh",
+      "ply": 10,
+      "detail": "No matching TS move",
+      "recMove": "mover=3,from=14,to=19",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=3,from=21,to=20,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Main Pacheh/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/race/reach/Pasit",
+      "plyReplayed": 53,
+      "recWinner": 4,
+      "tsWinner": 1,
+      "recRankings": [
+        0,
+        3,
+        2,
+        4,
+        1
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Pasit/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/reach/Santorini",
+      "ply": 11,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=6,to=6",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "mover=2,from=1,to=1,isPass=false",
+        "mover=2,from=7,to=7,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Santorini/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/race/reach/Sig wa Duqqan (Houmt Taourit)",
+      "plyReplayed": 1,
+      "recWinner": 2,
+      "tsWinner": 0,
+      "recRankings": [
+        0,
+        4,
+        1,
+        2,
+        3
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Sig wa Duqqan (Houmt Taourit)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/reach/Spinimax",
+      "ply": 16,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=-1,to=-1[Pass]",
+      "tsMoveCount": 9,
+      "sampleTsMoves": [
+        "mover=2,from=4,to=4,isPass=false",
+        "mover=2,from=5,to=5,isPass=false",
+        "mover=2,from=6,to=6,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Spinimax/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/The Pawn Game",
+      "plyReplayed": 34,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/The Pawn Game/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/Zonesh",
+      "plyReplayed": 424,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Zonesh/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/score/Splastwo",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=8,to=8",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/score/Splastwo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Chiana wa Bwalo",
+      "plyReplayed": 393,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Chiana wa Bwalo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Hawalis",
+      "plyReplayed": 305,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Hawalis/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/sow/four_rows/Katra",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/5552",
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Katra/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/sow/four_rows/Lisolo",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Lisolo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Misoro Tsoro (Additional Capture)",
+      "plyReplayed": 56,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Misoro Tsoro (Additional Capture)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Muvalavala (Quioco)",
+      "plyReplayed": 77,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Muvalavala (Quioco)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Nchayo",
+      "plyReplayed": 95,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Nchayo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Njombwa (Two Counters)",
+      "plyReplayed": 464,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Njombwa (Two Counters)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/sow/four_rows/Quela",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Quela/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Tchela",
+      "plyReplayed": 148,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Tchela/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/other/Cirgol",
+      "plyReplayed": 27,
+      "trialFile": "../../../Player/res/random_trials/board/sow/other/Cirgol/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/sow/other/Sowing",
+      "plyReplayed": 13,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/sow/other/Sowing/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/three_rows/Selus (Massawa)",
+      "ply": 122,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=13,to=13",
+      "tsMoveCount": 6,
+      "sampleTsMoves": [
+        "mover=2,from=7,to=7,isPass=false",
+        "mover=2,from=8,to=8,isPass=false",
+        "mover=2,from=16,to=16,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus (Massawa)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Altiev",
+      "plyReplayed": 47,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Altiev/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Azigo",
+      "ply": 16,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=4,to=4",
+      "tsMoveCount": 8,
+      "sampleTsMoves": [
+        "mover=1,from=8,to=8,isPass=false",
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Azigo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Buqruru",
+      "plyReplayed": 3,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Buqruru/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/sow/two_rows/Daramuti",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/711",
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Daramuti/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/English Wari (St. Lucia)",
+      "ply": 34,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=6,to=6",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "mover=1,from=2,to=2,isPass=false",
+        "mover=1,from=3,to=3,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/English Wari (St. Lucia)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Fondji",
+      "plyReplayed": 298,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Fondji/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Gabata (Shoa I)",
+      "ply": 71,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=12,to=9",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=12,to=8,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Gabata (Shoa I)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/sow/two_rows/Gifia",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Gifia/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Intotoi",
+      "plyReplayed": 51,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Intotoi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Kanji Guti",
+      "plyReplayed": 265,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Kanji Guti/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Khutka Boia",
+      "ply": 14,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=2,to=2",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=2,from=5,to=5,isPass=false",
+        "mover=2,from=7,to=7,isPass=false",
+        "mover=2,from=8,to=8,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Khutka Boia/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Lam Waladach",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=4,to=4",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=3,to=3,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Lam Waladach/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Li'b al-'Aqil",
+      "ply": 6,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=0,to=11",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Li'b al-'Aqil/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Mangala (Suez)",
+      "plyReplayed": 85,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Mangala (Suez)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Mewegae",
+      "ply": 112,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=8,to=8",
+      "tsMoveCount": 5,
+      "sampleTsMoves": [
+        "mover=1,from=5,to=5,isPass=false",
+        "mover=1,from=3,to=3,isPass=false",
+        "mover=1,from=2,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Mewegae/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Okwe (Nigeria)",
+      "ply": 13,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=14,to=14",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=2,from=15,to=15,isPass=false",
+        "mover=2,from=16,to=16,isPass=false",
+        "mover=2,from=18,to=18,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Okwe (Nigeria)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/sow/two_rows/Pallankuli",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1869",
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Pallankuli/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/sow/two_rows/Rio Kadalis",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1134",
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Rio Kadalis/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Ti",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=9,to=9",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=1,from=4,to=4,isPass=false",
+        "mover=1,from=4,to=4,isPass=false",
+        "mover=1,from=4,to=4,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Ti/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Um el-Bil",
+      "plyReplayed": 122,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Um el-Bil/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/sow/two_rows/Walak-Pussa",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/676",
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Walak-Pussa/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/sow/two_rows/Wouri",
+      "ply": 17,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=5,to=5",
+      "tsMoveCount": 6,
+      "sampleTsMoves": [
+        "mover=2,from=6,to=6,isPass=false",
+        "mover=2,from=7,to=7,isPass=false",
+        "mover=2,from=8,to=8,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Wouri/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Amazons",
+      "plyReplayed": 120,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Amazons/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Col",
+      "plyReplayed": 32,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Col/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/blocking/Duidoku",
+      "ply": 61,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=73,to=73",
+      "tsMoveCount": 14,
+      "sampleTsMoves": [
+        "mover=2,from=46,to=46,isPass=false",
+        "mover=2,from=70,to=70,isPass=false",
+        "mover=2,from=43,to=43,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Duidoku/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/blocking/Garrisons",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=11,to=11",
+      "tsMoveCount": 6,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Garrisons/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/space/blocking/Janes Soppi (Symmetrical)",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Janes Soppi (Symmetrical)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Mu Torere",
+      "plyReplayed": 160,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Mu Torere/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Pentomino",
+      "plyReplayed": 8,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Pentomino/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/space/blocking/Shred",
+      "plyReplayed": 181,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Shred/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Spots",
+      "plyReplayed": 16,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Spots/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Tron",
+      "plyReplayed": 4,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Tron/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/connection/Atoll",
+      "plyReplayed": 101,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Atoll/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/connection/ConHex",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=36,to=36",
+      "tsMoveCount": 25,
+      "sampleTsMoves": [
+        "mover=1,from=5,to=5,isPass=false",
+        "mover=1,from=6,to=6,isPass=false",
+        "mover=1,from=7,to=7,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/ConHex/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/space/connection/Esa Hex",
+      "plyReplayed": 99,
+      "recWinner": 2,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        2,
+        1
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Esa Hex/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/connection/Hex",
+      "plyReplayed": 78,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Hex/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/space/connection/Pippinzip (Zipline variant)",
+      "plyReplayed": 81,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Pippinzip (Zipline variant)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/space/connection/Sponnect",
+      "plyReplayed": 23,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Sponnect/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/connection/Troll",
+      "plyReplayed": 47,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Troll/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Abrobad",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=11,to=11",
+      "tsMoveCount": 7,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false",
+        "mover=1,from=3,to=3,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Abrobad/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/group/Elea",
+      "plyReplayed": 61,
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Elea/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/group/Make Muster",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=32,to=32",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Make Muster/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/space/group/Omega",
+      "plyReplayed": 58,
+      "recWinner": 1,
+      "tsWinner": 2,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Omega/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/group/Spaiji",
+      "plyReplayed": 30,
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Spaiji/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/group/Vigilance",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=32,to=32",
+      "tsMoveCount": 17,
+      "sampleTsMoves": [
+        "mover=1,from=29,to=28,isPass=false",
+        "mover=1,from=29,to=30,isPass=false",
+        "mover=1,from=29,to=31,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Vigilance/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/space/line/Agilidade",
+      "plyReplayed": 12,
+      "recWinner": 2,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        2,
+        1
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Agilidade/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Aqrad",
+      "plyReplayed": 516,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Aqrad/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Centrifugal Force",
+      "plyReplayed": 71,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Centrifugal Force/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/space/line/Dai Hasami Shogi",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1583",
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Dai Hasami Shogi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Driesticken",
+      "plyReplayed": 10,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Driesticken/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Fart (7x7)",
+      "plyReplayed": 71,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Fart (7x7)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Gomoku",
+      "plyReplayed": 71,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Gomoku/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Ketatu",
+      "plyReplayed": 62,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Ketatu/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Mbenga Alignment Game",
+      "plyReplayed": 8,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Mbenga Alignment Game/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Mulabalaba",
+      "plyReplayed": 103,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Mulabalaba/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Ngrin",
+      "plyReplayed": 6,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Ngrin/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Order and Chaos",
+      "plyReplayed": 30,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Order and Chaos/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Pushing Me XO",
+      "plyReplayed": 158,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Pushing Me XO/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Roll-Ing to Four",
+      "plyReplayed": 67,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Roll-Ing to Four/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/line/Shah",
+      "ply": 135,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=25,to=17",
+      "tsMoveCount": 3,
+      "sampleTsMoves": [
+        "mover=2,from=9,to=0,isPass=false",
+        "mover=2,from=12,to=8,isPass=false",
+        "mover=2,from=12,to=17,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Shah/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Spaniel",
+      "plyReplayed": 13,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Spaniel/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/line/Spline+",
+      "ply": 33,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=12,to=25",
+      "tsMoveCount": 56,
+      "sampleTsMoves": [
+        "mover=2,from=3,to=3,isPass=false",
+        "mover=2,from=4,to=4,isPass=false",
+        "mover=2,from=5,to=5,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Spline+/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/space/line/Taktik",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Taktik/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Three Men's Morris",
+      "plyReplayed": 7,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Three Men's Morris/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Tic-Tac-Toe",
+      "plyReplayed": 9,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Tic-Tac-Toe/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Triodi (Diagonal)",
+      "plyReplayed": 150,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Triodi (Diagonal)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Twelve Men's Morris",
+      "plyReplayed": 86,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Twelve Men's Morris/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Winkers",
+      "plyReplayed": 29,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Winkers/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Yavalanchor",
+      "plyReplayed": 32,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Yavalanchor/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/space/pattern/Diamond",
+      "plyReplayed": 21,
+      "recWinner": 0,
+      "tsWinner": 1,
+      "recRankings": [
+        0,
+        1.5,
+        1.5
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/space/pattern/Diamond/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/Atari Go",
+      "plyReplayed": 126,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Atari Go/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/Chucka",
+      "plyReplayed": 6,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Chucka/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/territory/Goats Wintering",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=10,to=10",
+      "tsMoveCount": 9,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true",
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Goats Wintering/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/territory/Lifeline",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=13,to=13",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/territory/Paintbucket",
+      "ply": 10,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=40,to=40",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false",
+        "mover=1,from=3,to=3,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Paintbucket/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/territory/Quathaxx",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=0,to=4",
+      "tsMoveCount": 24,
+      "sampleTsMoves": [
+        "mover=1,from=35,to=31,isPass=false",
+        "mover=1,from=35,to=32,isPass=false",
+        "mover=1,from=35,to=34,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Quathaxx/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/territory/Spargo",
+      "ply": 16,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=22,to=22",
+      "tsMoveCount": 14,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=4,to=4,isPass=false",
+        "mover=1,from=5,to=5,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Spargo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/territory/SupplyChains",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=22,to=22",
+      "tsMoveCount": 15,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/SupplyChains/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/space/territory/Weiqi",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1443",
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Weiqi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/custodial/Boseog Gonu",
+      "plyReplayed": 136,
+      "trialFile": "../../../Player/res/random_trials/board/war/custodial/Boseog Gonu/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/custodial/HeXentafl",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=15,to=16",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/custodial/HeXentafl/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/custodial/Maak Yek",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1104",
+      "trialFile": "../../../Player/res/random_trials/board/war/custodial/Maak Yek/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/custodial/Tawlbwrdd",
+      "plyReplayed": 150,
+      "trialFile": "../../../Player/res/random_trials/board/war/custodial/Tawlbwrdd/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/diagonal/Bashni",
+      "ply": 7,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=34,to=52",
+      "tsMoveCount": 7,
+      "sampleTsMoves": [
+        "mover=2,from=41,to=32,isPass=false",
+        "mover=2,from=45,to=36,isPass=false",
+        "mover=2,from=45,to=38,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Bashni/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/diagonal/Dama (Philippines)",
+      "plyReplayed": 128,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Dama (Philippines)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/diagonal/Dum Blas",
+      "plyReplayed": 156,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Dum Blas/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/diagonal/Lasca",
+      "ply": 7,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=48,to=40",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "mover=2,from=30,to=18,isPass=false",
+        "mover=2,from=34,to=18,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Lasca/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/diagonal/Seesaw Draughts",
+      "ply": 7,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=54,to=45",
+      "tsMoveCount": 5,
+      "sampleTsMoves": [
+        "mover=2,from=41,to=34,isPass=false",
+        "mover=2,from=41,to=32,isPass=false",
+        "mover=2,from=47,to=38,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Seesaw Draughts/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/lines/Awithlaknan Mosona",
+      "ply": 40,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=0,to=3",
+      "tsMoveCount": 12,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=0,isPass=false",
+        "mover=1,from=1,to=3,isPass=false",
+        "mover=1,from=1,to=10,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Awithlaknan Mosona/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/lines/Claim Jumpers",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=34,to=34",
+      "tsMoveCount": 5,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false",
+        "mover=1,from=3,to=3,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Claim Jumpers/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Dash Guti",
+      "plyReplayed": 172,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Dash Guti/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Gol Ekuish",
+      "plyReplayed": 447,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Gol Ekuish/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Kotu Ellima",
+      "plyReplayed": 572,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Kotu Ellima/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/leaping/lines/Mughal Pathan",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1011",
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Mughal Pathan/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Permainan-Tabal",
+      "plyReplayed": 93,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Permainan-Tabal/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Sumi Naga Game (War)",
+      "plyReplayed": 268,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Sumi Naga Game (War)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Tuknanavuhpi",
+      "plyReplayed": 435,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Tuknanavuhpi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Choko",
+      "plyReplayed": 197,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Choko/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Jumping Beans",
+      "plyReplayed": 111,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Jumping Beans/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/orthogonal/Louis XVI",
+      "ply": 12,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=35,to=36",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=10,to=8,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Louis XVI/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/orthogonal/T'oki",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=6,to=1",
+      "tsMoveCount": 21,
+      "sampleTsMoves": [
+        "mover=1,from=25,to=0,isPass=false",
+        "mover=1,from=25,to=1,isPass=false",
+        "mover=1,from=25,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/T'oki/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Yote",
+      "plyReplayed": 105,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Yote/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Chaturanga",
+      "plyReplayed": 409,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Cittabhramanrpasya Khelanam",
+      "plyReplayed": 234,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Cittabhramanrpasya Khelanam/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Mak Ruk",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1245",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Mak Ruk/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Santaraj",
+      "plyReplayed": 426,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Santaraj/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj (12x12)",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj (12x12)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj al-Husun",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=20,to=30",
+      "tsMoveCount": 30,
+      "sampleTsMoves": [
+        "mover=1,from=1,to=22,isPass=false",
+        "mover=1,from=1,to=20,isPass=false",
+        "mover=1,from=1,to=100,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj al-Husun/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chaturanga/Shodra",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shodra/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chess/Acedrex de los Cuatros Tiempos",
+      "plyReplayed": 254,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Acedrex de los Cuatros Tiempos/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chess/Chess",
+      "plyReplayed": 402,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Dice Chess",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=-1,to=-1",
+      "tsMoveCount": 20,
+      "sampleTsMoves": [
+        "mover=2,from=48,to=32,isPass=false",
+        "mover=2,from=48,to=40,isPass=false",
+        "mover=2,from=49,to=33,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Dice Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chess/Glinski Chess",
+      "plyReplayed": 354,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 354",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/chess/Level Chess",
+      "plyReplayed": 3,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 3",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chess/McCooey Chess",
+      "plyReplayed": 501,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/McCooey Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Phase Chess",
+      "ply": 15,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=60,to=62",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=2,from=59,to=51,isPass=false",
+        "mover=2,from=59,to=43,isPass=false",
+        "mover=2,from=59,to=50,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Phase Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Shafran Chess",
+      "ply": 85,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=69,to=69",
+      "tsMoveCount": 34,
+      "sampleTsMoves": [
+        "mover=2,from=9,to=8,isPass=false",
+        "mover=2,from=11,to=29,isPass=false",
+        "mover=2,from=11,to=37,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Shafran Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Starchess",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=41,to=0",
+      "tsMoveCount": 3,
+      "sampleTsMoves": [
+        "mover=1,from=7,to=5,isPass=false",
+        "mover=1,from=7,to=6,isPass=false",
+        "mover=1,from=7,to=4,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Starchess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/chess/Wellisch Chess",
+      "ply": 66,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=10,to=48",
+      "tsMoveCount": 34,
+      "sampleTsMoves": [
+        "mover=1,from=4,to=11,isPass=false",
+        "mover=1,from=4,to=19,isPass=false",
+        "mover=1,from=4,to=3,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Wellisch Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/shogi/Hexshogi",
+      "plyReplayed": 27,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 27",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/checkmate/shogi/Taikyoku Shogi",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=125,to=138",
+      "tsMoveCount": 301,
+      "sampleTsMoves": [
+        "mover=1,from=65,to=102,isPass=false",
+        "mover=1,from=66,to=102,isPass=false",
+        "mover=1,from=67,to=102,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Taikyoku Shogi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
+      "plyReplayed": 127,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 127",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/A K'aak'il",
+      "ply": 30,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=4,to=5",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "mover=2,from=20,to=1,isPass=false",
+        "mover=2,from=20,to=0,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/A K'aak'il/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Aj T'iwil",
+      "ply": 30,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=3,to=6",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "mover=2,from=20,to=2,isPass=false",
+        "mover=2,from=20,to=0,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Aj T'iwil/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Battleships",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=200,to=141",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Battleships/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Chaturaji",
+      "ply": 3,
+      "detail": "No matching TS move",
+      "recMove": "mover=4,from=-1,to=-1",
+      "tsMoveCount": 9,
+      "sampleTsMoves": [
+        "mover=4,from=32,to=24,isPass=false",
+        "mover=4,from=32,to=25,isPass=false",
+        "mover=4,from=33,to=34,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Chaturaji/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Diagonals (2002)",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=46,to=46",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=1,from=18,to=18,isPass=false",
+        "mover=1,from=27,to=27,isPass=false",
+        "mover=1,from=36,to=36,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Diagonals (2002)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Ja-Jeon-Geo-Gonu",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=9,to=6",
+      "tsMoveCount": 4,
+      "sampleTsMoves": [
+        "mover=1,from=8,to=4,isPass=false",
+        "mover=1,from=9,to=10,isPass=false",
+        "mover=1,from=9,to=5,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Ja-Jeon-Geo-Gonu/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Mehen",
+      "ply": 7,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=87,to=86",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=87,to=1,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Mehen/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/eliminate/all/Rampart",
+      "plyReplayed": 131,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Rampart/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/eliminate/all/Sig (Tozeur)",
+      "plyReplayed": 212,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Sig (Tozeur)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Sweep Burrow",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=60,to=52",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=23,to=7,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Sweep Burrow/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/Triad",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=3,from=16,to=39",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Triad/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/target/King And Courtesan",
+      "ply": 3,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=35,to=29",
+      "tsMoveCount": 15,
+      "sampleTsMoves": [
+        "mover=2,from=11,to=5,isPass=false",
+        "mover=2,from=11,to=10,isPass=false",
+        "mover=2,from=16,to=10,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/King And Courtesan/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/target/Monkey Queen",
+      "ply": 3,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=41,to=44",
+      "tsMoveCount": 30,
+      "sampleTsMoves": [
+        "mover=2,from=41,to=54,isPass=false",
+        "mover=2,from=137,to=138,isPass=false",
+        "mover=2,from=137,to=139,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Monkey Queen/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/stalemate/Press Ups",
+      "plyReplayed": 23,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/stalemate/Press Ups/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Astralesce and Constellation",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=24,to=16",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/Astralesce and Constellation/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Conflagration and Keep-a-riding",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=28,to=20",
+      "tsMoveCount": 36,
+      "sampleTsMoves": [
+        "mover=1,from=12,to=13,isPass=false",
+        "mover=1,from=12,to=19,isPass=false",
+        "mover=1,from=12,to=29,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/Conflagration and Keep-a-riding/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Equi Game System",
+      "ply": 1,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=10,to=10",
+      "tsMoveCount": 5,
+      "sampleTsMoves": [
+        "mover=2,from=0,to=0,isPass=false",
+        "mover=2,from=3,to=3,isPass=false",
+        "mover=2,from=4,to=4,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/Equi Game System/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "experimental/Greater Even Loss",
+      "plyReplayed": 1,
+      "trialFile": "../../../Player/res/random_trials/experimental/Greater Even Loss/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Hops-a-Daisy Generalized",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=22,to=22",
+      "tsMoveCount": 20,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true",
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/Hops-a-Daisy Generalized/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/OffShore",
+      "ply": 29,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=36,to=36",
+      "tsMoveCount": 11,
+      "sampleTsMoves": [
+        "mover=2,from=-1,to=-1,isPass=true",
+        "mover=2,from=4,to=4,isPass=false",
+        "mover=2,from=7,to=7,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/OffShore/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Skirt",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=85,to=85",
+      "tsMoveCount": 6,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/Skirt/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Tri-It-Out",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=22,to=22",
+      "tsMoveCount": 6,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/Tri-It-Out/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Windflowers",
+      "ply": 30,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=19,to=19",
+      "tsMoveCount": 45,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true",
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=6,to=6,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/Windflowers/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/graph_theory/CrossGeo",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=34,to=34",
+      "tsMoveCount": 30,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=1,to=1,isPass=false",
+        "mover=1,from=2,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/experimental/graph_theory/CrossGeo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "experimental/graph_theory/OddEvenTree",
+      "plyReplayed": 1,
+      "recWinner": 2,
+      "tsWinner": 1,
+      "recRankings": [
+        0,
+        2,
+        1
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/experimental/graph_theory/OddEvenTree/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "math/Aksadyuta",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=0,to=1",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=1,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/math/Aksadyuta/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "math/graph/Crossline",
+      "plyReplayed": 10,
+      "trialFile": "../../../Player/res/random_trials/math/graph/Crossline/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "math/graph/MaxMatch",
+      "ply": 3,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=25,to=25",
+      "tsMoveCount": 21,
+      "sampleTsMoves": [
+        "mover=2,from=0,to=0,isPass=false",
+        "mover=2,from=1,to=1,isPass=false",
+        "mover=2,from=2,to=2,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/math/graph/MaxMatch/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "math/hand/Rock-Paper-Scissors",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=3,from=0,to=0",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/math/hand/Rock-Paper-Scissors/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "puzzle/planning/Buttons And Lights",
+      "plyReplayed": 6,
+      "trialFile": "../../../Player/res/random_trials/puzzle/planning/Buttons And Lights/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "puzzle/planning/Knight's Tour",
+      "plyReplayed": 34,
+      "trialFile": "../../../Player/res/random_trials/puzzle/planning/Knight's Tour/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "puzzle/planning/Minesweeper",
+      "plyReplayed": 51,
+      "recWinner": 0,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        0
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/puzzle/planning/Minesweeper/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "puzzle/planning/Pentalpha",
+      "plyReplayed": 7,
+      "trialFile": "../../../Player/res/random_trials/puzzle/planning/Pentalpha/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "puzzle/planning/Tchoukaillon",
+      "ply": 2,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=3,to=3",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "mover=1,from=2,to=2,isPass=false",
+        "mover=1,from=4,to=4,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/puzzle/planning/Tchoukaillon/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "subgame/race/escape/JulbaharSubgame",
+      "plyReplayed": 219,
+      "trialFile": "../../../Player/res/random_trials/subgame/race/escape/JulbaharSubgame/RandomTrial_1.txt"
+    }
+  ]
+}

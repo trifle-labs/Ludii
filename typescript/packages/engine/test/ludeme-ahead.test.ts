@@ -35,11 +35,18 @@ describe("LudemeGame: (ahead <site> <direction>)", () => {
     assert.equal(legalCount("(= (ahead 4 N) 7)"), 8, "north of centre is 7");
     assert.equal(legalCount("(= (ahead 4 E) 5)"), 8, "east of centre is 5");
     assert.equal(legalCount("(= (ahead 4 W) 3)"), 8, "west of centre is 3");
+    assert.equal(
+      legalCount("(= (ahead 4 steps:1 (directions Cell from:0 to:4)) 8)"),
+      8,
+      "from-to directions step one more site along the same radial",
+    );
   });
 
-  it("returns Off when the step leaves the board", () => {
+  it("returns the source site when the step leaves the board", () => {
     // Site 0 is the bottom-left corner; stepping South leaves the board.
-    assert.equal(legalCount("(= (ahead 0 S) (- 0 1))"), 8, "off-board is Off");
+    // Java Ahead.java falls back to the original site when the radial is too
+    // short; Neutron uses this as its edge clamp.
+    assert.equal(legalCount("(= (ahead 0 S) 0)"), 8, "off-board clamps to 0");
   });
 
   it("does not match an incorrect target", () => {

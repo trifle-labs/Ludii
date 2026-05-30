@@ -251,15 +251,6 @@ export class ActionMove extends BaseAction {
     next = next.withCell(this.toIndex, movingOwner);
     next = next.withWhatAt(this.toIndex, movingWhat);
     next = this.applyDestAttrs(next, destState, destRotation, destValue);
-    // Count-bearing single-piece moves (e.g. a seed dealt from a hand onto an
-    // empty mancala pit) must leave a count of 1 at the destination. The flat
-    // branch above already decremented/cleared the counted source; without this
-    // carry-over the moved piece exists only as owner/what and `(count at:(to))`
-    // incorrectly reads 0, dropping the last dealt seed in Mangala (Bedouin)'s
-    // opening and later making the recorded fourth-hole move illegal.
-    if (fromCount > 0 && next.countAtSite(this.toIndex) === 0) {
-      next = next.withCountAt(this.toIndex, 1);
-    }
     return this.maintainTracks(next, movingWhat);
   }
 

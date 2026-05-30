@@ -585,6 +585,33 @@ function tsMoveUseDieIndices(move) {
   return idx.sort((x, y) => x - y);
 }
 
+// The promoted-to component a recorded move chooses. A pawn promotion is its
+// own recorded ply (from==to) carrying `Promote:...what=N`; the TS engine
+// generates several same-site candidates differing only by the promoted piece,
+// so without this the harness picks the first (e.g. Queen) when Java recorded
+// (e.g.) a Knight, desyncing the replay. Mirrors the die-index tier above.
+function recordedPromotionPiece(recMove) {
+  for (const a of recMove.actions) {
+    if (a.actionType !== 'Promote') continue;
+    const w = Number(a.fields.get('what'));
+    if (Number.isFinite(w) && w > 0) return w;
+  }
+  return null;
+}
+
+// The promoted-to component a TS candidate move applies (ActionPromote.what()).
+function tsMovePromotionPiece(move) {
+  for (const a of move.actions ?? []) {
+    try {
+      if (typeof a.actionType === 'function' && a.actionType() === 'Promote') {
+        const w = typeof a.what === 'function' ? a.what() : undefined;
+        if (Number.isFinite(w) && w > 0) return w;
+      }
+    } catch { /* ignore malformed action */ }
+  }
+  return null;
+}
+
 /**
  * Among several from/to-equivalent candidates, pick the one whose applied
  * per-site count delta best matches the recorded move's seed distribution.
@@ -605,6 +632,18 @@ function chooseMatch(tsMoves, recMove, ctx, game) {
   if (recState !== null) {
     const byState = candidates.filter((c) => tsMoveState(c) === recState);
     if (byState.length > 0) candidates = byState;
+    if (candidates.length === 1) return candidates[0];
+  }
+
+  // Disambiguate a promotion ply by the promoted-to piece: a pawn reaching the
+  // last rank records `Promote:what=N` (e.g. Knight) but the engine offers a
+  // candidate per promotable piece at the same from/to. Prefer the candidate
+  // promoting to the recorded piece. No-op for non-promotion plies (returns
+  // null) and single-candidate plies (handled above).
+  const recPromote = recordedPromotionPiece(recMove);
+  if (recPromote !== null) {
+    const byPromotion = candidates.filter((c) => tsMovePromotionPiece(c) === recPromote);
+    if (byPromotion.length > 0) candidates = byPromotion;
     if (candidates.length === 1) return candidates[0];
   }
 

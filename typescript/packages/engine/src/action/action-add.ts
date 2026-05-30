@@ -98,6 +98,18 @@ export class ActionAdd extends BaseAction {
       }
       return next;
     }
+    const currentWhat = state.whatAtSite(this.toIndex);
+    const currentOwner = state.cells[this.toIndex] ?? 0;
+    if (currentWhat === this.whatIndex && currentOwner === this.ownerIndex) {
+      const oldCount = state.countAtSite(this.toIndex) || 1;
+      // Java parity: occupied ActionAdd sites accumulate count instead of
+      // rewriting who/what (Core/src/other/action/move/ActionAdd.java:307-310).
+      let next = state.withCountAt(this.toIndex, oldCount + this.countValue);
+      if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
+        next = next.withStateAt(this.toIndex, this.stateValue);
+      }
+      return next;
+    }
     // Java parity: ActionAdd.apply → cs.setSite(.., who, what, count, state, ..)
     // writes the site state alongside who/what (ActionAdd.java:292).
     let next = state

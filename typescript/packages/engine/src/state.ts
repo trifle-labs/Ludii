@@ -445,6 +445,8 @@ export class State {
       if (w !== 0) return w;
       return this.stackAt(siteIndex, level);
     }
+    const st = this.stacks[siteIndex];
+    if (st !== undefined && st.length > 1) return this.stackAt(siteIndex, level);
     return this.whatAtSite(siteIndex);
   }
 
@@ -484,6 +486,11 @@ export class State {
 
   public withMover(mover: number): State {
     return this.with({ mover });
+  }
+
+  /** Java parity: `Context.active(pid)`; this port has no elimination state. */
+  public activePlayer(pid: number): boolean {
+    return pid >= 1 && pid < this.scores.length;
   }
 
   /**
@@ -668,8 +675,14 @@ export class State {
     if (!Number.isInteger(owner) || owner < 1) {
       throw new Error(`owner must be a 1-based integer; got ${owner}.`);
     }
+    const existingCount = this.countAt[siteIndex] ?? 0;
     const nextStacks = this.stacks.map((s) => [...s]);
     const target = nextStacks[siteIndex] ?? [];
+    const baseOwner = this.cells[siteIndex] ?? 0;
+    const baseWhat = this.whatAtSite(siteIndex);
+    if (existingCount > target.length && baseOwner > 0) {
+      while (target.length < existingCount) target.push(baseOwner);
+    }
     target.push(owner);
     nextStacks[siteIndex] = target;
     const nextCells = [...this.cells];
@@ -677,37 +690,43 @@ export class State {
     const existing = this.whatStacks[siteIndex];
     const hasWhatStack = existing !== undefined && existing.length > 0;
     const wantWhat = what !== undefined && what !== owner;
-    if (hasWhatStack || wantWhat) {
+    const materializedCount = existingCount > 0 && target.length >= existingCount;
+    const heteroOwnerStack =
+      baseOwner > 0 && owner !== baseOwner && target.length > 1;
+    if (hasWhatStack || wantWhat || materializedCount || heteroOwnerStack) {
       const nextWhatStacks = this.whatStacks.map((s) => [...s]);
       // Back-fill lower levels from their owners so the layer stays parallel
       // when materialised lazily mid-stack (Java seeds both arrays from level 0).
       const prevOwners = this.stacks[siteIndex] ?? [];
       const wsTarget = nextWhatStacks[siteIndex] ?? [];
-      while (wsTarget.length < prevOwners.length) {
-        wsTarget.push(prevOwners[wsTarget.length] ?? 0);
+      while (wsTarget.length < target.length - 1) {
+        const idx = wsTarget.length;
+        wsTarget.push(prevOwners[idx] ?? (idx < existingCount ? baseWhat : baseOwner));
       }
       wsTarget.push(what ?? owner);
       nextWhatStacks[siteIndex] = wsTarget;
       const nextWhats = [...this.whats];
       nextWhats[siteIndex] = what ?? owner;
+      const nextCounts = [...this.countAt];
+      nextCounts[siteIndex] = 0;
       return this.with({
         cells: nextCells,
         stacks: nextStacks,
         whatStacks: nextWhatStacks,
         whats: nextWhats,
+        countAt: nextCounts,
       });
     }
-    return this.with({ cells: nextCells, stacks: nextStacks });
+    const nextWhats = [...this.whats];
+    nextWhats[siteIndex] = what ?? owner;
+    return this.with({ cells: nextCells, stacks: nextStacks, whats: nextWhats });
   }
 
   /**
-   * Java parity: `ContainerStateStacks.remove(siteIndex)`. Pops the top level
-   * (owner) and refreshes the cell's top owner. When this site carries a
-   * per-level `what` stack, pop that layer too and refresh the site's top
-   * `whats[]` to the newly-exposed piece's component (or clear it when the
-   * stack empties), so `(what at:s)` no longer reports the removed piece.
+   * Java parity: `ContainerStateStacks.remove(siteIndex, level)`. Pops one
+   * level (top by default) and refreshes the visible top owner/component.
    */
-  public withStackPop(siteIndex: number): State {
+  public withStackPop(siteIndex: number, level?: number): State {
     if (siteIndex < 0 || siteIndex >= this.cells.length) {
       throw new RangeError(
         `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
@@ -715,7 +734,11 @@ export class State {
     }
     const nextStacks = this.stacks.map((s) => [...s]);
     const target = nextStacks[siteIndex] ?? [];
-    target.pop();
+    const removeAt =
+      level !== undefined && level >= 0 && level < target.length
+        ? level
+        : target.length - 1;
+    if (removeAt >= 0) target.splice(removeAt, 1);
     nextStacks[siteIndex] = target;
     const nextCells = [...this.cells];
     nextCells[siteIndex] = target[target.length - 1] ?? 0;
@@ -723,7 +746,7 @@ export class State {
     if (existing !== undefined && existing.length > 0) {
       const nextWhatStacks = this.whatStacks.map((s) => [...s]);
       const wsTarget = nextWhatStacks[siteIndex] ?? [];
-      wsTarget.pop();
+      if (removeAt >= 0 && removeAt < wsTarget.length) wsTarget.splice(removeAt, 1);
       nextWhatStacks[siteIndex] = wsTarget;
       const nextWhats = [...this.whats];
       nextWhats[siteIndex] = wsTarget[wsTarget.length - 1] ?? 0;
@@ -734,7 +757,9 @@ export class State {
         whats: nextWhats,
       });
     }
-    return this.with({ cells: nextCells, stacks: nextStacks });
+    const nextWhats = [...this.whats];
+    nextWhats[siteIndex] = target.length > 0 ? (target[target.length - 1] ?? 0) : 0;
+    return this.with({ cells: nextCells, stacks: nextStacks, whats: nextWhats });
   }
 
   // ---- Per-site value / state / rotation / count -----------------------

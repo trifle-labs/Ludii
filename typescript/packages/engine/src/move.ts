@@ -56,6 +56,12 @@ export interface MoveInit {
    */
   readonly fromSite?: number;
   readonly toSite?: number;
+  /**
+   * Java parity: endpoints of the non-decision move effect. These can differ
+   * from from()/to() when a move is wrapped in a decision Select.
+   */
+  readonly fromNonDecisionSite?: number;
+  readonly toNonDecisionSite?: number;
 }
 
 export class Move {
@@ -73,6 +79,8 @@ export class Move {
   /** Explicit from/to fallback; see {@link MoveInit.fromSite}/{@link MoveInit.toSite}. */
   public readonly fromSite?: number;
   public readonly toSite?: number;
+  public readonly fromNonDecisionSite?: number;
+  public readonly toNonDecisionSite?: number;
 
   public constructor(init: MoveInit) {
     if (init.siteIndices.length === 0) {
@@ -98,6 +106,8 @@ export class Move {
     this.decisionIndex = init.decisionIndex ?? 0;
     this.fromSite = init.fromSite;
     this.toSite = init.toSite;
+    this.fromNonDecisionSite = init.fromNonDecisionSite;
+    this.toNonDecisionSite = init.toNonDecisionSite;
   }
 
   public applyTo(state: State, rng?: SeededRng): State {
@@ -231,6 +241,8 @@ export class Move {
       decisionIndex: this.decisionIndex,
       fromSite: this.fromSite,
       toSite: this.toSite,
+      fromNonDecisionSite: this.fromNonDecisionSite,
+      toNonDecisionSite: this.toNonDecisionSite,
     });
   }
 
@@ -258,6 +270,8 @@ export class Move {
       decisionIndex: this.decisionIndex + extraActions.length,
       fromSite: this.fromSite,
       toSite: this.toSite,
+      fromNonDecisionSite: this.fromNonDecisionSite,
+      toNonDecisionSite: this.toNonDecisionSite,
     });
   }
 
@@ -331,6 +345,16 @@ export class Move {
       this.siteIndices[0] ??
       ACTION_OFF
     );
+  }
+
+  public fromNonDecision(): number {
+    // @java Core/src/other/move/Move.java:1221
+    return this.fromNonDecisionSite ?? this.from();
+  }
+
+  public toNonDecision(): number {
+    // @java Core/src/other/move/Move.java:1239
+    return this.toNonDecisionSite ?? this.to();
   }
 
   public what(): number {

@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-25T22:38:57.275Z
+**Date:** 2026-05-29T18:52:55.739Z
 **Trials processed:** 853  
-**Wall time:** 888.9s
+**Wall time:** 973.6s
 
 ## Bucket Summary
 
@@ -10,10 +10,10 @@
 |--------|-------|---|
 | COMPILE_FAIL | 1 | 0.1% |
 | START_FAIL | 0 | 0.0% |
-| MOVE_MISMATCH | 302 | 35.4% |
-| WINNER_MISMATCH | 70 | 8.2% |
-| OUTCOME_OK | 387 | 45.4% |
-| REPLAY_OK_NO_OUTCOME | 93 | 10.9% |
+| MOVE_MISMATCH | 270 | 31.7% |
+| WINNER_MISMATCH | 53 | 6.2% |
+| OUTCOME_OK | 418 | 49.0% |
+| REPLAY_OK_NO_OUTCOME | 111 | 13.0% |
 
 ## Top 15 COMPILE_FAIL Reasons
 
@@ -25,17 +25,17 @@
 - `board/hunt/Hyvn aetter Hare`: **1** mismatches
 - `board/hunt/Ludus Coriovalli`: **1** mismatches
 - `board/hunt/Shui Yen Ho-Shang`: **1** mismatches
-- `board/hunt/To Kinegi tou Lagou`: **1** mismatches
 - `board/race/escape/Ashta-kashte`: **1** mismatches
-- `board/race/escape/Ashtapada`: **1** mismatches
 - `board/race/escape/Atom`: **1** mismatches
 - `board/race/escape/Chaupar`: **1** mismatches
 - `board/race/escape/Grand Trictrac`: **1** mismatches
 - `board/race/escape/Julbahar`: **1** mismatches
 - `board/race/escape/Kawade Kelia`: **1** mismatches
 - `board/race/escape/Kiz Tavlasi`: **1** mismatches
+- `board/race/escape/Kolica Atarakua`: **1** mismatches
 - `board/race/escape/Mughrabieh`: **1** mismatches
 - `board/race/escape/Ofanfelling`: **1** mismatches
+- `board/race/escape/Pachesi`: **1** mismatches
 
 ## 5 Concrete MOVE_MISMATCH Examples
 
@@ -67,9 +67,9 @@
 - **Sample TS moves:** mover=2,from=-1,to=-1,isPass=true
 - **Detail:** No matching TS move
 
-### Example 5: `board/hunt/To Kinegi tou Lagou`
-- **Ply:** 2
-- **Recorded move:** `mover=1,from=41,to=2`
-- **TS moves available:** 4
-- **Sample TS moves:** mover=2,from=0,to=2,isPass=false, mover=2,from=0,to=4,isPass=false, mover=2,from=0,to=6,isPass=false
+### Example 5: `board/race/escape/Ashta-kashte`
+- **Ply:** 177
+- **Recorded move:** `mover=1,from=21,to=7`
+- **TS moves available:** 1
+- **Sample TS moves:** mover=1,from=-1,to=-1,isPass=true
 - **Detail:** No matching TS move

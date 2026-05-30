@@ -2960,6 +2960,8 @@ export class LudemeGame implements Game {
   private readonly rememberPlacements: readonly RememberPlacement[];
   private readonly handSeeds: readonly HandSeed[];
   private readonly teamPlacements: readonly TeamAssignment[];
+  /** Java parity: whether this game uses real per-level stacks. */
+  private readonly isStacking: boolean;
   /** Java parity: `GameType.NotAllPass` (e.g. explicit `(move Pass)`). */
   private readonly notAllPass: boolean;
   /** Java parity: `Game.maxTurnLimit` / `Game.maxMovesLimit` defaults. */
@@ -2997,6 +2999,7 @@ export class LudemeGame implements Game {
     // (flat count-piles, e.g. mancala pits) or pops one piece (stacking games,
     // e.g. Bagh goat stacks, Murus Gallicus). See gameUsesStacking above.
     const isStacking = gameUsesStacking(gameNode);
+    this.isStacking = isStacking;
     const equipment = child(gameNode, "equipment");
     const env: CompileEnv = {
       board: parsed.board,
@@ -3265,6 +3268,29 @@ export class LudemeGame implements Game {
         const placeWalks = this.componentWalkById[what ?? owner];
         for (const site of region.eval(evalCtx)) {
           if (site >= 0 && site < placed.length) {
+            const existingCount = counts[site] ?? 0;
+            const existingOwner = placed[site] ?? 0;
+            if (this.isStacking && existingCount > 0 && existingOwner > 0) {
+              const existingWhat = whats[site] || existingOwner;
+              const owners = stackOwners[site]
+                ? [...(stackOwners[site] as number[])]
+                : Array.from({ length: existingCount }, () => existingOwner);
+              const ws = stackWhats[site]
+                ? [...(stackWhats[site] as number[])]
+                : Array.from({ length: existingCount }, () => existingWhat);
+              owners.push(owner);
+              ws.push(what ?? owner);
+              stackOwners[site] = owners;
+              stackWhats[site] = ws;
+              placed[site] = owner;
+              whats[site] = what ?? owner;
+              counts[site] = 0;
+              anyItemStack = true;
+              if (st !== undefined) states[site] = st;
+              if (val !== undefined) values[site] = val;
+              idx += 1;
+              continue;
+            }
             placed[site] = owner;
             whats[site] = what ?? owner;
             if (st !== undefined) states[site] = st;
