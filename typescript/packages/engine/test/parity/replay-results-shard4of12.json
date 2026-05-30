@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 313.3,
+    "elapsed_s": 311.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 57,
+      "MOVE_MISMATCH": 58,
       "WINNER_MISMATCH": 13,
       "OUTCOME_OK": 111,
-      "REPLAY_OK_NO_OUTCOME": 32
+      "REPLAY_OK_NO_OUTCOME": 31
     }
   },
   "top15FailureReasons": {
@@ -1484,8 +1484,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 488,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 488",
+      "plyReplayed": 523,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 523",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_0.txt"
     },
     {
@@ -1511,8 +1511,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Cylinder Chess",
-      "plyReplayed": 230,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 230",
+      "plyReplayed": 235,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 235",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Cylinder Chess/RandomTrial_0.txt"
     },
     {
@@ -1525,8 +1525,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Korkserschach",
-      "plyReplayed": 117,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 117",
+      "plyReplayed": 118,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 118",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Korkserschach/RandomTrial_0.txt"
     },
     {
@@ -1707,10 +1707,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Skirmish (GDL)/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "plyReplayed": 376,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 376",
+      "ply": 377,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=11,to=9",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=2,from=1,to=0,isPass=false",
+        "mover=2,from=1,to=2,isPass=false",
+        "mover=2,from=1,to=9,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_0.txt"
     },
     {

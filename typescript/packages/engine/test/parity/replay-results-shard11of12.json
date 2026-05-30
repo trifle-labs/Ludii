@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 285.1,
+    "elapsed_s": 280.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1314,8 +1314,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 61,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 61",
+      "plyReplayed": 60,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 60",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1470,8 +1470,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 166,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 166",
+      "plyReplayed": 171,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 171",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
@@ -1540,8 +1540,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 122,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 122",
+      "plyReplayed": 128,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 128",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
     },
     {
@@ -1561,8 +1561,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 18,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 18",
+      "plyReplayed": 19,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 19",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_1.txt"
     },
     {

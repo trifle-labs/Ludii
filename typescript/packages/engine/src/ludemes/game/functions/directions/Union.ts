@@ -1,3 +1,6 @@
 // @java Core/src/game/functions/directions/Union.java
 
-// TODO Phase 2: faithful port from Union.java (currently handled in compile.ts shared directions logic)
+// STUB: the registry has a nominal `dir` category, but compileDirections() does
+// not look up registered direction ludemes. Java Union merges two
+// DirectionsFunction absolute sets at convert time (Union.java:124-175); leave
+// unregistered until the direction dispatcher is wired.

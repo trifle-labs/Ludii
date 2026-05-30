@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/intArray/values/ValuesStringType.java
 
-// TODO Phase 2: faithful port from ValuesStringType.java (currently handled in compile.ts compileValuesRegion shared logic)
+// STUB: Java ValuesStringType is an enum with only `Remembered`
+// (ValuesStringType.java:8-11). It is parsed as the first argument of
+// `(values Remembered ...)`, so there is no separate TS ludeme head to register.

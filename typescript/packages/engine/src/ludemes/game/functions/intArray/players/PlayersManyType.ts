@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/intArray/players/PlayersManyType.java
 
-// TODO Phase 2: faithful port from PlayersManyType.java (currently handled in compile.ts compileRegion players logic)
+// STUB: Java PlayersManyType is an enum (All, NonMover, Enemy, Friend, Ally)
+// used as the first argument of `(players ...)` (PlayersManyType.java:8-20).
+// There is no separate TS ludeme head to register; `Players.ts` handles it.

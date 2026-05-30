@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/directions/RandomDirectionType.java
 
-// TODO Phase 2: faithful port from RandomDirectionType.java (currently handled in compile.ts shared directions logic)
+// STUB: Java RandomDirectionType is an enum with only `Random`
+// (RandomDirectionType.java:6-10). It has no standalone `.lud` head to
+// register, and direction subtype dispatch is not wired.

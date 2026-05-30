@@ -1,3 +1,6 @@
 // @java Core/src/game/functions/intArray/IntArrayFunction.java
 
-// TODO Phase 2: faithful port from IntArrayFunction.java (currently not a dispatchable ludeme head)
+// STUB: Java IntArrayFunction is an interface, not a dispatchable ludeme
+// (IntArrayFunction.java:19-60). The TS engine currently represents int arrays
+// with RegionFn-like evaluables; there is no `compileIntArray` dispatcher to
+// register this interface against.

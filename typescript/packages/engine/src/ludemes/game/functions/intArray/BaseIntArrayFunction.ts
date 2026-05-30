@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/intArray/BaseIntArrayFunction.java
 
-// TODO Phase 2: faithful port from BaseIntArrayFunction.java (currently not a dispatchable ludeme head)
+// STUB: Java BaseIntArrayFunction is an abstract base class with no eval logic
+// and no `.lud` head (BaseIntArrayFunction.java:5-15). Nothing can be
+// registered for it in the TS ludeme registry.

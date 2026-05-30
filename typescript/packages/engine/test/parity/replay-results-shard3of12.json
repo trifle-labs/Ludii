@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 350.2,
+    "elapsed_s": 352.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1331,8 +1331,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 224,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 224",
+      "plyReplayed": 223,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 223",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_1.txt"
     },
     {
@@ -1495,8 +1495,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
-      "plyReplayed": 277,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 277",
+      "plyReplayed": 278,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 278",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_1.txt"
     },
     {

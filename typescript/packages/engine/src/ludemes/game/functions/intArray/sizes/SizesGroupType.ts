@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/intArray/sizes/SizesGroupType.java
 
-// TODO Phase 2: faithful port from SizesGroupType.java (currently handled in compile.ts compileRegion shared sizes logic)
+// STUB: Java SizesGroupType is an enum with only `Group`
+// (SizesGroupType.java:8-11). It is parsed as the first argument of
+// `(sizes Group ...)`, so there is no separate TS ludeme head to register.
