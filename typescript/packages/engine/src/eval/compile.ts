@@ -283,6 +283,20 @@ export interface CompileEnv {
    * `ActionRemove({ clearAll })`. Computed by LudemeGame from the game tree.
    */
   readonly isStacking?: boolean;
+  /**
+   * Deduction-puzzle CSP constraints compiled from `(satisfy ...)`. `(is
+   * Solved)` evaluates these predicates, mirroring Java IsSolved reading the
+   * Satisfy move's constraints.
+   */
+  readonly deductionConstraints?: BoolFn[];
+  /** Mutable marker while compiling a `(satisfy ...)` constraint body. */
+  readonly deductionConstraintDepth?: { depth: number };
+  /** Static `(regions {Rows Columns ...})` declarations used by CSP ludemes. */
+  readonly deductionRegionTypes?: string[];
+  /** Equipment hints: region plus optional numeric hint. */
+  readonly deductionHints?: { sites: readonly number[]; hint?: number }[];
+  /** Board value domain from `(values <SiteType> (range min max))`. */
+  readonly puzzleValueRange?: { min: number; max: number };
 }
 
 /** A set of dice declared in equipment: N dice, each with a face-value set. */
@@ -1284,6 +1298,14 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
       }
       break;
     }
+    case "hint": {
+      // @java Core/src/game/functions/ints/iterator/Hint.java
+      // In deduction constraints, bare `(hint)` reads the hint value currently
+      // bound by `(forAll Hint ...)` or by region-hint iteration in `(is Sum)`.
+      const atNode = named.get("at") ?? positional.find((p) => !isIdent(p));
+      if (!atNode) return { eval: (ctx) => ctx.frame.hint ?? OFF };
+      return { eval: () => OFF };
+    }
     case "rotation": {
       // (rotation [SiteType] at:<site> [level:<int>]) → the piece rotation
       // stored at that site. Java Rotation.java: returns 0 for an OFF site,
@@ -2097,6 +2119,10 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
   const rest = node.items.slice(2);
   const { positional, named } = parseArgs(rest);
   switch (kind) {
+    case "Count":
+      return compileDeductionCount(positional, named, env);
+    case "Sum":
+      return compileDeductionSum(positional, named, env);
     case "Line": {
       const lenNode = positional[0];
       if (!lenNode)
@@ -2596,10 +2622,14 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
       // port does not model elimination, so every real player is active.
       return { eval: () => true };
     case "Solved":
-      // (is Solved) — every deduction-puzzle (satisfy …) constraint holds. The
-      // TS engine has no CSP solver, so this compiles to constant false: the
-      // puzzle compiles and never auto-terminates.
-      return { eval: () => false };
+      // @java Core/src/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.java
+      // Java evaluates every BooleanFunction stored by the phase's Satisfy move.
+      return {
+        eval: (ctx) =>
+          (env.deductionConstraints ?? []).every((constraint) =>
+            constraint.eval(ctx),
+          ),
+      };
     case "Cycle":
       // (is Cycle) — the current position has occurred before (mancala
       // repetition / endless-sow guard). State-history tracking isn't modelled,
@@ -2940,6 +2970,258 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
  * predicate holds iff every member satisfies it. For `Different`, the region's
  * occupied contents must all be distinct (empty cells ignored).
  */
+function deductionStaticRegions(
+  ctx: EvalContext,
+  env: CompileEnv,
+): number[][] {
+  const out: number[][] = [];
+  const seen = new Set<string>();
+  const add = (sites: readonly number[]): void => {
+    const key = [...sites].join(",");
+    if (!seen.has(key)) {
+      seen.add(key);
+      out.push([...sites]);
+    }
+  };
+  const types = env.deductionRegionTypes ?? [];
+  for (const type of types) {
+    switch (type) {
+      case "Rows":
+        for (let y = 0; y < ctx.board.height; y += 1) add(rowSites(ctx, y));
+        break;
+      case "Columns":
+        for (let x = 0; x < ctx.board.width; x += 1) add(colSites(ctx, x));
+        break;
+      case "Diagonals": {
+        const n = Math.min(ctx.board.width, ctx.board.height);
+        const d1: number[] = [];
+        const d2: number[] = [];
+        for (let i = 0; i < n; i += 1) {
+          const a = ctx.board.siteAt(i, i);
+          const b = ctx.board.siteAt(ctx.board.width - 1 - i, i);
+          if (a >= 0) d1.push(a);
+          if (b >= 0) d2.push(b);
+        }
+        add(d1);
+        add(d2);
+        break;
+      }
+      case "SubGrids": {
+        const side = Math.sqrt(ctx.board.width);
+        if (
+          Number.isInteger(side) &&
+          side > 1 &&
+          ctx.board.width === ctx.board.height
+        ) {
+          for (let gy = 0; gy < side; gy += 1) {
+            for (let gx = 0; gx < side; gx += 1) {
+              const cells: number[] = [];
+              for (let dy = 0; dy < side; dy += 1) {
+                for (let dx = 0; dx < side; dx += 1) {
+                  const s = ctx.board.siteAt(gx * side + dx, gy * side + dy);
+                  if (s >= 0) cells.push(s);
+                }
+              }
+              add(cells);
+            }
+          }
+        }
+        break;
+      }
+      case "HintRegions":
+        for (const h of env.deductionHints ?? []) add(h.sites);
+        break;
+      case "AllDirections":
+        break;
+      default:
+        break;
+    }
+  }
+  return out.length > 0 ? out : [allSites(ctx)];
+}
+
+const DEDUCTION_RAY_DIRS = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [1, 1],
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+] as const;
+
+function deductionAllDifferentOnRegion(
+  ctx: EvalContext,
+  sites: readonly number[],
+  excepts: ReadonlySet<number>,
+): boolean {
+  const seen = new Set<number>();
+  for (const s of sites) {
+    if (s < 0 || s >= ctx.state.cells.length) continue;
+    const value = ctx.state.whatAtSite(s);
+    if (value === 0 && !excepts.has(value)) return false;
+    if (excepts.has(value)) continue;
+    if (seen.has(value)) return false;
+    seen.add(value);
+  }
+  return true;
+}
+
+function deductionAllDifferentRays(
+  ctx: EvalContext,
+  excepts: ReadonlySet<number>,
+): boolean {
+  for (let site = 0; site < ctx.board.numSites; site += 1) {
+    if (ctx.state.whatAtSite(site) === 0) continue;
+    const x0 = ctx.board.xOf(site);
+    const y0 = ctx.board.yOf(site);
+    for (const [dx, dy] of DEDUCTION_RAY_DIRS) {
+      const ray: number[] = [];
+      let x = x0;
+      let y = y0;
+      for (;;) {
+        const s = ctx.board.siteAt(x, y);
+        if (s < 0) break;
+        ray.push(s);
+        x += dx;
+        y += dy;
+      }
+      if (!deductionAllDifferentOnRegion(ctx, ray, excepts)) return false;
+    }
+  }
+  return true;
+}
+
+function compileDeductionAllDifferent(node: LudList, env: CompileEnv): BoolFn {
+  const { positional, named } = parseArgs(node.items.slice(2));
+  const regionNode = positional.find(
+    (n) => !(isIdent(n) && SITE_TYPE_IDENTS.has(n.name)),
+  );
+  const region = regionNode ? compileRegion(regionNode, env) : undefined;
+  const exceptFns: IntFn[] = [];
+  const exceptNode = named.get("except");
+  if (exceptNode) exceptFns.push(compileInt(exceptNode, env));
+  const exceptsNode = named.get("excepts");
+  if (exceptsNode && isList(exceptsNode) && exceptsNode.delimiter === "curly") {
+    for (const item of exceptsNode.items) exceptFns.push(compileInt(item, env));
+  }
+  return {
+    // @java Core/src/game/functions/booleans/deductionPuzzle/all/AllDifferent.java
+    eval: (ctx) => {
+      const excepts = new Set(exceptFns.map((fn) => fn.eval(ctx)));
+      if (region) {
+        return deductionAllDifferentOnRegion(ctx, region.eval(ctx), excepts);
+      }
+      for (const sites of deductionStaticRegions(ctx, env)) {
+        if (!deductionAllDifferentOnRegion(ctx, sites, excepts)) return false;
+      }
+      if ((env.deductionRegionTypes ?? []).includes("AllDirections")) {
+        return deductionAllDifferentRays(ctx, excepts);
+      }
+      return true;
+    },
+  };
+}
+
+function compileDeductionCount(
+  positional: readonly LudNode[],
+  named: ReadonlyMap<string, LudNode>,
+  env: CompileEnv,
+): BoolFn {
+  let idx = 0;
+  const first = positional[idx];
+  if (first && isIdent(first) && SITE_TYPE_IDENTS.has(first.name)) {
+    idx += 1;
+  }
+  const regionNode = positional[idx];
+  const resultNode = positional[positional.length - 1];
+  if (!regionNode || !resultNode) {
+    throw new LudemeCompileError("(is Count ...) needs a region and result.");
+  }
+  const region = compileRegion(regionNode, env);
+  const whatFn = named.get("of")
+    ? compileInt(named.get("of") as LudNode, env)
+    : { eval: () => 1 };
+  const resultFn = compileInt(resultNode, env);
+  return {
+    // @java Core/src/game/functions/booleans/deductionPuzzle/is/regionResult/IsCount.java
+    eval: (ctx) => {
+      const what = whatFn.eval(ctx);
+      const result = resultFn.eval(ctx);
+      let count = 0;
+      let hasZero = false;
+      for (const site of region.eval(ctx)) {
+        const value = ctx.state.whatAtSite(site);
+        if (value === what) count += 1;
+        if (value === 0) hasZero = true;
+      }
+      return !(count > result || (!hasZero && count !== result));
+    },
+  };
+}
+
+function deductionSumOk(
+  ctx: EvalContext,
+  sites: readonly number[],
+  result: number,
+): boolean {
+  let sum = 0;
+  let hasZero = false;
+  for (const site of sites) {
+    const value = ctx.state.whatAtSite(site);
+    if (value === 0) hasZero = true;
+    sum += value;
+  }
+  return !(sum > result || (!hasZero && sum !== result));
+}
+
+function compileDeductionSum(
+  positional: readonly LudNode[],
+  named: ReadonlyMap<string, LudNode>,
+  env: CompileEnv,
+): BoolFn {
+  let idx = 0;
+  const first = positional[idx];
+  if (first && isIdent(first) && SITE_TYPE_IDENTS.has(first.name)) {
+    idx += 1;
+  }
+  const maybeRegion = positional[idx];
+  const resultNode = positional[positional.length - 1];
+  if (!resultNode) throw new LudemeCompileError("(is Sum ...) needs a result.");
+  const region =
+    maybeRegion && maybeRegion !== resultNode && isList(maybeRegion)
+      ? compileRegion(maybeRegion, env)
+      : undefined;
+  const resultFn = compileInt(resultNode, env);
+  const nameNode = named.get("nameRegion");
+  const name =
+    nameNode && isString(nameNode)
+      ? nameNode.value
+      : nameNode && isIdent(nameNode)
+        ? nameNode.name
+        : "";
+  return {
+    // @java Core/src/game/functions/booleans/deductionPuzzle/is/regionResult/IsSum.java
+    eval: (ctx) => {
+      if (region) return deductionSumOk(ctx, region.eval(ctx), resultFn.eval(ctx));
+      if ((env.deductionRegionTypes ?? []).includes("HintRegions")) {
+        for (const h of env.deductionHints ?? []) {
+          const sub = ctx.withFrame({ hint: h.hint ?? OFF, hintRegion: h.sites });
+          if (!deductionSumOk(sub, h.sites, resultFn.eval(sub))) return false;
+        }
+        return true;
+      }
+      const regions = deductionStaticRegions(ctx, env);
+      for (const sites of regions) {
+        const sub = name ? ctx.withFrame({ hintRegion: sites }) : ctx;
+        if (!deductionSumOk(sub, sites, resultFn.eval(sub))) return false;
+      }
+      return true;
+    },
+  };
+}
+
 function compileAll(node: LudList, env: CompileEnv): BoolFn {
   const kindNode = node.items[1];
   const kind = kindNode && isIdent(kindNode) ? kindNode.name : "";
@@ -2969,6 +3251,9 @@ function compileAll(node: LudList, env: CompileEnv): BoolFn {
     return { eval: (ctx) => ctx.state.diceAllEqual };
   }
   if (kind === "Different") {
+    if ((env.deductionConstraintDepth?.depth ?? 0) > 0) {
+      return compileDeductionAllDifferent(node, env);
+    }
     const regionNode = positional[0];
     const region: RegionFn = regionNode
       ? compileRegion(regionNode, env)
@@ -4549,6 +4834,9 @@ function compileSites(node: LudList, env: CompileEnv): RegionFn {
       }
       case "Board":
         return { eval: (ctx) => allSites(ctx) };
+      case "Hint":
+        // @java Core/src/game/functions/region/sites/simple/SitesHint.java
+        return { eval: (ctx) => [...(ctx.frame.hintRegion ?? [])] };
       case "Top":
         return { eval: (ctx) => sideRowSites(ctx, "y", true) };
       case "Bottom":

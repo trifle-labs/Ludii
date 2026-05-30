@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-05-30T22:55:48.378Z",
+  "recorded": "2026-05-30T23:19:47.252Z",
   "java": {
     "Core/src/other/action/state/ActionAddPlayerToTeam.java": {
       "hash": "14f0e9e4b9d5bfa0",
@@ -433,12 +433,54 @@
         "src/ludemes/game/functions/ints/iterator/Edge.ts"
       ]
     },
+    "Core/src/game/functions/ints/iterator/Hint.java": {
+      "hash": "a2b9251f82366046",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/ints/iterator/Hint.ts"
+      ]
+    },
+    "Core/src/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.java": {
+      "hash": "e63b33e23645286e",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.ts"
+      ]
+    },
+    "Core/src/game/functions/booleans/deductionPuzzle/all/AllDifferent.java": {
+      "hash": "e40f42b2efb3a99f",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/booleans/deductionPuzzle/all/AllDifferent.ts"
+      ]
+    },
+    "Core/src/game/functions/booleans/deductionPuzzle/is/regionResult/IsCount.java": {
+      "hash": "acdc46d96d1d33ff",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/booleans/deductionPuzzle/is/regionResult/IsCount.ts"
+      ]
+    },
+    "Core/src/game/functions/booleans/deductionPuzzle/is/regionResult/IsSum.java": {
+      "hash": "c04af5d0258a90d5",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/booleans/deductionPuzzle/is/regionResult/IsSum.ts"
+      ]
+    },
     "Core/src/game/equipment/component/Piece.java": {
       "hash": "c09b67d08603f14e",
       "ts": [
         "src/eval/compile.ts",
         "src/eval/ludeme-game.ts",
         "src/ludemes/game/equipment/component/Piece.ts"
+      ]
+    },
+    "Core/src/game/functions/region/sites/simple/SitesHint.java": {
+      "hash": "2fd1399f08d19ef0",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/region/sites/simple/SitesHint.ts"
       ]
     },
     "Core/src/game/functions/region/sites/moves/SitesTo.java": {
@@ -581,6 +623,13 @@
       "ts": [
         "src/eval/ludeme-game.ts",
         "src/ludemes/game/equipment/container/board/Track.ts"
+      ]
+    },
+    "Core/src/game/rules/start/deductionPuzzle/Set.java": {
+      "hash": "6c202c32d4066214",
+      "ts": [
+        "src/eval/ludeme-game.ts",
+        "src/ludemes/game/rules/start/deductionPuzzle/Set.ts"
       ]
     },
     "Core/src/other/GameLoader.java": {
@@ -847,12 +896,6 @@
         "src/ludemes/game/functions/booleans/deductionPuzzle/all/All.ts"
       ]
     },
-    "Core/src/game/functions/booleans/deductionPuzzle/all/AllDifferent.java": {
-      "hash": "e40f42b2efb3a99f",
-      "ts": [
-        "src/ludemes/game/functions/booleans/deductionPuzzle/all/AllDifferent.ts"
-      ]
-    },
     "Core/src/game/functions/booleans/deductionPuzzle/all/AllPuzzleType.java": {
       "hash": "1bde03330a9467be",
       "ts": [
@@ -887,24 +930,6 @@
       "hash": "ce28425a1ed0fe81",
       "ts": [
         "src/ludemes/game/functions/booleans/deductionPuzzle/is/graph/IsUnique.ts"
-      ]
-    },
-    "Core/src/game/functions/booleans/deductionPuzzle/is/regionResult/IsCount.java": {
-      "hash": "acdc46d96d1d33ff",
-      "ts": [
-        "src/ludemes/game/functions/booleans/deductionPuzzle/is/regionResult/IsCount.ts"
-      ]
-    },
-    "Core/src/game/functions/booleans/deductionPuzzle/is/regionResult/IsSum.java": {
-      "hash": "c04af5d0258a90d5",
-      "ts": [
-        "src/ludemes/game/functions/booleans/deductionPuzzle/is/regionResult/IsSum.ts"
-      ]
-    },
-    "Core/src/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.java": {
-      "hash": "e63b33e23645286e",
-      "ts": [
-        "src/ludemes/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.ts"
       ]
     },
     "Core/src/game/functions/booleans/is/Hidden/IsHidden.java": {
@@ -2791,12 +2816,6 @@
         "src/ludemes/game/functions/ints/iterator/From.ts"
       ]
     },
-    "Core/src/game/functions/ints/iterator/Hint.java": {
-      "hash": "a2b9251f82366046",
-      "ts": [
-        "src/ludemes/game/functions/ints/iterator/Hint.ts"
-      ]
-    },
     "Core/src/game/functions/ints/iterator/Level.java": {
       "hash": "f6b98f64aacf53a7",
       "ts": [
@@ -3773,12 +3792,6 @@
       "hash": "86c45d2510cf4ea5",
       "ts": [
         "src/ludemes/game/functions/region/sites/simple/SitesCorners.ts"
-      ]
-    },
-    "Core/src/game/functions/region/sites/simple/SitesHint.java": {
-      "hash": "2fd1399f08d19ef0",
-      "ts": [
-        "src/ludemes/game/functions/region/sites/simple/SitesHint.ts"
       ]
     },
     "Core/src/game/functions/region/sites/simple/SitesInner.java": {
@@ -4825,12 +4838,6 @@
         "src/ludemes/game/rules/start/StartRule.ts"
       ]
     },
-    "Core/src/game/rules/start/deductionPuzzle/Set.java": {
-      "hash": "6c202c32d4066214",
-      "ts": [
-        "src/ludemes/game/rules/start/deductionPuzzle/Set.ts"
-      ]
-    },
     "Core/src/game/rules/start/forEach/ForEach.java": {
       "hash": "b89381aa7255b369",
       "ts": [
@@ -5228,6 +5235,7 @@
       "hash": "e40f42b2efb3a99f",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/booleans/deductionPuzzle/all/AllDifferent.ts"
       ]
     },
@@ -5287,6 +5295,7 @@
       "hash": "acdc46d96d1d33ff",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/booleans/deductionPuzzle/is/regionResult/IsCount.ts"
       ]
     },
@@ -5294,6 +5303,7 @@
       "hash": "c04af5d0258a90d5",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/booleans/deductionPuzzle/is/regionResult/IsSum.ts"
       ]
     },
@@ -5301,6 +5311,7 @@
       "hash": "e63b33e23645286e",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.ts"
       ]
     },
@@ -7747,6 +7758,7 @@
       "hash": "a2b9251f82366046",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/ints/iterator/Hint.ts"
       ]
     },
@@ -9011,6 +9023,7 @@
       "hash": "2fd1399f08d19ef0",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/region/sites/simple/SitesHint.ts"
       ]
     },
@@ -10411,6 +10424,7 @@
       "hash": "6c202c32d4066214",
       "ported": true,
       "ts": [
+        "src/eval/ludeme-game.ts",
         "src/ludemes/game/rules/start/deductionPuzzle/Set.ts"
       ]
     },

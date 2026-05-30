@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 289.4,
+    "elapsed_s": 278.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 75,
-      "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 103,
-      "REPLAY_OK_NO_OUTCOME": 27
+      "MOVE_MISMATCH": 76,
+      "WINNER_MISMATCH": 6,
+      "OUTCOME_OK": 106,
+      "REPLAY_OK_NO_OUTCOME": 25
     }
   },
   "top15FailureReasons": {
@@ -605,17 +605,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/other/Cirgol/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/other/Sowing",
       "plyReplayed": 6,
-      "recWinner": 2,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/sow/other/Sowing/RandomTrial_0.txt"
     },
     {
@@ -1593,8 +1585,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 431,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 431",
+      "plyReplayed": 465,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 465",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_0.txt"
     },
     {
@@ -1605,10 +1597,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/McCooey Chess",
-      "plyReplayed": 524,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 524",
+      "plyReplayed": 586,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/McCooey Chess/RandomTrial_0.txt"
     },
     {
@@ -1625,10 +1616,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Phase Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/checkmate/chess/Shafran Chess",
-      "plyReplayed": 122,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 122",
+      "ply": 131,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=63,to=63",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=2,from=12,to=5,isPass=false",
+        "mover=2,from=12,to=20,isPass=false",
+        "mover=2,from=12,to=19,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Shafran Chess/RandomTrial_0.txt"
     },
     {
@@ -1662,8 +1660,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 53,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 53",
+      "plyReplayed": 64,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 64",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_0.txt"
     },
     {
@@ -1683,8 +1681,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 101,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 101",
+      "plyReplayed": 113,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 113",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_0.txt"
     },
     {
@@ -2039,16 +2037,9 @@
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Pentalpha/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "puzzle/planning/Tchoukaillon",
       "plyReplayed": 8,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/puzzle/planning/Tchoukaillon/RandomTrial_0.txt"
     },
     {

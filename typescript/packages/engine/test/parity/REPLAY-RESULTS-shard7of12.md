@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-30T22:53:57.903Z
+**Date:** 2026-05-30T23:17:40.820Z
 **Trials processed:** 213  
-**Wall time:** 292.4s
+**Wall time:** 280.8s
 
 ## Bucket Summary
 
@@ -10,10 +10,10 @@
 |--------|-------|---|
 | COMPILE_FAIL | 0 | 0.0% |
 | START_FAIL | 0 | 0.0% |
-| MOVE_MISMATCH | 61 | 28.6% |
+| MOVE_MISMATCH | 60 | 28.2% |
 | WINNER_MISMATCH | 10 | 4.7% |
 | OUTCOME_OK | 109 | 51.2% |
-| REPLAY_OK_NO_OUTCOME | 33 | 15.5% |
+| REPLAY_OK_NO_OUTCOME | 34 | 16.0% |
 
 ## Top 15 COMPILE_FAIL Reasons
 
@@ -32,9 +32,9 @@
 - `board/race/reach/Sig (El Oued)`: **1** mismatches
 - `board/race/reach/Sneakthrough`: **1** mismatches
 - `board/race/reach/Thales`: **1** mismatches
-- `board/sow/four_rows/Dongjintian (Four Players)`: **1** mismatches
 - `board/sow/four_rows/Isolo`: **1** mismatches
 - `board/sow/two_rows/I Pere`: **1** mismatches
+- `board/sow/two_rows/La'b Akila`: **1** mismatches
 
 ## 5 Concrete MOVE_MISMATCH Examples
 

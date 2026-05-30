@@ -55,6 +55,12 @@ export interface EvalFrame {
   readonly value?: number;
   /** Iterated player (Java: `player()`), bound by `(forEach Player …)`. */
   readonly player?: number;
+  /** Deduction-puzzle hint value (Java: `Context.hint()`). */
+  readonly hint?: number;
+  /** Deduction-puzzle edge iterator/count value (Java: `Context.edge()`). */
+  readonly edge?: number;
+  /** Deduction-puzzle hint region (Java: `Context.hintRegion()`). */
+  readonly hintRegion?: readonly number[];
   /**
    * Java parity: `state.prev()` — the mover of the move committed *before* the
    * one being folded as a `(then …)` consequence. `applyHypothetical` records

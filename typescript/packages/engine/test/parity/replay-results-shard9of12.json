@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 266.7,
+    "elapsed_s": 255.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 80,
-      "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 99,
+      "WINNER_MISMATCH": 8,
+      "OUTCOME_OK": 100,
       "REPLAY_OK_NO_OUTCOME": 25
     }
   },
@@ -620,17 +620,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/other/Cirgol/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/other/Sowing",
       "plyReplayed": 13,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/sow/other/Sowing/RandomTrial_1.txt"
     },
     {
@@ -1626,8 +1618,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 289,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 289",
+      "plyReplayed": 287,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 287",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
     },
     {
@@ -1702,8 +1694,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 27,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 27",
+      "plyReplayed": 29,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 29",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_1.txt"
     },
     {
@@ -1723,8 +1715,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 56,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 56",
+      "plyReplayed": 63,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 63",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {

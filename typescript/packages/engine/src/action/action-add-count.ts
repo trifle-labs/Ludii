@@ -34,6 +34,9 @@ export class ActionAddCount extends BaseAction {
     if ((s.cells[this.toIndex] ?? 0) !== owner) {
       s = s.withCell(this.toIndex, owner);
     }
+    if (next === 0 && s.whatAtSite(this.toIndex) !== 0) {
+      s = s.withWhatAt(this.toIndex, 0);
+    }
     return s;
   }
 

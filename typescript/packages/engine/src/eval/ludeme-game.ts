@@ -1914,6 +1914,12 @@ interface CostPlacement {
   readonly region: RegionFn;
 }
 
+/** Deduction-puzzle `(start (set {{site value}...}))` givens. */
+interface PuzzleValuePlacement {
+  readonly site: number;
+  readonly value: number;
+}
+
 /** `(start (place "Label" "Hand" count:N))` — seed a player's hand site(s)
  * with N pieces, so placement games can later move pieces out of the hand. */
 interface HandSeed {
@@ -1935,6 +1941,7 @@ interface StartRules {
   readonly handSeeds: HandSeed[];
   readonly costs: CostPlacement[];
   readonly teams: TeamAssignment[];
+  readonly puzzleValues: PuzzleValuePlacement[];
 }
 
 /**
@@ -2273,6 +2280,73 @@ function compileMap(
   scanEquip(equipment);
 }
 
+function parsePuzzleValueRange(
+  equipment: LudList,
+): { min: number; max: number } | undefined {
+  let found: { min: number; max: number } | undefined;
+  const scan = (node: LudList): void => {
+    if (found) return;
+    if (listHead(node) === "values") {
+      for (const item of node.items) {
+        if (isList(item) && listHead(item) === "range") {
+          const min = item.items[1];
+          const max = item.items[2];
+          if (min && max && isNumber(min) && isNumber(max)) {
+            found = { min: min.value, max: max.value };
+            return;
+          }
+        }
+      }
+    }
+    for (const item of node.items) if (isList(item)) scan(item);
+  };
+  scan(equipment);
+  return found;
+}
+
+function parseDeductionRegionTypes(equipment: LudList): string[] {
+  const out: string[] = [];
+  const scan = (node: LudList): void => {
+    if (listHead(node) === "regions") {
+      const arg = node.items[1];
+      const items = arg && isList(arg) && arg.delimiter === "curly" ? arg.items : [arg];
+      for (const item of items) if (item && isIdent(item)) out.push(item.name);
+    }
+    for (const item of node.items) if (isList(item)) scan(item);
+  };
+  scan(equipment);
+  return out;
+}
+
+function parseDeductionHints(
+  equipment: LudList,
+): { sites: readonly number[]; hint?: number }[] {
+  const hints: { sites: readonly number[]; hint?: number }[] = [];
+  const scan = (node: LudList): void => {
+    if (listHead(node) === "hint") {
+      const first = node.items[1];
+      const second = node.items[2];
+      if (first && isList(first) && first.delimiter === "curly") {
+        const sites: number[] = [];
+        for (const n of first.items) if (isNumber(n)) sites.push(n.value);
+        hints.push({
+          sites,
+          hint: second && isNumber(second) ? second.value : undefined,
+        });
+      } else if (first && isNumber(first)) {
+        hints.push({
+          sites: [first.value],
+          hint: second && isNumber(second) ? second.value : undefined,
+        });
+      }
+      return;
+    }
+    for (const item of node.items) if (isList(item)) scan(item);
+  };
+  scan(equipment);
+  return hints;
+}
+
 /** Parse a chess-style coordinate ("D1") to a 0-based site index on a board of
  * the given width (origin bottom-left), or undefined if not a coordinate. */
 function parseCoordToSite(s: string, width: number): number | undefined {
@@ -2491,6 +2565,7 @@ function parseStartPlacements(
   const handSeeds: HandSeed[] = [];
   const costs: CostPlacement[] = [];
   const teams: TeamAssignment[] = [];
+  const puzzleValues: PuzzleValuePlacement[] = [];
   const scan = (node: LudList): void => {
     for (const item of node.items) {
       if (!isList(item)) continue;
@@ -2784,6 +2859,19 @@ function parseStartPlacements(
       } else if (head === "set") {
         // (set Count <n> to:<region>) — seed each site in the region.
         const sub = item.items[1];
+        if (sub && isList(sub) && sub.delimiter === "curly") {
+          // Deduction puzzle givens: (set { {site value} ... }).
+          // @java Core/src/game/rules/start/deductionPuzzle/Set.java
+          for (const pair of sub.items) {
+            if (!isList(pair) || pair.delimiter !== "curly") continue;
+            const siteNode = pair.items[0];
+            const valueNode = pair.items[1];
+            if (siteNode && valueNode && isNumber(siteNode) && isNumber(valueNode)) {
+              puzzleValues.push({ site: siteNode.value, value: valueNode.value });
+            }
+          }
+          continue;
+        }
         // (set <RoleType> <SiteType>? <region>) — fill every site of a region
         // with a player/neutral/shared piece (Java SetSite). This is how the
         // graph-theory family (Nein Ari, Ciri Amber, OddEvenTree, …) seeds its
@@ -2954,7 +3042,7 @@ function parseStartPlacements(
     }
   };
   scan(startNode);
-  return { placements, counts, remembers, handSeeds, costs, teams };
+  return { placements, counts, remembers, handSeeds, costs, teams, puzzleValues };
 }
 
 export class LudemeGame implements Game {
@@ -2995,6 +3083,7 @@ export class LudemeGame implements Game {
   private readonly rememberPlacements: readonly RememberPlacement[];
   private readonly handSeeds: readonly HandSeed[];
   private readonly teamPlacements: readonly TeamAssignment[];
+  private readonly puzzleValuePlacements: readonly PuzzleValuePlacement[];
   /** Java parity: whether this game uses real per-level stacks. */
   private readonly isStacking: boolean;
   /** Java parity: `GameType.NotAllPass` (e.g. explicit `(move Pass)`). */
@@ -3063,6 +3152,11 @@ export class LudemeGame implements Game {
       playerStoreMap: new Map<number, number>(),
       namedMaps: new Map<string, Map<number, number>>(),
       orderedMaps: [],
+      deductionConstraints: [],
+      deductionConstraintDepth: { depth: 0 },
+      deductionRegionTypes: equipment ? parseDeductionRegionTypes(equipment) : [],
+      deductionHints: equipment ? parseDeductionHints(equipment) : [],
+      puzzleValueRange: equipment ? parsePuzzleValueRange(equipment) : undefined,
     };
 
     if (equipment) {
@@ -3115,6 +3209,7 @@ export class LudemeGame implements Game {
           handSeeds: [],
           costs: [],
           teams: [],
+          puzzleValues: [],
         };
     this.placements = startRules.placements;
     this.countPlacements = startRules.counts;
@@ -3122,6 +3217,7 @@ export class LudemeGame implements Game {
     this.rememberPlacements = startRules.remembers;
     this.handSeeds = startRules.handSeeds;
     this.teamPlacements = startRules.teams;
+    this.puzzleValuePlacements = startRules.puzzleValues;
 
     // Resolve each placement region once against an empty start state and
     // group the resulting sites by owner, so `(sites Start …)` in the play
@@ -3357,6 +3453,14 @@ export class LudemeGame implements Game {
             }
           }
           idx += 1;
+        }
+      }
+      // Deduction puzzle givens: store the numeric value directly in the
+      // flat what/who slot, matching ActionSet's runtime representation.
+      for (const { site, value } of this.puzzleValuePlacements) {
+        if (site >= 0 && site < placed.length) {
+          placed[site] = value;
+          whats[site] = value;
         }
       }
       // `(set Count n to:region)` seeds each hole; mark it occupied by the
