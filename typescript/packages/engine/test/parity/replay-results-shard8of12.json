@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 250.7,
+    "elapsed_s": 253.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 80,
-      "WINNER_MISMATCH": 9,
+      "MOVE_MISMATCH": 79,
+      "WINNER_MISMATCH": 8,
       "OUTCOME_OK": 101,
-      "REPLAY_OK_NO_OUTCOME": 23
+      "REPLAY_OK_NO_OUTCOME": 25
     }
   },
   "top15FailureReasons": {
@@ -1309,14 +1309,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/territory/Spargo",
-      "ply": 15,
+      "ply": 12,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=1,to=1",
-      "tsMoveCount": 15,
+      "recMove": "mover=1,from=22,to=22",
+      "tsMoveCount": 7,
       "sampleTsMoves": [
-        "mover=2,from=4,to=4,isPass=false",
-        "mover=2,from=5,to=5,isPass=false",
-        "mover=2,from=6,to=6,isPass=false"
+        "mover=1,from=0,to=0,isPass=false",
+        "mover=1,from=5,to=5,isPass=false",
+        "mover=1,from=6,to=6,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Spargo/RandomTrial_0.txt"
     },
@@ -1612,17 +1612,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Dice Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 489,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
+      "plyReplayed": 476,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 476",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_0.txt"
     },
     {
@@ -1652,17 +1645,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Phase Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Shafran Chess",
-      "ply": 131,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=63,to=63",
-      "tsMoveCount": 32,
-      "sampleTsMoves": [
-        "mover=2,from=12,to=5,isPass=false",
-        "mover=2,from=12,to=20,isPass=false",
-        "mover=2,from=12,to=19,isPass=false"
-      ],
+      "plyReplayed": 126,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 126",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Shafran Chess/RandomTrial_0.txt"
     },
     {
@@ -1696,8 +1682,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 63,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 63",
+      "plyReplayed": 61,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 61",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_0.txt"
     },
     {

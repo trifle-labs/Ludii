@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 309.9,
+    "elapsed_s": 303.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 70,
+      "MOVE_MISMATCH": 69,
       "WINNER_MISMATCH": 10,
-      "OUTCOME_OK": 107,
+      "OUTCOME_OK": 108,
       "REPLAY_OK_NO_OUTCOME": 26
     }
   },
@@ -1294,17 +1294,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Redstone/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/territory/Spirit",
-      "ply": 10,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=-1,to=-1[Pass]",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=2,from=2,to=2,isPass=false",
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=12,to=12,isPass=false"
-      ],
+      "plyReplayed": 13,
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Spirit/RandomTrial_0.txt"
     },
     {
@@ -1324,8 +1316,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 58,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 58",
+      "plyReplayed": 60,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 60",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1474,8 +1466,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 185,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 185",
+      "plyReplayed": 174,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 174",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_0.txt"
     },
     {
@@ -1509,8 +1501,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj (14x14)",
-      "plyReplayed": 488,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 488",
+      "plyReplayed": 459,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 459",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj (14x14)/RandomTrial_0.txt"
     },
     {

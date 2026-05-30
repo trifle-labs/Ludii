@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 252.3,
+    "elapsed_s": 247.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1334,14 +1334,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/territory/Spargo",
-      "ply": 16,
+      "ply": 18,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=22,to=22",
-      "tsMoveCount": 14,
+      "recMove": "mover=1,from=26,to=26",
+      "tsMoveCount": 5,
       "sampleTsMoves": [
         "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=4,to=4,isPass=false",
-        "mover=1,from=5,to=5,isPass=false"
+        "mover=1,from=6,to=6,isPass=false",
+        "mover=1,from=8,to=8,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Spargo/RandomTrial_1.txt"
     },
@@ -1647,8 +1647,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 311,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 311",
+      "plyReplayed": 329,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 329",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
     },
     {
@@ -1744,8 +1744,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 124,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 124",
+      "plyReplayed": 134,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 134",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {

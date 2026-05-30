@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 334.4,
+    "elapsed_s": 329.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1482,8 +1482,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 372,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 372",
+      "plyReplayed": 364,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 364",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_1.txt"
     },
     {
@@ -1515,8 +1515,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Korkserschach",
-      "plyReplayed": 162,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 162",
+      "plyReplayed": 140,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 140",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Korkserschach/RandomTrial_1.txt"
     },
     {
@@ -1548,8 +1548,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Social Distance Chess",
-      "plyReplayed": 88,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 88",
+      "plyReplayed": 89,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 89",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Social Distance Chess/RandomTrial_1.txt"
     },
     {
@@ -1698,8 +1698,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "plyReplayed": 455,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 455",
+      "plyReplayed": 465,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 465",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_1.txt"
     },
     {
