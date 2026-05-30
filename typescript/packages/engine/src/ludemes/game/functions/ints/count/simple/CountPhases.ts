@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/ints/count/simple/CountPhases.java
 
-// TODO Phase 2: faithful port from CountPhases.java (currently handled in compile.ts compileInt shared count logic).
+// TODO: needs phase-list metadata in CompileEnv/Game. Java CountPhases.eval
+// returns context.game().rules().phases().length
+// (Core/src/game/functions/ints/count/simple/CountPhases.java:36-43).

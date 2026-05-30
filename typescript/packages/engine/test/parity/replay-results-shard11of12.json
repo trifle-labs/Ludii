@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 269.3,
+    "elapsed_s": 271,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1287,14 +1287,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/territory/Redstone",
-      "ply": 110,
+      "ply": 143,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=60,to=60",
-      "tsMoveCount": 55,
+      "recMove": "mover=2,from=8,to=8",
+      "tsMoveCount": 39,
       "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=2,to=2,isPass=false",
-        "mover=1,from=21,to=21,isPass=false"
+        "mover=2,from=5,to=5,isPass=false",
+        "mover=2,from=7,to=7,isPass=false",
+        "mover=2,from=12,to=12,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Redstone/RandomTrial_1.txt"
     },
@@ -1329,8 +1329,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 62,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 62",
+      "plyReplayed": 59,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 59",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1485,8 +1485,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 169,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 169",
+      "plyReplayed": 177,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 177",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
@@ -1555,8 +1555,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 125,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 125",
+      "plyReplayed": 130,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 130",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
     },
     {

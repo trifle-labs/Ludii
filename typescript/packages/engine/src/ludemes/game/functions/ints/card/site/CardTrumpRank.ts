@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/ints/card/site/CardTrumpRank.java
 
-// TODO Phase 2: faithful port from CardTrumpRank.java (currently not implemented in compile.ts compileInt).
+// TODO: needs Card component metadata in TS equipment. Java CardTrumpRank.eval
+// reads component.trumpRank() after cs.whatCell(site, level)
+// (Core/src/game/functions/ints/card/site/CardTrumpRank.java:53-71).

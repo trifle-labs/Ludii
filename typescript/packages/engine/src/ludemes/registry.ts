@@ -74,6 +74,10 @@ const DENY = new Set<string>([
   // correctly; the faithful root ports diverged on (all Sites if:(is Occupied)).
   'bool:all',
   'bool:no',
+  // count family: these two faithful ports diverged from legacy (Adidada uses
+  // (count Cell); Nex uses (count Pieces)). Keep the other count:* ports live.
+  'int:count:Cell',
+  'int:count:Pieces',
   'bool:Sites',
 ]);
 

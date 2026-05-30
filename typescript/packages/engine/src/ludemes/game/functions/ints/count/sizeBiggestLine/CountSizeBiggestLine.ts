@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/ints/count/sizeBiggestLine/CountSizeBiggestLine.java
 
-// TODO Phase 2: faithful port from CountSizeBiggestLine.java (currently handled in compile.ts compileInt shared count logic).
+// TODO: needs topology radial/opposite-radial API. Java CountSizeBiggestLine.eval
+// scans trajectories().radials(type, locn).distinctInDirection(...)
+// (Core/src/game/functions/ints/count/sizeBiggestLine/CountSizeBiggestLine.java:67-177).

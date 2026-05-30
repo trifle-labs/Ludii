@@ -1,79 +1,41 @@
 {
   "summary": {
     "totalTrials": 2,
-    "elapsed_s": 1.1,
+    "elapsed_s": 0,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 2,
-      "WINNER_MISMATCH": 0,
-      "OUTCOME_OK": 0,
+      "MOVE_MISMATCH": 0,
+      "WINNER_MISMATCH": 1,
+      "OUTCOME_OK": 1,
       "REPLAY_OK_NO_OUTCOME": 0
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": [
-      [
-        "board/space/pattern/Archworm",
-        2
-      ]
-    ]
+    "MOVE_MISMATCH": []
   },
-  "exampleMismatches": [
-    {
-      "game": "board/space/pattern/Archworm",
-      "ply": 89,
-      "recMove": "mover=2,from=23,to=29",
-      "tsMoveCount": 47,
-      "sampleTsMoves": [
-        "mover=2,from=2,to=7,isPass=false",
-        "mover=2,from=4,to=3,isPass=false",
-        "mover=2,from=4,to=10,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/space/pattern/Archworm",
-      "ply": 209,
-      "recMove": "mover=2,from=29,to=40",
-      "tsMoveCount": 41,
-      "sampleTsMoves": [
-        "mover=2,from=1,to=0,isPass=false",
-        "mover=2,from=1,to=2,isPass=false",
-        "mover=2,from=1,to=6,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    }
-  ],
+  "exampleMismatches": [],
   "perTrial": [
     {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/space/pattern/Archworm",
-      "ply": 89,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=23,to=29",
-      "tsMoveCount": 47,
-      "sampleTsMoves": [
-        "mover=2,from=2,to=7,isPass=false",
-        "mover=2,from=4,to=3,isPass=false",
-        "mover=2,from=4,to=10,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/space/pattern/Archworm/RandomTrial_0.txt"
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Game of Solomon",
+      "plyReplayed": 26,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Game of Solomon/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/space/pattern/Archworm",
-      "ply": 209,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=29,to=40",
-      "tsMoveCount": 41,
-      "sampleTsMoves": [
-        "mover=2,from=1,to=0,isPass=false",
-        "mover=2,from=1,to=2,isPass=false",
-        "mover=2,from=1,to=6,isPass=false"
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/war/leaping/lines/Game of Solomon",
+      "plyReplayed": 15,
+      "recWinner": 2,
+      "tsWinner": 0,
+      "recRankings": [
+        0,
+        2,
+        1
       ],
-      "trialFile": "../../../Player/res/random_trials/board/space/pattern/Archworm/RandomTrial_1.txt"
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Game of Solomon/RandomTrial_1.txt"
     }
   ]
 }

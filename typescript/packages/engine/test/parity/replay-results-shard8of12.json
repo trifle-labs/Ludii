@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 247,
+    "elapsed_s": 250.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1628,8 +1628,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Level Chess",
-      "plyReplayed": 3,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 3",
+      "plyReplayed": 2,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 2",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {
@@ -1696,8 +1696,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Hexshogi",
-      "plyReplayed": 64,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 64",
+      "plyReplayed": 63,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 63",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Hexshogi/RandomTrial_0.txt"
     },
     {

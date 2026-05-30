@@ -1,3 +1,6 @@
 // @java Core/src/game/functions/ints/count/sitesPlatformBelow/CountSitesPlatformBelow.java
 
-// TODO Phase 2: faithful port from CountSitesPlatformBelow.java (currently handled in compile.ts compileInt shared count logic).
+// TODO: needs layered vertex topology and Downward trajectories. Java
+// CountSitesPlatformBelow.eval reads vertex.layer() and
+// topology.trajectories().steps(... AbsoluteDirection.Downward)
+// (Core/src/game/functions/ints/count/sitesPlatformBelow/CountSitesPlatformBelow.java:88-130).
