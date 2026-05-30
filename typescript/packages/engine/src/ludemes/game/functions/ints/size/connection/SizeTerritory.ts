@@ -143,4 +143,4 @@ function checkTerritory(
   return true;
 }
 
-register("int", "Territory", compileSizeTerritory as any);
+register("int", "size:Territory", compileSizeTerritory as any);

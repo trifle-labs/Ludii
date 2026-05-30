@@ -1,35 +1,47 @@
 {
   "summary": {
     "totalTrials": 2,
-    "elapsed_s": 33.3,
+    "elapsed_s": 1.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 1,
+      "MOVE_MISMATCH": 2,
       "WINNER_MISMATCH": 0,
       "OUTCOME_OK": 0,
-      "REPLAY_OK_NO_OUTCOME": 1
+      "REPLAY_OK_NO_OUTCOME": 0
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
     "MOVE_MISMATCH": [
       [
-        "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-        1
+        "board/space/pattern/Archworm",
+        2
       ]
     ]
   },
   "exampleMismatches": [
     {
-      "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "ply": 377,
-      "recMove": "mover=2,from=11,to=9",
-      "tsMoveCount": 32,
+      "game": "board/space/pattern/Archworm",
+      "ply": 89,
+      "recMove": "mover=2,from=23,to=29",
+      "tsMoveCount": 47,
+      "sampleTsMoves": [
+        "mover=2,from=2,to=7,isPass=false",
+        "mover=2,from=4,to=3,isPass=false",
+        "mover=2,from=4,to=10,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/space/pattern/Archworm",
+      "ply": 209,
+      "recMove": "mover=2,from=29,to=40",
+      "tsMoveCount": 41,
       "sampleTsMoves": [
         "mover=2,from=1,to=0,isPass=false",
         "mover=2,from=1,to=2,isPass=false",
-        "mover=2,from=1,to=9,isPass=false"
+        "mover=2,from=1,to=6,isPass=false"
       ],
       "detail": "No matching TS move"
     }
@@ -37,24 +49,31 @@
   "perTrial": [
     {
       "bucket": "MOVE_MISMATCH",
-      "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "ply": 377,
+      "game": "board/space/pattern/Archworm",
+      "ply": 89,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=11,to=9",
-      "tsMoveCount": 32,
+      "recMove": "mover=2,from=23,to=29",
+      "tsMoveCount": 47,
+      "sampleTsMoves": [
+        "mover=2,from=2,to=7,isPass=false",
+        "mover=2,from=4,to=3,isPass=false",
+        "mover=2,from=4,to=10,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/pattern/Archworm/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/space/pattern/Archworm",
+      "ply": 209,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=29,to=40",
+      "tsMoveCount": 41,
       "sampleTsMoves": [
         "mover=2,from=1,to=0,isPass=false",
         "mover=2,from=1,to=2,isPass=false",
-        "mover=2,from=1,to=9,isPass=false"
+        "mover=2,from=1,to=6,isPass=false"
       ],
-      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
-      "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "plyReplayed": 560,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 560",
-      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_1.txt"
+      "trialFile": "../../../Player/res/random_trials/board/space/pattern/Archworm/RandomTrial_1.txt"
     }
   ]
 }

@@ -721,6 +721,12 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
       // every occupied site. The component "Name" carries no per-type identity
       // in this engine, so it is ignored. `in:` restricts the site set.
       const kind = positional[0];
+      // Subtype-dispatch: faithfully-ported `(count <Subtype> …)` registers under
+      // `count:<Subtype>` (e.g. `count:Liberties`); fall through to legacy below.
+      if (kind && isIdent(kind)) {
+        const _rsub = lookupLudeme("int", "count:" + kind.name);
+        if (_rsub) return _rsub(node, env) as IntFn;
+      }
       if (kind && isIdent(kind) && kind.name === "Pieces") {
         const roleNode = positional[1];
         const ofNode = named.get("of");
@@ -1345,9 +1351,11 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
       // LargePiece is not yet modelled (best-effort 0).
       const sub = positional[0];
       const subName = sub && isIdent(sub) ? sub.name : "";
-      if (subName === "Territory") {
-        const territory = lookupLudeme("int", "Territory");
-        if (territory) return territory(node, env) as IntFn;
+      // Subtype-dispatch: faithfully-ported `(size <Subtype> …)` registers under
+      // `size:<Subtype>` (e.g. `size:Territory`); fall through to legacy below.
+      if (subName) {
+        const _rsub = lookupLudeme("int", "size:" + subName);
+        if (_rsub) return _rsub(node, env) as IntFn;
       }
       if (subName === "Array") {
         const arrNode = positional[1] ?? named.get("array");
@@ -4255,10 +4263,11 @@ function compileSites(node: LudList, env: CompileEnv): RegionFn {
   if (arg && isIdent(arg)) {
     const name = arg.name;
     const { positional, named } = parseArgs(node.items.slice(2));
-    if (name === "Pattern") {
-      const pattern = lookupLudeme("region", "Pattern");
-      if (pattern) return pattern(node, env) as RegionFn;
-    }
+    // Subtype-dispatch: a faithfully-transliterated `(sites <Subtype> …)` ludeme
+    // registers under the compound key `sites:<Subtype>` (e.g. `sites:Around`).
+    // Look it up first; fall through to the legacy switch when none is live.
+    const _rsub = lookupLudeme("region", "sites:" + name);
+    if (_rsub) return _rsub(node, env) as RegionFn;
     switch (name) {
       case "Empty":
         // Java parity: what-based emptiness — neutral pieces (who 0, what>0)

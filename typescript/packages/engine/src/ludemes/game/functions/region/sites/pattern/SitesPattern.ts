@@ -140,4 +140,4 @@ function rotateToSupported(
   return dir;
 }
 
-register("region", "Pattern", compileSitesPattern as any);
+register("region", "sites:Pattern", compileSitesPattern as any);
