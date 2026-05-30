@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 316.1,
+    "elapsed_s": 317.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -236,8 +236,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 44,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 44",
+      "plyReplayed": 45,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 45",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_0.txt"
     },
     {
@@ -1484,8 +1484,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 460,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 460",
+      "plyReplayed": 427,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 427",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_0.txt"
     },
     {
@@ -1511,8 +1511,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Cylinder Chess",
-      "plyReplayed": 225,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 225",
+      "plyReplayed": 198,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 198",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Cylinder Chess/RandomTrial_0.txt"
     },
     {
@@ -1525,8 +1525,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Korkserschach",
-      "plyReplayed": 116,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 116",
+      "plyReplayed": 112,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 112",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Korkserschach/RandomTrial_0.txt"
     },
     {
@@ -1590,8 +1590,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "plyReplayed": 53,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 53",
+      "plyReplayed": 54,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 54",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {

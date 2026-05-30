@@ -10979,7 +10979,7 @@ function isMoveAgainNode(node: LudNode | undefined): boolean {
  * Java sees when it evaluates `then` consequents (which run after the move's own
  * actions). Falls back to `ctx` unchanged when no move is recorded.
  */
-function postMoveContext(ctx: EvalContext): EvalContext {
+export function postMoveContext(ctx: EvalContext): EvalContext {
   const last = ctx.context.trial.lastMove();
   if (!last) return ctx;
   // Re-apply on a *clone* of the RNG so a recorded move that carries a
@@ -11221,6 +11221,21 @@ export function compileEffectAction(
       | EffectFn
       | undefined;
     if (compiled) return compiled;
+  }
+  // Subtype-dispatch for (set <Subtype> …): relocated 1:1 files register under
+  // the compound key `set:<Subtype>` (e.g. `set:Score`). Falls through to the
+  // legacy `set` handling below when none is live.
+  if (head === "set") {
+    const sub = node.items[1];
+    if (sub && isIdent(sub)) {
+      const _rs = lookupLudeme("effect", "set:" + sub.name);
+      if (_rs) {
+        const compiled = _rs(node, env, inThen, allowForEachSite) as
+          | EffectFn
+          | undefined;
+        if (compiled) return compiled;
+      }
+    }
   }
   if (head === "moveAgain") {
     // As an effect (e.g. inside `(if … (moveAgain))`): schedule the current
