@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/ints/size/SizeTerritoryType.java
 
-// TODO Phase 2: faithful port from SizeTerritoryType.java (currently handled in compile.ts compileInt shared size logic).
+// Java grammar enum for Size.construct(...); no standalone ludeme head to
+// register. Only member: Territory (SizeTerritoryType.java:8-12).
+export type SizeTerritoryType = "Territory";

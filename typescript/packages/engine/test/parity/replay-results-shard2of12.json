@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 335.3,
+    "elapsed_s": 336.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1324,8 +1324,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 411,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 411",
+      "plyReplayed": 410,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 410",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_0.txt"
     },
     {
@@ -1481,15 +1481,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 80,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 80",
+      "plyReplayed": 79,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 79",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
-      "plyReplayed": 164,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 164",
+      "plyReplayed": 165,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 165",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_0.txt"
     },
     {
@@ -1642,8 +1642,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 9,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 9",
+      "plyReplayed": 10,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 10",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_0.txt"
     },
     {

@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/ints/size/SizeGroupType.java
 
-// TODO Phase 2: faithful port from SizeGroupType.java (currently handled in compile.ts compileInt shared size logic).
+// Java grammar enum for Size.construct(...); no standalone ludeme head to
+// register. Only member: Group (SizeGroupType.java:8-12).
+export type SizeGroupType = "Group";

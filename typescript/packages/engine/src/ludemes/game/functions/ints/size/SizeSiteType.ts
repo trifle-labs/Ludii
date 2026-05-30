@@ -1,3 +1,5 @@
 // @java Core/src/game/functions/ints/size/SizeSiteType.java
 
-// TODO Phase 2: faithful port from SizeSiteType.java (currently handled in compile.ts compileInt shared size logic).
+// Java grammar enum for Size.construct(...); no standalone ludeme head to
+// register. Only member: Stack (SizeSiteType.java:8-12).
+export type SizeSiteType = "Stack";
