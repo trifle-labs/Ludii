@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 623.8,
+    "elapsed_s": 684.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 50,
+      "MOVE_MISMATCH": 49,
       "WINNER_MISMATCH": 15,
-      "OUTCOME_OK": 119,
+      "OUTCOME_OK": 120,
       "REPLAY_OK_NO_OUTCOME": 29
     }
   },
@@ -239,8 +239,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 135,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 135",
+      "plyReplayed": 123,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 123",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_1.txt"
     },
     {
@@ -1515,8 +1515,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Social Distance Chess",
-      "plyReplayed": 492,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 492",
+      "plyReplayed": 534,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 534",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Social Distance Chess/RandomTrial_1.txt"
     },
     {
@@ -1612,15 +1612,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Daldosa/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Icebreaker",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=0,to=1",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 78,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Icebreaker/RandomTrial_1.txt"
     },
     {

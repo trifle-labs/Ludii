@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 469.4,
+    "elapsed_s": 548.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 45,
+      "MOVE_MISMATCH": 44,
       "WINNER_MISMATCH": 17,
-      "OUTCOME_OK": 120,
+      "OUTCOME_OK": 121,
       "REPLAY_OK_NO_OUTCOME": 32
     }
   },
@@ -1708,15 +1708,9 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Breakback/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Don't Mosey and The Last Scavenger",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=21,to=39",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 5,
       "trialFile": "../../../Player/res/random_trials/experimental/Don't Mosey and The Last Scavenger/RandomTrial_1.txt"
     },
     {
@@ -1885,9 +1879,9 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "puzzle/planning/Shisen-Sho",
-      "ply": 2,
+      "ply": 3,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=133,to=118",
+      "recMove": "mover=1,from=21,to=33",
       "tsMoveCount": 2,
       "sampleTsMoves": [
         "mover=1,from=30,to=31,isPass=false",

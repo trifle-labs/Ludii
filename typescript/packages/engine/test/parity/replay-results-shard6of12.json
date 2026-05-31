@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 564.5,
+    "elapsed_s": 637.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1435,14 +1435,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Seesaw",
-      "ply": 2,
+      "ply": 3,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=0,to=1",
-      "tsMoveCount": 4,
+      "recMove": "mover=2,from=32,to=27",
+      "tsMoveCount": 8,
       "sampleTsMoves": [
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=5,to=5,isPass=false",
-        "mover=1,from=9,to=9,isPass=false"
+        "mover=2,from=36,to=26,isPass=false",
+        "mover=2,from=36,to=31,isPass=false",
+        "mover=2,from=36,to=30,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Seesaw/RandomTrial_0.txt"
     },
@@ -1622,8 +1622,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Tai Shogi",
-      "plyReplayed": 4,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 4",
+      "plyReplayed": 5,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 5",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Tai Shogi/RandomTrial_0.txt"
     },
     {

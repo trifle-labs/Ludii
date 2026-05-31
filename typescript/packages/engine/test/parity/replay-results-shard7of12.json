@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 492.6,
+    "elapsed_s": 558.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 62,
+      "MOVE_MISMATCH": 61,
       "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 113,
+      "OUTCOME_OK": 114,
       "REPLAY_OK_NO_OUTCOME": 29
     }
   },
@@ -889,11 +889,11 @@
       "ply": 21,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=30,to=9",
-      "tsMoveCount": 6,
+      "tsMoveCount": 3,
       "sampleTsMoves": [
         "mover=1,from=30,to=16,isPass=false",
-        "mover=1,from=32,to=9,isPass=false",
-        "mover=1,from=32,to=16,isPass=false"
+        "mover=1,from=32,to=23,isPass=false",
+        "mover=1,from=32,to=25,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Spire/RandomTrial_1.txt"
     },
@@ -1422,17 +1422,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Leap Frog/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Seesaw",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=0,to=5",
-      "tsMoveCount": 3,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=4,to=4,isPass=false",
-        "mover=1,from=5,to=5,isPass=false"
-      ],
+      "plyReplayed": 2,
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Seesaw/RandomTrial_1.txt"
     },
     {

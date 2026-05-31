@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 539.3,
+    "elapsed_s": 612.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 53,
+      "MOVE_MISMATCH": 52,
       "WINNER_MISMATCH": 16,
-      "OUTCOME_OK": 117,
+      "OUTCOME_OK": 118,
       "REPLAY_OK_NO_OUTCOME": 27
     }
   },
@@ -1596,8 +1596,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 20,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 20",
+      "plyReplayed": 22,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 22",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1655,15 +1655,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Daldosa/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Icebreaker",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=34,to=25",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 62,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Icebreaker/RandomTrial_0.txt"
     },
     {

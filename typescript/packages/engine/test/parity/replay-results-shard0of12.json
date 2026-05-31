@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 477.2,
+    "elapsed_s": 550.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1672,9 +1672,11 @@
       "ply": 0,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=52,to=46",
-      "tsMoveCount": 1,
+      "tsMoveCount": 30,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=1,from=7,to=22,isPass=false",
+        "mover=1,from=7,to=13,isPass=false",
+        "mover=1,from=12,to=29,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Don't Mosey and The Last Scavenger/RandomTrial_0.txt"
     },

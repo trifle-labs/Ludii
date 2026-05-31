@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 508.2,
+    "elapsed_s": 540.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 73,
+      "MOVE_MISMATCH": 72,
       "WINNER_MISMATCH": 6,
-      "OUTCOME_OK": 110,
+      "OUTCOME_OK": 111,
       "REPLAY_OK_NO_OUTCOME": 24
     }
   },
@@ -1217,8 +1217,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "plyReplayed": 47,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 47",
+      "plyReplayed": 45,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 45",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_0.txt"
     },
     {
@@ -1563,8 +1563,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Level Chess",
-      "plyReplayed": 6,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 6",
+      "plyReplayed": 4,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 4",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {
@@ -1758,17 +1758,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Sig (Tozeur)/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Sweep Burrow",
-      "ply": 10,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=25,to=43",
-      "tsMoveCount": 62,
-      "sampleTsMoves": [
-        "mover=2,from=3,to=11,isPass=false",
-        "mover=2,from=3,to=4,isPass=false",
-        "mover=2,from=3,to=2,isPass=false"
-      ],
+      "plyReplayed": 59,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Sweep Burrow/RandomTrial_0.txt"
     },
     {

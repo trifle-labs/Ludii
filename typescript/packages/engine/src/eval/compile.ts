@@ -379,6 +379,10 @@ export function resolveRole(name: string, ctx: EvalContext): number {
       const n = ctx.context.game.numPlayers;
       return ((ctx.mover - 2 + n) % n) + 1;
     }
+    // Java Id.eval(RoleType): Neutral → Constants.NOBODY = 0
+    // (Core/src/game/functions/ints/board/Id.java:83)
+    case "Neutral":
+      return 0;
     case "P1":
       return 1;
     case "P2":

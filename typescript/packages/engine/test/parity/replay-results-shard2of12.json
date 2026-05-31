@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 660.1,
+    "elapsed_s": 725.5,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 59,
+      "MOVE_MISMATCH": 58,
       "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 116,
+      "OUTCOME_OK": 117,
       "REPLAY_OK_NO_OUTCOME": 30
     }
   },
@@ -1446,8 +1446,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 294,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 294",
+      "plyReplayed": 248,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 248",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
@@ -1599,8 +1599,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 16,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 16",
+      "plyReplayed": 17,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 17",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1721,14 +1721,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/eliminate/all/Tank Tactics",
-      "ply": 2,
+      "ply": 5,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=31,to=13",
+      "recMove": "mover=1,from=41,to=30",
       "tsMoveCount": 10,
       "sampleTsMoves": [
-        "mover=1,from=31,to=41,isPass=false",
-        "mover=1,from=31,to=32,isPass=false",
-        "mover=1,from=31,to=21,isPass=false"
+        "mover=2,from=13,to=23,isPass=false",
+        "mover=2,from=13,to=14,isPass=false",
+        "mover=2,from=13,to=3,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tank Tactics/RandomTrial_0.txt"
     },
@@ -1818,15 +1818,9 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Polypods/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Squish",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=31,to=39",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 28,
       "trialFile": "../../../Player/res/random_trials/experimental/Squish/RandomTrial_0.txt"
     },
     {

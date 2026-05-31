@@ -184,4 +184,8 @@ export function compileSitesDistance(node: LudList, env: CompileEnv): RegionFn {
   };
 }
 
-register("region", "Distance", compileSitesDistance as any);
+// Register as "sites:Distance" so compileSites's subtype-dispatch at
+// compile.ts:4938 (`lookupLudeme("region", "sites:" + name)`) routes
+// `(sites Distance …)` — including the step-move form — to this handler.
+// Java: Core/src/game/functions/region/sites/distance/SitesDistance.java
+register("region", "sites:Distance", compileSitesDistance as any);

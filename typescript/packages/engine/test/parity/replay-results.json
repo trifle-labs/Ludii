@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 2,
-    "elapsed_s": 0.1,
+    "elapsed_s": 0.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -19,15 +19,15 @@
   "perTrial": [
     {
       "bucket": "OUTCOME_OK",
-      "game": "board/war/replacement/eliminate/target/Ploy",
-      "plyReplayed": 119,
-      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Ploy/RandomTrial_0.txt"
+      "game": "board/war/replacement/eliminate/all/Icebreaker",
+      "plyReplayed": 62,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Icebreaker/RandomTrial_0.txt"
     },
     {
       "bucket": "OUTCOME_OK",
-      "game": "board/war/replacement/eliminate/target/Ploy",
-      "plyReplayed": 278,
-      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Ploy/RandomTrial_1.txt"
+      "game": "board/war/replacement/eliminate/all/Icebreaker",
+      "plyReplayed": 78,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Icebreaker/RandomTrial_1.txt"
     }
   ]
 }
