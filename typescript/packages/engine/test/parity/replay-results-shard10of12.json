@@ -1,12 +1,12 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 377.7,
+    "elapsed_s": 364.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 69,
-      "WINNER_MISMATCH": 10,
+      "MOVE_MISMATCH": 71,
+      "WINNER_MISMATCH": 8,
       "OUTCOME_OK": 108,
       "REPLAY_OK_NO_OUTCOME": 26
     }
@@ -63,15 +63,15 @@
         1
       ],
       [
+        "board/race/reach/Sig wa Duqqan (Houmt al-Arbah)",
+        1
+      ],
+      [
         "board/race/reach/There and Back",
         1
       ],
       [
         "board/sow/four_rows/Bao",
-        1
-      ],
-      [
-        "board/sow/four_rows/Chiana wa Kunja",
         1
       ]
     ]
@@ -459,19 +459,15 @@
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Saturankam/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/race/reach/Sig wa Duqqan (Houmt al-Arbah)",
-      "plyReplayed": 1,
-      "recWinner": 3,
-      "tsWinner": 0,
-      "recRankings": [
-        0,
-        3,
-        4,
-        1,
-        2
+      "ply": 7,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=11,to=8",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=11,to=7,isPass=false"
       ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Sig wa Duqqan (Houmt al-Arbah)/RandomTrial_0.txt"
     },
     {
@@ -590,19 +586,15 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Nsolo/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/sow/four_rows/Quendo",
-      "plyReplayed": 14,
-      "recWinner": 1,
-      "tsWinner": 0,
-      "recRankings": [
-        0,
-        1,
-        3,
-        4,
-        2
+      "ply": 14,
+      "detail": "No matching TS move",
+      "recMove": "mover=4,from=2,to=2",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=3,from=-1,to=-1,isPass=true"
       ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Quendo/RandomTrial_0.txt"
     },
     {
@@ -1336,8 +1328,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Poprad Game",
-      "plyReplayed": 600,
-      "detail": "Hit move cap 600/2644",
+      "plyReplayed": 596,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 596",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Poprad Game/RandomTrial_0.txt"
     },
     {
@@ -1467,8 +1459,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 157,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 157",
+      "plyReplayed": 159,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 159",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_0.txt"
     },
     {
@@ -1502,8 +1494,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj (14x14)",
-      "plyReplayed": 365,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 365",
+      "plyReplayed": 344,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 344",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj (14x14)/RandomTrial_0.txt"
     },
     {
@@ -1530,8 +1522,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 73,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 73",
+      "plyReplayed": 70,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 70",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_0.txt"
     },
     {
@@ -1551,8 +1543,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 12,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 12",
+      "plyReplayed": 11,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 11",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {
@@ -1565,8 +1557,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Lombard Chess",
-      "plyReplayed": 246,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 246",
+      "plyReplayed": 287,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 287",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Lombard Chess/RandomTrial_0.txt"
     },
     {

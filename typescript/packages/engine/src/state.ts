@@ -34,6 +34,8 @@ export interface ContainerStateView {
 export interface StateOptions {
   readonly scores?: readonly number[];
   readonly valuesPlayer?: readonly number[];
+  /** Java parity: per-player active flags. Index 0 is unused. */
+  readonly active?: readonly boolean[];
   readonly numPlayers?: number;
   readonly hiddenForPlayer?: readonly (readonly boolean[])[];
   readonly stacks?: readonly (readonly number[])[];
@@ -191,6 +193,8 @@ export class State {
   public readonly componentLabels: readonly string[];
   public readonly scores: readonly number[];
   public readonly valuesPlayer: readonly number[];
+  /** Java parity: `Context.active(pid)` state, indexed by player id. */
+  public readonly active: readonly boolean[];
   public readonly hiddenForPlayer: readonly (readonly boolean[])[];
   public readonly stacks: readonly (readonly number[])[];
   /**
@@ -263,6 +267,7 @@ export class State {
     this.valuesPlayer = Object.freeze(
       fillSlot(options.valuesPlayer, numPlayers + 1, -1),
     );
+    this.active = Object.freeze(fillActiveSlot(options.active, numPlayers + 1));
     this.hiddenForPlayer = Object.freeze(
       fillHidden(options.hiddenForPlayer, numPlayers + 1, n),
     );
@@ -497,9 +502,20 @@ export class State {
     return this.with({ mover });
   }
 
-  /** Java parity: `Context.active(pid)`; this port has no elimination state. */
+  /** Java parity: `Context.active(pid)`. */
   public activePlayer(pid: number): boolean {
-    return pid >= 1 && pid < this.scores.length;
+    return pid >= 1 && pid < this.active.length && this.active[pid] === true;
+  }
+
+  /** Java parity: `Context.setActive(pid, value)`. */
+  public withActivePlayer(pid: number, value: boolean): State {
+    if (!Number.isInteger(pid) || pid < 1 || pid >= this.active.length) {
+      return this;
+    }
+    if (this.active[pid] === value) return this;
+    const next = [...this.active];
+    next[pid] = value;
+    return this.with({ active: next });
   }
 
   /**
@@ -598,6 +614,9 @@ export class State {
     for (const c of this.cells) mix(c);
     for (const s of this.scores) mix(s);
     for (const v of this.valuesPlayer) mix(v);
+    if (this.active.some((v, i) => i > 0 && !v)) {
+      for (const a of this.active) mix(a ? 1 : 0);
+    }
     return h >>> 0;
   }
 
@@ -1000,6 +1019,7 @@ export class State {
         whats: patch.whats ?? this.whats,
         scores: patch.scores ?? this.scores,
         valuesPlayer: patch.valuesPlayer ?? this.valuesPlayer,
+        active: patch.active ?? this.active,
         hiddenForPlayer: patch.hiddenForPlayer ?? this.hiddenForPlayer,
         stacks: nextStacks,
         // whatStacks rides through unchanged unless explicitly patched. It is
@@ -1138,6 +1158,19 @@ function fillSlot(
   const out = new Array<number>(length).fill(fill);
   for (let i = 0; i < Math.min(length, source.length); i += 1) {
     out[i] = source[i] ?? fill;
+  }
+  return out;
+}
+
+function fillActiveSlot(
+  source: readonly boolean[] | undefined,
+  length: number,
+): boolean[] {
+  const out = new Array<boolean>(length).fill(true);
+  out[0] = false;
+  if (source === undefined) return out;
+  for (let i = 0; i < Math.min(length, source.length); i += 1) {
+    out[i] = i === 0 ? false : source[i] === true;
   }
   return out;
 }

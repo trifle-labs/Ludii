@@ -91,6 +91,8 @@ import {
   type Dir,
   type DirectionsFn,
   END,
+  type EndEvalState,
+  type EndOutcome,
   type EndRule,
   type EvalContext,
   type InterpBoard,
@@ -15011,6 +15013,7 @@ function compileForEachPlayerEnd(node: LudNode, env: CompileEnv): EndRule {
     throw new LudemeCompileError("(forEach …) end needs a result.");
   }
   const result = compileEndResult(resultNode, env);
+  const lossRole = forEachLossResultRole(resultNode);
   return {
     eval: (ctx) => {
       const n = ctx.context.game.numPlayers;
@@ -15028,6 +15031,18 @@ function compileForEachPlayerEnd(node: LudNode, env: CompileEnv): EndRule {
           players.push(p);
         }
       }
+      if (n > 2 && lossRole) {
+        for (const p of players) {
+          const endState = ctx.frame.endState;
+          if (endState && !endState.active[p]) continue;
+          const sub = ctx.withFrame({ player: p });
+          if (!cond || cond.eval(sub)) {
+            applyMultiPlayerLoss(sub, lossRole);
+            if (endState?.terminal) break;
+          }
+        }
+        return outcomeFromEndState(ctx);
+      }
       for (const p of players) {
         const sub = ctx.withFrame({ player: p });
         if (!cond || cond.eval(sub)) {
@@ -15037,6 +15052,103 @@ function compileForEachPlayerEnd(node: LudNode, env: CompileEnv): EndRule {
       return undefined;
     },
   };
+}
+
+function forEachLossResultRole(node: LudNode): string | undefined {
+  if (!isList(node) || listHead(node) !== "result") return undefined;
+  const typeNode = node.items[2] as LudIdent | undefined;
+  const type = typeNode && isIdent(typeNode) ? typeNode.name : "Win";
+  if (type !== "Loss") return undefined;
+  const roleNode = node.items[1] as LudIdent | undefined;
+  return roleNode && isIdent(roleNode) ? roleNode.name : "Mover";
+}
+
+function outcomeFromEndState(ctx: EvalContext): EndOutcome | undefined {
+  const endState = ctx.frame.endState;
+  if (!endState?.changed) return undefined;
+  let state = ctx.state;
+  for (let p = 1; p < endState.active.length; p += 1) {
+    state = state.withActivePlayer(p, endState.active[p] === true);
+  }
+  return {
+    winner: endState.winner,
+    terminal: endState.terminal,
+    state,
+    ranking: endState.ranking,
+  };
+}
+
+function resolveEndResultRole(role: string, ctx: EvalContext): number {
+  const n = ctx.context.game.numPlayers;
+  if (role === "Next") return (ctx.mover % n) + 1;
+  if (role === "Player") return ctx.player;
+  if (role.startsWith("P") && /^P\d+$/.test(role)) return Number(role.slice(1));
+  return ctx.mover;
+}
+
+function applyMultiPlayerLoss(ctx: EvalContext, role: string): void {
+  const endState = ctx.frame.endState;
+  if (!endState || endState.terminal) return;
+  const n = ctx.context.game.numPlayers;
+  const who = resolveEndResultRole(role, ctx);
+  if (who < 1 || who > n || !endState.active[who]) {
+    endState.numLossesDecided += 1;
+    return;
+  }
+
+  endState.active[who] = false;
+  endState.changed = true;
+
+  // Java End.applyResult(Loss): assign loss ranks from the bottom, and merge
+  // same-End.eval losses into an averaged simultaneous rank.
+  const numLosersTaken = countInactiveRanked(endState, n);
+  let rank = n - numLosersTaken;
+  const numSimulLosses = endState.numLossesDecided;
+  const prevLossRank = rank + 1.0 + 0.5 * (numSimulLosses - 1.0);
+  rank = prevLossRank - 0.5;
+  endState.ranking[who] = rank;
+  for (let p = 1; p <= n; p += 1) {
+    if (endState.ranking[p] === prevLossRank) endState.ranking[p] = rank;
+  }
+
+  const active = activePlayers(endState, n);
+  if (active.length === 1) {
+    const winner = active[0] as number;
+    endState.ranking[winner] = computeNextWinRank(endState, n);
+    endState.active[winner] = false;
+    endState.terminal = true;
+    endState.winner = winner;
+  } else if (active.length === 0) {
+    endState.terminal = true;
+    endState.winner = 0;
+  }
+
+  endState.numLossesDecided += 1;
+}
+
+function activePlayers(endState: EndEvalState, n: number): number[] {
+  const out: number[] = [];
+  for (let p = 1; p <= n; p += 1) {
+    if (endState.active[p]) out.push(p);
+  }
+  return out;
+}
+
+function countInactiveRanked(endState: EndEvalState, n: number): number {
+  let count = 0;
+  for (let p = 1; p <= n; p += 1) {
+    if (!endState.active[p] && (endState.ranking[p] ?? 0) > 0) count += 1;
+  }
+  return count;
+}
+
+function computeNextWinRank(endState: EndEvalState, n: number): number {
+  let winners = 0;
+  for (let p = 1; p <= n; p += 1) {
+    const r = endState.ranking[p] ?? 0;
+    if (r > 0 && r <= winners + 1) winners += 1;
+  }
+  return winners + 1;
 }
 
 /**

@@ -94,6 +94,8 @@ export interface EvalFrame {
    * present it overrides `state.visited` for `(is Visited …)`.
    */
   readonly visited?: ReadonlySet<number>;
+  /** Mutable accumulator used only while evaluating Java-style end rules. */
+  readonly endState?: EndEvalState;
 }
 
 /**
@@ -743,9 +745,22 @@ export interface DirectionsFn {
   eval(ctx: EvalContext): readonly Dir[];
 }
 
+/** Mutable state for one Java `End.eval()` pass. */
+export interface EndEvalState {
+  active: boolean[];
+  ranking: number[];
+  numLossesDecided: number;
+  changed: boolean;
+  terminal: boolean;
+  winner: number;
+}
+
 /** The resolved outcome of an end condition. `winner === 0` is a draw. */
 export interface EndOutcome {
   readonly winner: number;
+  readonly terminal?: boolean;
+  readonly state?: State;
+  readonly ranking?: readonly number[];
 }
 
 /** An ending rule (Java: `game.rules.end.End` clause). */

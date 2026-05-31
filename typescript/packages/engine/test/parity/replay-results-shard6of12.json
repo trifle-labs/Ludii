@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 352.4,
+    "elapsed_s": 343.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 62,
-      "WINNER_MISMATCH": 11,
-      "OUTCOME_OK": 108,
+      "MOVE_MISMATCH": 63,
+      "WINNER_MISMATCH": 9,
+      "OUTCOME_OK": 109,
       "REPLAY_OK_NO_OUTCOME": 32
     }
   },
@@ -24,6 +24,10 @@
       ],
       [
         "board/race/escape/Kolica Atarakua",
+        1
+      ],
+      [
+        "board/race/escape/Nama",
         1
       ],
       [
@@ -69,10 +73,6 @@
       [
         "board/race/reach/Thales",
         1
-      ],
-      [
-        "board/sow/four_rows/Dongjintian (Four Players)",
-        1
       ]
     ]
   },
@@ -114,23 +114,22 @@
       "detail": "No matching TS move"
     },
     {
+      "game": "board/race/escape/Nama",
+      "ply": 13,
+      "recMove": "mover=6,from=1,to=3",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=6,from=-1,to=-1,isPass=true"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
       "game": "board/race/escape/Pachisi",
       "ply": 34,
       "recMove": "mover=3,from=1,to=4",
       "tsMoveCount": 1,
       "sampleTsMoves": [
         "mover=3,from=-1,to=-1,isPass=true"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/race/escape/Sokkattan",
-      "ply": 79,
-      "recMove": "mover=3,from=99,to=82",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=3,from=6,to=7,isPass=false",
-        "mover=3,from=82,to=85,isPass=false"
       ],
       "detail": "No matching TS move"
     }
@@ -286,23 +285,15 @@
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Ludus Anglicorum/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/race/escape/Nama",
-      "plyReplayed": 9,
-      "recWinner": 6,
-      "tsWinner": 0,
-      "recRankings": [
-        0,
-        5,
-        3,
-        5,
-        7,
-        8,
-        1,
-        2,
-        5
+      "ply": 13,
+      "detail": "No matching TS move",
+      "recMove": "mover=6,from=1,to=3",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=6,from=-1,to=-1,isPass=true"
       ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Nama/RandomTrial_0.txt"
     },
     {
@@ -439,19 +430,9 @@
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Jeson Mor/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/race/reach/Li'b el-Merafib",
       "plyReplayed": 1,
-      "recWinner": 1,
-      "tsWinner": 0,
-      "recRankings": [
-        0,
-        1,
-        2,
-        4,
-        3
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Li'b el-Merafib/RandomTrial_0.txt"
     },
     {
@@ -1229,8 +1210,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Go",
-      "plyReplayed": 162,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 162",
+      "plyReplayed": 161,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 161",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Go/RandomTrial_0.txt"
     },
     {
@@ -1250,8 +1231,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/One-Eyed Go",
-      "plyReplayed": 130,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 130",
+      "plyReplayed": 131,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 131",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/One-Eyed Go/RandomTrial_0.txt"
     },
     {
@@ -1295,8 +1276,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Bizingo",
-      "plyReplayed": 138,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 138",
+      "plyReplayed": 133,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 133",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Bizingo/RandomTrial_0.txt"
     },
     {
@@ -1475,8 +1456,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chatur",
-      "plyReplayed": 200,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 200",
+      "plyReplayed": 217,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 217",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chatur/RandomTrial_0.txt"
     },
     {
@@ -1542,15 +1523,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Brusky Chess",
-      "plyReplayed": 58,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 58",
+      "plyReplayed": 54,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 54",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Brusky Chess/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/De Vasa Chess",
-      "plyReplayed": 57,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 57",
+      "plyReplayed": 54,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 54",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/De Vasa Chess/RandomTrial_0.txt"
     },
     {
@@ -1651,8 +1632,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Xiangqi",
-      "plyReplayed": 157,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 157",
+      "plyReplayed": 190,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 190",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Xiangqi/RandomTrial_0.txt"
     },
     {

@@ -1,12 +1,12 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 354.5,
+    "elapsed_s": 345.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 74,
-      "WINNER_MISMATCH": 9,
+      "MOVE_MISMATCH": 75,
+      "WINNER_MISMATCH": 8,
       "OUTCOME_OK": 109,
       "REPLAY_OK_NO_OUTCOME": 21
     }
@@ -472,7 +472,7 @@
       "game": "board/race/reach/Sig wa Duqqan (Houmt al-Arbah)",
       "plyReplayed": 1,
       "recWinner": 2,
-      "tsWinner": 0,
+      "tsWinner": 1,
       "recRankings": [
         0,
         4,
@@ -480,7 +480,13 @@
         2,
         3
       ],
-      "tsRankings": [],
+      "tsRankings": [
+        0,
+        1,
+        3,
+        3,
+        3
+      ],
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Sig wa Duqqan (Houmt al-Arbah)/RandomTrial_1.txt"
     },
     {
@@ -601,19 +607,15 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Nsolo/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/sow/four_rows/Quendo",
-      "plyReplayed": 14,
-      "recWinner": 1,
-      "tsWinner": 0,
-      "recRankings": [
-        0,
-        1,
-        3,
-        4,
-        2
+      "ply": 14,
+      "detail": "No matching TS move",
+      "recMove": "mover=4,from=2,to=2",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=3,from=-1,to=-1,isPass=true"
       ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Quendo/RandomTrial_1.txt"
     },
     {
@@ -1479,8 +1481,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 26,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 26",
+      "plyReplayed": 25,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 25",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_1.txt"
     },
     {
@@ -1542,8 +1544,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 87,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 87",
+      "plyReplayed": 80,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 80",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
     },
     {
@@ -1563,8 +1565,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 12,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 12",
+      "plyReplayed": 11,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 11",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_1.txt"
     },
     {
@@ -1666,8 +1668,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Manzhouqi",
-      "plyReplayed": 373,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 373",
+      "plyReplayed": 578,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 578",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Manzhouqi/RandomTrial_1.txt"
     },
     {

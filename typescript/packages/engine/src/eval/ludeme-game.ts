@@ -55,6 +55,7 @@ import {
 import {
   type BoolFn,
   END,
+  type EndEvalState,
   type EndOutcome,
   type EndRule,
   EvalContext,
@@ -3822,7 +3823,9 @@ export class LudemeGame implements Game {
     // first, then the game-level `(end …)`. `placed.mover` is still the player
     // who just moved (rotation happens below), so its phase is the right one.
     const outcome0 = this.evalEnd(evalCtx, placed.phase(placed.mover));
-    let over = outcome0 !== undefined;
+    if (outcome0?.state) placed = outcome0.state;
+    const endRanking = outcome0?.ranking;
+    let over = outcome0 ? outcome0.terminal !== false : false;
     let winner = outcome0?.winner ?? 0;
 
     // Java parity (End.eval, after the explicit end rules): a game that
@@ -3957,9 +3960,9 @@ export class LudemeGame implements Game {
     advanced = advanced.withCounter(advanced.counter + 1);
 
     const finalWinner = over ? winner : -1;
-    const trial = context.trial
-      .withMove(move, over, finalWinner)
-      .saveState(advanced);
+    let trial = context.trial.withMove(move, over, finalWinner);
+    if (endRanking) trial = trial.withRanking(endRanking);
+    trial = trial.saveState(advanced);
     return new Context(this, advanced, trial, context.rng);
   }
 
@@ -3972,18 +3975,51 @@ export class LudemeGame implements Game {
     evalCtx: EvalContext,
     phaseIdx: number,
   ): EndOutcome | undefined {
+    const n = this.numPlayers;
+    const ranking =
+      evalCtx.context.trial.ranking.length >= n + 1
+        ? [...evalCtx.context.trial.ranking]
+        : new Array<number>(n + 1).fill(0);
+    const endState: EndEvalState = {
+      active: Array.from({ length: n + 1 }, (_, p) =>
+        p > 0 ? evalCtx.state.activePlayer(p) : false,
+      ),
+      ranking,
+      numLossesDecided: 0,
+      changed: false,
+      terminal: false,
+      winner: 0,
+    };
+    let ctx = evalCtx.withFrame({ endState });
+    let lastOutcome: EndOutcome | undefined;
     const phase = this.phaseList[phaseIdx];
     if (phase) {
       for (const rule of phase.endRules) {
-        const outcome = rule.eval(evalCtx);
-        if (outcome) return outcome;
+        const outcome = rule.eval(ctx);
+        if (!outcome) continue;
+        lastOutcome = outcome;
+        if (outcome.state) {
+          ctx = ctx.withContext(ctx.context.withState(outcome.state));
+        }
+        if (outcome.ranking) {
+          ctx = ctx.withContext(ctx.context.withTrial(ctx.context.trial.withRanking(outcome.ranking)));
+        }
+        if (outcome.terminal !== false) return outcome;
       }
     }
     for (const rule of this.endRules) {
-      const outcome = rule.eval(evalCtx);
-      if (outcome) return outcome;
+      const outcome = rule.eval(ctx);
+      if (!outcome) continue;
+      lastOutcome = outcome;
+      if (outcome.state) {
+        ctx = ctx.withContext(ctx.context.withState(outcome.state));
+      }
+      if (outcome.ranking) {
+        ctx = ctx.withContext(ctx.context.withTrial(ctx.context.trial.withRanking(outcome.ranking)));
+      }
+      if (outcome.terminal !== false) return outcome;
     }
-    return undefined;
+    return lastOutcome;
   }
 
   public over(context: Context): boolean {

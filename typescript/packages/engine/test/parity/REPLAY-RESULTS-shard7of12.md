@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-31T00:07:26.017Z
+**Date:** 2026-05-31T00:33:41.552Z
 **Trials processed:** 213  
-**Wall time:** 332.7s
+**Wall time:** 330.4s
 
 ## Bucket Summary
 
@@ -10,9 +10,9 @@
 |--------|-------|---|
 | COMPILE_FAIL | 0 | 0.0% |
 | START_FAIL | 0 | 0.0% |
-| MOVE_MISMATCH | 60 | 28.2% |
-| WINNER_MISMATCH | 10 | 4.7% |
-| OUTCOME_OK | 109 | 51.2% |
+| MOVE_MISMATCH | 61 | 28.6% |
+| WINNER_MISMATCH | 8 | 3.8% |
+| OUTCOME_OK | 110 | 51.6% |
 | REPLAY_OK_NO_OUTCOME | 34 | 16.0% |
 
 ## Top 15 COMPILE_FAIL Reasons
@@ -23,6 +23,7 @@
 - `board/race/escape/Atom`: **1** mismatches
 - `board/race/escape/Julbahar`: **1** mismatches
 - `board/race/escape/Kolica Atarakua`: **1** mismatches
+- `board/race/escape/Nama`: **1** mismatches
 - `board/race/escape/Pachisi`: **1** mismatches
 - `board/race/escape/Sokkattan`: **1** mismatches
 - `board/race/escape/Tayam Sonalu`: **1** mismatches
@@ -34,7 +35,6 @@
 - `board/race/reach/Thales`: **1** mismatches
 - `board/sow/four_rows/Isolo`: **1** mismatches
 - `board/sow/two_rows/I Pere`: **1** mismatches
-- `board/sow/two_rows/La'b Akila`: **1** mismatches
 
 ## 5 Concrete MOVE_MISMATCH Examples
 
@@ -59,16 +59,16 @@
 - **Sample TS moves:** mover=2,from=17,to=45,isPass=false, mover=2,from=70,to=70,isPass=false
 - **Detail:** No matching TS move
 
-### Example 4: `board/race/escape/Pachisi`
+### Example 4: `board/race/escape/Nama`
+- **Ply:** 9
+- **Recorded move:** `mover=2,from=1,to=3`
+- **TS moves available:** 1
+- **Sample TS moves:** mover=2,from=-1,to=-1,isPass=true
+- **Detail:** No matching TS move
+
+### Example 5: `board/race/escape/Pachisi`
 - **Ply:** 102
 - **Recorded move:** `mover=2,from=55,to=65`
 - **TS moves available:** 2
 - **Sample TS moves:** mover=2,from=38,to=19,isPass=false, mover=2,from=-1,to=-1,isPass=true
-- **Detail:** No matching TS move
-
-### Example 5: `board/race/escape/Sokkattan`
-- **Ply:** 120
-- **Recorded move:** `mover=4,from=50,to=47`
-- **TS moves available:** 2
-- **Sample TS moves:** mover=4,from=81,to=51,isPass=false, mover=4,from=89,to=94,isPass=false
 - **Detail:** No matching TS move
