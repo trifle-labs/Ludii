@@ -3762,6 +3762,16 @@ export class LudemeGame implements Game {
     );
   }
 
+  private nextActivePlayer(state: State, start: number): number {
+    if (this.numPlayers <= 0) return 0;
+    let next = ((start - 1 + this.numPlayers) % this.numPlayers) + 1;
+    for (let i = 0; i < this.numPlayers; i += 1) {
+      if (state.activePlayer(next)) return next;
+      next = (next % this.numPlayers) + 1;
+    }
+    return next;
+  }
+
   public apply(context: Context, move: Move): Context {
     if (context.over) {
       throw new Error("Cannot apply a move to a terminal trial.");
@@ -3899,12 +3909,15 @@ export class LudemeGame implements Game {
       // takes precedence; a static `(then (moveAgain))` keeps the same mover;
       // otherwise rotate. The override is consumed once applied.
       const override = phased.next;
-      const nextMover =
+      const requestedNext =
         override > 0
           ? override
           : move.moveAgain
             ? phased.mover
             : (phased.mover % this.numPlayers) + 1;
+      const nextMover = phased.activePlayer(requestedNext)
+        ? requestedNext
+        : this.nextActivePlayer(phased, requestedNext);
       advanced = phased.withMover(nextMover).withNext(0);
       // Java parity (Game.java:3200-3206): after `setMover(next)`, same-player
       // continuations increment `numTurnSamePlayer`; a real turn change (or
