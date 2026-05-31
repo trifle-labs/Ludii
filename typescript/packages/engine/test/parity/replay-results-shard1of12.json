@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 623.8,
+    "elapsed_s": 472.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 48,
+      "MOVE_MISMATCH": 45,
       "WINNER_MISMATCH": 17,
-      "OUTCOME_OK": 117,
+      "OUTCOME_OK": 120,
       "REPLAY_OK_NO_OUTCOME": 32
     }
   },
@@ -71,7 +71,7 @@
         1
       ],
       [
-        "board/sow/three_rows/Gabata (Adowa)",
+        "board/sow/two_rows/J'erin",
         1
       ]
     ]
@@ -591,17 +591,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/other/Mbelele/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/three_rows/Gabata (Adowa)",
-      "ply": 132,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=2,to=2",
-      "tsMoveCount": 5,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=4,to=4,isPass=false",
-        "mover=1,from=11,to=11,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/4510",
       "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Gabata (Adowa)/RandomTrial_1.txt"
     },
     {
@@ -630,16 +623,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Chongka'/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/two_rows/Deka",
-      "ply": 17,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=1,to=1",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=1,from=3,to=3,isPass=false",
-        "mover=1,from=11,to=11,isPass=false"
-      ],
+      "plyReplayed": 40,
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Deka/RandomTrial_1.txt"
     },
     {
@@ -752,10 +738,10 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/sow/two_rows/Tuz",
-      "ply": 77,
+      "ply": 147,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=2,to=2",
-      "tsMoveCount": 7,
+      "recMove": "mover=1,from=8,to=8",
+      "tsMoveCount": 8,
       "sampleTsMoves": [
         "mover=1,from=5,to=5,isPass=false",
         "mover=1,from=4,to=4,isPass=false",
@@ -776,15 +762,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Waurie/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/two_rows/Yovodji",
-      "ply": 36,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=5,to=5",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=2,from=7,to=7,isPass=false"
-      ],
+      "plyReplayed": 101,
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Yovodji/RandomTrial_1.txt"
     },
     {
@@ -902,10 +882,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Master Y/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/connection/Scaffold",
-      "plyReplayed": 72,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 72",
+      "plyReplayed": 99,
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Scaffold/RandomTrial_1.txt"
     },
     {

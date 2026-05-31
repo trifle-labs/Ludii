@@ -14382,6 +14382,27 @@ function compileSow(node: LudList, env: CompileEnv): EffectFn {
     let numSkipped = 0;
     const MAX_SKIP = 10000;
     let sowIndex = 0;
+    // Java `Sow.eval` (Sow.java line 235): `context.setTo(to)` is called with
+    // the RAW candidate site BEFORE the `includeSelf:False` adjustment (lines
+    // 250-254). After the sow loop, `context.to()` = the last raw candidate of
+    // the step that PLACED the final seed, NOT the adjusted (actual landing) site.
+    // When the sow wraps around and the last seed would land on `start`
+    // (triggering the `!includeSelf && to==start` skip), Java adjusts `to` to
+    // the next site IN THE SAME loop iteration and places there — so
+    // `context.to()` = start (pre-adjustment), while `landing` = next-after-start.
+    // The capture/apply section (Sow.java 295-351) evaluates the captureEffect
+    // with this `context.to()` value (via `TempContext(context)` at line 298;
+    // `to` is never explicitly updated to the landing site there). Mirror Java:
+    // track `sowContextTo` as the raw candidate of the last-placing step.
+    //
+    // In TS, `includeSelf:False` uses `continue` which starts a new loop iteration
+    // for the adjusted site, normally overwriting `sowContextTo`. We prevent the
+    // overwrite with `prevWasIncludeSelfSkip`: when the previous iteration was an
+    // `includeSelf:False` skip, the current iteration must NOT update `sowContextTo`
+    // (mirroring Java where the adjusted-site placement is part of the SAME
+    // iteration as the skip, so `context.to` = raw_pre_adjustment stays).
+    let sowContextTo = from;
+    let prevWasIncludeSelfSkip = false;
     while (placed < startCount) {
       pos += 1;
       if (pos >= ring.length) {
@@ -14392,6 +14413,14 @@ function compileSow(node: LudList, env: CompileEnv): EffectFn {
       // Java Sow.eval sets context.value to `count - index` before checking
       // skipIf and re-evaluating numPerHole for this candidate hole.
       const javaValue = startCount - sowIndex;
+      // Java Sow.java line 235: context.setTo(to) is called here, BEFORE any
+      // skip check. Mirror this by updating sowContextTo — UNLESS the previous
+      // iteration was an includeSelf:False skip, in which case this iteration is
+      // the "adjusted" step of the same Java iteration and must NOT overwrite.
+      if (!prevWasIncludeSelfSkip) {
+        sowContextTo = site;
+      }
+      prevWasIncludeSelfSkip = false;
       if (skipIf && numSkipped < MAX_SKIP) {
         const skipCtx = ctx.withFrame({ from, to: site, value: javaValue });
         if (skipIf.eval(skipCtx)) {
@@ -14400,7 +14429,14 @@ function compileSow(node: LudList, env: CompileEnv): EffectFn {
         }
       }
       // includeSelf:False — never drop a seed back into the origin hole.
-      if (!includeSelf && site === from) continue;
+      // Java (Sow.java lines 250-254) adjusts `to` in-place in the same
+      // iteration (no new context.setTo call). TS uses `continue`, so we set the
+      // flag to suppress the next iteration's sowContextTo update, preserving the
+      // current sowContextTo = site (= from = start), matching Java.
+      if (!includeSelf && site === from) {
+        prevWasIncludeSelfSkip = true;
+        continue;
+      }
       numSkipped = 0;
       dropAt(site, javaValue);
       sowIndex += 1;
@@ -14415,7 +14451,11 @@ function compileSow(node: LudList, env: CompileEnv): EffectFn {
     // unconditional captures). Run `apply` whenever it is present, using `cond`
     // (when given) as the gate.
     if (apply) {
-      let capPos = ring.indexOf(landing);
+      // Java Sow.java lines 295-308: the capture context's `to` is taken from
+      // `context.to()` after the sow loop (= sowContextTo, the last raw
+      // candidate, which equals `from` when `includeSelf:False` deflected the
+      // final seed away from the origin). Use sowContextTo here, not `landing`.
+      let capPos = ring.indexOf(sowContextTo);
       for (let guard = 0; guard < ring.length && capPos >= 0; guard += 1) {
         const capSite = ring[capPos] as number;
         const subCtx = ctx

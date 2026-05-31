@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 778.1,
+    "elapsed_s": 620.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -239,8 +239,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 91,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 91",
+      "plyReplayed": 135,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 135",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_1.txt"
     },
     {
@@ -1515,8 +1515,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Social Distance Chess",
-      "plyReplayed": 497,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 497",
+      "plyReplayed": 483,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 483",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Social Distance Chess/RandomTrial_1.txt"
     },
     {

@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 725.1,
+    "elapsed_s": 544.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 53,
       "WINNER_MISMATCH": 16,
-      "OUTCOME_OK": 116,
-      "REPLAY_OK_NO_OUTCOME": 28
+      "OUTCOME_OK": 117,
+      "REPLAY_OK_NO_OUTCOME": 27
     }
   },
   "top15FailureReasons": {
@@ -700,17 +700,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Jimafesosh/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/two_rows/Kay",
-      "ply": 19,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=1,to=1",
-      "tsMoveCount": 3,
-      "sampleTsMoves": [
-        "mover=1,from=3,to=3,isPass=false",
-        "mover=1,from=4,to=4,isPass=false",
-        "mover=1,from=6,to=6,isPass=false"
-      ],
+      "plyReplayed": 129,
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Kay/RandomTrial_0.txt"
     },
     {
@@ -1588,17 +1580,24 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dice Shogi/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "plyReplayed": 89,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 89",
+      "ply": 90,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=-1,to=-1[Pass]",
+      "tsMoveCount": 40,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=10,isPass=false",
+        "mover=1,from=2,to=11,isPass=false",
+        "mover=1,from=2,to=3,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 23,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 23",
+      "plyReplayed": 20,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 20",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_0.txt"
     },
     {

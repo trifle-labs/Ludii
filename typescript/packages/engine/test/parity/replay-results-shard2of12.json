@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 737.1,
+    "elapsed_s": 663.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 61,
+      "MOVE_MISMATCH": 59,
       "WINNER_MISMATCH": 8,
       "OUTCOME_OK": 116,
-      "REPLAY_OK_NO_OUTCOME": 28
+      "REPLAY_OK_NO_OUTCOME": 30
     }
   },
   "top15FailureReasons": {
@@ -644,16 +644,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/other/Okwe (Achalla)/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/three_rows/Gabata (Aksum)",
-      "ply": 113,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=14,to=14",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=2,from=16,to=16,isPass=false",
-        "mover=2,from=15,to=15,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/4465",
       "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Gabata (Aksum)/RandomTrial_0.txt"
     },
     {
@@ -765,17 +759,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Ovalhu/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/two_rows/Qelat",
-      "ply": 103,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=5,to=5",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=8,to=8,isPass=false",
-        "mover=2,from=9,to=9,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/6572",
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Qelat/RandomTrial_0.txt"
     },
     {
@@ -1302,8 +1289,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 490,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 490",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2407",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_0.txt"
     },
     {
@@ -1459,8 +1446,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 138,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 138",
+      "plyReplayed": 304,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 304",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
@@ -1633,8 +1620,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Unashogi",
-      "plyReplayed": 1,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 1",
+      "plyReplayed": 2,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 2",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Unashogi/RandomTrial_0.txt"
     },
     {

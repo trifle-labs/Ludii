@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 627.5,
+    "elapsed_s": 502.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 81,
+      "MOVE_MISMATCH": 77,
       "WINNER_MISMATCH": 6,
-      "OUTCOME_OK": 103,
-      "REPLAY_OK_NO_OUTCOME": 23
+      "OUTCOME_OK": 106,
+      "REPLAY_OK_NO_OUTCOME": 24
     }
   },
   "top15FailureReasons": {
@@ -622,17 +622,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/other/Sowing/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/three_rows/Selus (Massawa)",
-      "ply": 122,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=13,to=13",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=8,to=8,isPass=false",
-        "mover=2,from=16,to=16,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/3695",
       "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus (Massawa)/RandomTrial_1.txt"
     },
     {
@@ -669,16 +662,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Daramuti/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/two_rows/English Wari (St. Lucia)",
-      "ply": 34,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=6,to=6",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=1,from=2,to=2,isPass=false",
-        "mover=1,from=3,to=3,isPass=false"
-      ],
+      "plyReplayed": 68,
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/English Wari (St. Lucia)/RandomTrial_1.txt"
     },
     {
@@ -690,14 +676,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/sow/two_rows/Gabata (Shoa I)",
-      "ply": 75,
+      "ply": 79,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=2,to=2",
-      "tsMoveCount": 6,
+      "recMove": "mover=1,from=8,to=8",
+      "tsMoveCount": 8,
       "sampleTsMoves": [
         "mover=1,from=5,to=5,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=0,to=0,isPass=false"
+        "mover=1,from=4,to=4,isPass=false",
+        "mover=1,from=3,to=3,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Gabata (Shoa I)/RandomTrial_1.txt"
     },
@@ -765,17 +751,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Mangala (Suez)/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/two_rows/Mewegae",
-      "ply": 112,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=8,to=8",
-      "tsMoveCount": 5,
-      "sampleTsMoves": [
-        "mover=1,from=5,to=5,isPass=false",
-        "mover=1,from=3,to=3,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
+      "plyReplayed": 192,
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Mewegae/RandomTrial_1.txt"
     },
     {
@@ -834,17 +812,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Walak-Pussa/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/two_rows/Wouri",
-      "ply": 17,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=5,to=5",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=2,from=6,to=6,isPass=false",
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=8,to=8,isPass=false"
-      ],
+      "plyReplayed": 412,
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Wouri/RandomTrial_1.txt"
     },
     {
@@ -1253,8 +1223,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "plyReplayed": 35,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 35",
+      "plyReplayed": 43,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 43",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_1.txt"
     },
     {
@@ -1701,8 +1671,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 165,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 165",
+      "plyReplayed": 156,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 156",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {

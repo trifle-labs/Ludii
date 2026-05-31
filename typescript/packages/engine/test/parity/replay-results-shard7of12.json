@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 660.4,
+    "elapsed_s": 483.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 61,
+      "MOVE_MISMATCH": 62,
       "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 114,
+      "OUTCOME_OK": 113,
       "REPLAY_OK_NO_OUTCOME": 29
     }
   },
@@ -71,7 +71,7 @@
         1
       ],
       [
-        "board/sow/two_rows/I Pere",
+        "board/sow/four_rows/Misoro Tsoro",
         1
       ]
     ]
@@ -538,9 +538,15 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Kubuguza/RandomTrial_1.txt"
     },
     {
-      "bucket": "OUTCOME_OK",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/sow/four_rows/Misoro Tsoro",
-      "plyReplayed": 92,
+      "ply": 37,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=-1,to=-1[Pass]",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "mover=2,from=26,to=26,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Misoro Tsoro/RandomTrial_1.txt"
     },
     {
@@ -1606,8 +1612,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Tai Shogi",
-      "plyReplayed": 4,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 4",
+      "plyReplayed": 3,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 3",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Tai Shogi/RandomTrial_1.txt"
     },
     {

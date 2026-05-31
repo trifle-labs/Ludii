@@ -37,6 +37,16 @@ export class ActionAddCount extends BaseAction {
     if (next === 0 && s.whatAtSite(this.toIndex) !== 0) {
       s = s.withWhatAt(this.toIndex, 0);
     }
+    // When a site is emptied (count → 0), Java's container `remove()` (called by
+    // ActionMoveN.apply, ActionMoveN.java:276-277, when count drops ≤ 0) resets
+    // ALL per-site properties to 0 — including the per-site `state`. This clears
+    // stale tuz/owned-hole markers (state > 0 from a previous round) when a hole
+    // is drained, which the next round's relay/tuz-creation conditions depend on
+    // (Tuz, Gabata, Mewegae, Selus families). TS never reset state here, so stale
+    // markers persisted across rounds. Mirror Java: clear state on empty.
+    if (next === 0 && (s.stateAtSite(this.toIndex) ?? 0) !== 0) {
+      s = s.withStateAt(this.toIndex, 0);
+    }
     return s;
   }
 

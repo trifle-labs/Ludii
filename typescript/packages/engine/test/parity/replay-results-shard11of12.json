@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 612.6,
+    "elapsed_s": 511.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 72,
+      "MOVE_MISMATCH": 71,
       "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 113,
+      "OUTCOME_OK": 114,
       "REPLAY_OK_NO_OUTCOME": 20
     }
   },
@@ -701,7 +701,7 @@
       "ply": 64,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=10,to=10",
-      "tsMoveCount": 4,
+      "tsMoveCount": 6,
       "sampleTsMoves": [
         "mover=1,from=5,to=5,isPass=false",
         "mover=1,from=4,to=4,isPass=false",
@@ -799,16 +799,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Papan Dakon/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/sow/two_rows/Shono",
-      "ply": 86,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=4,to=4",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=1,from=2,to=2,isPass=false",
-        "mover=1,from=6,to=6,isPass=false"
-      ],
+      "plyReplayed": 132,
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Shono/RandomTrial_1.txt"
     },
     {
@@ -1305,8 +1298,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 197,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 197",
+      "plyReplayed": 252,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 252",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1453,15 +1446,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 329,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 329",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/1124",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 62,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 62",
+      "plyReplayed": 86,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 86",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_1.txt"
     },
     {
@@ -1541,8 +1534,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 59,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 59",
+      "plyReplayed": 57,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 57",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_1.txt"
     },
     {
