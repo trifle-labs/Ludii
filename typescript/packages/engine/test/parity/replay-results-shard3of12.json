@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 606.9,
+    "elapsed_s": 561.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1462,8 +1462,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 278,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 278",
+      "plyReplayed": 310,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 310",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_1.txt"
     },
     {
@@ -1623,8 +1623,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 9,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 9",
+      "plyReplayed": 10,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 10",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_1.txt"
     },
     {

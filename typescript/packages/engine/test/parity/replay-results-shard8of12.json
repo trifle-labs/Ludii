@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 1533.3,
+    "elapsed_s": 1492.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1212,8 +1212,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "plyReplayed": 46,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 46",
+      "plyReplayed": 47,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 47",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_0.txt"
     },
     {
@@ -1558,8 +1558,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Level Chess",
-      "plyReplayed": 5,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 5",
+      "plyReplayed": 6,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 6",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {

@@ -9915,6 +9915,20 @@ export function compileEffect(node: LudList, env: CompileEnv): EffectFn {
     );
     return (ctx) => parts.flatMap((p) => p(ctx));
   }
+  if (head === "seq") {
+    // `(seq { eff… })` in effect/consequence position — run the sub-effects in
+    // order, accumulating their actions. Java Seq.eval iterates the sub-moves
+    // over a chained TempContext; in effect position the consequence actions are
+    // applied in sequence by the engine when the move resolves, so we flatten
+    // them in order here (mirrors the moves-position `case "seq"` and the lenient
+    // `and`/curly handling above). Was previously unhandled → the whole sequence
+    // was silently dropped to a no-op (Throngs, Boop).
+    // Java: Core/src/game/rules/play/moves/nonDecision/operators/logical/Seq.java
+    const parts = effectChildren(node.items.slice(1)).map((n) =>
+      compileEffectLenient(n, env),
+    );
+    return (ctx) => parts.flatMap((p) => p(ctx));
+  }
   if (head === "forEach") {
     return compileForEachEffect(node, env);
   }

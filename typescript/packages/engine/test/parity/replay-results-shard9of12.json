@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 1422,
+    "elapsed_s": 1426.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1218,8 +1218,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "plyReplayed": 72,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 72",
+      "plyReplayed": 75,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 75",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_1.txt"
     },
     {
