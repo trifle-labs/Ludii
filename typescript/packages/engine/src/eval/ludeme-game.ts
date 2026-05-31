@@ -1880,6 +1880,10 @@ interface StartPlacement {
   /** Per-site piece value to seed (Java: ContainerState.value) from `value:N`.
    * Quarto encodes a piece's 4th attribute here. Undefined leaves it at 0. */
   readonly value?: number;
+  /** Per-site piece rotation to seed (Java: ContainerState.rotation) from
+   * `rotation:N`. Ploy and Kriegsspiel encode initial piece orientation here.
+   * Undefined leaves the rotation at 0. */
+  readonly rotation?: number;
   /** `(place Random {label} count:N)` — instead of placing one piece at every
    * region site, draw {@link count} *empty* sites at random from the region
    * (one piece each) using the context RNG. The draw sequence reproduces Java's
@@ -2778,6 +2782,10 @@ function parseStartPlacements(
         // `(place "Disc1" <site> value:N)` — seed the placed piece's value
         // (Java: ContainerState.value). Quarto's 16 hand pieces split on this.
         const valueArg = readNamedInt(item.items, "value");
+        // `(place "Commander1" coord:"E1" rotation:N)` — seed the placed
+        // piece's rotation (Java: ContainerState.rotation). Ploy and
+        // Kriegsspiel encode initial piece orientation here.
+        const rotationArg = readNamedInt(item.items, "rotation");
         // `(place "Label" "Hand" [count:N])` — seed the named player's hand
         // rather than a board region, so placement games (Achi, morris, …)
         // have pieces to move out of the hand at ply 0.
@@ -2814,6 +2822,7 @@ function parseStartPlacements(
               count: countArg,
               state: stateArg,
               value: valueArg,
+              rotation: rotationArg,
               region: {
                 eval: (ctx) => {
                   const s = ctx.board.siteAtLabel(cr.col, cr.row);
@@ -2838,6 +2847,7 @@ function parseStartPlacements(
               stacked,
               state: stateArg,
               value: valueArg,
+              rotation: rotationArg,
               region: { eval: () => [site] },
             });
           }
@@ -2862,6 +2872,7 @@ function parseStartPlacements(
                 stacked,
                 state: stateArg,
                 value: valueArg,
+                rotation: rotationArg,
                 region: compileRegion(regionNode, env),
               });
             } catch {
@@ -3383,6 +3394,9 @@ export class LudemeGame implements Game {
       const states = new Array<number>(placed.length).fill(0);
       // Per-site piece value (Java: ContainerState.value) — `(place … value:N)`.
       const values = new Array<number>(placed.length).fill(0);
+      // Per-site piece rotation (Java: ContainerState.rotation) — `(place … rotation:N)`.
+      // Ploy/Kriegsspiel encode initial piece orientation here.
+      const rotations = new Array<number>(placed.length).fill(0);
       // Per-player hidden flags (Java ContainerState hidden What/Who/etc.).
       const hiddenForPlayer = Array.from(
         { length: this.numPlayers + 1 },
@@ -3411,7 +3425,7 @@ export class LudemeGame implements Game {
           counts[hs] = count;
         }
       }
-      for (const { owner, region, count, counts: perSite, stacked, what, state: st, value: val, random, stackItems } of this
+      for (const { owner, region, count, counts: perSite, stacked, what, state: st, value: val, rotation: rot, random, stackItems } of this
         .placements) {
         // `(place Stack items:{…} <loc>)` — lay a genuine per-level stack at the
         // placement's single site (items[0] bottom … items[last] top). Sets the
@@ -3458,6 +3472,7 @@ export class LudemeGame implements Game {
             whats[site] = whatId;
             if (st !== undefined) states[site] = st;
             if (val !== undefined) values[site] = val;
+            if (rot !== undefined) rotations[site] = rot;
           }
           continue;
         }
@@ -3485,6 +3500,7 @@ export class LudemeGame implements Game {
               anyItemStack = true;
               if (st !== undefined) states[site] = st;
               if (val !== undefined) values[site] = val;
+              if (rot !== undefined) rotations[site] = rot;
               idx += 1;
               continue;
             }
@@ -3492,6 +3508,7 @@ export class LudemeGame implements Game {
             whats[site] = what ?? owner;
             if (st !== undefined) states[site] = st;
             if (val !== undefined) values[site] = val;
+            if (rot !== undefined) rotations[site] = rot;
             // Pile height. Java PlaceItem.java:156 sets countFn =
             // counts[0] (a single fn) and evalFill applies it to EVERY region
             // site — so a plain `(place … counts:{N})` broadcasts counts[0] to
@@ -3596,6 +3613,10 @@ export class LudemeGame implements Game {
         whatStacks: whatStacksOpt,
         stateAt: states.some((v) => v !== 0) ? states : undefined,
         valueAt: values.some((v) => v !== 0) ? values : undefined,
+        // @java Core/src/game/rules/start/set/sites/SetSite.java — Java's start
+        // placement calls cs.setSite(…, rotation, …) which writes the per-site
+        // rotation into ContainerState. Seed it here from `rotation:N` args.
+        rotationAt: rotations.some((v) => v !== 0) ? rotations : undefined,
         hiddenForPlayer: hiddenForPlayer.some((row) => row.some(Boolean))
           ? hiddenForPlayer
           : undefined,

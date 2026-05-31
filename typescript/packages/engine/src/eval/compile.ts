@@ -13584,19 +13584,12 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
       },
     };
   }
-  // Generic relocation: (move (from <region>?) (to <region> if:… (apply …))).
-  // The most common move primitive in Ludii — a piece travels from each
-  // from-site to each to-site, optionally capturing via the to-clause's
-  // (apply …) effect. Dispatched last so the keyword forms above win.
-  const hasFromOrTo = node.items.some(
-    (n) => isList(n) && (listHead(n) === "from" || listHead(n) === "to"),
-  );
-  if (hasFromOrTo) {
-    return compileFromTo(node, env);
-  }
-
   // (move Set NextPlayer (player <n>)) — override whose turn follows.
   // (move Set Rotation [(to <site>)] [{r1 r2 …}]) — emit one move per rotation.
+  // @java SetRotation.java: `(move Set Rotation (to <site>))` uses a `(to …)`
+  // argument to name the target site, NOT to indicate a relocation. This check
+  // must run BEFORE the hasFromOrTo guard below so a `(to …)` arg on a Set
+  // Rotation move is not mistaken for a from-to piece relocation.
   if (second && isIdent(second) && second.name === "Set") {
     const subNode = node.items[2];
     const subName = subNode && isIdent(subNode) ? subNode.name : "";
@@ -13621,6 +13614,9 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
       };
     }
     if (subName === "Rotation") {
+      // @java Core/src/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.java
+      // SetRotation.eval(): siteFn defaults to `new From(null)` which reads
+      // context.from() — the piece's current site (bound by forEach Piece).
       const toNode = node.items.find(
         (n) => isList(n) && listHead(n) === "to",
       ) as LudList | undefined;
@@ -13634,27 +13630,85 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
       const rotValues = setNode
         ? setNode.items.filter(isNumber).map((n) => n.value)
         : [];
-      const values = rotValues.length > 0 ? rotValues : [0];
+      const hasExplicitValues = rotValues.length > 0;
       return {
         generate: (ctx) => {
           const mover = ctx.mover;
-          const site = atFn ? atFn.eval(ctx) : (ctx.frame.to ?? 0);
+          // @java SetRotation.java:99 — siteFn = new From(null), reads context.from()
+          // (the piece's origin site bound by forEach Piece), not context.to().
+          const site = atFn
+            ? atFn.eval(ctx)
+            : (ctx.frame.from ?? ctx.frame.to ?? 0);
           if (site < 0) return [];
-          return values.map(
-            (rot) =>
+          if (hasExplicitValues) {
+            return rotValues.map(
+              (rot) =>
+                new Move({
+                  id: `setRot:${site}:${rot}:${mover}`,
+                  label: `SetRotation ${site}->${rot}`,
+                  siteIndices: [site],
+                  mover,
+                  placedOwner: mover,
+                  actions: [new ActionSetRotation({ to: site, rotation: rot })],
+                }),
+            );
+          }
+          // @java SetRotation.java:117-148 — no explicit directions: generate
+          // prev (rotate left) and next (rotate right) rotation moves.
+          // maximalRotationStates() = topology.supportedDirections(Vertex|Cell).size()
+          // = number of compass directions (8 on a square board).
+          const maxRot = Object.keys(ctx.board.tiling.absolute).length;
+          if (maxRot < 1) return [];
+          const currentRot = ctx.state.rotationAtSite(site);
+          const prevRot = currentRot > 0 ? currentRot - 1 : maxRot - 1;
+          const nextRot = currentRot < maxRot - 1 ? currentRot + 1 : 0;
+          const moves: Move[] = [];
+          // previous (rotate left)
+          moves.push(
+            new Move({
+              id: `setRot:${site}:${prevRot}:${mover}`,
+              label: `SetRotation ${site}->${prevRot}`,
+              siteIndices: [site],
+              mover,
+              placedOwner: mover,
+              actions: [
+                new ActionSetRotation({ to: site, rotation: prevRot }),
+              ],
+            }),
+          );
+          // next (rotate right), only if distinct from prev
+          if (prevRot !== nextRot) {
+            moves.push(
               new Move({
-                id: `setRot:${site}:${rot}:${mover}`,
-                label: `SetRotation ${site}->${rot}`,
+                id: `setRot:${site}:${nextRot}:${mover}`,
+                label: `SetRotation ${site}->${nextRot}`,
                 siteIndices: [site],
                 mover,
                 placedOwner: mover,
-                actions: [new ActionSetRotation({ to: site, rotation: rot })],
+                actions: [
+                  new ActionSetRotation({ to: site, rotation: nextRot }),
+                ],
               }),
-          );
+            );
+          }
+          return moves;
         },
       };
     }
     return EMPTY_MOVES;
+  }
+
+  // Generic relocation: (move (from <region>?) (to <region> if:… (apply …))).
+  // The most common move primitive in Ludii — a piece travels from each
+  // from-site to each to-site, optionally capturing via the to-clause's
+  // (apply …) effect. Dispatched after the `(move Set …)` family (above) so
+  // that a `(to …)` arg on `(move Set Rotation (to <site>))` is not
+  // misinterpreted as a piece relocation.
+  const hasFromOrTo = node.items.some(
+    (n) => isList(n) && (listHead(n) === "from" || listHead(n) === "to"),
+  );
+  if (hasFromOrTo) {
+    return compileFromTo(node, env);
   }
 
   // (move Propose "string" …) — record a proposition.

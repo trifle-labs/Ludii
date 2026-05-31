@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 511.7,
+    "elapsed_s": 510.5,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 71,
+      "MOVE_MISMATCH": 70,
       "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 114,
+      "OUTCOME_OK": 115,
       "REPLAY_OK_NO_OUTCOME": 20
     }
   },
@@ -1298,8 +1298,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 252,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 252",
+      "plyReplayed": 248,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 248",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1534,8 +1534,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 57,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 57",
+      "plyReplayed": 59,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 59",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_1.txt"
     },
     {
@@ -1784,17 +1784,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Kriegsspiel/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/target/Ploy",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=22,to=22",
-      "tsMoveCount": 40,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=10,isPass=false",
-        "mover=1,from=1,to=19,isPass=false",
-        "mover=1,from=1,to=28,isPass=false"
-      ],
+      "plyReplayed": 278,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Ploy/RandomTrial_1.txt"
     },
     {

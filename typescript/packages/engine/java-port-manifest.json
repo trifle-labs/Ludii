@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-05-31T10:48:07.924Z",
+  "recorded": "2026-05-31T11:59:10.687Z",
   "java": {
     "Core/src/other/action/state/ActionAddPlayerToTeam.java": {
       "hash": "14f0e9e4b9d5bfa0",
@@ -521,7 +521,8 @@
     "Core/src/game/functions/directions/Directions.java": {
       "hash": "a00ae8e861bce0c3",
       "ts": [
-        "src/eval/compile.ts"
+        "src/eval/compile.ts",
+        "src/eval/directions.ts"
       ]
     },
     "Core/src/game/rules/play/moves/nonDecision/effect/Step.java": {
@@ -557,6 +558,13 @@
       "ts": [
         "src/eval/compile.ts",
         "src/ludemes/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.ts"
+      ]
+    },
+    "Core/src/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.java": {
+      "hash": "5ee71913ea84b419",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.ts"
       ]
     },
     "Core/src/game/rules/play/moves/nonDecision/effect/FromTo.java": {
@@ -665,6 +673,13 @@
       "ts": [
         "src/eval/ludeme-game.ts",
         "src/ludemes/game/rules/start/set/hidden/SetHidden.ts"
+      ]
+    },
+    "Core/src/game/rules/start/set/sites/SetSite.java": {
+      "hash": "d6f60afbc83ad2d7",
+      "ts": [
+        "src/eval/ludeme-game.ts",
+        "src/ludemes/game/rules/start/set/sites/SetSite.ts"
       ]
     },
     "Core/src/other/GameLoader.java": {
@@ -4477,12 +4492,6 @@
         "src/ludemes/game/rules/play/moves/nonDecision/effect/set/SetVarType.ts"
       ]
     },
-    "Core/src/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.java": {
-      "hash": "5ee71913ea84b419",
-      "ts": [
-        "src/ludemes/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.ts"
-      ]
-    },
     "Core/src/game/rules/play/moves/nonDecision/effect/set/nextPlayer/SetNextPlayer.java": {
       "hash": "8eb7e710089fd7a9",
       "ts": [
@@ -5015,12 +5024,6 @@
       "hash": "de44bf6ecd720e4f",
       "ts": [
         "src/ludemes/game/rules/start/set/sites/SetPhase.ts"
-      ]
-    },
-    "Core/src/game/rules/start/set/sites/SetSite.java": {
-      "hash": "d6f60afbc83ad2d7",
-      "ts": [
-        "src/ludemes/game/rules/start/set/sites/SetSite.ts"
       ]
     },
     "Core/src/game/rules/start/split/Split.java": {
@@ -6129,7 +6132,8 @@
       "hash": "a00ae8e861bce0c3",
       "ported": true,
       "ts": [
-        "src/eval/compile.ts"
+        "src/eval/compile.ts",
+        "src/eval/directions.ts"
       ]
     },
     "Core/src/game/functions/directions/DirectionsFunction.java": {
@@ -9928,6 +9932,7 @@
       "hash": "5ee71913ea84b419",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.ts"
       ]
     },
@@ -10670,6 +10675,7 @@
       "hash": "d6f60afbc83ad2d7",
       "ported": true,
       "ts": [
+        "src/eval/ludeme-game.ts",
         "src/ludemes/game/rules/start/set/sites/SetSite.ts"
       ]
     },

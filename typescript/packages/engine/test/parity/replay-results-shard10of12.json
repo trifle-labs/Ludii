@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 544,
+    "elapsed_s": 534.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 71,
+      "MOVE_MISMATCH": 70,
       "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 111,
+      "OUTCOME_OK": 112,
       "REPLAY_OK_NO_OUTCOME": 23
     }
   },
@@ -1288,8 +1288,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 245,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 245",
+      "plyReplayed": 248,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 248",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1452,8 +1452,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 77,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 77",
+      "plyReplayed": 82,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 82",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_0.txt"
     },
     {
@@ -1765,17 +1765,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Kriegsspiel/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/target/Ploy",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=11,to=11",
-      "tsMoveCount": 40,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=10,isPass=false",
-        "mover=1,from=1,to=19,isPass=false",
-        "mover=1,from=1,to=28,isPass=false"
-      ],
+      "plyReplayed": 119,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Ploy/RandomTrial_0.txt"
     },
     {

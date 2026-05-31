@@ -32,10 +32,25 @@ export class ActionSetRotation extends BaseAction {
   public override actionType(): ActionType {
     return ActionSetRotation.TYPE;
   }
+  // @java Core/src/other/action/state/ActionSetRotation.java:226
+  // Java ActionSetRotation.from() returns `to` (the site), same as to().
+  public override from(): number {
+    return this.toIndex;
+  }
   public override to(): number {
     return this.toIndex;
   }
   public override rotation(): number {
+    return this.rotationValue;
+  }
+  // @java Core/src/other/action/state/ActionSetRotation.java:241
+  // Java ActionSetRotation.state() returns rotation (used for move equality).
+  public override state(): number {
+    return this.rotationValue;
+  }
+  // @java Core/src/other/action/state/ActionSetRotation.java:246
+  // Java ActionSetRotation.who() returns rotation.
+  public override who(): number {
     return this.rotationValue;
   }
 }

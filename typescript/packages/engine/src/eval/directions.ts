@@ -47,13 +47,18 @@ function rotateToFacing(dir: Dir, facing: string | undefined): Dir {
  * (Java: the component's `getDirn()`); otherwise we fall back to the context's
  * acting player. Returns `undefined` when no facing was declared, which
  * `rotateToFacing` treats as North.
+ *
+ * @java Core/src/game/functions/directions/Directions.java:468-478
+ * Java applies the piece's per-site rotation on top of the component/player
+ * facing. Each rotation unit is one FR step (45° clockwise) in the compass.
+ * On a 16-point compass this is +2 positions per rotation step.
  */
 export function facingForSite(
   ctx: EvalContext,
   site: number | undefined,
 ): string | undefined {
   const facings = ctx.board.playerFacing;
-  let owner: number | undefined;
+  let baseFacing: string | undefined;
   if (site !== undefined && site >= 0) {
     // A piece's own declared facing (Java `Component.getDirn()`) takes
     // precedence over its owner's player facing — Toads & Frogs gives the Toad
@@ -64,12 +69,29 @@ export function facingForSite(
     if (compFacing) {
       const what = ctx.state.whatAtSite(site);
       const f = what > 0 ? compFacing[what] : undefined;
-      if (f !== undefined) return f;
+      if (f !== undefined) {
+        baseFacing = f;
+      }
     }
-    const w = ctx.state.cells[site] ?? 0;
-    if (w > 0) owner = w;
+    if (baseFacing === undefined) {
+      const w = ctx.state.cells[site] ?? 0;
+      baseFacing = facings && w > 0 ? facings[w] : undefined;
+    }
+    // @java Directions.java:472-478 — apply per-site rotation to the base
+    // facing. Each rotation unit is one FR step (45° clockwise). In the
+    // 16-point compass (N=0, NNE=1, NE=2, …, NW=14) one 45° step = +2.
+    const rotation = ctx.state.rotationAtSite(site);
+    if (rotation !== 0) {
+      const baseIdx = facingIndex(baseFacing);
+      const rotIdx = (baseIdx + rotation * 2) % 16;
+      return COMPASS16[rotIdx];
+    }
+    // When the site has a component/owner facing, return it; otherwise fall
+    // through to the acting player's facing below (preserves the pre-rotation
+    // behaviour for empty/unowned sites — only rotation pieces change here).
+    if (baseFacing !== undefined) return baseFacing;
   }
-  if (owner === undefined) owner = ctx.player;
+  const owner = ctx.player;
   return facings && owner >= 0 ? facings[owner] : undefined;
 }
 

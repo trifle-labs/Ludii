@@ -1,93 +1,33 @@
 {
   "summary": {
-    "totalTrials": 4,
-    "elapsed_s": 0.7,
+    "totalTrials": 2,
+    "elapsed_s": 0.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 2,
+      "MOVE_MISMATCH": 0,
       "WINNER_MISMATCH": 0,
-      "OUTCOME_OK": 0,
-      "REPLAY_OK_NO_OUTCOME": 2
+      "OUTCOME_OK": 2,
+      "REPLAY_OK_NO_OUTCOME": 0
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": [
-      [
-        "board/sow/three_rows/Selus (Massawa)",
-        2
-      ]
-    ]
+    "MOVE_MISMATCH": []
   },
-  "exampleMismatches": [
-    {
-      "game": "board/sow/three_rows/Selus (Massawa)",
-      "ply": 112,
-      "recMove": "mover=2,from=12,to=12",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=8,to=8,isPass=false",
-        "mover=2,from=6,to=6,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/sow/three_rows/Selus (Massawa)",
-      "ply": 122,
-      "recMove": "mover=2,from=13,to=13",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=8,to=8,isPass=false",
-        "mover=2,from=16,to=16,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    }
-  ],
+  "exampleMismatches": [],
   "perTrial": [
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
-      "game": "board/sow/three_rows/Selus",
-      "plyReplayed": 600,
-      "detail": "Hit move cap 600/10000",
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus/RandomTrial_0.txt"
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/eliminate/target/Ploy",
+      "plyReplayed": 119,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Ploy/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
-      "game": "board/sow/three_rows/Selus",
-      "plyReplayed": 600,
-      "detail": "Hit move cap 600/10000",
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus/RandomTrial_1.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Selus (Massawa)",
-      "ply": 112,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=12,to=12",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=8,to=8,isPass=false",
-        "mover=2,from=6,to=6,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus (Massawa)/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Selus (Massawa)",
-      "ply": 122,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=13,to=13",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=2,from=7,to=7,isPass=false",
-        "mover=2,from=8,to=8,isPass=false",
-        "mover=2,from=16,to=16,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus (Massawa)/RandomTrial_1.txt"
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/eliminate/target/Ploy",
+      "plyReplayed": 278,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/target/Ploy/RandomTrial_1.txt"
     }
   ]
 }

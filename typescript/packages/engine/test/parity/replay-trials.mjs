@@ -525,17 +525,32 @@ function recordedRemoveSites(recMove) {
 function recordedDecisionState(recMove) {
   for (const a of recMove.actions) {
     if (a.fields.get('decision') !== 'true') continue;
+    // Numeric `state` field (Add/Move action type).
     const s = Number(a.fields.get('state'));
     if (Number.isFinite(s)) return s;
+    // SetRotation records `rotation=N` rather than `state=N` in the trial
+    // format (ActionSetRotation.toTrialFormat() — Java parity). Return it so
+    // chooseMatch can disambiguate between the two rotation candidates.
+    if (a.actionType === 'SetRotation') {
+      const r = Number(a.fields.get('rotation'));
+      if (Number.isFinite(r)) return r;
+    }
   }
   return null;
 }
 
-/** The state a TS candidate move's decision (Add/Move) action records, or null. */
+/** The state a TS candidate move's decision (Add/Move/SetRotation) action
+ * records, or null. Extended to handle SetRotation whose canonical discriminant
+ * is the rotation value (Java ActionSetRotation.state() == rotation). */
 function tsMoveState(move) {
   for (const a of move.actions ?? []) {
     try {
       const t = typeof a.actionType === 'function' ? a.actionType() : null;
+      // For rotation moves, use the rotation value as the discriminant.
+      if (t === 'SetRotation') {
+        const r = typeof a.rotation === 'function' ? a.rotation() : undefined;
+        if (Number.isFinite(r) && r >= 0) return r;
+      }
       if (t !== 'Add' && t !== 'Move') continue;
       const s = typeof a.state === 'function' ? a.state() : undefined;
       if (Number.isFinite(s) && s >= 0) return s;

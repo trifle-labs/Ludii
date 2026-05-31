@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 587.6,
+    "elapsed_s": 584,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1470,8 +1470,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 295,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 295",
+      "plyReplayed": 292,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 292",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_1.txt"
     },
     {

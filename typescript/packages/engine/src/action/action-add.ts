@@ -110,13 +110,20 @@ export class ActionAdd extends BaseAction {
       }
       return next;
     }
-    // Java parity: ActionAdd.apply → cs.setSite(.., who, what, count, state, ..)
-    // writes the site state alongside who/what (ActionAdd.java:292).
+    // Java parity: ActionAdd.apply → cs.setSite(.., who, what, count, state,
+    // rotation, value, ..) writes all fields alongside who/what
+    // (ActionAdd.java:292). The TS port previously omitted rotation and value,
+    // leaving placed pieces with rotation=0 even when rotation: was specified.
     let next = state
       .withCell(this.toIndex, this.ownerIndex)
       .withWhatAt(this.toIndex, this.whatIndex);
     if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
       next = next.withStateAt(this.toIndex, this.stateValue);
+    }
+    // @java Core/src/other/action/move/ActionAdd.java:292 — cs.setSite includes
+    // rotation; set it on placement so pieces start with the declared rotation.
+    if (this.rotationValue !== ACTION_OFF && this.rotationValue !== ACTION_UNDEFINED) {
+      next = next.withRotationAt(this.toIndex, this.rotationValue);
     }
     // Large-piece footprint: every covered cell (anchor included) gets count=1
     // and no owner, matching Java applyLargePiece (removeFromEmpty + setCount).

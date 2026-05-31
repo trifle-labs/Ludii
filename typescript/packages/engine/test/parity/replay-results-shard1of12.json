@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 472.7,
+    "elapsed_s": 469.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,

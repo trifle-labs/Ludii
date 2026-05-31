@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 620.3,
+    "elapsed_s": 623.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1515,8 +1515,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Social Distance Chess",
-      "plyReplayed": 483,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 483",
+      "plyReplayed": 492,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 492",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Social Distance Chess/RandomTrial_1.txt"
     },
     {
