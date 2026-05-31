@@ -50,6 +50,7 @@ import {
   compileMoves,
   compileRegion,
   largePieceFootprint,
+  parseArgs,
 } from "./compile.js";
 import {
   type BoolFn,
@@ -1934,6 +1935,13 @@ interface TeamAssignment {
   readonly players: readonly number[];
 }
 
+/** `(start (set Hidden ...))` — seed per-player hidden flags. */
+interface HiddenPlacement {
+  readonly players: readonly number[];
+  readonly region: RegionFn;
+  readonly hidden: boolean;
+}
+
 interface StartRules {
   readonly placements: StartPlacement[];
   readonly counts: CountPlacement[];
@@ -1942,6 +1950,7 @@ interface StartRules {
   readonly costs: CostPlacement[];
   readonly teams: TeamAssignment[];
   readonly puzzleValues: PuzzleValuePlacement[];
+  readonly hidden: HiddenPlacement[];
 }
 
 /**
@@ -2566,6 +2575,7 @@ function parseStartPlacements(
   const costs: CostPlacement[] = [];
   const teams: TeamAssignment[] = [];
   const puzzleValues: PuzzleValuePlacement[] = [];
+  const hidden: HiddenPlacement[] = [];
   const scan = (node: LudList): void => {
     for (const item of node.items) {
       if (!isList(item)) continue;
@@ -2872,6 +2882,50 @@ function parseStartPlacements(
           }
           continue;
         }
+        if (sub && isIdent(sub) && sub.name === "Hidden") {
+          // @java Core/src/game/rules/start/set/hidden/SetHidden.java
+          // Banqi starts every board site face-down for both players. The TS
+          // replay engine stores the hidden subtypes in one per-player matrix;
+          // that is enough for legal flip-vs-move generation.
+          const { positional, named } = parseArgs(item.items.slice(2));
+          const regionNode = positional.find(
+            (n) =>
+              isList(n) &&
+              !(n.delimiter === "curly" && n.items.every((it) => isIdent(it))),
+          );
+          const valueNode = positional.find(
+            (n) => isIdent(n) && (n.name === "True" || n.name === "False"),
+          );
+          const toNode = named.get("to") ?? named.get("To");
+          const players: number[] = [];
+          if (toNode && isIdent(toNode)) {
+            if (toNode.name === "All" || toNode.name === "Each") {
+              for (let p = 1; p <= env.numPlayers; p += 1) players.push(p);
+            } else {
+              const p =
+                toNode.name === "P1"
+                  ? 1
+                  : toNode.name === "P2"
+                    ? 2
+                    : toNode.name === "P3"
+                      ? 3
+                      : toNode.name === "P4"
+                        ? 4
+                        : /^P\d+$/.test(toNode.name)
+                          ? Number(toNode.name.slice(1))
+                          : undefined;
+              if (p !== undefined && p >= 1 && p <= env.numPlayers) players.push(p);
+            }
+          }
+          if (regionNode && players.length > 0) {
+            hidden.push({
+              players,
+              region: compileRegion(regionNode, env),
+              hidden: !(valueNode && isIdent(valueNode) && valueNode.name === "False"),
+            });
+          }
+          continue;
+        }
         // (set <RoleType> <SiteType>? <region>) — fill every site of a region
         // with a player/neutral/shared piece (Java SetSite). This is how the
         // graph-theory family (Nein Ari, Ciri Amber, OddEvenTree, …) seeds its
@@ -3042,7 +3096,7 @@ function parseStartPlacements(
     }
   };
   scan(startNode);
-  return { placements, counts, remembers, handSeeds, costs, teams, puzzleValues };
+  return { placements, counts, remembers, handSeeds, costs, teams, puzzleValues, hidden };
 }
 
 export class LudemeGame implements Game {
@@ -3084,6 +3138,7 @@ export class LudemeGame implements Game {
   private readonly handSeeds: readonly HandSeed[];
   private readonly teamPlacements: readonly TeamAssignment[];
   private readonly puzzleValuePlacements: readonly PuzzleValuePlacement[];
+  private readonly hiddenPlacements: readonly HiddenPlacement[];
   /** Java parity: whether this game uses real per-level stacks. */
   private readonly isStacking: boolean;
   /** Java parity: `GameType.NotAllPass` (e.g. explicit `(move Pass)`). */
@@ -3210,6 +3265,7 @@ export class LudemeGame implements Game {
           costs: [],
           teams: [],
           puzzleValues: [],
+          hidden: [],
         };
     this.placements = startRules.placements;
     this.countPlacements = startRules.counts;
@@ -3218,6 +3274,7 @@ export class LudemeGame implements Game {
     this.handSeeds = startRules.handSeeds;
     this.teamPlacements = startRules.teams;
     this.puzzleValuePlacements = startRules.puzzleValues;
+    this.hiddenPlacements = startRules.hidden;
 
     // Resolve each placement region once against an empty start state and
     // group the resulting sites by owner, so `(sites Start …)` in the play
@@ -3304,7 +3361,8 @@ export class LudemeGame implements Game {
       this.countPlacements.length > 0 ||
       this.costPlacements.length > 0 ||
       this.rememberPlacements.length > 0 ||
-      this.handSeeds.length > 0
+      this.handSeeds.length > 0 ||
+      this.hiddenPlacements.length > 0
     ) {
       const trial0 = new Trial([], false, -1).saveState(state);
       const evalCtx = new EvalContext(
@@ -3322,6 +3380,11 @@ export class LudemeGame implements Game {
       const states = new Array<number>(placed.length).fill(0);
       // Per-site piece value (Java: ContainerState.value) — `(place … value:N)`.
       const values = new Array<number>(placed.length).fill(0);
+      // Per-player hidden flags (Java ContainerState hidden What/Who/etc.).
+      const hiddenForPlayer = Array.from(
+        { length: this.numPlayers + 1 },
+        () => new Array<boolean>(placed.length).fill(false),
+      );
       // Real per-level stacks seeded by `(place Stack items:{…})` (Java
       // PlaceCustomStack). Sparse: a non-null entry is a distinct-piece stack at
       // that site (owners + parallel whats, bottom→top); every other site keeps
@@ -3489,6 +3552,16 @@ export class LudemeGame implements Game {
         const cur = remembered.get(name) ?? [];
         remembered.set(name, [...cur, ...region.eval(evalCtx)]);
       }
+      // `(set Hidden ... to:Pk)` start rules seed face-down information.
+      for (const h of this.hiddenPlacements) {
+        for (const site of h.region.eval(evalCtx)) {
+          if (site < 0 || site >= placed.length) continue;
+          for (const player of h.players) {
+            const row = hiddenForPlayer[player];
+            if (row) row[site] = h.hidden;
+          }
+        }
+      }
       // Materialise the per-level stacks only when a `(place Stack items:{…})`
       // actually built one. Stacked sites carry their full owner/what columns;
       // every other site mirrors State.fillStacks' default (a flat single level
@@ -3520,6 +3593,9 @@ export class LudemeGame implements Game {
         whatStacks: whatStacksOpt,
         stateAt: states.some((v) => v !== 0) ? states : undefined,
         valueAt: values.some((v) => v !== 0) ? values : undefined,
+        hiddenForPlayer: hiddenForPlayer.some((row) => row.some(Boolean))
+          ? hiddenForPlayer
+          : undefined,
         phases,
         temps: [-1],
         remembered: remembered.size > 0 ? remembered : undefined,

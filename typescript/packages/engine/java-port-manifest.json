@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-05-30T23:19:47.252Z",
+  "recorded": "2026-05-31T00:10:10.756Z",
   "java": {
     "Core/src/other/action/state/ActionAddPlayerToTeam.java": {
       "hash": "14f0e9e4b9d5bfa0",
@@ -440,6 +440,20 @@
         "src/ludemes/game/functions/ints/iterator/Hint.ts"
       ]
     },
+    "Core/src/game/functions/booleans/is/Hidden/IsHidden.java": {
+      "hash": "e0dd489c1d37f0ab",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/booleans/is/Hidden/IsHidden.ts"
+      ]
+    },
+    "Core/src/game/functions/booleans/is/Hidden/IsHiddenWhat.java": {
+      "hash": "b69ef83eb8a35572",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/booleans/is/Hidden/IsHiddenWhat.ts"
+      ]
+    },
     "Core/src/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.java": {
       "hash": "e63b33e23645286e",
       "ts": [
@@ -474,6 +488,13 @@
         "src/eval/compile.ts",
         "src/eval/ludeme-game.ts",
         "src/ludemes/game/equipment/component/Piece.ts"
+      ]
+    },
+    "Core/src/game/functions/region/sites/hidden/SitesHidden.java": {
+      "hash": "cf7e4586bc3887e6",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/functions/region/sites/hidden/SitesHidden.ts"
       ]
     },
     "Core/src/game/functions/region/sites/simple/SitesHint.java": {
@@ -529,6 +550,13 @@
       "ts": [
         "src/eval/compile.ts",
         "src/ludemes/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.ts"
+      ]
+    },
+    "Core/src/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.java": {
+      "hash": "7599237b9b8827d1",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.ts"
       ]
     },
     "Core/src/game/rules/play/moves/nonDecision/effect/FromTo.java": {
@@ -630,6 +658,13 @@
       "ts": [
         "src/eval/ludeme-game.ts",
         "src/ludemes/game/rules/start/deductionPuzzle/Set.ts"
+      ]
+    },
+    "Core/src/game/rules/start/set/hidden/SetHidden.java": {
+      "hash": "8e37aa2ac1cfaee2",
+      "ts": [
+        "src/eval/ludeme-game.ts",
+        "src/ludemes/game/rules/start/set/hidden/SetHidden.ts"
       ]
     },
     "Core/src/other/GameLoader.java": {
@@ -932,12 +967,6 @@
         "src/ludemes/game/functions/booleans/deductionPuzzle/is/graph/IsUnique.ts"
       ]
     },
-    "Core/src/game/functions/booleans/is/Hidden/IsHidden.java": {
-      "hash": "e0dd489c1d37f0ab",
-      "ts": [
-        "src/ludemes/game/functions/booleans/is/Hidden/IsHidden.ts"
-      ]
-    },
     "Core/src/game/functions/booleans/is/Hidden/IsHiddenCount.java": {
       "hash": "7f2d4e63f92da3d3",
       "ts": [
@@ -960,12 +989,6 @@
       "hash": "fa202b223676b106",
       "ts": [
         "src/ludemes/game/functions/booleans/is/Hidden/IsHiddenValue.ts"
-      ]
-    },
-    "Core/src/game/functions/booleans/is/Hidden/IsHiddenWhat.java": {
-      "hash": "b69ef83eb8a35572",
-      "ts": [
-        "src/ludemes/game/functions/booleans/is/Hidden/IsHiddenWhat.ts"
       ]
     },
     "Core/src/game/functions/booleans/is/Hidden/IsHiddenWho.java": {
@@ -3584,12 +3607,6 @@
         "src/ludemes/game/functions/region/sites/group/SitesGroup.ts"
       ]
     },
-    "Core/src/game/functions/region/sites/hidden/SitesHidden.java": {
-      "hash": "cf7e4586bc3887e6",
-      "ts": [
-        "src/ludemes/game/functions/region/sites/hidden/SitesHidden.ts"
-      ]
-    },
     "Core/src/game/functions/region/sites/hidden/SitesHiddenCount.java": {
       "hash": "9fb9d3b47769c45a",
       "ts": [
@@ -4466,12 +4483,6 @@
         "src/ludemes/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.ts"
       ]
     },
-    "Core/src/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.java": {
-      "hash": "7599237b9b8827d1",
-      "ts": [
-        "src/ludemes/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.ts"
-      ]
-    },
     "Core/src/game/rules/play/moves/nonDecision/effect/set/nextPlayer/SetNextPlayer.java": {
       "hash": "8eb7e710089fd7a9",
       "ts": [
@@ -4964,12 +4975,6 @@
         "src/ludemes/game/rules/start/set/SetStartSitesType.ts"
       ]
     },
-    "Core/src/game/rules/start/set/hidden/SetHidden.java": {
-      "hash": "8e37aa2ac1cfaee2",
-      "ts": [
-        "src/ludemes/game/rules/start/set/hidden/SetHidden.ts"
-      ]
-    },
     "Core/src/game/rules/start/set/player/SetAmount.java": {
       "hash": "253134f5a004f4e1",
       "ts": [
@@ -5324,6 +5329,7 @@
       "hash": "e0dd489c1d37f0ab",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/booleans/is/Hidden/IsHidden.ts"
       ]
     },
@@ -5359,6 +5365,7 @@
       "hash": "b69ef83eb8a35572",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/booleans/is/Hidden/IsHiddenWhat.ts"
       ]
     },
@@ -8757,6 +8764,7 @@
       "hash": "cf7e4586bc3887e6",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/functions/region/sites/hidden/SitesHidden.ts"
       ]
     },
@@ -9927,6 +9935,7 @@
       "hash": "7599237b9b8827d1",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.ts"
       ]
     },
@@ -10599,6 +10608,7 @@
       "hash": "8e37aa2ac1cfaee2",
       "ported": true,
       "ts": [
+        "src/eval/ludeme-game.ts",
         "src/ludemes/game/rules/start/set/hidden/SetHidden.ts"
       ]
     },

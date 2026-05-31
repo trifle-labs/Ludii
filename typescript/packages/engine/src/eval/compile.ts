@@ -51,6 +51,15 @@ import { ActionSelect } from "../action/action-select.js";
 import { ActionSetCost } from "../action/action-set-cost.js";
 import { ActionSetCount } from "../action/action-set-count.js";
 import { ActionSetCounter } from "../action/action-set-counter.js";
+import {
+  ActionSetHidden,
+  ActionSetHiddenCount,
+  ActionSetHiddenRotation,
+  ActionSetHiddenState,
+  ActionSetHiddenValue,
+  ActionSetHiddenWhat,
+  ActionSetHiddenWho,
+} from "../action/action-set-hidden.js";
 import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
 import { ActionSetPending } from "../action/action-set-pending.js";
 import { ActionSetRotation } from "../action/action-set-rotation.js";
@@ -434,6 +443,122 @@ function extractPromotePieceSpec(spec: LudNode | undefined): {
 function resolveHandRole(name: string, ctx: EvalContext): number {
   if (name === "Shared" || name === "Neutral") return 0;
   return resolveRole(name, ctx);
+}
+
+type HiddenDataName = "What" | "Who" | "State" | "Count" | "Rotation" | "Value";
+
+const HIDDEN_DATA_NAMES = new Set<string>([
+  "What",
+  "Who",
+  "State",
+  "Count",
+  "Rotation",
+  "Value",
+]);
+
+function hiddenDataNames(nodes: readonly LudNode[]): HiddenDataName[] | undefined {
+  const out: HiddenDataName[] = [];
+  const visit = (node: LudNode | undefined): void => {
+    if (!node) return;
+    if (isIdent(node) && HIDDEN_DATA_NAMES.has(node.name)) {
+      out.push(node.name as HiddenDataName);
+      return;
+    }
+    if (isList(node) && node.delimiter === "curly") {
+      for (const child of node.items) visit(child);
+    }
+  };
+  for (const node of nodes) visit(node);
+  return out.length > 0 ? out : undefined;
+}
+
+function hiddenTargetPlayers(
+  targetNode: LudNode | undefined,
+  env: CompileEnv,
+): (ctx: EvalContext) => number[] {
+  if (targetNode && isIdent(targetNode)) {
+    const role = targetNode.name;
+    if (role === "All" || role === "Each") {
+      return () => {
+        const out: number[] = [];
+        for (let p = 1; p <= env.numPlayers; p += 1) out.push(p);
+        return out;
+      };
+    }
+  }
+  const targetFn = targetNode ? compileInt(targetNode, env) : undefined;
+  return (ctx) => {
+    const p = targetFn ? targetFn.eval(ctx) : ctx.mover;
+    return p >= 1 && p <= env.numPlayers ? [p] : [];
+  };
+}
+
+function hiddenAction(
+  dataType: HiddenDataName | undefined,
+  site: number,
+  player: number,
+  hidden: boolean,
+): Action {
+  switch (dataType) {
+    case "What":
+      return new ActionSetHiddenWhat(site, player, hidden);
+    case "Who":
+      return new ActionSetHiddenWho(site, player, hidden);
+    case "State":
+      return new ActionSetHiddenState(site, player, hidden);
+    case "Count":
+      return new ActionSetHiddenCount(site, player, hidden);
+    case "Rotation":
+      return new ActionSetHiddenRotation(site, player, hidden);
+    case "Value":
+      return new ActionSetHiddenValue(site, player, hidden);
+    default:
+      return new ActionSetHidden(site, player, hidden);
+  }
+}
+
+function compileHiddenEffect(node: LudList, env: CompileEnv): EffectFn {
+  const { positional, named } = parseArgs(node.items.slice(2));
+  const dataTypes = hiddenDataNames(positional);
+  const valueNode = positional.find(
+    (n) => isIdent(n) && (n.name === "True" || n.name === "False"),
+  );
+  const hidden = !(valueNode && isIdent(valueNode) && valueNode.name === "False");
+  const atNode = named.get("at");
+  const toNode = named.get("to");
+  const targetPlayers = hiddenTargetPlayers(toNode ?? named.get("To"), env);
+
+  let region: RegionFn | undefined;
+  const regionNode = positional.find(
+    (n) =>
+      isList(n) &&
+      !(n.delimiter === "curly" && n.items.every((it) => isIdent(it) && HIDDEN_DATA_NAMES.has(it.name))),
+  );
+  if (regionNode) region = compileRegion(regionNode, env);
+  const atFn = atNode ? compileInt(atNode, env) : undefined;
+
+  return (ctx) => {
+    const sites = region
+      ? region.eval(ctx)
+      : atFn
+        ? [atFn.eval(ctx)]
+        : [ctx.frame.to ?? OFF];
+    const players = targetPlayers(ctx);
+    const out: Action[] = [];
+    for (const site of sites) {
+      if (site < 0 || site >= ctx.state.cells.length) continue;
+      for (const player of players) {
+        if (!dataTypes) {
+          out.push(hiddenAction(undefined, site, player, hidden));
+          continue;
+        }
+        for (const dataType of dataTypes) {
+          out.push(hiddenAction(dataType, site, player, hidden));
+        }
+      }
+    }
+    return out;
+  };
 }
 
 /**
@@ -2114,10 +2239,27 @@ function compileIs(node: LudList, env: CompileEnv): BoolFn {
     throw new LudemeCompileError("(is …) needs a kind keyword.");
   }
   const kind = kindNode.name;
-  const _r = lookupLudeme("bool", kind);
-  if (_r) return _r(node, env) as BoolFn;
   const rest = node.items.slice(2);
   const { positional, named } = parseArgs(rest);
+  if (kind === "Hidden") {
+    // @java Core/src/game/functions/booleans/is/Hidden/IsHidden.java
+    // @java Core/src/game/functions/booleans/is/Hidden/IsHiddenWhat.java
+    // Banqi uses the subtype form `(is Hidden What at:(to) to:Mover)`.
+    // The TS state keeps a single per-player hidden matrix, which is enough for
+    // move legality: What/Who are always toggled together in Banqi.
+    const siteNode = named.get("at") ?? dropSiteType(positional)[0];
+    const siteFn = siteNode ? compileInt(siteNode, env) : undefined;
+    const targetPlayers = hiddenTargetPlayers(named.get("to") ?? named.get("To"), env);
+    return {
+      eval: (ctx) => {
+        const site = siteFn ? siteFn.eval(ctx) : (ctx.frame.to ?? OFF);
+        if (site < 0 || site >= ctx.state.cells.length) return false;
+        return targetPlayers(ctx).some((p) => ctx.state.isHidden(p, site));
+      },
+    };
+  }
+  const _r = lookupLudeme("bool", kind);
+  if (_r) return _r(node, env) as BoolFn;
   switch (kind) {
     case "Count":
       return compileDeductionCount(positional, named, env);
@@ -4725,6 +4867,24 @@ function compileSites(node: LudList, env: CompileEnv): RegionFn {
   if (arg && isIdent(arg)) {
     const name = arg.name;
     const { positional, named } = parseArgs(node.items.slice(2));
+    if (name === "Hidden") {
+      // @java Core/src/game/functions/region/sites/hidden/SitesHidden.java
+      // The subtype tokens (What/Who/...) select which hidden bit Java reads.
+      // Banqi toggles What and Who together, so the unified State hidden matrix
+      // is sufficient for legal reveal generation.
+      const targetPlayers = hiddenTargetPlayers(named.get("to") ?? named.get("To"), env);
+      return {
+        eval: (ctx) => {
+          const players = targetPlayers(ctx);
+          if (players.length === 0) return [];
+          const out: number[] = [];
+          for (let s = 0; s < ctx.board.numSites; s += 1) {
+            if (players.some((p) => ctx.state.isHidden(p, s))) out.push(s);
+          }
+          return out;
+        },
+      };
+    }
     // Subtype-dispatch: a faithfully-transliterated `(sites <Subtype> …)` ludeme
     // registers under the compound key `sites:<Subtype>` (e.g. `sites:Around`).
     // Look it up first; fall through to the legacy switch when none is live.
@@ -12665,6 +12825,10 @@ export function compileEffectAction(
       const fn = arg ? compileInt(arg, env) : undefined;
       return (ctx) => [new ActionSetNextPlayer(fn ? fn.eval(ctx) : ctx.mover)];
     }
+    if (subName === "Hidden") {
+      // @java Core/src/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.java
+      return compileHiddenEffect(node, env);
+    }
     if (subName === "Rotation") {
       const { positional, named } = parseArgs(node.items.slice(2));
       const valFn = positional[0] ? compileInt(positional[0], env) : undefined;
@@ -12715,11 +12879,9 @@ export function compileEffectAction(
       const valFn = valNode ? compileInt(valNode, env) : undefined;
       return (ctx) => [new ActionRememberValue(name, valFn ? valFn.eval(ctx) : 0)];
     }
-    // Hidden-information, team, and pot bookkeeping have no public-state
-    // backing in this port yet; accept the syntax as a no-op so the rest of
-    // the game still compiles.
+    // Team and pot bookkeeping have no public-state backing in this port yet;
+    // accept the syntax as a no-op so the rest of the game still compiles.
     if (
-      subName === "Hidden" ||
       subName === "Team" ||
       subName === "Pot" ||
       subName === "Visible"

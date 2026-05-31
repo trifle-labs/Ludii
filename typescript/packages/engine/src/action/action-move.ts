@@ -10,8 +10,8 @@
  * Subset ported: deterministic data members (from / to / count /
  * state / rotation / value / level{From,To}) plus the core
  * `apply(state) → state` semantics: the piece at `from` is cleared
- * and re-placed at `to`. Hidden info, stacking semantics, and per-die
- * dispatch are deferred.
+ * and re-placed at `to`. Hidden info follows the moving piece on the flat
+ * top-piece path; the long tail of stacking/per-die dispatch is deferred.
  */
 
 import { maintainOnTrackIndicesForMove } from "../on-track-indices.js";
@@ -246,12 +246,34 @@ export class ActionMove extends BaseAction {
       next = next.withWhatAt(this.toIndex, movingWhat);
       next = this.applyDestAttrs(next, destState, destRotation, destValue);
       next = next.withCountAt(this.toIndex, destHeight + 1);
+      next = this.transferHidden(next, state, false);
       return this.maintainTracks(next, movingWhat);
     }
     next = next.withCell(this.toIndex, movingOwner);
     next = next.withWhatAt(this.toIndex, movingWhat);
     next = this.applyDestAttrs(next, destState, destRotation, destValue);
+    next = this.transferHidden(next, state, fromCount <= 1);
     return this.maintainTracks(next, movingWhat);
+  }
+
+  /**
+   * Java parity: ActionMoveTopPiece.java keeps hidden info with the piece:
+   * `csTo.setHidden*(..., csFrom.isHidden*(...))`, then clears the source
+   * hidden bits if the source site became empty (lines 1462-1482).
+   */
+  private transferHidden(next: State, before: State, clearFrom: boolean): State {
+    if (this.fromIndex === this.toIndex) return next;
+    let out = next;
+    for (let pid = 1; pid < before.hiddenForPlayer.length; pid += 1) {
+      const movingHidden = before.isHidden(pid, this.fromIndex);
+      if (out.isHidden(pid, this.toIndex) !== movingHidden) {
+        out = out.withHidden(pid, this.toIndex, movingHidden);
+      }
+      if (clearFrom && out.isHidden(pid, this.fromIndex)) {
+        out = out.withHidden(pid, this.fromIndex, false);
+      }
+    }
+    return out;
   }
 
   /**

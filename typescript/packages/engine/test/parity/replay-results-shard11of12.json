@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 282.5,
+    "elapsed_s": 354.5,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1316,8 +1316,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 60,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 60",
+      "plyReplayed": 51,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 51",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1472,8 +1472,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 159,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 159",
+      "plyReplayed": 151,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 151",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
@@ -1542,8 +1542,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Alice Chess",
-      "plyReplayed": 126,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 126",
+      "plyReplayed": 87,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 87",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Alice Chess/RandomTrial_1.txt"
     },
     {
@@ -1563,8 +1563,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 19,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 19",
+      "plyReplayed": 12,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 12",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_1.txt"
     },
     {
@@ -1666,8 +1666,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Manzhouqi",
-      "plyReplayed": 600,
-      "detail": "Hit move cap 600/2500",
+      "plyReplayed": 373,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 373",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Manzhouqi/RandomTrial_1.txt"
     },
     {
