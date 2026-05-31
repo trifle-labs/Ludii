@@ -19,15 +19,15 @@
   "perTrial": [
     {
       "bucket": "OUTCOME_OK",
-      "game": "board/space/line/Splade",
-      "plyReplayed": 14,
-      "trialFile": "../../../Player/res/random_trials/board/space/line/Splade/RandomTrial_0.txt"
+      "game": "math/graph/Sim",
+      "plyReplayed": 9,
+      "trialFile": "../../../Player/res/random_trials/math/graph/Sim/RandomTrial_0.txt"
     },
     {
       "bucket": "OUTCOME_OK",
-      "game": "board/space/line/Splade",
-      "plyReplayed": 12,
-      "trialFile": "../../../Player/res/random_trials/board/space/line/Splade/RandomTrial_1.txt"
+      "game": "math/graph/Sim",
+      "plyReplayed": 7,
+      "trialFile": "../../../Player/res/random_trials/math/graph/Sim/RandomTrial_1.txt"
     }
   ]
 }

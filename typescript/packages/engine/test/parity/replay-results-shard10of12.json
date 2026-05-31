@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 527.6,
+    "elapsed_s": 565.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 69,
-      "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 112,
+      "WINNER_MISMATCH": 8,
+      "OUTCOME_OK": 113,
       "REPLAY_OK_NO_OUTCOME": 23
     }
   },
@@ -1288,8 +1288,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 255,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 255",
+      "plyReplayed": 236,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 236",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1452,8 +1452,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 85,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 85",
+      "plyReplayed": 72,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 72",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_0.txt"
     },
     {
@@ -1533,8 +1533,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 72,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 72",
+      "plyReplayed": 65,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 65",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {
@@ -1934,17 +1934,9 @@
       "trialFile": "../../../Player/res/random_trials/math/graph/DisPath/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "math/graph/Sim",
       "plyReplayed": 9,
-      "recWinner": 2,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/math/graph/Sim/RandomTrial_0.txt"
     },
     {
