@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-31T01:48:18.740Z
+**Date:** 2026-05-31T02:49:33.794Z
 **Trials processed:** 213  
-**Wall time:** 365.7s
+**Wall time:** 775.8s
 
 ## Bucket Summary
 
@@ -10,10 +10,10 @@
 |--------|-------|---|
 | COMPILE_FAIL | 0 | 0.0% |
 | START_FAIL | 0 | 0.0% |
-| MOVE_MISMATCH | 55 | 25.8% |
-| WINNER_MISMATCH | 12 | 5.6% |
-| OUTCOME_OK | 111 | 52.1% |
-| REPLAY_OK_NO_OUTCOME | 35 | 16.4% |
+| MOVE_MISMATCH | 58 | 27.2% |
+| WINNER_MISMATCH | 14 | 6.6% |
+| OUTCOME_OK | 114 | 53.5% |
+| REPLAY_OK_NO_OUTCOME | 27 | 12.7% |
 
 ## Top 15 COMPILE_FAIL Reasons
 
@@ -22,6 +22,7 @@
 
 - `board/hunt/Hund efter Hare (Thy)`: **1** mismatches
 - `board/race/escape/Asi Keliya`: **1** mismatches
+- `board/race/escape/Buffa de Baldrac`: **1** mismatches
 - `board/race/escape/Garanguet`: **1** mismatches
 - `board/race/escape/Knossos Game`: **1** mismatches
 - `board/race/escape/Myles`: **1** mismatches
@@ -34,7 +35,6 @@
 - `board/race/reach/Football Chess`: **1** mismatches
 - `board/race/reach/Ishighan`: **1** mismatches
 - `board/race/reach/Kos`: **1** mismatches
-- `board/race/reach/Quoridor`: **1** mismatches
 
 ## 5 Concrete MOVE_MISMATCH Examples
 
@@ -52,23 +52,23 @@
 - **Sample TS moves:** mover=4,from=21,to=27,isPass=false
 - **Detail:** No matching TS move
 
-### Example 3: `board/race/escape/Garanguet`
+### Example 3: `board/race/escape/Buffa de Baldrac`
+- **Ply:** 87
+- **Recorded move:** `mover=2,from=3,to=2`
+- **TS moves available:** 16
+- **Sample TS moves:** mover=2,from=7,to=2,isPass=false, mover=2,from=7,to=3,isPass=false, mover=2,from=8,to=3,isPass=false
+- **Detail:** No matching TS move
+
+### Example 4: `board/race/escape/Garanguet`
 - **Ply:** 138
 - **Recorded move:** `mover=2,from=25,to=22`
 - **TS moves available:** 5
 - **Sample TS moves:** mover=2,from=2,to=2,isPass=false, mover=2,from=15,to=15,isPass=false, mover=2,from=21,to=21,isPass=false
 - **Detail:** No matching TS move
 
-### Example 4: `board/race/escape/Knossos Game`
+### Example 5: `board/race/escape/Knossos Game`
 - **Ply:** 40
 - **Recorded move:** `mover=2,from=15,to=8`
 - **TS moves available:** 1
 - **Sample TS moves:** mover=2,from=-1,to=-1,isPass=true
-- **Detail:** No matching TS move
-
-### Example 5: `board/race/escape/Myles`
-- **Ply:** 9
-- **Recorded move:** `mover=2,from=21,to=17`
-- **TS moves available:** 10
-- **Sample TS moves:** mover=2,from=14,to=14,isPass=false, mover=2,from=19,to=2,isPass=false, mover=2,from=22,to=18,isPass=false
 - **Detail:** No matching TS move

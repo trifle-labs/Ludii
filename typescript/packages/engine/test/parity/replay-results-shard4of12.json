@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 365.7,
+    "elapsed_s": 775.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 55,
-      "WINNER_MISMATCH": 12,
-      "OUTCOME_OK": 111,
-      "REPLAY_OK_NO_OUTCOME": 35
+      "MOVE_MISMATCH": 58,
+      "WINNER_MISMATCH": 14,
+      "OUTCOME_OK": 114,
+      "REPLAY_OK_NO_OUTCOME": 27
     }
   },
   "top15FailureReasons": {
@@ -20,6 +20,10 @@
       ],
       [
         "board/race/escape/Asi Keliya",
+        1
+      ],
+      [
+        "board/race/escape/Buffa de Baldrac",
         1
       ],
       [
@@ -69,10 +73,6 @@
       [
         "board/race/reach/Kos",
         1
-      ],
-      [
-        "board/race/reach/Quoridor",
-        1
       ]
     ]
   },
@@ -100,6 +100,18 @@
       "detail": "No matching TS move"
     },
     {
+      "game": "board/race/escape/Buffa de Baldrac",
+      "ply": 87,
+      "recMove": "mover=2,from=3,to=2",
+      "tsMoveCount": 16,
+      "sampleTsMoves": [
+        "mover=2,from=7,to=2,isPass=false",
+        "mover=2,from=7,to=3,isPass=false",
+        "mover=2,from=8,to=3,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
       "game": "board/race/escape/Garanguet",
       "ply": 138,
       "recMove": "mover=2,from=25,to=22",
@@ -118,18 +130,6 @@
       "tsMoveCount": 1,
       "sampleTsMoves": [
         "mover=2,from=-1,to=-1,isPass=true"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/race/escape/Myles",
-      "ply": 9,
-      "recMove": "mover=2,from=21,to=17",
-      "tsMoveCount": 10,
-      "sampleTsMoves": [
-        "mover=2,from=14,to=14,isPass=false",
-        "mover=2,from=19,to=2,isPass=false",
-        "mover=2,from=22,to=18,isPass=false"
       ],
       "detail": "No matching TS move"
     }
@@ -236,10 +236,17 @@
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Asi Keliya/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 42,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 42",
+      "ply": 87,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=3,to=2",
+      "tsMoveCount": 16,
+      "sampleTsMoves": [
+        "mover=2,from=7,to=2,isPass=false",
+        "mover=2,from=7,to=3,isPass=false",
+        "mover=2,from=8,to=3,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_0.txt"
     },
     {
@@ -1211,10 +1218,17 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Reversi/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/space/territory/Stargazers",
-      "plyReplayed": 5,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 5",
+      "plyReplayed": 35,
+      "recWinner": 2,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        2,
+        1
+      ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Stargazers/RandomTrial_0.txt"
     },
     {
@@ -1485,8 +1499,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 230,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 230",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_0.txt"
     },
     {
@@ -1510,10 +1524,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Beirut Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/Cylinder Chess",
-      "plyReplayed": 130,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 130",
+      "plyReplayed": 301,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Cylinder Chess/RandomTrial_0.txt"
     },
     {
@@ -1526,8 +1539,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Korkserschach",
-      "plyReplayed": 72,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 72",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2503",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Korkserschach/RandomTrial_0.txt"
     },
     {
@@ -1543,10 +1556,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Official Football Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/Scachs",
-      "plyReplayed": 112,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 112",
+      "plyReplayed": 258,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Scachs/RandomTrial_0.txt"
     },
     {
@@ -1564,10 +1576,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Social Distance Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/Unachess",
-      "plyReplayed": 10,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 10",
+      "plyReplayed": 278,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Unachess/RandomTrial_0.txt"
     },
     {
@@ -1583,17 +1594,24 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dice Shogi/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "plyReplayed": 37,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 37",
+      "ply": 90,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=-1,to=-1[Pass]",
+      "tsMoveCount": 40,
+      "sampleTsMoves": [
+        "mover=1,from=0,to=10,isPass=false",
+        "mover=1,from=2,to=11,isPass=false",
+        "mover=1,from=2,to=3,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 10,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 10",
+      "plyReplayed": 23,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 23",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1702,10 +1720,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Skirmish (GDL)/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "plyReplayed": 325,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 325",
+      "ply": 377,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=11,to=9",
+      "tsMoveCount": 32,
+      "sampleTsMoves": [
+        "mover=2,from=1,to=0,isPass=false",
+        "mover=2,from=1,to=2,isPass=false",
+        "mover=2,from=1,to=9,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_0.txt"
     },
     {
@@ -1847,10 +1872,17 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Tennessee Waltz/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "WINNER_MISMATCH",
       "game": "experimental/Watershed",
-      "plyReplayed": 32,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 32",
+      "plyReplayed": 65,
+      "recWinner": 2,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        2,
+        1
+      ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/experimental/Watershed/RandomTrial_0.txt"
     },
     {

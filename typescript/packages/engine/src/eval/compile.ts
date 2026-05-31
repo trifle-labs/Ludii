@@ -3497,11 +3497,6 @@ function compileNo(node: LudList, env: CompileEnv): BoolFn {
         nameStr = p.value;
       }
     }
-    // Component-name identity is not modelled per-type in this engine, so a
-    // `"Name"` filter conservatively assumes such pieces exist (eval false),
-    // matching the prior behaviour of `(no Pieces "Name")`.
-    if (nameStr !== undefined) return { eval: () => false };
-
     const everyone =
       roleName === undefined ? ofNode === undefined : roleName === "All";
     const pidFn = ofNode ? compileInt(ofNode, env) : undefined;
@@ -3509,6 +3504,50 @@ function compileNo(node: LudList, env: CompileEnv): BoolFn {
       !everyone && roleName !== undefined && roleName !== "All"
         ? ownerPredicate(roleName)
         : undefined;
+    if (nameStr !== undefined) {
+      const componentIds = new Set<number>();
+      for (const [label, what] of env.componentIdByLabel ?? []) {
+        if (label.includes(nameStr)) componentIds.add(what);
+      }
+      const baseNames = env.componentBaseNameById ?? [];
+      for (let what = 1; what < baseNames.length; what += 1) {
+        if ((baseNames[what] ?? "").includes(nameStr)) componentIds.add(what);
+      }
+      return {
+        eval: (ctx) => {
+          if (componentIds.size === 0) return true;
+          const cells = ctx.state.cells;
+          const ownerMatches = (who: number): boolean => {
+            if (everyone) return true;
+            if (pidFn) return who === pidFn.eval(ctx);
+            return pred!(who, ctx);
+          };
+          const occupied = (s: number): boolean => {
+            if (s < 0 || s >= cells.length || !ctx.state.isOccupiedSite(s)) {
+              return false;
+            }
+            const stackSize = ctx.state.stackSize(s);
+            if (stackSize > 1 || (ctx.state.stacks[s]?.length ?? 0) > 0) {
+              for (let level = 0; level < stackSize; level += 1) {
+                if (!ownerMatches(ctx.state.whoAtSiteLevel(s, level))) continue;
+                if (!componentIds.has(ctx.state.whatAtSiteLevel(s, level))) continue;
+                return true;
+              }
+              return false;
+            }
+            const who = cells[s] ?? 0;
+            return ownerMatches(who) && componentIds.has(ctx.state.whatAtSite(s));
+          };
+          if (regionFn) {
+            for (const s of regionFn.eval(ctx)) if (occupied(s)) return false;
+            return true;
+          }
+          for (let s = 0; s < cells.length; s += 1) if (occupied(s)) return false;
+          return true;
+        },
+      };
+    }
+
     return {
       eval: (ctx) => {
         const cells = ctx.state.cells;

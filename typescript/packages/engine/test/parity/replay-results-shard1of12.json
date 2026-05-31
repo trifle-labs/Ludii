@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 306.8,
+    "elapsed_s": 648.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 49,
-      "WINNER_MISMATCH": 15,
-      "OUTCOME_OK": 114,
-      "REPLAY_OK_NO_OUTCOME": 36
+      "MOVE_MISMATCH": 51,
+      "WINNER_MISMATCH": 17,
+      "OUTCOME_OK": 115,
+      "REPLAY_OK_NO_OUTCOME": 31
     }
   },
   "top15FailureReasons": {
@@ -384,8 +384,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/fill/Suffragetto",
-      "plyReplayed": 356,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 356",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/3155",
       "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_1.txt"
     },
     {
@@ -900,10 +900,17 @@
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Master Y/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/space/connection/Scaffold",
-      "plyReplayed": 39,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 39",
+      "plyReplayed": 99,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Scaffold/RandomTrial_1.txt"
     },
     {
@@ -1203,10 +1210,17 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/MacBeth/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/space/territory/Patok",
-      "plyReplayed": 131,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 131",
+      "ply": 257,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=208,to=208",
+      "tsMoveCount": 119,
+      "sampleTsMoves": [
+        "mover=2,from=1,to=1,isPass=false",
+        "mover=2,from=5,to=5,isPass=false",
+        "mover=2,from=6,to=6,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Patok/RandomTrial_1.txt"
     },
     {
@@ -1406,8 +1420,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)",
-      "plyReplayed": 226,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 226",
+      "plyReplayed": 526,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 526",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (14x14)/RandomTrial_1.txt"
     },
     {
@@ -1417,10 +1431,16 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Krida Buddhibalasrita/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/checkmate/chaturanga/Parsi Chess",
-      "plyReplayed": 94,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 94",
+      "ply": 205,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=15,to=7",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "mover=2,from=20,to=12,isPass=false",
+        "mover=2,from=55,to=63,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Parsi Chess/RandomTrial_1.txt"
     },
     {
@@ -1453,15 +1473,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Tepong",
-      "plyReplayed": 165,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 165",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2500",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Tepong/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Amazon Chess",
-      "plyReplayed": 244,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 244",
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/706",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Amazon Chess/RandomTrial_1.txt"
     },
     {
@@ -1497,10 +1517,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Half Chess/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/Long Assize",
-      "plyReplayed": 178,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 178",
+      "plyReplayed": 452,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Long Assize/RandomTrial_1.txt"
     },
     {
@@ -1531,17 +1550,24 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Shatera/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/war/replacement/checkmate/chess/Symmetric Chess",
-      "plyReplayed": 51,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 51",
+      "plyReplayed": 59,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Symmetric Chess/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Chu Seireigi",
-      "plyReplayed": 13,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 13",
+      "plyReplayed": 29,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 29",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Chu Seireigi/RandomTrial_1.txt"
     },
     {
