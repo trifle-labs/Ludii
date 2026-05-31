@@ -5884,9 +5884,21 @@ function compileSites(node: LudList, env: CompileEnv): RegionFn {
       }
     }
   }
-  // `(sites <intExpr>)` — e.g. `(sites (player (mapEntry (mover))))`. Java
-  // promotes an IntFunction here to the region declared for that player.
+  // `(sites <intExpr> {walk…})` — Java Sites.construct(SiteType, index,
+  // possibleSteps, rotations) → SitesWalk. Detected when the first arg is a
+  // list (int expression such as `(from)`) and the remaining positional args
+  // contain a curly walk array. Route to the registered sites:Walk compiler.
+  // @java Sites.java:684-703 — the walk form takes an IntFunction `index` plus
+  // the step-array(s) `possibleSteps`.
   if (arg && isList(arg)) {
+    const remainingArgs = node.items.slice(2);
+    const hasWalkArg = remainingArgs.some(
+      (n) => isList(n) && n.delimiter === "curly",
+    );
+    if (hasWalkArg) {
+      const walkLudeme = lookupLudeme("region", "sites:Walk");
+      if (walkLudeme) return walkLudeme(node, env) as RegionFn;
+    }
     const pidFn = compileInt(arg, env);
     return playerRegionLookup((ctx) => pidFn.eval(ctx), env);
   }
@@ -8464,10 +8476,19 @@ function playersForRole(name: string | undefined, ctx: EvalContext): number[] {
   if (name === "Enemy" || name === "NonMover") {
     return Array.from({ length: n }, (_, i) => i + 1).filter((p) => p !== ctx.mover);
   }
-  if (name === "Shared" || name === "Neutral") {
-    // Shared/Neutral pieces are owned by the neutral player `numPlayers + 1`
-    // (matching `collectPiece`/`compilePieceMoves`).
+  if (name === "Shared") {
+    // Shared pieces are registered under `numPlayers + 1` in `collectPiece`
+    // and stored in state.cells with that owner — e.g. Slimetrail's Snail.
     return [n + 1];
+  }
+  if (name === "Neutral") {
+    // Neutral pieces (Java RoleType.Neutral = 0) are stored in state.cells
+    // with who=0 (the placement label "Disc0" resolves owner via the suffix
+    // "0" → Number("0") = 0). Java ForEachPiece with specificPlayer=0 matches
+    // sites where state.who(s)==0 (neutral).
+    // @java RoleType.java:20 — Neutral(0); Java ForEachPiece.java iterates
+    // `owned.positions(0)` for the Neutral/0 player.
+    return [0];
   }
   const p = resolveRole(name, ctx);
   return p >= 1 ? [p] : [ctx.mover];
@@ -11557,6 +11578,7 @@ export function compileMoveLudeme(node: LudList, env: CompileEnv): MovesFn {
   // Ceelkoqyuqkoqiji family uses `(size Stack at:(last From))` in the `then` to
   // compute the relay landing hole; evaluating that on a synthetic post-move
   // board collapses the source stack to 0 and drops the `(moveAgain)` replay.
+  // @java Core/src/game/rules/play/moves/nonDecision/effect/Select.java
   const second = node.items[1];
   const selectOwnedThen =
     second !== undefined && isIdent(second) && second.name === "Select";
@@ -11564,6 +11586,13 @@ export function compileMoveLudeme(node: LudList, env: CompileEnv): MovesFn {
     thenNode,
     env,
     !selectOwnedThen,
+    // For a Select-owned then, inThen=false keeps guards on the pre-sow board,
+    // but (forEach Site …) effects (e.g. Veloop's `(remember Value (site))`)
+    // still need to execute. Pass allowForEachSite=true so they are compiled
+    // while guards remain pre-sow.
+    // @java Select.java — consequences run after ActionSelect fires, so
+    // site-iteration effects read the same unmodified board as guards do.
+    selectOwnedThen,
   );
   return {
     generate: (ctx) =>

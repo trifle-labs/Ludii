@@ -1,5 +1,5 @@
 {
-  "recorded": "2026-05-31T13:04:38.614Z",
+  "recorded": "2026-05-31T15:32:56.735Z",
   "java": {
     "Core/src/other/action/state/ActionAddPlayerToTeam.java": {
       "hash": "14f0e9e4b9d5bfa0",
@@ -546,6 +546,13 @@
         "src/ludemes/game/rules/play/moves/nonDecision/effect/Hop.ts"
       ]
     },
+    "Core/src/game/rules/play/moves/nonDecision/effect/Select.java": {
+      "hash": "e8003c5aff371658",
+      "ts": [
+        "src/eval/compile.ts",
+        "src/ludemes/game/rules/play/moves/nonDecision/effect/Select.ts"
+      ]
+    },
     "Core/src/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.java": {
       "hash": "223decc6ae92307c",
       "ts": [
@@ -572,6 +579,13 @@
       "ts": [
         "src/eval/compile.ts",
         "src/ludemes/game/rules/play/moves/nonDecision/effect/FromTo.ts"
+      ]
+    },
+    "Core/src/game/functions/graph/operators/Complete.java": {
+      "hash": "89dd29395c1afaf3",
+      "ts": [
+        "src/eval/graph/board-graph.ts",
+        "src/ludemes/game/functions/graph/operators/Complete.ts"
       ]
     },
     "Core/src/game/functions/graph/generators/shape/Regular.java": {
@@ -2168,12 +2182,6 @@
       "hash": "c7e7af3977e7502b",
       "ts": [
         "src/ludemes/game/functions/graph/operators/Clip.ts"
-      ]
-    },
-    "Core/src/game/functions/graph/operators/Complete.java": {
-      "hash": "89dd29395c1afaf3",
-      "ts": [
-        "src/ludemes/game/functions/graph/operators/Complete.ts"
       ]
     },
     "Core/src/game/functions/graph/operators/Dual.java": {
@@ -4316,12 +4324,6 @@
       "hash": "1161b7e608402d1a",
       "ts": [
         "src/ludemes/game/rules/play/moves/nonDecision/effect/Satisfy.ts"
-      ]
-    },
-    "Core/src/game/rules/play/moves/nonDecision/effect/Select.java": {
-      "hash": "e8003c5aff371658",
-      "ts": [
-        "src/ludemes/game/rules/play/moves/nonDecision/effect/Select.ts"
       ]
     },
     "Core/src/game/rules/play/moves/nonDecision/effect/Shoot.java": {
@@ -6870,6 +6872,7 @@
       "hash": "89dd29395c1afaf3",
       "ported": true,
       "ts": [
+        "src/eval/graph/board-graph.ts",
         "src/ludemes/game/functions/graph/operators/Complete.ts"
       ]
     },
@@ -9698,6 +9701,7 @@
       "hash": "e8003c5aff371658",
       "ported": true,
       "ts": [
+        "src/eval/compile.ts",
         "src/ludemes/game/rules/play/moves/nonDecision/effect/Select.ts"
       ]
     },

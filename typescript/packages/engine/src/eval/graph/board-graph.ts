@@ -35,6 +35,7 @@ import {
   genRegular,
   genSpiral,
   genTri,
+  genTriCustom,
   genWedge,
 } from "./named-tilings.js";
 import {
@@ -343,7 +344,6 @@ const PASSTHROUGH = new Set([
   "trim",
   "splitcrossings",
   "makefaces",
-  "complete",
   "mesh",
   "layers",
   "renumberclockwise",
@@ -368,9 +368,15 @@ export function toGraph(node: LudNode, vertexMode = false): Graph | undefined {
       if (isTrue(named.get("pyramidal"))) {
         return genSquarePyramidal(evalNum(pos[0]) ?? 1);
       }
+      // Optional leading shape ident: `(square Square 8)` is equivalent to
+      // `(square 8)` — `Square` is the default shape. Skip the ident to find
+      // the numeric dimension. @java Square.java:56-80 — `SquareShapeType shape`
+      // defaults to Square when null, and Square/Rectangle route through
+      // `RectangleOnSquare(dimA, dimB)` with no special treatment.
+      const sqOff = pos[0] && isIdent(pos[0]) ? 1 : 0;
       const diag = named.get("diagonals");
       return genSquare(
-        evalNum(pos[0]) ?? 1,
+        evalNum(pos[sqOff]) ?? 1,
         vertexMode,
         diag && isIdent(diag) ? diag.name : undefined,
       );
@@ -404,6 +410,16 @@ export function toGraph(node: LudNode, vertexMode = false): Graph | undefined {
     case "hex":
     case "tri":
     case "brick": {
+      // `(tri {s1 s2 s3 …})` / `(hex {s1 s2 …})` — a curly-list of side
+      // lengths routes to Java's CustomOnTri/CustomOnHex({sides}) constructor.
+      // @java Tri.java:85-103 — `construct(DimFunction[] sides)` calls
+      // `new CustomOnTri(sides)` when the first argument is an array.
+      if (head === "tri" && pos[0] && isList(pos[0]) && pos[0].delimiter === "curly") {
+        const sides = pos[0].items
+          .filter(isNumber)
+          .map((n) => n.value);
+        if (sides.length > 0) return genTriCustom(sides);
+      }
       // Optional leading shape ident: (hex Diamond 11) vs (hex 5).
       const shape = pos[0] && isIdent(pos[0]) ? pos[0].name : undefined;
       const off = shape ? 1 : 0;
@@ -704,6 +720,23 @@ export function toGraph(node: LudNode, vertexMode = false): Graph | undefined {
       }
       g.makeFaces();
       g.reorder();
+      return g;
+    }
+    case "complete": {
+      // @java Complete.java:83-91 — `(complete graph)` creates an edge between
+      // every pair of vertices (graph.clear(Edge), then findOrAddEdge for all
+      // (va,vb) pairs, then makeFaces). Used by Oriath et al. on edge-play boards.
+      // @java Core/src/game/functions/graph/operators/Complete.java:83-96
+      const src = firstOperand(pos, vertexMode);
+      if (!src) return undefined;
+      const g = new Graph();
+      // Copy vertices only (no edges), then add all-pairs edges.
+      for (const v of src.vertices) g.addVertex(v.x, v.y);
+      const n = g.vertices.length;
+      for (let va = 0; va < n; va += 1)
+        for (let vb = va + 1; vb < n; vb += 1)
+          g.addEdge(va, vb);
+      g.makeFaces();
       return g;
     }
     default:

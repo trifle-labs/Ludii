@@ -275,11 +275,12 @@ function genHexCustom(
 }
 
 /**
- * `(tri Limping n)` — @java Tri.construct + CustomOnTri.eval. Builds the
- * side-walk polygon for `{n, n+1}`, inflates it, samples Tri.xy lattice points
- * inside it, then joins unit-apart vertices and reorders.
+ * `(tri Limping n)` / `(tri {sides…})` — @java Tri.construct + CustomOnTri.eval.
+ * Builds the side-walk polygon for the given sides, inflates it, samples
+ * Tri.xy lattice points inside it, then joins unit-apart vertices and reorders.
+ * @java CustomOnTri.java:79-113
  */
-function genTriCustom(sides: readonly number[]): Graph {
+export function genTriCustom(sides: readonly number[]): Graph {
   const poly = triPolygonFromSides(sides);
   inflatePolygon(poly, 0.1);
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -401,6 +402,9 @@ export function genHex(
     }
     case "triangle":
       return buildTiling({ ref, rows: a, cols: a, xy, keep: triClip });
+    case "limping":
+      // @java Hex.java:94 — `case Limping: return new CustomOnHex({dimA, dimA+1})`
+      return genHexCustom([a, a + 1], ref);
     default: {
       // @java Hex.construct: two dims with no shape keyword → CustomOnHex({a,b})
       // (a polygon/limping hexagon), NOT a regular hexagon. Single dim →

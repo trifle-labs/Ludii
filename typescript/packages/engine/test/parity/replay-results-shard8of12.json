@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 540.2,
+    "elapsed_s": 1533.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 72,
+      "MOVE_MISMATCH": 70,
       "WINNER_MISMATCH": 6,
       "OUTCOME_OK": 111,
-      "REPLAY_OK_NO_OUTCOME": 24
+      "REPLAY_OK_NO_OUTCOME": 26
     }
   },
   "top15FailureReasons": {
@@ -702,15 +702,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Khutka Boia/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/two_rows/Lam Waladach",
-      "ply": 4,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=4,to=4",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=2,from=3,to=3,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/3103",
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Lam Waladach/RandomTrial_0.txt"
     },
     {
@@ -833,14 +828,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/blocking/Garrisons",
-      "ply": 0,
+      "ply": 31,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=19,to=19",
-      "tsMoveCount": 6,
+      "recMove": "mover=2,from=30,to=1",
+      "tsMoveCount": 71,
       "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+        "mover=2,from=2,to=2,isPass=false",
+        "mover=2,from=14,to=14,isPass=false",
+        "mover=2,from=21,to=21,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Garrisons/RandomTrial_0.txt"
     },
@@ -1217,8 +1212,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "plyReplayed": 45,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 45",
+      "plyReplayed": 46,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 46",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_0.txt"
     },
     {
@@ -1383,14 +1378,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/war/leaping/lines/Claim Jumpers",
-      "ply": 0,
+      "ply": 6,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=25,to=25",
-      "tsMoveCount": 5,
+      "recMove": "mover=1,from=14,to=3",
+      "tsMoveCount": 30,
       "sampleTsMoves": [
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false",
-        "mover=1,from=3,to=3,isPass=false"
+        "mover=2,from=1,to=1,isPass=false",
+        "mover=2,from=3,to=3,isPass=false",
+        "mover=2,from=4,to=4,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Claim Jumpers/RandomTrial_0.txt"
     },
@@ -1563,8 +1558,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Level Chess",
-      "plyReplayed": 4,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 4",
+      "plyReplayed": 5,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 5",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {
@@ -1830,14 +1825,13 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Equi Game System",
-      "ply": 0,
+      "ply": 2,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=6,to=6",
-      "tsMoveCount": 6,
+      "recMove": "mover=1,from=23,to=23",
+      "tsMoveCount": 2,
       "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+        "mover=1,from=0,to=11,isPass=false",
+        "mover=1,from=0,to=11,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Equi Game System/RandomTrial_0.txt"
     },
@@ -1868,30 +1862,23 @@
       "trialFile": "../../../Player/res/random_trials/experimental/OffShore/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "experimental/Skirt",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=56,to=56",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
+      "plyReplayed": 1,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 1",
       "trialFile": "../../../Player/res/random_trials/experimental/Skirt/RandomTrial_0.txt"
     },
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Tri-It-Out",
-      "ply": 1,
+      "ply": 9,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=10,to=10",
-      "tsMoveCount": 5,
+      "recMove": "mover=1,from=11,to=11",
+      "tsMoveCount": 18,
       "sampleTsMoves": [
         "mover=2,from=0,to=0,isPass=false",
         "mover=2,from=1,to=1,isPass=false",
-        "mover=2,from=2,to=2,isPass=false"
+        "mover=2,from=4,to=4,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Tri-It-Out/RandomTrial_0.txt"
     },

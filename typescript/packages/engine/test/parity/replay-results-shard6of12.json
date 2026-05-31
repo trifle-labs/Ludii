@@ -1,12 +1,12 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 637.1,
+    "elapsed_s": 583.5,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 64,
-      "WINNER_MISMATCH": 9,
+      "MOVE_MISMATCH": 62,
+      "WINNER_MISMATCH": 11,
       "OUTCOME_OK": 115,
       "REPLAY_OK_NO_OUTCOME": 25
     }
@@ -1622,8 +1622,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Tai Shogi",
-      "plyReplayed": 5,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 5",
+      "plyReplayed": 4,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 4",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Tai Shogi/RandomTrial_0.txt"
     },
     {
@@ -1870,17 +1870,17 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Wild Draughts/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "experimental/graph_theory/Ciri Amber",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=11,to=11",
-      "tsMoveCount": 7,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+      "plyReplayed": 1,
+      "recWinner": 2,
+      "tsWinner": 1,
+      "recRankings": [
+        0,
+        2,
+        1
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/experimental/graph_theory/Ciri Amber/RandomTrial_0.txt"
     },
     {
@@ -1890,17 +1890,17 @@
       "trialFile": "../../../Player/res/random_trials/experimental/graph_theory/Nein Ari/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "experimental/graph_theory/Windir",
-      "ply": 3,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=26,to=26",
-      "tsMoveCount": 13,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=1,to=1,isPass=false",
-        "mover=2,from=2,to=2,isPass=false"
+      "plyReplayed": 28,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/experimental/graph_theory/Windir/RandomTrial_0.txt"
     },
     {

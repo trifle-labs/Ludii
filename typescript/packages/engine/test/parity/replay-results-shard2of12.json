@@ -1,12 +1,12 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 725.5,
+    "elapsed_s": 646.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 58,
-      "WINNER_MISMATCH": 8,
+      "MOVE_MISMATCH": 57,
+      "WINNER_MISMATCH": 9,
       "OUTCOME_OK": 117,
       "REPLAY_OK_NO_OUTCOME": 30
     }
@@ -979,14 +979,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/RootZone",
-      "ply": 0,
+      "ply": 1,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=49,to=49",
-      "tsMoveCount": 7,
+      "recMove": "mover=2,from=12,to=12",
+      "tsMoveCount": 24,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true",
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false"
+        "mover=2,from=-1,to=-1,isPass=true",
+        "mover=2,from=0,to=0,isPass=false",
+        "mover=2,from=1,to=1,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/group/RootZone/RandomTrial_0.txt"
     },
@@ -1054,17 +1054,17 @@
       "trialFile": "../../../Player/res/random_trials/board/space/line/Five Men's Morris/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/space/line/Kassle",
-      "ply": 24,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=24,to=19",
-      "tsMoveCount": 32,
-      "sampleTsMoves": [
-        "mover=1,from=3,to=3,isPass=false",
-        "mover=1,from=4,to=4,isPass=false",
-        "mover=1,from=6,to=6,isPass=false"
+      "plyReplayed": 5,
+      "recWinner": 2,
+      "tsWinner": 1,
+      "recRankings": [
+        0,
+        2,
+        1
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/line/Kassle/RandomTrial_0.txt"
     },
     {
@@ -1446,8 +1446,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 248,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 248",
+      "plyReplayed": 280,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 280",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
@@ -1599,8 +1599,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 17,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 17",
+      "plyReplayed": 16,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 16",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1620,8 +1620,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Unashogi",
-      "plyReplayed": 2,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 2",
+      "plyReplayed": 1,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 1",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Unashogi/RandomTrial_0.txt"
     },
     {
@@ -1826,12 +1826,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Veloop (Square)",
-      "ply": 0,
+      "ply": 2,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=45,to=28",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=54,to=37",
+      "tsMoveCount": 4,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=1,from=18,to=28,isPass=false",
+        "mover=1,from=34,to=28,isPass=false",
+        "mover=1,from=35,to=45,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Veloop (Square)/RandomTrial_0.txt"
     },

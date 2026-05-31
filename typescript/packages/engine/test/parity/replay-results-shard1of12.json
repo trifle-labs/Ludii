@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 548.4,
+    "elapsed_s": 490.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 44,
+      "MOVE_MISMATCH": 43,
       "WINNER_MISMATCH": 17,
-      "OUTCOME_OK": 121,
+      "OUTCOME_OK": 122,
       "REPLAY_OK_NO_OUTCOME": 32
     }
   },
@@ -782,12 +782,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Ex Nihilo",
-      "ply": 0,
+      "ply": 13,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=28,to=52",
-      "tsMoveCount": 1,
+      "recMove": "mover=1,from=7,to=1",
+      "tsMoveCount": 8,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=2,from=15,to=9,isPass=false",
+        "mover=2,from=21,to=13,isPass=false",
+        "mover=2,from=22,to=9,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Ex Nihilo/RandomTrial_1.txt"
     },
@@ -1750,14 +1752,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Parry",
-      "ply": 0,
+      "ply": 4,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=32,to=32",
+      "recMove": "mover=1,from=32,to=28",
       "tsMoveCount": 6,
       "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+        "mover=2,from=3,to=3,isPass=false",
+        "mover=2,from=4,to=4,isPass=false",
+        "mover=2,from=8,to=8,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Parry/RandomTrial_1.txt"
     },
@@ -1776,12 +1778,13 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Veloop (Hex)",
-      "ply": 0,
+      "ply": 2,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=20,to=10",
-      "tsMoveCount": 1,
+      "recMove": "mover=1,from=11,to=20",
+      "tsMoveCount": 2,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=1,from=9,to=10,isPass=false",
+        "mover=1,from=19,to=20,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Veloop (Hex)/RandomTrial_1.txt"
     },
@@ -1806,17 +1809,9 @@
       "trialFile": "../../../Player/res/random_trials/experimental/graph_theory/LastEdge/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/graph_theory/Oriath",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=10,to=10",
-      "tsMoveCount": 7,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
+      "plyReplayed": 21,
       "trialFile": "../../../Player/res/random_trials/experimental/graph_theory/Oriath/RandomTrial_1.txt"
     },
     {

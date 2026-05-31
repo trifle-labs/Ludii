@@ -1,12 +1,12 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 585.4,
+    "elapsed_s": 561.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 70,
-      "WINNER_MISMATCH": 8,
+      "MOVE_MISMATCH": 69,
+      "WINNER_MISMATCH": 9,
       "OUTCOME_OK": 112,
       "REPLAY_OK_NO_OUTCOME": 23
     }
@@ -1288,8 +1288,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 238,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 238",
+      "plyReplayed": 247,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 247",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1452,8 +1452,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 61,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 61",
+      "plyReplayed": 79,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 79",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_0.txt"
     },
     {
@@ -1533,8 +1533,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 56,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 56",
+      "plyReplayed": 59,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 59",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {
@@ -1862,14 +1862,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/SnipSnip",
-      "ply": 0,
+      "ply": 4,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=13,to=13",
-      "tsMoveCount": 6,
+      "recMove": "mover=2,from=14,to=14",
+      "tsMoveCount": 14,
       "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
         "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+        "mover=1,from=2,to=2,isPass=false",
+        "mover=1,from=3,to=3,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/SnipSnip/RandomTrial_0.txt"
     },
@@ -1934,17 +1934,17 @@
       "trialFile": "../../../Player/res/random_trials/math/graph/DisPath/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "math/graph/Sim",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=11,to=11",
-      "tsMoveCount": 6,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+      "plyReplayed": 9,
+      "recWinner": 2,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        2,
+        1
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/math/graph/Sim/RandomTrial_0.txt"
     },
     {

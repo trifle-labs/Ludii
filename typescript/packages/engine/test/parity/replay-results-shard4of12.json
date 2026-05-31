@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 612.6,
+    "elapsed_s": 553.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 52,
+      "MOVE_MISMATCH": 51,
       "WINNER_MISMATCH": 16,
       "OUTCOME_OK": 118,
-      "REPLAY_OK_NO_OUTCOME": 27
+      "REPLAY_OK_NO_OUTCOME": 28
     }
   },
   "top15FailureReasons": {
@@ -1580,24 +1580,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dice Shogi/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "ply": 90,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=-1,to=-1[Pass]",
-      "tsMoveCount": 40,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=10,isPass=false",
-        "mover=1,from=2,to=11,isPass=false",
-        "mover=1,from=2,to=3,isPass=false"
-      ],
+      "plyReplayed": 90,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 90",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 22,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 22",
+      "plyReplayed": 20,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 20",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_0.txt"
     },
     {

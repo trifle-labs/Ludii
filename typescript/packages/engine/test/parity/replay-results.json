@@ -1,33 +1,79 @@
 {
   "summary": {
     "totalTrials": 2,
-    "elapsed_s": 0.4,
+    "elapsed_s": 3.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 0,
+      "MOVE_MISMATCH": 2,
       "WINNER_MISMATCH": 0,
-      "OUTCOME_OK": 2,
+      "OUTCOME_OK": 0,
       "REPLAY_OK_NO_OUTCOME": 0
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": []
+    "MOVE_MISMATCH": [
+      [
+        "experimental/Ex Nihilo",
+        2
+      ]
+    ]
   },
-  "exampleMismatches": [],
-  "perTrial": [
+  "exampleMismatches": [
     {
-      "bucket": "OUTCOME_OK",
-      "game": "board/war/replacement/eliminate/all/Icebreaker",
-      "plyReplayed": 62,
-      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Icebreaker/RandomTrial_0.txt"
+      "game": "experimental/Ex Nihilo",
+      "ply": 4,
+      "recMove": "mover=2,from=7,to=1",
+      "tsMoveCount": 15,
+      "sampleTsMoves": [
+        "mover=1,from=12,to=5,isPass=false",
+        "mover=1,from=15,to=9,isPass=false",
+        "mover=1,from=20,to=5,isPass=false"
+      ],
+      "detail": "No matching TS move"
     },
     {
-      "bucket": "OUTCOME_OK",
-      "game": "board/war/replacement/eliminate/all/Icebreaker",
-      "plyReplayed": 78,
-      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Icebreaker/RandomTrial_1.txt"
+      "game": "experimental/Ex Nihilo",
+      "ply": 13,
+      "recMove": "mover=1,from=7,to=1",
+      "tsMoveCount": 8,
+      "sampleTsMoves": [
+        "mover=2,from=15,to=9,isPass=false",
+        "mover=2,from=21,to=13,isPass=false",
+        "mover=2,from=22,to=9,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
+  "perTrial": [
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Ex Nihilo",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=7,to=1",
+      "tsMoveCount": 15,
+      "sampleTsMoves": [
+        "mover=1,from=12,to=5,isPass=false",
+        "mover=1,from=15,to=9,isPass=false",
+        "mover=1,from=20,to=5,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Ex Nihilo/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "experimental/Ex Nihilo",
+      "ply": 13,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=7,to=1",
+      "tsMoveCount": 8,
+      "sampleTsMoves": [
+        "mover=2,from=15,to=9,isPass=false",
+        "mover=2,from=21,to=13,isPass=false",
+        "mover=2,from=22,to=9,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Ex Nihilo/RandomTrial_1.txt"
     }
   ]
 }
