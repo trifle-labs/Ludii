@@ -610,6 +610,8 @@ export function compileInt(node: LudNode, env: CompileEnv): IntFn {
     const name = node.name;
     if (name === "Off") return { eval: () => OFF };
     if (name === "End") return { eval: () => END };
+    // Java main.Constants.INFINITY.
+    if (name === "Infinity") return { eval: () => 1000000000 };
     return { eval: (ctx) => resolveRole(name, ctx) };
   }
   if (!isList(node)) {
@@ -7148,6 +7150,31 @@ export function compileMoves(node: LudNode, env: CompileEnv): MovesFn {
           }),
         ],
       };
+    case "enclose": {
+      // Enclose is an Effect subclass on the Java side, but it is also a Moves
+      // object and is commonly probed through `(can Move (enclose ...))`.
+      // Generate a single non-decision move carrying the enclosure actions so
+      // CanMove sees the capture availability.
+      const effect = compileEffectAction(node, env, false);
+      return {
+        generate: (ctx) => {
+          const actions = effect ? effect(ctx) : [];
+          if (actions.length === 0) return [];
+          const from = ctx.frame.from ?? lastToSite(ctx);
+          const to = actions[0]?.to() ?? from;
+          return [
+            new Move({
+              id: `enclose:${from}:${to}:${ctx.mover}`,
+              label: "Enclose",
+              siteIndices: [to >= 0 ? to : 0],
+              mover: ctx.mover,
+              placedOwner: ctx.mover,
+              actions,
+            }),
+          ];
+        },
+      };
+    }
     case "max": {
       // (max Moves|Captures|Distance [withValue:…] <generator> [then]) — Java
       // `Max.construct` dispatches on the leading MaxMovesType/MaxDistanceType.
@@ -10144,6 +10171,12 @@ function compileForEachEffect(node: LudList, env: CompileEnv): EffectFn {
       }
     }
     if (!bodyNode) return () => [];
+    const groupThenNode = node.items.find(
+      (n) => isList(n) && listHead(n) === "then",
+    ) as LudList | undefined;
+    const groupThen = groupThenNode
+      ? compileThen(groupThenNode, env, false, true)
+      : undefined;
     // Fail-soft: a group-effect body using a form we can't compile yet
     // (e.g. `(priority …)`/`(pass …)` in Bug/Lifeline) degrades the whole
     // iteration to a no-op rather than failing the game's compile — matching
@@ -10159,6 +10192,7 @@ function compileForEachEffect(node: LudList, env: CompileEnv): EffectFn {
       const nSites = cells.length;
       const seen = new Set<number>();
       const out: Action[] = [];
+      let postState = ctx.context.state;
       for (let start = 0; start < nSites; start += 1) {
         const owner = cells[start] ?? 0;
         if (owner === 0 || seen.has(start)) continue;
@@ -10178,7 +10212,20 @@ function compileForEachEffect(node: LudList, env: CompileEnv): EffectFn {
         const rep = Math.max(...comp);
         const sub = ctx.withFrame({ to: rep, from: rep, site: rep, region: comp });
         if (!gCond.eval(sub)) continue;
-        out.push(...eff(sub));
+        const body = eff(sub);
+        out.push(...body);
+        for (const a of body) postState = a.apply(postState, ctx.context.rng.clone());
+        if (groupThen && body.length > 0) {
+          const thenCtx = sub.withContext(sub.context.withState(postState));
+          const extra = groupThen.effect ? groupThen.effect(thenCtx) : [];
+          out.push(...extra);
+          for (const a of extra) postState = a.apply(postState, ctx.context.rng.clone());
+          let again = groupThen.moveAgain;
+          if (!again && groupThen.moveAgainCond) {
+            again = groupThen.moveAgainCond.eval(thenCtx);
+          }
+          if (again) out.push(new ActionSetNextPlayer(ctx.mover));
+        }
       }
       return out;
     };
@@ -11867,6 +11914,12 @@ export function compileEffectAction(
     // ActionSetNextPlayer(mover).
     return (ctx) => [new ActionSetNextPlayer(ctx.mover)];
   }
+  if (head === "pass") {
+    // Java Pass.eval emits a non-decision ActionPass. This is a real effect in
+    // branches such as Lifeline's per-group `(if ... (remove ...) (pass))`; the
+    // action is state-neutral but lets the surrounding conditional compile.
+    return () => [new ActionPass()];
+  }
   if (head === "do") {
     // `(do <prior> next:<main> …)` reached via this LEAF compiler — i.e. nested
     // *inside* an effect chain, not as a top-level `(then …)` consequent. The
@@ -12196,7 +12249,7 @@ export function compileEffectAction(
       : { eval: () => 0 };
 
     return (ctx) => {
-      const pmctx = postMoveContext(ctx);
+      const pmctx = inThen ? postMoveContext(ctx) : ctx;
       const from = fromFn.eval(pmctx);
       if (from < 0 || from >= pmctx.board.numSites) return [];
       if (pmctx.state.whatAtSite(from) <= 0) return [];

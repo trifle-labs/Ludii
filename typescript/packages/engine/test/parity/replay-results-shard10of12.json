@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 545,
+    "elapsed_s": 550.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 70,
-      "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 111,
+      "WINNER_MISMATCH": 8,
+      "OUTCOME_OK": 112,
       "REPLAY_OK_NO_OUTCOME": 23
     }
   },
@@ -849,17 +849,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Jostle/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/blocking/NoGo",
       "plyReplayed": 76,
-      "recWinner": 2,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/NoGo/RandomTrial_0.txt"
     },
     {
@@ -1296,8 +1288,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 252,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 252",
+      "plyReplayed": 253,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 253",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1533,8 +1525,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 68,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 68",
+      "plyReplayed": 49,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 49",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {

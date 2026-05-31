@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 663,
+    "elapsed_s": 638.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 51,
-      "WINNER_MISMATCH": 14,
-      "OUTCOME_OK": 120,
-      "REPLAY_OK_NO_OUTCOME": 28
+      "MOVE_MISMATCH": 50,
+      "WINNER_MISMATCH": 15,
+      "OUTCOME_OK": 119,
+      "REPLAY_OK_NO_OUTCOME": 29
     }
   },
   "top15FailureReasons": {
@@ -239,8 +239,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 136,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 136",
+      "plyReplayed": 142,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 142",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_1.txt"
     },
     {
@@ -1513,9 +1513,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Scachs/RandomTrial_1.txt"
     },
     {
-      "bucket": "OUTCOME_OK",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Social Distance Chess",
-      "plyReplayed": 557,
+      "plyReplayed": 273,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 273",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Social Distance Chess/RandomTrial_1.txt"
     },
     {
@@ -1743,17 +1744,17 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Goldilocks Stones/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "experimental/Hexifact",
-      "ply": 22,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=13,to=10",
-      "tsMoveCount": 12,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=23,to=23,isPass=false",
-        "mover=1,from=25,to=25,isPass=false"
+      "plyReplayed": 35,
+      "recWinner": 2,
+      "tsWinner": 1,
+      "recRankings": [
+        0,
+        2,
+        1
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/experimental/Hexifact/RandomTrial_1.txt"
     },
     {
@@ -1761,7 +1762,7 @@
       "game": "experimental/N-Mesh",
       "plyReplayed": 15,
       "recWinner": 1,
-      "tsWinner": -1,
+      "tsWinner": 2,
       "recRankings": [
         0,
         1,
@@ -1776,11 +1777,9 @@
       "ply": 0,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=25,to=23",
-      "tsMoveCount": 34,
+      "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true",
-        "mover=1,from=6,to=28,isPass=false",
-        "mover=1,from=9,to=7,isPass=false"
+        "mover=1,from=-1,to=-1,isPass=true"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Rabbit Warrens/RandomTrial_1.txt"
     },
@@ -1803,7 +1802,7 @@
       "game": "experimental/Watershed",
       "plyReplayed": 67,
       "recWinner": 2,
-      "tsWinner": -1,
+      "tsWinner": 1,
       "recRankings": [
         0,
         2,

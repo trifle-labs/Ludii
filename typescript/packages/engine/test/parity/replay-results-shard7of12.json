@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 481.6,
+    "elapsed_s": 500.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 62,
+      "MOVE_MISMATCH": 61,
       "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 113,
+      "OUTCOME_OK": 114,
       "REPLAY_OK_NO_OUTCOME": 29
     }
   },
@@ -1168,15 +1168,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/pattern/Upper Hand/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/territory/Cavity",
-      "ply": 2,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=87,to=87",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 148,
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Cavity/RandomTrial_1.txt"
     },
     {
@@ -1612,8 +1606,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Tai Shogi",
-      "plyReplayed": 4,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 4",
+      "plyReplayed": 3,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 3",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Tai Shogi/RandomTrial_1.txt"
     },
     {

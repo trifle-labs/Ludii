@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 461.4,
+    "elapsed_s": 485.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -466,12 +466,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/race/reach/Stairs",
-      "ply": 1,
+      "ply": 16,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=3,to=8",
-      "tsMoveCount": 1,
+      "recMove": "mover=1,from=34,to=35",
+      "tsMoveCount": 4,
       "sampleTsMoves": [
-        "mover=2,from=-1,to=-1,isPass=true"
+        "mover=1,from=21,to=14,isPass=false",
+        "mover=1,from=21,to=15,isPass=false",
+        "mover=1,from=21,to=16,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/race/reach/Stairs/RandomTrial_0.txt"
     },

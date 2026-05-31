@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 403.7,
+    "elapsed_s": 529.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 76,
+      "MOVE_MISMATCH": 75,
       "WINNER_MISMATCH": 6,
       "OUTCOME_OK": 109,
-      "REPLAY_OK_NO_OUTCOME": 22
+      "REPLAY_OK_NO_OUTCOME": 23
     }
   },
   "top15FailureReasons": {
@@ -1228,15 +1228,10 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Goats Wintering/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "ply": 2,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=126,to=126",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 48,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 48",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_0.txt"
     },
     {
