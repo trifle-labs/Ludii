@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 256.9,
+    "elapsed_s": 258.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1614,8 +1614,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Glinski Chess",
-      "plyReplayed": 274,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 274",
+      "plyReplayed": 267,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 267",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
     },
     {

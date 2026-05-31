@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 272.8,
+    "elapsed_s": 272.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 50,
+      "MOVE_MISMATCH": 49,
       "WINNER_MISMATCH": 10,
       "OUTCOME_OK": 120,
-      "REPLAY_OK_NO_OUTCOME": 34
+      "REPLAY_OK_NO_OUTCOME": 35
     }
   },
   "top15FailureReasons": {
@@ -377,8 +377,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/fill/Suffragetto",
-      "plyReplayed": 384,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 384",
+      "plyReplayed": 366,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 366",
       "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_0.txt"
     },
     {
@@ -714,15 +714,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Oure Ngat/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/two_rows/Puhulmutu",
-      "ply": 16,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=5,to=5",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=14,to=14,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/689",
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Puhulmutu/RandomTrial_0.txt"
     },
     {
@@ -1189,8 +1184,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Patok",
-      "plyReplayed": 148,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 148",
+      "plyReplayed": 149,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 149",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Patok/RandomTrial_0.txt"
     },
     {
@@ -1515,8 +1510,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Symmetric Chess",
-      "plyReplayed": 94,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 94",
+      "plyReplayed": 96,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 96",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Symmetric Chess/RandomTrial_0.txt"
     },
     {

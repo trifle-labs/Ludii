@@ -14212,8 +14212,12 @@ function compileSow(node: LudList, env: CompileEnv): EffectFn {
     // Drop up to numPerHole seeds (default 1) at `site`, capped by the seeds
     // still in hand. Returns true if at least one seed landed (so `landing`
     // tracks the last hole that actually received a seed).
-    const dropAt = (site: number): boolean => {
-      const per = numPerHole ? numPerHole.eval(ctx.withFrame({ from, to: site })) : 1;
+    const dropAt = (site: number, value?: number): boolean => {
+      const dropFrame =
+        value === undefined ? { from, to: site } : { from, to: site, value };
+      const per = numPerHole
+        ? numPerHole.eval(ctx.withFrame(dropFrame))
+        : 1;
       let dropped = 0;
       while (dropped < per && placed < startCount) {
         actions.push(new ActionAddCount(site, +1, seedOwner));
@@ -14229,6 +14233,7 @@ function compileSow(node: LudList, env: CompileEnv): EffectFn {
     // that the skip stops applying so distribution always terminates.
     let numSkipped = 0;
     const MAX_SKIP = 10000;
+    let sowIndex = 0;
     while (placed < startCount) {
       pos += 1;
       if (pos >= ring.length) {
@@ -14236,8 +14241,11 @@ function compileSow(node: LudList, env: CompileEnv): EffectFn {
         pos = 0;
       }
       const site = ring[pos] as number;
+      // Java Sow.eval sets context.value to `count - index` before checking
+      // skipIf and re-evaluating numPerHole for this candidate hole.
+      const javaValue = startCount - sowIndex;
       if (skipIf && numSkipped < MAX_SKIP) {
-        const skipCtx = ctx.withFrame({ from, to: site });
+        const skipCtx = ctx.withFrame({ from, to: site, value: javaValue });
         if (skipIf.eval(skipCtx)) {
           numSkipped += 1;
           continue;
@@ -14246,7 +14254,8 @@ function compileSow(node: LudList, env: CompileEnv): EffectFn {
       // includeSelf:False — never drop a seed back into the origin hole.
       if (!includeSelf && site === from) continue;
       numSkipped = 0;
-      dropAt(site);
+      dropAt(site, javaValue);
+      sowIndex += 1;
     }
 
     let postState = ctx.state;

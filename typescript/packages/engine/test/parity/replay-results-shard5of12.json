@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 338.6,
+    "elapsed_s": 341.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1458,8 +1458,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 341,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 341",
+      "plyReplayed": 362,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 362",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_1.txt"
     },
     {
@@ -1477,8 +1477,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Cylinder Chess",
-      "plyReplayed": 260,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 260",
+      "plyReplayed": 262,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 262",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Cylinder Chess/RandomTrial_1.txt"
     },
     {
@@ -1491,8 +1491,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Korkserschach",
-      "plyReplayed": 155,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 155",
+      "plyReplayed": 144,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 144",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Korkserschach/RandomTrial_1.txt"
     },
     {
@@ -1524,8 +1524,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Social Distance Chess",
-      "plyReplayed": 88,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 88",
+      "plyReplayed": 87,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 87",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Social Distance Chess/RandomTrial_1.txt"
     },
     {
@@ -1674,8 +1674,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "plyReplayed": 463,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 463",
+      "plyReplayed": 462,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 462",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_1.txt"
     },
     {

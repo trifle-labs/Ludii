@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 317.3,
+    "elapsed_s": 318,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -238,8 +238,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 44,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 44",
+      "plyReplayed": 43,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 43",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_0.txt"
     },
     {
@@ -1485,8 +1485,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma",
-      "plyReplayed": 436,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 436",
+      "plyReplayed": 388,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 388",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj at-Tamma/RandomTrial_0.txt"
     },
     {
@@ -1591,8 +1591,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "plyReplayed": 54,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 54",
+      "plyReplayed": 55,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 55",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {
@@ -1710,8 +1710,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/eliminate/all/Tibetan Jiuqi",
-      "plyReplayed": 370,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 370",
+      "plyReplayed": 377,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 377",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Tibetan Jiuqi/RandomTrial_0.txt"
     },
     {

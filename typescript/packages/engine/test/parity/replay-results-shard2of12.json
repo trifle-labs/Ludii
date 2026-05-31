@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 339.5,
+    "elapsed_s": 340,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 65,
+      "MOVE_MISMATCH": 64,
       "WINNER_MISMATCH": 8,
       "OUTCOME_OK": 112,
-      "REPLAY_OK_NO_OUTCOME": 28
+      "REPLAY_OK_NO_OUTCOME": 29
     }
   },
   "top15FailureReasons": {
@@ -726,15 +726,10 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Katrayo/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/sow/two_rows/Kotu Baendum",
-      "ply": 13,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=7,to=7",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=2,from=6,to=6,isPass=false"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/2942",
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Kotu Baendum/RandomTrial_0.txt"
     },
     {
@@ -1315,8 +1310,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 225,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 225",
+      "plyReplayed": 222,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 222",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_0.txt"
     },
     {
@@ -1472,15 +1467,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 79,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 79",
+      "plyReplayed": 78,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 78",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Main Chator",
-      "plyReplayed": 161,
-      "detail": "per-trial time budget (20000ms) exceeded at ply 161",
+      "plyReplayed": 164,
+      "detail": "per-trial time budget (20000ms) exceeded at ply 164",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Main Chator/RandomTrial_0.txt"
     },
     {
