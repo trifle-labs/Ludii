@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-31T02:50:28.035Z
+**Date:** 2026-05-31T03:23:54.847Z
 **Trials processed:** 213  
-**Wall time:** 830.0s
+**Wall time:** 680.9s
 
 ## Bucket Summary
 

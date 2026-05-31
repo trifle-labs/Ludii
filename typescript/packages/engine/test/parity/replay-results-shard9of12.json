@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 575.8,
+    "elapsed_s": 390.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 82,
+      "MOVE_MISMATCH": 83,
       "WINNER_MISMATCH": 7,
       "OUTCOME_OK": 101,
-      "REPLAY_OK_NO_OUTCOME": 23
+      "REPLAY_OK_NO_OUTCOME": 22
     }
   },
   "top15FailureReasons": {
@@ -812,7 +812,7 @@
       "ply": 2,
       "detail": "No matching TS move",
       "recMove": "mover=2,from=9,to=9",
-      "tsMoveCount": 4,
+      "tsMoveCount": 3,
       "sampleTsMoves": [
         "mover=1,from=4,to=4,isPass=false",
         "mover=1,from=4,to=4,isPass=false",
@@ -1618,10 +1618,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_1.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/checkmate/chess/Level Chess",
-      "plyReplayed": 4,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 4",
+      "ply": 4,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=134,to=13",
+      "tsMoveCount": 22,
+      "sampleTsMoves": [
+        "mover=1,from=7,to=27,isPass=false",
+        "mover=1,from=129,to=4,isPass=false",
+        "mover=1,from=129,to=8,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_1.txt"
     },
     {
@@ -1715,8 +1722,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 159,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 159",
+      "plyReplayed": 154,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 154",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {

@@ -13267,6 +13267,7 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
   if (second && isIdent(second) && second.name === "Add") {
     const { named } = parseArgs(node.items.slice(2));
     let toRegion: RegionFn | undefined;
+    let toApply: EffectFn | undefined;
     const toNode = node.items.find((n) => isList(n) && listHead(n) === "to") as
       | LudList
       | undefined;
@@ -13293,6 +13294,20 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
             toCond = compileBool(toIfNode, env);
           } catch {
             toCond = undefined;
+          }
+        }
+        const applyNode = toPos.find(
+          (n) => isList(n) && listHead(n) === "apply",
+        ) as LudList | undefined;
+        if (applyNode) {
+          try {
+            // Java Add evaluates the destination's `(apply ...)` with the
+            // candidate bound as `(to)` and prepends those actions before the
+            // ActionAdd. Scaffold uses this to save the pre-placement group
+            // count for its `ifAfterwards` filter.
+            toApply = compileApply(applyNode, env);
+          } catch {
+            toApply = undefined;
           }
         }
         if (toCond) {
@@ -13403,6 +13418,9 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
         const walks = walkById?.[effectiveWhat];
         for (const site of region.eval(ctx)) {
           if (site < 0) continue;
+          const preActions = toApply
+            ? toApply(ctx.withFrame({ to: site, site }))
+            : [];
           let footprint: number[] | undefined;
           if (walks && walks.length > 0) {
             const cells = largePieceFootprint(ctx.board, site, state ?? 0, walks);
@@ -13420,6 +13438,7 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
               // piece's owner may still be 0 (Neutral) — that lives on the action.
               placedOwner: mover,
               actions: [
+                ...preActions,
                 new ActionAdd({
                   to: site,
                   what: effectiveWhat,
@@ -13430,6 +13449,7 @@ function compileMoveLudemeInner(node: LudList, env: CompileEnv): MovesFn {
                   ...(footprint ? { footprint } : {}),
                 }),
               ],
+              decisionIndex: preActions.length,
             }),
           );
         }

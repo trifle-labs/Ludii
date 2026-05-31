@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 553.2,
+    "elapsed_s": 413.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -784,7 +784,7 @@
       "ply": 2,
       "detail": "No matching TS move",
       "recMove": "mover=2,from=9,to=9",
-      "tsMoveCount": 4,
+      "tsMoveCount": 3,
       "sampleTsMoves": [
         "mover=1,from=6,to=6,isPass=false",
         "mover=1,from=6,to=6,isPass=false",
@@ -1589,8 +1589,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Level Chess",
-      "plyReplayed": 4,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 4",
+      "plyReplayed": 6,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 6",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {

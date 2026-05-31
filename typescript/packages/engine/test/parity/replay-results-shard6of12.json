@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 760.2,
+    "elapsed_s": 595.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 65,
       "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 113,
-      "REPLAY_OK_NO_OUTCOME": 26
+      "OUTCOME_OK": 114,
+      "REPLAY_OK_NO_OUTCOME": 25
     }
   },
   "top15FailureReasons": {
@@ -1525,10 +1525,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Acedrex (Alfonso)/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/Brusky Chess",
-      "plyReplayed": 362,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 362",
+      "plyReplayed": 423,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Brusky Chess/RandomTrial_0.txt"
     },
     {
@@ -1830,11 +1829,9 @@
       "ply": 1,
       "detail": "No matching TS move",
       "recMove": "mover=2,from=12,to=12",
-      "tsMoveCount": 15,
+      "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=1,to=1,isPass=false",
-        "mover=2,from=2,to=2,isPass=false"
+        "mover=2,from=6,to=6,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Netted/RandomTrial_0.txt"
     },
