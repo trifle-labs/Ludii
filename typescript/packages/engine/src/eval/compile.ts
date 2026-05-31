@@ -15568,11 +15568,19 @@ function compileResult(
     const player =
       role === "Next"
         ? (ctx.mover % numPlayers) + 1
-        : role === "Player"
-          ? ctx.player
-          : role.startsWith("P") && /^P\d+$/.test(role)
-            ? Number(role.slice(1))
-            : ctx.mover;
+        : role === "Prev"
+          ? // Java Id.eval(Prev) = state.prev() — the player who moved just
+            // before the current mover (Id.java:123). End rules run BEFORE mover
+            // rotation, so for alternating play this is the cyclic predecessor.
+            // Resolved LOCALLY here (not via the shared resolveRole) so Splade's
+            // condition-path Prev — `(id "Ball" Prev)` in an (is Line …) — is
+            // untouched; only `(result Prev …)` (Wong) is affected.
+            ((ctx.mover - 2 + numPlayers) % numPlayers) + 1
+          : role === "Player"
+            ? ctx.player
+            : role.startsWith("P") && /^P\d+$/.test(role)
+              ? Number(role.slice(1))
+              : ctx.mover;
     if (type === "Draw") return { winner: 0 };
     if (type === "Loss") {
       // 2-player: the other player wins; otherwise mark a draw.

@@ -5,75 +5,29 @@
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 2,
+      "MOVE_MISMATCH": 0,
       "WINNER_MISMATCH": 0,
-      "OUTCOME_OK": 0,
+      "OUTCOME_OK": 2,
       "REPLAY_OK_NO_OUTCOME": 0
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": [
-      [
-        "board/space/line/Boop",
-        2
-      ]
-    ]
+    "MOVE_MISMATCH": []
   },
-  "exampleMismatches": [
-    {
-      "game": "board/space/line/Boop",
-      "ply": 11,
-      "recMove": "mover=2,from=32,to=32",
-      "tsMoveCount": 25,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=2,to=2,isPass=false",
-        "mover=2,from=3,to=3,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/space/line/Boop",
-      "ply": 4,
-      "recMove": "mover=1,from=14,to=14",
-      "tsMoveCount": 32,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    }
-  ],
+  "exampleMismatches": [],
   "perTrial": [
     {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/space/line/Boop",
-      "ply": 11,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=32,to=32",
-      "tsMoveCount": 25,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=2,to=2,isPass=false",
-        "mover=2,from=3,to=3,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/space/line/Boop/RandomTrial_0.txt"
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Splade",
+      "plyReplayed": 14,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Splade/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/space/line/Boop",
-      "ply": 4,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=14,to=14",
-      "tsMoveCount": 32,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/space/line/Boop/RandomTrial_1.txt"
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Splade",
+      "plyReplayed": 12,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Splade/RandomTrial_1.txt"
     }
   ]
 }
