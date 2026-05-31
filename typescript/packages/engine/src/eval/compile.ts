@@ -8657,6 +8657,7 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
       dispatchEffects.length > 0 ||
       dispatchMoveAgain ||
       dispatchMoveAgainConds.length > 0;
+    const dispatchBaseNameById = env.componentBaseNameById;
     return {
       generate: (ctx) => {
         const byOwner = env.pieceMovesByOwner;
@@ -8665,6 +8666,8 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
         const numPlayers = ctx.context.game.numPlayers;
         const out: Move[] = [];
         const sites = pieceSites(ctx);
+        const restrictDispatchByName =
+          pieceName !== undefined && dispatchBaseNameById !== undefined;
         const emitForPiece = (gen: MovesFn, sub: EvalContext): void => {
           for (const m of gen.generate(sub)) {
             if (dispatchDeferredThens.length > 0)
@@ -8721,6 +8724,11 @@ function compileForEach(node: LudList, env: CompileEnv): MovesFn {
             // fall back to the per-owner generator, which is identical to the old
             // behaviour.
             const what = state.whatAtSite(s);
+            // Java ForEachPiece preprocess filters component indices by
+            // `getNameWithoutNumber().equals(item)` for both explicit moves and
+            // component dispatch. Mirror that for `(forEach Piece "Name")`.
+            if (restrictDispatchByName && dispatchBaseNameById![what] !== pieceName)
+              continue;
             // A piece defined with no move generator (Chessence's King) must
             // produce nothing — never inherit the per-owner fallback (its
             // sibling pawn's slide rule). Java: an empty Component generator.

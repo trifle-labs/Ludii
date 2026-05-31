@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 413.7,
+    "elapsed_s": 407.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 77,
+      "MOVE_MISMATCH": 76,
       "WINNER_MISMATCH": 6,
-      "OUTCOME_OK": 108,
+      "OUTCOME_OK": 109,
       "REPLAY_OK_NO_OUTCOME": 22
     }
   },
@@ -1559,17 +1559,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chess/Dice Chess",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=-1,to=-1",
-      "tsMoveCount": 20,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=18,isPass=false",
-        "mover=1,from=1,to=16,isPass=false",
-        "mover=1,from=6,to=23,isPass=false"
-      ],
+      "plyReplayed": 97,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Dice Chess/RandomTrial_0.txt"
     },
     {
@@ -1732,11 +1724,10 @@
       "ply": 4,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=18,to=32",
-      "tsMoveCount": 8,
+      "tsMoveCount": 2,
       "sampleTsMoves": [
-        "mover=1,from=1,to=16,isPass=false",
-        "mover=1,from=3,to=4,isPass=false",
-        "mover=1,from=3,to=12,isPass=false"
+        "mover=1,from=18,to=4,isPass=false",
+        "mover=1,from=18,to=0,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Chaturaji/RandomTrial_0.txt"
     },

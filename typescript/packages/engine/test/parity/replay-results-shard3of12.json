@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 599.7,
+    "elapsed_s": 587.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1491,8 +1491,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 309,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 309",
+      "plyReplayed": 302,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 302",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_1.txt"
     },
     {
@@ -1731,14 +1731,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/eliminate/all/Four-Player Chaturanga (al-Biruni)",
-      "ply": 12,
+      "ply": 24,
       "detail": "No matching TS move",
-      "recMove": "mover=3,from=-1,to=-1",
-      "tsMoveCount": 14,
+      "recMove": "mover=3,from=63,to=45",
+      "tsMoveCount": 9,
       "sampleTsMoves": [
-        "mover=3,from=46,to=38,isPass=false",
-        "mover=3,from=46,to=39,isPass=false",
-        "mover=3,from=52,to=44,isPass=false"
+        "mover=4,from=33,to=34,isPass=false",
+        "mover=4,from=49,to=50,isPass=false",
+        "mover=4,from=57,to=58,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Four-Player Chaturanga (al-Biruni)/RandomTrial_1.txt"
     },

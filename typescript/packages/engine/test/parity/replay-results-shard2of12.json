@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 625.6,
+    "elapsed_s": 671.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1467,8 +1467,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 306,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 306",
+      "plyReplayed": 300,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 300",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
@@ -1620,8 +1620,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 17,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 17",
+      "plyReplayed": 20,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 20",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1641,8 +1641,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Unashogi",
-      "plyReplayed": 1,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 1",
+      "plyReplayed": 2,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 2",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Unashogi/RandomTrial_0.txt"
     },
     {
@@ -1698,14 +1698,13 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/eliminate/all/Four-Player Chaturanga (al-Biruni)",
-      "ply": 4,
+      "ply": 22,
       "detail": "No matching TS move",
-      "recMove": "mover=3,from=-1,to=-1",
-      "tsMoveCount": 18,
+      "recMove": "mover=1,from=18,to=32",
+      "tsMoveCount": 2,
       "sampleTsMoves": [
-        "mover=3,from=52,to=44,isPass=false",
-        "mover=3,from=53,to=45,isPass=false",
-        "mover=3,from=54,to=46,isPass=false"
+        "mover=1,from=18,to=0,isPass=false",
+        "mover=1,from=18,to=0,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Four-Player Chaturanga (al-Biruni)/RandomTrial_0.txt"
     },

@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 469.3,
+    "elapsed_s": 478.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1451,14 +1451,13 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/checkmate/chaturanga/Shatranj al-Mustatila",
-      "ply": 0,
+      "ply": 241,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=-1,to=-1",
-      "tsMoveCount": 16,
+      "recMove": "mover=2,from=-1,to=-1[Pass]",
+      "tsMoveCount": 2,
       "sampleTsMoves": [
-        "mover=1,from=0,to=10,isPass=false",
-        "mover=1,from=3,to=9,isPass=false",
-        "mover=1,from=4,to=8,isPass=false"
+        "mover=2,from=61,to=58,isPass=false",
+        "mover=2,from=61,to=56,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj al-Mustatila/RandomTrial_1.txt"
     },
@@ -1558,8 +1557,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Chu Seireigi",
-      "plyReplayed": 28,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 28",
+      "plyReplayed": 29,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 29",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Chu Seireigi/RandomTrial_1.txt"
     },
     {

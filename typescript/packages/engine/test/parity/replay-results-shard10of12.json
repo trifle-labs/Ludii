@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 639.5,
+    "elapsed_s": 545.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 71,
       "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 110,
-      "REPLAY_OK_NO_OUTCOME": 24
+      "OUTCOME_OK": 111,
+      "REPLAY_OK_NO_OUTCOME": 23
     }
   },
   "top15FailureReasons": {
@@ -1296,8 +1296,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 251,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 251",
+      "plyReplayed": 253,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 253",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1452,8 +1452,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 80,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 80",
+      "plyReplayed": 79,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 79",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_0.txt"
     },
     {
@@ -1464,17 +1464,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Ouk Chatrang/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/checkmate/chaturanga/Sarvatobhadra",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=-1,to=-1",
-      "tsMoveCount": 14,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=18,isPass=false",
-        "mover=1,from=1,to=16,isPass=false",
-        "mover=1,from=2,to=18,isPass=false"
-      ],
+      "plyReplayed": 169,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Sarvatobhadra/RandomTrial_0.txt"
     },
     {
@@ -1541,15 +1533,22 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 65,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 65",
+      "plyReplayed": 66,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 66",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "MOVE_MISMATCH",
       "game": "board/war/replacement/checkmate/chess/Grande Acedrex",
-      "plyReplayed": 2,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 2",
+      "ply": 3,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=137,to=123",
+      "tsMoveCount": 46,
+      "sampleTsMoves": [
+        "mover=2,from=93,to=81,isPass=false",
+        "mover=2,from=96,to=84,isPass=false",
+        "mover=2,from=97,to=85,isPass=false"
+      ],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Grande Acedrex/RandomTrial_0.txt"
     },
     {
