@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 681.2,
+    "elapsed_s": 737.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 63,
-      "WINNER_MISMATCH": 7,
-      "OUTCOME_OK": 115,
+      "MOVE_MISMATCH": 61,
+      "WINNER_MISMATCH": 8,
+      "OUTCOME_OK": 116,
       "REPLAY_OK_NO_OUTCOME": 28
     }
   },
@@ -1302,8 +1302,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 600,
-      "detail": "Hit move cap 600/2407",
+      "plyReplayed": 490,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 490",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_0.txt"
     },
     {
@@ -1459,8 +1459,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 323,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 323",
+      "plyReplayed": 138,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 138",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
@@ -1612,8 +1612,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 15,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 15",
+      "plyReplayed": 17,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 17",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1633,22 +1633,27 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Unashogi",
-      "plyReplayed": 2,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 2",
+      "plyReplayed": 1,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 1",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Unashogi/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi",
-      "ply": 333,
-      "detail": "No matching TS move",
-      "recMove": "mover=6,from=354,to=254",
-      "tsMoveCount": 90,
-      "sampleTsMoves": [
-        "mover=5,from=204,to=224,isPass=false",
-        "mover=5,from=204,to=186,isPass=false",
-        "mover=5,from=204,to=184,isPass=false"
+      "plyReplayed": 333,
+      "recWinner": 3,
+      "tsWinner": 0,
+      "recRankings": [
+        0,
+        4.5,
+        6.5,
+        1,
+        6.5,
+        4.5,
+        2.5,
+        2.5
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi/RandomTrial_0.txt"
     },
     {
@@ -1708,17 +1713,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Kiust Oyun/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Oust",
-      "ply": 94,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=89,to=89",
-      "tsMoveCount": 21,
-      "sampleTsMoves": [
-        "mover=1,from=28,to=28,isPass=false",
-        "mover=1,from=79,to=79,isPass=false",
-        "mover=1,from=86,to=86,isPass=false"
-      ],
+      "plyReplayed": 127,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Oust/RandomTrial_0.txt"
     },
     {

@@ -12530,7 +12530,7 @@ export function compileEffectAction(
     const { positional, named } = parseArgs(node.items.slice(1));
     const siteNode = positional[0];
     if (!siteNode) return undefined;
-    const site = compileInt(siteNode, env);
+    const sites = compileSiteOrRegion(siteNode, env);
     // `at:EndOfTurn` → deferred capture (Java: ActionRemove.construct
     // applied=false → ActionRemoveNonApplied). The piece is marked in the
     // state's deferred-capture queue and stays on the board until the turn
@@ -12549,18 +12549,27 @@ export function compileEffectAction(
     const countFn = countNode ? compileInt(countNode, env) : undefined;
     if (deferred) {
       return (ctx) => {
-        const s = site.eval(ctx);
-        return s >= 0 ? [new ActionRemoveNonApplied(s)] : [];
+        const out: Action[] = [];
+        for (const s of sites.eval(ctx)) {
+          if (s >= 0 && ctx.state.whatAtSite(s) > 0) {
+            out.push(new ActionRemoveNonApplied(s));
+          }
+        }
+        return out;
       };
     }
     return (ctx) => {
-      const s = site.eval(ctx);
-      if (s < 0) return [];
       const count = countFn ? countFn.eval(ctx) : 1;
       if (count <= 0) return [];
-      return [
-        new ActionRemove({ to: s, count, clearAll: env.isStacking === false }),
-      ];
+      const out: Action[] = [];
+      for (const s of sites.eval(ctx)) {
+        if (s >= 0 && ctx.state.whatAtSite(s) > 0) {
+          out.push(
+            new ActionRemove({ to: s, count, clearAll: env.isStacking === false }),
+          );
+        }
+      }
+      return out;
     };
   }
   if (head === "flip") {

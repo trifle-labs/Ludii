@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 485.4,
+    "elapsed_s": 624.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 50,
+      "MOVE_MISMATCH": 48,
       "WINNER_MISMATCH": 10,
-      "OUTCOME_OK": 123,
-      "REPLAY_OK_NO_OUTCOME": 31
+      "OUTCOME_OK": 124,
+      "REPLAY_OK_NO_OUTCOME": 32
     }
   },
   "top15FailureReasons": {
@@ -873,9 +873,10 @@
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Master Y/RandomTrial_0.txt"
     },
     {
-      "bucket": "OUTCOME_OK",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/connection/Scaffold",
-      "plyReplayed": 116,
+      "plyReplayed": 80,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 80",
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Scaffold/RandomTrial_0.txt"
     },
     {
@@ -1333,15 +1334,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Terhuchu/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/leaping/orthogonal/Cage",
-      "ply": 15,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=114,to=116",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=72,to=96,isPass=false"
-      ],
+      "plyReplayed": 148,
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Cage/RandomTrial_0.txt"
     },
     {
@@ -1584,17 +1579,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Crusade/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Fission",
-      "ply": 5,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=52,to=48",
-      "tsMoveCount": 19,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=5,isPass=false",
-        "mover=2,from=0,to=18,isPass=false",
-        "mover=2,from=0,to=56,isPass=false"
-      ],
+      "plyReplayed": 33,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Fission/RandomTrial_0.txt"
     },
     {

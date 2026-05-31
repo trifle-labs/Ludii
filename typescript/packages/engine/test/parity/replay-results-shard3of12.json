@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 601,
+    "elapsed_s": 704.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 66,
-      "WINNER_MISMATCH": 11,
-      "OUTCOME_OK": 110,
+      "MOVE_MISMATCH": 64,
+      "WINNER_MISMATCH": 12,
+      "OUTCOME_OK": 111,
       "REPLAY_OK_NO_OUTCOME": 26
     }
   },
@@ -1326,8 +1326,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Castello",
-      "plyReplayed": 600,
-      "detail": "Hit move cap 600/2667",
+      "plyReplayed": 514,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 514",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_1.txt"
     },
     {
@@ -1483,8 +1483,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 306,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 306",
+      "plyReplayed": 149,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 149",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_1.txt"
     },
     {
@@ -1670,17 +1670,22 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Unashogi/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi",
-      "ply": 326,
-      "detail": "No matching TS move",
-      "recMove": "mover=6,from=297,to=292",
-      "tsMoveCount": 43,
-      "sampleTsMoves": [
-        "mover=5,from=250,to=254,isPass=false",
-        "mover=5,from=263,to=358,isPass=false",
-        "mover=5,from=263,to=168,isPass=false"
+      "plyReplayed": 322,
+      "recWinner": 2,
+      "tsWinner": 0,
+      "recRankings": [
+        0,
+        5.5,
+        1,
+        2,
+        4,
+        7,
+        3,
+        5.5
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi/RandomTrial_1.txt"
     },
     {
@@ -1742,17 +1747,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Kiust Oyun/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/replacement/eliminate/all/Oust",
-      "ply": 66,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=40,to=40",
-      "tsMoveCount": 68,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false",
-        "mover=1,from=3,to=3,isPass=false"
-      ],
+      "plyReplayed": 94,
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Oust/RandomTrial_1.txt"
     },
     {

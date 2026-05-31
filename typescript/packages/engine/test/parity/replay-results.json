@@ -1,33 +1,59 @@
 {
   "summary": {
     "totalTrials": 2,
-    "elapsed_s": 0.1,
+    "elapsed_s": 0.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 0,
+      "MOVE_MISMATCH": 1,
       "WINNER_MISMATCH": 0,
-      "OUTCOME_OK": 2,
+      "OUTCOME_OK": 1,
       "REPLAY_OK_NO_OUTCOME": 0
     }
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": []
+    "MOVE_MISMATCH": [
+      [
+        "board/war/leaping/diagonal/Damas",
+        1
+      ]
+    ]
   },
-  "exampleMismatches": [],
+  "exampleMismatches": [
+    {
+      "game": "board/war/leaping/diagonal/Damas",
+      "ply": 52,
+      "recMove": "mover=1,from=27,to=34",
+      "tsMoveCount": 3,
+      "sampleTsMoves": [
+        "mover=1,from=36,to=54,isPass=false",
+        "mover=1,from=43,to=52,isPass=false",
+        "mover=1,from=43,to=50,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
   "perTrial": [
     {
-      "bucket": "OUTCOME_OK",
-      "game": "board/space/territory/Spodd",
-      "plyReplayed": 30,
-      "trialFile": "../../../Player/res/random_trials/board/space/territory/Spodd/RandomTrial_0.txt"
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/leaping/diagonal/Damas",
+      "ply": 52,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=27,to=34",
+      "tsMoveCount": 3,
+      "sampleTsMoves": [
+        "mover=1,from=36,to=54,isPass=false",
+        "mover=1,from=43,to=52,isPass=false",
+        "mover=1,from=43,to=50,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Damas/RandomTrial_0.txt"
     },
     {
       "bucket": "OUTCOME_OK",
-      "game": "board/space/territory/Spodd",
-      "plyReplayed": 28,
-      "trialFile": "../../../Player/res/random_trials/board/space/territory/Spodd/RandomTrial_1.txt"
+      "game": "board/war/leaping/diagonal/Damas",
+      "plyReplayed": 56,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Damas/RandomTrial_1.txt"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 548.9,
+    "elapsed_s": 725.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1590,15 +1590,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Shogi",
-      "plyReplayed": 87,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 87",
+      "plyReplayed": 89,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 89",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Shogi/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 20,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 20",
+      "plyReplayed": 23,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 23",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_0.txt"
     },
     {

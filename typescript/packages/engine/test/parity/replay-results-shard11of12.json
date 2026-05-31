@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 522.6,
+    "elapsed_s": 612.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 73,
+      "MOVE_MISMATCH": 72,
       "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 112,
+      "OUTCOME_OK": 113,
       "REPLAY_OK_NO_OUTCOME": 20
     }
   },
@@ -1271,14 +1271,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/territory/Redstone",
-      "ply": 143,
+      "ply": 156,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=8,to=8",
-      "tsMoveCount": 38,
+      "recMove": "mover=1,from=47,to=47",
+      "tsMoveCount": 32,
       "sampleTsMoves": [
-        "mover=2,from=5,to=5,isPass=false",
-        "mover=2,from=21,to=21,isPass=false",
-        "mover=2,from=27,to=27,isPass=false"
+        "mover=1,from=5,to=5,isPass=false",
+        "mover=1,from=18,to=18,isPass=false",
+        "mover=1,from=21,to=21,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Redstone/RandomTrial_1.txt"
     },
@@ -1305,8 +1305,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 259,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 259",
+      "plyReplayed": 197,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 197",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1341,17 +1341,9 @@
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Brazilian Draughts/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/war/leaping/diagonal/Damas",
-      "ply": 18,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=13,to=22",
-      "tsMoveCount": 7,
-      "sampleTsMoves": [
-        "mover=1,from=2,to=11,isPass=false",
-        "mover=1,from=9,to=18,isPass=false",
-        "mover=1,from=9,to=16,isPass=false"
-      ],
+      "plyReplayed": 56,
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Damas/RandomTrial_1.txt"
     },
     {
@@ -1461,15 +1453,15 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)",
-      "plyReplayed": 600,
-      "detail": "Hit move cap 600/1124",
+      "plyReplayed": 329,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 329",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (12x12)/RandomTrial_1.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 85,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 85",
+      "plyReplayed": 62,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 62",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_1.txt"
     },
     {
@@ -1549,8 +1541,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 53,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 53",
+      "plyReplayed": 59,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 59",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_1.txt"
     },
     {
