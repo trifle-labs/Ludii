@@ -11772,7 +11772,26 @@ export function compileEffectAction(
   inThen = false,
   allowForEachSite = false,
 ): EffectFn | undefined {
+  const unwrapped = unwrapParens(node);
+  if (!isList(unwrapped)) return undefined;
+  node = unwrapped;
   const head = listHead(node);
+  if (!head && (node.delimiter === "round" || node.delimiter === "curly")) {
+    // Anonymous move/effect grouping: `( (fromTo ...) (set ...) )`.
+    // Java's logical move ludemes carry `Moves` lists (If.java) and concatenate
+    // them in order when grouped through And/array constructors (And.java).
+    const subs = effectChildren(node.items)
+      .map((n) => {
+        try {
+          return compileEffectAction(n, env, inThen, allowForEachSite);
+        } catch {
+          return undefined;
+        }
+      })
+      .filter((f): f is EffectFn => f !== undefined);
+    if (subs.length === 0) return undefined;
+    return (ctx) => subs.flatMap((f) => f(ctx));
+  }
   const _r = head ? lookupLudeme("effect", head) : undefined;
   if (_r) {
     const compiled = _r(node, env, inThen, allowForEachSite) as
