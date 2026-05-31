@@ -155,7 +155,9 @@ const PER_TRIAL_MOVE_CAP = Number(process.env.MOVE_CAP) > 0 ? Number(process.env
 // Per-trial soft deadline: bounds slow-but-progressing trials so one pathological
 // game cannot starve the whole run. (A true infinite loop inside a single
 // moves()/apply() call is bounded instead by sharding into child processes.)
-const PER_TRIAL_MS = 20 * 1000;
+const PER_TRIAL_MS = process.env.PER_TRIAL_MS
+  ? parseInt(process.env.PER_TRIAL_MS, 10)
+  : 20 * 1000;
 // Per-ply scripted-dice replay (recorded SetStateAndUpdateDice faces). On by
 // default; set SCRIPTED_DICE=0 to fall back to whole-game SplitMix64 RNG parity.
 const SCRIPTED_DICE = process.env.SCRIPTED_DICE !== "0";
