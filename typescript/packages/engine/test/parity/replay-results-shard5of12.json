@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 664.7,
+    "elapsed_s": 663,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 54,
-      "WINNER_MISMATCH": 13,
-      "OUTCOME_OK": 118,
+      "MOVE_MISMATCH": 51,
+      "WINNER_MISMATCH": 14,
+      "OUTCOME_OK": 120,
       "REPLAY_OK_NO_OUTCOME": 28
     }
   },
@@ -239,8 +239,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 138,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 138",
+      "plyReplayed": 136,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 136",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_1.txt"
     },
     {
@@ -778,17 +778,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/4 Squared/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Claustro",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=20,to=20",
-      "tsMoveCount": 19,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
+      "plyReplayed": 12,
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Claustro/RandomTrial_1.txt"
     },
     {
@@ -848,17 +840,17 @@
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Temeen Tavag/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/space/connection/00'Y'",
-      "ply": 3,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=44,to=44",
-      "tsMoveCount": 34,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=2,to=2,isPass=false",
-        "mover=1,from=3,to=3,isPass=false"
+      "plyReplayed": 67,
+      "recWinner": 1,
+      "tsWinner": 0,
+      "recRankings": [
+        0,
+        1,
+        2
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/00'Y'/RandomTrial_1.txt"
     },
     {
@@ -1346,9 +1338,11 @@
       "ply": 0,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=13,to=21",
-      "tsMoveCount": 1,
+      "tsMoveCount": 7,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=1,from=-1,to=-1,isPass=true",
+        "mover=1,from=5,to=5,isPass=false",
+        "mover=1,from=6,to=6,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Throngs/RandomTrial_1.txt"
     },
@@ -1729,17 +1723,9 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Breakthrough Chess/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Double-Run Stone",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=9,to=9",
-      "tsMoveCount": 20,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
+      "plyReplayed": 9,
       "trialFile": "../../../Player/res/random_trials/experimental/Double-Run Stone/RandomTrial_1.txt"
     },
     {
@@ -1759,14 +1745,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Hexifact",
-      "ply": 0,
+      "ply": 22,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=9,to=9",
-      "tsMoveCount": 20,
+      "recMove": "mover=1,from=13,to=10",
+      "tsMoveCount": 12,
       "sampleTsMoves": [
         "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+        "mover=1,from=23,to=23,isPass=false",
+        "mover=1,from=25,to=25,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Hexifact/RandomTrial_1.txt"
     },

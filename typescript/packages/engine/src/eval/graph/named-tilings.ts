@@ -151,6 +151,41 @@ function polygonFromSides(sides: readonly number[]): [number, number][] {
   return pts;
 }
 
+/** Tri.xy(row,col) lattice point — @java Tri.xy (unit = 1). */
+const triXY = (row: number, col: number): [number, number] => [
+  col - 0.5 * row,
+  (SQRT3 / 2) * row,
+];
+
+/**
+ * @java CustomOnTri.polygonFromSides — identical side walk to CustomOnHex, but
+ * sampled on Tri.xy. `(tri Limping n)` reaches this through Tri.construct:
+ * `new CustomOnTri({n, n+1})`.
+ */
+function triPolygonFromSides(sides: readonly number[]): [number, number][] {
+  const steps: readonly [number, number][] = [
+    [1, 0], [1, 1], [0, 1], [-1, 0], [-1, -1], [0, -1],
+  ];
+  let dirn = 1;
+  let row = 0;
+  let col = 0;
+  const pts: [number, number][] = [triXY(row, col)];
+  const n = Math.max(5, sides.length);
+  for (let i = 0; i < n; i += 1) {
+    let nextStep = sides[i % sides.length] as number;
+    nextStep += nextStep < 0 ? 1 : -1;
+    dirn += nextStep < 0 ? -1 : 1;
+    dirn = (dirn + 6) % 6;
+    if (nextStep > 0) {
+      const s = steps[dirn] as [number, number];
+      row += nextStep * s[0];
+      col += nextStep * s[1];
+      pts.push(triXY(row, col));
+    }
+  }
+  return pts;
+}
+
 /**
  * @java main.math.Polygon.inflate — push every vertex outward along its edge
  * bisector by `amount`, so cell centroids never sit exactly on the boundary.
@@ -224,6 +259,47 @@ function genHexCustom(
       const [px, py] = hexXY(r, c);
       if (!polygonContains(poly, px, py)) continue;
       for (const [dx, dy] of ref) g.addVertex(px + dx, py + dy, DEDUP);
+    }
+  }
+  const vs = g.vertices;
+  for (let a = 0; a < vs.length; a += 1) {
+    const va = vs[a]!;
+    for (let b = a + 1; b < vs.length; b += 1) {
+      const vb = vs[b]!;
+      if (Math.abs(Math.hypot(va.x - vb.x, va.y - vb.y) - UNIT) < 0.01) g.addEdge(a, b);
+    }
+  }
+  g.makeFaces();
+  g.reorder();
+  return g;
+}
+
+/**
+ * `(tri Limping n)` — @java Tri.construct + CustomOnTri.eval. Builds the
+ * side-walk polygon for `{n, n+1}`, inflates it, samples Tri.xy lattice points
+ * inside it, then joins unit-apart vertices and reorders.
+ */
+function genTriCustom(sides: readonly number[]): Graph {
+  const poly = triPolygonFromSides(sides);
+  inflatePolygon(poly, 0.1);
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const [px, py] of poly) {
+    if (px < minX) minX = px;
+    if (py < minY) minY = py;
+    if (px > maxX) maxX = px;
+    if (py > maxY) maxY = py;
+  }
+  const margin = Math.max(0, Math.trunc(sides[0] ?? 2));
+  const fromCol = Math.trunc(minX) - margin;
+  const fromRow = Math.trunc(minY) - margin;
+  const toCol = Math.trunc(maxX) + margin;
+  const toRow = Math.trunc(maxY) + margin;
+  const g = new Graph();
+  for (let r = fromRow; r <= toRow; r += 1) {
+    for (let c = fromCol; c <= toCol; c += 1) {
+      const [px, py] = triXY(r, c);
+      if (!polygonContains(poly, px, py)) continue;
+      g.addVertex(px, py, DEDUP);
     }
   }
   const vs = g.vertices;
@@ -353,9 +429,11 @@ export function genTri(
   const cell = vertexMode ? 0 : 1;
   const ref: [number, number][] = [[0, 0]];
   // @java Tri.xy(row,col).
-  const xy: XY = (r, c) => [c - 0.5 * r, (SQRT3 / 2) * r];
+  const xy: XY = triXY;
   const st = (shape ?? "Triangle").toLowerCase();
   switch (st) {
+    case "limping":
+      return genTriCustom([a, a + 1]);
     case "hexagon": {
       // @java HexagonOnTri.eval — d = dim + cell; rows = cols = 2d−1; keep
       // `col ≤ cols/2 + row && row − col ≤ cols/2` (= hexClipDiff).

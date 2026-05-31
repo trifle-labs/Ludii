@@ -1,12 +1,12 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 545.3,
+    "elapsed_s": 545,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 71,
-      "WINNER_MISMATCH": 8,
+      "MOVE_MISMATCH": 70,
+      "WINNER_MISMATCH": 9,
       "OUTCOME_OK": 111,
       "REPLAY_OK_NO_OUTCOME": 23
     }
@@ -1296,8 +1296,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 253,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 253",
+      "plyReplayed": 252,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 252",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1452,8 +1452,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 79,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 79",
+      "plyReplayed": 81,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 81",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_0.txt"
     },
     {
@@ -1533,8 +1533,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 66,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 66",
+      "plyReplayed": 68,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 68",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {
@@ -1888,17 +1888,17 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Unlace/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "experimental/Wrigglers",
-      "ply": 1,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=20,to=20",
-      "tsMoveCount": 37,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=1,to=1,isPass=false",
-        "mover=2,from=2,to=2,isPass=false"
+      "plyReplayed": 54,
+      "recWinner": 1,
+      "tsWinner": 2,
+      "recRankings": [
+        0,
+        1,
+        2
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/experimental/Wrigglers/RandomTrial_0.txt"
     },
     {

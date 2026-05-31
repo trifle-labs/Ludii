@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 671.3,
+    "elapsed_s": 669.3,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 65,
+      "MOVE_MISMATCH": 63,
       "WINNER_MISMATCH": 7,
-      "OUTCOME_OK": 113,
+      "OUTCOME_OK": 115,
       "REPLAY_OK_NO_OUTCOME": 28
     }
   },
@@ -914,17 +914,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Bipod/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/connection/Defector Y",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=43,to=43",
-      "tsMoveCount": 37,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
+      "plyReplayed": 40,
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Defector Y/RandomTrial_0.txt"
     },
     {
@@ -1467,8 +1459,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 300,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 300",
+      "plyReplayed": 305,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 305",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
@@ -1620,8 +1612,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 20,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 20",
+      "plyReplayed": 18,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 18",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_0.txt"
     },
     {
@@ -1807,17 +1799,9 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Double-Move Situ/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Freeze Frenzy",
-      "ply": 2,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=25,to=25",
-      "tsMoveCount": 25,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
-      ],
+      "plyReplayed": 55,
       "trialFile": "../../../Player/res/random_trials/experimental/Freeze Frenzy/RandomTrial_0.txt"
     },
     {

@@ -1243,8 +1243,9 @@ function parseTriBoard(shape: LudList, board: LudList): ParsedBoard {
   // sites by that numbering. The `onBoard`-mask lattice fallback below kept the
   // full bounding box under a sparse, hole-punched numbering (e.g. 81 sites for
   // `(tri Hexagon 5)` instead of 61), so both site indices and neighbours
-  // diverged from Java. Star / Limping / custom-polygon outlines are not modelled
-  // by genTri, so they keep the lattice approximation below.
+  // diverged from Java. Limping is Java `CustomOnTri(dimA, dimA+1)`; Star /
+  // custom-polygon outlines are not modelled by genTri, so they keep the lattice
+  // approximation below.
   if (
     shapeName === undefined ||
     shapeName === "hexagon" ||
@@ -1252,7 +1253,8 @@ function parseTriBoard(shape: LudList, board: LudList): ParsedBoard {
     shapeName === "rectangle" ||
     shapeName === "square" ||
     shapeName === "diamond" ||
-    shapeName === "prism"
+    shapeName === "prism" ||
+    shapeName === "limping"
   ) {
     const g = buildBoardGraph(board);
     if (g) {

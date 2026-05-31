@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 590.6,
+    "elapsed_s": 591,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 58,
-      "WINNER_MISMATCH": 14,
-      "OUTCOME_OK": 114,
+      "MOVE_MISMATCH": 55,
+      "WINNER_MISMATCH": 16,
+      "OUTCOME_OK": 115,
       "REPLAY_OK_NO_OUTCOME": 27
     }
   },
@@ -804,17 +804,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/4 Squared/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Claustro",
-      "ply": 1,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=25,to=25",
-      "tsMoveCount": 18,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=2,to=2,isPass=false",
-        "mover=2,from=5,to=5,isPass=false"
-      ],
+      "plyReplayed": 11,
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Claustro/RandomTrial_0.txt"
     },
     {
@@ -875,17 +867,17 @@
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Temeen Tavag/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/space/connection/00'Y'",
-      "ply": 2,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=35,to=35",
-      "tsMoveCount": 35,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=1,to=1,isPass=false",
-        "mover=2,from=2,to=2,isPass=false"
+      "plyReplayed": 65,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/00'Y'/RandomTrial_0.txt"
     },
     {
@@ -1377,12 +1369,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/war/leaping/lines/Throngs",
-      "ply": 0,
+      "ply": 1,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=14,to=14",
-      "tsMoveCount": 1,
+      "recMove": "mover=1,from=13,to=23",
+      "tsMoveCount": 13,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=2,from=-1,to=-1,isPass=true",
+        "mover=2,from=26,to=26,isPass=false",
+        "mover=2,from=27,to=27,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Throngs/RandomTrial_0.txt"
     },
@@ -1788,17 +1782,17 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Breakthrough Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "experimental/Double-Run Stone",
-      "ply": 0,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=11,to=11",
-      "tsMoveCount": 20,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+      "plyReplayed": 10,
+      "recWinner": 2,
+      "tsWinner": 1,
+      "recRankings": [
+        0,
+        2,
+        1
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/experimental/Double-Run Stone/RandomTrial_0.txt"
     },
     {
@@ -1818,14 +1812,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Hexifact",
-      "ply": 5,
+      "ply": 11,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=3,to=3",
-      "tsMoveCount": 8,
+      "recMove": "mover=2,from=19,to=2",
+      "tsMoveCount": 7,
       "sampleTsMoves": [
-        "mover=2,from=1,to=1,isPass=false",
-        "mover=2,from=2,to=2,isPass=false",
-        "mover=2,from=8,to=8,isPass=false"
+        "mover=2,from=4,to=4,isPass=false",
+        "mover=2,from=5,to=5,isPass=false",
+        "mover=2,from=9,to=9,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Hexifact/RandomTrial_0.txt"
     },

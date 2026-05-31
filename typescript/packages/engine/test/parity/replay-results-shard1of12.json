@@ -1,12 +1,12 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 478.8,
+    "elapsed_s": 459.5,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 51,
-      "WINNER_MISMATCH": 16,
+      "MOVE_MISMATCH": 50,
+      "WINNER_MISMATCH": 17,
       "OUTCOME_OK": 116,
       "REPLAY_OK_NO_OUTCOME": 31
     }
@@ -868,17 +868,17 @@
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Un/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/space/connection/Bipartisan Y",
-      "ply": 5,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=4,to=4",
-      "tsMoveCount": 32,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+      "plyReplayed": 42,
+      "recWinner": 2,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        2,
+        1
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/connection/Bipartisan Y/RandomTrial_1.txt"
     },
     {
@@ -1557,8 +1557,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Chu Seireigi",
-      "plyReplayed": 29,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 29",
+      "plyReplayed": 28,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 28",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Chu Seireigi/RandomTrial_1.txt"
     },
     {

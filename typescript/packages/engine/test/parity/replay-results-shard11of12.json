@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 518.8,
+    "elapsed_s": 516.4,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 74,
+      "MOVE_MISMATCH": 73,
       "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 111,
+      "OUTCOME_OK": 112,
       "REPLAY_OK_NO_OUTCOME": 20
     }
   },
@@ -1305,8 +1305,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 254,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 254",
+      "plyReplayed": 255,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 255",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_1.txt"
     },
     {
@@ -1468,8 +1468,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 84,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 84",
+      "plyReplayed": 87,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 87",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_1.txt"
     },
     {
@@ -1920,17 +1920,9 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Unlace/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Wrigglers",
-      "ply": 1,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=43,to=43",
-      "tsMoveCount": 37,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=1,to=1,isPass=false",
-        "mover=2,from=2,to=2,isPass=false"
-      ],
+      "plyReplayed": 53,
       "trialFile": "../../../Player/res/random_trials/experimental/Wrigglers/RandomTrial_1.txt"
     },
     {
