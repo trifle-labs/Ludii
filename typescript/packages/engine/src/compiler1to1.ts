@@ -26,13 +26,24 @@ import "./ludemes/registry1to1-boolean.js";
 import "./ludemes/registry1to1-int.js";
 import "./ludemes/registry1to1-region.js";
 import "./ludemes/registry1to1-moves.js";
+import "./ludemes/registry1to1-intarray.js";
+import "./ludemes/registry1to1-float.js";
+import "./ludemes/registry1to1-directions.js";
 import {
   lookupBool1to1,
   lookupInt1to1,
   lookupRegion1to1,
   lookupMoves1to1,
+  lookupIntArray1to1,
+  lookupFloat1to1,
+  lookupDirections1to1,
   type Compile1to1Env,
 } from "./ludemes/registry1to1.js";
+import type {
+  IntArrayFunction,
+  FloatFunction,
+  DirectionsFunction,
+} from "./ludemes/base.js";
 
 // Equipment
 import { Piece } from "./ludemes/game/equipment/component/Piece.js";
@@ -3294,8 +3305,64 @@ let _isThreatenedActive = false;
  */
 let _canMoveActive = false;
 
-function compileMoves1to1(node: LudNode, equipment?: Equipment1to1): MovesFunction {
+export function compileMoves1to1(node: LudNode, equipment?: Equipment1to1): MovesFunction {
   return _compileMoves(node, equipment);
+}
+
+// ---------------------------------------------------------------------------
+// IntArray / Float / Directions sub-compilers (new function kinds).
+// Each consults its registry; registered 1:1 classes are the only source.
+// These mirror the Bool/Int/Region/Moves lookup pattern.
+// ---------------------------------------------------------------------------
+
+/** @java game/functions/intArray/IntArrayFunction.java */
+export function compileIntArray1to1(node: LudNode | undefined): IntArrayFunction {
+  if (!node) return { eval: () => [] };
+  if (isList(node)) {
+    // { a b c } curly list of ints → array of their values
+    if (node.delimiter === "curly") {
+      const elems = node.items.map(it => compileInt1to1(it));
+      return { eval(ctx: Context): number[] { return elems.map(e => e.eval(ctx)); } };
+    }
+    const h = headOf(node)!;
+    const env: Compile1to1Env = { numPlayers: 2 };
+    const ctor = lookupIntArray1to1(h);
+    if (ctor) return ctor(node, env);
+  }
+  throw new Error(`compiler1to1: no IntArrayFunction for ${isList(node) ? headOf(node) : "non-list"}`);
+}
+
+/** @java game/functions/floats/FloatFunction.java */
+export function compileFloat1to1(node: LudNode | undefined): FloatFunction {
+  if (!node) return { eval: () => 0 };
+  if (isNumber(node)) { const v = node.value; return { eval: () => v }; }
+  if (isList(node)) {
+    const h = headOf(node)!;
+    const env: Compile1to1Env = { numPlayers: 2 };
+    const ctor = lookupFloat1to1(h);
+    if (ctor) return ctor(node, env);
+  }
+  // A float context can wrap an int expression (Java auto-widens int→float).
+  return compileInt1to1(node);
+}
+
+/** @java game/util/directions/DirectionsFunction.java — returns Trajectories direction names */
+export function compileDirections1to1(node: LudNode | undefined): DirectionsFunction {
+  if (!node) return { eval: () => ["Adjacent"] };
+  if (isIdent(node)) { const nm = node.name; return { eval: () => [nm] }; }
+  if (isList(node)) {
+    const h = headOf(node)!;
+    const env: Compile1to1Env = { numPlayers: 2 };
+    const ctor = lookupDirections1to1(h);
+    if (ctor) return ctor(node, env);
+    // (directions <Type>) → the named direction group
+    if (h === "directions") {
+      const { positional } = parseArgs1to1(node.items);
+      const first = positional[0];
+      if (first && isIdent(first)) { const nm = first.name; return { eval: () => [nm] }; }
+    }
+  }
+  throw new Error(`compiler1to1: no DirectionsFunction for ${isList(node) ? headOf(node) : "non-list"}`);
 }
 
 /**

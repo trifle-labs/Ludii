@@ -93,6 +93,34 @@ export interface EndRuleFunction {
   eval(ctx: Context & EvalScratch): EndResult | null;
 }
 
+/**
+ * An integer-array-valued ludeme. eval() returns a plain int[] (NOT site
+ * indices — semantically a list of values, e.g. (results ...), (array ...)).
+ * @java game.functions.intArray.IntArrayFunction
+ */
+export interface IntArrayFunction {
+  eval(ctx: Context & EvalScratch): number[];
+}
+
+/**
+ * A float-valued ludeme. eval() returns a JS number used as a Java float/double.
+ * @java game.functions.floats.FloatFunction
+ */
+export interface FloatFunction {
+  eval(ctx: Context & EvalScratch): number;
+}
+
+/**
+ * A directions ludeme. In the 1:1 path, directions resolve to the set of
+ * direction NAMES understood by the Trajectories API (compass names like
+ * "N"/"NE" and group names like "Orthogonal"/"Diagonal"/"Adjacent"). eval()
+ * returns that name list so step/ray/group callers can iterate it.
+ * @java game.util.directions.DirectionsFunction
+ */
+export interface DirectionsFunction {
+  eval(ctx: Context & EvalScratch): string[];
+}
+
 // ---------------------------------------------------------------------------
 // Result types
 // ---------------------------------------------------------------------------

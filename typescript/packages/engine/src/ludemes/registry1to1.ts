@@ -17,7 +17,15 @@
  */
 
 import type { LudNode } from "@ludii/typescript-language";
-import type { BooleanFunction, IntFunction, RegionFunction, MovesFunction } from "./base.js";
+import type {
+  BooleanFunction,
+  IntFunction,
+  RegionFunction,
+  MovesFunction,
+  IntArrayFunction,
+  FloatFunction,
+  DirectionsFunction,
+} from "./base.js";
 
 // ---------------------------------------------------------------------------
 // Compile environment (what factory functions receive)
@@ -52,6 +60,15 @@ export type RegionCtor = (node: LudNode, env: Compile1to1Env) => RegionFunction;
 /** Factory that turns a raw LudNode + env into a MovesFunction. */
 export type MovesCtor = (node: LudNode, env: Compile1to1Env) => MovesFunction;
 
+/** Factory that turns a raw LudNode + env into an IntArrayFunction. */
+export type IntArrayCtor = (node: LudNode, env: Compile1to1Env) => IntArrayFunction;
+
+/** Factory that turns a raw LudNode + env into a FloatFunction. */
+export type FloatCtor = (node: LudNode, env: Compile1to1Env) => FloatFunction;
+
+/** Factory that turns a raw LudNode + env into a DirectionsFunction. */
+export type DirectionsCtor = (node: LudNode, env: Compile1to1Env) => DirectionsFunction;
+
 // ---------------------------------------------------------------------------
 // Registry maps  (key = lowercased head name, e.g. "and", "is:line")
 // ---------------------------------------------------------------------------
@@ -60,6 +77,9 @@ const boolRegistry = new Map<string, BoolCtor>();
 const intRegistry  = new Map<string, IntCtor>();
 const regionRegistry = new Map<string, RegionCtor>();
 const movesRegistry  = new Map<string, MovesCtor>();
+const intArrayRegistry = new Map<string, IntArrayCtor>();
+const floatRegistry = new Map<string, FloatCtor>();
+const directionsRegistry = new Map<string, DirectionsCtor>();
 
 // ---------------------------------------------------------------------------
 // Registration functions
@@ -81,6 +101,18 @@ export function registerMoves1to1(key: string, ctor: MovesCtor): void {
   movesRegistry.set(key.toLowerCase(), ctor);
 }
 
+export function registerIntArray1to1(key: string, ctor: IntArrayCtor): void {
+  intArrayRegistry.set(key.toLowerCase(), ctor);
+}
+
+export function registerFloat1to1(key: string, ctor: FloatCtor): void {
+  floatRegistry.set(key.toLowerCase(), ctor);
+}
+
+export function registerDirections1to1(key: string, ctor: DirectionsCtor): void {
+  directionsRegistry.set(key.toLowerCase(), ctor);
+}
+
 // ---------------------------------------------------------------------------
 // Lookup functions
 // ---------------------------------------------------------------------------
@@ -99,4 +131,16 @@ export function lookupRegion1to1(key: string): RegionCtor | undefined {
 
 export function lookupMoves1to1(key: string): MovesCtor | undefined {
   return movesRegistry.get(key.toLowerCase());
+}
+
+export function lookupIntArray1to1(key: string): IntArrayCtor | undefined {
+  return intArrayRegistry.get(key.toLowerCase());
+}
+
+export function lookupFloat1to1(key: string): FloatCtor | undefined {
+  return floatRegistry.get(key.toLowerCase());
+}
+
+export function lookupDirections1to1(key: string): DirectionsCtor | undefined {
+  return directionsRegistry.get(key.toLowerCase());
 }
