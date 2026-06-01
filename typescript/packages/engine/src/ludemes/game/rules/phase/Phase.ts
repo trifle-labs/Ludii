@@ -25,19 +25,28 @@ export class Phase {
   public readonly end: End | null;
   /** Conditions to transition to another phase. @java Phase.nextPhase() */
   public readonly nextPhases: readonly NextPhase[];
+  /**
+   * Owner role of this phase: 0=Shared (all players), N=player N only.
+   * @java Phase.owner() — RoleType.owner() returns player id, or 0 for Shared
+   * Used by State.initPhase() to assign initial phases to players.
+   */
+  public readonly ownerPlayerId: number;
 
   /**
    * @java game/rules/phase/Phase.java — constructor
+   * @param ownerPlayerId  0 = Shared (all players), N = player N only (P1=1, P2=2, ...)
    */
   public constructor(
     name: string,
     play: Play1to1,
     end: End | null = null,
     nextPhases: NextPhase[] = [],
+    ownerPlayerId = 0,
   ) {
     this.name = name;
     this.play = play;
     this.end = end;
     this.nextPhases = nextPhases;
+    this.ownerPlayerId = ownerPlayerId;
   }
 }

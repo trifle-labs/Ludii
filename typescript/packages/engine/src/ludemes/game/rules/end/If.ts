@@ -39,7 +39,8 @@ export class If implements EndRuleFunction {
     if (!this.condition.eval(ctx)) return null;
 
     const mover = ctx.state.mover;
-    const who = this.result.resolveWho(mover, this.numPlayers);
+    // @java game/functions/ints/board/Id.java:122 — case Next uses state.next()
+    const who = this.result.resolveWho(mover, this.numPlayers, ctx);
     const resultType = this.result.result;
 
     // Build rankings array: [0, rank_p1, rank_p2, ...]

@@ -61,10 +61,12 @@ import { OrMoves } from "./ludemes/game/rules/play/moves/nonDecision/operators/l
 import { IfMoves } from "./ludemes/game/rules/play/moves/nonDecision/operators/logical/IfMoves.js";
 import { ForEachPiece1to1 } from "./ludemes/game/rules/play/moves/nonDecision/operators/foreach/ForEachPiece1to1.js";
 import { Slide1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Slide1to1.js";
+import { Shoot1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Shoot1to1.js";
 import { Step1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Step1to1.js";
 import { FromTo1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/FromTo1to1.js";
 import { ActionRemove } from "./action/action-remove.js";
 import { ActionPass } from "./action/action-pass.js";
+import { ActionSetNextPlayer } from "./action/action-set-next-player.js";
 import { ActionMove } from "./action/action-move.js";
 
 // Rules
@@ -89,6 +91,7 @@ import { Game1to1 } from "./ludemes/Game1to1.js";
 import { Context } from "./context.js";
 import { Move } from "./move.js";
 import type { Trajectories } from "./eval/graph/trajectories.js";
+import { type CellFlatRadials, radialsForDirection } from "./ludemes/topology-radials.js";
 import type {
   IntFunction,
   BooleanFunction,
@@ -408,10 +411,35 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
       const { positional: lPos } = parseArgs1to1(node.items);
       const first = lPos[0];
       if (first && isIdent(first) && first.name.toLowerCase() === "to") {
-        return { eval(ctx: Context): number { return ctx._evalTo; } };
+        // @java game/functions/ints/last/LastTo.java:50-62
+        // Read from trial.moves (the actual last-to site), NOT from _evalTo.
+        // _evalTo is only valid during end-rule evaluation, not during move generation.
+        // Using trial.moves allows (last To) to work in both move generation and end rules.
+        return { eval(ctx: Context): number {
+          const moves = ctx.trial.moves;
+          if (moves.length === 0) return ctx._evalTo; // fallback during initial placement
+          const last = moves[moves.length - 1];
+          if (!last) return ctx._evalTo;
+          const t = last.toNonDecision();
+          if (t >= 0) return t;
+          const t2 = last.to();
+          if (t2 >= 0) return t2;
+          return ctx._evalTo;
+        }};
       }
       if (first && isIdent(first) && first.name.toLowerCase() === "from") {
-        return { eval(ctx: Context): number { return ctx._evalFrom; } };
+        // @java game/functions/ints/last/LastFrom.java:49-55
+        return { eval(ctx: Context): number {
+          const moves = ctx.trial.moves;
+          if (moves.length === 0) return ctx._evalFrom;
+          const last = moves[moves.length - 1];
+          if (!last) return ctx._evalFrom;
+          const f = last.fromNonDecision();
+          if (f >= 0) return f;
+          const f2 = last.from();
+          if (f2 >= 0) return f2;
+          return ctx._evalFrom;
+        }};
       }
     }
 
@@ -674,7 +702,66 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
     // @java game/functions/ints/board/Id.java — resolves RoleType to player id
     if (h === "id") {
       const { positional: idPos } = parseArgs1to1(node.items);
-      // id can take a string name or a role ident
+      // (id "PieceName" Role) — returns component index of named piece
+      // (id Mover) / (id P1) / etc. — returns player id
+      // @java game/functions/ints/board/Id.java — eval
+
+      // Try string-based piece lookup first: (id "Name" [Role])
+      const nameNode = idPos.find(p => isString(p));
+      if (nameNode && isString(nameNode)) {
+        const pieceName = nameNode.value;
+        // Find owner role
+        const roleNode = idPos.find(p => isIdent(p));
+        const roleStr = roleNode && isIdent(roleNode) ? roleNode.name.toLowerCase() : "neutral";
+        // Resolve owner
+        let owner: number;
+        if (roleStr === "neutral" || roleStr === "neutral") owner = 0;
+        else if (roleStr === "mover") owner = -1; // dynamic
+        else if (roleStr === "next") owner = -2; // dynamic
+        else if (roleStr.startsWith("p") && !isNaN(parseInt(roleStr.slice(1), 10))) {
+          owner = parseInt(roleStr.slice(1), 10);
+        } else {
+          owner = 0;
+        }
+
+        if (owner >= 0) {
+          // Static: find piece by name+owner
+          // We need equipment, but compileInt1to1 doesn't have it. We'll use a runtime lookup.
+          // At runtime, look up from game.equipment.
+          const nameConst = pieceName;
+          const ownerConst = owner;
+          return {
+            eval(ctx: Context): number {
+              const g = ctx.game as unknown as { equipment?: { pieces?: Array<{ name: string; owner: number; index: number }> } };
+              const pieces = g.equipment?.pieces;
+              if (!pieces) return 0;
+              const match = pieces.find(p =>
+                p.name.toLowerCase() === nameConst.toLowerCase() && p.owner === ownerConst
+              ) ?? pieces.find(p =>
+                `${p.name}${p.owner}`.toLowerCase() === `${nameConst}${ownerConst}`.toLowerCase()
+              );
+              return match ? match.index : 0;
+            }
+          };
+        }
+        // Dynamic owner (Mover/Next)
+        const nameConst2 = pieceName;
+        const isDynMover = owner === -1;
+        return {
+          eval(ctx: Context): number {
+            const g = ctx.game as unknown as { equipment?: { pieces?: Array<{ name: string; owner: number; index: number }> } };
+            const pieces = g.equipment?.pieces;
+            if (!pieces) return 0;
+            const dynOwner = isDynMover ? ctx.state.mover : (ctx.state.mover % ctx.game.numPlayers) + 1;
+            const match = pieces.find(p =>
+              p.name.toLowerCase() === nameConst2.toLowerCase() && p.owner === dynOwner
+            );
+            return match ? match.index : 0;
+          }
+        };
+      }
+
+      // Role-based: (id Mover), (id P1), etc.
       for (const p of idPos) {
         if (isIdent(p)) {
           const roleName = p.name.toLowerCase();
@@ -1064,9 +1151,19 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
             } else if (roleName === "p1" || roleName === "p2" || roleName === "p3" || roleName === "p4") {
               const pid = parseInt(roleName.slice(1), 10);
               for (let i = 0; i < boardN; i++) { if (cells[i] === pid) result.push(i); }
+            } else if (roleName === "neutral" || roleName === "shared") {
+              // Neutral pieces: cells[i] = 0 (owner=neutral/shared) AND whats[i] != 0
+              // @java SitesOccupied: Neutral = RoleType.Neutral = owner 0
+              const whats = ctx.state.whats;
+              for (let i = 0; i < boardN; i++) {
+                if (cells[i] === 0 && (whats[i] ?? 0) !== 0) result.push(i);
+              }
             } else {
-              // All: any non-empty board site
-              for (let i = 0; i < boardN; i++) { if (cells[i] !== 0) result.push(i); }
+              // All: any non-empty board site (occupied by anyone including neutral)
+              const whats2 = ctx.state.whats;
+              for (let i = 0; i < boardN; i++) {
+                if (cells[i] !== 0 || (whats2[i] ?? 0) !== 0) result.push(i);
+              }
             }
             return result;
           }
@@ -1101,65 +1198,183 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
         }};
       }
       if (kind === "around") {
-        // (sites Around <site> ...) — neighbours of a site
+        // (sites Around <site-or-region> [<dirn>] [if:<cond>]) — neighbours
         // @java game/functions/region/sites/around/SitesAround.java
+        // Supports both IntFunction (single site) and RegionFunction (multiple sites).
+        // When a region is given, returns the union of all neighbours of all sites.
         const siteArgNode = positional[1];
         if (siteArgNode) {
           let dirName = "Adjacent";
-          let siteFn: IntFunction;
+          let siteFn: IntFunction | null = null;
+          let regionFnAround: RegionFunction | null = null;
           let includeSelf = false;
-          // Optional: direction ident before site
-          try {
-            siteFn = compileInt1to1(siteArgNode);
-          } catch {
-            // Maybe it's direction then site
-            if (isIdent(siteArgNode)) {
-              dirName = siteArgNode.name;
-              const siteNode2 = positional[2];
-              if (siteNode2) {
-                try { siteFn = compileInt1to1(siteNode2); } catch { siteFn = { eval: () => -1 }; }
-              } else { siteFn = { eval: () => -1 }; }
-            } else { siteFn = { eval: () => -1 }; }
+          const siteArgNodeFinal = siteArgNode;
+
+          // Optional: direction ident before site/region
+          if (isIdent(siteArgNode)) {
+            dirName = siteArgNode.name;
+            const siteNode2 = positional[2];
+            if (siteNode2) {
+              try { siteFn = compileInt1to1(siteNode2); } catch {
+                try { regionFnAround = compileRegion1to1(siteNode2); } catch { /* ignore */ }
+              }
+            }
+          } else {
+            // Detect whether siteArgNode is a region-type or int-type expression.
+            // Region heads: sites, union, intersection, difference, expand, where,
+            //   complement, forEach, if (as region), centrePoint, etc.
+            // Int heads: last, coord, site, from, to, var, score, etc.
+            // (sites ...) always returns a region; use compileRegion1to1 for it.
+            const isRegionHead = isList(siteArgNodeFinal) && (() => {
+              const h2 = headOf(siteArgNodeFinal)?.toLowerCase();
+              return h2 === "sites" || h2 === "union" || h2 === "intersection" ||
+                     h2 === "difference" || h2 === "expand" || h2 === "complement" ||
+                     h2 === "centrepoint";
+            })();
+            if (isRegionHead) {
+              try {
+                regionFnAround = compileRegion1to1(siteArgNodeFinal);
+              } catch { /* ignore */ }
+            } else {
+              // Try as IntFunction first (single site), then as RegionFunction
+              try {
+                siteFn = compileInt1to1(siteArgNodeFinal);
+              } catch {
+                try {
+                  regionFnAround = compileRegion1to1(siteArgNodeFinal);
+                } catch { /* ignore */ }
+              }
+            }
           }
+
+          // Check remaining positional args for direction and/or RegionTypeDynamic.
+          // Pattern: (sites Around <site> [<typeDynamic>] [<direction>])
+          // @java SitesAround — @Opt RegionTypeDynamic type, @Opt AbsoluteDirection dirn
+          // RegionTypeDynamic = Own, Enemy, Mover, Next, Neutral, etc.
+          // AbsoluteDirection = Orthogonal, Adjacent, Diagonal, N, S, E, W, etc.
+          const DYNAMIC_TYPES = new Set(["own", "enemy", "mover", "next", "neutral", "all", "each", "friend", "foe", "p1", "p2"]);
+          const DIRECTION_NAMES = new Set(["adjacent", "orthogonal", "diagonal", "n", "s", "e", "w", "ne", "nw", "se", "sw", "all", "forwards", "backwards", "north", "south", "east", "west", "northeast", "northwest", "southeast", "southwest"]);
+          let dynamicType: string | null = null;
+          // Scan remaining positional args (2..N) for type and direction
+          for (let pi = (isIdent(siteArgNode) ? 2 : 2); pi < positional.length; pi++) {
+            const pa = positional[pi];
+            if (!pa || !isIdent(pa)) continue;
+            const paName = pa.name.toLowerCase();
+            if (DYNAMIC_TYPES.has(paName) && !dynamicType) {
+              dynamicType = paName;
+            } else if (DIRECTION_NAMES.has(paName)) {
+              dirName = pa.name; // Update direction
+            }
+          }
+
           const includeSelfNode = named.get("includeSelf") ?? named.get("includeself");
           if (includeSelfNode && isIdent(includeSelfNode) && includeSelfNode.name.toLowerCase() === "true") {
             includeSelf = true;
           }
+          // (sites Around X if:<cond>) — optional filter condition
+          // @java SitesAround.java — cond evaluated with context.to() = neighbour
+          const ifNode = named.get("if");
+          let ifCondFn: BooleanFunction | null = null;
+          if (ifNode) {
+            try { ifCondFn = compileBool1to1(ifNode, 2); } catch { /* skip */ }
+          }
           const dirFinal = dirName;
           const includeSelfFinal = includeSelf;
-          const siteFnFinal = siteFn!;
-          return { eval(ctx: Context): number[] {
-            const site = siteFnFinal.eval(ctx);
-            if (site < 0) return [];
+          const siteFnFinal = siteFn;
+          const regionFnFinal = regionFnAround;
+          const ifFinal = ifCondFn;
+          const dynTypeFinal = dynamicType;
+
+          /** Get neighbours of a single site on the current board. */
+          function neighboursOf(ctx: Context, s: number): number[] {
             const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
             const traj = ctxAny._trajectories;
-            let neighbours: number[];
-            if (traj) {
-              neighbours = traj.group(site, dirFinal);
+            if (traj) return traj.group(s, dirFinal);
+            const g = ctx.game as unknown as Game1to1;
+            const W = g.equipment.board.width;
+            const H = g.equipment.board.height;
+            const col = s % W; const row = Math.floor(s / W);
+            const ns: number[] = [];
+            const useAll = dirFinal === "Adjacent" || dirFinal === "All";
+            const useOrtho = useAll || dirFinal === "Orthogonal";
+            const useDiag = useAll || dirFinal === "Diagonal";
+            if (useOrtho) {
+              if (col > 0) ns.push(s - 1);
+              if (col < W-1) ns.push(s + 1);
+              if (row > 0) ns.push(s - W);
+              if (row < H-1) ns.push(s + W);
+            }
+            if (useDiag) {
+              if (col > 0 && row > 0) ns.push(s - W - 1);
+              if (col < W-1 && row > 0) ns.push(s - W + 1);
+              if (col > 0 && row < H-1) ns.push(s + W - 1);
+              if (col < W-1 && row < H-1) ns.push(s + W + 1);
+            }
+            return ns;
+          }
+
+          return { eval(ctx: Context): number[] {
+            // Collect all sites from the source (single site or region)
+            let sourceSites: number[];
+            if (siteFnFinal) {
+              const s = siteFnFinal.eval(ctx);
+              if (s < 0) return [];
+              sourceSites = [s];
+            } else if (regionFnFinal) {
+              sourceSites = regionFnFinal.eval(ctx);
+              if (sourceSites.length === 0) return [];
             } else {
-              const g = ctx.game as unknown as Game1to1;
-              const W = g.equipment.board.width;
-              const H = g.equipment.board.height;
-              const col = site % W; const row = Math.floor(site / W);
-              neighbours = [];
-              const useAll = dirFinal === "Adjacent" || dirFinal === "All";
-              const useOrtho = useAll || dirFinal === "Orthogonal";
-              const useDiag = useAll || dirFinal === "Diagonal";
-              if (useOrtho) {
-                if (col > 0) neighbours.push(site - 1);
-                if (col < W-1) neighbours.push(site + 1);
-                if (row > 0) neighbours.push(site - W);
-                if (row < H-1) neighbours.push(site + W);
+              return [];
+            }
+
+            // Collect all neighbours (union of all source sites' neighbours)
+            const seen = new Set<number>();
+            const neighbours: number[] = [];
+            for (const s of sourceSites) {
+              if (includeSelfFinal) {
+                if (!seen.has(s)) { seen.add(s); neighbours.push(s); }
               }
-              if (useDiag) {
-                if (col > 0 && row > 0) neighbours.push(site - W - 1);
-                if (col < W-1 && row > 0) neighbours.push(site - W + 1);
-                if (col > 0 && row < H-1) neighbours.push(site + W - 1);
-                if (col < W-1 && row < H-1) neighbours.push(site + W + 1);
+              for (const n of neighboursOf(ctx, s)) {
+                if (!seen.has(n)) { seen.add(n); neighbours.push(n); }
               }
             }
-            if (includeSelfFinal) neighbours = [site, ...neighbours];
-            return neighbours;
+
+            // Apply RegionTypeDynamic filter (Own, Enemy, Mover, Next, Neutral).
+            // @java SitesAround.java — typeDynamic filters results by ownership
+            let filtered = neighbours;
+            if (dynTypeFinal) {
+              const cells = ctx.state.cells;
+              const mover = ctx.state.mover;
+              const next = (mover % ctx.game.numPlayers) + 1;
+              filtered = neighbours.filter(n => {
+                const who = cells[n] ?? 0;
+                switch (dynTypeFinal) {
+                  case "own": case "mover": return who === mover;
+                  case "enemy": return who !== 0 && who !== mover;
+                  case "next": return who === next;
+                  case "neutral": return who === 0;
+                  case "all": return true;
+                  default: return true;
+                }
+              });
+            }
+
+            // Apply if: condition, setting _evalTo and _evalSite to each candidate
+            // @java SitesAround.java — cond evaluated with context.to() = neighbour
+            if (ifFinal) {
+              const origTo = ctx._evalTo;
+              const origSite = ctx._evalSite;
+              const result: number[] = [];
+              for (const n of filtered) {
+                ctx._evalTo = n;
+                ctx._evalSite = n;
+                if (ifFinal.eval(ctx)) result.push(n);
+              }
+              ctx._evalTo = origTo;
+              ctx._evalSite = origSite;
+              return result;
+            }
+            return filtered;
           }};
         }
         return { eval(_ctx: Context): number[] { return []; } };
@@ -1198,8 +1413,9 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
         return new SitesEmpty();
       }
       if (kind === "direction") {
-        // (sites Direction ...) — sites in a specific direction from a site
+        // (sites Direction [from:<site>] [<dirn>]) — ALL sites along a direction from a site
         // @java game/functions/region/sites/direction/SitesDirection.java
+        // Returns all sites in ALL radials of the given direction (like a queen's reach).
         const fromNode2 = named.get("from");
         const dirNode2 = positional[1];
         const dirName2 = (dirNode2 && isIdent(dirNode2)) ? dirNode2.name : "Adjacent";
@@ -1207,15 +1423,26 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
         return { eval(ctx: Context): number[] {
           const from = fromFn2.eval(ctx);
           if (from < 0) return [];
-          const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
+          const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null; _radials?: readonly CellFlatRadials[] };
           const traj = ctxAny._trajectories;
-          if (traj) return traj.ray(from, dirName2);
-          const radialCtx = ctx as unknown as { _radials?: readonly import("./ludemes/topology-radials.js").CellFlatRadials[] };
-          const radials = radialCtx._radials;
+          if (traj) {
+            return traj.group(from, dirName2);
+          }
+          // Square board: use radials to get all sites along all axes in the direction
+          const radials = ctxAny._radials;
           if (!radials) return [];
           const cr = radials[from];
           if (!cr) return [];
-          return cr.axes[0] ? [...cr.axes[0].ray.slice(1)] : [];
+          const axes = radialsForDirection(cr, dirName2);
+          const result: number[] = [];
+          for (const axis of axes) {
+            for (const r of [axis.ray, axis.opposite]) {
+              for (let i = 1; i < r.length; i++) {
+                if (r[i] !== undefined) result.push(r[i] as number);
+              }
+            }
+          }
+          return result;
         }};
       }
       if (kind === "state") {
@@ -1334,11 +1561,94 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
       }
 
       if (kind === "side") {
-        // (sites Side N/S/E/W) — sites on a given board side
+        // (sites Side N/S/E/W/NE/NW/SE/SW) — sites on a given board side
+        // @java game/functions/region/sites/side/SitesSide.java — eval
         const sideNode = positional[1];
         const sideName = (sideNode && isIdent(sideNode)) ? sideNode.name.toUpperCase() : "";
         return { eval(ctx: Context): number[] {
           const g = ctx.game as unknown as Game1to1;
+          const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
+          const traj = ctxT._trajectories;
+
+          if (traj) {
+            // For hex/graph boards: use perimeter sites with direction filtering.
+            // @java SitesSide.java — uses graph.sides(SiteType).get(direction)
+            const perimSites = traj.perimeterSites();
+            if (sideName === "" || sideName === "ALL") return perimSites;
+
+            // Try coordinate-based classification for non-trivial directions.
+            // Only applied when we have non-NSEW compass names (NE, NW, SE, SW etc.)
+            // that don't match the square-board fallback below.
+            const NSEW = new Set(["N","NORTH","S","SOUTH","E","EAST","W","WEST"]);
+            if (!NSEW.has(sideName)) {
+              // Use angle-based classification for diagonal compass directions
+              if (perimSites.length === 0) return [];
+              let sumX = 0, sumY = 0;
+              for (const s of perimSites) { sumX += traj.xOf(s); sumY += traj.yOf(s); }
+              const cx = sumX / perimSites.length;
+              const cy = sumY / perimSites.length;
+              const siteAngles = perimSites.map(s => ({
+                site: s,
+                angle: Math.atan2(traj.yOf(s) - cy, traj.xOf(s) - cx),
+              }));
+              const PI = Math.PI;
+              const DIR_ANGLES: Record<string, number> = {
+                "NE": PI/6, "ENE": PI/12, "NNE": PI/4,
+                "NW": 5*PI/6, "WNW": 11*PI/12, "NNW": 3*PI/4,
+                "SW": -5*PI/6, "WSW": -11*PI/12, "SSW": -3*PI/4,
+                "SE": -PI/6, "ESE": -PI/12, "SSE": -PI/4,
+                "NORTHEAST": PI/6, "NORTHWEST": 5*PI/6,
+                "SOUTHEAST": -PI/6, "SOUTHWEST": -5*PI/6,
+              };
+              const centerAngle = DIR_ANGLES[sideName];
+              if (centerAngle !== undefined) {
+                const sectorHalf = PI / 6 + 0.02;
+                return siteAngles
+                  .filter(({ angle }) => {
+                    let diff = angle - centerAngle;
+                    if (diff > PI) diff -= 2*PI;
+                    if (diff < -PI) diff += 2*PI;
+                    return Math.abs(diff) <= sectorHalf;
+                  })
+                  .map(({ site }) => site)
+                  .sort((a, b) => a - b);
+              }
+              // Fallback for unknown diagonal: return all perimeter
+              return perimSites;
+            }
+
+            // NSEW on hex/graph board: also try angle-based
+            if (perimSites.length === 0) return perimSites;
+            {
+              let sumX2 = 0, sumY2 = 0;
+              for (const s of perimSites) { sumX2 += traj.xOf(s); sumY2 += traj.yOf(s); }
+              const cx2 = sumX2 / perimSites.length;
+              const cy2 = sumY2 / perimSites.length;
+              const PI2 = Math.PI;
+              const NSEW_ANGLES: Record<string, number> = {
+                "N": PI2/2, "NORTH": PI2/2,
+                "S": -PI2/2, "SOUTH": -PI2/2,
+                "E": 0, "EAST": 0,
+                "W": PI2, "WEST": PI2,
+              };
+              const center2 = NSEW_ANGLES[sideName];
+              if (center2 !== undefined) {
+                const half2 = PI2 / 4 + 0.02; // 45° sector for N/S/E/W on hex
+                const result2 = perimSites.filter(s => {
+                  const x = traj.xOf(s), y = traj.yOf(s);
+                  const angle = Math.atan2(y - cy2, x - cx2);
+                  let diff = angle - center2;
+                  if (diff > PI2) diff -= 2*PI2;
+                  if (diff < -PI2) diff += 2*PI2;
+                  return Math.abs(diff) <= half2;
+                }).sort((a, b) => a - b);
+                if (result2.length > 0) return result2;
+              }
+            }
+            return perimSites;
+          }
+
+          // Square board fallback
           const W = g.equipment.board.width;
           const H = g.equipment.board.height;
           const res: number[] = [];
@@ -1535,9 +1845,25 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
     const typeNode = positional[0];
     const typeName = (typeNode && isIdent(typeNode)) ? typeNode.name.toLowerCase() : "to";
     if (typeName === "from") {
-      return { eval(ctx: Context): number[] { const s = ctx._evalFrom; return s >= 0 ? [s] : []; }};
+      // @java game/functions/ints/last/LastFrom.java — read from trial
+      return { eval(ctx: Context): number[] {
+        const moves = ctx.trial.moves;
+        if (moves.length > 0) {
+          const last = moves[moves.length - 1];
+          if (last) { const f = last.fromNonDecision(); if (f >= 0) return [f]; }
+        }
+        const s = ctx._evalFrom; return s >= 0 ? [s] : [];
+      }};
     }
-    return { eval(ctx: Context): number[] { const s = ctx._evalTo; return s >= 0 ? [s] : []; }};
+    // @java game/functions/ints/last/LastTo.java — read from trial
+    return { eval(ctx: Context): number[] {
+      const moves = ctx.trial.moves;
+      if (moves.length > 0) {
+        const last = moves[moves.length - 1];
+        if (last) { const t = last.toNonDecision(); if (t >= 0) return [t]; }
+      }
+      const s = ctx._evalTo; return s >= 0 ? [s] : [];
+    }};
   }
 
   // (centrePoint) as RegionFunction — centre site as singleton
@@ -1571,15 +1897,23 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
   }
 
   // (last To/From) as RegionFunction — singleton site
-  // Handled in compileInt1to1 already, but also support as region
+  // @java game/functions/ints/last/LastTo.java / LastFrom.java — read from trial
   if (h === "last") {
     const { positional: lPos } = parseArgs1to1(node.items);
     const typeNode = lPos[0];
     const typeName = (typeNode && isIdent(typeNode)) ? typeNode.name.toLowerCase() : "to";
     if (typeName === "from") {
-      return { eval(ctx: Context): number[] { const s = ctx._evalFrom; return s >= 0 ? [s] : []; }};
+      return { eval(ctx: Context): number[] {
+        const ms = ctx.trial.moves;
+        if (ms.length > 0) { const l = ms[ms.length-1]; if (l) { const f = l.fromNonDecision(); if (f >= 0) return [f]; } }
+        const s = ctx._evalFrom; return s >= 0 ? [s] : [];
+      }};
     }
-    return { eval(ctx: Context): number[] { const s = ctx._evalTo; return s >= 0 ? [s] : []; }};
+    return { eval(ctx: Context): number[] {
+      const ms = ctx.trial.moves;
+      if (ms.length > 0) { const l = ms[ms.length-1]; if (l) { const t = l.toNonDecision(); if (t >= 0) return [t]; } }
+      const s = ctx._evalTo; return s >= 0 ? [s] : [];
+    }};
   }
 
   // (mapEntry ...) as RegionFunction — singleton site
@@ -1784,27 +2118,79 @@ export function compileBool1to1(
       // @java game/functions/booleans/is/connect/IsConnected.java — eval: BFS from last-to site
       if (kind === "connected") {
         const { positional: cpPos, named: cpNamed } = parseArgs1to1(node.items);
-        // Args after "Connected": optional direction, optional role, optional at:
-        // Java default direction = Adjacent (8-connected on square, 6-connected on hex)
+        // Two forms:
+        // 1. (is Connected {region1 region2 ...}) — explicit goal sets, check mover's connectivity
+        // 2. (is Connected [dir] [role] [at:<site>]) — BFS-based, using player regions or board sides
+        //
+        // @java game/functions/booleans/is/connect/IsConnected.java — eval
         let dirName = "Adjacent";
         let roleName = "mover"; // default: check mover's connectivity
         const CONN_DIRS = new Set(["orthogonal", "diagonal", "adjacent", "all"]);
-        for (let i = 1; i < cpPos.length; i++) {
-          const p = cpPos[i];
-          if (p && isIdent(p)) {
-            const n = p.name.toLowerCase();
-            if (CONN_DIRS.has(n)) dirName = p.name;
-            else roleName = n;
+
+        // Check for (is Connected N Sides) / (is Connected N Corners) / (is Connected N SidesNoCorners)
+        // @java game/functions/booleans/is/connect/IsConnected.java — numSidesRequired
+        let numGoalsRequired = -1;
+        let goalType: "Sides" | "Corners" | "SidesNoCorners" | null = null;
+        if (cpPos[1] && isNumber(cpPos[1])) {
+          numGoalsRequired = (cpPos[1] as { value: number }).value;
+          const typeArg = cpPos[2];
+          if (typeArg && isIdent(typeArg)) {
+            const typeName = typeArg.name.toLowerCase();
+            if (typeName === "sides") goalType = "Sides";
+            else if (typeName === "corners") goalType = "Corners";
+            else if (typeName === "sidesnocorners" || typeName === "sides_no_corners") goalType = "SidesNoCorners";
+          } else {
+            goalType = "Sides"; // default
+          }
+          // Also check for role/direction
+          for (let i = 3; i < cpPos.length; i++) {
+            const p = cpPos[i];
+            if (p && isIdent(p)) {
+              const n = p.name.toLowerCase();
+              if (CONN_DIRS.has(n)) dirName = p.name;
+              else roleName = n;
+            }
           }
         }
+        const numGoalsFinal = numGoalsRequired;
+        const goalTypeFinal = goalType;
+
+        // Check for explicit goal sets: (is Connected {region1 region2 ...})
+        const firstGoalArg = cpPos[1];
+        let explicitGoalFns: RegionFunction[] | null = null;
+        if (numGoalsRequired < 0 && firstGoalArg && isList(firstGoalArg) && firstGoalArg.delimiter === "curly") {
+          explicitGoalFns = [];
+          for (const item of firstGoalArg.items) {
+            if (isList(item)) {
+              try { explicitGoalFns.push(compileRegion1to1(item)); } catch { /* skip */ }
+            }
+          }
+          // Also check for direction after the goal list
+          for (let i = 2; i < cpPos.length; i++) {
+            const p = cpPos[i];
+            if (p && isIdent(p)) {
+              const n = p.name.toLowerCase();
+              if (CONN_DIRS.has(n)) dirName = p.name;
+              else roleName = n;
+            }
+          }
+        } else {
+          for (let i = 1; i < cpPos.length; i++) {
+            const p = cpPos[i];
+            if (p && isIdent(p)) {
+              const n = p.name.toLowerCase();
+              if (CONN_DIRS.has(n)) dirName = p.name;
+              else roleName = n;
+            }
+          }
+        }
+
         const atNode = cpNamed.get("at");
         const atFn = atNode ? compileInt1to1(atNode) : null;
         const dirFinal = dirName;
         const roleNameFinal = roleName;
+        const explicitGoalsFinal = explicitGoalFns;
         return { eval(ctx: Context): boolean {
-          // Resolve seed site: explicit `at:` arg, else context._evalTo (last move to)
-          const seed = atFn ? atFn.eval(ctx) : ctx._evalTo;
-          if (seed < 0) return false;
           const cells = ctx.state.cells;
           // Resolve owner
           let owner: number;
@@ -1814,51 +2200,171 @@ export function compileBool1to1(
             owner = parseInt(roleNameFinal.slice(1), 10);
           } else owner = ctx.state.mover;
 
-          // Seed must be owned by owner
-          if ((cells[seed] ?? 0) !== owner) return false;
-
-          // Get player regions (declared via (regions P1 ...) or similar)
           const game = ctx.game as unknown as Game1to1;
-          const playerRegions = game.equipment?.playerRegions;
+
+          // Determine goal sets
           let goalSets: Set<number>[];
-          if (playerRegions && playerRegions.has(owner)) {
-            // Player has explicit regions — treat each declared region as a goal
-            // @java IsConnected: player's owned regions are each a separate goal
-            goalSets = [];
-            for (const [pid, regionFn] of playerRegions) {
-              void pid;
-              // Each player's region is a goal
-              goalSets.push(new Set(regionFn.eval(ctx)));
-            }
-          } else {
-            // Fall back to board sides: N/S (rows) for player 1 / player 2
-            // Java parity: default = board sides (N+S or E+W depending on player)
-            // Simple fallback: use top/bottom rows
+          if (numGoalsFinal >= 0 && goalTypeFinal) {
+            // Form 3: (is Connected N Sides/Corners/SidesNoCorners)
+            // Get all board sides/corners via trajectories or rectangle fallback
+            const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
+            const traj = ctxT._trajectories;
             const W = game.equipment.board.width;
             const H = game.equipment.board.height;
-            const N = W * H;
-            const topRow = new Set<number>();
-            const botRow = new Set<number>();
-            for (let c = 0; c < W; c++) {
-              topRow.add((H-1) * W + c);
-              botRow.add(c);
+            const allBoardSides: Set<number>[] = [];
+
+            if (traj) {
+              // For hex/graph boards, use trajectories to get sides
+              // The Trajectories object has boardSides() method
+              const boardSides = (traj as unknown as { boardSides?: () => Map<string, number[]> }).boardSides?.();
+              if (boardSides) {
+                for (const [, sites] of boardSides) {
+                  allBoardSides.push(new Set(sites));
+                }
+              }
             }
-            goalSets = [botRow, topRow];
+
+            if (allBoardSides.length === 0) {
+              // Fallback: use rectangle sides (N, S, E, W)
+              const sideN = new Set<number>();
+              const sideS = new Set<number>();
+              const sideE = new Set<number>();
+              const sideW = new Set<number>();
+              for (let c = 0; c < W; c++) { sideN.add((H-1)*W+c); sideS.add(c); }
+              for (let r = 0; r < H; r++) { sideE.add(r*W+(W-1)); sideW.add(r*W); }
+              allBoardSides.push(sideN, sideS, sideE, sideW);
+            }
+
+            // For Corners: use corner sites
+            if (goalTypeFinal === "Corners") {
+              const corners = new Set<number>([0, W-1, (H-1)*W, (H-1)*W+(W-1)]);
+              // Each corner is a separate goal
+              for (const c of corners) allBoardSides.push(new Set([c]));
+              goalSets = allBoardSides.slice(allBoardSides.length - 4); // just corners
+            } else {
+              goalSets = allBoardSides;
+            }
+          } else if (explicitGoalsFinal && explicitGoalsFinal.length > 0) {
+            // Form 1: explicit goal regions from (is Connected {region1 region2 ...})
+            goalSets = explicitGoalsFinal.map(gfn => new Set(gfn.eval(ctx)));
+          } else {
+            // Form 2: use player regions or board sides as goals
+            const playerRegions = game.equipment?.playerRegions;
+            if (playerRegions && playerRegions.has(owner)) {
+              // Use only the CURRENT PLAYER's declared region(s) as goal sets.
+              // @java IsConnected.java — uses game.board().ownedSites(owner) or player regions
+              // The region declared for `owner` is usually the union of their board sides.
+              // We split it back into individual sub-regions if it's a union, otherwise use as-is.
+              goalSets = [];
+              const ownerRegionFn = playerRegions.get(owner)!;
+              const ownerSites = ownerRegionFn.eval(ctx);
+              // If the owner's region is a union of sides, try to split it
+              // Otherwise treat the whole region as a single goal set.
+              const regions = goalSets;
+              // Check if the region function is a UnionRegion (has sub-regions)
+              const subRegions = (ownerRegionFn as unknown as { regions?: RegionFunction[] }).regions;
+              if (subRegions && subRegions.length > 0) {
+                for (const sr of subRegions) {
+                  goalSets.push(new Set(sr.eval(ctx)));
+                }
+              } else {
+                goalSets.push(new Set(ownerSites));
+              }
+              void regions;
+            } else {
+              // Fall back to board sides: N/S (rows) for player 1 / player 2
+              const W = game.equipment.board.width;
+              const H = game.equipment.board.height;
+              const topRow = new Set<number>();
+              const botRow = new Set<number>();
+              for (let c = 0; c < W; c++) {
+                topRow.add((H-1) * W + c);
+                botRow.add(c);
+              }
+              goalSets = [botRow, topRow];
+            }
           }
 
           const need = goalSets.length;
           if (need === 0) return true;
 
+          // For explicit goals: BFS from ANY mover piece that touches goal 1
+          // For seed-based: BFS from the specific seed site
+          const ctxAny2 = ctx as unknown as { _trajectories?: Trajectories | null };
+          const traj2 = ctxAny2._trajectories;
+
+          // Find all mover pieces
+          const boardN = game.equipment ? game.equipment.board.numSites : cells.length;
+          const moverPieces: number[] = [];
+          for (let i = 0; i < boardN; i++) {
+            if ((cells[i] ?? 0) === owner) moverPieces.push(i);
+          }
+
+          if (explicitGoalsFinal || (numGoalsFinal >= 0 && goalTypeFinal) || need > 1) {
+            // Multi-goal / N-Sides / player-regions form: check if a SINGLE connected component
+            // of the mover touches ALL required goal regions.
+            // @java IsConnected.java — BFS from each piece and check if component spans all goals
+            const moverPieceSet = new Set(moverPieces);
+            const visitedGlobal = new Set<number>(); // avoid re-exploring components
+
+            const getNeighbours = (s: number): number[] => {
+              if (traj2) return traj2.group(s, dirFinal);
+              const W = game.equipment.board.width;
+              const H = game.equipment.board.height;
+              const col = s % W; const row2 = Math.floor(s / W);
+              const ns: number[] = [];
+              ns.push(s - 1, s + 1, s - W, s + W);
+              if (dirFinal === "Adjacent" || dirFinal === "All") {
+                ns.push(s - W - 1, s - W + 1, s + W - 1, s + W + 1);
+              }
+              return ns.filter(n => n >= 0 && n < W * H &&
+                Math.abs((n % W) - col) <= 1 && Math.abs(Math.floor(n/W) - row2) <= 1);
+            };
+
+            const minRequired = numGoalsFinal >= 0 ? numGoalsFinal : need;
+
+            for (const seed of moverPieces) {
+              if (visitedGlobal.has(seed)) continue;
+              // BFS to find the connected component of `seed`
+              const component = new Set<number>([seed]);
+              const stack: number[] = [seed];
+              visitedGlobal.add(seed);
+              while (stack.length > 0) {
+                const s = stack.pop()!;
+                for (const nb of getNeighbours(s)) {
+                  if (!component.has(nb) && moverPieceSet.has(nb)) {
+                    component.add(nb);
+                    visitedGlobal.add(nb);
+                    stack.push(nb);
+                  }
+                }
+              }
+              // Check how many goal regions this component touches
+              let touchCount = 0;
+              for (const gs of goalSets) {
+                for (const s of component) {
+                  if (gs.has(s)) { touchCount++; break; }
+                }
+              }
+              if (touchCount >= minRequired) return true;
+            }
+            return false;
+          }
+
+          // Seed-based form (legacy)
+          const seed = atFn ? atFn.eval(ctx) : ctx._evalTo;
+          if (seed < 0) return false;
+          if ((cells[seed] ?? 0) !== owner) return false;
+          if (need === 0) return true;
+
           // BFS from seed, collect connected group of `owner` pieces
-          const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
-          const traj = ctxAny._trajectories;
-          const visited = new Set<number>([seed]);
-          const stack = [seed];
-          while (stack.length > 0) {
-            const s = stack.pop()!;
+          const visited2 = new Set<number>([seed]);
+          const stack2 = [seed];
+          while (stack2.length > 0) {
+            const s = stack2.pop()!;
             let neighbours: number[];
-            if (traj) {
-              neighbours = traj.group(s, dirFinal);
+            if (traj2) {
+              neighbours = traj2.group(s, dirFinal);
             } else {
               const W = game.equipment.board.width;
               const H = game.equipment.board.height;
@@ -1877,21 +2383,21 @@ export function compileBool1to1(
               }
             }
             for (const nb of neighbours) {
-              if (!visited.has(nb) && (cells[nb] ?? 0) === owner) {
-                visited.add(nb);
-                stack.push(nb);
+              if (!visited2.has(nb) && (cells[nb] ?? 0) === owner) {
+                visited2.add(nb);
+                stack2.push(nb);
               }
             }
           }
 
-          // Check how many goal regions the connected group touches
-          let touchCount = 0;
+          // Check how many goal regions the seed-based connected group touches
+          let touchCount2 = 0;
           for (const gs of goalSets) {
-            for (const s of visited) {
-              if (gs.has(s)) { touchCount++; break; }
+            for (const s of visited2) {
+              if (gs.has(s)) { touchCount2++; break; }
             }
           }
-          return touchCount >= need;
+          return touchCount2 >= need;
         }};
       }
 
@@ -2468,7 +2974,7 @@ function compileEndRule1to1(node: LudNode, numPlayers: number): EndRuleFunction 
             // "Player" refers to context._evalPlayer
             if (who === "All" as unknown) winner = 0;
             else if ((who as string) === "Player") winner = pid;
-            else winner = result.resolveWho(mover, nPl);
+            else winner = result.resolveWho(mover, nPl, ctx);
 
             const ranking = new Array<number>(nPl + 1).fill(0);
             if (resultType === "Win") {
@@ -2659,6 +3165,159 @@ function compileMoves1to1(node: LudNode, equipment?: Equipment1to1): MovesFuncti
   return _compileMoves(node, equipment);
 }
 
+/**
+ * Scan a list of positional args for `(then (moveAgain))` and return true if
+ * found. Used to attach `moveAgain=true` to generated moves.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/Then.java — then consequence
+ * @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
+ */
+function hasThenMoveAgain(positional: readonly LudNode[]): boolean {
+  for (const p of positional) {
+    if (!isList(p)) continue;
+    if (headOf(p) !== "then") continue;
+    // (then (moveAgain)) — check the first arg of then
+    const thenArgs = parseArgs1to1(p.items);
+    const thenInner = thenArgs.positional[0];
+    if (thenInner && isList(thenInner) && headOf(thenInner) === "moveagain") {
+      return true;
+    }
+    if (thenInner && isList(thenInner) && headOf(thenInner) === "moveAgain") {
+      return true;
+    }
+    // Single-ident form: (then moveAgain) — unlikely but guard
+    if (thenInner && isIdent(thenInner) &&
+        (thenInner.name === "moveAgain" || thenInner.name === "moveagain")) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Wrap a `MovesFunction` so that every generated move has `moveAgain=true`.
+ *
+ * Used when `(then (moveAgain))` appears as a consequence of a move generator.
+ * Java equivalent: `Then.eval` appends `ActionSetNextPlayer(mover)` to each
+ * move, which `Game.apply` reads as a same-player continuation.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/Then.java — eval(Context)
+ * @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
+ */
+function withMoveAgainWrapper(inner: MovesFunction): MovesFunction {
+  return {
+    eval(ctx: Context): Move[] {
+      const mover = ctx.state.mover;
+      // @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
+      // Java's MoveAgain emits ActionSetNextPlayer(mover) as the consequence action.
+      // This sets state.next = mover, so that (no Moves Next) evaluates against the
+      // SAME player (they must complete the second half of their turn).
+      const setNext = new ActionSetNextPlayer(mover);
+      return inner.eval(ctx).map(m => m.withConsequence([setNext], true));
+    },
+  };
+}
+
+/**
+ * Compile a `(piece ...)` argument in a move generator to {what, owner}.
+ *
+ * Forms:
+ *   (piece "Square0")       → fixed piece by name (Square0 = neutral)
+ *   (piece (mover))         → mover's primary piece (what = mover index)
+ *   (piece (id "Name0"))    → same as (piece "Name0")
+ *
+ * @java game/util/moves/Piece.java — component() returns the component index fn
+ */
+function compilePieceArg1to1(
+  node: LudList,
+  equipment: Equipment1to1,
+): { what: IntFunction; owner: number } | null {
+  const pArgs = parseArgs1to1(node.items);
+  const first = pArgs.positional[0];
+  if (!first) return null;
+
+  // (piece "Name0") — fixed piece name with optional owner suffix
+  if (isString(first)) {
+    const pieceId = first.value;
+    // Resolve by name
+    const match = equipment.pieces.find(
+      p => `${p.name}${p.owner}`.toLowerCase() === pieceId.toLowerCase()
+    ) ?? equipment.pieces.find(
+      p => p.name.toLowerCase() === pieceId.replace(/\d+$/, "").toLowerCase() &&
+           (pieceId.match(/\d+$/) ? p.owner === parseInt(pieceId.match(/\d+$/)![0]!, 10) : true)
+    );
+    if (!match) return null;
+    const idx = match.index;
+    const owner = match.owner;
+    return { what: { eval: (_ctx: Context) => idx }, owner };
+  }
+
+  // (piece (mover)) — use mover's primary piece
+  if (isList(first) && headOf(first) === "mover") {
+    // Returns mover index; owner = mover at eval time
+    return { what: { eval: (ctx: Context) => ctx.state.mover }, owner: -1 }; // owner=-1 means "use mover"
+  }
+
+  // (piece (id "Name0")) — same as (piece "Name0")
+  if (isList(first) && headOf(first) === "id") {
+    const idArgs = parseArgs1to1(first.items);
+    const roleName = idArgs.positional[0];
+    if (roleName && isString(roleName)) {
+      const pieceId = roleName.value;
+      const match = equipment.pieces.find(
+        p => `${p.name}${p.owner}`.toLowerCase() === pieceId.toLowerCase()
+      );
+      if (!match) return null;
+      const idx = match.index;
+      const owner = match.owner;
+      return { what: { eval: (_ctx: Context) => idx }, owner };
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Wrap a RegionFunction with an optional `if:` filter condition.
+ * Used for `(to <region> if:<cond>)` in Add and similar move generators.
+ *
+ * When `ifNode` is non-null, returns a RegionFunction that filters the
+ * base region by evaluating the condition for each candidate site, setting
+ * `_evalTo` and `_evalSite` to the candidate (Java: context.to()).
+ *
+ * @java game/rules/play/moves/nonDecision/effect/Add.java — toRule
+ */
+function applyToIfCondition(
+  region: RegionFunction,
+  ifNode: LudNode | undefined,
+): RegionFunction {
+  if (!ifNode) return region;
+  let condFn: BooleanFunction;
+  try {
+    condFn = compileBool1to1(ifNode, 2);
+  } catch {
+    return region; // If condition can't be compiled, ignore it
+  }
+  return {
+    eval(ctx: Context): number[] {
+      const sites = region.eval(ctx);
+      const origTo = ctx._evalTo;
+      const origSite = ctx._evalSite;
+      const result: number[] = [];
+      for (const s of sites) {
+        ctx._evalTo = s;
+        ctx._evalSite = s;
+        let pass = true;
+        try { pass = condFn.eval(ctx); } catch { pass = true; } // If eval throws, include site
+        if (pass) result.push(s);
+      }
+      ctx._evalTo = origTo;
+      ctx._evalSite = origSite;
+      return result;
+    },
+  };
+}
+
 function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFunction {
   if (!isList(node)) throw new Error("compiler1to1: play moves must be a list");
   const h = headOf(node);
@@ -2668,24 +3327,36 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     const { positional, named } = parseArgs1to1(node.items);
     const first = positional[0];
 
-    // (move Add (to (sites Empty))) or (move Add (to Cell (sites Empty Cell)))
+    // (move Add [(piece ...)] (to (sites Empty))) or (move Add (to Cell (sites Empty Cell)))
     if (first && isIdent(first) && first.name.toLowerCase() === "add") {
+      // Extract optional (piece "Name") or (piece (mover)) argument.
+      // @java Add.java — piece.component().index() and piece.owner()
+      const pieceNode = positional.find(n => isList(n) && headOf(n) === "piece");
+      let pieceFn: { what: IntFunction; owner: number } | null = null;
+      if (pieceNode && isList(pieceNode) && equipment) {
+        pieceFn = compilePieceArg1to1(pieceNode, equipment);
+      }
+
       const toNode = positional.find(n => isList(n) && headOf(n) === "to");
       if (!toNode || !isList(toNode)) {
         // Try named arg (to:...)
         const toNamed = named.get("to");
         if (toNamed && isList(toNamed)) {
-          const toArgs = parseArgs1to1(toNamed.items);
-          const regionNode = findRegionInToArgs(toArgs.positional);
-          if (!regionNode) throw new Error("compiler1to1: (to ...) missing region");
-          return new Add(compileRegion1to1(regionNode));
+          const toArgs2 = parseArgs1to1(toNamed.items);
+          const regionNode2 = findRegionInToArgs(toArgs2.positional);
+          if (!regionNode2) throw new Error("compiler1to1: (to ...) missing region");
+          const region2 = applyToIfCondition(compileRegion1to1(regionNode2), toArgs2.named.get("if"));
+          return new Add(region2, pieceFn);
         }
         throw new Error("compiler1to1: (move Add ...) missing (to ...)");
       }
       const toArgs = parseArgs1to1(toNode.items);
       const regionNode = findRegionInToArgs(toArgs.positional);
       if (!regionNode) throw new Error("compiler1to1: (to ...) missing region");
-      return new Add(compileRegion1to1(regionNode));
+      // Apply (to ... if:cond) filter if present
+      // @java Add.java: the `to` condition filters valid placement sites
+      const region = applyToIfCondition(compileRegion1to1(regionNode), toArgs.named.get("if"));
+      return new Add(region, pieceFn);
     }
 
     // (move Hop [<dir>] (between ...) (to ...)) — jump over a piece
@@ -2906,46 +3577,66 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       return { eval(ctx: Context): Move[] {
         const mover = ctx.state.mover;
         return [new Move({
-          id: "pass", label: "Pass", siteIndices: [], mover, placedOwner: mover,
+          id: "pass", label: "Pass", siteIndices: [0], mover, placedOwner: mover,
           actions: [new ActionPass()],
         })];
       }};
     }
 
-    // (move Shoot (piece "Name")) — slide to an empty site and place a piece there
+    // (move Shoot [(piece "Name")] [(from ...)] [(dirn ...)])
     // @java game/rules/play/moves/nonDecision/effect/Shoot.java — eval
-    // Generates moves: from each occupied friendly site, slide to all reachable
-    // empty sites and place the specified piece at the destination.
-    // In Amazons, called after a queen slide (moveAgain context), shoots an arrow.
+    // Default: from=(lastTo), direction=Adjacent, places the named piece at each reachable empty site.
+    // Used in Amazons: (move Shoot (piece "Dot0")) places an arrow after a queen slide.
     if (first && isIdent(first) && first.name.toLowerCase() === "shoot") {
-      // Piece to place is optional arg (e.g. (piece "Dot0"))
-      // For 1:1 we generate slides from current _evalFrom to empty sites and place neutral
-      // This is the second-phase move in Amazons (arrow shooting)
-      // In the 1:1 path, _evalFrom is set to the queen's landing site by Slide1to1
-      return new Slide1to1("Adjacent"); // Shoot = slide to empty empty site (uses same Add-like Add)
+      // Extract the (piece "PieceId") argument to know what to place.
+      // @java Shoot.pieceFn — component() index resolved at eval time
+      let pieceId = "Dot0"; // Default for the common Amazons case
+      let dirnName = "Adjacent";
+      for (const p of positional.slice(1)) {
+        if (isList(p)) {
+          const ph = headOf(p);
+          if (ph === "piece") {
+            const pArgs = parseArgs1to1(p.items);
+            const pNameNode = pArgs.positional[0];
+            if (pNameNode && isString(pNameNode)) pieceId = pNameNode.value;
+          } else if (ph === "from") {
+            // (from ...) — explicit from location: ignore for now (uses lastTo default)
+          }
+        } else if (isIdent(p)) {
+          // Direction ident e.g. "Orthogonal"
+          dirnName = p.name;
+        }
+      }
+      return new Shoot1to1(pieceId, dirnName);
     }
 
-    // (move Slide [direction])
+    // (move Slide [direction] [(then (moveAgain))])
     if (first && isIdent(first) && first.name.toLowerCase() === "slide") {
       const dirnNode = positional[1];
       let dirnName = "Adjacent";
       if (dirnNode && isIdent(dirnNode)) {
         dirnName = dirnNode.name;
       }
-      return new Slide1to1(dirnName);
+      const slideMoves: MovesFunction = new Slide1to1(dirnName);
+      // (then (moveAgain)) → mark all generated moves as same-player continuation
+      // @java game/rules/play/moves/nonDecision/effect/Then.java — eval wraps each move
+      // @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
+      if (hasThenMoveAgain(positional)) return withMoveAgainWrapper(slideMoves);
+      return slideMoves;
     }
 
-    // (move Step [direction] (to ...))
+    // (move Step [direction] (to ...) [(then (moveAgain))])
     if (first && isIdent(first) && first.name.toLowerCase() === "step") {
       // Direction is optional; (to ...) follows
       let dirnName = "Adjacent";
-      let toNodeIdx = 1;
       if (positional[1] && isIdent(positional[1]!) && !isList(positional[1]!)) {
         dirnName = (positional[1] as { name: string }).name;
-        toNodeIdx = 2;
       }
       // (to if:(is Empty (to))) — for now default to empty condition
-      return new Step1to1(dirnName);
+      const stepMoves: MovesFunction = new Step1to1(dirnName);
+      // @java game/rules/play/moves/nonDecision/effect/Then.java — eval wraps each move
+      if (hasThenMoveAgain(positional)) return withMoveAgainWrapper(stepMoves);
+      return stepMoves;
     }
 
     // (move (from ...) (to ...)) — FromTo
@@ -3764,7 +4455,23 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
   const sitesNode = positional[1];
   if (!sitesNode) return null;
 
-  // First try RegionFunction (handles union, intersection, sites Top/Bottom etc.)
+  // Curly-brace literal lists {n1 n2 ...} or {"A1" "B1" ...} — try literal extraction first.
+  // compileRegion1to1 would silently produce an empty UnionRegion for string-only curly lists,
+  // so we must try extractSites1to1 before delegating to the region compiler.
+  if (isList(sitesNode) && sitesNode.delimiter === "curly") {
+    const sites = extractSites1to1(sitesNode, equipment?.board.width, equipment?.board.height);
+    if (sites.length > 0) return new PlaceSites1to1(pieceId, sites);
+    // Empty result — fall through to region compiler (e.g. curly-wrapped region functions)
+  }
+
+  // (coord "A4") — single algebraic coordinate
+  if (!isList(sitesNode)) {
+    const sites = extractSites1to1(sitesNode, equipment?.board.width, equipment?.board.height);
+    if (sites.length > 0) return new PlaceSites1to1(pieceId, sites);
+    return null;
+  }
+
+  // Parenthesis-delimited list: try as RegionFunction (sites Top/Bottom/Outer, intersection, etc.)
   if (isList(sitesNode)) {
     try {
       const regionFn = compileRegion1to1(sitesNode);
@@ -3774,7 +4481,7 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
     }
   }
 
-  // Fallback: extract literal site indices from {n1 n2 ...} or (coord "X")
+  // Last-resort: extract literal site indices from (coord "X") etc.
   const sites = extractSites1to1(sitesNode, equipment?.board.width, equipment?.board.height);
   if (sites.length === 0) return null;
 
@@ -3950,10 +4657,17 @@ function compileEquipment1to1(
     } else if (ch === "hand") {
       compileHand1to1(child, hands, numPlayers);
     } else if (ch === "regions") {
-      // (regions P1 <regionFn>) — player region declaration
+      // (regions [name] <owner> <regionFn>) — player region declaration
+      // Forms:
+      //   (regions P1 <region>)           — unnamed player region
+      //   (regions "Name" P1 <region>)    — named player region (skip name)
+      // @java game/equipment/regions/PlayerRegions.java
       const rArgs = parseArgs1to1(child.items);
-      const ownerNode = rArgs.positional[0];
-      const regionDef = rArgs.positional[1];
+      // Skip optional string name as first arg
+      let argIdx = 0;
+      if (rArgs.positional[0] && isString(rArgs.positional[0])) argIdx = 1; // skip name
+      const ownerNode = rArgs.positional[argIdx];
+      const regionDef = rArgs.positional[argIdx + 1];
       if (ownerNode && isIdent(ownerNode) && regionDef && isList(regionDef)) {
         const ownerStr = ownerNode.name;
         if (ownerStr.startsWith("P") && !isNaN(parseInt(ownerStr.slice(1), 10))) {
@@ -4244,6 +4958,19 @@ function compilePhasesItems(
     }
     const phaseName = nameNode.value;
 
+    // Second positional arg: optional owner role (P1/P2/Shared/All etc.)
+    // @java Phase.java:64 — @Opt RoleType role
+    // @java State.initPhase: assigns initial phase index to each player based on this.
+    let ownerPlayerId = 0; // 0 = Shared (all players)
+    const ownerNode = pArgs.positional[1];
+    if (ownerNode && isIdent(ownerNode)) {
+      const ownerName = ownerNode.name.toLowerCase();
+      if (ownerName.startsWith("p") && !isNaN(parseInt(ownerName.slice(1), 10))) {
+        ownerPlayerId = parseInt(ownerName.slice(1), 10);
+      }
+      // "Shared", "All", "Each", "Mover", "Next" → ownerPlayerId = 0 (Shared)
+    }
+
     // Find (play ...), (end ...), (nextPhase ...) children
     let phasePlay: Play1to1 | undefined;
     let phaseEnd: End | null = null;
@@ -4267,7 +4994,7 @@ function compilePhasesItems(
     }
 
     if (!phasePlay) throw new Error(`compiler1to1: (phase "${phaseName}") missing (play ...)`);
-    phases.push(new Phase(phaseName, phasePlay, phaseEnd, phaseNextPhases));
+    phases.push(new Phase(phaseName, phasePlay, phaseEnd, phaseNextPhases, ownerPlayerId));
   }
 
   if (phases.length === 0) {
@@ -4390,5 +5117,24 @@ export function compileNode1to1(gameNode: LudList): Game1to1 {
   }
 
   const rules = new Rules1to1(play, end, phases);
-  return new Game1to1(gameName, numPlayers, equipment, rules, startRules);
+
+  // Detect if (move Pass) appears in the game tree.
+  // @java game/rules/play/moves/nonDecision/effect/Pass.java — gameFlags |= GameType.NotAllPass
+  // When a game has explicit (move Pass) moves, the all-pass draw heuristic must be disabled.
+  function containsPassMove(node: LudNode): boolean {
+    if (!isList(node)) return false;
+    const h = headOf(node);
+    if (h === "move") {
+      const args = parseArgs1to1(node.items);
+      const first = args.positional[0];
+      if (first && isIdent(first) && first.name.toLowerCase() === "pass") return true;
+    }
+    for (const item of node.items) {
+      if (isList(item) && containsPassMove(item)) return true;
+    }
+    return false;
+  }
+  const notAllPass = containsPassMove(gameNode);
+
+  return new Game1to1(gameName, numPlayers, equipment, rules, startRules, notAllPass);
 }

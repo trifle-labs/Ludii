@@ -4,14 +4,15 @@
  * (no Moves Mover) / (no Moves Next) / (no Moves P1) etc.
  *
  * Checks whether the given player is stalemated (has no legal moves).
- * Java parity: reads context.state().isStalemated(playerId).
  *
- * In the 1:1 TS path, the stalemated flag is set by Game1to1.apply() when
- * the new mover has no legal moves. We read state.stalemated[playerId].
+ * Java parity (NoMoves.java:57-92):
+ *   For role=Next, Java temporarily switches the mover to the next player,
+ *   recomputes the stalemated flag, then restores the original mover.
+ *   This is necessary because the stalemated cache is only updated for the
+ *   current mover after each move — it is NOT pre-computed for the opponent.
  *
- * For the special (no Moves Next) case, Java temporarily switches to the
- * next player to compute moves. In our implementation we rely on the
- * pre-computed stalemated flag in the state, updated during apply().
+ *   For other roles (Mover, P1, P2, ...), Java reads the cached
+ *   context.state().isStalemated(playerId) directly.
  *
  * @java game/functions/booleans/no/moves/NoMoves.java — eval(Context)
  */
@@ -19,6 +20,11 @@
 import type { Context } from "../../../../../context.js";
 import type { BooleanFunction } from "../../../../base.js";
 import type { RoleType } from "../../../../base.js";
+import type { Game1to1, Context1to1 } from "../../../../Game1to1.js";
+import { Context as ContextClass } from "../../../../../context.js";
+
+/** Recursion guard: prevent NoMoves(Next) from calling itself. */
+let _noMovesNextActive = false;
 
 export class NoMoves implements BooleanFunction {
   /** The role whose moves we're checking. @java NoMoves.role */
@@ -34,27 +40,65 @@ export class NoMoves implements BooleanFunction {
   /**
    * @java game/functions/booleans/no/moves/NoMoves.java — eval(Context)
    *
-   * Java lines 57-92: resolves the role to a player id, then returns
-   * context.state().isStalemated(playerId).
+   * For role=Next: temporarily switch the mover to the next player, generate
+   * their moves, and return true if they have none.
+   * @java NoMoves.java:57-92 — the "Next" special-case with autoFail guard
    *
-   * In the TS 1:1 path:
-   *   Mover  → state.mover
-   *   Next   → (state.mover % numPlayers) + 1  (next player in rotation)
-   *   Prev   → ((state.mover - 2 + numPlayers) % numPlayers) + 1
-   *   P1..PN → literal player index
+   * For other roles: read from state.stalemated[playerId].
    */
   public eval(ctx: Context): boolean {
     const state = ctx.state;
     const numPlayers = ctx.game.numPlayers;
-    let playerId: number;
 
+    if (this.role === "Next") {
+      // @java NoMoves.java:60-91 — special case: temporarily switch to next player
+      // and compute legal moves rather than relying on the cached flag.
+      if (_noMovesNextActive) return false; // @java autoFail guard
+
+      const nextPlayer = state.next > 0
+        ? state.next
+        : (state.mover % numPlayers) + 1;
+
+      _noMovesNextActive = true;
+      try {
+        const game = ctx.game as unknown as Game1to1;
+        if (!game || !game.equipment) return state.stalemated[nextPlayer] === true;
+
+        // Build a temp context for the next player.
+        const nextState = state.withMover(nextPlayer);
+        const tempCtx = new ContextClass(
+          ctx.game,
+          nextState,
+          ctx.trial,
+          ctx.rng,
+        ) as Context1to1;
+        const ctxAny = ctx as unknown as Context1to1;
+        tempCtx._radials = ctxAny._radials ?? game.equipment.board.radials;
+        tempCtx._trajectories = ctxAny._trajectories ?? game.equipment.board.trajectories;
+        tempCtx._evalTo = -1;
+        tempCtx._evalFrom = -1;
+        tempCtx._evalValue = 0;
+
+        // Get the play rules for the next player's phase.
+        const phaseIdx = nextState.phase?.(nextPlayer) ?? 0;
+        const phases = game.rules.phases;
+        const playRules =
+          phases && phaseIdx >= 0 && phaseIdx < phases.length
+            ? phases[phaseIdx]!.play
+            : game.rules.play;
+
+        const moves = playRules.moves.eval(tempCtx);
+        return moves.length === 0;
+      } finally {
+        _noMovesNextActive = false;
+      }
+    }
+
+    // For Mover, P1, P2, ...: read the cached stalemated flag.
+    let playerId: number;
     switch (this.role) {
       case "Mover":
         playerId = state.mover;
-        break;
-      case "Next":
-        // Java: state.next() — the player who moves next
-        playerId = (state.mover % numPlayers) + 1;
         break;
       default: {
         // P1, P2, etc.

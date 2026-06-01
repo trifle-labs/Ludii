@@ -106,6 +106,15 @@ export class Game1to1 implements Game {
   /** Optional start rules. @java game/rules/start/StartRules.java */
   public readonly startRules: readonly StartRule[];
 
+  /**
+   * Whether the game uses explicit (move Pass) ludemes.
+   * When true, the all-pass draw heuristic is disabled.
+   *
+   * @java game/rules/play/moves/nonDecision/effect/Pass.java — gameFlags |= GameType.NotAllPass
+   * @java game/Game.java:requiresAllPass() — returns false when NotAllPass is set
+   */
+  public readonly notAllPass: boolean;
+
   /** Component labels array (index 0 unused, 1-based). */
   private readonly componentLabels: string[];
 
@@ -115,6 +124,7 @@ export class Game1to1 implements Game {
     equipment: Equipment1to1,
     rules: Rules1to1,
     startRules: StartRule[] = [],
+    notAllPass = false,
   ) {
     this.name = name;
     this.id = name;
@@ -122,6 +132,7 @@ export class Game1to1 implements Game {
     this.equipment = equipment;
     this.rules = rules;
     this.startRules = startRules;
+    this.notAllPass = notAllPass;
     this.width = equipment.board.width;
     this.height = equipment.board.height;
     this.numSites = equipment.board.numSites;
@@ -153,10 +164,31 @@ export class Game1to1 implements Game {
       rule.applyToInitialState(cells, whats, countAt, this.equipment, this.numPlayers);
     }
 
+    // Compute initial phase indices for each player.
+    // @java other/state/State.java — initPhase(game)
+    // For each player, scan phases in order and assign the first matching one:
+    //   - phase.ownerPlayerId === pid → assign that phase
+    //   - phase.ownerPlayerId === 0 (Shared) → assign that phase
+    const initialPhases = new Array(this.numPlayers + 1).fill(0);
+    if (this.rules.phases !== null) {
+      const phases = this.rules.phases;
+      for (let pid = 1; pid <= this.numPlayers; pid++) {
+        for (let idx = 0; idx < phases.length; idx++) {
+          const phase = phases[idx]!;
+          const owner = phase.ownerPlayerId;
+          if (owner === pid || owner === 0) {
+            initialPhases[pid] = idx;
+            break;
+          }
+        }
+      }
+    }
+
     const state = new State(1, cells, this.componentLabels, {
       numPlayers: this.numPlayers,
       whats,
       countAt,
+      phases: initialPhases,
     });
 
     const trial = new Trial([], false, -1);
@@ -274,7 +306,9 @@ export class Game1to1 implements Game {
     }
 
     // Step 4: All-pass draw.
-    if (!over && this.allPassed(evalTrial)) {
+    // @java game/Game.java:End.eval — only fires if requiresAllPass() (i.e. no explicit (move Pass))
+    // @java game/rules/play/moves/nonDecision/effect/Pass.java — sets GameType.NotAllPass flag
+    if (!over && !this.notAllPass && this.allPassed(evalTrial)) {
       over = true;
       winner = 0; // draw
     }
@@ -316,12 +350,37 @@ export class Game1to1 implements Game {
     }
 
     // Step 6: Advance mover.
+    // @java game/Game.java:3193–3206 — rotate mover unless move.moveAgain or
+    // the current move includes an ActionSetNextPlayer that overrides the player.
+    //
+    // Key: only use state.next if it was SET by the CURRENT MOVE's actions.
+    // This avoids picking up a stale next-player from a previous (then (moveAgain)).
     let advanced = stateAfterPhase;
     if (!over) {
-      const nextMover = (newState.mover % this.numPlayers) + 1;
+      // Find the ActionSetNextPlayer in the current move's actions, if any.
+      // @java Game.java:3195 — the "next" override from ActionSetNextPlayer
+      const setNextAction = move.actions.find(a => a.actionType() === "SetNextPlayer");
+      const dynamicNextOverride: number = setNextAction ? setNextAction.who() : 0;
+
+      let nextMover: number;
+      if (move.moveAgain) {
+        // Static (then (moveAgain)) flag: keep the same player.
+        // The ActionSetNextPlayer(mover) we added also sets next=mover (same).
+        nextMover = newState.mover;
+      } else if (dynamicNextOverride > 0) {
+        // Dynamic ActionSetNextPlayer from current move's effects.
+        nextMover = dynamicNextOverride;
+      } else {
+        nextMover = (newState.mover % this.numPlayers) + 1;
+      }
       advanced = advanced.withMover(nextMover);
-      // @java Game.java:3200 — bump numTurn when player changes
-      advanced = advanced.withNewTurn();
+      // Always clear state.next after consumption.
+      // @java ludeme-game.ts — advanced = phased.withMover(nextMover).withNext(0)
+      advanced = advanced.withNext(0);
+      if (nextMover !== newState.mover) {
+        // @java Game.java:3200 — bump numTurn when player changes
+        advanced = advanced.withNewTurn();
+      }
       // Increment counter (Java: state.incrCounter())
       advanced = advanced.withCounter(advanced.counter + 1);
     } else {
