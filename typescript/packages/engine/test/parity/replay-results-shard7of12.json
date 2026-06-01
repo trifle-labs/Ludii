@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 487.7,
+    "elapsed_s": 454,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1732,7 +1732,7 @@
       "ply": 1,
       "detail": "No matching TS move",
       "recMove": "mover=1,from=94,to=94",
-      "tsMoveCount": 8,
+      "tsMoveCount": 5,
       "sampleTsMoves": [
         "mover=1,from=47,to=47,isPass=false",
         "mover=1,from=55,to=55,isPass=false",

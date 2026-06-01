@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 473.4,
+    "elapsed_s": 475.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1513,8 +1513,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Chu Seireigi",
-      "plyReplayed": 29,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 29",
+      "plyReplayed": 32,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 32",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Chu Seireigi/RandomTrial_1.txt"
     },
     {

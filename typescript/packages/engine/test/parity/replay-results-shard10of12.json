@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 538.9,
+    "elapsed_s": 536.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1280,8 +1280,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 245,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 245",
+      "plyReplayed": 256,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 256",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1444,8 +1444,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 83,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 83",
+      "plyReplayed": 80,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 80",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_0.txt"
     },
     {
@@ -1525,8 +1525,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 64,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 64",
+      "plyReplayed": 70,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 70",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {

@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 2,
-    "elapsed_s": 62.3,
+    "elapsed_s": 6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -19,15 +19,15 @@
   "perTrial": [
     {
       "bucket": "OUTCOME_OK",
-      "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 126,
-      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_0.txt"
+      "game": "board/space/connection/Gonnect",
+      "plyReplayed": 176,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Gonnect/RandomTrial_0.txt"
     },
     {
       "bucket": "OUTCOME_OK",
-      "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 248,
-      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
+      "game": "board/space/connection/Gonnect",
+      "plyReplayed": 223,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Gonnect/RandomTrial_1.txt"
     }
   ]
 }

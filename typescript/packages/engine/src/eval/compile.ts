@@ -13141,48 +13141,57 @@ export function compileEffectAction(
     const countNode = named.get("count");
     const countFn = countNode ? compileInt(countNode, env) : undefined;
     return (ctx) => {
-      const site = region.eval(ctx)[0] ?? OFF;
-      if (site < 0) return [];
+      // Java Add.eval iterates EVERY site in the `(to <region>)` set, emitting
+      // one ActionAdd per site (Add.java:263-300 — `for (int toSite = …)`). TS
+      // previously took only `region.eval(ctx)[0]`, so a multi-site effect-add
+      // (Inkblots' `(add (piece …) (to (intersection …)))`) placed just one
+      // piece per turn instead of all. Single-site callers (a 1-element region,
+      // e.g. `(to (last To))`) are unchanged.
+      const sites = region.eval(ctx).filter((s) => s >= 0);
+      if (sites.length === 0) return [];
       const count = countFn ? countFn.eval(ctx) : 1;
       if (count <= 0) return [];
-      // Count games (mancala families) represent seeds through the per-site
-      // count layer, not as ordinary occupying pieces. `(add (piece "Seed" …)
-      // … count:4)` in Whyo's round reset must therefore lay four seeds into
-      // `countAt`, not place one mover-owned piece with a count metadata field.
-      if (!onStack && countFn && env.sowSeedOwner !== undefined) {
-        return [new ActionAddCount(site, count, env.sowSeedOwner)];
-      }
       const state = stateFn ? stateFn.eval(ctx) : undefined;
-      if (staticPiece) {
-        return [
+      const out: Action[] = [];
+      for (const site of sites) {
+        // Count games (mancala families) represent seeds through the per-site
+        // count layer, not as ordinary occupying pieces. `(add (piece "Seed" …)
+        // … count:4)` in Whyo's round reset lays seeds into `countAt`.
+        if (!onStack && countFn && env.sowSeedOwner !== undefined) {
+          out.push(new ActionAddCount(site, count, env.sowSeedOwner));
+          continue;
+        }
+        if (staticPiece) {
+          out.push(
+            new ActionAdd({
+              to: site,
+              what: staticPiece.what,
+              owner: staticPiece.owner,
+              count,
+              onStack,
+              ...(state !== undefined ? { state } : {}),
+            }),
+          );
+          continue;
+        }
+        const what = whatFn.eval(ctx);
+        const whatId = what > 0 ? what : ctx.mover;
+        // Java parity (ActionAdd records the placed component's owner as `who`):
+        // derive the owner from the component table rather than letting ActionAdd
+        // default ownerIndex to `what`.
+        const owner = env.componentOwnerById?.[whatId];
+        out.push(
           new ActionAdd({
             to: site,
-            what: staticPiece.what,
-            owner: staticPiece.owner,
+            what: whatId,
+            ...(owner !== undefined ? { owner } : {}),
             count,
             onStack,
             ...(state !== undefined ? { state } : {}),
           }),
-        ];
+        );
       }
-      const what = whatFn.eval(ctx);
-      const whatId = what > 0 ? what : ctx.mover;
-      // Java parity (ActionAdd records the placed component's owner as `who`):
-      // derive the owner from the component table rather than letting ActionAdd
-      // default ownerIndex to `what`. A captured piece keeps its component id,
-      // but its owner is the component's declared owner (e.g. a P1 piece added
-      // to P1's hand stays owned by P1, not by owner==what).
-      const owner = env.componentOwnerById?.[whatId];
-      return [
-        new ActionAdd({
-          to: site,
-          what: whatId,
-          ...(owner !== undefined ? { owner } : {}),
-          count,
-          onStack,
-          ...(state !== undefined ? { state } : {}),
-        }),
-      ];
+      return out;
     };
   }
   return undefined;

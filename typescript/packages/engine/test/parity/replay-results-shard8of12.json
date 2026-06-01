@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 1501.2,
+    "elapsed_s": 1544.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 70,
+      "MOVE_MISMATCH": 69,
       "WINNER_MISMATCH": 6,
-      "OUTCOME_OK": 111,
+      "OUTCOME_OK": 112,
       "REPLAY_OK_NO_OUTCOME": 26
     }
   },
@@ -1212,22 +1212,14 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "plyReplayed": 45,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 45",
+      "plyReplayed": 48,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 48",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/territory/Paintbucket",
-      "ply": 13,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=46,to=46",
-      "tsMoveCount": 33,
-      "sampleTsMoves": [
-        "mover=2,from=0,to=0,isPass=false",
-        "mover=2,from=2,to=2,isPass=false",
-        "mover=2,from=5,to=5,isPass=false"
-      ],
+      "plyReplayed": 14,
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Paintbucket/RandomTrial_0.txt"
     },
     {

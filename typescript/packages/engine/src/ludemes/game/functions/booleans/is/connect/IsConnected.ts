@@ -132,10 +132,14 @@ export function compileIsConnected(node: LudList, env: CompileEnv): BoolFn {
         const c = ctx.state.cells[s] ?? 0;
         return owner === 0 ? c !== 0 : c === owner;
       };
-      const neighboursOf =
-        dirTokens.length > 0
-          ? (s: number) => aroundSites(ctx, s, dirTokens)
-          : (s: number) => orthoNeighbours(ctx, s);
+      // Java IsConnected default direction is `AbsoluteDirection.Adjacent`
+      // (IsConnected.java:114 `new Directions(AbsoluteDirection.Adjacent, null)`)
+      // — 8-connected on a square board (diagonals count), NOT orthogonal.
+      // On hex boards Adjacent == the 6 ortho neighbours, so hex connection
+      // games (Havannah/Hex) are unaffected; square-board games where a diagonal
+      // bridge matters (Havabu, Bipartisan Y) need the Adjacent default.
+      const effDirTokens = dirTokens.length > 0 ? dirTokens : ["Adjacent"];
+      const neighboursOf = (s: number) => aroundSites(ctx, s, effDirTokens);
       const touches = (comp: Set<number>): number =>
         goals.reduce(
           (acc, g) =>

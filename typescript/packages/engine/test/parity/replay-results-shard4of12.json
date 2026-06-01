@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 506.9,
+    "elapsed_s": 495,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -1166,7 +1166,7 @@
       "game": "experimental/Inkblots",
       "plyReplayed": 18,
       "recWinner": 1,
-      "tsWinner": -1,
+      "tsWinner": 2,
       "recRankings": [
         0,
         1,
@@ -1596,8 +1596,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 20,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 20",
+      "plyReplayed": 23,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 23",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_0.txt"
     },
     {

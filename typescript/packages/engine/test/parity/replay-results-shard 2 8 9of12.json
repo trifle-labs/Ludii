@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 556.2,
+    "elapsed_s": 553.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 57,
-      "WINNER_MISMATCH": 9,
-      "OUTCOME_OK": 118,
+      "WINNER_MISMATCH": 8,
+      "OUTCOME_OK": 119,
       "REPLAY_OK_NO_OUTCOME": 29
     }
   },
@@ -1440,8 +1440,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 506,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 506",
+      "plyReplayed": 519,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 519",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
@@ -1788,17 +1788,9 @@
       "trialFile": "../../../Player/res/random_trials/experimental/Freeze Frenzy/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Havabu",
       "plyReplayed": 33,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/experimental/Havabu/RandomTrial_0.txt"
     },
     {
