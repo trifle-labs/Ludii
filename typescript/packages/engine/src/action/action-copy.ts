@@ -18,16 +18,18 @@ export class ActionCopy extends BaseAction {
   }
 
   public override apply(state: State): State {
-    // Java parity: ActionCopy moves the source piece to `to` then restores the
-    // source to its original who/what/count — net effect is that `to` carries a
-    // copy of the source's owner *and* component, while the source is unchanged.
+    // Java parity: ActionCopy places a copy of the source piece at `to`
+    // while leaving the source completely unchanged.
+    // Net effect: `to` carries the same owner and component as `from`; `from` is untouched.
+    //
+    // Unlike ActionMove, ActionCopy does NOT decrement hand counts.
+    // We check `what` (component index) as well as `owner` for Shared pieces
+    // which have owner=0 but a valid what.
     const owner = state.cells[this.fromIndex] ?? 0;
-    if (owner === 0) return state;
     const what = state.whatAtSite(this.fromIndex);
-    const count = state.countAtSite(this.fromIndex) || 1;
+    if (owner === 0 && what === 0) return state; // Truly empty source
     let next = state.withCell(this.toIndex, owner);
     if (what !== 0) next = next.withWhatAt(this.toIndex, what);
-    next = next.withCountAt(this.toIndex, count);
     return next;
   }
   public override actionType(): ActionType {

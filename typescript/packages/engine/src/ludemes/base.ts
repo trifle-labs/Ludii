@@ -33,6 +33,13 @@ export interface EvalScratch {
   _evalFrom: number;
   /** Java parity: Context.value() / Context.setValue(int). Default 0. */
   _evalValue: number;
+  /**
+   * Java parity: Context.site() / Context.setSite(int).
+   * Used by forEach region iteration (ForEachSiteInRegion) to pass the current
+   * site to the condition evaluator. Default -1 (Constants.OFF).
+   * @java other/context/Context.java — site()/setSite(int)
+   */
+  _evalSite?: number;
 }
 
 // ---------------------------------------------------------------------------

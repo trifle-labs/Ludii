@@ -37,6 +37,12 @@ export class Context {
   public _evalFrom: number = -1;
   /** Java parity: Context.value() / setValue(). Default 0. */
   public _evalValue: number = 0;
+  /**
+   * Java parity: Context.site() / setSite(int).
+   * Used by forEach iteration to pass the current site to conditions.
+   * Default -1 (Constants.OFF).
+   */
+  public _evalSite: number = -1;
 
   /** Java parity: Context.to(). */
   public getEvalTo(): number { return this._evalTo; }

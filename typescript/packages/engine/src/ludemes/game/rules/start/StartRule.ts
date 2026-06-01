@@ -1,2 +1,35 @@
-// @java Core/src/game/rules/start/StartRule.java
-// TODO Phase 2: faithful port from StartRule.java (currently not implemented as a standalone head)
+/**
+ * StartRule interface for the 1:1 Java→TS port.
+ *
+ * A start rule modifies the initial state (cells[], whats[], countAt[])
+ * before the game begins. Applied in order during Game1to1.start().
+ *
+ * @java game/rules/start/StartRule.java — start(Context)
+ */
+
+import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
+
+/**
+ * A start-placement rule that modifies the initial state arrays.
+ * This is called during game.start() to place pieces, fill hands, etc.
+ *
+ * @java game/rules/start/StartRule.java
+ */
+export interface StartRule {
+  /**
+   * Apply this start rule to the raw initial-state arrays.
+   *
+   * @param cells       cells[site] = owner (mutable)
+   * @param whats       whats[site] = component index (mutable)
+   * @param countAt     countAt[site] = piece count at site (mutable)
+   * @param equipment   equipment for resolving piece names and hand sites
+   * @param numPlayers  number of players
+   */
+  applyToInitialState(
+    cells: number[],
+    whats: number[],
+    countAt: number[],
+    equipment: Equipment1to1,
+    numPlayers: number,
+  ): void;
+}

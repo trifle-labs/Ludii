@@ -3,9 +3,8 @@
  *
  * The core game object for the 1:1 Java→TS port.
  *
- * Supports the placement-game case (Tic-Tac-Toe):
- *   - create(): builds the initial Context
- *   - start(ctx): applies start rules (none for TTT), returns initial Context
+ * Supports placement, movement, and hand-based games:
+ *   - start(): builds the initial Context applying start rules
  *   - moves(ctx): generates legal moves via rules.play.eval(ctx)
  *   - apply(ctx, move): applies a move, checks end conditions, advances mover
  *   - over(ctx): true if the trial is over
@@ -15,11 +14,14 @@
  *   2. Evaluate end rules. If one fires, mark the trial over.
  *   3. If not over, check for all-pass draw (both players forced-pass).
  *   4. Advance the mover (rotate to next player).
- *   5. Check if the new mover is stalemated (no legal moves → forced pass flag).
+ *   5. Update the new mover's stalemated flag.
  *   6. Record the move in the trial.
  *
- * The Context is augmented with `_radials` (the board's precomputed radials)
- * and `_evalTo` (mutable eval scratch) for IsLine to read.
+ * Start rules supported:
+ *   (place "PieceName1" {sites...})          — place pieces at given sites
+ *   (place "PieceName" "Hand" count:N)       — fill hand with N pieces
+ *   (place "PieceName" coord)                — place piece at named coord
+ *   (start (set Score ...))                  — no-op (scores default to 0)
  *
  * @java game/Game.java — create/start/moves/apply/over
  */
@@ -28,11 +30,14 @@ import { Context } from "../context.js";
 import type { Game } from "../game.js";
 import { Move } from "../move.js";
 import { ActionPass } from "../action/action-pass.js";
+import { ActionAdd } from "../action/action-add.js";
+import { ActionSetCount } from "../action/action-set-count.js";
 import { State } from "../state.js";
 import { Trial } from "../trial.js";
 
 import type { Equipment1to1 } from "./game/equipment/Equipment1to1.js";
 import type { Rules1to1 } from "./game/rules/Rules1to1.js";
+import type { StartRule } from "./game/rules/start/StartRule.js";
 import type { CellFlatRadials } from "./topology-radials.js";
 
 // ---------------------------------------------------------------------------
@@ -73,10 +78,12 @@ export class Game1to1 implements Game {
   public readonly height: number;
   /** @java Game.numSites() */
   public readonly numSites: number;
-  /** Equipment (board + pieces). */
+  /** Equipment (board + pieces + hands). */
   public readonly equipment: Equipment1to1;
   /** Rules (play + end). */
   public readonly rules: Rules1to1;
+  /** Optional start rules. @java game/rules/start/StartRules.java */
+  public readonly startRules: readonly StartRule[];
 
   /** Component labels array (index 0 unused, 1-based). */
   private readonly componentLabels: string[];
@@ -86,12 +93,14 @@ export class Game1to1 implements Game {
     numPlayers: number,
     equipment: Equipment1to1,
     rules: Rules1to1,
+    startRules: StartRule[] = [],
   ) {
     this.name = name;
     this.id = name;
     this.numPlayers = numPlayers;
     this.equipment = equipment;
     this.rules = rules;
+    this.startRules = startRules;
     this.width = equipment.board.width;
     this.height = equipment.board.height;
     this.numSites = equipment.board.numSites;
@@ -107,15 +116,26 @@ export class Game1to1 implements Game {
   /**
    * @java game/Game.java — start(context)
    *
-   * Returns the initial Context for a new game. For TTT there are no start
-   * rules (no (start ...) block), so we just create the empty initial state.
+   * Returns the initial Context for a new game. Applies start rules to
+   * set up the initial board position.
    */
   public start(): Context {
-    const numSites = this.equipment.board.numSites;
-    const cells = new Array<number>(numSites).fill(0);
+    // Use totalSites to include hand slots in the state.
+    const totalSites = this.equipment.totalSites;
+    const cells = new Array<number>(totalSites).fill(0);
+    const whats = new Array<number>(totalSites).fill(0);
+    const countAt = new Array<number>(totalSites).fill(0);
+
+    // Apply start rules.
+    // @java game/Game.java — start(): applies ActionAdd for each start placement
+    for (const rule of this.startRules) {
+      rule.applyToInitialState(cells, whats, countAt, this.equipment, this.numPlayers);
+    }
 
     const state = new State(1, cells, this.componentLabels, {
       numPlayers: this.numPlayers,
+      whats,
+      countAt,
     });
 
     const trial = new Trial([], false, -1);
@@ -168,7 +188,8 @@ export class Game1to1 implements Game {
    *   3. Evaluate end rules. If one fires, mark trial over.
    *   4. If not over, check all-pass draw.
    *   5. Advance mover (rotate).
-   *   6. Record move in trial.
+   *   6. Update stalemated flag for new mover.
+   *   7. Record move in trial.
    */
   public apply(context: Context, move: Move): Context {
     if (context.over) {
@@ -200,8 +221,6 @@ export class Game1to1 implements Game {
     }
 
     // Step 4: All-pass draw.
-    // Java parity: if not over and all players have force-passed, it's a draw.
-    // We detect this by checking if the last N moves (one per player) were all passes.
     if (!over && this.allPassed(evalTrial)) {
       over = true;
       winner = 0; // draw
@@ -221,7 +240,14 @@ export class Game1to1 implements Game {
       advanced = newState.withCounter(newState.counter + 1);
     }
 
-    // Step 6: Record move in trial.
+    // Step 6: Update stalemated flag for the new mover.
+    // @java Game.java — computeStalemated: called after advancing the mover
+    // so that (no Moves Next) can read the correct cached value.
+    if (!over) {
+      advanced = this.computeStalemated(advanced, evalCtx);
+    }
+
+    // Step 7: Record move in trial.
     const finalWinner = over ? winner : -1;
     let trial = context.trial.withMove(move, over, finalWinner);
     if (ranking !== undefined) trial = trial.withRanking(ranking);
@@ -259,5 +285,28 @@ export class Game1to1 implements Game {
       if (!m || !m.isPass()) return false;
     }
     return true;
+  }
+
+  /**
+   * Update the stalemated flag for the new mover.
+   * @java Game.java — computeStalemated(Context)
+   *
+   * Temporarily builds a context for the new mover and checks if they have
+   * any legal moves. Updates state.stalemated[newMover] accordingly.
+   */
+  private computeStalemated(state: State, baseCtx: Context1to1): State {
+    const newMover = state.mover;
+    // Build a temporary context for the new mover to check for legal moves.
+    const tempTrial = baseCtx.trial;
+    const tempCtx = new Context(this, state, tempTrial, baseCtx.rng) as Context1to1;
+    tempCtx._radials = baseCtx._radials;
+    tempCtx._evalTo = -1;
+    tempCtx._evalFrom = -1;
+    tempCtx._evalValue = 0;
+
+    const legalMoves = this.rules.play.moves.eval(tempCtx);
+    const isStalemated = legalMoves.length === 0;
+
+    return state.withStalemated(newMover, isStalemated);
   }
 }
