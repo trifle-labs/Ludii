@@ -1,0 +1,36 @@
+// @java Core/src/game/functions/booleans/ToBool.java
+
+import type { Context } from "../../../../context.js";
+import type { BooleanFunction, IntFunction } from "../../../base.js";
+import type { LudNode } from "@ludii/typescript-language";
+import { type LudList } from "@ludii/typescript-language";
+import { compileInt1to1, parseArgs1to1 } from "../../../../compiler1to1.js";
+import { registerBool1to1, type Compile1to1Env } from "../../../registry1to1.js";
+
+/**
+ * (toBool <intFn>)
+ * Converts an integer function to boolean: false if 0, true otherwise.
+ * @java game/functions/booleans/ToBool.java
+ */
+export class ToBool1to1 implements BooleanFunction {
+  /** @java ToBool.intFn */
+  private readonly intFn: IntFunction;
+
+  public constructor(intFn: IntFunction) {
+    this.intFn = intFn;
+  }
+
+  /**
+   * @java ToBool.eval(Context):
+   *   if (intFn != null) return intFn.eval(context) != 0;
+   */
+  public eval(ctx: Context): boolean {
+    return this.intFn.eval(ctx) !== 0;
+  }
+}
+
+registerBool1to1("tobool", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
+  const { positional } = parseArgs1to1((node as LudList).items);
+  const intFn = compileInt1to1(positional[0]);
+  return new ToBool1to1(intFn);
+});

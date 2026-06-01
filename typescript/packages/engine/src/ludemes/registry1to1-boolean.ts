@@ -67,3 +67,7 @@ import "./game/functions/booleans/can1to1/CanMove1to1.js";
 
 // was
 import "./game/functions/booleans/was1to1/Was1to1.js";
+
+// ---- Wave-1 parallel-port sub-barrels (gap-fill classes) ----
+import "./registry1to1-bool-is.js";
+import "./registry1to1-bool-rest.js";
