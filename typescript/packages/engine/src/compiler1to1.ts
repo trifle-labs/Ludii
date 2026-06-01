@@ -21,10 +21,16 @@ import {
   listHead,
 } from "@ludii/typescript-language";
 
-// 1:1 registry — side-effectful imports register all boolean (and future) classes
+// 1:1 registry — side-effectful imports register all boolean/int/region/moves classes
 import "./ludemes/registry1to1-boolean.js";
+import "./ludemes/registry1to1-int.js";
+import "./ludemes/registry1to1-region.js";
+import "./ludemes/registry1to1-moves.js";
 import {
   lookupBool1to1,
+  lookupInt1to1,
+  lookupRegion1to1,
+  lookupMoves1to1,
   type Compile1to1Env,
 } from "./ludemes/registry1to1.js";
 
@@ -136,7 +142,7 @@ export function parseArgs1to1(items: readonly LudNode[], startFrom = 1): ParsedA
   return { positional, named };
 }
 
-function headOf(node: LudNode): string | undefined {
+export function headOf(node: LudNode): string | undefined {
   if (!isList(node)) return undefined;
   return listHead(node)?.toLowerCase();
 }
@@ -162,6 +168,65 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
       return new IntConstant(0);
     }
     const h = headOf(node);
+
+    // ---------------------------------------------------------------------------
+    // Int registry lookup — registered 1:1 classes take priority over inline branches
+    // Pattern mirrors compileBool1to1's registry lookup (lines ~2009-2041)
+    // ---------------------------------------------------------------------------
+    {
+      const env: Compile1to1Env = { numPlayers: 2 }; // numPlayers resolved at runtime
+      // 1. Plain head: "mover", "score", "+", "abs", etc.
+      const plainCtor = lookupInt1to1(h!);
+      if (plainCtor) return plainCtor(node, env);
+      // 2. Compound "count:<Subtype>": (count Moves), (count Pieces), etc.
+      if (h === "count") {
+        const { positional: cntPos } = parseArgs1to1(node.items);
+        const first = cntPos[0];
+        if (first && isIdent(first)) {
+          const subKey = `count:${first.name.toLowerCase()}`;
+          const subCtor = lookupInt1to1(subKey);
+          if (subCtor) return subCtor(node, env);
+        }
+      }
+      // 3. Compound "size:<Subtype>": (size Group ...), (size Stack ...), etc.
+      if (h === "size") {
+        const { positional: szPos } = parseArgs1to1(node.items);
+        const first = szPos[0];
+        if (first && isIdent(first)) {
+          const subKey = `size:${first.name.toLowerCase()}`;
+          const subCtor = lookupInt1to1(subKey);
+          if (subCtor) return subCtor(node, env);
+        }
+        // "size" itself is registered (handles all subtypes in one factory)
+        const sizeCtor = lookupInt1to1("size");
+        if (sizeCtor) return sizeCtor(node, env);
+      }
+      // 4. Compound "value:<Subtype>": (value Piece ...), (value Player ...), etc.
+      if (h === "value") {
+        const { positional: vPos } = parseArgs1to1(node.items);
+        const first = vPos[0];
+        if (first && isIdent(first)) {
+          const subKey = `value:${first.name.toLowerCase()}`;
+          const subCtor = lookupInt1to1(subKey);
+          if (subCtor) return subCtor(node, env);
+        }
+        const valueCtor = lookupInt1to1("value");
+        if (valueCtor) return valueCtor(node, env);
+      }
+      // 5. Compound "last:<Subtype>": (last To), (last From), etc.
+      if (h === "last") {
+        const { positional: lPos } = parseArgs1to1(node.items);
+        const first = lPos[0];
+        if (first && isIdent(first)) {
+          const subKey = `last:${first.name.toLowerCase()}`;
+          const subCtor = lookupInt1to1(subKey);
+          if (subCtor) return subCtor(node, env);
+        }
+        const lastCtor = lookupInt1to1("last");
+        if (lastCtor) return lastCtor(node, env);
+      }
+    }
+
     if (h === "from") {
       // (from) — the iterator's current "from" site (context._evalFrom)
       // @java game/functions/ints/iterator/From.java — eval returns context.from()
@@ -1089,6 +1154,25 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
     return new UnionRegion(regions);
   }
   const h = headOf(node)!;
+
+  // ---------------------------------------------------------------------------
+  // Region registry lookup — registered 1:1 classes take priority over inline.
+  // Pattern mirrors compileInt1to1 (line ~172) / compileBool1to1 (line ~2070).
+  // ---------------------------------------------------------------------------
+  {
+    const env: Compile1to1Env = { numPlayers: 2 };
+    const plainCtor = lookupRegion1to1(h);
+    if (plainCtor) return plainCtor(node, env);
+    // Compound "sites:<Subtype>": (sites Empty), (sites Occupied ...), etc.
+    if (h === "sites") {
+      const { positional: rPos } = parseArgs1to1(node.items);
+      const first = rPos[0];
+      if (first && isIdent(first)) {
+        const subCtor = lookupRegion1to1(`sites:${first.name.toLowerCase()}`);
+        if (subCtor) return subCtor(node, env);
+      }
+    }
+  }
 
   if (h === "sites") {
     const { positional, named } = parseArgs1to1(node.items);
@@ -3370,6 +3454,25 @@ function applyToIfCondition(
 function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFunction {
   if (!isList(node)) throw new Error("compiler1to1: play moves must be a list");
   const h = headOf(node);
+
+  // ---------------------------------------------------------------------------
+  // Moves registry lookup — registered 1:1 classes take priority over inline.
+  // Pattern mirrors compileInt1to1 (line ~172) / compileRegion1to1 (line ~1160).
+  // ---------------------------------------------------------------------------
+  {
+    const env: Compile1to1Env = { numPlayers: 2 };
+    const plainCtor = lookupMoves1to1(h!);
+    if (plainCtor) return plainCtor(node, env);
+    // Compound "move:<Subtype>": (move Add ...), (move Hop ...), (move Step ...)
+    if (h === "move") {
+      const { positional: mPos } = parseArgs1to1(node.items);
+      const first = mPos[0];
+      if (first && isIdent(first)) {
+        const subCtor = lookupMoves1to1(`move:${first.name.toLowerCase()}`);
+        if (subCtor) return subCtor(node, env);
+      }
+    }
+  }
 
   // ---- (move ...) dispatch -----------------------------------------------
   if (h === "move") {
