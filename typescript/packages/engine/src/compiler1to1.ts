@@ -62,6 +62,7 @@ import { ForEachPiece1to1 } from "./ludemes/game/rules/play/moves/nonDecision/op
 import { Slide1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Slide1to1.js";
 import { Step1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Step1to1.js";
 import { FromTo1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/FromTo1to1.js";
+import { ActionRemove } from "./action/action-remove.js";
 
 // Rules
 import { Result } from "./ludemes/game/rules/end/Result.js";
@@ -69,6 +70,8 @@ import { If } from "./ludemes/game/rules/end/If.js";
 import { End } from "./ludemes/game/rules/end/End.js";
 import { Play1to1 } from "./ludemes/game/rules/play/Play1to1.js";
 import { Rules1to1 } from "./ludemes/game/rules/Rules1to1.js";
+import { Phase } from "./ludemes/game/rules/phase/Phase.js";
+import { NextPhase } from "./ludemes/game/rules/phase/NextPhase.js";
 
 // Start rules
 import type { StartRule } from "./ludemes/game/rules/start/StartRule.js";
@@ -189,6 +192,67 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
           return { eval(ctx: Context): number {
             const g = ctx.game as unknown as { equipment: { board: { width: number } } };
             return g.equipment.board.width;
+          }};
+        }
+        if (kind === "cell" || kind === "stack") {
+          // (count Cell at:<site>) — count of pieces at a site
+          // @java game/functions/ints/count/site/CountStack.java — eval returns state.stateStack(site).size() or countAt
+          const atNode = named.get("at");
+          if (atNode) {
+            const siteFn = compileInt1to1(atNode);
+            return { eval(ctx: Context): number {
+              const s = siteFn.eval(ctx);
+              return ctx.state.countAtSite(s);
+            }};
+          }
+          return new IntConstant(0);
+        }
+        if (kind === "pieces") {
+          // (count Pieces [role]) — count all pieces owned by role (board + hand containers)
+          // @java game/functions/ints/count/component/CountPieces.java — eval
+          // Java uses owned().positions(pid) which tracks per-piece locations across
+          // ALL containers. For hand slots, countAt[site] stores N pieces in one slot.
+          //
+          // Counting logic:
+          //   - Board sites (0..boardN-1): if cells[i]==pid, count 1 (one piece per site)
+          //   - Hand slots (boardN..total-1): if cells[i]==pid, count countAt[i] pieces
+          //     (hand uses countAt for pile depth; 0 = empty hand slot)
+          const roleNode = positional[1];
+          const roleName = (roleNode && isIdent(roleNode)) ? roleNode.name.toLowerCase() : "all";
+          return { eval(ctx: Context): number {
+            const cells = ctx.state.cells;
+            const countAt = ctx.state.countAt;
+            const g = ctx.game as unknown as Game1to1;
+            const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
+            const totalN = cells.length;
+            function countFor(pid: number): number {
+              let total = 0;
+              // Board sites: 1 piece per occupied site
+              for (let i = 0; i < boardN; i++) {
+                if (cells[i] === pid) total++;
+              }
+              // Hand slots: countAt[i] pieces per slot
+              for (let i = boardN; i < totalN; i++) {
+                if (cells[i] === pid) {
+                  total += countAt[i] ?? 0;
+                }
+              }
+              return total;
+            }
+            if (roleName === "mover") return countFor(ctx.state.mover);
+            if (roleName === "next") return countFor((ctx.state.mover % ctx.game.numPlayers) + 1);
+            if (roleName.startsWith("p") && !isNaN(parseInt(roleName.slice(1), 10))) {
+              return countFor(parseInt(roleName.slice(1), 10));
+            }
+            // All / total pieces across board + hands
+            let total = 0;
+            for (let i = 0; i < boardN; i++) {
+              if (cells[i] !== 0) total++;
+            }
+            for (let i = boardN; i < totalN; i++) {
+              if (cells[i] !== 0) total += countAt[i] ?? 0;
+            }
+            return total;
           }};
         }
         // Other count variants: stub as 0
@@ -331,6 +395,36 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
         if (secondNode && isIdent(secondNode) && secondNode.name.toLowerCase() === "farthest") {
           return new SitesLineOfSightFarthest1to1();
         }
+      }
+      if (kind === "occupied") {
+        // (sites Occupied by:<role> [component:<name>]) — board sites containing pieces of player
+        // @java game/functions/region/sites/occupied/SitesOccupied.java — eval
+        // Only returns BOARD sites (not hand containers). Java's owned positions
+        // are stored per-container; the board container holds board-site positions.
+        const byNode = named.get("by");
+        const roleName = (byNode && isIdent(byNode)) ? byNode.name.toLowerCase() : "all";
+        return {
+          eval(ctx: Context): number[] {
+            const cells = ctx.state.cells;
+            const g = ctx.game as unknown as Game1to1;
+            const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
+            const result: number[] = [];
+            if (roleName === "mover") {
+              const mover = ctx.state.mover;
+              for (let i = 0; i < boardN; i++) { if (cells[i] === mover) result.push(i); }
+            } else if (roleName === "next") {
+              const next = (ctx.state.mover % ctx.game.numPlayers) + 1;
+              for (let i = 0; i < boardN; i++) { if (cells[i] === next) result.push(i); }
+            } else if (roleName === "p1" || roleName === "p2" || roleName === "p3" || roleName === "p4") {
+              const pid = parseInt(roleName.slice(1), 10);
+              for (let i = 0; i < boardN; i++) { if (cells[i] === pid) result.push(i); }
+            } else {
+              // All: any non-empty board site
+              for (let i = 0; i < boardN; i++) { if (cells[i] !== 0) result.push(i); }
+            }
+            return result;
+          }
+        };
       }
       if (kind === "bottom") return new SitesBottom();
       if (kind === "top") return new SitesTop();
@@ -844,6 +938,47 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       const regionNode = toArgs.positional[0];
       if (!regionNode) throw new Error("compiler1to1: (to ...) missing region");
       return new Add(compileRegion1to1(regionNode));
+    }
+
+    // (move Remove [type] <sites>)
+    // @java game/rules/play/moves/nonDecision/effect/Remove.java — eval
+    // Generates one remove-move per occupied site in the region.
+    if (first && isIdent(first) && first.name.toLowerCase() === "remove") {
+      // Second positional may be a SiteType ident (Cell/Edge/Vertex) or the region
+      let regionNode: LudNode | undefined;
+      let typeIdx = 1;
+      if (positional[1] && isIdent(positional[1]!) && !isList(positional[1]!)) {
+        const maybeType = (positional[1] as { name: string }).name.toLowerCase();
+        if (maybeType === "cell" || maybeType === "edge" || maybeType === "vertex") {
+          typeIdx = 2; // skip type ident
+        }
+      }
+      regionNode = positional[typeIdx];
+      if (!regionNode) {
+        // Bare (move Remove) — remove from all occupied sites (unusual; stub as empty)
+        return { eval(_ctx: Context): Move[] { return []; } };
+      }
+      const regionFn = compileRegion1to1(regionNode);
+      return {
+        eval(ctx: Context): Move[] {
+          const sites = regionFn.eval(ctx);
+          const moves: Move[] = [];
+          const mover = ctx.state.mover;
+          for (const s of sites) {
+            if (ctx.state.isEmptySite(s)) continue;
+            const action = new ActionRemove({ to: s });
+            moves.push(new Move({
+              id: `remove:${s}`,
+              label: `Remove ${s}`,
+              siteIndices: [s],
+              mover,
+              placedOwner: mover,
+              actions: [action],
+            }));
+          }
+          return moves;
+        }
+      };
     }
 
     // (move Slide [direction])
@@ -1450,6 +1585,201 @@ function compileBoard1to1(node: LudList): Board1to1 {
 // Top-level: compileNode1to1 — the main entry point
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Compile Phases (nextPhase / phase array)
+// ---------------------------------------------------------------------------
+
+/**
+ * Compile a `(nextPhase [who] <cond> [name])` node into a NextPhase object.
+ *
+ * Supported forms:
+ *   (nextPhase Mover <boolFn> "PhaseName")
+ *   (nextPhase <boolFn> "PhaseName")        — who defaults to Shared
+ *   (nextPhase <boolFn>)                    — wrap to next phase in list
+ *
+ * @java game/rules/phase/NextPhase.java — constructor
+ */
+function compileNextPhase1to1(
+  node: LudNode,
+  numPlayers: number,
+): NextPhase {
+  if (!isList(node)) throw new Error("compiler1to1: nextPhase must be a list");
+  const h = headOf(node)!;
+  if (h !== "nextphase") throw new Error(`compiler1to1: expected (nextPhase ...), got "${h}"`);
+
+  const rawArgs = node.items.slice(1); // skip the head
+
+  // Distinguish args:
+  //   Optional first arg = who (RoleType ident like Mover, P1, Shared)
+  //   Required next arg  = condition (BooleanFunction list)
+  //   Optional last arg  = target phase name (string)
+  //
+  // @java NextPhase.java: who defaults to Shared (= numPlayers+1)
+  let whoFn: import("./ludemes/base.js").IntFunction;
+  let remainingArgs = rawArgs;
+  const SHARED_IDX = numPlayers + 1;
+
+  // Check if first non-trivial arg is a RoleType ident (not a list, not a string)
+  const firstArg = rawArgs[0];
+  const knownRoles = new Set(["mover", "next", "p1", "p2", "p3", "p4", "shared", "all", "each"]);
+  if (firstArg && isIdent(firstArg) && knownRoles.has(firstArg.name.toLowerCase())) {
+    const roleName = firstArg.name.toLowerCase();
+    if (roleName === "mover") {
+      whoFn = { eval(ctx: Context): number { return ctx.state.mover; } };
+    } else if (roleName === "next") {
+      whoFn = { eval(ctx: Context): number { return (ctx.state.mover % ctx.game.numPlayers) + 1; } };
+    } else if (roleName === "shared" || roleName === "all" || roleName === "each") {
+      whoFn = { eval(_ctx: Context): number { return SHARED_IDX; } };
+    } else if (roleName.startsWith("p") && !isNaN(parseInt(roleName.slice(1), 10))) {
+      const pid = parseInt(roleName.slice(1), 10);
+      whoFn = { eval(_ctx: Context): number { return pid; } };
+    } else {
+      whoFn = { eval(_ctx: Context): number { return SHARED_IDX; } };
+    }
+    remainingArgs = rawArgs.slice(1);
+  } else {
+    // No explicit who — defaults to Shared
+    whoFn = { eval(_ctx: Context): number { return SHARED_IDX; } };
+  }
+
+  // Last arg may be the target phase name (string)
+  let targetName: string | null = null;
+  const lastArg = remainingArgs[remainingArgs.length - 1];
+  if (lastArg && isString(lastArg)) {
+    targetName = lastArg.value;
+    remainingArgs = remainingArgs.slice(0, -1);
+  }
+
+  // Remaining first arg is the condition
+  const condNode = remainingArgs[0];
+  let condFn: import("./ludemes/base.js").BooleanFunction;
+  if (!condNode) {
+    // No condition: always true
+    condFn = { eval(_ctx: Context): boolean { return true; } };
+  } else {
+    condFn = compileBool1to1(condNode, numPlayers);
+  }
+
+  const np = new NextPhase(whoFn, condFn, targetName);
+  return np;
+}
+
+/**
+ * Compile phases from a raw curly-brace list node `{ (phase ...) ... }`.
+ * This handles the `phases:{ ... }` named-arg form common in .lud files.
+ */
+function compilePhasesFromCurly(
+  curlyNode: LudList,
+  equipment: Equipment1to1,
+  numPlayers: number,
+): Phase[] {
+  return compilePhasesItems(curlyNode.items, equipment, numPlayers);
+}
+
+/**
+ * Compile the `(phases { (phase ...) ... })` block.
+ *
+ * @java game/rules/Rules.java — Rules(null, end, phases)
+ * @java game/rules/phase/Phase.java — Phase(name, role, mode, play, end, nextPhase[])
+ */
+function compilePhases1to1(
+  node: LudNode,
+  equipment: Equipment1to1,
+  numPlayers: number,
+): Phase[] {
+  if (!isList(node)) throw new Error("compiler1to1: phases must be a list");
+  const h = headOf(node)!;
+  if (h !== "phases") throw new Error(`compiler1to1: expected (phases ...), got "${h}"`);
+
+  // Unwrap curly-brace list
+  const { positional } = parseArgs1to1(node.items);
+  const items: LudNode[] = [];
+  for (const p of positional) {
+    if (isList(p) && p.delimiter === "curly") {
+      for (const child of p.items) items.push(child);
+    } else {
+      items.push(p);
+    }
+  }
+  return compilePhasesItems(items, equipment, numPlayers);
+}
+
+/**
+ * Shared implementation: compile a flat list of `(phase ...)` nodes into Phase[].
+ */
+function compilePhasesItems(
+  items: readonly LudNode[],
+  equipment: Equipment1to1,
+  numPlayers: number,
+): Phase[] {
+
+  const phases: Phase[] = [];
+
+  for (const item of items) {
+    if (!isList(item)) continue;
+    const ph = headOf(item)!;
+    if (ph !== "phase") continue;
+
+    const pArgs = parseArgs1to1(item.items);
+    // First positional arg: phase name (string)
+    const nameNode = pArgs.positional[0];
+    if (!nameNode || !isString(nameNode)) {
+      throw new Error("compiler1to1: (phase ...) missing name");
+    }
+    const phaseName = nameNode.value;
+
+    // Find (play ...), (end ...), (nextPhase ...) children
+    let phasePlay: Play1to1 | undefined;
+    let phaseEnd: End | null = null;
+    const phaseNextPhases: NextPhase[] = [];
+
+    for (const child of item.items.slice(1)) {
+      if (!isList(child)) continue;
+      const ch = headOf(child)!;
+      if (ch === "play") {
+        phasePlay = compilePlay1to1(child, equipment);
+      } else if (ch === "end") {
+        phaseEnd = compileEnd1to1(child, numPlayers);
+      } else if (ch === "nextphase") {
+        try {
+          const np = compileNextPhase1to1(child, numPlayers);
+          phaseNextPhases.push(np);
+        } catch {
+          // Skip uncompilable nextPhase conditions
+        }
+      }
+    }
+
+    if (!phasePlay) throw new Error(`compiler1to1: (phase "${phaseName}") missing (play ...)`);
+    phases.push(new Phase(phaseName, phasePlay, phaseEnd, phaseNextPhases));
+  }
+
+  if (phases.length === 0) {
+    throw new Error("compiler1to1: (phases ...) produced no phases");
+  }
+
+  // Resolve targetName → targetIndex for all NextPhase objects.
+  // @java game/rules/phase/NextPhase.eval: searches phases[] by name
+  const nameToIdx = new Map<string, number>();
+  for (let i = 0; i < phases.length; i++) {
+    nameToIdx.set(phases[i]!.name, i);
+  }
+  for (const phase of phases) {
+    for (const np of phase.nextPhases) {
+      if (np.targetName !== null) {
+        const idx = nameToIdx.get(np.targetName);
+        np.targetIndex = idx !== undefined ? idx : -1;
+      }
+    }
+  }
+
+  return phases;
+}
+
+// ---------------------------------------------------------------------------
+// Top-level: compileNode1to1 — the main entry point
+// ---------------------------------------------------------------------------
+
 /**
  * Walk the expanded `(game ...)` AST and produce a `Game1to1`.
  */
@@ -1489,6 +1819,22 @@ export function compileNode1to1(gameNode: LudList): Game1to1 {
   let play: Play1to1 | undefined;
   let end: End | undefined;
   let startRules: StartRule[] = [];
+  let phases: Phase[] | null = null;
+
+  // Parse named args from rulesNode (handles `phases:{...}` form).
+  // @java game/rules/Rules.java — phases field accessed via named arg `phases:`
+  // The lud grammar allows both:
+  //   (phases { ... }) — as a child list
+  //   phases:{ ... }   — as a named arg key+value (the common form in .lud files)
+  const rulesNamed = parseArgs1to1(rulesNode.items);
+
+  // Check for named `phases:` arg (the curly-brace form used in .lud files)
+  const phasesNamedNode = rulesNamed.named.get("phases");
+  if (phasesNamedNode && isList(phasesNamedNode) && phasesNamedNode.delimiter === "curly") {
+    // Build a synthetic (phases { ... }) list node to reuse compilePhases1to1
+    // Note: let all errors propagate — we want specific error messages
+    phases = compilePhasesFromCurly(phasesNamedNode, equipment, numPlayers);
+  }
 
   for (const child2 of rulesNode.items) {
     if (!isList(child2)) continue;
@@ -1499,13 +1845,23 @@ export function compileNode1to1(gameNode: LudList): Game1to1 {
       end = compileEnd1to1(child2, numPlayers);
     } else if (ch === "start") {
       startRules = compileStart1to1(child2, numPlayers, equipment);
+    } else if (ch === "phases") {
+      // (phases { ... }) explicit list form
+      phases = compilePhases1to1(child2, equipment, numPlayers);
     }
-    // (phases ...) etc. — skip for now
+  }
+
+  // If phases are present but no bare (play ...), synthesise from phase 0.
+  // @java game/rules/Rules.java:62 — bare-play case wraps in default phase
+  if (phases !== null && phases.length > 0) {
+    if (!play) {
+      play = phases[0]!.play;
+    }
   }
 
   if (!play) throw new Error("compiler1to1: (rules ...) missing (play ...)");
   if (!end) throw new Error("compiler1to1: (rules ...) missing (end ...)");
 
-  const rules = new Rules1to1(play, end);
+  const rules = new Rules1to1(play, end, phases);
   return new Game1to1(gameName, numPlayers, equipment, rules, startRules);
 }

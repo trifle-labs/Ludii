@@ -3,19 +3,29 @@
  *
  * The core game object for the 1:1 Java→TS port.
  *
- * Supports placement, movement, and hand-based games:
+ * Supports placement, movement, and hand-based games, including phase games:
  *   - start(): builds the initial Context applying start rules
- *   - moves(ctx): generates legal moves via rules.play.eval(ctx)
- *   - apply(ctx, move): applies a move, checks end conditions, advances mover
+ *   - moves(ctx): generates legal moves via the current phase's play.eval(ctx)
+ *   - apply(ctx, move): applies a move, checks end conditions, advances mover,
+ *                       and runs phase-transition logic after every move.
  *   - over(ctx): true if the trial is over
  *
- * The play loop mirrors Java's Game.apply() / applyInternal():
- *   1. Apply the move's actions to the state.
- *   2. Evaluate end rules. If one fires, mark the trial over.
- *   3. If not over, check for all-pass draw (both players forced-pass).
- *   4. Advance the mover (rotate to next player).
- *   5. Update the new mover's stalemated flag.
- *   6. Record the move in the trial.
+ * Phase logic mirrors Java Game.apply() / applyInternal():
+ *   @java game/Game.java:3119–3141
+ *   After applying the move (and checking end conditions), if the game has
+ *   phases and the game is still active, iterate all players 1..numPlayers
+ *   and evaluate their current phase's nextPhase conditions in order;
+ *   the first condition whose eval != UNDEFINED fires and advances that
+ *   player to the returned phase index.
+ *
+ * Per-phase end rules:
+ *   @java game/Game.java:3061–3066
+ *   Before evaluating the global end rule, evaluate the current mover's
+ *   current phase's end rule (if present).
+ *
+ * Phase-aware move generation:
+ *   @java game/Game.java:2850–2852
+ *   For alternating-move games, look up phases[state.currentPhase(mover)].play.
  *
  * Start rules supported:
  *   (place "PieceName1" {sites...})          — place pieces at given sites
@@ -30,13 +40,12 @@ import { Context } from "../context.js";
 import type { Game } from "../game.js";
 import { Move } from "../move.js";
 import { ActionPass } from "../action/action-pass.js";
-import { ActionAdd } from "../action/action-add.js";
-import { ActionSetCount } from "../action/action-set-count.js";
 import { State } from "../state.js";
 import { Trial } from "../trial.js";
 
 import type { Equipment1to1 } from "./game/equipment/Equipment1to1.js";
 import type { Rules1to1 } from "./game/rules/Rules1to1.js";
+import type { Phase } from "./game/rules/phase/Phase.js";
 import type { StartRule } from "./game/rules/start/StartRule.js";
 import type { CellFlatRadials } from "./topology-radials.js";
 import type { Trajectories } from "../eval/graph/trajectories.js";
@@ -70,6 +79,9 @@ function attachRadials(
   return c;
 }
 
+// Java constant: UNDEFINED = -1
+const UNDEFINED = -1;
+
 // ---------------------------------------------------------------------------
 // Game1to1
 // ---------------------------------------------------------------------------
@@ -89,7 +101,7 @@ export class Game1to1 implements Game {
   public readonly numSites: number;
   /** Equipment (board + pieces + hands). */
   public readonly equipment: Equipment1to1;
-  /** Rules (play + end). */
+  /** Rules (play + end + optional phases). */
   public readonly rules: Rules1to1;
   /** Optional start rules. @java game/rules/start/StartRules.java */
   public readonly startRules: readonly StartRule[];
@@ -156,8 +168,13 @@ export class Game1to1 implements Game {
   /**
    * @java game/Game.java — moves(context)
    *
-   * Returns legal moves for the current state. If no moves are available,
-   * returns a single forced-pass move (Java's stalemated player behaviour).
+   * Returns legal moves for the current state.
+   *
+   * For phase games: uses phases[state.currentPhase(mover)].play.
+   * @java game/Game.java:2849–2852
+   *
+   * If no moves are available, returns a single forced-pass move
+   * (Java's stalemated player behaviour).
    */
   public moves(context: Context): readonly Move[] {
     const ctx = context as Context1to1;
@@ -168,7 +185,8 @@ export class Game1to1 implements Game {
     ctx._evalFrom = -1;
     ctx._evalValue = 0;
 
-    const generated = this.rules.play.moves.eval(ctx);
+    const movesGen = this.getPlayForMover(ctx);
+    const generated = movesGen.moves.eval(ctx);
     if (generated.length > 0) {
       return generated;
     }
@@ -195,16 +213,20 @@ export class Game1to1 implements Game {
    * Play loop (mirroring Java Game.apply / applyInternal):
    *   1. Apply move actions to state.
    *   2. Set _evalTo to move.to() for end-rule evaluation.
-   *   3. Evaluate end rules. If one fires, mark trial over.
+   *   3a. Evaluate per-phase end rule (if game has phases).   @java 3061–3066
+   *   3b. Evaluate global end rules.
    *   4. If not over, check all-pass draw.
-   *   5. Advance mover (rotate).
-   *   6. Update stalemated flag for new mover.
-   *   7. Record move in trial.
+   *   5. If still active, evaluate nextPhase conditions for all players.  @java 3119–3141
+   *   6. Advance mover (rotate).
+   *   7. Update stalemated flag for new mover.
+   *   8. Record move in trial.
    */
   public apply(context: Context, move: Move): Context {
     if (context.over) {
       throw new Error("Cannot apply a move to a finished game.");
     }
+
+    const mover = context.state.mover;
 
     // Step 1: Apply move actions.
     const newState = move.applyTo(context.state, context.rng);
@@ -219,16 +241,36 @@ export class Game1to1 implements Game {
     evalCtx._evalFrom = move.from();
     evalCtx._evalValue = 0;
 
-    // Step 3: Evaluate end rules.
+    // Step 3a: Evaluate per-phase end rule.
+    // @java game/Game.java:3061–3066 — end rule of current phase for mover
     let over = false;
     let winner = -1;
     let ranking: readonly number[] | undefined;
 
-    const endResult = this.rules.end.eval(evalCtx);
-    if (endResult !== null && endResult.over) {
-      over = true;
-      winner = endResult.winner;
-      ranking = endResult.ranking;
+    if (this.rules.phases !== null) {
+      const phaseIdx = newState.phase(mover);
+      const phases = this.rules.phases;
+      if (phaseIdx >= 0 && phaseIdx < phases.length) {
+        const phaseEnd = phases[phaseIdx]!.end;
+        if (phaseEnd !== null) {
+          const phaseEndResult = phaseEnd.eval(evalCtx);
+          if (phaseEndResult !== null && phaseEndResult.over) {
+            over = true;
+            winner = phaseEndResult.winner;
+            ranking = phaseEndResult.ranking;
+          }
+        }
+      }
+    }
+
+    // Step 3b: Evaluate global end rules.
+    if (!over) {
+      const endResult = this.rules.end.eval(evalCtx);
+      if (endResult !== null && endResult.over) {
+        over = true;
+        winner = endResult.winner;
+        ranking = endResult.ranking;
+      }
     }
 
     // Step 4: All-pass draw.
@@ -237,28 +279,64 @@ export class Game1to1 implements Game {
       winner = 0; // draw
     }
 
-    // Step 5: Advance mover.
-    let advanced = newState;
+    // Step 5: Phase transitions (only when game is still active).
+    // @java game/Game.java:3117–3141
+    // "We update the current Phase for each player if this is a game with phases."
+    let stateAfterPhase = newState;
+    if (!over && this.rules.phases !== null) {
+      const phases = this.rules.phases;
+      for (let pid = 1; pid <= this.numPlayers; pid++) {
+        const currentPhaseIdx = stateAfterPhase.phase(pid);
+        if (currentPhaseIdx < 0 || currentPhaseIdx >= phases.length) continue;
+        const currentPhase = phases[currentPhaseIdx]!;
+
+        for (const np of currentPhase.nextPhases) {
+          // @java NextPhase.who().eval(context): who == players.count()+1 means Shared/All
+          const whoVal = np.who.eval(evalCtx);
+          const isShared = whoVal === this.numPlayers + 1;
+          if (!isShared && pid !== whoVal) continue;
+
+          // @java NextPhase.eval(context): returns targetPhaseIdx or UNDEFINED
+          if (np.cond.eval(evalCtx)) {
+            // Resolve target index
+            let targetIdx: number;
+            if (np.targetName === null) {
+              // Wrap to next in list
+              targetIdx = (currentPhaseIdx + 1) % phases.length;
+            } else {
+              targetIdx = np.targetIndex;
+            }
+            if (targetIdx !== UNDEFINED && targetIdx !== currentPhaseIdx) {
+              stateAfterPhase = stateAfterPhase.withPhase(pid, targetIdx);
+            }
+            break; // first firing condition wins
+          }
+        }
+      }
+    }
+
+    // Step 6: Advance mover.
+    let advanced = stateAfterPhase;
     if (!over) {
       const nextMover = (newState.mover % this.numPlayers) + 1;
-      advanced = newState.withMover(nextMover);
+      advanced = advanced.withMover(nextMover);
       // @java Game.java:3200 — bump numTurn when player changes
       advanced = advanced.withNewTurn();
       // Increment counter (Java: state.incrCounter())
       advanced = advanced.withCounter(advanced.counter + 1);
     } else {
       // Still increment counter even when over.
-      advanced = newState.withCounter(newState.counter + 1);
+      advanced = advanced.withCounter(advanced.counter + 1);
     }
 
-    // Step 6: Update stalemated flag for the new mover.
+    // Step 7: Update stalemated flag for the new mover.
     // @java Game.java — computeStalemated: called after advancing the mover
     // so that (no Moves Next) can read the correct cached value.
     if (!over) {
       advanced = this.computeStalemated(advanced, evalCtx);
     }
 
-    // Step 7: Record move in trial.
+    // Step 8: Record move in trial.
     const finalWinner = over ? winner : -1;
     let trial = context.trial.withMove(move, over, finalWinner);
     if (ranking !== undefined) trial = trial.withRanking(ranking);
@@ -281,6 +359,28 @@ export class Game1to1 implements Game {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  /**
+   * Return the play rules for the current mover.
+   *
+   * For phase games: looks up phases[state.currentPhase(mover)].play.
+   * @java game/Game.java:2849–2852 — indexPhase = state.currentPhase(mover)
+   *
+   * For bare games: returns rules.play.
+   */
+  private getPlayForMover(ctx: Context1to1): Rules1to1["play"] {
+    if (this.rules.phases !== null) {
+      const mover = ctx.state.mover;
+      const phaseIdx = ctx.state.phase(mover);
+      const phases = this.rules.phases;
+      if (phaseIdx >= 0 && phaseIdx < phases.length) {
+        return phases[phaseIdx]!.play;
+      }
+      // Fallback to phase 0 if index out of range
+      return phases[0]!.play;
+    }
+    return this.rules.play;
+  }
 
   /**
    * Detect all-pass draw: if the last `numPlayers` moves in the trial are all
@@ -317,7 +417,8 @@ export class Game1to1 implements Game {
     tempCtx._evalFrom = -1;
     tempCtx._evalValue = 0;
 
-    const legalMoves = this.rules.play.moves.eval(tempCtx);
+    const playForMover = this.getPlayForMover(tempCtx);
+    const legalMoves = playForMover.moves.eval(tempCtx);
     const isStalemated = legalMoves.length === 0;
 
     return state.withStalemated(newMover, isStalemated);
