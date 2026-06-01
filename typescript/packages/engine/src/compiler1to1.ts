@@ -25,6 +25,7 @@ import {
 import { Piece } from "./ludemes/game/equipment/component/Piece.js";
 import { Board1to1 } from "./ludemes/game/equipment/container/board/Board1to1.js";
 import { Equipment1to1, type HandSpec } from "./ludemes/game/equipment/Equipment1to1.js";
+import { buildBoardGraph } from "./eval/graph/board-graph.js";
 
 // Functions
 import { IntConstant } from "./ludemes/game/functions/ints/IntConstant.js";
@@ -80,6 +81,7 @@ import { PlaceRegion1to1 } from "./ludemes/game/rules/start/PlaceRegion1to1.js";
 import { Game1to1 } from "./ludemes/Game1to1.js";
 
 import { Context } from "./context.js";
+import { Move } from "./move.js";
 import type {
   IntFunction,
   BooleanFunction,
@@ -652,6 +654,66 @@ export function compileBool1to1(
     return new AndBool(bools);
   }
 
+  // (not <bool>) — logical negation
+  // @java game/functions/booleans/math/Not.java — eval = !a.eval(context)
+  if (h === "not") {
+    const { positional } = parseArgs1to1(node.items);
+    const sub = compileBool1to1(positional[0], numPlayers);
+    return { eval(ctx: Context): boolean { return !sub.eval(ctx); } };
+  }
+
+  // (all Sites <region> if:<cond>) — true if ALL sites in region satisfy condition
+  // @java game/functions/booleans/all/sites/AllSites.java — eval iterates region, sets context.site
+  // (all Passed) — true if all players passed in the previous turns
+  // @java game/functions/booleans/all/simple/AllPassed.java — eval checks context.allPass()
+  if (h === "all") {
+    const { positional, named } = parseArgs1to1(node.items);
+    const first = positional[0];
+
+    if (first && isIdent(first)) {
+      const kind = first.name.toLowerCase();
+
+      if (kind === "passed") {
+        // (all Passed) — game-level all-pass check
+        // @java AllPassed.eval: trial.moveNumber() >= players.count() && context.allPass()
+        return { eval(ctx: Context): boolean {
+          const g = ctx.game;
+          const moveNum = ctx.trial.moves.length;
+          if (moveNum < g.numPlayers) return false;
+          const lastN = ctx.trial.moves.slice(-g.numPlayers);
+          return lastN.every(m => m && m.isPass());
+        }};
+      }
+
+      if (kind === "sites") {
+        // (all Sites <region> if:<cond>)
+        // @java AllSites.eval: for each site in region, set context.site(), check condition
+        const regionNode = positional[1];
+        const ifNode = named.get("if");
+        if (!regionNode || !ifNode) {
+          throw new Error("compiler1to1: (all Sites <region> if:<cond>) — missing args");
+        }
+        const regionFn = compileRegion1to1(regionNode);
+        const condFn = compileBool1to1(ifNode, numPlayers);
+        return { eval(ctx: Context): boolean {
+          const sites = regionFn.eval(ctx);
+          const origSite = ctx._evalSite;
+          for (const s of sites) {
+            ctx._evalSite = s;
+            if (!condFn.eval(ctx)) {
+              ctx._evalSite = origSite;
+              return false;
+            }
+          }
+          ctx._evalSite = origSite;
+          return true;
+        }};
+      }
+    }
+
+    throw new Error(`compiler1to1: (all ${first && isIdent(first) ? first.name : "?"}) not supported`);
+  }
+
   throw new Error(`compiler1to1: unknown BooleanFunction head "${h}"`);
 }
 
@@ -857,6 +919,94 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       return fp;
     }
     throw new Error(`compiler1to1: (forEach ${first && isIdent(first) ? first.name : "?"}) not supported`);
+  }
+
+  // ---- (do <prior> next:<main> ifAfterwards:<cond>) -----------------------
+  // @java game/rules/play/moves/nonDecision/effect/requirement/Do.java — eval
+  //
+  // Two forms:
+  //   1. (do <prior> next:<main>)           — apply prior, then eval main in that context
+  //   2. (do <prior> ifAfterwards:<cond>)   — eval prior moves, filter by condition
+  if (h === "do") {
+    const { positional, named } = parseArgs1to1(node.items);
+    const priorNode = positional[0];
+    if (!priorNode) throw new Error("compiler1to1: (do ...) missing prior moves");
+    const priorMoves = compileMoves1to1(priorNode, equipment);
+
+    const nextNode = named.get("next");
+    const ifAfterNode = named.get("ifafterwards");
+
+    if (nextNode) {
+      // Form 1: (do <prior> next:<main>)
+      // @java Do.eval: apply each prior move to a TempContext, eval next there,
+      //   prepend prior actions to each resulting move.
+      const nextMoves = compileMoves1to1(nextNode, equipment);
+      return {
+        eval(ctx: Context): Move[] {
+          const priorResult = priorMoves.eval(ctx);
+          if (priorResult.length === 0) return [];
+          // Apply all prior moves to a temp state, collect their combined actions.
+          const priorActions: Move["actions"][number][] = [];
+          let tempState = ctx.state;
+          for (const pm of priorResult) {
+            const newState = pm.applyTo(tempState, ctx.rng);
+            for (const a of pm.actions) priorActions.push(a);
+            tempState = newState;
+          }
+          // Build temp context with the new state.
+          const tempCtx = new Context(ctx.game, tempState, ctx.trial, ctx.rng);
+          tempCtx._evalTo = ctx._evalTo;
+          tempCtx._evalFrom = ctx._evalFrom;
+          tempCtx._evalValue = 0;
+          // Copy radials if present (1:1 path).
+          const ctxAny = ctx as unknown as Record<string, unknown>;
+          const tctxAny = tempCtx as unknown as Record<string, unknown>;
+          if (ctxAny["_radials"] !== undefined) tctxAny["_radials"] = ctxAny["_radials"];
+          // Eval next in the temp context.
+          const nextResult = nextMoves.eval(tempCtx);
+          // Prepend prior actions to each next move.
+          return nextResult.map(nm => new Move({
+            id: nm.id,
+            label: nm.label,
+            siteIndices: nm.siteIndices,
+            mover: nm.mover,
+            placedOwner: nm.placedOwner,
+            actions: [...priorActions, ...nm.actions],
+            moveAgain: nm.moveAgain,
+            decisionIndex: priorActions.length + (nm.decisionIndex ?? 0),
+          }));
+        }
+      };
+    }
+
+    if (ifAfterNode) {
+      // Form 2: (do <prior> ifAfterwards:<cond>)
+      // @java Do.eval: generate prior.eval(context) moves, filter each move by
+      //   applying it to a TempContext and checking ifAfterwards.
+      const condFn = compileBool1to1(ifAfterNode, 2);
+      return {
+        eval(ctx: Context): Move[] {
+          const priorResult = priorMoves.eval(ctx);
+          const filtered: Move[] = [];
+          for (const m of priorResult) {
+            // Apply move to a temp state.
+            const tempState = m.applyTo(ctx.state, ctx.rng);
+            const tempCtx = new Context(ctx.game, tempState, ctx.trial, ctx.rng);
+            tempCtx._evalTo = m.to();
+            tempCtx._evalFrom = m.from();
+            tempCtx._evalValue = 0;
+            const ctxAny = ctx as unknown as Record<string, unknown>;
+            const tctxAny = tempCtx as unknown as Record<string, unknown>;
+            if (ctxAny["_radials"] !== undefined) tctxAny["_radials"] = ctxAny["_radials"];
+            if (condFn.eval(tempCtx)) filtered.push(m);
+          }
+          return filtered;
+        }
+      };
+    }
+
+    // Bare (do <prior>) — just return prior moves
+    return priorMoves;
   }
 
   throw new Error(`compiler1to1: unknown play moves head "${h ?? "?"}"`);
@@ -1248,6 +1398,16 @@ function compileHand1to1(child: LudList, hands: HandSpec[], numPlayers: number):
   }
 }
 
+/**
+ * Compile a (board <shape> ...) node into a Board1to1.
+ *
+ * For square/rectangle boards uses the fast W×H path.
+ * For all other shapes (hex, tri, concentric, rotate, remove, add, dual, …)
+ * routes through buildBoardGraph (the interpreter's faithful graph machinery),
+ * then builds graph-adjacency radials from the resulting Trajectories.
+ *
+ * @java game/equipment/container/board/Board.java — create(shape)
+ */
 function compileBoard1to1(node: LudList): Board1to1 {
   const { positional } = parseArgs1to1(node.items);
   const shapeNode = positional[0];
@@ -1269,14 +1429,21 @@ function compileBoard1to1(node: LudList): Board1to1 {
     const rArgs = parseArgs1to1(shapeNode.items);
     const hNode = rArgs.positional[0];
     const wNode = rArgs.positional[1];
-    if (!hNode || !isNumber(hNode) || !wNode || !isNumber(wNode)) {
-      throw new Error("compiler1to1: (rectangle H W) — H, W must be numbers");
+    if (hNode && isNumber(hNode) && wNode && isNumber(wNode)) {
+      // Java convention: first arg = rows (height), second = columns (width)
+      return new Board1to1(wNode.value, hNode.value);
     }
-    // Java convention: first arg = rows (height), second = columns (width)
-    return new Board1to1(wNode.value, hNode.value);
+    // Non-literal dimensions (e.g. from option expressions): fall through to buildBoardGraph.
   }
 
-  throw new Error(`compiler1to1: unsupported board shape "${sh}"`);
+  // All other shapes: route through the interpreter's faithful graph machinery.
+  // @java game/equipment/container/board/Board.java — create(shape, use)
+  // @java game/util/graph/Graph.java — buildBoardGraph
+  const graphSpec = buildBoardGraph(node);
+  if (!graphSpec) {
+    throw new Error(`compiler1to1: unsupported board shape "${sh}"`);
+  }
+  return new Board1to1(graphSpec.width, graphSpec.height, graphSpec.numSites, graphSpec.traj);
 }
 
 // ---------------------------------------------------------------------------

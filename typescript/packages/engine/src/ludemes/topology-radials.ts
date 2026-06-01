@@ -22,6 +22,9 @@
  *     opposite[0] == pivot, opposite[1..] == backward sites
  */
 
+// Lazy import to avoid circular deps — only used by buildGraphRadials.
+import type { Trajectories } from "../eval/graph/trajectories.js";
+
 export interface FlatRadial {
   /** Sites from pivot outward in this direction, starting with pivot. */
   readonly ray: readonly number[];
@@ -148,4 +151,42 @@ export function radialsForDirection(
       // Fallback: Adjacent
       return axes;
   }
+}
+
+/**
+ * Build a CellFlatRadials table from a graph-based Trajectories object.
+ *
+ * This is the graph-adjacency-driven version of buildFlatRadials, faithful for
+ * hex/tri/concentric/any board shape. For each cell, for each "Adjacent"
+ * distinct radial pair from Java's distinctInDirection(Adjacent), we collect:
+ *   - ray: the forward direction (starts with pivot)
+ *   - opposite: the backward direction (starts with pivot, or just [pivot])
+ *
+ * @java other/topology/Topology.java — preGenerateDirection(game): builds each
+ *   cell's directional rays by walking the graph's neighbour relation.
+ * @java game/util/graph/Radials.java — distinctInDirection(Adjacent)
+ */
+export function buildGraphRadials(traj: Trajectories): CellFlatRadials[] {
+  const n = traj.numSites;
+  const result: CellFlatRadials[] = new Array(n);
+
+  for (let site = 0; site < n; site++) {
+    // Get all distinct radials for the "Adjacent" direction group.
+    // Java: radials(type, site).distinctInDirection(Adjacent)
+    const distinctRadials = traj.distinctRadialsByName(site, "Adjacent");
+
+    const axes: FlatRadial[] = [];
+    for (const { ray, opposites } of distinctRadials) {
+      // ray[0] is the pivot (site itself); ray[1..] are the forward steps.
+      // opposites[0] (if present) is the geometric opposite ray starting at pivot.
+      const opposite = (opposites.length > 0 && opposites[0] !== undefined)
+        ? opposites[0]
+        : [site];
+      axes.push({ ray, opposite });
+    }
+
+    result[site] = { axes };
+  }
+
+  return result;
 }

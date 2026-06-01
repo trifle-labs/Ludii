@@ -21,6 +21,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction } from "../../../../../base.js";
 import type { CellFlatRadials, FlatRadial } from "../../../../../topology-radials.js";
+import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
 export class IsLine implements BooleanFunction {
   /** Minimum line length. @java IsLine.length */
@@ -43,12 +44,6 @@ export class IsLine implements BooleanFunction {
    * to the last-placed site before calling end-rule eval.
    */
   public eval(ctx: Context): boolean {
-    const ctxAny = ctx as unknown as { _radials?: CellFlatRadials[] };
-    const radials = ctxAny._radials;
-    if (radials === undefined) {
-      throw new Error("IsLine(1:1): _radials not attached to context. Board1to1 must set ctx._radials.");
-    }
-
     const pivot = ctx._evalTo;
     if (pivot < 0) return false;
 
@@ -65,19 +60,54 @@ export class IsLine implements BooleanFunction {
 
     const len = this.lengthFn.eval(ctx);
 
-    const cellRadials = radials[pivot];
-    if (cellRadials === undefined) return false;
-
-    const selectedAxes = selectAxes(cellRadials.axes, this.dirnName);
-
     const matchFn = (site: number): boolean => {
       const w = ((whats[site] ?? 0) !== 0) ? (whats[site] as number) : (cells[site] ?? 0);
       return w === pivotWhat;
     };
 
+    // For graph-based boards (hex/tri/concentric/etc.), use the Trajectories
+    // object to get direction-correct distinct radials via distinctRadialsByName.
+    // @java other/topology/Topology.java — preGenerateDirection(game)
+    // @java game/util/graph/Radials.java — distinctInDirection(dirn)
+    const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null; _radials?: CellFlatRadials[] };
+    const traj: Trajectories | null | undefined = ctxAny._trajectories;
+
+    if (traj != null) {
+      // Graph path: use Trajectories.distinctRadialsByName which is direction-aware.
+      const distinctRadials = traj.distinctRadialsByName(pivot, this.dirnName);
+      for (const { ray, opposites } of distinctRadials) {
+        let count = 1; // pivot itself
+        for (let i = 1; i < ray.length; i++) {
+          const s = ray[i];
+          if (s === undefined || !matchFn(s)) break;
+          count++;
+        }
+        const opp = opposites[0] ?? [];
+        for (let i = 1; i < opp.length; i++) {
+          const s = opp[i];
+          if (s === undefined || !matchFn(s)) break;
+          count++;
+        }
+        if (count >= len) return true;
+      }
+      return false;
+    }
+
+    // Square/rectangle path: use precomputed flat radials table.
+    const radials = ctxAny._radials;
+    if (radials === undefined) {
+      throw new Error("IsLine(1:1): _radials not attached to context. Board1to1 must set ctx._radials.");
+    }
+
+    const cellRadials = radials[pivot];
+    if (cellRadials === undefined) return false;
+
+    const selectedAxes = selectAxes(cellRadials.axes, this.dirnName);
+
     // Java IsLine.eval lines 333-519: for each distinct radial, walk forward
     // then opposite, return true if count >= len.
     for (const { ray, opposite } of selectedAxes) {
+      if (!ray || !opposite) continue; // guard against sparse axis arrays
       let count = 1; // pivot itself
 
       for (let i = 1; i < ray.length; i++) {

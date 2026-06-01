@@ -39,6 +39,7 @@ import type { Equipment1to1 } from "./game/equipment/Equipment1to1.js";
 import type { Rules1to1 } from "./game/rules/Rules1to1.js";
 import type { StartRule } from "./game/rules/start/StartRule.js";
 import type { CellFlatRadials } from "./topology-radials.js";
+import type { Trajectories } from "../eval/graph/trajectories.js";
 
 // ---------------------------------------------------------------------------
 // Extended context type for the 1:1 path
@@ -47,14 +48,22 @@ import type { CellFlatRadials } from "./topology-radials.js";
 /**
  * A Context augmented with the radials table and eval-scratch.
  * The 1:1 ludemes access ctx._radials (board radials) and ctx._evalTo (pivot).
+ * For graph boards, _trajectories is also attached for direction-aware queries.
  */
 export type Context1to1 = Context & {
   _radials: readonly CellFlatRadials[];
+  /** Graph Trajectories object for non-square boards; null for square boards. */
+  _trajectories?: Trajectories | null;
 };
 
-function attachRadials(ctx: Context, radials: readonly CellFlatRadials[]): Context1to1 {
+function attachRadials(
+  ctx: Context,
+  radials: readonly CellFlatRadials[],
+  trajectories?: Trajectories | null,
+): Context1to1 {
   const c = ctx as Context1to1;
   c._radials = radials;
+  c._trajectories = trajectories ?? null;
   c._evalTo = -1;
   c._evalFrom = -1;
   c._evalValue = 0;
@@ -141,7 +150,7 @@ export class Game1to1 implements Game {
     const trial = new Trial([], false, -1);
     const ctx = new Context(this, state, trial);
 
-    return attachRadials(ctx, this.equipment.board.radials);
+    return attachRadials(ctx, this.equipment.board.radials, this.equipment.board.trajectories);
   }
 
   /**
@@ -154,6 +163,7 @@ export class Game1to1 implements Game {
     const ctx = context as Context1to1;
     // Ensure radials are always attached (survives withRng/withState copies).
     ctx._radials = ctx._radials ?? this.equipment.board.radials;
+    ctx._trajectories = ctx._trajectories ?? this.equipment.board.trajectories;
     ctx._evalTo = -1;
     ctx._evalFrom = -1;
     ctx._evalValue = 0;
@@ -204,6 +214,7 @@ export class Game1to1 implements Game {
     const evalTrial = context.trial.withMove(move, false, -1);
     const evalCtx = new Context(this, newState, evalTrial, context.rng) as Context1to1;
     evalCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;
+    evalCtx._trajectories = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
     evalCtx._evalTo = move.to();
     evalCtx._evalFrom = move.from();
     evalCtx._evalValue = 0;
@@ -255,6 +266,7 @@ export class Game1to1 implements Game {
 
     const newCtx = new Context(this, advanced, trial, context.rng) as Context1to1;
     newCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;
+    newCtx._trajectories = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
     newCtx._evalTo = -1;
     newCtx._evalFrom = -1;
     newCtx._evalValue = 0;
@@ -300,6 +312,7 @@ export class Game1to1 implements Game {
     const tempTrial = baseCtx.trial;
     const tempCtx = new Context(this, state, tempTrial, baseCtx.rng) as Context1to1;
     tempCtx._radials = baseCtx._radials;
+    tempCtx._trajectories = baseCtx._trajectories;
     tempCtx._evalTo = -1;
     tempCtx._evalFrom = -1;
     tempCtx._evalValue = 0;
