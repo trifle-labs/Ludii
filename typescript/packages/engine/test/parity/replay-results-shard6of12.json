@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 593.5,
+    "elapsed_s": 555.8,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 62,
-      "WINNER_MISMATCH": 11,
-      "OUTCOME_OK": 115,
-      "REPLAY_OK_NO_OUTCOME": 25
+      "MOVE_MISMATCH": 61,
+      "WINNER_MISMATCH": 9,
+      "OUTCOME_OK": 117,
+      "REPLAY_OK_NO_OUTCOME": 26
     }
   },
   "top15FailureReasons": {
@@ -771,17 +771,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Wore/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/blocking/Agapi",
       "plyReplayed": 63,
-      "recWinner": 1,
-      "tsWinner": 2,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Agapi/RandomTrial_0.txt"
     },
     {
@@ -1036,17 +1028,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/line/Fart (5x5)/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/line/Gobblet Gobblers",
       "plyReplayed": 7,
-      "recWinner": 1,
-      "tsWinner": -1,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/line/Gobblet Gobblers/RandomTrial_0.txt"
     },
     {
@@ -1673,15 +1657,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Catapult/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/eliminate/all/Deleb",
-      "ply": 13,
-      "detail": "No matching TS move",
-      "recMove": "mover=3,from=19,to=39",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=3,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/7989",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Deleb/RandomTrial_0.txt"
     },
     {

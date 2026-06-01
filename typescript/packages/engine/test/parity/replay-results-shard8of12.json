@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 1271.9,
+    "elapsed_s": 1501.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 71,
+      "MOVE_MISMATCH": 70,
       "WINNER_MISMATCH": 6,
       "OUTCOME_OK": 111,
-      "REPLAY_OK_NO_OUTCOME": 25
+      "REPLAY_OK_NO_OUTCOME": 26
     }
   },
   "top15FailureReasons": {
@@ -1212,8 +1212,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "plyReplayed": 72,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 72",
+      "plyReplayed": 45,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 45",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_0.txt"
     },
     {
@@ -1556,17 +1556,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Glinski Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Level Chess",
-      "ply": 8,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=3,to=4",
-      "tsMoveCount": 28,
-      "sampleTsMoves": [
-        "mover=1,from=3,to=25,isPass=false",
-        "mover=1,from=12,to=11,isPass=false",
-        "mover=1,from=128,to=136,isPass=false"
-      ],
+      "plyReplayed": 6,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 6",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Level Chess/RandomTrial_0.txt"
     },
     {

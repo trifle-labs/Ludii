@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 612.1,
+    "elapsed_s": 572.6,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -967,12 +967,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "board/space/group/Meridians",
-      "ply": 2,
+      "ply": 5,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=81,to=81",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=56,to=56",
+      "tsMoveCount": 21,
       "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
+        "mover=2,from=6,to=6,isPass=false",
+        "mover=2,from=11,to=11,isPass=false",
+        "mover=2,from=17,to=17,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/board/space/group/Meridians/RandomTrial_1.txt"
     },
@@ -1454,8 +1456,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 270,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 270",
+      "plyReplayed": 296,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 296",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_1.txt"
     },
     {
@@ -1797,12 +1799,14 @@
     {
       "bucket": "MOVE_MISMATCH",
       "game": "experimental/Double-Move Situ",
-      "ply": 18,
+      "ply": 10,
       "detail": "No matching TS move",
-      "recMove": "mover=2,from=5,to=5",
-      "tsMoveCount": 1,
+      "recMove": "mover=2,from=7,to=7",
+      "tsMoveCount": 7,
       "sampleTsMoves": [
-        "mover=2,from=18,to=18,isPass=false"
+        "mover=2,from=1,to=1,isPass=false",
+        "mover=2,from=5,to=5,isPass=false",
+        "mover=2,from=9,to=9,isPass=false"
       ],
       "trialFile": "../../../Player/res/random_trials/experimental/Double-Move Situ/RandomTrial_1.txt"
     },

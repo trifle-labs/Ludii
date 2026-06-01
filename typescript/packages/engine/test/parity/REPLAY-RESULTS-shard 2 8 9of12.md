@@ -1,8 +1,8 @@
 # Ludii TS Engine — Golden Trial Replay Parity Results
 
-**Date:** 2026-05-31T23:47:40.247Z
+**Date:** 2026-05-31T23:57:43.645Z
 **Trials processed:** 213  
-**Wall time:** 572.6s
+**Wall time:** 556.2s
 
 ## Bucket Summary
 
@@ -10,10 +10,10 @@
 |--------|-------|---|
 | COMPILE_FAIL | 0 | 0.0% |
 | START_FAIL | 0 | 0.0% |
-| MOVE_MISMATCH | 60 | 28.2% |
-| WINNER_MISMATCH | 11 | 5.2% |
-| OUTCOME_OK | 114 | 53.5% |
-| REPLAY_OK_NO_OUTCOME | 28 | 13.1% |
+| MOVE_MISMATCH | 57 | 26.8% |
+| WINNER_MISMATCH | 9 | 4.2% |
+| OUTCOME_OK | 118 | 55.4% |
+| REPLAY_OK_NO_OUTCOME | 29 | 13.6% |
 
 ## Top 15 COMPILE_FAIL Reasons
 
@@ -31,16 +31,16 @@
 - `board/race/escape/Tavli`: **1** mismatches
 - `board/race/escape/Tsun K'i`: **1** mismatches
 - `board/race/reach/Ashere`: **1** mismatches
+- `board/race/reach/India`: **1** mismatches
 - `board/race/reach/Pylos`: **1** mismatches
 - `board/race/reach/Setichch`: **1** mismatches
 - `board/race/reach/Tamman`: **1** mismatches
-- `board/race/reach/Tri EinStein Wurfelt Nicht`: **1** mismatches
 
 ## 5 Concrete MOVE_MISMATCH Examples
 
 ### Example 1: `board/hunt/Ludus Coriovalli`
 - **Ply:** 0
-- **Recorded move:** `mover=1,from=10,to=2`
+- **Recorded move:** `mover=1,from=10,to=1`
 - **TS moves available:** 1
 - **Sample TS moves:** mover=1,from=-1,to=-1,isPass=true
 - **Detail:** No matching TS move
@@ -53,22 +53,22 @@
 - **Detail:** No matching TS move
 
 ### Example 3: `board/race/escape/Ashtapada`
-- **Ply:** 79
-- **Recorded move:** `mover=2,from=65,to=60`
+- **Ply:** 34
+- **Recorded move:** `mover=1,from=64,to=3`
 - **TS moves available:** 1
-- **Sample TS moves:** mover=2,from=11,to=10,isPass=false
+- **Sample TS moves:** mover=1,from=25,to=33,isPass=false
 - **Detail:** No matching TS move
 
 ### Example 4: `board/race/escape/Kiz Tavlasi`
-- **Ply:** 40
-- **Recorded move:** `mover=1,from=9,to=9`
-- **TS moves available:** 4
-- **Sample TS moves:** mover=1,from=7,to=10,isPass=false, mover=1,from=9,to=12,isPass=false, mover=1,from=11,to=11,isPass=false
+- **Ply:** 44
+- **Recorded move:** `mover=1,from=7,to=8`
+- **TS moves available:** 10
+- **Sample TS moves:** mover=2,from=13,to=13,isPass=false, mover=2,from=13,to=13,isPass=false, mover=2,from=14,to=13,isPass=false
 - **Detail:** No matching TS move
 
 ### Example 5: `board/race/escape/Mughrabieh`
 - **Ply:** 0
-- **Recorded move:** `mover=1,from=12,to=10`
+- **Recorded move:** `mover=1,from=12,to=9`
 - **TS moves available:** 4
 - **Sample TS moves:** mover=1,from=0,to=0,isPass=false, mover=1,from=1,to=1,isPass=false, mover=1,from=2,to=2,isPass=false
 - **Detail:** No matching TS move

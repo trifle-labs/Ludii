@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 1411.8,
+    "elapsed_s": 1697.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 74,
       "WINNER_MISMATCH": 6,
-      "OUTCOME_OK": 108,
-      "REPLAY_OK_NO_OUTCOME": 25
+      "OUTCOME_OK": 107,
+      "REPLAY_OK_NO_OUTCOME": 26
     }
   },
   "top15FailureReasons": {
@@ -1218,8 +1218,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/space/territory/Lifeline",
-      "plyReplayed": 78,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 78",
+      "plyReplayed": 44,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 44",
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Lifeline/RandomTrial_1.txt"
     },
     {
@@ -1662,9 +1662,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Taikyoku Shogi/RandomTrial_1.txt"
     },
     {
-      "bucket": "OUTCOME_OK",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/xiangqi/Loop Xiangqi",
-      "plyReplayed": 248,
+      "plyReplayed": 165,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 165",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/xiangqi/Loop Xiangqi/RandomTrial_1.txt"
     },
     {

@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 214,
-    "elapsed_s": 511.1,
+    "elapsed_s": 464.1,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 45,
-      "WINNER_MISMATCH": 10,
-      "OUTCOME_OK": 127,
-      "REPLAY_OK_NO_OUTCOME": 32
+      "MOVE_MISMATCH": 44,
+      "WINNER_MISMATCH": 8,
+      "OUTCOME_OK": 129,
+      "REPLAY_OK_NO_OUTCOME": 33
     }
   },
   "top15FailureReasons": {
@@ -147,17 +147,10 @@
       "trialFile": "../../../Player/res/random_trials/board/hunt/Baghchal/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/hunt/Diviyan Keliya",
-      "plyReplayed": 4,
-      "recWinner": 1,
-      "tsWinner": 2,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/811",
       "trialFile": "../../../Player/res/random_trials/board/hunt/Diviyan Keliya/RandomTrial_0.txt"
     },
     {
@@ -1142,17 +1135,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Dorvolz/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/HexTrike",
-      "plyReplayed": 1,
-      "recWinner": 2,
-      "tsWinner": 1,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
+      "plyReplayed": 60,
       "trialFile": "../../../Player/res/random_trials/board/space/territory/HexTrike/RandomTrial_0.txt"
     },
     {
@@ -1196,15 +1181,9 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Spodd/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Tumbleweed",
-      "ply": 3,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=2,to=2",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 373,
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Tumbleweed/RandomTrial_0.txt"
     },
     {

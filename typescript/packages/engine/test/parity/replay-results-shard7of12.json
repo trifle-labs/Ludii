@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 542,
+    "elapsed_s": 487.7,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 58,
-      "WINNER_MISMATCH": 10,
-      "OUTCOME_OK": 116,
-      "REPLAY_OK_NO_OUTCOME": 29
+      "MOVE_MISMATCH": 57,
+      "WINNER_MISMATCH": 9,
+      "OUTCOME_OK": 117,
+      "REPLAY_OK_NO_OUTCOME": 30
     }
   },
   "top15FailureReasons": {
@@ -749,17 +749,9 @@
       "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Wore/RandomTrial_1.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "board/space/blocking/Agapi",
       "plyReplayed": 35,
-      "recWinner": 1,
-      "tsWinner": 2,
-      "recRankings": [
-        0,
-        1,
-        2
-      ],
-      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Agapi/RandomTrial_1.txt"
     },
     {
@@ -1011,7 +1003,7 @@
       "game": "board/space/line/Gobblet Gobblers",
       "plyReplayed": 12,
       "recWinner": 2,
-      "tsWinner": -1,
+      "tsWinner": 1,
       "recRankings": [
         0,
         2,
@@ -1649,15 +1641,10 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Catapult/RandomTrial_1.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/eliminate/all/Deleb",
-      "ply": 54,
-      "detail": "No matching TS move",
-      "recMove": "mover=4,from=60,to=40",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=4,from=-1,to=-1,isPass=true"
-      ],
+      "plyReplayed": 600,
+      "detail": "Hit move cap 600/7962",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/Deleb/RandomTrial_1.txt"
     },
     {

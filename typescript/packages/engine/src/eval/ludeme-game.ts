@@ -251,7 +251,19 @@ function parsePhases(rules: LudList, env: CompileEnv): CompiledPhase[] {
     }
     const play = compileMoves(playNode.items[1], env);
     const nextPhases: NextPhaseRule[] = [];
-    for (const item of node.items) {
+    // Collect (nextPhase …) declarations, descending into any curly `{ … }`
+    // wrapper — a phase may group several `(nextPhase Px … "Target")` rules in
+    // one block (Diviyan Keliya), which Java parses regardless of the wrapper.
+    const phaseItems: LudNode[] = [];
+    const collectNextPhase = (items: readonly LudNode[]): void => {
+      for (const it of items) {
+        if (!isList(it)) continue;
+        if (it.delimiter === "curly") collectNextPhase(it.items);
+        else phaseItems.push(it);
+      }
+    };
+    collectNextPhase(node.items);
+    for (const item of phaseItems) {
       if (!isList(item) || listHead(item) !== "nextPhase") continue;
       const after = item.items.slice(1);
       // The destination is the trailing string; an optional leading role ident

@@ -3720,6 +3720,8 @@ function isLineWhoRole(name: string): boolean {
     name === "Mover" ||
     name === "Next" ||
     name === "Prev" ||
+    name === "Player" || // (is Line N Player …) — the iterating/acting player's
+    // pieces by OWNER, not a direction (Gobblet Gobblers). Java IsLine RoleType.
     name === "Enemy" ||
     name === "Friend" ||
     name === "Mine" ||
@@ -5963,6 +5965,11 @@ function lineOfSightSites(
   const dirs = resolveDirectionTokens(
     tokens.length > 0 ? tokens : ["Adjacent"],
     ctx,
+    // Pass `at` as the from-site so direction resolution uses the GRAPH radials
+    // anchored at `at` (Java SitesLineOfSight walks topology radials from the
+    // site), not Cartesian integer steps from ctx.frame.from. On non-square
+    // (hex-triangle) boards the integer steps miss every site (Trike/HexTrike).
+    at,
   );
   const empty = losType === "Empty";
   const farthest = losType === "Farthest";
@@ -15567,7 +15574,14 @@ function compileResult(
     const numPlayers = ctx.context.game.numPlayers;
     const player =
       role === "Next"
-        ? (ctx.mover % numPlayers) + 1
+        ? // Mirror resolveRole("Next"): when the end-rule frame carries the
+          // state-based next (set by SetNextPlayer/moveAgain), `(result Next …)`
+          // must resolve to state.next (Java Id.eval(Next) = state.next()), not
+          // the cyclic successor — otherwise a `(if (no Moves Next) (result Next
+          // Loss))` assigns the loss to the wrong player (Agapi, Diviyan Keliya).
+          ctx.frame.roleNextFromState && ctx.state.next > 0
+          ? ctx.state.next
+          : (ctx.mover % numPlayers) + 1
         : role === "Prev"
           ? // Java Id.eval(Prev) = state.prev() — the player who moved just
             // before the current mover (Id.java:123). End rules run BEFORE mover

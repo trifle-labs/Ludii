@@ -1,13 +1,13 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 565.1,
+    "elapsed_s": 538.9,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 69,
+      "MOVE_MISMATCH": 68,
       "WINNER_MISMATCH": 8,
-      "OUTCOME_OK": 113,
+      "OUTCOME_OK": 114,
       "REPLAY_OK_NO_OUTCOME": 23
     }
   },
@@ -823,17 +823,17 @@
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Cram/RandomTrial_0.txt"
     },
     {
-      "bucket": "MOVE_MISMATCH",
+      "bucket": "WINNER_MISMATCH",
       "game": "experimental/Epoxy",
-      "ply": 15,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=33,to=37",
-      "tsMoveCount": 31,
-      "sampleTsMoves": [
-        "mover=1,from=0,to=0,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=2,to=2,isPass=false"
+      "plyReplayed": 69,
+      "recWinner": 1,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1,
+        2
       ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/space/blocking/Epoxy/RandomTrial_0.txt"
     },
     {
@@ -1272,24 +1272,16 @@
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Spirit/RandomTrial_0.txt"
     },
     {
-      "bucket": "WINNER_MISMATCH",
+      "bucket": "OUTCOME_OK",
       "game": "experimental/Trike",
-      "plyReplayed": 1,
-      "recWinner": 2,
-      "tsWinner": 1,
-      "recRankings": [
-        0,
-        2,
-        1
-      ],
-      "tsRankings": [],
+      "plyReplayed": 39,
       "trialFile": "../../../Player/res/random_trials/board/space/territory/Trike/RandomTrial_0.txt"
     },
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/custodial/Alea Evangelii",
-      "plyReplayed": 236,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 236",
+      "plyReplayed": 245,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 245",
       "trialFile": "../../../Player/res/random_trials/board/war/custodial/Alea Evangelii/RandomTrial_0.txt"
     },
     {
@@ -1452,8 +1444,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess",
-      "plyReplayed": 72,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 72",
+      "plyReplayed": 83,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 83",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Hindustani Chess/RandomTrial_0.txt"
     },
     {
@@ -1533,8 +1525,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chess/Double Chess",
-      "plyReplayed": 65,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 65",
+      "plyReplayed": 64,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 64",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Double Chess/RandomTrial_0.txt"
     },
     {

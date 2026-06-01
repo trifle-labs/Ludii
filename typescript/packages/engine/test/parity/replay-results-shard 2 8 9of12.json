@@ -1,14 +1,14 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 680,
+    "elapsed_s": 556.2,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
       "MOVE_MISMATCH": 57,
-      "WINNER_MISMATCH": 8,
+      "WINNER_MISMATCH": 9,
       "OUTCOME_OK": 118,
-      "REPLAY_OK_NO_OUTCOME": 30
+      "REPLAY_OK_NO_OUTCOME": 29
     }
   },
   "top15FailureReasons": {
@@ -1440,8 +1440,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)",
-      "plyReplayed": 294,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 294",
+      "plyReplayed": 506,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 506",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga (Kridakausalya 14x14)/RandomTrial_0.txt"
     },
     {
@@ -1591,10 +1591,17 @@
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Ultimate Chess/RandomTrial_0.txt"
     },
     {
-      "bucket": "REPLAY_OK_NO_OUTCOME",
+      "bucket": "WINNER_MISMATCH",
       "game": "board/war/replacement/checkmate/shogi/Dai Seireigi",
-      "plyReplayed": 20,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 20",
+      "plyReplayed": 24,
+      "recWinner": 1,
+      "tsWinner": 2,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [],
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Dai Seireigi/RandomTrial_0.txt"
     },
     {

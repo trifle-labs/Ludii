@@ -1,7 +1,7 @@
 {
   "summary": {
     "totalTrials": 213,
-    "elapsed_s": 653.6,
+    "elapsed_s": 579,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
@@ -239,8 +239,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/race/escape/Buffa de Baldrac",
-      "plyReplayed": 113,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 113",
+      "plyReplayed": 130,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 130",
       "trialFile": "../../../Player/res/random_trials/board/race/escape/Buffa de Baldrac/RandomTrial_1.txt"
     },
     {
@@ -1553,8 +1553,8 @@
     {
       "bucket": "REPLAY_OK_NO_OUTCOME",
       "game": "board/war/replacement/checkmate/shogi/Yonin Seireigi",
-      "plyReplayed": 32,
-      "detail": "per-trial time budget (90000ms) exceeded at ply 32",
+      "plyReplayed": 31,
+      "detail": "per-trial time budget (90000ms) exceeded at ply 31",
       "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/shogi/Yonin Seireigi/RandomTrial_1.txt"
     },
     {
