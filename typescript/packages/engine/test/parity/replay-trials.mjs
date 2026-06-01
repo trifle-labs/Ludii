@@ -71,10 +71,20 @@ let verbose = false;
 // ---------------------------------------------------------------------------
 let compileLudemeSource;
 let SplitMix64;
+// ENGINE_1TO1=1: use the faithful 1:1 ludeme-object path (play1to1) instead of
+// the interpreter (compileLudemeSource). Only TTT and simple placement games are
+// supported by the 1:1 path currently.
+const USE_1TO1 = process.env.ENGINE_1TO1 === '1';
+let play1to1;
 try {
   const engine = await import(DIST_INDEX);
   compileLudemeSource = engine.compileLudemeSource;
   SplitMix64 = engine.SplitMix64;
+  if (USE_1TO1) {
+    play1to1 = engine.play1to1;
+    if (!play1to1) throw new Error('play1to1 not exported from engine dist');
+    console.log('[ENGINE_1TO1] Using 1:1 ludeme-object path (play1to1)');
+  }
 } catch (e) {
   console.error('Failed to load engine from', DIST_INDEX, ':', e.message);
   process.exit(1);
@@ -241,7 +251,8 @@ function loadGame(gameRelPath, trialPath) {
   let result;
   try {
     const src = readFileSync(absPath, 'utf8');
-    const game = compileLudemeSource(src);
+    // ENGINE_1TO1 gate: use 1:1 ludeme-object path for supported games
+    const game = USE_1TO1 ? play1to1(src) : compileLudemeSource(src);
     result = { game };
   } catch (e) {
     result = { error: e };

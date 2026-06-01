@@ -7,6 +7,13 @@
  * `apply()` produces a new Context. The Java surface is broad
  * (RNG, completed trials, owned components, ranking); the methods
  * pinned here are the ones the engine + browser-player actually call.
+ *
+ * Eval-scratch (1:1 path addition):
+ * Java's Context carries mutable `from/to/value` scratch fields used by
+ * ludeme eval() calls (e.g. IsLine reads the pivot via context.to()).
+ * Added here as plain mutable properties that do NOT affect the immutable
+ * State/Trial. They are initialised to Java's defaults (-1/-1/0).
+ * @java other/context/Context.java — setTo/setFrom/setValue, to()/from()/value()
  */
 
 import type { Game } from "./game.js";
@@ -19,6 +26,30 @@ export class Context {
   public readonly state: State;
   public readonly trial: Trial;
   public readonly rng: SeededRng;
+
+  // ---- Mutable eval-scratch (1:1 path) ------------------------------------
+  // Java parity: Context.java — to/from/value scratch for ludeme eval passes.
+  // These are NOT part of the immutable state; they are set/read only within
+  // a single eval() invocation and reset between calls.
+  /** Java parity: Context.to() / setTo(). Default -1 (Constants.OFF). */
+  public _evalTo: number = -1;
+  /** Java parity: Context.from() / setFrom(). Default -1 (Constants.OFF). */
+  public _evalFrom: number = -1;
+  /** Java parity: Context.value() / setValue(). Default 0. */
+  public _evalValue: number = 0;
+
+  /** Java parity: Context.to(). */
+  public getEvalTo(): number { return this._evalTo; }
+  /** Java parity: Context.setTo(int). */
+  public setEvalTo(v: number): void { this._evalTo = v; }
+  /** Java parity: Context.from(). */
+  public getEvalFrom(): number { return this._evalFrom; }
+  /** Java parity: Context.setFrom(int). */
+  public setEvalFrom(v: number): void { this._evalFrom = v; }
+  /** Java parity: Context.value(). */
+  public getEvalValue(): number { return this._evalValue; }
+  /** Java parity: Context.setValue(int). */
+  public setEvalValue(v: number): void { this._evalValue = v; }
 
   public constructor(game: Game, state: State, trial: Trial, rng?: SeededRng) {
     this.game = game;
