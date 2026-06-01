@@ -3420,6 +3420,74 @@ function withMoveAgainWrapper(inner: MovesFunction): MovesFunction {
 }
 
 /**
+ * Generalised (then <moves>) consequence chaining. For each parent move, apply
+ * it to a POST-MOVE context, evaluate the consequence THERE (so conditions like
+ * (is Line 3) see the just-placed/moved piece), and bake the resulting actions +
+ * moveAgain into the parent move.
+ *
+ * This is the faithful behaviour of Java Then.java / Game.applyInternal, which
+ * evaluate the `then` consequence in the context AFTER the move's own actions.
+ * The previous code only handled the literal (then (moveAgain)) and only on
+ * Step/Slide — conditional moveAgain ((then (if (is Line 3) (moveAgain)))) never
+ * fired, the dominant board/space MOVE_MISMATCH cause (Morris-family mills).
+ *
+ * @java game/rules/play/moves/nonDecision/effect/Then.java
+ */
+function withThenConsequence(inner: MovesFunction, thenGen: MovesFunction): MovesFunction {
+  return {
+    eval(ctx: Context): Move[] {
+      const c = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
+      return inner.eval(ctx).map(m => {
+        let postCtx: Context;
+        try {
+          const postState = m.applyTo(ctx.state, ctx.rng);
+          postCtx = ctx.withState(postState);
+        } catch { return m; }
+        const aug = postCtx as Context & { _radials?: unknown; _trajectories?: unknown };
+        aug._radials = c._radials;
+        aug._trajectories = c._trajectories;
+        postCtx._evalFrom = m.from();
+        postCtx._evalTo = m.to();
+        postCtx._evalValue = 0;
+        let thenMoves: Move[];
+        try { thenMoves = thenGen.eval(postCtx); }
+        catch { return m; }
+        if (thenMoves.length === 0) return m;
+        const extraActions = thenMoves.flatMap(tm => [...tm.actions]);
+        const moveAgain = thenMoves.some(tm => tm.moveAgain);
+        if (extraActions.length === 0 && !moveAgain) return m;
+        return m.withConsequence(extraActions, moveAgain);
+      });
+    },
+  };
+}
+
+/**
+ * If `positional` contains a (then <moves>) child, compile it and wrap `inner`
+ * with withThenConsequence; otherwise return inner unchanged (byte-identical for
+ * moves with no `then`).
+ */
+function attachThen(
+  inner: MovesFunction,
+  positional: readonly LudNode[],
+  equipment?: Equipment1to1,
+): MovesFunction {
+  for (const p of positional) {
+    if (isList(p) && headOf(p) === "then") {
+      const { positional: thenPos } = parseArgs1to1(p.items);
+      const thenNode = thenPos[0];
+      if (thenNode) {
+        try {
+          const thenGen = compileMoves1to1(thenNode, equipment);
+          return withThenConsequence(inner, thenGen);
+        } catch { /* fall through — leave inner unwrapped */ }
+      }
+    }
+  }
+  return inner;
+}
+
+/**
  * Compile a `(piece ...)` argument in a move generator to {what, owner}.
  *
  * Forms:
@@ -3542,6 +3610,21 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     }
   }
 
+  // ---- (moveAgain) as a moves generator ----------------------------------
+  // Emits a sentinel move carrying the same-player continuation. Only meaningful
+  // inside a (then ...) consequence (resolved by withThenConsequence/attachThen);
+  // never added to a real move list directly.
+  // @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
+  if (h === "moveagain") {
+    return { eval(ctx: Context): Move[] {
+      const mover = ctx.state.mover;
+      return [new Move({
+        id: "moveAgain", label: "MoveAgain", siteIndices: [0], mover, placedOwner: mover,
+        actions: [new ActionSetNextPlayer(mover)], moveAgain: true,
+      })];
+    }};
+  }
+
   // ---- (move ...) dispatch -----------------------------------------------
   if (h === "move") {
     const { positional, named } = parseArgs1to1(node.items);
@@ -3566,7 +3649,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
           const regionNode2 = findRegionInToArgs(toArgs2.positional);
           if (!regionNode2) throw new Error("compiler1to1: (to ...) missing region");
           const region2 = applyToIfCondition(compileRegion1to1(regionNode2), toArgs2.named.get("if"));
-          return new Add(region2, pieceFn);
+          return attachThen(new Add(region2, pieceFn), positional, equipment);
         }
         throw new Error("compiler1to1: (move Add ...) missing (to ...)");
       }
@@ -3576,7 +3659,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       // Apply (to ... if:cond) filter if present
       // @java Add.java: the `to` condition filters valid placement sites
       const region = applyToIfCondition(compileRegion1to1(regionNode), toArgs.named.get("if"));
-      return new Add(region, pieceFn);
+      return attachThen(new Add(region, pieceFn), positional, equipment);
     }
 
     // (move Hop [<dir>] (between ...) (to ...)) — jump over a piece
@@ -3838,11 +3921,10 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
         dirnName = dirnNode.name;
       }
       const slideMoves: MovesFunction = new Slide1to1(dirnName);
-      // (then (moveAgain)) → mark all generated moves as same-player continuation
+      // (then <moves>) consequence chaining (incl. conditional moveAgain).
       // @java game/rules/play/moves/nonDecision/effect/Then.java — eval wraps each move
       // @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
-      if (hasThenMoveAgain(positional)) return withMoveAgainWrapper(slideMoves);
-      return slideMoves;
+      return attachThen(slideMoves, positional, equipment);
     }
 
     // (move Step [direction] (to ...) [(then (moveAgain))])
@@ -3854,9 +3936,9 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       }
       // (to if:(is Empty (to))) — for now default to empty condition
       const stepMoves: MovesFunction = new Step1to1(dirnName);
+      // (then <moves>) consequence chaining (incl. conditional moveAgain).
       // @java game/rules/play/moves/nonDecision/effect/Then.java — eval wraps each move
-      if (hasThenMoveAgain(positional)) return withMoveAgainWrapper(stepMoves);
-      return stepMoves;
+      return attachThen(stepMoves, positional, equipment);
     }
 
     // (move (from ...) (to ...)) — FromTo
