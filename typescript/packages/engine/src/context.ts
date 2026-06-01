@@ -43,6 +43,14 @@ export class Context {
    * Default -1 (Constants.OFF).
    */
   public _evalSite: number = -1;
+  /**
+   * Java parity: Context.player() / setPlayer(int).
+   * Set by (forEach Player/NonMover/Mover ...) end rules to pass the current
+   * iterated player index to predicates like (is Blocked Player).
+   * Undefined when not inside a forEach iteration.
+   * @java other/context/Context.java — player()/setPlayer(int)
+   */
+  public _evalPlayer?: number;
 
   /** Java parity: Context.to(). */
   public getEvalTo(): number { return this._evalTo; }

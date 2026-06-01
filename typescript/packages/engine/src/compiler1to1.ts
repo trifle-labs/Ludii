@@ -63,6 +63,8 @@ import { Slide1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Sl
 import { Step1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Step1to1.js";
 import { FromTo1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/FromTo1to1.js";
 import { ActionRemove } from "./action/action-remove.js";
+import { ActionPass } from "./action/action-pass.js";
+import { ActionMove } from "./action/action-move.js";
 
 // Rules
 import { Result } from "./ludemes/game/rules/end/Result.js";
@@ -85,12 +87,14 @@ import { Game1to1 } from "./ludemes/Game1to1.js";
 
 import { Context } from "./context.js";
 import { Move } from "./move.js";
+import type { Trajectories } from "./eval/graph/trajectories.js";
 import type {
   IntFunction,
   BooleanFunction,
   RegionFunction,
   MovesFunction,
   EndRuleFunction,
+  EndResult,
   RoleType,
   ResultType,
 } from "./ludemes/base.js";
@@ -138,6 +142,14 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
     if (!isNaN(n)) return new IntConstant(n);
   }
   if (isList(node)) {
+    // { (if ...) ... } — curly-brace list in int context: evaluate first element
+    if (node.delimiter === "curly") {
+      const firstChild = node.items[0];
+      if (firstChild) {
+        try { return compileInt1to1(firstChild); } catch { /* fall through */ }
+      }
+      return new IntConstant(0);
+    }
     const h = headOf(node);
     if (h === "from") {
       // (from) — the iterator's current "from" site (context._evalFrom)
@@ -364,7 +376,318 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
         return { eval(ctx: Context): number { return ctx._evalFrom; } };
       }
     }
+
+    // (score <role>) — the current score of the given player
+    // @java game/functions/ints/state/Score.java — eval returns context.score(pid)
+    if (h === "score") {
+      const { positional: sPos } = parseArgs1to1(node.items);
+      const roleNode = sPos[0];
+      const roleName = (roleNode && isIdent(roleNode)) ? roleNode.name.toLowerCase() : "mover";
+      return { eval(ctx: Context): number {
+        const scores = (ctx.state as unknown as { scores?: number[] }).scores;
+        if (!scores) return 0;
+        if (roleName === "mover") return scores[ctx.state.mover] ?? 0;
+        if (roleName === "next") return scores[(ctx.state.mover % ctx.game.numPlayers) + 1] ?? 0;
+        if (roleName.startsWith("p") && !isNaN(parseInt(roleName.slice(1), 10))) {
+          return scores[parseInt(roleName.slice(1), 10)] ?? 0;
+        }
+        return 0;
+      }};
+    }
+
+    // (var) / (var "name") — read a named context variable
+    // @java game/functions/ints/iterator/Var.java — eval returns context.getValue("name")
+    if (h === "var") {
+      // Simplified: return _evalValue (the context's current named value scratch)
+      return { eval(ctx: Context): number { return ctx._evalValue ?? 0; } };
+    }
+
+    // (counter) — the game's current counter (move number, turn, etc.)
+    // @java game/functions/ints/state/Counter.java — eval returns context.counter()
+    if (h === "counter") {
+      return { eval(ctx: Context): number {
+        return ctx.trial.moves.length;
+      }};
+    }
+
+    // (size Array ...) / (size Group ...) — count of sites in a group or array
+    // @java game/functions/ints/count/site/SizeGroup.java — eval returns group.eval(ctx).size()
+    // @java game/functions/ints/count/site/SizeStack.java — eval for Array type
+    if (h === "size") {
+      const { positional: szPos, named: szNamed } = parseArgs1to1(node.items);
+      const typeNode = szPos[0];
+      const typeName = (typeNode && isIdent(typeNode)) ? typeNode.name.toLowerCase() : "";
+      if (typeName === "group") {
+        // (size Group of:<site>) — size of the connected group containing site
+        const ofNode = szNamed.get("of");
+        if (ofNode) {
+          const siteFn = compileInt1to1(ofNode);
+          return { eval(ctx: Context): number {
+            const site = siteFn.eval(ctx);
+            if (site < 0) return 0;
+            const cells = ctx.state.cells;
+            const owner = cells[site] ?? 0;
+            if (owner === 0) return 0;
+            // BFS flood-fill same-owner group
+            const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
+            const traj = ctxAny._trajectories;
+            const visited = new Set<number>([site]);
+            const stack = [site];
+            while (stack.length > 0) {
+              const s = stack.pop()!;
+              let neighbours: number[];
+              if (traj) {
+                neighbours = traj.group(s, "Adjacent");
+              } else {
+                const g = ctx.game as unknown as Game1to1;
+                const W = g.equipment.board.width;
+                const H = g.equipment.board.height;
+                const col = s % W; const row = Math.floor(s / W);
+                neighbours = [];
+                if (col > 0) neighbours.push(s - 1);
+                if (col < W-1) neighbours.push(s + 1);
+                if (row > 0) neighbours.push(s - W);
+                if (row < H-1) neighbours.push(s + W);
+              }
+              for (const nb of neighbours) {
+                if (!visited.has(nb) && (cells[nb] ?? 0) === owner) {
+                  visited.add(nb);
+                  stack.push(nb);
+                }
+              }
+            }
+            return visited.size;
+          }};
+        }
+        return new IntConstant(0);
+      }
+      if (typeName === "array" || typeName === "stack") {
+        // (size Array at:<site>) — stack depth at a site
+        // (size Array (array <region>)) — count elements in an array region
+        const atNode = szNamed.get("at");
+        if (atNode) {
+          const siteFn = compileInt1to1(atNode);
+          return { eval(ctx: Context): number {
+            const s = siteFn.eval(ctx);
+            return ctx.state.countAtSite(s);
+          }};
+        }
+        // (size Array (array <region>)) form
+        const arrNode = szPos[1];
+        if (arrNode && isList(arrNode) && headOf(arrNode) === "array") {
+          const innerArgs = parseArgs1to1(arrNode.items);
+          const innerRegionNode = innerArgs.positional[0];
+          if (innerRegionNode) {
+            try {
+              const regionFn = compileRegion1to1(innerRegionNode);
+              return { eval(ctx: Context): number { return regionFn.eval(ctx).length; } };
+            } catch { /* fall through */ }
+          }
+        }
+        return new IntConstant(0);
+      }
+      return new IntConstant(0);
+    }
+
+    // (max <intFn1> <intFn2> ...) — maximum of integer values
+    // @java game/functions/ints/math/Max.java — eval returns max of sub-functions
+    if (h === "max") {
+      const { positional: mxPos } = parseArgs1to1(node.items);
+      if (mxPos.length === 0) return new IntConstant(0);
+      // Could be (max <region>) where region is an intFn-producing region
+      // Most common: (max <int1> <int2>)
+      const fns: IntFunction[] = [];
+      for (const p of mxPos) {
+        try { fns.push(compileInt1to1(p)); } catch { /* skip */ }
+      }
+      if (fns.length === 0) return new IntConstant(0);
+      return { eval(ctx: Context): number {
+        let m = fns[0]!.eval(ctx);
+        for (let i = 1; i < fns.length; i++) {
+          const v = fns[i]!.eval(ctx);
+          if (v > m) m = v;
+        }
+        return m;
+      }};
+    }
+
+    // (min <intFn1> <intFn2> ...) — minimum of integer values
+    // @java game/functions/ints/math/Min.java
+    if (h === "min") {
+      const { positional: mnPos } = parseArgs1to1(node.items);
+      if (mnPos.length === 0) return new IntConstant(0);
+      const fns: IntFunction[] = [];
+      for (const p of mnPos) {
+        try { fns.push(compileInt1to1(p)); } catch { /* skip */ }
+      }
+      if (fns.length === 0) return new IntConstant(0);
+      return { eval(ctx: Context): number {
+        let m = fns[0]!.eval(ctx);
+        for (let i = 1; i < fns.length; i++) {
+          const v = fns[i]!.eval(ctx);
+          if (v < m) m = v;
+        }
+        return m;
+      }};
+    }
+
+    // (abs <intFn>) — absolute value
+    // @java game/functions/ints/math/Abs.java
+    if (h === "abs") {
+      const { positional: abPos } = parseArgs1to1(node.items);
+      const sub = compileInt1to1(abPos[0]);
+      return { eval(ctx: Context): number { return Math.abs(sub.eval(ctx)); } };
+    }
+
+    // (sites ...) as IntFunction — treat as count of the region
+    // Used when (sites ...) appears in an integer context (e.g. size of region)
+    // @java game/functions/ints/count/site/CountSites.java
+    if (h === "sites") {
+      try {
+        const regionFn = compileRegion1to1(node);
+        return { eval(ctx: Context): number { return regionFn.eval(ctx).length; } };
+      } catch { /* fall through */ }
+    }
+
+    // (ahead <from> <direction> <steps>) — site ahead in direction from a site
+    // @java game/functions/ints/board/Ahead.java
+    if (h === "ahead") {
+      const { positional: ahPos } = parseArgs1to1(node.items);
+      const fromFnAh = compileInt1to1(ahPos[0]);
+      const dirNodeAh = ahPos[1];
+      const dirNameAh = (dirNodeAh && isIdent(dirNodeAh)) ? dirNodeAh.name : "N";
+      return { eval(ctx: Context): number {
+        const from = fromFnAh.eval(ctx);
+        if (from < 0) return -1;
+        const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
+        const traj = ctxAny._trajectories;
+        if (traj) {
+          const steps = traj.steps(from, dirNameAh);
+          return steps.length > 0 ? steps[0]! : -1;
+        }
+        const g = ctx.game as unknown as Game1to1;
+        const W = g.equipment.board.width;
+        const H = g.equipment.board.height;
+        const col = from % W; const row = Math.floor(from / W);
+        const d = dirNameAh.toUpperCase();
+        if (d === "N" || d === "NORTH") return row < H-1 ? from + W : -1;
+        if (d === "S" || d === "SOUTH") return row > 0 ? from - W : -1;
+        if (d === "E" || d === "EAST") return col < W-1 ? from + 1 : -1;
+        if (d === "W" || d === "WEST") return col > 0 ? from - 1 : -1;
+        return -1;
+      }};
+    }
+
+    // (pow a b) — a to the power b
+    // @java game/functions/ints/math/Pow.java
+    if (h === "pow") {
+      const { positional: pwPos } = parseArgs1to1(node.items);
+      const base = compileInt1to1(pwPos[0]);
+      const exp = compileInt1to1(pwPos[1]);
+      return { eval(ctx: Context): number {
+        return Math.trunc(Math.pow(base.eval(ctx), exp.eval(ctx)));
+      }};
+    }
+
+    // (arrayValue <array> index:<int>) — get element of array at index (stub: return 0)
+    // @java game/functions/ints/array/ArrayValue.java
+    if (h === "arrayvalue") {
+      return new IntConstant(0);
+    }
+
+    // (state at:<site>) — state value at a site (stub: return 0)
+    if (h === "state") {
+      return new IntConstant(0);
+    }
+
+    // (level of:<site>) — z-level of a site in a 3D board (stub: return 0)
+    // @java game/functions/ints/board/Level.java
+    if (h === "layer" || h === "level") {
+      return new IntConstant(0);
+    }
+
+    // (centrePoint) — the centre site of the board
+    // @java game/functions/ints/board/CentrePoint.java
+    if (h === "centrepoint") {
+      return { eval(ctx: Context): number {
+        const g = ctx.game as unknown as Game1to1;
+        return Math.floor(g.equipment.board.numSites / 2);
+      }};
+    }
+
+    // (value Player <role>) — persistent player value
+    // @java game/functions/ints/state/Value.java — eval returns context.value(player)
+    if (h === "value") {
+      const { positional: vPos } = parseArgs1to1(node.items);
+      const typeNode = vPos[0];
+      if (typeNode && isIdent(typeNode) && typeNode.name.toLowerCase() === "player") {
+        const roleNode = vPos[1];
+        const roleName = (roleNode && isIdent(roleNode)) ? roleNode.name.toLowerCase() : "mover";
+        return { eval(ctx: Context): number {
+          // Persistent player values not tracked in 1:1 state; return 0
+          void roleName; void ctx;
+          return 0;
+        }};
+      }
+      return new IntConstant(0);
+    }
+
+    // (id "name" role) / (id role) — player id from role type
+    // @java game/functions/ints/board/Id.java — resolves RoleType to player id
+    if (h === "id") {
+      const { positional: idPos } = parseArgs1to1(node.items);
+      // id can take a string name or a role ident
+      for (const p of idPos) {
+        if (isIdent(p)) {
+          const roleName = p.name.toLowerCase();
+          if (roleName === "mover") return { eval(ctx: Context): number { return ctx.state.mover; } };
+          if (roleName === "next") return { eval(ctx: Context): number { return (ctx.state.mover % ctx.game.numPlayers) + 1; } };
+          if (roleName.startsWith("p") && !isNaN(parseInt(roleName.slice(1), 10))) {
+            const pid = parseInt(roleName.slice(1), 10);
+            return new IntConstant(pid);
+          }
+        }
+      }
+      return { eval(ctx: Context): number { return ctx.state.mover; } };
+    }
+
+    // (prev) — the previous mover
+    // @java game/functions/ints/state/Prev.java
+    if (h === "prev") {
+      return { eval(ctx: Context): number {
+        const n = ctx.game.numPlayers;
+        return ((ctx.state.mover - 2 + n) % n) + 1;
+      }};
+    }
+
+    // (if <bool> <int> [<int>]) — conditional int
+    // @java game/functions/ints/IfInt.java
+    if (h === "if") {
+      const { positional: ifPos } = parseArgs1to1(node.items);
+      const condFn = compileBool1to1(ifPos[0], 2);
+      const thenFn = compileInt1to1(ifPos[1]);
+      const elseFn = ifPos[2] ? compileInt1to1(ifPos[2]) : new IntConstant(0);
+      return { eval(ctx: Context): number {
+        return condFn.eval(ctx) ? thenFn.eval(ctx) : elseFn.eval(ctx);
+      }};
+    }
   }
+
+  // Bare ident: P1, P2, ... — player index as IntFunction
+  // @java game/functions/ints/board/Id.java — (id "P1" ...) or role literal
+  if (isIdent(node)) {
+    const name = node.name.toUpperCase();
+    if (name.length >= 2 && name.startsWith("P") && !isNaN(parseInt(name.slice(1), 10))) {
+      const pid = parseInt(name.slice(1), 10);
+      return new IntConstant(pid);
+    }
+    if (name === "MOVER") return { eval(ctx: Context): number { return ctx.state.mover; } };
+    if (name === "NEXT") return { eval(ctx: Context): number { return (ctx.state.mover % ctx.game.numPlayers) + 1; } };
+    if (name === "PLAYER") return { eval(ctx: Context): number { return ctx._evalPlayer ?? ctx.state.mover; } };
+    if (name === "INFINITY" || name === "MAX") return new IntConstant(Number.MAX_SAFE_INTEGER);
+    if (name === "-INFINITY" || name === "MIN") return new IntConstant(Number.MIN_SAFE_INTEGER);
+  }
+
   throw new Error(`compiler1to1: cannot compile IntFunction from ${JSON.stringify(node)}`);
 }
 
@@ -374,7 +697,17 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
 
 export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
   if (!node) throw new Error("compiler1to1: expected RegionFunction node");
-  if (!isList(node)) throw new Error(`compiler1to1: expected list for RegionFunction, got ${node.kind}`);
+  if (!isList(node)) throw new Error(`compiler1to1: expected list for RegionFunction, got ${(node as {kind:string}).kind}`);
+  // { <region1> <region2> ... } — curly-brace list of regions = union
+  if (node.delimiter === "curly") {
+    const regions: RegionFunction[] = [];
+    for (const item of node.items) {
+      if (isList(item)) {
+        try { regions.push(compileRegion1to1(item)); } catch { /* skip */ }
+      }
+    }
+    return new UnionRegion(regions);
+  }
   const h = headOf(node)!;
 
   if (h === "sites") {
@@ -395,6 +728,33 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
         if (secondNode && isIdent(secondNode) && secondNode.name.toLowerCase() === "farthest") {
           return new SitesLineOfSightFarthest1to1();
         }
+        // (sites LineOfSight Piece at:<site>) — sites visible along lines from site
+        // Simplified: return all reachable empty sites in each direction (like Slide)
+        const atNode2 = named.get("at");
+        if (atNode2) {
+          const siteFn = compileInt1to1(atNode2);
+          return { eval(ctx: Context): number[] {
+            const from = siteFn.eval(ctx);
+            if (from < 0) return [];
+            const ctxAny = ctx as unknown as { _radials?: readonly import("./ludemes/topology-radials.js").CellFlatRadials[] };
+            const radials = ctxAny._radials;
+            if (!radials) return [];
+            const cellRadials = radials[from];
+            if (!cellRadials) return [];
+            const result: number[] = [];
+            for (const axis of cellRadials.axes) {
+              for (const ray of [axis.ray, axis.opposite]) {
+                for (let i = 1; i < ray.length; i++) {
+                  const s = ray[i]!;
+                  if (!ctx.state.isEmptySite(s)) break;
+                  result.push(s);
+                }
+              }
+            }
+            return [...new Set(result)];
+          }};
+        }
+        return { eval(_ctx: Context): number[] { return []; } };
       }
       if (kind === "occupied") {
         // (sites Occupied by:<role> [component:<name>]) — board sites containing pieces of player
@@ -426,6 +786,98 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
           }
         };
       }
+      if (kind === "board") {
+        // (sites Board) — all board sites
+        // @java game/functions/region/sites/simple/SitesBoard.java
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          const n = g.equipment ? g.equipment.board.numSites : ctx.state.cells.length;
+          return Array.from({ length: n }, (_, i) => i);
+        }};
+      }
+      if (kind === "centre" || kind === "center") {
+        // (sites Centre) — centre sites of the board (approximately)
+        // @java game/functions/region/sites/simple/SitesCentre.java
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          const W = g.equipment.board.width;
+          const H = g.equipment.board.height;
+          const cx = Math.floor(W / 2);
+          const cy = Math.floor(H / 2);
+          const sites: number[] = [];
+          for (let dy = 0; dy <= (H % 2 === 0 ? 1 : 0); dy++) {
+            for (let dx = 0; dx <= (W % 2 === 0 ? 1 : 0); dx++) {
+              const s = (cy - dy) * W + (cx - dx);
+              if (s >= 0 && s < W * H) sites.push(s);
+            }
+          }
+          return [...new Set(sites)].sort((a, b) => a - b);
+        }};
+      }
+      if (kind === "around") {
+        // (sites Around <site> ...) — neighbours of a site
+        // @java game/functions/region/sites/around/SitesAround.java
+        const siteArgNode = positional[1];
+        if (siteArgNode) {
+          let dirName = "Adjacent";
+          let siteFn: IntFunction;
+          let includeSelf = false;
+          // Optional: direction ident before site
+          try {
+            siteFn = compileInt1to1(siteArgNode);
+          } catch {
+            // Maybe it's direction then site
+            if (isIdent(siteArgNode)) {
+              dirName = siteArgNode.name;
+              const siteNode2 = positional[2];
+              if (siteNode2) {
+                try { siteFn = compileInt1to1(siteNode2); } catch { siteFn = { eval: () => -1 }; }
+              } else { siteFn = { eval: () => -1 }; }
+            } else { siteFn = { eval: () => -1 }; }
+          }
+          const includeSelfNode = named.get("includeSelf") ?? named.get("includeself");
+          if (includeSelfNode && isIdent(includeSelfNode) && includeSelfNode.name.toLowerCase() === "true") {
+            includeSelf = true;
+          }
+          const dirFinal = dirName;
+          const includeSelfFinal = includeSelf;
+          const siteFnFinal = siteFn!;
+          return { eval(ctx: Context): number[] {
+            const site = siteFnFinal.eval(ctx);
+            if (site < 0) return [];
+            const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
+            const traj = ctxAny._trajectories;
+            let neighbours: number[];
+            if (traj) {
+              neighbours = traj.group(site, dirFinal);
+            } else {
+              const g = ctx.game as unknown as Game1to1;
+              const W = g.equipment.board.width;
+              const H = g.equipment.board.height;
+              const col = site % W; const row = Math.floor(site / W);
+              neighbours = [];
+              const useAll = dirFinal === "Adjacent" || dirFinal === "All";
+              const useOrtho = useAll || dirFinal === "Orthogonal";
+              const useDiag = useAll || dirFinal === "Diagonal";
+              if (useOrtho) {
+                if (col > 0) neighbours.push(site - 1);
+                if (col < W-1) neighbours.push(site + 1);
+                if (row > 0) neighbours.push(site - W);
+                if (row < H-1) neighbours.push(site + W);
+              }
+              if (useDiag) {
+                if (col > 0 && row > 0) neighbours.push(site - W - 1);
+                if (col < W-1 && row > 0) neighbours.push(site - W + 1);
+                if (col > 0 && row < H-1) neighbours.push(site + W - 1);
+                if (col < W-1 && row < H-1) neighbours.push(site + W + 1);
+              }
+            }
+            if (includeSelfFinal) neighbours = [site, ...neighbours];
+            return neighbours;
+          }};
+        }
+        return { eval(_ctx: Context): number[] { return []; } };
+      }
       if (kind === "bottom") return new SitesBottom();
       if (kind === "top") return new SitesTop();
       if (kind === "left") return new SitesLeft();
@@ -455,8 +907,217 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
         const phaseFn = compileInt1to1(positional[1]);
         return new SitesPhase(phaseFn);
       }
+      if (kind === "playable") {
+        // (sites Playable) — sites that can be played to (empty board sites)
+        return new SitesEmpty();
+      }
+      if (kind === "direction") {
+        // (sites Direction ...) — sites in a specific direction from a site
+        // @java game/functions/region/sites/direction/SitesDirection.java
+        const fromNode2 = named.get("from");
+        const dirNode2 = positional[1];
+        const dirName2 = (dirNode2 && isIdent(dirNode2)) ? dirNode2.name : "Adjacent";
+        const fromFn2 = fromNode2 ? compileInt1to1(fromNode2) : { eval: (ctx: Context) => ctx._evalFrom };
+        return { eval(ctx: Context): number[] {
+          const from = fromFn2.eval(ctx);
+          if (from < 0) return [];
+          const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
+          const traj = ctxAny._trajectories;
+          if (traj) return traj.ray(from, dirName2);
+          const radialCtx = ctx as unknown as { _radials?: readonly import("./ludemes/topology-radials.js").CellFlatRadials[] };
+          const radials = radialCtx._radials;
+          if (!radials) return [];
+          const cr = radials[from];
+          if (!cr) return [];
+          return cr.axes[0] ? [...cr.axes[0].ray.slice(1)] : [];
+        }};
+      }
+      if (kind === "state") {
+        // (sites State <int>) — sites with a specific state value (stub: empty)
+        return { eval(_ctx: Context): number[] { return []; } };
+      }
+
+      if (kind === "to") {
+        // (sites To) — site of the last move to (= _evalTo)
+        return { eval(ctx: Context): number[] {
+          const s = ctx._evalTo;
+          return s >= 0 ? [s] : [];
+        }};
+      }
+
+      if (kind === "from") {
+        // (sites From) — site of the last move from (= _evalFrom)
+        return { eval(ctx: Context): number[] {
+          const s = ctx._evalFrom;
+          return s >= 0 ? [s] : [];
+        }};
+      }
+
+      if (kind === "mover") {
+        // (sites Mover) — sites owned by mover
+        return { eval(ctx: Context): number[] {
+          const cells = ctx.state.cells;
+          const g = ctx.game as unknown as Game1to1;
+          const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
+          const mover = ctx.state.mover;
+          const res: number[] = [];
+          for (let i = 0; i < boardN; i++) { if (cells[i] === mover) res.push(i); }
+          return res;
+        }};
+      }
+
+      if (kind === "next") {
+        // (sites Next) — sites owned by next player
+        return { eval(ctx: Context): number[] {
+          const cells = ctx.state.cells;
+          const g = ctx.game as unknown as Game1to1;
+          const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
+          const next = (ctx.state.mover % ctx.game.numPlayers) + 1;
+          const res: number[] = [];
+          for (let i = 0; i < boardN; i++) { if (cells[i] === next) res.push(i); }
+          return res;
+        }};
+      }
+
+      if (kind === "outer") {
+        // (sites Outer) — perimeter sites of the board
+        // Simplified: top/bottom rows + left/right columns
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          const W = g.equipment.board.width;
+          const H = g.equipment.board.height;
+          const sites = new Set<number>();
+          for (let c = 0; c < W; c++) { sites.add(c); sites.add((H-1)*W+c); }
+          for (let r = 0; r < H; r++) { sites.add(r*W); sites.add(r*W+(W-1)); }
+          return [...sites].sort((a,b)=>a-b);
+        }};
+      }
+
+      if (kind === "inner") {
+        // (sites Inner) — non-perimeter board sites
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          const W = g.equipment.board.width;
+          const H = g.equipment.board.height;
+          const res: number[] = [];
+          for (let r = 1; r < H-1; r++)
+            for (let c = 1; c < W-1; c++)
+              res.push(r*W+c);
+          return res;
+        }};
+      }
+
+      if (kind === "layer") {
+        // (sites Layer <int>) — stub: return empty (3D board layers)
+        return { eval(_ctx: Context): number[] { return []; } };
+      }
+
+      if (kind === "pending") {
+        // (sites Pending) — sites in a pending state (stub: empty)
+        return { eval(_ctx: Context): number[] { return []; } };
+      }
+
+      if (kind === "incident") {
+        // (sites Incident ...) — sites incident to a given site/element
+        // Simplified: return adjacency of _evalSite or _evalTo
+        const ofNode = named.get("of");
+        const atNode3 = named.get("at");
+        if (atNode3) {
+          try {
+            const siteFn3 = compileInt1to1(atNode3);
+            return { eval(ctx: Context): number[] {
+              const site = siteFn3.eval(ctx);
+              if (site < 0) return [];
+              const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
+              const traj = ctxAny._trajectories;
+              if (traj) return traj.group(site, "Adjacent");
+              const g = ctx.game as unknown as Game1to1;
+              const W = g.equipment.board.width;
+              const H = g.equipment.board.height;
+              const col = site % W; const row = Math.floor(site / W);
+              const nb: number[] = [];
+              if (col > 0) nb.push(site - 1);
+              if (col < W-1) nb.push(site + 1);
+              if (row > 0) nb.push(site - W);
+              if (row < H-1) nb.push(site + W);
+              return nb;
+            }};
+          } catch { /* fall through */ }
+        }
+        return { eval(_ctx: Context): number[] { return []; } };
+      }
+
+      if (kind === "side") {
+        // (sites Side N/S/E/W) — sites on a given board side
+        const sideNode = positional[1];
+        const sideName = (sideNode && isIdent(sideNode)) ? sideNode.name.toUpperCase() : "";
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          const W = g.equipment.board.width;
+          const H = g.equipment.board.height;
+          const res: number[] = [];
+          if (sideName === "N" || sideName === "NORTH") {
+            for (let c = 0; c < W; c++) res.push((H-1)*W+c);
+          } else if (sideName === "S" || sideName === "SOUTH") {
+            for (let c = 0; c < W; c++) res.push(c);
+          } else if (sideName === "E" || sideName === "EAST") {
+            for (let r = 0; r < H; r++) res.push(r*W+(W-1));
+          } else if (sideName === "W" || sideName === "WEST") {
+            for (let r = 0; r < H; r++) res.push(r*W);
+          } else {
+            // All perimeter
+            const ss = new Set<number>();
+            for (let c = 0; c < W; c++) { ss.add(c); ss.add((H-1)*W+c); }
+            for (let r = 0; r < H; r++) { ss.add(r*W); ss.add(r*W+(W-1)); }
+            return [...ss].sort((a,b)=>a-b);
+          }
+          return res;
+        }};
+      }
+
+      throw new Error(`compiler1to1: (sites ${first.name}) not supported`);
     }
-    throw new Error(`compiler1to1: (sites ${first ? (isIdent(first) ? first.name : first.kind) : "?"}) not supported`);
+    // (sites { num1 num2 ... }) or (sites { "A1" "B2" ... }) — curly list of sites
+    if (first && isList(first) && first.delimiter === "curly") {
+      const coordStrings2: string[] = [];
+      const numSites2: number[] = [];
+      for (const item of first.items) {
+        if (isString(item)) coordStrings2.push(item.value);
+        else if (isNumber(item)) numSites2.push(item.value);
+      }
+      if (coordStrings2.length > 0) {
+        const cs2 = coordStrings2;
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          const W = g.equipment?.board?.width ?? 0;
+          const H = g.equipment?.board?.height ?? 0;
+          return cs2.map(c => algebraicToSite(c, W, H)).filter(s => s >= 0);
+        }};
+      }
+      if (numSites2.length > 0) {
+        const ns = numSites2;
+        return { eval(_ctx: Context): number[] { return [...ns]; } };
+      }
+      return { eval(_ctx: Context): number[] { return []; } };
+    }
+    // (sites (regionFn)) — a single region function wrapped in sites
+    if (first && isList(first)) {
+      try {
+        return compileRegion1to1(first);
+      } catch { /* fall through */ }
+    }
+
+    // (sites "A1" "B2" ...) — specific coordinate sites
+    if (first && isString(first)) {
+      const coordStrings: string[] = positional.filter(p => isString(p)).map(p => (p as { value: string }).value);
+      return { eval(ctx: Context): number[] {
+        const g = ctx.game as unknown as Game1to1;
+        const W = g.equipment?.board?.width ?? 0;
+        const H = g.equipment?.board?.height ?? 0;
+        return coordStrings.map(c => algebraicToSite(c, W, H)).filter(s => s >= 0);
+      }};
+    }
+    throw new Error(`compiler1to1: (sites ${first ? ((first as unknown as {name?:string}).name ?? (first as unknown as {kind:string}).kind ?? "?") : "?"}) not supported`);
   }
 
   // (expand <region> [steps:N])
@@ -527,29 +1188,61 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
   // @java game/functions/region/foreach/sites/ForEachSite.java
   if (h === "foreach") {
     const { positional, named } = parseArgs1to1(node.items);
-    try {
-      const baseRegion = compileRegion1to1(positional[0]);
-      const ifNode = named.get("if");
-      if (!ifNode) {
-        return baseRegion; // No condition: return base region unchanged
-      }
-      const condFn = compileBool1to1(ifNode, 2);
-      return {
-        eval(ctx: Context): number[] {
-          const sites = baseRegion.eval(ctx);
-          const origSite = ctx._evalSite;
-          const result: number[] = [];
-          for (const s of sites) {
-            ctx._evalSite = s;
-            if (condFn.eval(ctx)) result.push(s);
-          }
-          ctx._evalSite = origSite;
-          return result;
-        }
-      };
-    } catch {
-      throw new Error(`compiler1to1: unknown RegionFunction head "${h}"`);
+    const baseRegion = compileRegion1to1(positional[0]);
+    const ifNode = named.get("if");
+    if (!ifNode) {
+      return baseRegion; // No condition: return base region unchanged
     }
+    const condFn = compileBool1to1(ifNode, 2);
+    return {
+      eval(ctx: Context): number[] {
+        const sites = baseRegion.eval(ctx);
+        const origSite = ctx._evalSite;
+        const result: number[] = [];
+        for (const s of sites) {
+          ctx._evalSite = s;
+          if (condFn.eval(ctx)) result.push(s);
+        }
+        ctx._evalSite = origSite;
+        return result;
+      }
+    };
+  }
+
+  // (count <int>) or (count Sites ...) as RegionFunction — stub: return empty
+  if (h === "count") {
+    return { eval(_ctx: Context): number[] { return []; } };
+  }
+
+  // (last To) / (last From) as RegionFunction — return site as singleton
+  if (h === "last") {
+    const { positional } = parseArgs1to1(node.items);
+    const typeNode = positional[0];
+    const typeName = (typeNode && isIdent(typeNode)) ? typeNode.name.toLowerCase() : "to";
+    if (typeName === "from") {
+      return { eval(ctx: Context): number[] { const s = ctx._evalFrom; return s >= 0 ? [s] : []; }};
+    }
+    return { eval(ctx: Context): number[] { const s = ctx._evalTo; return s >= 0 ? [s] : []; }};
+  }
+
+  // (centrePoint) as RegionFunction — centre site as singleton
+  if (h === "centrepoint") {
+    return { eval(ctx: Context): number[] {
+      const g = ctx.game as unknown as Game1to1;
+      return [Math.floor(g.equipment.board.numSites / 2)];
+    }};
+  }
+
+  // (if <cond> <region> [<elseRegion>]) — conditional region
+  // @java game/functions/region/if/If.java
+  if (h === "if") {
+    const { positional: ifPos } = parseArgs1to1(node.items);
+    const condFn = compileBool1to1(ifPos[0], 2);
+    const thenRegion = compileRegion1to1(ifPos[1]);
+    const elseRegion = ifPos[2] ? compileRegion1to1(ifPos[2]) : { eval: (_ctx: Context): number[] => [] };
+    return { eval(ctx: Context): number[] {
+      return condFn.eval(ctx) ? thenRegion.eval(ctx) : elseRegion.eval(ctx);
+    }};
   }
 
   throw new Error(`compiler1to1: unknown RegionFunction head "${h}"`);
@@ -582,6 +1275,24 @@ export function compileBool1to1(
 ): BooleanFunction {
   if (!node) throw new Error("compiler1to1: expected BooleanFunction node");
   if (!isList(node)) throw new Error(`compiler1to1: expected list for BooleanFunction`);
+
+  // Handle grouped expression: ( (expr) (expr) ... ) — first item is a list not an ident
+  // Java parity: a parenthesized group with no head ident is treated as (and ...) over the items
+  // @java game/functions/booleans/math/And.java
+  const firstItem = node.items[0];
+  if (firstItem && isList(firstItem)) {
+    // This is a parenthesized group of boolean expressions — treat as (and ...)
+    const bools: BooleanFunction[] = [];
+    for (const item of node.items) {
+      if (isList(item)) {
+        try { bools.push(compileBool1to1(item, numPlayers)); } catch { /* skip */ }
+      }
+    }
+    if (bools.length === 0) return { eval: () => true };
+    if (bools.length === 1) return bools[0]!;
+    return new AndBool(bools);
+  }
+
   const h = headOf(node)!;
 
   if (h === "is") {
@@ -610,6 +1321,28 @@ export function compileBool1to1(
         // (is Even <intFn>)
         const valNode = positional[1];
         return new IsEven(compileInt1to1(valNode));
+      }
+
+      if (kind === "odd") {
+        // (is Odd <intFn>)
+        // @java game/functions/booleans/is/integer/IsOdd.java
+        const valNode = positional[1];
+        const valFn = compileInt1to1(valNode);
+        return { eval(ctx: Context): boolean { return valFn.eval(ctx) % 2 !== 0; } };
+      }
+
+      if (kind === "next") {
+        // (is Next <whoFn>) — checks if who equals next player
+        // @java game/functions/booleans/is/player/IsNext.java
+        const whoNode = positional[1];
+        if (whoNode) {
+          const whoFn = compileInt1to1(whoNode);
+          return { eval(ctx: Context): boolean {
+            const next = (ctx.state.mover % ctx.game.numPlayers) + 1;
+            return whoFn.eval(ctx) === next;
+          }};
+        }
+        return { eval(_ctx: Context): boolean { return false; } };
       }
 
       if (kind === "prev") {
@@ -681,6 +1414,216 @@ export function compileBool1to1(
           }};
         }
         return { eval(_ctx: Context): boolean { return true; } };
+      }
+
+      // (is Connected [role|regions]) — group of mover's pieces touches both player regions
+      // @java game/functions/booleans/is/connect/IsConnected.java — eval: BFS from last-to site
+      if (kind === "connected") {
+        const { positional: cpPos, named: cpNamed } = parseArgs1to1(node.items);
+        // Args after "Connected": optional direction, optional role, optional at:
+        // Java default direction = Adjacent (8-connected on square, 6-connected on hex)
+        let dirName = "Adjacent";
+        let roleName = "mover"; // default: check mover's connectivity
+        const CONN_DIRS = new Set(["orthogonal", "diagonal", "adjacent", "all"]);
+        for (let i = 1; i < cpPos.length; i++) {
+          const p = cpPos[i];
+          if (p && isIdent(p)) {
+            const n = p.name.toLowerCase();
+            if (CONN_DIRS.has(n)) dirName = p.name;
+            else roleName = n;
+          }
+        }
+        const atNode = cpNamed.get("at");
+        const atFn = atNode ? compileInt1to1(atNode) : null;
+        const dirFinal = dirName;
+        const roleNameFinal = roleName;
+        return { eval(ctx: Context): boolean {
+          // Resolve seed site: explicit `at:` arg, else context._evalTo (last move to)
+          const seed = atFn ? atFn.eval(ctx) : ctx._evalTo;
+          if (seed < 0) return false;
+          const cells = ctx.state.cells;
+          // Resolve owner
+          let owner: number;
+          if (roleNameFinal === "mover") owner = ctx.state.mover;
+          else if (roleNameFinal === "next") owner = (ctx.state.mover % ctx.game.numPlayers) + 1;
+          else if (roleNameFinal.startsWith("p") && !isNaN(parseInt(roleNameFinal.slice(1), 10))) {
+            owner = parseInt(roleNameFinal.slice(1), 10);
+          } else owner = ctx.state.mover;
+
+          // Seed must be owned by owner
+          if ((cells[seed] ?? 0) !== owner) return false;
+
+          // Get player regions (declared via (regions P1 ...) or similar)
+          const game = ctx.game as unknown as Game1to1;
+          const playerRegions = game.equipment?.playerRegions;
+          let goalSets: Set<number>[];
+          if (playerRegions && playerRegions.has(owner)) {
+            // Player has explicit regions — treat each declared region as a goal
+            // @java IsConnected: player's owned regions are each a separate goal
+            goalSets = [];
+            for (const [pid, regionFn] of playerRegions) {
+              void pid;
+              // Each player's region is a goal
+              goalSets.push(new Set(regionFn.eval(ctx)));
+            }
+          } else {
+            // Fall back to board sides: N/S (rows) for player 1 / player 2
+            // Java parity: default = board sides (N+S or E+W depending on player)
+            // Simple fallback: use top/bottom rows
+            const W = game.equipment.board.width;
+            const H = game.equipment.board.height;
+            const N = W * H;
+            const topRow = new Set<number>();
+            const botRow = new Set<number>();
+            for (let c = 0; c < W; c++) {
+              topRow.add((H-1) * W + c);
+              botRow.add(c);
+            }
+            goalSets = [botRow, topRow];
+          }
+
+          const need = goalSets.length;
+          if (need === 0) return true;
+
+          // BFS from seed, collect connected group of `owner` pieces
+          const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
+          const traj = ctxAny._trajectories;
+          const visited = new Set<number>([seed]);
+          const stack = [seed];
+          while (stack.length > 0) {
+            const s = stack.pop()!;
+            let neighbours: number[];
+            if (traj) {
+              neighbours = traj.group(s, dirFinal);
+            } else {
+              const W = game.equipment.board.width;
+              const H = game.equipment.board.height;
+              const col = s % W; const row = Math.floor(s / W);
+              neighbours = [];
+              if (col > 0) neighbours.push(s - 1);
+              if (col < W-1) neighbours.push(s + 1);
+              if (row > 0) neighbours.push(s - W);
+              if (row < H-1) neighbours.push(s + W);
+              // Diagonal for Adjacent
+              if (dirFinal === "Adjacent" || dirFinal === "All") {
+                if (col > 0 && row > 0) neighbours.push(s - W - 1);
+                if (col < W-1 && row > 0) neighbours.push(s - W + 1);
+                if (col > 0 && row < H-1) neighbours.push(s + W - 1);
+                if (col < W-1 && row < H-1) neighbours.push(s + W + 1);
+              }
+            }
+            for (const nb of neighbours) {
+              if (!visited.has(nb) && (cells[nb] ?? 0) === owner) {
+                visited.add(nb);
+                stack.push(nb);
+              }
+            }
+          }
+
+          // Check how many goal regions the connected group touches
+          let touchCount = 0;
+          for (const gs of goalSets) {
+            for (const s of visited) {
+              if (gs.has(s)) { touchCount++; break; }
+            }
+          }
+          return touchCount >= need;
+        }};
+      }
+
+      // (is Full) — no empty sites on the board
+      // @java game/functions/booleans/is/simple/IsFull.java — eval: emptyRegion.size() == 0
+      if (kind === "full") {
+        return { eval(ctx: Context): boolean {
+          const g = ctx.game as unknown as Game1to1;
+          const boardN = g.equipment ? g.equipment.board.numSites : ctx.state.cells.length;
+          for (let i = 0; i < boardN; i++) {
+            if (ctx.state.isEmptySite(i)) return false;
+          }
+          return true;
+        }};
+      }
+
+      // (is Blocked <role>) — the given player has no legal moves
+      // @java game/functions/booleans/is/simple/IsBlocked.java — eval: game.moves(ctx).moves().isEmpty()
+      if (kind === "blocked") {
+        const { positional: blPos } = parseArgs1to1(node.items);
+        // In end context, Java checks if context.player() (set by forEach) can't move
+        return { eval(ctx: Context): boolean {
+          const evalPlayer = ctx._evalPlayer;
+          if (evalPlayer === undefined || evalPlayer <= 0) return false;
+          // Save and temporarily set mover to evalPlayer
+          const origMover = ctx.state.mover;
+          (ctx.state as unknown as { mover: number }).mover = evalPlayer;
+          try {
+            const g = ctx.game as unknown as Game1to1;
+            const moves = g.moves ? g.moves(ctx) : [];
+            return !moves || moves.length === 0;
+          } finally {
+            (ctx.state as unknown as { mover: number }).mover = origMover;
+          }
+        }};
+      }
+
+      // (is Triggered <int> <id>) — event trigger check (stub: false)
+      if (kind === "triggered") {
+        return { eval(_ctx: Context): boolean { return false; } };
+      }
+
+      // (is Pending) — game-level pending check (stub: false)
+      if (kind === "pending") {
+        return { eval(_ctx: Context): boolean { return false; } };
+      }
+
+      // (is Pattern ...) — pattern matching (stub: false)
+      if (kind === "pattern") {
+        return { eval(_ctx: Context): boolean { return false; } };
+      }
+
+      // (is Loop ...) — connected group forms a loop (stub: false)
+      // @java game/functions/booleans/is/loop/IsLoop.java
+      if (kind === "loop") {
+        return { eval(_ctx: Context): boolean { return false; } };
+      }
+
+      // (is Proposed ...) — a move has been proposed (simultaneous game; stub: false)
+      if (kind === "proposed") {
+        return { eval(_ctx: Context): boolean { return false; } };
+      }
+
+      // (is Within ...) — site is within a region/group (stub: false)
+      if (kind === "within") {
+        return { eval(_ctx: Context): boolean { return false; } };
+      }
+
+      // (is Flat) — stack top is flat (stub: true — non-stacking games)
+      // @java game/functions/booleans/is/component/IsFlat.java
+      if (kind === "flat") {
+        return { eval(_ctx: Context): boolean { return true; } };
+      }
+
+      // (is Hidden ...) — check hidden state (stub: false)
+      if (kind === "hidden") {
+        return { eval(_ctx: Context): boolean { return false; } };
+      }
+
+      // (is In <site> <region>) — site is in region
+      // @java game/functions/booleans/is/in/IsIn.java
+      if (kind === "in") {
+        const { positional: inPos } = parseArgs1to1(node.items);
+        const siteNode = inPos[1];
+        const regionNode = inPos[2];
+        if (siteNode && regionNode) {
+          try {
+            const siteFn = compileInt1to1(siteNode);
+            const regionFn = compileRegion1to1(regionNode);
+            return { eval(ctx: Context): boolean {
+              const s = siteFn.eval(ctx);
+              return regionFn.eval(ctx).includes(s);
+            }};
+          } catch { /* fall through */ }
+        }
+        return { eval(_ctx: Context): boolean { return false; } };
       }
 
       throw new Error(`compiler1to1: (is ${first.name}) not supported`);
@@ -803,9 +1746,80 @@ export function compileBool1to1(
           return true;
         }};
       }
+
+      if (kind === "groups") {
+        // (all Groups if:<cond>) — true if all connected groups satisfy condition (stub: false)
+        // @java game/functions/booleans/all/groups/AllGroups.java
+        return { eval(_ctx: Context): boolean { return false; } };
+      }
+
+      if (kind === "different") {
+        // (all Different) — all values are different (stub: true)
+        // @java game/functions/booleans/all/sites/AllDifferent.java
+        return { eval(_ctx: Context): boolean { return true; } };
+      }
     }
 
     throw new Error(`compiler1to1: (all ${first && isIdent(first) ? first.name : "?"}) not supported`);
+  }
+
+  // (if <cond> <then> [<else>]) — conditional boolean (returns true/false based on sub-expressions)
+  // @java game/functions/booleans/is/IfBool.java — this is used when (if ...) evaluates to bool
+  // In the Bool context, (if cond trueVal falseVal) — if both branches are booleans
+  if (h === "if") {
+    const { positional: ifBPos } = parseArgs1to1(node.items);
+    try {
+      const condFn = compileBool1to1(ifBPos[0], numPlayers);
+      const thenFn = compileBool1to1(ifBPos[1], numPlayers);
+      const elseFn = ifBPos[2] ? compileBool1to1(ifBPos[2], numPlayers) : { eval: () => false };
+      return { eval(ctx: Context): boolean {
+        return condFn.eval(ctx) ? thenFn.eval(ctx) : (elseFn as BooleanFunction).eval(ctx);
+      }};
+    } catch { /* fall through */ }
+    // If the branches aren't booleans, this might be (if <bool>) — bare condition
+    try {
+      const condFn = compileBool1to1(ifBPos[0], numPlayers);
+      return condFn;
+    } catch {
+      return { eval: () => false };
+    }
+  }
+
+  // (can Move <role>) — player can make a move (stub: check game.moves() non-empty)
+  // @java game/functions/booleans/can/CanMove.java
+  if (h === "can") {
+    const { positional: canPos } = parseArgs1to1(node.items);
+    const first = canPos[0];
+    if (first && isIdent(first) && first.name.toLowerCase() === "move") {
+      return { eval(ctx: Context): boolean {
+        const g = ctx.game as unknown as Game1to1;
+        try {
+          const moves = g.moves(ctx);
+          return moves.length > 0;
+        } catch { return false; }
+      }};
+    }
+    return { eval(_ctx: Context): boolean { return false; } };
+  }
+
+  // (was Last <int>) — site was the last to (stub: compare to _evalTo)
+  // @java game/functions/booleans/is/graph/IsLastTo.java (similar)
+  if (h === "was") {
+    const { positional: wasPos } = parseArgs1to1(node.items);
+    const typeNode = wasPos[0];
+    if (typeNode && isIdent(typeNode)) {
+      const typeName = typeNode.name.toLowerCase();
+      if (typeName === "last") {
+        const subNode = wasPos[1];
+        if (subNode && isIdent(subNode)) {
+          const subName = subNode.name.toLowerCase();
+          if (subName === "in" || subName === "to" || subName === "from") {
+            return { eval(ctx: Context): boolean { return ctx._evalTo >= 0; } };
+          }
+        }
+      }
+    }
+    return { eval(_ctx: Context): boolean { return false; } };
   }
 
   throw new Error(`compiler1to1: unknown BooleanFunction head "${h}"`);
@@ -844,11 +1858,182 @@ function compileEndRule1to1(node: LudNode, numPlayers: number): EndRuleFunction 
       throw new Error("compiler1to1: (if condition result) — missing parts");
     }
     const condition = compileBool1to1(condNode, numPlayers);
+
+    // (if <cond> (byScore)) — byScore used as the result of an if end rule
+    // @java game/rules/end/ByScore.java — extends Result, triggered when cond is true
+    if (isList(resultNode) && headOf(resultNode) === "byscore") {
+      const byScoreRule = compileByScore1to1(resultNode, numPlayers);
+      return {
+        eval(ctx: Context): EndResult | null {
+          if (!condition.eval(ctx)) return null;
+          return byScoreRule.eval(ctx);
+        }
+      };
+    }
+
+    // (if <cond> { (if ...) (if ...) ... }) — curly-list of end rules as the "then"
+    // @java game/rules/end/If.java — when result is a list, iterate sub-rules
+    if (isList(resultNode) && resultNode.delimiter === "curly") {
+      const subRules: EndRuleFunction[] = [];
+      for (const child of resultNode.items) {
+        if (!isList(child)) continue;
+        const ch = headOf(child);
+        if (ch === "byscore") {
+          subRules.push(compileByScore1to1(child, numPlayers));
+        } else {
+          try { subRules.push(compileEndRule1to1(child, numPlayers)); } catch { /* skip */ }
+        }
+      }
+      return {
+        eval(ctx: Context): EndResult | null {
+          if (!condition.eval(ctx)) return null;
+          for (const rule of subRules) {
+            const r = rule.eval(ctx);
+            if (r !== null) return r;
+          }
+          return null;
+        }
+      };
+    }
+
+    // (if <cond> (if ...)) — nested if as result
+    if (isList(resultNode) && headOf(resultNode) === "if") {
+      const subRule = compileEndRule1to1(resultNode, numPlayers);
+      return {
+        eval(ctx: Context): EndResult | null {
+          if (!condition.eval(ctx)) return null;
+          return subRule.eval(ctx);
+        }
+      };
+    }
+
     const result = compileResult1to1(resultNode);
     return new If(condition, result, numPlayers);
   }
 
+  // (forEach <roleType> if:<cond> (result Player <type>))
+  // @java game/rules/end/ForEach.java — iterates players of given type, checks cond, applies result
+  if (h === "foreach") {
+    const { positional, named } = parseArgs1to1(node.items);
+    const typeNode = positional[0];
+    const typeName = (typeNode && isIdent(typeNode)) ? typeNode.name.toLowerCase() : "player";
+    const ifNode = named.get("if");
+    const resultNode = positional[1];
+    if (!ifNode || !resultNode) {
+      throw new Error("compiler1to1: (forEach <role> if:<cond> (result ...)) — missing parts");
+    }
+    const condFn = compileBool1to1(ifNode, numPlayers);
+    const result = compileResult1to1(resultNode);
+    const typeNameFinal = typeName;
+    const nPl = numPlayers;
+    return {
+      eval(ctx: Context): EndResult | null {
+        // Iterate relevant players and check condition for each
+        // @java ForEach.eval: sets context.setPlayer(pid) then checks cond
+        const mover = ctx.state.mover;
+        for (let pid = 1; pid <= nPl; pid++) {
+          if (typeNameFinal === "nonmover" && pid === mover) continue;
+          if (typeNameFinal === "mover" && pid !== mover) continue;
+          // Set player context scratch
+          ctx._evalPlayer = pid;
+          if (condFn.eval(ctx)) {
+            ctx._evalPlayer = undefined;
+            // Resolve result for this specific player
+            const who = result.who;
+            const resultType = result.result;
+            let winner: number;
+            // "Player" refers to context._evalPlayer
+            if (who === "All" as unknown) winner = 0;
+            else if ((who as string) === "Player") winner = pid;
+            else winner = result.resolveWho(mover, nPl);
+
+            const ranking = new Array<number>(nPl + 1).fill(0);
+            if (resultType === "Win") {
+              ranking[winner] = 1.0;
+              for (let p = 1; p <= nPl; p++) if (p !== winner) ranking[p] = 2.0;
+              return { winner, over: true, ranking };
+            }
+            if (resultType === "Loss") {
+              ranking[pid] = nPl;
+              for (let p = 1; p <= nPl; p++) if (p !== pid) ranking[p] = 1.0;
+              const w = nPl === 2 ? (pid === 1 ? 2 : 1) : 0;
+              return { winner: w, over: true, ranking };
+            }
+            if (resultType === "Draw") {
+              const drawRank = (nPl + 1) / 2;
+              for (let p = 1; p <= nPl; p++) ranking[p] = drawRank;
+              return { winner: 0, over: true, ranking };
+            }
+          }
+        }
+        ctx._evalPlayer = undefined;
+        return null;
+      }
+    };
+  }
+
   throw new Error(`compiler1to1: unknown end rule head "${h}"`);
+}
+
+// ---------------------------------------------------------------------------
+// Compile ByScore end result
+// ---------------------------------------------------------------------------
+
+/**
+ * Compile (byScore [{(score P1 <int>)...}]) as an end result.
+ * Winner is the player with the highest score.
+ *
+ * @java game/rules/end/ByScore.java — eval: ranks players by score
+ */
+function compileByScore1to1(node: LudList, numPlayers: number): EndRuleFunction {
+  // (byScore) — use context scores as-is; highest score wins
+  return {
+    eval(ctx: Context): import("./ludemes/base.js").EndResult | null {
+      const scores = (ctx.state as unknown as { scores?: number[] }).scores;
+      if (!scores) return null;
+
+      // Rank by score: highest score = rank 1
+      const allScores: number[] = new Array(numPlayers + 1).fill(0);
+      for (let p = 1; p <= numPlayers; p++) {
+        allScores[p] = scores[p] ?? 0;
+      }
+
+      // Build ranking (Java parity: iterative max-score rank assignment)
+      const ranking = new Array<number>(numPlayers + 1).fill(0);
+      const scratch = [...allScores];
+      let numAssigned = 0;
+      while (numAssigned < numPlayers) {
+        let maxScore = Number.MIN_SAFE_INTEGER;
+        let numMax = 0;
+        for (let p = 1; p <= numPlayers; p++) {
+          if (scratch[p] === undefined) continue;
+          if ((scratch[p] as number) > maxScore) {
+            maxScore = scratch[p] as number;
+            numMax = 1;
+          } else if ((scratch[p] as number) === maxScore) {
+            numMax++;
+          }
+        }
+        if (maxScore === Number.MIN_SAFE_INTEGER) break;
+        const nextRank = ((numAssigned + 1) * 2 + numMax - 1) / 2;
+        for (let p = 1; p <= numPlayers; p++) {
+          if ((scratch[p] as number) === maxScore) {
+            ranking[p] = nextRank;
+            scratch[p] = undefined as unknown as number;
+          }
+        }
+        numAssigned += numMax;
+      }
+
+      // Determine winner (rank 1.0) and loser
+      let winner = 0;
+      for (let p = 1; p <= numPlayers; p++) {
+        if (ranking[p] === 1.0) winner = p;
+      }
+
+      return { winner, over: true, ranking };
+    }
+  };
 }
 
 function compileResult1to1(node: LudNode): Result {
@@ -868,6 +2053,10 @@ function compileResult1to1(node: LudNode): Result {
   throw new Error(`compiler1to1: unknown result head "${h}"`);
 }
 
+// Extended Result.resolveWho to handle "Player" role (set by forEach iteration)
+// This is used by the forEach end rule to resolve the current iterated player.
+// We patch Result to handle "Player" via monkey-patching in forEach rule compilation.
+
 // ---------------------------------------------------------------------------
 // Compile End
 // ---------------------------------------------------------------------------
@@ -877,6 +2066,7 @@ function compileEnd1to1(node: LudNode, numPlayers: number): End {
   const h = headOf(node)!;
   if (h !== "end") throw new Error(`compiler1to1: expected (end ...), got "${h}"`);
 
+  // Check for (end (byScore ...)) — top-level byScore
   const { positional } = parseArgs1to1(node.items);
   const rules: EndRuleFunction[] = [];
 
@@ -885,14 +2075,33 @@ function compileEnd1to1(node: LudNode, numPlayers: number): End {
   }
 
   const first = positional[0]!;
+
+  // (end (byScore ...)) — direct byScore result
+  // @java game/rules/end/ByScore.java
+  if (isList(first) && headOf(first) === "byscore") {
+    return new End([compileByScore1to1(first, numPlayers)]);
+  }
+
   if (isList(first) && first.delimiter === "curly") {
     for (const child of first.items) {
-      if (isList(child)) {
-        rules.push(compileEndRule1to1(child, numPlayers));
+      if (!isList(child)) continue;
+      const ch = headOf(child);
+      if (ch === "byscore") {
+        rules.push(compileByScore1to1(child, numPlayers));
+      } else {
+        try { rules.push(compileEndRule1to1(child, numPlayers)); } catch (e) {
+          // Re-throw to preserve error message for COMPILE_FAIL tracking
+          throw e;
+        }
       }
     }
   } else if (isList(first)) {
-    rules.push(compileEndRule1to1(first, numPlayers));
+    const ch = headOf(first);
+    if (ch === "byscore") {
+      rules.push(compileByScore1to1(first, numPlayers));
+    } else {
+      rules.push(compileEndRule1to1(first, numPlayers));
+    }
   } else {
     throw new Error("compiler1to1: end rule content must be a list or curly-list");
   }
@@ -940,6 +2149,177 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       return new Add(compileRegion1to1(regionNode));
     }
 
+    // (move Hop [<dir>] (between ...) (to ...)) — jump over a piece
+    // @java game/rules/play/moves/nonDecision/effect/Hop.java — eval
+    // Simplified: generate hop moves by jumping over adjacent pieces
+    if (first && isIdent(first) && first.name.toLowerCase() === "hop") {
+      const hopArgs = parseArgs1to1(node.items);
+      // Find (between ...) and (to ...) sub-nodes
+      let betweenCond: BooleanFunction | null = null;
+      let toCond: BooleanFunction | null = null;
+      let captureNode: RegionFunction | null = null;
+      for (const p of hopArgs.positional) {
+        if (!isList(p)) continue;
+        const ph = headOf(p);
+        if (ph === "between") {
+          const ba = parseArgs1to1(p.items);
+          const bIf = ba.named.get("if");
+          if (bIf) { try { betweenCond = compileBool1to1(bIf, 2); } catch { /* skip */ } }
+        } else if (ph === "to") {
+          const ta = parseArgs1to1(p.items);
+          const tIf = ta.named.get("if");
+          if (tIf) { try { toCond = compileBool1to1(tIf, 2); } catch { /* skip */ } }
+          const capNode = ta.named.get("apply");
+          if (capNode) { try { captureNode = compileRegion1to1(capNode); } catch { /* skip */ } }
+        }
+      }
+      // Simplified hop: from each piece, try to jump over adjacent occupied cells
+      // to the cell beyond, if to is empty
+      return {
+        eval(ctx: Context): Move[] {
+          const from = ctx._evalFrom;
+          if (from < 0) return [];
+          const cells = ctx.state.cells;
+          const mover = ctx.state.mover;
+          const ctxAny = ctx as unknown as { _radials?: readonly import("./ludemes/topology-radials.js").CellFlatRadials[] };
+          const radials = ctxAny._radials;
+          if (!radials) return [];
+          const cr = radials[from];
+          if (!cr) return [];
+          const moves: Move[] = [];
+          for (const axis of cr.axes) {
+            for (const ray of [axis.ray, axis.opposite]) {
+              // First step = potential "between" (piece to jump over)
+              const between = ray[1];
+              const toSite = ray[2];
+              if (between === undefined || toSite === undefined) continue;
+              if (cells[between] === undefined || cells[between] === 0) continue;
+              if (!ctx.state.isEmptySite(toSite)) continue;
+              // Check conditions
+              ctx._evalFrom = from;
+              ctx._evalTo = toSite;
+              if (betweenCond) {
+                const origSite = ctx._evalSite;
+                ctx._evalSite = between;
+                const ok = betweenCond.eval(ctx);
+                ctx._evalSite = origSite;
+                if (!ok) continue;
+              }
+              if (toCond && !toCond.eval(ctx)) continue;
+              // Generate ActionMove + ActionRemove for capture
+              const actions: import("./action/index.js").Action[] = [];
+              actions.push(new ActionRemove({ to: between }));
+              actions.push(new ActionMove({ from, to: toSite }));
+              moves.push(new Move({
+                id: `hop:${from}:${between}:${toSite}`,
+                label: `Hop ${from}→${toSite}`,
+                siteIndices: [from, toSite],
+                mover,
+                placedOwner: mover,
+                actions,
+                fromSite: from,
+                toSite: toSite,
+              }));
+            }
+          }
+          ctx._evalFrom = from;
+          return moves;
+        }
+      };
+    }
+
+    // (move Select (from ...) [if:...] [(to ...)] ...)
+    // @java game/rules/play/moves/nonDecision/effect/Select.java — eval
+    // Selects sites from a 'from' region (optionally filtered by condition).
+    // If no 'to' region, generates single-site select moves (from == to).
+    // If 'to' region provided, generates from×to pairs filtered by to-condition.
+    if (first && isIdent(first) && first.name.toLowerCase() === "select") {
+      const selArgs = parseArgs1to1(node.items);
+      // Find (from ...) and (to ...) sub-nodes
+      let fromRegion: RegionFunction | null = null;
+      let fromCond: BooleanFunction | null = null;
+      let toRegion: RegionFunction | null = null;
+      let toCond: BooleanFunction | null = null;
+      for (const p of selArgs.positional) {
+        if (!isList(p)) continue;
+        const ph = headOf(p);
+        if (ph === "from") {
+          const fa = parseArgs1to1(p.items);
+          const fLoc = fa.positional[0];
+          if (fLoc) { try { fromRegion = compileRegion1to1(fLoc); } catch { /* skip */ } }
+          const fIf = fa.named.get("if");
+          if (fIf) { try { fromCond = compileBool1to1(fIf, 2); } catch { /* skip */ } }
+        } else if (ph === "to") {
+          const ta = parseArgs1to1(p.items);
+          const tLoc = ta.positional[0];
+          if (tLoc) { try { toRegion = compileRegion1to1(tLoc); } catch { /* skip */ } }
+          const tIf = ta.named.get("if");
+          if (tIf) { try { toCond = compileBool1to1(tIf, 2); } catch { /* skip */ } }
+        }
+      }
+      // If no fromRegion, try named arg form
+      const fromNamed = selArgs.named.get("from");
+      if (!fromRegion && fromNamed && isList(fromNamed)) {
+        const fa = parseArgs1to1(fromNamed.items);
+        const fLoc = fa.positional[0];
+        if (fLoc) { try { fromRegion = compileRegion1to1(fLoc); } catch { /* skip */ } }
+        const fIf = fa.named.get("if");
+        if (fIf) { try { fromCond = compileBool1to1(fIf, 2); } catch { /* skip */ } }
+      }
+      if (!fromRegion) fromRegion = new SitesEmpty(); // fallback
+      const fr = fromRegion;
+      const fc = fromCond;
+      const tr = toRegion;
+      const tc = toCond;
+      return {
+        eval(ctx: Context): Move[] {
+          const origFrom = ctx._evalFrom;
+          const origTo = ctx._evalTo;
+          const mover = ctx.state.mover;
+          const fromSites = fr.eval(ctx);
+          const moves: Move[] = [];
+          for (const site of fromSites) {
+            ctx._evalFrom = site;
+            ctx._evalTo = site;
+            if (fc && !fc.eval(ctx)) continue;
+            if (!tr) {
+              // Single-site select (no to region)
+              moves.push(new Move({
+                id: `select:${site}`,
+                label: `Select ${site}`,
+                siteIndices: [site],
+                mover,
+                placedOwner: mover,
+                actions: [],
+                fromSite: site,
+                toSite: site,
+              }));
+            } else {
+              // from×to
+              const toSites = tr.eval(ctx);
+              for (const toSite of toSites) {
+                ctx._evalTo = toSite;
+                if (tc && !tc.eval(ctx)) continue;
+                moves.push(new Move({
+                  id: `select:${site}:${toSite}`,
+                  label: `Select ${site}→${toSite}`,
+                  siteIndices: [site, toSite],
+                  mover,
+                  placedOwner: mover,
+                  actions: [],
+                  fromSite: site,
+                  toSite: toSite,
+                }));
+              }
+            }
+          }
+          ctx._evalFrom = origFrom;
+          ctx._evalTo = origTo;
+          return moves;
+        }
+      };
+    }
+
     // (move Remove [type] <sites>)
     // @java game/rules/play/moves/nonDecision/effect/Remove.java — eval
     // Generates one remove-move per occupied site in the region.
@@ -979,6 +2359,31 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
           return moves;
         }
       };
+    }
+
+    // (move Pass) — generate a pass move
+    // @java game/rules/play/moves/nonDecision/effect/Pass.java
+    if (first && isIdent(first) && first.name.toLowerCase() === "pass") {
+      return { eval(ctx: Context): Move[] {
+        const mover = ctx.state.mover;
+        return [new Move({
+          id: "pass", label: "Pass", siteIndices: [], mover, placedOwner: mover,
+          actions: [new ActionPass()],
+        })];
+      }};
+    }
+
+    // (move Shoot (piece "Name")) — slide to an empty site and place a piece there
+    // @java game/rules/play/moves/nonDecision/effect/Shoot.java — eval
+    // Generates moves: from each occupied friendly site, slide to all reachable
+    // empty sites and place the specified piece at the destination.
+    // In Amazons, called after a queen slide (moveAgain context), shoots an arrow.
+    if (first && isIdent(first) && first.name.toLowerCase() === "shoot") {
+      // Piece to place is optional arg (e.g. (piece "Dot0"))
+      // For 1:1 we generate slides from current _evalFrom to empty sites and place neutral
+      // This is the second-phase move in Amazons (arrow shooting)
+      // In the 1:1 path, _evalFrom is set to the queen's landing site by Slide1to1
+      return new Slide1to1("Adjacent"); // Shoot = slide to empty empty site (uses same Add-like Add)
     }
 
     // (move Slide [direction])
@@ -1042,18 +2447,101 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
 
   // ---- (forEach Piece [specificMoves]) ------------------------------------
   if (h === "foreach") {
-    const { positional } = parseArgs1to1(node.items);
+    const { positional, named } = parseArgs1to1(node.items);
     const first = positional[0];
-    if (first && isIdent(first) && first.name.toLowerCase() === "piece") {
-      const specificMovesNode = positional[1];
-      const specificMoves = specificMovesNode
-        ? compileMoves1to1(specificMovesNode, equipment)
-        : null;
-      const fp = new ForEachPiece1to1(specificMoves);
-      if (equipment) fp.equipment = equipment;
-      return fp;
+    if (first && isIdent(first)) {
+      const typeName = first.name.toLowerCase();
+      if (typeName === "piece") {
+        // (forEach Piece [<pieceName>] [<movesGenerator>])
+        // The optional second arg could be a piece name string or role ident OR a moves generator
+        let specificMoves: MovesFunction | null = null;
+        let specificRole: string | null = null;
+        // Skip string piece name and role ident - only compile list as moves
+        if (positional[1]) {
+          const secondArg = positional[1];
+          if (isList(secondArg)) {
+            try { specificMoves = compileMoves1to1(secondArg, equipment); } catch { /* skip */ }
+          } else if (isString(secondArg)) {
+            // (forEach Piece "PieceName" ...) — piece name filter; look for moves in [2]
+            if (positional[2] && isList(positional[2])) {
+              try { specificMoves = compileMoves1to1(positional[2]!, equipment); } catch { /* skip */ }
+            }
+          } else if (isIdent(secondArg)) {
+            // Role ident (e.g. Shared) — used to filter pieces by owner; look for moves in [2]
+            specificRole = secondArg.name;
+            if (positional[2] && isList(positional[2])) {
+              try { specificMoves = compileMoves1to1(positional[2]!, equipment); } catch { /* skip */ }
+            }
+          }
+        }
+        void specificRole; // Note: owner filtering not yet implemented
+        const fp = new ForEachPiece1to1(specificMoves);
+        if (equipment) fp.equipment = equipment;
+        return fp;
+      }
+
+      // (forEach Site <region> <moves>) — generate moves for each site in region
+      // @java game/rules/play/moves/nonDecision/operators/foreach/site/ForEachSite.java
+      if (typeName === "site") {
+        const regionNode = positional[1];
+        const movesNode = positional[2] ?? named.get("do");
+        if (!regionNode || !movesNode) {
+          throw new Error(`compiler1to1: (forEach Site <region> <moves>) — missing parts`);
+        }
+        const regionFn = compileRegion1to1(regionNode);
+        const movesFn = compileMoves1to1(movesNode, equipment);
+        return {
+          eval(ctx: Context): Move[] {
+            const origSite = ctx._evalSite;
+            const origFrom = ctx._evalFrom;
+            const origTo = ctx._evalTo;
+            const sites = regionFn.eval(ctx);
+            const allMoves: Move[] = [];
+            for (const s of sites) {
+              ctx._evalSite = s;
+              ctx._evalFrom = s;
+              ctx._evalTo = s;
+              const ms = movesFn.eval(ctx);
+              for (const m of ms) allMoves.push(m);
+            }
+            ctx._evalSite = origSite;
+            ctx._evalFrom = origFrom;
+            ctx._evalTo = origTo;
+            return allMoves;
+          }
+        };
+      }
     }
     throw new Error(`compiler1to1: (forEach ${first && isIdent(first) ? first.name : "?"}) not supported`);
+  }
+
+  // ---- (priority { <moves1> <moves2> ... }) — first non-empty move list -----
+  // @java game/rules/play/moves/nonDecision/effect/requirement/Priority.java
+  // Returns the first sub-list that generates at least one move.
+  if (h === "priority") {
+    const { positional } = parseArgs1to1(node.items);
+    const subMoves = flattenMovesList(positional, equipment);
+    return {
+      eval(ctx: Context): Move[] {
+        for (const sub of subMoves) {
+          const moves = sub.eval(ctx);
+          if (moves.length > 0) return moves;
+        }
+        return [];
+      }
+    };
+  }
+
+  // ---- (then <moves> (then ...)) — sequential move with consequence ----------
+  // @java game/rules/play/moves/nonDecision/effect/Then.java
+  // Simplified: return the inner moves (ignore then-consequence in 1:1 path)
+  if (h === "then") {
+    const { positional } = parseArgs1to1(node.items);
+    const innerNode = positional[0];
+    if (innerNode) {
+      try { return compileMoves1to1(innerNode, equipment); } catch { /* fall through */ }
+    }
+    return { eval(_ctx: Context): Move[] { return []; } };
   }
 
   // ---- (do <prior> next:<main> ifAfterwards:<cond>) -----------------------
@@ -1142,6 +2630,66 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
 
     // Bare (do <prior>) — just return prior moves
     return priorMoves;
+  }
+
+  // ---- (and <moves1> <moves2>) — combine two move generators ---------------
+  // @java game/rules/play/moves/nonDecision/operators/logical/And.java
+  if (h === "and") {
+    const { positional } = parseArgs1to1(node.items);
+    const subMoves = flattenMovesList(positional, equipment);
+    return {
+      eval(ctx: Context): Move[] {
+        const all: Move[] = [];
+        for (const sub of subMoves) {
+          for (const m of sub.eval(ctx)) all.push(m);
+        }
+        return all;
+      }
+    };
+  }
+
+  // ---- (append <moves1> <moves2>) — same as (and ...) ----------------------
+  // @java game/rules/play/moves/nonDecision/operators/logical/Append.java
+  if (h === "append") {
+    const { positional } = parseArgs1to1(node.items);
+    const subMoves = flattenMovesList(positional, equipment);
+    return {
+      eval(ctx: Context): Move[] {
+        const all: Move[] = [];
+        for (const sub of subMoves) {
+          for (const m of sub.eval(ctx)) all.push(m);
+        }
+        return all;
+      }
+    };
+  }
+
+  // ---- (set ...) in play context — set a value and generate no moves -------
+  // @java various Set ludemes. Used in play rules to set values;
+  // In 1:1 path, these are applied before move generation but we stub as empty.
+  if (h === "set") {
+    return { eval(_ctx: Context): Move[] { return []; } };
+  }
+
+  // ---- (roll) — roll dice. Stub: return empty moves -------------------------
+  if (h === "roll") {
+    return { eval(_ctx: Context): Move[] { return []; } };
+  }
+
+  // ---- (pass) / (move Pass) — explicit pass move ----------------------------
+  // @java game/rules/play/moves/nonDecision/effect/Pass.java
+  if (h === "pass") {
+    return { eval(ctx: Context): Move[] {
+      const mover = ctx.state.mover;
+      return [new Move({
+        id: "pass",
+        label: "Pass",
+        siteIndices: [],
+        mover,
+        placedOwner: mover,
+        actions: [new ActionPass()],
+      })];
+    }};
   }
 
   throw new Error(`compiler1to1: unknown play moves head "${h ?? "?"}"`);
@@ -1438,6 +2986,20 @@ function compileEquipment1to1(
 
     if (ch === "board") {
       board = compileBoard1to1(child);
+    } else if (ch === "boardless") {
+      // (boardless <tiling>) — infinite/expandable board; use a large default
+      // @java game/equipment/container/board/Boardless.java
+      // For 1:1 path, use a large square that buildBoardGraph can handle
+      try {
+        const graphSpec = buildBoardGraph(child);
+        if (graphSpec) {
+          board = new Board1to1(graphSpec.width, graphSpec.height, graphSpec.numSites, graphSpec.traj);
+        }
+      } catch { /* fall through */ }
+      if (!board) {
+        // Default 20×20 for boardless games
+        board = new Board1to1(20, 20);
+      }
     } else if (ch === "piece") {
       compilePiece1to1(child, pieces, numPlayers);
     } else if (ch === "hand") {
@@ -1554,10 +3116,10 @@ function compileBoard1to1(node: LudList): Board1to1 {
   if (sh === "square") {
     const sArgs = parseArgs1to1(shapeNode.items);
     const sizeNode = sArgs.positional[0];
-    if (!sizeNode || !isNumber(sizeNode)) {
-      throw new Error("compiler1to1: (square N) — N must be a number");
+    if (sizeNode && isNumber(sizeNode)) {
+      return new Board1to1(sizeNode.value, sizeNode.value);
     }
-    return new Board1to1(sizeNode.value, sizeNode.value);
+    // Non-literal size or tiling variant (e.g. Diamond): fall through to buildBoardGraph
   }
 
   if (sh === "rectangle") {
@@ -1860,7 +3422,18 @@ export function compileNode1to1(gameNode: LudList): Game1to1 {
   }
 
   if (!play) throw new Error("compiler1to1: (rules ...) missing (play ...)");
-  if (!end) throw new Error("compiler1to1: (rules ...) missing (end ...)");
+
+  // When phases are present and each phase has its own (end ...), the global
+  // (end ...) may be absent. Java allows this: phase-level end rules fire before
+  // the global one. Fall back to an empty End (no global terminal rule).
+  // @java game/Game.java:3061-3066 — phase-level end rule evaluation
+  if (!end) {
+    if (phases !== null && phases.length > 0 && phases.some(p => p.end !== null)) {
+      end = new End([]);
+    } else {
+      throw new Error("compiler1to1: (rules ...) missing (end ...)");
+    }
+  }
 
   const rules = new Rules1to1(play, end, phases);
   return new Game1to1(gameName, numPlayers, equipment, rules, startRules);

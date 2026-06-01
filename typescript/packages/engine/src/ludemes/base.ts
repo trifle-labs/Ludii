@@ -40,6 +40,13 @@ export interface EvalScratch {
    * @java other/context/Context.java — site()/setSite(int)
    */
   _evalSite?: number;
+  /**
+   * Java parity: Context.player() / Context.setPlayer(int).
+   * Set by (forEach Player ...) end rules to pass the current player being
+   * evaluated to predicates like (is Blocked Player).
+   * @java other/context/Context.java — player()/setPlayer(int)
+   */
+  _evalPlayer?: number;
 }
 
 // ---------------------------------------------------------------------------
