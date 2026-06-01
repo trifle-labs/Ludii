@@ -29,6 +29,7 @@ import "./ludemes/registry1to1-moves.js";
 import "./ludemes/registry1to1-intarray.js";
 import "./ludemes/registry1to1-float.js";
 import "./ludemes/registry1to1-directions.js";
+import "./ludemes/registry1to1-topo-undefer.js";
 import {
   lookupBool1to1,
   lookupInt1to1,

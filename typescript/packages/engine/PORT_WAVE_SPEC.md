@@ -81,6 +81,28 @@ import "./game/functions/ints/math/Add1to1.js";
 export {};
 ```
 
+## NEW function kinds (wave 2+)
+`src/ludemes/base.ts` now also defines: `IntArrayFunction { eval(ctx): number[] }`,
+`FloatFunction { eval(ctx): number }`, `DirectionsFunction { eval(ctx): string[] }`
+(returns Trajectories direction NAMES). Register via `registerIntArray1to1`/
+`registerFloat1to1`/`registerDirections1to1` from `registry1to1.js`. Sub-compilers
+exported from `compiler1to1.js`: `compileIntArray1to1`, `compileFloat1to1`,
+`compileDirections1to1`, and `compileMoves1to1(node, equipment?)` (now exported).
+
+## The REAL topology API (use this — do NOT defer claiming "no topology API")
+The board graph IS built. In the 1:1 path get it via the trajectories on the board.
+A `Trajectories` object exposes (see `src/eval/graph/trajectories.ts`): `numSites`,
+`vertexCount`, `kind`, `perimeterSites()`, `cornerSites()` (vertex-play), `xOf/yOf/zOf(site)`,
+`edgeEndpoints(site)`, `step(site,dir)`, `steps(site,dir)`, `ray(site,dir)`,
+`group(site,name)`, `neighbours(site)`, `radialsByName(site,dirName)`,
+`distinctRadialsByName(site,dirName)`, `walkSites(from,walks,allRotations)`.
+Flat per-cell radials are on `ctx._radials` (`CellFlatRadials[]`, each `{axes:{ray,opposite}[]}`)
+and the graph trajectories on `ctx._trajectories` (may be null for plain square lattices —
+in that case use `ctx._radials` and board width/height from `ctx.game`).
+`ctx.game` is a `Game1to1` with `.width/.height/.numSites/.equipment`. So edge/vertex/
+adjacency/corner/distance ludemes ARE portable — call these. Only defer if the SPECIFIC
+datum truly has no source (e.g. domino pip metadata on components).
+
 ## Report back (concise)
 - # classes ported faithfully + the registry keys you added.
 - Which Java files you DEFERRED and why (missing API/dep) — be honest, do not hide gaps.
