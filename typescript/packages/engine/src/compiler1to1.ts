@@ -21,6 +21,13 @@ import {
   listHead,
 } from "@ludii/typescript-language";
 
+// 1:1 registry — side-effectful imports register all boolean (and future) classes
+import "./ludemes/registry1to1-boolean.js";
+import {
+  lookupBool1to1,
+  type Compile1to1Env,
+} from "./ludemes/registry1to1.js";
+
 // Equipment
 import { Piece } from "./ludemes/game/equipment/component/Piece.js";
 import { Board1to1 } from "./ludemes/game/equipment/container/board/Board1to1.js";
@@ -107,12 +114,12 @@ import type {
 // Helper: split items into positional + named (key:value) args
 // ---------------------------------------------------------------------------
 
-interface ParsedArgs1to1 {
+export interface ParsedArgs1to1 {
   positional: LudNode[];
   named: Map<string, LudNode>;
 }
 
-function parseArgs1to1(items: readonly LudNode[], startFrom = 1): ParsedArgs1to1 {
+export function parseArgs1to1(items: readonly LudNode[], startFrom = 1): ParsedArgs1to1 {
   const positional: LudNode[] = [];
   const named = new Map<string, LudNode>();
   for (let i = startFrom; i < items.length; i++) {
@@ -1993,6 +2000,46 @@ export function compileBool1to1(
 
   const h = headOf(node)!;
 
+  // ---------------------------------------------------------------------------
+  // Registry lookup — registered classes take priority over inline branches
+  // ---------------------------------------------------------------------------
+  {
+    const env: Compile1to1Env = { numPlayers };
+    // Try plain head first: "and", "or", "not", etc.
+    const plainCtor = lookupBool1to1(h);
+    if (plainCtor) return plainCtor(node, env);
+    // Try compound "is:<Subtype>" key for (is Line ...) / (is Empty ...) etc.
+    if (h === "is") {
+      const { positional: isPos } = parseArgs1to1(node.items);
+      const first = isPos[0];
+      if (first && isIdent(first)) {
+        const subKey = `is:${first.name.toLowerCase()}`;
+        const subCtor = lookupBool1to1(subKey);
+        if (subCtor) return subCtor(node, env);
+      }
+    }
+    // Try compound "no:<Subtype>" key for (no Moves ...) / (no Pieces ...) etc.
+    if (h === "no") {
+      const { positional: noPos } = parseArgs1to1(node.items);
+      const first = noPos[0];
+      if (first && isIdent(first)) {
+        const subKey = `no:${first.name.toLowerCase()}`;
+        const subCtor = lookupBool1to1(subKey);
+        if (subCtor) return subCtor(node, env);
+      }
+    }
+    // Try compound "all:<Subtype>" key for (all Sites ...) / (all Passed ...) etc.
+    if (h === "all") {
+      const { positional: allPos } = parseArgs1to1(node.items);
+      const first = allPos[0];
+      if (first && isIdent(first)) {
+        const subKey = `all:${first.name.toLowerCase()}`;
+        const subCtor = lookupBool1to1(subKey);
+        if (subCtor) return subCtor(node, env);
+      }
+    }
+  }
+
   if (h === "is") {
     const { positional } = parseArgs1to1(node.items);
     const first = positional[0];
@@ -2607,11 +2654,11 @@ export function compileBool1to1(
         return { eval(_ctx: Context): boolean { return false; } };
       }
 
-      // Catch-all for unknown (is X ...) — return false
-      return { eval(_ctx: Context): boolean { return false; } };
+      // No catch-all: unknown (is X ...) → COMPILE_FAIL for visibility
+      throw new Error(`compiler1to1: unknown (is ${kind}) subtype — not yet ported to 1:1`);
     }
-    // (is ...) with non-ident first arg — return false
-    return { eval(_ctx: Context): boolean { return false; } };
+    // (is ...) with non-ident first arg — COMPILE_FAIL for visibility
+    throw new Error(`compiler1to1: (is ...) with non-ident first arg — not supported`);
   }
 
   if (h === "no") {
@@ -2633,10 +2680,11 @@ export function compileBool1to1(
         }
         return new NoPieces1to1("Mover");
       }
-      // Unknown (no X ...) — stub false
-      return { eval(_ctx: Context): boolean { return false; } };
+      // No catch-all: unknown (no X ...) → COMPILE_FAIL for visibility
+      throw new Error(`compiler1to1: unknown (no ${kind}) subtype — not yet ported to 1:1`);
     }
-    return { eval(_ctx: Context): boolean { return false; } };
+    // (no ...) with non-ident first arg — COMPILE_FAIL
+    throw new Error(`compiler1to1: (no ...) with non-ident first arg — not supported`);
   }
 
   // Integer comparisons: (= a b), (!= a b), (<= a b), (>= a b), (< a b), (> a b)
@@ -2770,11 +2818,12 @@ export function compileBool1to1(
         return { eval(_ctx: Context): boolean { return false; } };
       }
 
-      // Generic unknown (all X ...) — stub false rather than throw, to avoid cascade failures
-      return { eval(_ctx: Context): boolean { return false; } };
+      // No catch-all: unknown (all X ...) → COMPILE_FAIL for visibility
+      throw new Error(`compiler1to1: unknown (all ${kind}) subtype — not yet ported to 1:1`);
     }
 
-    return { eval(_ctx: Context): boolean { return false; } };
+    // (all ...) with non-ident first arg — COMPILE_FAIL
+    throw new Error(`compiler1to1: (all ...) with non-ident first arg — not supported`);
   }
 
   // (if <cond> <then> [<else>]) — conditional boolean (returns true/false based on sub-expressions)
