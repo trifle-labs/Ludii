@@ -28,6 +28,8 @@ Rating = parity yield per unit effort, as observed. ★★★ = high-leverage,
 
 ## Known minefields (☠ — net-negative, do not re-attempt without a new idea)
 
+- **Graph-board side-region orientation** (`(sites Top/Bottom/Left/Right)` via trajectories xOf/yOf extremes): the y-axis convention is NOT uniform across graph boards — Adugo's "Top" is min-y, but applying min-y globally REGRESSED board/space −2 and hunt −7 (other graph boards orient the opposite way). The flat W×H formula and the graph yOf disagree on up/down. Needs per-board-family orientation metadata, not a global min/max rule. (2026-06-02, reverted.)
+
 - ActionMoveStacking full/partial-stack move semantics + ActionAddCount count-transfer OWNER logic (Bashni/Lasca/Moo/Murus/At-Tab).
 - `makeFaces()` / board-graph topology / face renumbering (TS's accumulated numbering beats a faithful Java re-port for more games).
 - Board TRACK topology (race/* backgammon-family).
