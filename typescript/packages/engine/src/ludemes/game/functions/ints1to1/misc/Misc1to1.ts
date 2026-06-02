@@ -105,15 +105,38 @@ registerInt1to1("regionsite", (node: LudNode, _env: Compile1to1Env): IntFunction
 // TrackSite
 // ---------------------------------------------------------------------------
 registerInt1to1("tracksite", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  const { named } = parseArgs1to1((node as LudList).items);
-  const fromNode = named.get("from");
-  if (fromNode) {
-    try {
-      const fromFn = compileInt1to1(fromNode);
-      return { eval: (ctx: Context) => fromFn.eval(ctx) };
-    } catch { /* fall through */ }
-  }
-  return { eval: (_ctx: Context) => -1 };
+  // (trackSite Move <from> steps:<N>) — the site N steps along the track from
+  // <from>, wrapping when the track loops. Also FirstSite / LastSite.
+  // @java game/functions/ints/board/trackSite/TrackSite.java
+  const items = (node as LudList).items;
+  const { positional, named } = parseArgs1to1(items);
+  const sub = (positional[0] && (positional[0] as { name?: string }).name)
+    ? (positional[0] as { name: string }).name.toLowerCase() : "";
+  const fromNode = named.get("from")
+    ?? positional.slice(1).find(n => (n as LudList).items !== undefined || typeof (n as { value?: number }).value === "number");
+  let fromFn: IntFunction | undefined;
+  if (fromNode) { try { fromFn = compileInt1to1(fromNode); } catch { /* none */ } }
+  const stepsNode = named.get("steps");
+  let stepsFn: IntFunction | undefined;
+  if (stepsNode) { try { stepsFn = compileInt1to1(stepsNode); } catch { /* default 1 */ } }
+  return { eval(ctx: Context): number {
+    const game = ctx.game as unknown as { equipment?: { tracks?: ReadonlyMap<string, { sites: readonly number[]; loop: boolean }> } };
+    const trackEntry = [...(game.equipment?.tracks?.values() ?? [])][0];
+    if (!trackEntry) return -1;
+    const track = trackEntry.sites;
+    if (sub === "firstsite") return track[0] ?? -1;
+    if (sub === "lastsite") return track[track.length - 1] ?? -1;
+    const from = fromFn ? fromFn.eval(ctx) : ctx._evalTo;
+    if (from < 0) return -1;
+    const pos = track.indexOf(from);
+    if (pos < 0) return -1;
+    let np = pos + (stepsFn ? stepsFn.eval(ctx) : 1);
+    if (np >= track.length || np < 0) {
+      if (trackEntry.loop) np = ((np % track.length) + track.length) % track.length;
+      else return -1;
+    }
+    return track[np] ?? -1;
+  }};
 });
 
 // ---------------------------------------------------------------------------

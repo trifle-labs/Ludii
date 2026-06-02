@@ -94,6 +94,9 @@ import { ActionSetCount } from "./action/action-set-count.js";
 import { ActionPass } from "./action/action-pass.js";
 import { ActionSetNextPlayer } from "./action/action-set-next-player.js";
 import { ActionMove } from "./action/action-move.js";
+import { ActionSetPending } from "./action/action-set-pending.js";
+import { ActionSetCounter } from "./action/action-set-counter.js";
+import { SetVar1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/set/var/SetVar1to1.js";
 
 // Rules
 import { Result } from "./ludemes/game/rules/end/Result.js";
@@ -501,8 +504,15 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
     }
     // (last To) — site of the last placed piece (= _evalTo)
     if (h === "last") {
-      const { positional: lPos } = parseArgs1to1(node.items);
+      const { positional: lPos, named: lNamed } = parseArgs1to1(node.items);
       const first = lPos[0];
+      // afterConsequence:True → the to-site AFTER all consequence actions, i.e.
+      // the to of the LAST applied action (e.g. the final sown hole in mancala),
+      // not the decision's top-level to. @java LastTo.afterConsequence
+      const afterCons = (() => {
+        const v = lNamed.get("afterConsequence") ?? lNamed.get("afterconsequence");
+        return !!v && isIdent(v) && v.name.toLowerCase() === "true";
+      })();
       if (first && isIdent(first) && first.name.toLowerCase() === "to") {
         // @java game/functions/ints/last/LastTo.java:50-62
         // Read from trial.moves (the actual last-to site), NOT from _evalTo.
@@ -513,6 +523,13 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
           if (moves.length === 0) return ctx._evalTo; // fallback during initial placement
           const last = moves[moves.length - 1];
           if (!last) return ctx._evalTo;
+          if (afterCons) {
+            // Scan actions backwards for the last one with a real to-site.
+            for (let i = last.actions.length - 1; i >= 0; i--) {
+              const t = last.actions[i]!.to();
+              if (t >= 0) return t;
+            }
+          }
           const t = last.toNonDecision();
           if (t >= 0) return t;
           const t2 = last.to();
@@ -3799,12 +3816,17 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       for (const [s, n] of added) actions.push(new ActionSetCount({ to: s, count: ctx.state.countAtSite(s) + n }));
       let moveAgain = false;
       if (sowApply) {
-        const origTo = ctx._evalTo;
-        ctx._evalTo = last;
+        // @java Sow.java — the apply: consequence runs at the LANDING site in the
+        // state AFTER the seeds have been distributed (source hole cleared, each
+        // landing incremented). Build that post-sow state and evaluate against it.
+        let postState = ctx.state;
+        for (const a of actions) postState = a.apply(postState);
+        const postCtx = ctx.withState(postState);
+        postCtx._evalTo = last;
+        postCtx._evalFrom = hole;
         try {
-          for (const am of sowApply.eval(ctx)) { for (const a of am.actions) actions.push(a); if (am.moveAgain) moveAgain = true; }
+          for (const am of sowApply.eval(postCtx)) { for (const a of am.actions) actions.push(a); if (am.moveAgain) moveAgain = true; }
         } catch { /* ignore */ }
-        ctx._evalTo = origTo;
       }
       return [new Move({
         id: `sow:${hole}`, label: "Sow", siteIndices: [hole], mover: ctx.state.mover,
@@ -4659,10 +4681,44 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     };
   }
 
-  // ---- (set ...) in play context — set a value and generate no moves -------
-  // @java various Set ludemes. Used in play rules to set values;
-  // In 1:1 path, these are applied before move generation but we stub as empty.
+  // ---- (set ...) in play context — dispatch to the faithful Set ludeme. -----
+  // @java game/rules/play/moves/nonDecision/effect/set/**
   if (h === "set") {
+    const { positional: setPos } = parseArgs1to1(node.items);
+    const sub = (setPos[0] && isIdent(setPos[0])) ? setPos[0].name.toLowerCase() : "";
+    // (set Var [<name>] <value>) → ActionSetTemp / ActionSetVar
+    if (sub === "var") {
+      let name: string | null = null;
+      let valNode: LudNode | undefined = setPos[1];
+      if (setPos[1] && isString(setPos[1])) { name = setPos[1].value; valNode = setPos[2]; }
+      const valueFn: IntFunction = valNode ? compileInt1to1(valNode) : new IntConstant(-1);
+      return new SetVar1to1(name, valueFn);
+    }
+    // (set Pending [<site>]) → ActionSetPending
+    if (sub === "pending") {
+      const siteNode = setPos[1];
+      const siteFn: IntFunction | null = siteNode ? compileInt1to1(siteNode) : null;
+      return { eval(ctx: Context): Move[] {
+        const mover = ctx.state.mover;
+        return [new Move({
+          id: `setpending:${mover}`, label: "SetPending", siteIndices: [], mover,
+          placedOwner: mover, actions: [new ActionSetPending(siteFn ? siteFn.eval(ctx) : 1)],
+        })];
+      }};
+    }
+    // (set Counter <value>) → ActionSetCounter
+    if (sub === "counter") {
+      const valNode = setPos[1];
+      const valueFn: IntFunction = valNode ? compileInt1to1(valNode) : new IntConstant(0);
+      return { eval(ctx: Context): Move[] {
+        const mover = ctx.state.mover;
+        return [new Move({
+          id: `setcounter:${mover}`, label: "SetCounter", siteIndices: [], mover,
+          placedOwner: mover, actions: [new ActionSetCounter(valueFn.eval(ctx))],
+        })];
+      }};
+    }
+    // Other set subtypes not yet routed — generate no moves (no fake behaviour).
     return { eval(_ctx: Context): Move[] { return []; } };
   }
 

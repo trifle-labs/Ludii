@@ -162,6 +162,17 @@ export class Ahead1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 export class LastTo1to1 implements IntFunction {
   /**
+   * afterConsequence:True → return the to-site AFTER consequences, i.e. the to
+   * of the last applied action with a real to (e.g. the final sown hole).
+   * @java game/functions/ints/last/LastTo.java — move.toAfterSubsequents()
+   */
+  private readonly afterConsequence: boolean;
+
+  public constructor(afterConsequence = false) {
+    this.afterConsequence = afterConsequence;
+  }
+
+  /**
    * @java game/functions/ints/last/LastTo.java — eval:
    * Returns the non-decision "to" site of the last applied move.
    */
@@ -170,6 +181,14 @@ export class LastTo1to1 implements IntFunction {
     if (moves.length === 0) return ctx._evalTo;
     const last = moves[moves.length - 1];
     if (!last) return ctx._evalTo;
+    if (this.afterConsequence) {
+      // @java Move.toAfterSubsequents(): scan actions from the end, skip OFF.
+      const acts = last.actions;
+      for (let i = acts.length - 1; i >= 0; i--) {
+        const t = acts[i]!.to();
+        if (t >= 0) return t;
+      }
+    }
     const t = last.toNonDecision();
     if (t >= 0) return t;
     const t2 = last.to();
@@ -362,14 +381,16 @@ registerInt1to1("ahead", (node: LudNode, _env: Compile1to1Env): IntFunction => {
 });
 
 registerInt1to1("last", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
+  const { positional, named } = parseArgs1to1((node as LudList).items);
   const first = positional[0];
+  const acVal = named.get("afterConsequence") ?? named.get("afterconsequence");
+  const afterCons = !!acVal && isIdent(acVal) && acVal.name.toLowerCase() === "true";
   if (first && isIdent(first)) {
     const kind = first.name.toLowerCase();
-    if (kind === "to") return new LastTo1to1();
+    if (kind === "to") return new LastTo1to1(afterCons);
     if (kind === "from") return new LastFrom1to1();
   }
-  return new LastTo1to1();
+  return new LastTo1to1(afterCons);
 });
 
 registerInt1to1("coord", (node: LudNode, _env: Compile1to1Env): IntFunction => {

@@ -83,8 +83,11 @@ export class Move {
   public readonly toNonDecisionSite?: number;
 
   public constructor(init: MoveInit) {
-    if (init.siteIndices.length === 0) {
-      throw new Error("Move must touch at least one site.");
+    // A move must touch a site OR carry an action. State-setting moves
+    // (set Var / set Pending / set Counter) are siteless in Java — they carry
+    // only a state action (ActionSetTemp etc.) and from/to = Constants.OFF.
+    if (init.siteIndices.length === 0 && (!init.actions || init.actions.length === 0)) {
+      throw new Error("Move must touch at least one site or carry an action.");
     }
     if (!Number.isInteger(init.mover) || init.mover < 1) {
       throw new Error(`Mover must be a 1-based integer; got ${init.mover}.`);

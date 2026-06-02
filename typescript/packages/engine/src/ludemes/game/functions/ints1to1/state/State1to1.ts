@@ -85,8 +85,9 @@ export class Var1to1 implements IntFunction {
   /** @java game/functions/ints/state/Var.java — eval: key==null ? state.temp() : state.getValue(key) */
   public eval(ctx: Context): number {
     if (this.key === null) {
-      // temp() = _evalValue scratch
-      return ctx._evalValue ?? 0;
+      // @java Var.java:45 — state.temp(). The single game-wide temp is emulated
+      // in slot 0 (SetVar writes ActionSetTemp(0, value) → temps[0]).
+      return ctx.state.temp(0);
     }
     // getValue(key) — stored in state's namedValues map
     const stateAny = ctx.state as unknown as { _namedValues?: Map<string, number> };
