@@ -261,6 +261,13 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
     if (h === "count") {
       const { positional, named } = parseArgs1to1(node.items);
       const first = positional[0];
+      // (count at:<site>) — bare form (no subtype): the number of pieces/seeds at
+      // the site = countAt (mancala holes). @java CountStack default.
+      if ((!first || !isIdent(first)) && named.has("at")) {
+        const atN = named.get("at");
+        const siteFn = compileInt1to1(atN);
+        return { eval(ctx: Context): number { const s = siteFn.eval(ctx); return s >= 0 ? ctx.state.countAtSite(s) : 0; } };
+      }
       if (first && isIdent(first)) {
         const kind = first.name.toLowerCase();
         if (kind === "moves") return new CountMoves();
@@ -3731,6 +3738,52 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     }};
   }
 
+  // ---- (sow [apply:<effect>]) — mancala sow, used inside (then (sow …)) -------
+  // Picks up the seeds at the selected hole (_evalTo) and distributes one per
+  // subsequent track site (wrapping if the track loops). The apply: consequence
+  // runs at the LANDING site (_evalTo = last). @java …/effect/Sow.java
+  if (h === "sow") {
+    const { named } = parseArgs1to1(node.items);
+    const applyNode = named.get("apply");
+    let sowApply: MovesFunction | undefined;
+    if (applyNode) { try { sowApply = compileMoves1to1(applyNode, equipment); } catch { /* skip */ } }
+    return { eval(ctx: Context): Move[] {
+      const game = ctx.game as unknown as Game1to1;
+      const trackEntry = [...(game.equipment?.tracks?.values() ?? [])][0];
+      if (!trackEntry) return [];
+      const track = trackEntry.sites;
+      const loop = trackEntry.loop;
+      const hole = ctx._evalTo;
+      if (hole < 0) return [];
+      const seeds = ctx.state.countAtSite(hole);
+      const pos0 = track.indexOf(hole);
+      if (seeds <= 0 || pos0 < 0) return [];
+      const added = new Map<number, number>();
+      let pos = pos0, last = hole;
+      for (let i = 0; i < seeds; i++) {
+        pos++; if (pos >= track.length) { if (loop) pos = 0; else break; }
+        const s = track[pos]!;
+        added.set(s, (added.get(s) ?? 0) + 1);
+        last = s;
+      }
+      const actions: import("./action/index.js").Action[] = [new ActionSetCount({ to: hole, count: 0 })];
+      for (const [s, n] of added) actions.push(new ActionSetCount({ to: s, count: ctx.state.countAtSite(s) + n }));
+      let moveAgain = false;
+      if (sowApply) {
+        const origTo = ctx._evalTo;
+        ctx._evalTo = last;
+        try {
+          for (const am of sowApply.eval(ctx)) { for (const a of am.actions) actions.push(a); if (am.moveAgain) moveAgain = true; }
+        } catch { /* ignore */ }
+        ctx._evalTo = origTo;
+      }
+      return [new Move({
+        id: `sow:${hole}`, label: "Sow", siteIndices: [hole], mover: ctx.state.mover,
+        placedOwner: ctx.state.mover, actions, moveAgain,
+      })];
+    }};
+  }
+
   // ---- (move ...) dispatch -----------------------------------------------
   if (h === "move") {
     const { positional, named } = parseArgs1to1(node.items);
@@ -3855,8 +3908,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     // Selects sites from a 'from' region (optionally filtered by condition).
     // If no 'to' region, generates single-site select moves (from == to).
     // If 'to' region provided, generates from×to pairs filtered by to-condition.
-    if (first && isIdent(first) && first.name.toLowerCase() === "select") {
-      const selArgs = parseArgs1to1(node.items);
+    if (first && isIdent(first) && first.name.toLowerCase() === "select") {      const selArgs = parseArgs1to1(node.items);
       // Find (from ...) and (to ...) sub-nodes
       let fromRegion: RegionFunction | null = null;
       let fromCond: BooleanFunction | null = null;
@@ -3894,66 +3946,8 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       const tr = toRegion;
       const tc = toCond;
 
-      // (move Select (from <holes>) (sow …)) — mancala sow: from each selected
-      // hole, pick up its seeds and distribute one per subsequent track site,
-      // wrapping if the track loops. The (sow … apply:<effect>) consequence runs
-      // at the LANDING site. @java game/rules/play/moves/nonDecision/effect/Sow.java
-      const sowNode = selArgs.positional.find(n => isList(n) && headOf(n) === "sow");
-      if (sowNode && isList(sowNode)) {
-        const sowArgs = parseArgs1to1(sowNode.items);
-        const applyNode = sowArgs.named.get("apply");
-        let applyGen: MovesFunction | undefined;
-        if (applyNode) { try { applyGen = compileMoves1to1(applyNode, equipment); } catch { /* skip */ } }
-        return {
-          eval(ctx: Context): Move[] {
-            const game = ctx.game as unknown as Game1to1;
-            const trackEntry = [...(game.equipment?.tracks?.values() ?? [])][0];
-            if (!trackEntry) return [];
-            const track = trackEntry.sites;
-            const loop = trackEntry.loop;
-            const mover = ctx.state.mover;
-            const origFrom = ctx._evalFrom, origTo = ctx._evalTo;
-            const fromSites = fr.eval(ctx);            const moves: Move[] = [];
-            for (const hole of fromSites) {
-              ctx._evalFrom = hole; ctx._evalTo = hole;
-              if (fc && !fc.eval(ctx)) continue;
-              const seeds = ctx.state.countAtSite(hole);
-              if (seeds <= 0) continue;
-              const pos0 = track.indexOf(hole);
-              if (pos0 < 0) continue;
-              const added = new Map<number, number>();
-              let pos = pos0, last = hole;
-              for (let i = 0; i < seeds; i++) {
-                pos++; if (pos >= track.length) { if (loop) pos = 0; else break; }
-                const s = track[pos]!;
-                added.set(s, (added.get(s) ?? 0) + 1);
-                last = s;
-              }
-              const actions: import("./action/index.js").Action[] = [new ActionSetCount({ to: hole, count: 0 })];
-              for (const [s, n] of added) actions.push(new ActionSetCount({ to: s, count: ctx.state.countAtSite(s) + n }));
-              // apply: consequence at the landing site (moveAgain / capture).
-              let moveAgain = false;
-              if (applyGen) {
-                ctx._evalTo = last; ctx._evalFrom = hole;
-                try {
-                  const appMoves = applyGen.eval(ctx);
-                  for (const am of appMoves) { for (const a of am.actions) actions.push(a); if (am.moveAgain) moveAgain = true; }
-                } catch { /* ignore */ }
-              }
-              moves.push(new Move({
-                id: `sow:${hole}`, label: `Sow ${hole}`, siteIndices: [hole, last],
-                mover, placedOwner: mover, actions, moveAgain, fromSite: hole, toSite: last,
-              }));
-            }
-            ctx._evalFrom = origFrom; ctx._evalTo = origTo;
-            return moves;
-          },
-        };
-      }
-
-      return {
-        eval(ctx: Context): Move[] {
-          const origFrom = ctx._evalFrom;
+      const selectGen: MovesFunction = {
+        eval(ctx: Context): Move[] {          const origFrom = ctx._evalFrom;
           const origTo = ctx._evalTo;
           const mover = ctx.state.mover;
           const fromSites = fr.eval(ctx);
@@ -3998,6 +3992,9 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
           return moves;
         }
       };
+      // (move Select … (then (sow …))) — attach the then-consequence (mancala sow,
+      // captures, moveAgain) so it runs after the selection.
+      return attachThen(selectGen, selArgs.positional, equipment);
     }
 
     // (move Remove [type] <sites>)
