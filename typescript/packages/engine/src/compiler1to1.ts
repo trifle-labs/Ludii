@@ -4452,15 +4452,20 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
           const priorResult = priorMoves.eval(ctx);
           const filtered: Move[] = [];
           for (const m of priorResult) {
-            // Apply move to a temp state.
+            // Apply move to a temp state AND record it in a temp trial so the
+            // ifAfterwards condition's (last To)/(last From) resolve to THIS move
+            // (Go no-suicide/no-capture: (count Liberties at:(last To))). Without
+            // the trial update they'd read the previous ply's move (or -1).
             const tempState = m.applyTo(ctx.state, ctx.rng);
-            const tempCtx = new Context(ctx.game, tempState, ctx.trial, ctx.rng);
+            const tempTrial = ctx.trial.withMove(m, false, -1);
+            const tempCtx = new Context(ctx.game, tempState, tempTrial, ctx.rng);
             tempCtx._evalTo = m.to();
             tempCtx._evalFrom = m.from();
             tempCtx._evalValue = 0;
             const ctxAny = ctx as unknown as Record<string, unknown>;
             const tctxAny = tempCtx as unknown as Record<string, unknown>;
             if (ctxAny["_radials"] !== undefined) tctxAny["_radials"] = ctxAny["_radials"];
+            if (ctxAny["_trajectories"] !== undefined) tctxAny["_trajectories"] = ctxAny["_trajectories"];
             if (condFn.eval(tempCtx)) filtered.push(m);
           }
           return filtered;
