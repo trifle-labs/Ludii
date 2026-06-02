@@ -1,3 +1,13 @@
-// @java Core/src/game/functions/graph/generators/basis/hex/HexShapeType.java
-
-// TODO Phase 2: faithful port from HexShapeType.java (currently handled in src/eval/graph board builder shared logic).
+/**
+ * HexShapeType — enum for hex-basis board shapes.
+ * @java game/functions/graph/generators/basis/hex/HexShapeType.java
+ */
+export type HexShapeType =
+  | "Hexagon"
+  | "Triangle"
+  | "Diamond"
+  | "Prism"
+  | "Star"
+  | "Limping"
+  | "Square"
+  | "Rectangle";

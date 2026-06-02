@@ -1,3 +1,5 @@
-// @java Core/src/game/functions/graph/generators/shape/ShapeStarType.java
-
-// TODO Phase 2: faithful port from ShapeStarType.java (currently handled in src/eval/graph board builder shared logic).
+/**
+ * @java Core/src/game/functions/graph/generators/shape/ShapeStarType.java
+ * Defines star shape types for known board types.
+ */
+export type ShapeStarType = "Star";
