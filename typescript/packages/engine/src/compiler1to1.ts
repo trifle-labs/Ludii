@@ -1889,12 +1889,18 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
             for (const site of frontier) {
               const col = site % W;
               const row = Math.floor(site / W);
-              // Expand orthogonally
+              // Expand to ADJACENT neighbours (8-dir) — Ludii's `(expand)` default
+              // direction is Adjacent, which on a square board includes diagonals.
+              const w = col > 0, e = col < W - 1, s = row > 0, n = row < H - 1;
               const neighbors = [
-                col > 0 ? site - 1 : -1,
-                col < W-1 ? site + 1 : -1,
-                row > 0 ? site - W : -1,
-                row < H-1 ? site + W : -1,
+                w ? site - 1 : -1,
+                e ? site + 1 : -1,
+                s ? site - W : -1,
+                n ? site + W : -1,
+                (w && s) ? site - W - 1 : -1,
+                (e && s) ? site - W + 1 : -1,
+                (w && n) ? site + W - 1 : -1,
+                (e && n) ? site + W + 1 : -1,
               ];
               for (const nb of neighbors) {
                 if (nb >= 0 && !seen.has(nb)) { seen.add(nb); next.push(nb); }
