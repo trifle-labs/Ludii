@@ -4196,32 +4196,35 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     if (first && isIdent(first)) {
       const typeName = first.name.toLowerCase();
       if (typeName === "piece") {
-        // (forEach Piece [<pieceName>] [<movesGenerator>])
-        // The optional second arg could be a piece name string or role ident OR a moves generator
+        // (forEach Piece [<pieceName>] [<movesGenerator>] [(then …)])
+        // The optional second arg could be a piece name string, role ident, a
+        // moves generator, OR a (then …) consequence. A (then …) is NOT a moves
+        // override — it attaches to the piece's OWN generated moves (e.g. Ataxx's
+        // post-move score update `(forEach Piece (then (and (set Score …))))`).
         let specificMoves: MovesFunction | null = null;
         let specificRole: string | null = null;
-        // Skip string piece name and role ident - only compile list as moves
+        const fpThen: LudNode[] = [];
+        const considerArg = (a: LudNode | undefined): void => {
+          if (!a || !isList(a)) return;
+          if (headOf(a) === "then") { fpThen.push(a); return; }
+          if (!specificMoves) { try { specificMoves = compileMoves1to1(a, equipment); } catch { /* skip */ } }
+        };
         if (positional[1]) {
           const secondArg = positional[1];
           if (isList(secondArg)) {
-            try { specificMoves = compileMoves1to1(secondArg, equipment); } catch { /* skip */ }
+            considerArg(secondArg);
           } else if (isString(secondArg)) {
-            // (forEach Piece "PieceName" ...) — piece name filter; look for moves in [2]
-            if (positional[2] && isList(positional[2])) {
-              try { specificMoves = compileMoves1to1(positional[2]!, equipment); } catch { /* skip */ }
-            }
+            considerArg(positional[2]); considerArg(positional[3]);
           } else if (isIdent(secondArg)) {
-            // Role ident (e.g. Shared) — used to filter pieces by owner; look for moves in [2]
             specificRole = secondArg.name;
-            if (positional[2] && isList(positional[2])) {
-              try { specificMoves = compileMoves1to1(positional[2]!, equipment); } catch { /* skip */ }
-            }
+            considerArg(positional[2]); considerArg(positional[3]);
           }
         }
+        considerArg(positional[2]); // also pick up a trailing (then …) after a moves arg
         void specificRole; // Note: owner filtering not yet implemented
         const fp = new ForEachPiece1to1(specificMoves);
         if (equipment) fp.equipment = equipment;
-        return fp;
+        return fpThen.length > 0 ? attachThen(fp, fpThen, equipment) : fp;
       }
 
       // (forEach Site <region> <moves>) — generate moves for each site in region
@@ -4714,6 +4717,11 @@ function compileFromTo1to1(
         // Can't compile from — default to no from sites
       }
     }
+  } else {
+    // Bare (from) — the source is the iterator's current from-site (set by
+    // forEach Piece / Site). @java From.eval = context.from(). Without this the
+    // FromTo has no source and generates nothing (e.g. Ataxx copy/jump moves).
+    locFrom = { eval: (ctx: Context): number => ctx._evalFrom };
   }
 
   // Determine if to is a single site or region
@@ -4722,7 +4730,7 @@ function compileFromTo1to1(
 
   if (toLocNode) {
     const th = isList(toLocNode) ? headOf(toLocNode) : undefined;
-    if (th === "sites") {
+    if (th === "sites" || th === "expand" || th === "difference" || th === "union" || th === "intersection") {
       try { regionTo = compileRegion1to1(toLocNode); } catch { locTo = compileInt1to1(toLocNode); }
     } else {
       try { locTo = compileInt1to1(toLocNode); } catch {
@@ -4731,7 +4739,12 @@ function compileFromTo1to1(
     }
   }
 
-  return new FromTo1to1({ locFrom, regionFrom, locTo, regionTo, copy });
+  // (to … if:<cond>) — filter the to-sites (e.g. if:(is Empty (to))). @java To.cond()
+  let toCondition: BooleanFunction | null = null;
+  const toIfNode = toArgs.named.get("if");
+  if (toIfNode) { try { toCondition = compileBool1to1(toIfNode, 2); } catch { /* ignore */ } }
+
+  return new FromTo1to1({ locFrom, regionFrom, locTo, regionTo, toCondition, copy });
 }
 
 // ---------------------------------------------------------------------------
