@@ -1007,17 +1007,33 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
       return { eval(ctx: Context): number { return indexFn.eval(ctx); } };
     }
 
-    // (trackSite FirstSite/LastSite "name" from:<site> if:<cond>) — site on track
-    // @java game/functions/ints/board/trackSite/TrackSite.java — eval
-    // Simplified: return from site (or -1) — track-based games partially unsupported
+    // (trackSite Move <from> steps:<N>) — the site N steps along the track from
+    // <from> (mancala next-hole). Also (trackSite FirstSite/LastSite …).
+    // @java game/functions/ints/board/trackSite/TrackSite.java
     if (h === "tracksite") {
-      const { named: tsNamed } = parseArgs1to1(node.items);
-      const fromNode = tsNamed.get("from");
-      if (fromNode) {
-        const fromFn = compileInt1to1(fromNode);
-        return { eval(ctx: Context): number { return fromFn.eval(ctx); } };
-      }
-      return new IntConstant(-1);
+      const { positional: tsPos, named: tsNamed } = parseArgs1to1(node.items);
+      const sub = (tsPos[0] && isIdent(tsPos[0])) ? (tsPos[0] as { name: string }).name.toLowerCase() : "";
+      const fromNode = tsNamed.get("from")
+        ?? tsPos.slice(1).find(n => isList(n) || isNumber(n));
+      const fromFn: IntFunction = fromNode ? compileInt1to1(fromNode) : { eval: (ctx: Context): number => ctx._evalTo };
+      const stepsNode = tsNamed.get("steps");
+      const stepsFn: IntFunction = stepsNode ? compileInt1to1(stepsNode) : new IntConstant(1);
+      return { eval(ctx: Context): number {
+        const from = fromFn.eval(ctx);
+        const game = ctx.game as unknown as Game1to1;
+        const trackEntry = [...(game.equipment?.tracks?.values() ?? [])][0];
+        if (!trackEntry) return from;
+        const track = trackEntry.sites;
+        if (sub === "firstsite") return track[0] ?? -1;
+        if (sub === "lastsite") return track[track.length - 1] ?? -1;
+        if (from < 0) return -1;
+        const pos = track.indexOf(from);
+        if (pos < 0) return -1;
+        let np = pos + stepsFn.eval(ctx);
+        if (np >= track.length) { if (trackEntry.loop) np = ((np % track.length) + track.length) % track.length; else return -1; }
+        if (np < 0) { if (trackEntry.loop) np = ((np % track.length) + track.length) % track.length; else return -1; }
+        return track[np] ?? -1;
+      }};
     }
 
     // (count Pips) — total pip count of all dice
