@@ -22,7 +22,13 @@ export class SitesEmpty implements RegionFunction {
    */
   public eval(ctx: Context): number[] {
     const state = ctx.state;
-    const n = state.cells.length;
+    // (sites Empty) defaults to the BOARD container — iterate only board sites
+    // (0..numSites-1), NOT hand/store slots (which live at higher indices). On a
+    // board with hands, including empty hand slots would offer spurious placements
+    // onto the hand. @java SitesEmpty: ContainerState of the board container only.
+    const boardN = (ctx.game as unknown as { equipment?: { board?: { numSites?: number } } })
+      .equipment?.board?.numSites;
+    const n = (boardN !== undefined && boardN > 0) ? boardN : state.cells.length;
     const result: number[] = [];
     for (let i = 0; i < n; i++) {
       if (state.isEmptySite(i)) {
