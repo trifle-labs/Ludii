@@ -90,6 +90,7 @@ import { Shoot1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Sh
 import { Step1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/Step1to1.js";
 import { FromTo1to1 } from "./ludemes/game/rules/play/moves/nonDecision/effect/FromTo1to1.js";
 import { ActionRemove } from "./action/action-remove.js";
+import { ActionSetCount } from "./action/action-set-count.js";
 import { ActionPass } from "./action/action-pass.js";
 import { ActionSetNextPlayer } from "./action/action-set-next-player.js";
 import { ActionMove } from "./action/action-move.js";
@@ -3892,6 +3893,64 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       const fc = fromCond;
       const tr = toRegion;
       const tc = toCond;
+
+      // (move Select (from <holes>) (sow …)) — mancala sow: from each selected
+      // hole, pick up its seeds and distribute one per subsequent track site,
+      // wrapping if the track loops. The (sow … apply:<effect>) consequence runs
+      // at the LANDING site. @java game/rules/play/moves/nonDecision/effect/Sow.java
+      const sowNode = selArgs.positional.find(n => isList(n) && headOf(n) === "sow");
+      if (sowNode && isList(sowNode)) {
+        const sowArgs = parseArgs1to1(sowNode.items);
+        const applyNode = sowArgs.named.get("apply");
+        let applyGen: MovesFunction | undefined;
+        if (applyNode) { try { applyGen = compileMoves1to1(applyNode, equipment); } catch { /* skip */ } }
+        return {
+          eval(ctx: Context): Move[] {
+            const game = ctx.game as unknown as Game1to1;
+            const trackEntry = [...(game.equipment?.tracks?.values() ?? [])][0];
+            if (!trackEntry) return [];
+            const track = trackEntry.sites;
+            const loop = trackEntry.loop;
+            const mover = ctx.state.mover;
+            const origFrom = ctx._evalFrom, origTo = ctx._evalTo;
+            const fromSites = fr.eval(ctx);            const moves: Move[] = [];
+            for (const hole of fromSites) {
+              ctx._evalFrom = hole; ctx._evalTo = hole;
+              if (fc && !fc.eval(ctx)) continue;
+              const seeds = ctx.state.countAtSite(hole);
+              if (seeds <= 0) continue;
+              const pos0 = track.indexOf(hole);
+              if (pos0 < 0) continue;
+              const added = new Map<number, number>();
+              let pos = pos0, last = hole;
+              for (let i = 0; i < seeds; i++) {
+                pos++; if (pos >= track.length) { if (loop) pos = 0; else break; }
+                const s = track[pos]!;
+                added.set(s, (added.get(s) ?? 0) + 1);
+                last = s;
+              }
+              const actions: import("./action/index.js").Action[] = [new ActionSetCount({ to: hole, count: 0 })];
+              for (const [s, n] of added) actions.push(new ActionSetCount({ to: s, count: ctx.state.countAtSite(s) + n }));
+              // apply: consequence at the landing site (moveAgain / capture).
+              let moveAgain = false;
+              if (applyGen) {
+                ctx._evalTo = last; ctx._evalFrom = hole;
+                try {
+                  const appMoves = applyGen.eval(ctx);
+                  for (const am of appMoves) { for (const a of am.actions) actions.push(a); if (am.moveAgain) moveAgain = true; }
+                } catch { /* ignore */ }
+              }
+              moves.push(new Move({
+                id: `sow:${hole}`, label: `Sow ${hole}`, siteIndices: [hole, last],
+                mover, placedOwner: mover, actions, moveAgain, fromSite: hole, toSite: last,
+              }));
+            }
+            ctx._evalFrom = origFrom; ctx._evalTo = origTo;
+            return moves;
+          },
+        };
+      }
+
       return {
         eval(ctx: Context): Move[] {
           const origFrom = ctx._evalFrom;
