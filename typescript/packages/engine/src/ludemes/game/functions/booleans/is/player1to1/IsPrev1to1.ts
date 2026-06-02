@@ -24,10 +24,17 @@ export class IsPrev1to1 implements BooleanFunction {
   /**
    * @java game/functions/booleans/is/player/IsPrev.java — eval(Context):
    *   who.eval(context) == context.state().prev()
+   *
+   * `state().prev()` is the ACTUAL player who made the previous move (the last
+   * move in the trial), NOT the cyclic predecessor (mover-1). After a moveAgain
+   * the same player moves again, so prev == mover — this is the "SameTurn"
+   * idiom (`(is Prev Mover)`) that gates Morris mill-removal turns. Using the
+   * cyclic predecessor instead makes `(is Prev Mover)` permanently false.
    */
   public eval(ctx: Context): boolean {
-    const n = ctx.game.numPlayers;
-    const prev = ((ctx.state.mover - 2 + n) % n) + 1;
+    const moves = ctx.trial.moves;
+    if (moves.length === 0) return false;
+    const prev = moves[moves.length - 1]!.mover;
     return this.who.eval(ctx) === prev;
   }
 }

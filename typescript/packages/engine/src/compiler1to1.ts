@@ -2198,10 +2198,8 @@ export function compileBool1to1(
       }
 
       if (kind === "prev") {
-        // (is Prev <role>) — true when the player who made the PREVIOUS move equals
-        // <role>'s player. With role=Mover this is the "SameTurn" idiom: the same
-        // player is moving again (a moveAgain continuation, e.g. a Morris mill →
-        // remove). @java game/functions/booleans/is/player/IsPrev.java
+        // (is Prev <role>) — handled by the registered IsPrev1to1 class (registry
+        // takes priority over this inline branch); kept as a fallback only.
         const roleNode = positional[1];
         const roleName = (roleNode && isIdent(roleNode)) ? roleNode.name.toLowerCase() : "mover";
         return { eval(ctx: Context): boolean {
