@@ -75,6 +75,12 @@ export class Equipment1to1 {
   public readonly playerRegions: ReadonlyMap<number, import("../../base.js").RegionFunction>;
 
   /**
+   * Named tracks (mancala/race): ordered site sequences with a loop flag.
+   * @java game/equipment/container/board/Track.java
+   */
+  public readonly tracks: ReadonlyMap<string, { sites: readonly number[]; loop: boolean }>;
+
+  /**
    * @java game/equipment/Equipment.java — create()
    *
    * Assigns 1-based component indices to pieces, matching Java's Equipment.
@@ -85,8 +91,10 @@ export class Equipment1to1 {
     pieces: Piece[],
     hands: HandSpec[] = [],
     playerRegions: Map<number, import("../../base.js").RegionFunction> = new Map(),
+    tracks: Map<string, { sites: readonly number[]; loop: boolean }> = new Map(),
   ) {
     this.board = board;
+    this.tracks = tracks;
     // Assign 1-based component indices.
     // @java Equipment.java — for each Component, component.setIndex(i)
     for (let i = 0; i < pieces.length; i++) {

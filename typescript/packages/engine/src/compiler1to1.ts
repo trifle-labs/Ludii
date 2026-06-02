@@ -107,6 +107,7 @@ import { NextPhase } from "./ludemes/game/rules/phase/NextPhase.js";
 import type { StartRule } from "./ludemes/game/rules/start/StartRule.js";
 import { PlaceHandCount1to1 } from "./ludemes/game/rules/start/PlaceHandCount1to1.js";
 import { PlaceSites1to1 } from "./ludemes/game/rules/start/PlaceSites1to1.js";
+import { SetCountStart1to1 } from "./ludemes/game/rules/start/SetCountStart1to1.js";
 import { PlaceAtHandSite1to1 } from "./ludemes/game/rules/start/PlaceAtHandSite1to1.js";
 import { PlaceRegion1to1 } from "./ludemes/game/rules/start/PlaceRegion1to1.js";
 
@@ -4876,6 +4877,23 @@ function compileStart1to1(node: LudNode, numPlayers: number, equipment?: Equipme
     if (ih === "place") {
       const rule = compilePlaceRule1to1(item, equipment);
       if (rule) rules.push(rule);
+    } else if (ih === "set") {
+      // (set Count <n> to:<region>) — mancala seeding (n seeds per hole).
+      const sa = parseArgs1to1(item.items);
+      const sub = sa.positional[0];
+      if (sub && isIdent(sub) && sub.name.toLowerCase() === "count") {
+        const cntNode = sa.positional[1];
+        const count = cntNode && isNumber(cntNode) ? cntNode.value : 0;
+        const toNode = sa.named.get("to") ?? sa.positional.find((n, i) => i >= 2 && isList(n));
+        if (toNode && count > 0) {
+          try {
+            const regionFn = compileRegion1to1(toNode);
+            // Seed component = the first declared piece (often "Seed"), if any.
+            const seedWhat = equipment && equipment.pieces.length > 0 ? equipment.pieces[0]!.index : 0;
+            rules.push(new SetCountStart1to1(regionFn, count, seedWhat));
+          } catch { /* skip */ }
+        }
+      }
     }
     // (set Score ...) and other non-placement start rules: skip
   }
@@ -5095,6 +5113,7 @@ function compileEquipment1to1(
   const pieces: Piece[] = [];
   const hands: HandSpec[] = [];
   const pendingRegions: Array<{ owner: number; node: LudList }> = [];
+  const tracks = new Map<string, { sites: readonly number[]; loop: boolean }>();
 
   const { positional } = parseArgs1to1(node.items);
   const listNode = positional[0];
@@ -5196,6 +5215,9 @@ function compileEquipment1to1(
     board = new Board1to1(8, 8);
   }
 
+  // Collect (track "Name" {sites} loop:) declarations (children of the board node).
+  collectTracks1to1(node, tracks);
+
   // Compile player regions (needs board to be known first).
   const playerRegions = new Map<number, RegionFunction>();
   for (const { owner, node: rNode } of pendingRegions) {
@@ -5207,7 +5229,43 @@ function compileEquipment1to1(
     }
   }
 
-  return new Equipment1to1(board, pieces, hands, playerRegions);
+  return new Equipment1to1(board, pieces, hands, playerRegions, tracks);
+}
+
+/** Expand a curly site list — bare ints + `a..b` ranges (ascending or descending). */
+function parseTrackSites1to1(node: LudNode | undefined): number[] {
+  if (!node || !isList(node)) return [];
+  const out: number[] = [];
+  for (const it of node.items) {
+    if (isNumber(it)) { out.push(it.value); continue; }
+    if (isIdent(it)) {
+      const m = it.name.match(/^(\d+)\.\.(\d+)$/);
+      if (m) {
+        const a = parseInt(m[1]!, 10), b = parseInt(m[2]!, 10);
+        if (a <= b) for (let i = a; i <= b; i++) out.push(i);
+        else for (let i = a; i >= b; i--) out.push(i);
+      }
+    }
+  }
+  return out;
+}
+
+/** Recursively find `(track "Name" {sites} loop:)` nodes and store the ordered tracks. */
+function collectTracks1to1(node: LudNode, tracks: Map<string, { sites: readonly number[]; loop: boolean }>): void {
+  if (!isList(node)) return;
+  if (headOf(node) === "track") {
+    const { positional, named } = parseArgs1to1(node.items);
+    const nameNode = positional[0];
+    const name = (nameNode && isString(nameNode)) ? nameNode.value : `Track${tracks.size}`;
+    // Site list is the first curly-list positional arg.
+    const sitesNode = positional.find(n => isList(n) && n.delimiter === "curly");
+    const sites = parseTrackSites1to1(sitesNode);
+    const loopNode = named.get("loop");
+    const loop = loopNode !== undefined && isIdent(loopNode) && loopNode.name.toLowerCase() === "true";
+    if (sites.length > 0) tracks.set(name, { sites, loop });
+    return;
+  }
+  for (const item of node.items) collectTracks1to1(item, tracks);
 }
 
 /** Compile a (piece ...) declaration and push Piece objects into the array. */
