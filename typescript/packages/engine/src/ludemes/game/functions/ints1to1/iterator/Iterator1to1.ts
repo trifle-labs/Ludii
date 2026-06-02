@@ -61,12 +61,12 @@ export class Site1to1 implements IntFunction {
 export class Between1to1 implements IntFunction {
   /**
    * @java game/functions/ints/iterator/Between.java — eval: context.between()
-   * The "between" site set by hop/step iteration. We use _evalFrom as proxy.
+   * The "between" site (hurdle) set during hop iteration.
    */
   public eval(ctx: Context): number {
-    // Java: context.between() — set by hop/step moves
-    const ctxAny = ctx as unknown as { _evalBetween?: number };
-    return ctxAny._evalBetween ?? ctx._evalFrom;
+    // Java: context.between() — set by hop moves via _evalBetween.
+    const b = ctx._evalBetween;
+    return b >= 0 ? b : ctx._evalFrom;
   }
 }
 

@@ -3713,9 +3713,12 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
               ctx._evalTo = toSite;
               if (betweenCond) {
                 const origSite = ctx._evalSite;
+                const origBetween = ctx._evalBetween;
                 ctx._evalSite = between;
+                ctx._evalBetween = between; // (between) IntFunction reads this
                 const ok = betweenCond.eval(ctx);
                 ctx._evalSite = origSite;
+                ctx._evalBetween = origBetween;
                 if (!ok) continue;
               }
               if (toCond && !toCond.eval(ctx)) continue;

@@ -44,6 +44,12 @@ export class Context {
    */
   public _evalSite: number = -1;
   /**
+   * Java parity: Context.between() / setBetween(int).
+   * The "between" site set during hop iteration (the hurdle being jumped).
+   * Read by the `(between)` IntFunction. Default -1 (Constants.OFF).
+   */
+  public _evalBetween: number = -1;
+  /**
    * Java parity: Context.player() / setPlayer(int).
    * Set by (forEach Player/NonMover/Mover ...) end rules to pass the current
    * iterated player index to predicates like (is Blocked Player).
