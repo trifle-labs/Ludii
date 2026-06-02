@@ -17,11 +17,18 @@
 
 import type { Context } from "../../../../../../../context.js";
 import type { Move } from "../../../../../../../move.js";
-import type { MovesFunction } from "../../../../../../base.js";
+import type { BooleanFunction, MovesFunction } from "../../../../../../base.js";
 import type { CellFlatRadials } from "../../../../../../topology-radials.js";
+import type { Action } from "../../../../../../../action/index.js";
 import { radialsForDirection } from "../../../../../../topology-radials.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+
+/** Default landing rule: the target square must be empty. */
+class IsEmptyTo implements BooleanFunction {
+  public eval(ctx: Context): boolean { return ctx.state.isEmptySite(ctx._evalTo ?? -1); }
+}
+const DEFAULT_TO_COND = new IsEmptyTo();
 
 export class Slide1to1 implements MovesFunction {
   /**
@@ -30,13 +37,41 @@ export class Slide1to1 implements MovesFunction {
    * @java Slide.dirnChoice
    */
   private readonly dirnName: string;
+  /** Landing rule on the target square. Default: is Empty. @java Slide.toRule */
+  private readonly toCondition: BooleanFunction;
+  /** (to … (apply <effect>)) side-effect (e.g. capture). @java Slide.sideEffect */
+  private readonly applyGen?: MovesFunction;
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Slide.java — constructor
    * @param dirnName Direction name (defaults to "Adjacent").
+   * @param toCondition Landing rule (defaults to is Empty).
+   * @param applyGen Optional capture side-effect.
    */
-  public constructor(dirnName = "Adjacent") {
+  public constructor(
+    dirnName = "Adjacent",
+    toCondition: BooleanFunction = DEFAULT_TO_COND,
+    applyGen?: MovesFunction,
+  ) {
     this.dirnName = dirnName;
+    this.toCondition = toCondition;
+    this.applyGen = applyGen;
+  }
+
+  /** Build a slide move from→to, chaining any `(apply ...)` capture actions. */
+  private buildMove(ctx: Context, from: number, to: number, mover: number): LudiiMove {
+    if (!this.applyGen) return makeMoveAction(from, to, mover);
+    ctx._evalFrom = from;
+    ctx._evalTo = to;
+    let applyActions: Action[] = [];
+    try { applyActions = this.applyGen.eval(ctx).flatMap(m => [...m.actions]); }
+    catch { applyActions = []; }
+    if (applyActions.length === 0) return makeMoveAction(from, to, mover);
+    return new LudiiMove({
+      id: `slide:${mover}:${from}:${to}`, label: `Slide(${from}→${to})`,
+      siteIndices: [from, to], mover, placedOwner: mover,
+      actions: [...applyActions, new ActionMove({ from, to })],
+    });
   }
 
   /**
@@ -58,31 +93,35 @@ export class Slide1to1 implements MovesFunction {
     if (!cellRadials) return [];
 
     const state = ctx.state;
-    const cells = state.cells;
     const mover = state.mover;
     const moves: LudiiMove[] = [];
 
     // Select axes by direction.
     const axes = radialsForDirection(cellRadials, this.dirnName);
 
-    for (const { ray, opposite } of axes) {
-      // Walk in the "ray" direction (from pivot outward)
+    // Walk a single ray: while intermediate squares are empty (go-rule), test the
+    // landing rule at each square and emit a move if it passes; the FIRST occupied
+    // square is the last candidate (an enemy capture) — then stop (can't pass it).
+    // @java Slide.eval — goRule on `between`, toRule on `to`, sideEffect on landing.
+    const walk = (ray: readonly number[]): void => {
       for (let i = 1; i < ray.length; i++) {
         const to = ray[i];
         if (to === undefined) break;
-        if (!state.isEmptySite(to)) break; // Blocked
-        // Empty cell: valid target
-        moves.push(makeMoveAction(from, to, mover));
+        const occupied = !state.isEmptySite(to);
+        ctx._evalTo = to;
+        if (this.toCondition.eval(ctx)) {
+          moves.push(this.buildMove(ctx, from, to, mover));
+        }
+        if (occupied) break; // blocked — cannot slide beyond this square
       }
-      // Walk in the "opposite" direction
-      for (let i = 1; i < opposite.length; i++) {
-        const to = opposite[i];
-        if (to === undefined) break;
-        if (!state.isEmptySite(to)) break; // Blocked
-        moves.push(makeMoveAction(from, to, mover));
-      }
+    };
+
+    for (const { ray, opposite } of axes) {
+      walk(ray);
+      walk(opposite);
     }
 
+    ctx._evalTo = -1;
     return moves;
   }
 }

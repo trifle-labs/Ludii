@@ -3923,7 +3923,27 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       if (dirnNode && isIdent(dirnNode)) {
         dirnName = dirnNode.name;
       }
-      const slideMoves: MovesFunction = new Slide1to1(dirnName);
+      // Parse (to if:<cond> (apply <effect>)) — landing rule + capture (chess).
+      // @java Slide.java: toRule = to.cond(); sideEffect = to.effect()
+      let slideToCond: BooleanFunction | undefined;
+      let slideApply: MovesFunction | undefined;
+      const slideToNode = positional.find(n => isList(n) && headOf(n) === "to");
+      if (slideToNode && isList(slideToNode)) {
+        const sToArgs = parseArgs1to1(slideToNode.items);
+        const ifN = sToArgs.named.get("if");
+        if (ifN) { try { slideToCond = compileBool1to1(ifN, 2); } catch { /* default empty */ } }
+        let applyEffectNode = sToArgs.named.get("apply");
+        if (!applyEffectNode) {
+          const applyChild = sToArgs.positional.find(n => isList(n) && headOf(n) === "apply");
+          if (applyChild && isList(applyChild)) {
+            applyEffectNode = parseArgs1to1(applyChild.items).positional[0];
+          }
+        }
+        if (applyEffectNode) {
+          try { slideApply = compileMoves1to1(applyEffectNode, equipment); } catch { /* skip */ }
+        }
+      }
+      const slideMoves: MovesFunction = new Slide1to1(dirnName, slideToCond ?? undefined, slideApply);
       // (then <moves>) consequence chaining (incl. conditional moveAgain).
       // @java game/rules/play/moves/nonDecision/effect/Then.java — eval wraps each move
       // @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
