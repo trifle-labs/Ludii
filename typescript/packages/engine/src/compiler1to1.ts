@@ -3934,8 +3934,27 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       if (positional[1] && isIdent(positional[1]!) && !isList(positional[1]!)) {
         dirnName = (positional[1] as { name: string }).name;
       }
-      // (to if:(is Empty (to))) — for now default to empty condition
-      const stepMoves: MovesFunction = new Step1to1(dirnName);
+      // Parse (to if:<cond> (apply <effect>)) — destination rule + capture.
+      // @java Step.java: rule = to.cond(); sideEffect = to.effect()
+      let stepToCond: BooleanFunction | undefined;
+      let stepApply: MovesFunction | undefined;
+      const stepToNode = positional.find(n => isList(n) && headOf(n) === "to");
+      if (stepToNode && isList(stepToNode)) {
+        const toArgs = parseArgs1to1(stepToNode.items);
+        const ifN = toArgs.named.get("if");
+        if (ifN) { try { stepToCond = compileBool1to1(ifN, 2); } catch { /* default empty */ } }
+        let applyEffectNode = toArgs.named.get("apply");
+        if (!applyEffectNode) {
+          const applyChild = toArgs.positional.find(n => isList(n) && headOf(n) === "apply");
+          if (applyChild && isList(applyChild)) {
+            applyEffectNode = parseArgs1to1(applyChild.items).positional[0];
+          }
+        }
+        if (applyEffectNode) {
+          try { stepApply = compileMoves1to1(applyEffectNode, equipment); } catch { /* skip */ }
+        }
+      }
+      const stepMoves: MovesFunction = new Step1to1(dirnName, stepToCond ?? undefined, stepApply);
       // (then <moves>) consequence chaining (incl. conditional moveAgain).
       // @java game/rules/play/moves/nonDecision/effect/Then.java — eval wraps each move
       return attachThen(stepMoves, positional, equipment);
