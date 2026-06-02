@@ -3865,7 +3865,15 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
   // subsequent track site (wrapping if the track loops). The apply: consequence
   // runs at the LANDING site (_evalTo = last). @java …/effect/Sow.java
   if (h === "sow") {
-    const { named } = parseArgs1to1(node.items);
+    const { positional, named } = parseArgs1to1(node.items);
+    // (sow ["TrackNamePrefix"] [owner:<int>] …) — select the track. With a name
+    // prefix and/or owner, pick the track whose name contains the prefix and
+    // whose owner matches; else the first track. @java Sow track selection.
+    const trackPrefixNode = positional.find(n => isString(n)) as { value: string } | undefined;
+    const trackPrefix = trackPrefixNode ? trackPrefixNode.value : null;
+    const ownerNode = named.get("owner");
+    let ownerFn: IntFunction | undefined;
+    if (ownerNode) { try { ownerFn = compileInt1to1(ownerNode); } catch { /* none */ } }
     const applyNode = named.get("apply");          // captureEffect
     const ifNode = named.get("if");                // captureRule (default true)
     const includeSelfNode = named.get("includeself");
@@ -3881,7 +3889,12 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     const hasBacktrack = backtrackAlways || backtrackFn !== undefined;
     return { eval(ctx: Context): Move[] {
       const game = ctx.game as unknown as Game1to1;
-      const trackEntry = [...(game.equipment?.tracks?.values() ?? [])][0];
+      const allTracks = [...(game.equipment?.tracks?.entries() ?? [])];
+      const wantOwner = ownerFn ? ownerFn.eval(ctx) : -1;
+      let trackEntry = allTracks.find(([nm, t]) =>
+        (trackPrefix === null || nm.includes(trackPrefix)) &&
+        (wantOwner < 0 || t.owner === wantOwner || t.owner === 0)
+      )?.[1] ?? allTracks[0]?.[1];
       if (!trackEntry) return [];
       const track = trackEntry.sites;
       const loop = trackEntry.loop;
@@ -5389,7 +5402,7 @@ function compileEquipment1to1(
   const pieces: Piece[] = [];
   const hands: HandSpec[] = [];
   const pendingRegions: Array<{ owner: number; name: string | null; node: LudList }> = [];
-  const tracks = new Map<string, { sites: readonly number[]; loop: boolean }>();
+  const tracks = new Map<string, { sites: readonly number[]; loop: boolean; owner: number }>();
 
   const { positional } = parseArgs1to1(node.items);
   const listNode = positional[0];
@@ -5564,14 +5577,20 @@ function parseTrackDirString1to1(spec: string, W: number, H: number): number[] {
   const out: number[] = [start];
   let cur = start;
   for (let i = 1; i < toks.length; i++) {
-    let next = stepOf(cur, toks[i]!);
-    while (next >= 0 && !out.includes(next)) { out.push(next); cur = next; next = stepOf(cur, toks[i]!); }
+    // A direction may carry an explicit step count ("N1" = exactly one step);
+    // without a count it walks greedily to the edge.
+    const m = toks[i]!.match(/^([NSEWnsew])(\d+)$/);
+    const dir = m ? m[1]! : toks[i]!;
+    const limit = m ? parseInt(m[2]!, 10) : Infinity;
+    let steps = 0;
+    let next = stepOf(cur, dir);
+    while (next >= 0 && steps < limit && !out.includes(next)) { out.push(next); cur = next; steps++; next = stepOf(cur, dir); }
   }
   return out;
 }
 
-/** Recursively find `(track "Name" {sites}|"dir-string" loop:)` nodes and store the ordered tracks. */
-function collectTracks1to1(node: LudNode, tracks: Map<string, { sites: readonly number[]; loop: boolean }>, W = 0, H = 0): void {
+/** Recursively find `(track "Name" {sites}|"dir-string" loop: [Pn])` nodes and store the ordered tracks. */
+function collectTracks1to1(node: LudNode, tracks: Map<string, { sites: readonly number[]; loop: boolean; owner: number }>, W = 0, H = 0): void {
   if (!isList(node)) return;
   if (headOf(node) === "track") {
     const { positional, named } = parseArgs1to1(node.items);
@@ -5587,7 +5606,12 @@ function collectTracks1to1(node: LudNode, tracks: Map<string, { sites: readonly 
     }
     const loopNode = named.get("loop");
     const loop = loopNode !== undefined && isIdent(loopNode) && loopNode.name.toLowerCase() === "true";
-    if (sites.length > 0) tracks.set(name, { sites, loop });
+    // Trailing role ident (P1/P2/…) = the track's owner; 0 if shared/none.
+    let owner = 0;
+    for (const p of positional) {
+      if (isIdent(p) && /^p\d+$/i.test(p.name)) { owner = parseInt(p.name.slice(1), 10); break; }
+    }
+    if (sites.length > 0) tracks.set(name, { sites, loop, owner });
     return;
   }
   for (const item of node.items) collectTracks1to1(item, tracks, W, H);

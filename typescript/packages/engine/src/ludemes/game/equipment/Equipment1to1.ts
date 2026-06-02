@@ -78,7 +78,7 @@ export class Equipment1to1 {
    * Named tracks (mancala/race): ordered site sequences with a loop flag.
    * @java game/equipment/container/board/Track.java
    */
-  public readonly tracks: ReadonlyMap<string, { sites: readonly number[]; loop: boolean }>;
+  public readonly tracks: ReadonlyMap<string, { sites: readonly number[]; loop: boolean; owner: number }>;
 
   /**
    * Named player regions (from `(regions "Home" P1 …)` declarations): lowercased
@@ -98,7 +98,7 @@ export class Equipment1to1 {
     pieces: Piece[],
     hands: HandSpec[] = [],
     playerRegions: Map<number, import("../../base.js").RegionFunction> = new Map(),
-    tracks: Map<string, { sites: readonly number[]; loop: boolean }> = new Map(),
+    tracks: Map<string, { sites: readonly number[]; loop: boolean; owner: number }> = new Map(),
     namedPlayerRegions: Map<string, Map<number, import("../../base.js").RegionFunction>> = new Map(),
   ) {
     this.board = board;
