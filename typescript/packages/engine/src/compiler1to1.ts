@@ -1863,7 +1863,18 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
   if (h === "expand") {
     const { positional, named } = parseArgs1to1(node.items);
     try {
-      const baseRegion = compileRegion1to1(positional[0]);
+      // Base region: positional[0], or the `origin:<int>` named arg as a 1-site
+      // seed (e.g. (expand origin:(from) steps:2) for Ataxx jumps).
+      const originNode = named.get("origin");
+      let baseRegion: RegionFunction;
+      if (positional[0]) {
+        baseRegion = compileRegion1to1(positional[0]);
+      } else if (originNode) {
+        const originFn = compileInt1to1(originNode);
+        baseRegion = { eval(ctx: Context): number[] { const s = originFn.eval(ctx); return s >= 0 ? [s] : []; } };
+      } else {
+        return { eval(_ctx: Context): number[] { return []; } };
+      }
       const stepsNode = named.get("steps");
       const steps = stepsNode && isNumber(stepsNode) ? stepsNode.value : 1;
       return {
