@@ -21,10 +21,13 @@ export class PlaceRegion1to1 implements StartRule {
   private readonly pieceId: string;
   /** Region function to evaluate for target sites. */
   private readonly regionFn: RegionFunction;
+  /** Pieces to place at each site (the `count:` arg, default 1). @java Place.count */
+  private readonly count: number;
 
-  public constructor(pieceId: string, regionFn: RegionFunction) {
+  public constructor(pieceId: string, regionFn: RegionFunction, count = 1) {
     this.pieceId = pieceId;
     this.regionFn = regionFn;
+    this.count = count;
   }
 
   public applyToInitialState(
@@ -54,7 +57,7 @@ export class PlaceRegion1to1 implements StartRule {
       if (site < 0 || site >= cells.length) continue;
       cells[site] = owner;
       whats[site] = piece.index;
-      countAt[site] = 1;
+      countAt[site] = this.count;
     }
   }
 

@@ -27,13 +27,18 @@ export class PlaceSites1to1 implements StartRule {
    */
   private readonly sites: readonly number[];
 
+  /** Pieces to place at each site (the `count:` arg, default 1). @java Place.count */
+  private readonly count: number;
+
   /**
    * @param pieceId Full piece identifier (e.g. "Ball1")
    * @param sites   Site indices for placement
+   * @param count   Pieces per site (default 1; mancala sow seeds use 4, etc.)
    */
-  public constructor(pieceId: string, sites: readonly number[]) {
+  public constructor(pieceId: string, sites: readonly number[], count = 1) {
     this.pieceId = pieceId;
     this.sites = sites;
+    this.count = count;
   }
 
   /**
@@ -64,7 +69,7 @@ export class PlaceSites1to1 implements StartRule {
       if (site < 0 || site >= cells.length) continue;
       cells[site] = owner;
       whats[site] = piece.index;
-      countAt[site] = 1;
+      countAt[site] = this.count;
     }
   }
 }

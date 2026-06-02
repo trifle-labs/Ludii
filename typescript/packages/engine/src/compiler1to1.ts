@@ -4748,13 +4748,18 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
   if (!pieceIdNode || !isString(pieceIdNode)) return null;
   const pieceId = pieceIdNode.value;
 
+  // count:N — pieces seeded per placed site (mancala sow seeds use 4, etc.).
+  // @java game/rules/start/place/Place.count — default 1.
+  const placeCountNode = named.get("count");
+  const placeCount = placeCountNode && isNumber(placeCountNode) ? placeCountNode.value : 1;
+
   // (place "X" coord:"C5") — placement at a NAMED algebraic coordinate.
   // @java game/rules/start/place/site/PlaceCustomStack / Place coord:
   const coordNamed = named.get("coord");
   if (coordNamed && isString(coordNamed)) {
     const site = coordToSite1to1(coordNamed.value, equipment?.board);
     if (site >= 0) {
-      return new PlaceSites1to1(pieceId, [site]);
+      return new PlaceSites1to1(pieceId, [site], placeCount);
     }
   }
 
@@ -4797,14 +4802,14 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
   // so we must try extractSites1to1 before delegating to the region compiler.
   if (isList(sitesNode) && sitesNode.delimiter === "curly") {
     const sites = extractSites1to1(sitesNode, equipment?.board.width, equipment?.board.height);
-    if (sites.length > 0) return new PlaceSites1to1(pieceId, sites);
+    if (sites.length > 0) return new PlaceSites1to1(pieceId, sites, placeCount);
     // Empty result — fall through to region compiler (e.g. curly-wrapped region functions)
   }
 
   // (coord "A4") — single algebraic coordinate
   if (!isList(sitesNode)) {
     const sites = extractSites1to1(sitesNode, equipment?.board.width, equipment?.board.height);
-    if (sites.length > 0) return new PlaceSites1to1(pieceId, sites);
+    if (sites.length > 0) return new PlaceSites1to1(pieceId, sites, placeCount);
     return null;
   }
 
@@ -4812,7 +4817,7 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
   if (isList(sitesNode)) {
     try {
       const regionFn = compileRegion1to1(sitesNode);
-      return new PlaceRegion1to1(pieceId, regionFn);
+      return new PlaceRegion1to1(pieceId, regionFn, placeCount);
     } catch {
       // Fall through to literal site extraction
     }
@@ -4822,7 +4827,7 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
   const sites = extractSites1to1(sitesNode, equipment?.board.width, equipment?.board.height);
   if (sites.length === 0) return null;
 
-  return new PlaceSites1to1(pieceId, sites);
+  return new PlaceSites1to1(pieceId, sites, placeCount);
 }
 
 /** Extract site indices from a sites node: {n1 n2 ...}, (coord "X"), or a number. */
