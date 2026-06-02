@@ -1,0 +1,389 @@
+/**
+ * @java game/rules/start/place/item/PlaceItem.java
+ *
+ * Places a piece (or set of pieces) at the given site(s) as part of the
+ * initial game setup.  This is the primary non-stack, non-puzzle placement
+ * ludeme; it mirrors PlaceItem.eval(Context).
+ *
+ * Limitations (deferred):
+ *  - Stack placement (isStack=true) is not supported — see PlaceCustomStack /
+ *    PlaceMonotonousStack for that path.
+ *  - Deduction-puzzle variant (evalPuzzle) is not supported — ActionSet is
+ *    absent from applyToInitialState.
+ *  - Container-based placement for non-Hand containers is not supported —
+ *    the TS Equipment1to1 only exposes hand sites.
+ *  - The "stringWithoutNumber / Hand" loop (player-suffixed generic piece) is
+ *    not supported; use PlaceHandCount1to1 for those cases.
+ *  - coord-based placement relies on algebraicToSite which only handles
+ *    single-letter, fixed-width boards.
+ */
+
+import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { Piece } from "../../../../equipment/component/Piece.js"; // game/equipment/component/
+import type { IntFunction, RegionFunction } from "../../../../../base.js";
+import type { StartRule } from "../../StartRule.js";
+import type { Context } from "../../../../../../context.js";
+import type { Game1to1 } from "../../../../../Game1to1.js";
+
+/** Java constant: OFF = -1 */
+const OFF = -1;
+
+/**
+ * @java game/rules/start/place/item/PlaceItem.java
+ */
+export class PlaceItem1to1 implements StartRule {
+  /** @java PlaceItem.item */
+  private readonly item: string;
+
+  /** @java PlaceItem.container — null for board placement */
+  private readonly container: string | null;
+
+  /** @java PlaceItem.siteId — single-site location */
+  private readonly siteId: IntFunction | null;
+
+  /** @java PlaceItem.coord — algebraic coordinate string */
+  private readonly coord: string | null;
+
+  /** @java PlaceItem.countFn — number of pieces to place, default 1 */
+  private readonly countFn: IntFunction;
+
+  /** @java PlaceItem.stateFn — site-state, default OFF */
+  private readonly stateFn: IntFunction;
+
+  /** @java PlaceItem.rotationFn — rotation, default OFF */
+  private readonly rotationFn: IntFunction;
+
+  /** @java PlaceItem.valueFn — piece value, default OFF */
+  private readonly valueFn: IntFunction;
+
+  // ------ region/fill fields -------------------------------------------------
+
+  /** @java PlaceItem.locationIds — multiple locations */
+  private readonly locationIds: readonly IntFunction[] | null;
+
+  /** @java PlaceItem.region — region to fill */
+  private readonly region: RegionFunction | null;
+
+  /** @java PlaceItem.coords — multiple algebraic coordinates */
+  private readonly coords: readonly string[] | null;
+
+  /** @java PlaceItem.countsFn — per-site counts when using region/locs */
+  private readonly countsFn: readonly IntFunction[];
+
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Single-site constructor.
+   * @java PlaceItem(String item, String container, SiteType type,
+   *                IntFunction loc, String coord, IntFunction count,
+   *                IntFunction state, IntFunction rotation, IntFunction value)
+   */
+  public constructor(
+    item: string,
+    container: string | null,
+    siteId: IntFunction | null,
+    coord: string | null,
+    countFn: IntFunction,
+    stateFn: IntFunction,
+    rotationFn: IntFunction,
+    valueFn: IntFunction,
+  );
+
+  /**
+   * Region/multi-site constructor.
+   * @java PlaceItem(String item, SiteType type, IntFunction[] locs,
+   *                RegionFunction region, String[] coords,
+   *                IntFunction[] counts, IntFunction state,
+   *                IntFunction rotation, IntFunction value)
+   */
+  public constructor(
+    item: string,
+    container: null,
+    siteId: null,
+    coord: null,
+    countFn: IntFunction,
+    stateFn: IntFunction,
+    rotationFn: IntFunction,
+    valueFn: IntFunction,
+    locationIds: readonly IntFunction[] | null,
+    region: RegionFunction | null,
+    coords: readonly string[] | null,
+    countsFn: readonly IntFunction[],
+  );
+
+  public constructor(
+    item: string,
+    container: string | null,
+    siteId: IntFunction | null,
+    coord: string | null,
+    countFn: IntFunction,
+    stateFn: IntFunction,
+    rotationFn: IntFunction,
+    valueFn: IntFunction,
+    locationIds: readonly IntFunction[] | null = null,
+    region: RegionFunction | null = null,
+    coords: readonly string[] | null = null,
+    countsFn: readonly IntFunction[] = [],
+  ) {
+    this.item = item;
+    this.container = container;
+    this.siteId = siteId;
+    this.coord = coord;
+    this.countFn = countFn;
+    this.stateFn = stateFn;
+    this.rotationFn = rotationFn;
+    this.valueFn = valueFn;
+    this.locationIds = locationIds;
+    this.region = region;
+    this.coords = coords;
+    this.countsFn = countsFn;
+  }
+
+  /**
+   * @java PlaceItem.eval(Context)
+   *
+   * Dispatches to:
+   *  - evalFill (region / multi-site placement)
+   *  - single-site placement (coord or siteId, no container)
+   *
+   * Deferred: deduction-puzzle path, container-based (non-hand), stacking.
+   */
+  public applyToInitialState(
+    cells: number[],
+    whats: number[],
+    countAt: number[],
+    equipment: Equipment1to1,
+    numPlayers: number,
+  ): void {
+    const fakeCtx = makeFakeCtx(cells, equipment, numPlayers);
+
+    // Java: if (locationIds != null || region != null || coords != null || countsFn != null)
+    if (
+      this.locationIds !== null ||
+      this.region !== null ||
+      this.coords !== null ||
+      (this.countsFn.length > 0)
+    ) {
+      this.evalFill(cells, whats, countAt, equipment, numPlayers, fakeCtx);
+      return;
+    }
+
+    // Java: else if (context.game().isDeductionPuzzle()) → evalPuzzle (deferred)
+
+    // Java: else — single-site placement
+    const count = this.eval(this.countFn, fakeCtx, 1);
+    // state/rotation/value not used by applyToInitialState but evaluated faithfully
+    // const state = this.eval(this.stateFn, fakeCtx, OFF);
+    // const rotation = this.eval(this.rotationFn, fakeCtx, OFF);
+    // const value = this.eval(this.valueFn, fakeCtx, OFF);
+
+    // --- hand / container placement ---
+    if (this.container !== null) {
+      if (this.container.toLowerCase().includes("hand")) {
+        // Java: Start.placePieces(context, siteFrom, c.index(), count, ...)
+        // Place in each matching player hand.
+        const nameOnly = this.item.replace(/\d+$/, "");
+        for (let p = 1; p <= numPlayers; p++) {
+          const handSite = equipment.handSiteFor(p, 0);
+          if (handSite < 0 || handSite >= cells.length) continue;
+          const piece = equipment.pieces.find(
+            (pi: Piece) => pi.owner === p && pi.name.toLowerCase() === nameOnly.toLowerCase(),
+          );
+          if (piece === undefined) continue;
+          cells[handSite] = p;
+          whats[handSite] = piece.index;
+          countAt[handSite] = count;
+        }
+        return;
+      }
+      // Other containers: deferred (no container index map in Equipment1to1)
+      return;
+    }
+
+    // --- board placement ---
+    if (this.siteId === null && this.coord === null) return;
+
+    let site = -1;
+    if (this.coord !== null) {
+      // Java: TopologyElement element = SiteFinder.find(context.board(), coord, type)
+      site = algebraicToSite(this.coord, equipment.board.width, equipment.board.height);
+      if (site < 0) return;
+    } else if (this.siteId !== null) {
+      // Java: site = siteId.eval(context)
+      try {
+        site = this.siteId.eval(fakeCtx);
+      } catch {
+        return;
+      }
+    }
+
+    if (site < 0 || site >= cells.length) return;
+
+    const piece = resolveComponent(this.item, equipment);
+    if (piece === null) return;
+
+    // Java: Start.placePieces(context, site, what, count, state, rotation, value, false, type)
+    cells[site] = piece.owner;
+    whats[site] = piece.index;
+    countAt[site] = count;
+  }
+
+  /**
+   * @java PlaceItem.evalFill(Context)
+   *
+   * Region/multi-site placement — mirrors Java evalFill without container path.
+   */
+  private evalFill(
+    cells: number[],
+    whats: number[],
+    countAt: number[],
+    equipment: Equipment1to1,
+    numPlayers: number,
+    fakeCtx: Context,
+  ): void {
+    const piece = resolveComponent(this.item, equipment);
+    if (piece === null) return;
+
+    const count = this.eval(this.countFn, fakeCtx, 1);
+
+    // Java: if (container != null) → container-based fill (deferred)
+
+    // Java: if (coords != null)
+    if (this.coords !== null) {
+      for (const coordinate of this.coords) {
+        // Java: TopologyElement element = SiteFinder.find(context.board(), coordinate, type)
+        const site = algebraicToSite(coordinate, equipment.board.width, equipment.board.height);
+        if (site < 0) continue;
+        if (site >= cells.length) continue;
+        // Java: Start.placePieces(context, element.index(), what, count, ...)
+        cells[site] = piece.owner;
+        whats[site] = piece.index;
+        countAt[site] = count;
+      }
+      return;
+    }
+
+    // Java: else if (region != null)
+    if (this.region !== null) {
+      let sites: number[];
+      try {
+        sites = this.region.eval(fakeCtx);
+      } catch {
+        return;
+      }
+      for (let k = 0; k < sites.length; k++) {
+        const loc = sites[k]!;
+        if (loc < 0 || loc >= cells.length) continue;
+        // Java: countsFn.length == 0 ? countFn.eval(context) : countsFn[k].eval(context)
+        const c =
+          this.countsFn.length === 0
+            ? count
+            : this.eval(this.countsFn[k] ?? this.countsFn[this.countsFn.length - 1]!, fakeCtx, count);
+        cells[loc] = piece.owner;
+        whats[loc] = piece.index;
+        countAt[loc] = c;
+      }
+      return;
+    }
+
+    // Java: else if (locationIds != null)
+    if (this.locationIds !== null) {
+      for (let k = 0; k < this.locationIds.length; k++) {
+        let loc: number;
+        try {
+          loc = this.locationIds[k]!.eval(fakeCtx);
+        } catch {
+          continue;
+        }
+        if (loc < 0 || loc >= cells.length) continue;
+        const c =
+          this.countsFn.length === 0
+            ? count
+            : this.eval(this.countsFn[k] ?? this.countsFn[this.countsFn.length - 1]!, fakeCtx, count);
+        cells[loc] = piece.owner;
+        whats[loc] = piece.index;
+        countAt[loc] = c;
+      }
+    }
+  }
+
+  /** Safe IntFunction evaluation. */
+  private eval(fn: IntFunction, ctx: Context, fallback: number): number {
+    try {
+      return fn.eval(ctx);
+    } catch {
+      return fallback;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve a Ludii piece-name (e.g. "Pawn1") to the matching Piece in equipment.
+ * @java Game.getComponent(String name)
+ */
+function resolveComponent(
+  item: string,
+  equipment: Equipment1to1,
+): Piece | null {
+  const match = item.match(/^(.*?)(\d+)$/);
+  if (!match) {
+    // No player suffix — find neutral (owner=0) piece
+    const piece = equipment.pieces.find(
+      (p: Piece) => p.name.toLowerCase() === item.toLowerCase(),
+    );
+    return piece ?? null;
+  }
+  const pieceName = match[1]!;
+  const owner = parseInt(match[2]!, 10);
+  const piece = equipment.pieces.find(
+    (p: Piece) => p.owner === owner && p.name.toLowerCase() === pieceName.toLowerCase(),
+  );
+  return piece ?? null;
+}
+
+/**
+ * Convert algebraic coordinate to site index.
+ * @java other/topology/SiteFinder.find(board, coord, type)
+ */
+function algebraicToSite(coord: string, boardWidth: number, _boardHeight: number): number {
+  if (boardWidth <= 0) return -1;
+  const match = coord.match(/^([A-Za-z]+)(\d+)$/);
+  if (!match) return -1;
+  const colStr = match[1]!.toUpperCase();
+  if (colStr.length !== 1) return -1;
+  const col = colStr.charCodeAt(0) - 65;
+  const rowNum = parseInt(match[2]!, 10);
+  if (isNaN(rowNum) || rowNum < 1 || col < 0 || col >= boardWidth) return -1;
+  const row = rowNum - 1;
+  return row * boardWidth + col;
+}
+
+/** Minimal fake context for IntFunction/RegionFunction evaluation. */
+function makeFakeCtx(
+  cells: number[],
+  equipment: Equipment1to1,
+  numPlayers: number,
+): Context {
+  const fakeGame = { numPlayers, equipment } as unknown as Game1to1;
+  return {
+    game: fakeGame,
+    state: {
+      mover: 1,
+      cells,
+      isEmptySite: (i: number) => !cells[i],
+    },
+    _evalFrom: -1,
+    _evalTo: -1,
+    _evalValue: 0,
+    _evalSite: -1,
+    _evalPlayer: 1,
+    _radials: equipment.board.radials,
+  } as unknown as Context;
+}
+
+// Re-export OFF for consumers (mirrors Java Constants.OFF = -1).
+export { OFF };

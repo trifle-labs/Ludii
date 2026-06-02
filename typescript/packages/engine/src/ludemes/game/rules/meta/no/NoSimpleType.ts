@@ -1,2 +1,10 @@
-// @java Core/src/game/rules/meta/no/NoSimpleType.java
-// TODO Phase 2: faithful port from NoSimpleType.java (currently not implemented as a standalone head)
+/**
+ * Enum for no-simple meta-rule types.
+ *
+ * @java game/rules/meta/no/NoSimpleType.java
+ *
+ * Java: enum with one value: Suicide.
+ */
+
+/** @java game/rules/meta/no/NoSimpleType.java */
+export type NoSimpleType = "Suicide";

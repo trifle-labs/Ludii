@@ -11,4 +11,5 @@
 // (region package sub-barrels are added here as they are ported)
 import "./registry1to1-region-sitesA.js";
 import "./registry1to1-region-sitesB.js";
+import "./registry1to1-region-deferred.js";
 export {};

@@ -1,2 +1,10 @@
-// @java Core/src/game/rules/meta/no/NoRepeatType.java
-// TODO Phase 2: faithful port from NoRepeatType.java (currently not implemented as a standalone head)
+/**
+ * Enum for no-repeat meta-rule types.
+ *
+ * @java game/rules/meta/no/NoRepeatType.java
+ *
+ * Java: enum with one value: Repeat.
+ */
+
+/** @java game/rules/meta/no/NoRepeatType.java */
+export type NoRepeatType = "Repeat";

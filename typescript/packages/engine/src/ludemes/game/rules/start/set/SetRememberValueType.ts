@@ -1,2 +1,9 @@
-// @java Core/src/game/rules/start/set/SetRememberValueType.java
-// TODO Phase 2: faithful port from SetRememberValueType.java (currently not implemented as a standalone head)
+/**
+ * Defines properties that can be set in the starting rules to remember a value.
+ *
+ * @java game/rules/start/set/SetRememberValueType.java — enum SetRememberValueType
+ */
+export enum SetRememberValueType {
+  /** To remember a value. */
+  RememberValue = "RememberValue",
+}

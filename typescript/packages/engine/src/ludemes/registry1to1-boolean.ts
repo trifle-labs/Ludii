@@ -71,3 +71,6 @@ import "./game/functions/booleans/was1to1/Was1to1.js";
 // ---- Wave-1 parallel-port sub-barrels (gap-fill classes) ----
 import "./registry1to1-bool-is.js";
 import "./registry1to1-bool-rest.js";
+
+// ---- Wave-2 deferred predicates (topology API now available) ----
+import "./registry1to1-bool-deferred.js";

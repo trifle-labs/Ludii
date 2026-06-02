@@ -44,3 +44,4 @@ import "./registry1to1-int-count.js";
 import "./registry1to1-int-bvs.js";
 import "./registry1to1-int-msil.js";
 import "./registry1to1-int-cardrest.js";
+import "./registry1to1-int-deferred.js";

@@ -1,0 +1,116 @@
+/**
+ * IsFreedom1to1.ts
+ * @java game/functions/booleans/is/component/IsFreedom.java
+ *
+ * Tests if a region has "freedom": some site in the region is adjacent to at
+ * least one empty board site (excluding the toPlace site). This is essentially
+ * the "liberty" check for Go-like games.
+ *
+ * Java eval (lines 69-103):
+ *   1. pid = locnFn.eval(ctx) if locnFn != null (the site being placed)
+ *   2. listPivots = region.eval(ctx).sites()
+ *   3. For each loc in listPivots:
+ *      - Check N/S/E/W neighbours (trajectories.steps(type, loc, type, dir))
+ *      - For each neighbour: if neigh != pid AND what == 0 AND layer == 0 → return true
+ *   4. return false
+ *
+ * TS: uses Trajectories.steps for N/S/E/W. Layer == 0 check: for planar boards
+ * zOf(site) == 0; for pyramid boards, also check zOf(site) == 0.
+ */
+
+import type { Context } from "../../../../../../context.js";
+import type { BooleanFunction, IntFunction, RegionFunction, EvalScratch } from "../../../../../base.js";
+import type { LudNode, LudList } from "@ludii/typescript-language";
+import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
+import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
+import { parseArgs1to1, compileInt1to1, compileRegion1to1 } from "../../../../../../compiler1to1.js";
+import { isIdent } from "@ludii/typescript-language";
+
+const CARDINAL_DIRS = ["N", "S", "E", "W"] as const;
+
+export class IsFreedom1to1 implements BooleanFunction {
+  private readonly regionFn: RegionFunction;
+  private readonly locnFn: IntFunction | null;
+
+  public constructor(regionFn: RegionFunction, locnFn: IntFunction | null) {
+    this.regionFn = regionFn;
+    this.locnFn = locnFn;
+  }
+
+  /**
+   * @java game/functions/booleans/is/component/IsFreedom.java — eval(Context)
+   */
+  public eval(ctx: Context & EvalScratch): boolean {
+    // @java IsFreedom.java:71-72 — pid = locnFn.eval(ctx) if present
+    const pid = this.locnFn !== null ? this.locnFn.eval(ctx) : -1;
+
+    // @java IsFreedom.java:73 — listPivots = region.eval(ctx).sites()
+    const pivots = this.regionFn.eval(ctx);
+
+    const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
+    const traj = ctxAny._trajectories;
+    if (!traj) return false;
+
+    for (const loc of pivots) {
+      // @java IsFreedom.java:79-86: steps in N/S/E/W
+      for (const dir of CARDINAL_DIRS) {
+        const neighbours = traj.steps(loc, dir);
+        for (const neigh of neighbours) {
+          if (neigh === pid) continue;
+          const what = ctx.state.whatAtSite(neigh);
+          // @java IsFreedom.java:96-98: what == 0 AND layer == 0
+          // layer = 0 for ground-level sites; use zOf for pyramid boards
+          const layer = traj.zOf(neigh);
+          if (what === 0 && layer === 0) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+}
+
+registerBool1to1("is:freedom", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
+  const { positional, named } = parseArgs1to1((node as LudList).items);
+  // Java: IsFreedom(@Opt SiteType type, RegionFunction in, @Opt IntFunction toPlace)
+  // LUD syntax: (is Freedom [<type>] <region> [toPlace:<int>])
+  // positional[0] = "Freedom"
+  // positional[1] = optional SiteType ident
+  // positional[2] = region expression
+  // named: in (region), toPlace
+
+  let idx = 1;
+  // Skip optional SiteType ident
+  {
+    const p = positional[idx];
+    if (p && isIdent(p)) {
+      const n = p.name.toLowerCase();
+      if (n === "cell" || n === "edge" || n === "vertex") idx++;
+    }
+  }
+
+  // Region: from named "in" or positional
+  let regionFn: RegionFunction = { eval: () => [] };
+  const inNode = named.get("in");
+  const regionNode = inNode ?? positional[idx];
+  if (regionNode) {
+    try { regionFn = compileRegion1to1(regionNode); idx++; }
+    catch { /* keep default */ }
+  }
+
+  // toPlace: optional
+  let locnFn: IntFunction | null = null;
+  const toPlaceNode = named.get("toplace") ?? named.get("toPlace");
+  if (toPlaceNode) {
+    try { locnFn = compileInt1to1(toPlaceNode); } catch { /* keep null */ }
+  } else {
+    const posNode = positional[idx];
+    if (posNode) {
+      try { locnFn = compileInt1to1(posNode); } catch { /* keep null */ }
+    }
+  }
+
+  return new IsFreedom1to1(regionFn, locnFn);
+});
