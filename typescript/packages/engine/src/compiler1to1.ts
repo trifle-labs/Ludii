@@ -4752,7 +4752,7 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
   // @java game/rules/start/place/site/PlaceCustomStack / Place coord:
   const coordNamed = named.get("coord");
   if (coordNamed && isString(coordNamed)) {
-    const site = algebraicToSite(coordNamed.value, equipment?.board.width, equipment?.board.height);
+    const site = coordToSite1to1(coordNamed.value, equipment?.board);
     if (site >= 0) {
       return new PlaceSites1to1(pieceId, [site]);
     }
@@ -4886,6 +4886,30 @@ function extractSites1to1(node: LudNode, boardWidth?: number, boardHeight?: numb
  * @param boardWidth  Board width (number of columns)
  * @param boardHeight Board height — unused but kept for signature clarity
  */
+/**
+ * Resolve an algebraic coordinate ("C5") to a site index, graph-aware.
+ *
+ * For graph boards (non-square: alquerque, triangle appendages, hex…) the
+ * vertices are NOT numbered row-major, so the flat formula is wrong. Java maps
+ * the coord to the graph element whose centroid is at (col, row-1): column
+ * letter → x (A=0), row number → y = N-1. We match that vertex via the
+ * trajectories' xOf/yOf. Square boards (no trajectories) keep the flat mapping.
+ * @java game/types/board/SiteType + Graph coordinate lookup
+ */
+function coordToSite1to1(coord: string, board?: Board1to1): number {
+  if (!board) return -1;
+  const traj = board.trajectories;
+  if (!traj) return algebraicToSite(coord, board.width, board.height);
+  const m = coord.match(/^([A-Za-z]+)(\d+)$/);
+  if (!m || m[1]!.length !== 1) return algebraicToSite(coord, board.width, board.height);
+  const col = m[1]!.toUpperCase().charCodeAt(0) - 65;
+  const row = parseInt(m[2]!, 10) - 1;
+  for (let s = 0; s < board.numSites; s++) {
+    if (Math.abs(traj.xOf(s) - col) < 0.25 && Math.abs(traj.yOf(s) - row) < 0.25) return s;
+  }
+  return -1;
+}
+
 function algebraicToSite(coord: string, boardWidth?: number, _boardHeight?: number): number {
   if (!boardWidth || boardWidth <= 0) return -1;
 
