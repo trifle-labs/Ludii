@@ -2187,8 +2187,22 @@ export function compileBool1to1(
       }
 
       if (kind === "prev") {
-        // (is Prev Mover) — SameTurn check; simplified: return false
-        return { eval(_ctx: Context): boolean { return false; } };
+        // (is Prev <role>) — true when the player who made the PREVIOUS move equals
+        // <role>'s player. With role=Mover this is the "SameTurn" idiom: the same
+        // player is moving again (a moveAgain continuation, e.g. a Morris mill →
+        // remove). @java game/functions/booleans/is/player/IsPrev.java
+        const roleNode = positional[1];
+        const roleName = (roleNode && isIdent(roleNode)) ? roleNode.name.toLowerCase() : "mover";
+        return { eval(ctx: Context): boolean {
+          const moves = ctx.trial.moves;
+          if (moves.length === 0) return false;
+          const prevMover = moves[moves.length - 1]!.mover;
+          let target: number;
+          if (roleName === "next") target = ctx.state.next;
+          else if (/^p\d+$/.test(roleName)) target = parseInt(roleName.slice(1), 10);
+          else target = ctx.state.mover; // Mover (default)
+          return prevMover === target;
+        }};
       }
 
       if (kind === "friendly" || kind === "friend") {
