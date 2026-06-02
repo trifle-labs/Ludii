@@ -1254,6 +1254,17 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
             } else if (roleName === "p1" || roleName === "p2" || roleName === "p3" || roleName === "p4") {
               const pid = parseInt(roleName.slice(1), 10);
               for (let i = 0; i < boardN; i++) { if (cells[i] === pid) result.push(i); }
+            } else if (roleName === "enemy") {
+              // Enemy: any board piece NOT owned by the mover (and not neutral).
+              // @java SitesOccupied with RoleType.Enemy.
+              const mover = ctx.state.mover;
+              for (let i = 0; i < boardN; i++) {
+                if (cells[i] !== 0 && cells[i] !== mover) result.push(i);
+              }
+            } else if (roleName === "friend" || roleName === "friendly") {
+              // Friend: the mover's own board pieces. @java RoleType.Friend.
+              const mover = ctx.state.mover;
+              for (let i = 0; i < boardN; i++) { if (cells[i] === mover) result.push(i); }
             } else if (roleName === "neutral" || roleName === "shared") {
               // Neutral pieces: cells[i] = 0 (owner=neutral/shared) AND whats[i] != 0
               // @java SitesOccupied: Neutral = RoleType.Neutral = owner 0
