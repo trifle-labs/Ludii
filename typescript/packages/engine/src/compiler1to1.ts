@@ -3997,13 +3997,15 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       return attachThen(stepMoves, positional, equipment);
     }
 
-    // (move (from ...) (to ...)) — FromTo
+    // (move (from ...) (to ...) [(then ...)]) — FromTo
     if (first && isList(first) && headOf(first) === "from") {
       const toNode = positional.find(n => isList(n) && headOf(n) === "to");
       if (!toNode || !isList(toNode)) {
         throw new Error("compiler1to1: (move (from ...) ...) missing (to ...)");
       }
-      return compileFromTo1to1(first, toNode, named);
+      // attachThen so a placement's mill consequence (then (if (is Line 3) (moveAgain)))
+      // fires — Morris-family placements are FromTo moves.
+      return attachThen(compileFromTo1to1(first, toNode, named), positional, equipment);
     }
 
     // (move Promote [type] <location> (piece {"Queen" "Knight" ...}) [<role>]) — piece promotion
