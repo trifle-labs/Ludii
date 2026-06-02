@@ -18,8 +18,16 @@ import {
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 
 export class Board1to1 {
-  /** Number of cells on the board. @java Board.numSites() */
+  /** Number of play sites on the board (vertices for vertex-play boards). @java Board.numSites() */
   public readonly numSites: number;
+  /**
+   * The board container's index span = max(numFaces, numPlaySites). Java offsets
+   * the NEXT container (hands) by this, NOT by the play-site count — so on a
+   * vertex-played board with more cells than vertices (e.g. AlquerqueBoard 5×5:
+   * 25 vertices, 32 cells) the hand sits at index 32, not 25.
+   * @java game/equipment/Equipment.java — initContainer maxSiteMainBoard
+   */
+  public readonly containerSpan: number;
   /** Board width (for square boards, or bounding-box width for others). */
   public readonly width: number;
   /** Board height (for square boards, or bounding-box height for others). */
@@ -49,12 +57,13 @@ export class Board1to1 {
    * @param numSites Actual play-site count
    * @param traj Trajectories object for adjacency/radial queries
    */
-  public constructor(width: number, height: number, numSites: number, traj: Trajectories);
+  public constructor(width: number, height: number, numSites: number, traj: Trajectories, numFaces?: number);
   public constructor(
     width: number,
     height: number,
     numSitesOrUndefined?: number,
     traj?: Trajectories,
+    numFaces?: number,
   ) {
     this.width = width;
     this.height = height;
@@ -64,12 +73,15 @@ export class Board1to1 {
       this.trajectories = traj;
       // @java other/topology/Topology.java — preGenerateDirection(game)
       this.radials = buildGraphRadials(traj);
+      // Container span = max(numFaces, numPlaySites) — see field doc.
+      this.containerSpan = Math.max(numFaces ?? this.numSites, this.numSites);
     } else {
-      // Square/rectangle path.
+      // Square/rectangle path: cells == play sites, so the span equals numSites.
       this.numSites = width * height;
       this.trajectories = null;
       // @java other/topology/Topology.java — buildRadials() (called during Game.create)
       this.radials = buildFlatRadials(width, height);
+      this.containerSpan = this.numSites;
     }
   }
 }

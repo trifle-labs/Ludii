@@ -95,10 +95,13 @@ export class Equipment1to1 {
     this.pieces = Object.freeze([...pieces]);
     this.hands = Object.freeze([...hands]);
 
-    // Compute hand site indices starting at board.numSites.
-    // @java Equipment.sitesFrom(): board sites first, then hand containers in order.
-    this.handSiteBase = board.numSites;
-    let nextSite = board.numSites;
+    // Compute hand site indices starting at the board container's index SPAN,
+    // = max(numFaces, numPlaySites). On a vertex-played board with more cells
+    // than vertices (AlquerqueBoard 5×5: 25 vertices, 32 cells) Java puts the
+    // hand at 32, not 25 — matching the recorded trials.
+    // @java Equipment.sitesFrom() / Equipment.initContainer maxSiteMainBoard.
+    this.handSiteBase = board.containerSpan;
+    let nextSite = board.containerSpan;
     const handMap = new Map<number, number>();
     for (const hand of hands) {
       handMap.set(hand.owner, nextSite);

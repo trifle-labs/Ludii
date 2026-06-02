@@ -5101,21 +5101,24 @@ function compileBoard1to1(node: LudList): Board1to1 {
   if (sh === "square") {
     const sArgs = parseArgs1to1(shapeNode.items);
     const sizeNode = sArgs.positional[0];
-    if (sizeNode && isNumber(sizeNode)) {
+    // Boards with diagonals (alquerque-style) need the real graph (diagonal
+    // adjacency + the extra triangular faces that set the hand-container offset),
+    // so they must route through buildBoardGraph — only plain squares fast-path.
+    if (sizeNode && isNumber(sizeNode) && !sArgs.named.has("diagonals")) {
       return new Board1to1(sizeNode.value, sizeNode.value);
     }
-    // Non-literal size or tiling variant (e.g. Diamond): fall through to buildBoardGraph
+    // Non-literal size / tiling variant / diagonals: fall through to buildBoardGraph
   }
 
   if (sh === "rectangle") {
     const rArgs = parseArgs1to1(shapeNode.items);
     const hNode = rArgs.positional[0];
     const wNode = rArgs.positional[1];
-    if (hNode && isNumber(hNode) && wNode && isNumber(wNode)) {
+    if (hNode && isNumber(hNode) && wNode && isNumber(wNode) && !rArgs.named.has("diagonals")) {
       // Java convention: first arg = rows (height), second = columns (width)
       return new Board1to1(wNode.value, hNode.value);
     }
-    // Non-literal dimensions (e.g. from option expressions): fall through to buildBoardGraph.
+    // Non-literal dimensions / diagonals: fall through to buildBoardGraph.
   }
 
   // All other shapes: route through the interpreter's faithful graph machinery.
@@ -5129,7 +5132,7 @@ function compileBoard1to1(node: LudList): Board1to1 {
     }
     throw new Error(`compiler1to1: unsupported board shape "${sh}"`);
   }
-  return new Board1to1(graphSpec.width, graphSpec.height, graphSpec.numSites, graphSpec.traj);
+  return new Board1to1(graphSpec.width, graphSpec.height, graphSpec.numSites, graphSpec.traj, graphSpec.numFaces);
 }
 
 // ---------------------------------------------------------------------------
