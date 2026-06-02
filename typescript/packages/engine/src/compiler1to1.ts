@@ -1884,7 +1884,19 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
             };
           } catch { /* fall through */ }
         }
-        return { eval(_ctx: Context): number[] { return []; } };
+        // Bare (sites Player) — the region of the currently iterated player
+        // (forEach Player sets ctx._evalPlayer), else the mover.
+        return { eval(ctx: Context): number[] {
+          const game = ctx.game as unknown as Game1to1;
+          const pid = ctx._evalPlayer ?? ctx.state.mover;
+          const regionFn = game.equipment?.playerRegions.get(pid);
+          if (regionFn) return regionFn.eval(ctx);
+          const cells = ctx.state.cells;
+          const boardN = game.equipment ? game.equipment.board.numSites : cells.length;
+          const res: number[] = [];
+          for (let i = 0; i < boardN; i++) { if (cells[i] === pid) res.push(i); }
+          return res;
+        }};
       }
 
       // Generic unknown (sites X ...) — return empty rather than throw to avoid cascade
