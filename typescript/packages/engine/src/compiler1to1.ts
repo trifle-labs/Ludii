@@ -271,6 +271,23 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
         const siteFn = compileInt1to1(atN);
         return { eval(ctx: Context): number { const s = siteFn.eval(ctx); return s >= 0 ? ctx.state.countAtSite(s) : 0; } };
       }
+      // (count in:<region>) — bare form (no subtype): the total number of
+      // pieces/seeds across the region's sites. @java CountInRegion
+      if ((!first || !isIdent(first)) && named.has("in")) {
+        const inN = named.get("in");
+        let regionFn: RegionFunction | null = null;
+        try { regionFn = compileRegion1to1(inN); } catch { /* none */ }
+        return { eval(ctx: Context): number {
+          if (!regionFn) return 0;
+          let total = 0;
+          for (const s of regionFn.eval(ctx)) {
+            if (s < 0) continue;
+            const c = ctx.state.countAtSite(s);
+            total += c > 0 ? c : ((ctx.state.cells[s] ?? 0) !== 0 ? 1 : 0);
+          }
+          return total;
+        }};
+      }
       if (first && isIdent(first)) {
         const kind = first.name.toLowerCase();
         if (kind === "moves") return new CountMoves();
@@ -1623,10 +1640,14 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
       }
 
       if (kind === "mover") {
-        // (sites Mover) — sites owned by mover
+        // (sites Mover) — the static region declared for the mover via
+        // (regions P1 …)/(regions P2 …); falls back to mover-owned cells when
+        // no region is declared. @java …/region/sites/player/SitesPlayer (Mover).
         return { eval(ctx: Context): number[] {
-          const cells = ctx.state.cells;
           const g = ctx.game as unknown as Game1to1;
+          const region = g.equipment?.playerRegions?.get(ctx.state.mover);
+          if (region) return region.eval(ctx);
+          const cells = ctx.state.cells;
           const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
           const mover = ctx.state.mover;
           const res: number[] = [];
@@ -1636,15 +1657,27 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
       }
 
       if (kind === "next") {
-        // (sites Next) — sites owned by next player
+        // (sites Next) — the static region declared for the next player; falls
+        // back to next-owned cells when no region is declared.
         return { eval(ctx: Context): number[] {
-          const cells = ctx.state.cells;
           const g = ctx.game as unknown as Game1to1;
-          const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
           const next = (ctx.state.mover % ctx.game.numPlayers) + 1;
+          const region = g.equipment?.playerRegions?.get(next);
+          if (region) return region.eval(ctx);
+          const cells = ctx.state.cells;
+          const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
           const res: number[] = [];
           for (let i = 0; i < boardN; i++) { if (cells[i] === next) res.push(i); }
           return res;
+        }};
+      }
+
+      if (kind === "track") {
+        // (sites Track) — all sites on the (first) track. @java SitesTrack
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          const t = [...(g.equipment?.tracks?.values() ?? [])][0];
+          return t ? [...t.sites] : [];
         }};
       }
 
@@ -5401,8 +5434,8 @@ function compileEquipment1to1(
     board = new Board1to1(8, 8);
   }
 
-  // Collect (track "Name" {sites} loop:) declarations (children of the board node).
-  collectTracks1to1(node, tracks);
+  // Collect (track "Name" {sites}|"dir-string" loop:) declarations.
+  collectTracks1to1(node, tracks, board.width, board.height);
 
   // Compile player regions (needs board to be known first).
   const playerRegions = new Map<number, RegionFunction>();
@@ -5436,22 +5469,58 @@ function parseTrackSites1to1(node: LudNode | undefined): number[] {
   return out;
 }
 
-/** Recursively find `(track "Name" {sites} loop:)` nodes and store the ordered tracks. */
-function collectTracks1to1(node: LudNode, tracks: Map<string, { sites: readonly number[]; loop: boolean }>): void {
+/**
+ * Walk a mancala direction-string track such as "0,E,N,W" on a W×H grid.
+ * The first token is the start site; each following token is a compass step
+ * (E/W/N/S) walked greedily until it can no longer continue, then the next
+ * direction takes over. Sites are numbered row-major from the bottom row
+ * (site = row*W + col). @java game/equipment/container/board/Track.java string ctor.
+ */
+function parseTrackDirString1to1(spec: string, W: number, H: number): number[] {
+  const toks = spec.split(",").map(t => t.trim()).filter(Boolean);
+  if (toks.length === 0 || W <= 0 || H <= 0) return [];
+  const start = parseInt(toks[0]!, 10);
+  if (!Number.isInteger(start) || start < 0 || start >= W * H) return [];
+  const stepOf = (s: number, dir: string): number => {
+    const col = s % W, row = Math.floor(s / W);
+    switch (dir.toUpperCase()) {
+      case "E": return col + 1 < W ? s + 1 : -1;
+      case "W": return col - 1 >= 0 ? s - 1 : -1;
+      case "N": return row + 1 < H ? s + W : -1;
+      case "S": return row - 1 >= 0 ? s - W : -1;
+      default: return -1;
+    }
+  };
+  const out: number[] = [start];
+  let cur = start;
+  for (let i = 1; i < toks.length; i++) {
+    let next = stepOf(cur, toks[i]!);
+    while (next >= 0 && !out.includes(next)) { out.push(next); cur = next; next = stepOf(cur, toks[i]!); }
+  }
+  return out;
+}
+
+/** Recursively find `(track "Name" {sites}|"dir-string" loop:)` nodes and store the ordered tracks. */
+function collectTracks1to1(node: LudNode, tracks: Map<string, { sites: readonly number[]; loop: boolean }>, W = 0, H = 0): void {
   if (!isList(node)) return;
   if (headOf(node) === "track") {
     const { positional, named } = parseArgs1to1(node.items);
     const nameNode = positional[0];
     const name = (nameNode && isString(nameNode)) ? nameNode.value : `Track${tracks.size}`;
-    // Site list is the first curly-list positional arg.
+    // Site list is the first curly-list positional arg …
     const sitesNode = positional.find(n => isList(n) && n.delimiter === "curly");
-    const sites = parseTrackSites1to1(sitesNode);
+    let sites = parseTrackSites1to1(sitesNode);
+    // … or a direction string ("0,E,N,W"), the second string positional after the name.
+    if (sites.length === 0) {
+      const dirStr = positional.find((n, i) => i > 0 && isString(n)) as { value: string } | undefined;
+      if (dirStr) sites = parseTrackDirString1to1(dirStr.value, W, H);
+    }
     const loopNode = named.get("loop");
     const loop = loopNode !== undefined && isIdent(loopNode) && loopNode.name.toLowerCase() === "true";
     if (sites.length > 0) tracks.set(name, { sites, loop });
     return;
   }
-  for (const item of node.items) collectTracks1to1(item, tracks);
+  for (const item of node.items) collectTracks1to1(item, tracks, W, H);
 }
 
 /** Compile a (piece ...) declaration and push Piece objects into the array. */
