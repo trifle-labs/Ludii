@@ -1250,6 +1250,25 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
     const first = positional[0];
     if (first && isIdent(first)) {
       const kind = first.name.toLowerCase();
+      // (sites <role> "Name") — a named player region (regions "Home" P1 …).
+      // Resolves <role> to a player (Mover/Next/Player→_evalPlayer, Pn→n) then
+      // looks up that player's named region. @java SitesPlayer with region name.
+      const nameNode = positional[1];
+      if (nameNode && isString(nameNode) &&
+          (kind === "mover" || kind === "next" || kind === "player" || (kind.startsWith("p") && !isNaN(parseInt(kind.slice(1), 10))))) {
+        const regName = nameNode.value.toLowerCase();
+        const fixedPid = (kind.startsWith("p") && !isNaN(parseInt(kind.slice(1), 10))) ? parseInt(kind.slice(1), 10) : -1;
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          let pid = fixedPid;
+          if (kind === "mover") pid = ctx.state.mover;
+          else if (kind === "next") pid = (ctx.state.mover % ctx.game.numPlayers) + 1;
+          else if (kind === "player") pid = ctx._evalPlayer ?? ctx.state.mover;
+          const byName = g.equipment?.namedPlayerRegions?.get(regName);
+          const regionFn = byName?.get(pid);
+          return regionFn ? regionFn.eval(ctx) : [];
+        }};
+      }
       if (kind === "empty") return new SitesEmpty();
       if (kind === "hand") {
         const roleNode = positional[1];
@@ -1673,10 +1692,15 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
       }
 
       if (kind === "track") {
-        // (sites Track) — all sites on the (first) track. @java SitesTrack
+        // (sites Track ["Name"]) — sites on the named track (or the first track).
+        // @java SitesTrack
+        const trackNameNode = positional[1];
+        const trackName = (trackNameNode && isString(trackNameNode)) ? trackNameNode.value : null;
         return { eval(ctx: Context): number[] {
           const g = ctx.game as unknown as Game1to1;
-          const t = [...(g.equipment?.tracks?.values() ?? [])][0];
+          const tracksMap = g.equipment?.tracks;
+          if (!tracksMap) return [];
+          const t = trackName ? tracksMap.get(trackName) : [...tracksMap.values()][0];
           return t ? [...t.sites] : [];
         }};
       }
@@ -5364,7 +5388,7 @@ function compileEquipment1to1(
   let board: Board1to1 | undefined;
   const pieces: Piece[] = [];
   const hands: HandSpec[] = [];
-  const pendingRegions: Array<{ owner: number; node: LudList }> = [];
+  const pendingRegions: Array<{ owner: number; name: string | null; node: LudList }> = [];
   const tracks = new Map<string, { sites: readonly number[]; loop: boolean }>();
 
   const { positional } = parseArgs1to1(node.items);
@@ -5444,16 +5468,17 @@ function compileEquipment1to1(
       //   (regions "Name" P1 <region>)    — named player region (skip name)
       // @java game/equipment/regions/PlayerRegions.java
       const rArgs = parseArgs1to1(child.items);
-      // Skip optional string name as first arg
+      // Capture optional string name as first arg: (regions "Home" P1 <region>)
       let argIdx = 0;
-      if (rArgs.positional[0] && isString(rArgs.positional[0])) argIdx = 1; // skip name
+      let regionName: string | null = null;
+      if (rArgs.positional[0] && isString(rArgs.positional[0])) { regionName = rArgs.positional[0].value; argIdx = 1; }
       const ownerNode = rArgs.positional[argIdx];
       const regionDef = rArgs.positional[argIdx + 1];
       if (ownerNode && isIdent(ownerNode) && regionDef && isList(regionDef)) {
         const ownerStr = ownerNode.name;
         if (ownerStr.startsWith("P") && !isNaN(parseInt(ownerStr.slice(1), 10))) {
           const owner = parseInt(ownerStr.slice(1), 10);
-          pendingRegions.push({ owner, node: regionDef });
+          pendingRegions.push({ owner, name: regionName, node: regionDef });
         }
       }
     }
@@ -5470,18 +5495,30 @@ function compileEquipment1to1(
   // Collect (track "Name" {sites}|"dir-string" loop:) declarations.
   collectTracks1to1(node, tracks, board.width, board.height);
 
-  // Compile player regions (needs board to be known first).
+  // Compile player regions (needs board to be known first). Unnamed regions go
+  // into playerRegions (by owner); named ones into namedPlayerRegions (by
+  // lowercased name → owner → region) for (sites <role> "Name") resolution.
   const playerRegions = new Map<number, RegionFunction>();
-  for (const { owner, node: rNode } of pendingRegions) {
+  const namedPlayerRegions = new Map<string, Map<number, RegionFunction>>();
+  for (const { owner, name, node: rNode } of pendingRegions) {
     try {
       const regionFn = compileRegion1to1(rNode);
-      playerRegions.set(owner, regionFn);
+      if (name) {
+        const key = name.toLowerCase();
+        let m = namedPlayerRegions.get(key);
+        if (!m) { m = new Map(); namedPlayerRegions.set(key, m); }
+        m.set(owner, regionFn);
+        // The first named region for a player also serves as its default region.
+        if (!playerRegions.has(owner)) playerRegions.set(owner, regionFn);
+      } else {
+        playerRegions.set(owner, regionFn);
+      }
     } catch {
       // Skip uncompilable regions
     }
   }
 
-  return new Equipment1to1(board, pieces, hands, playerRegions, tracks);
+  return new Equipment1to1(board, pieces, hands, playerRegions, tracks, namedPlayerRegions);
 }
 
 /** Expand a curly site list — bare ints + `a..b` ranges (ascending or descending). */
