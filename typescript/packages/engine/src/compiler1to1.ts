@@ -4748,6 +4748,16 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
   if (!pieceIdNode || !isString(pieceIdNode)) return null;
   const pieceId = pieceIdNode.value;
 
+  // (place "X" coord:"C5") — placement at a NAMED algebraic coordinate.
+  // @java game/rules/start/place/site/PlaceCustomStack / Place coord:
+  const coordNamed = named.get("coord");
+  if (coordNamed && isString(coordNamed)) {
+    const site = algebraicToSite(coordNamed.value, equipment?.board.width, equipment?.board.height);
+    if (site >= 0) {
+      return new PlaceSites1to1(pieceId, [site]);
+    }
+  }
+
   // Check for "Hand" as second positional arg
   const secondNode = positional[1];
   if (secondNode && isString(secondNode) && secondNode.value.toLowerCase() === "hand") {
