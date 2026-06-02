@@ -73,6 +73,13 @@ export class FromTo1to1 implements MovesFunction {
   /**
    * @java game/rules/play/moves/nonDecision/effect/FromTo.java — constructor
    */
+  /**
+   * Optional count: a number of seeds to transfer (non-stacking N-seed move,
+   * mancala captures). When set, emits an ActionMove with transferCount=true.
+   * @java FromTo.count
+   */
+  private readonly countFn: IntFunction | null;
+
   public constructor(opts: {
     locFrom?: IntFunction | null;
     regionFrom?: RegionFunction | null;
@@ -80,6 +87,7 @@ export class FromTo1to1 implements MovesFunction {
     regionTo?: RegionFunction | null;
     toCondition?: BooleanFunction | null;
     copy?: boolean;
+    countFn?: IntFunction | null;
   }) {
     this.locFrom = opts.locFrom ?? null;
     this.regionFrom = opts.regionFrom ?? null;
@@ -87,6 +95,7 @@ export class FromTo1to1 implements MovesFunction {
     this.regionTo = opts.regionTo ?? null;
     this.toCondition = opts.toCondition ?? null;
     this.copy = opts.copy ?? false;
+    this.countFn = opts.countFn ?? null;
   }
 
   /**
@@ -157,18 +166,30 @@ export class FromTo1to1 implements MovesFunction {
           // (move ... copy:True) — duplicate piece, source unchanged.
           // @java FromTo.java: ActionCopy when copy is true.
           action = new ActionCopy(from, to);
+        } else if (this.countFn !== null) {
+          // (fromTo … count:N) — non-stacking N-seed transfer (mancala capture):
+          // decrement source by N, increment dest by N. @java ActionMove(transferCount).
+          // count: is evaluated against the consequence context (where (to) is the
+          // sow landing site), NOT this move's own destination — restore origTo.
+          const savedFrom = ctx._evalFrom, savedTo = ctx._evalTo;
+          ctx._evalFrom = origFrom; ctx._evalTo = origTo;
+          const n = this.countFn.eval(ctx);
+          ctx._evalFrom = savedFrom; ctx._evalTo = savedTo;
+          action = new ActionMove({ from, to, count: n, transferCount: true });
         } else {
           // Standard move: ActionMove handles count-based hands correctly.
           // @java ActionMove: decrements countAt if > 1, clears if ≤ 1.
           action = new ActionMove({ from, to });
         }
 
+        // Seed/Shared content has owner 0; the placed owner falls back to the
+        // mover (the player performing the move) so the Move stays well-formed.
         result.push(new Move({
           id: `fromto:${mover}:${from}:${to}`,
           label: `FromTo(${from}→${to})`,
           siteIndices: [from, to],
           mover,
-          placedOwner: who,
+          placedOwner: who >= 1 ? who : mover,
           actions: [action],
         }));
       }

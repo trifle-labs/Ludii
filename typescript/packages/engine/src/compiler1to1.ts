@@ -3255,16 +3255,35 @@ function compileEndRule1to1(node: LudNode, numPlayers: number): EndRuleFunction 
  * @java game/rules/end/ByScore.java — eval: ranks players by score
  */
 function compileByScore1to1(node: LudList, numPlayers: number): EndRuleFunction {
-  // (byScore) — use context scores as-is; highest score wins
+  // (byScore [{ (score P1 <fn>) (score P2 <fn>) ... }]) — when an explicit score
+  // list is given, each player's score is the evaluated <fn> at end time (Java
+  // ByScore evaluates the finalScore functions); otherwise use state scores.
+  // @java game/rules/end/ByScore.java
+  const { positional } = parseArgs1to1(node.items);
+  const scoreList = positional.find(n => isList(n) && (n as LudList).delimiter === "curly");
+  const scoreFns = new Map<number, IntFunction>();
+  if (scoreList && isList(scoreList)) {
+    for (const item of scoreList.items) {
+      if (!isList(item) || headOf(item) !== "score") continue;
+      const sArgs = parseArgs1to1(item.items);
+      const roleNode = sArgs.positional[0];
+      const valNode = sArgs.positional[1];
+      if (!roleNode || !isIdent(roleNode) || !valNode) continue;
+      const rn = roleNode.name.toLowerCase();
+      const pid = rn.startsWith("p") && !isNaN(parseInt(rn.slice(1), 10)) ? parseInt(rn.slice(1), 10) : -1;
+      if (pid < 1) continue;
+      try { scoreFns.set(pid, compileInt1to1(valNode)); } catch { /* skip */ }
+    }
+  }
   return {
     eval(ctx: Context): import("./ludemes/base.js").EndResult | null {
-      const scores = (ctx.state as unknown as { scores?: number[] }).scores;
-      if (!scores) return null;
+      const stateScores = (ctx.state as unknown as { scores?: number[] }).scores;
 
-      // Rank by score: highest score = rank 1
+      // Rank by score: highest score = rank 1. Prefer evaluated score fns.
       const allScores: number[] = new Array(numPlayers + 1).fill(0);
       for (let p = 1; p <= numPlayers; p++) {
-        allScores[p] = scores[p] ?? 0;
+        const fn = scoreFns.get(p);
+        allScores[p] = fn ? fn.eval(ctx) : (stateScores?.[p] ?? 0);
       }
 
       // Build ranking (Java parity: iterative max-score rank assignment)
@@ -3804,16 +3823,24 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       const seeds = ctx.state.countAtSite(hole);
       const pos0 = track.indexOf(hole);
       if (seeds <= 0 || pos0 < 0) return [];
-      const added = new Map<number, number>();
+      // Clear the source hole, then drop one seed per subsequent track site (in
+      // sow order). A running per-site count lets a seed that WRAPS back onto the
+      // (now-cleared) source land on a base of 0, and emits one SetCount per seed
+      // so the LAST action's `to` is the final sown hole — needed by
+      // (last To afterConsequence). @java game/.../effect/Sow.java
+      const running = new Map<number, number>();
+      running.set(hole, 0);
+      const actions: import("./action/index.js").Action[] = [new ActionSetCount({ to: hole, count: 0 })];
       let pos = pos0, last = hole;
       for (let i = 0; i < seeds; i++) {
         pos++; if (pos >= track.length) { if (loop) pos = 0; else break; }
         const s = track[pos]!;
-        added.set(s, (added.get(s) ?? 0) + 1);
+        const base = running.has(s) ? running.get(s)! : ctx.state.countAtSite(s);
+        const nc = base + 1;
+        running.set(s, nc);
+        actions.push(new ActionSetCount({ to: s, count: nc }));
         last = s;
       }
-      const actions: import("./action/index.js").Action[] = [new ActionSetCount({ to: hole, count: 0 })];
-      for (const [s, n] of added) actions.push(new ActionSetCount({ to: s, count: ctx.state.countAtSite(s) + n }));
       let moveAgain = false;
       if (sowApply) {
         // @java Sow.java — the apply: consequence runs at the LANDING site in the
@@ -3833,6 +3860,19 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
         placedOwner: ctx.state.mover, actions, moveAgain,
       })];
     }};
+  }
+
+  // ---- (fromTo (from ...) (to ...) [count:N] [(then ...)]) — standalone -----
+  // The same ludeme as (move (from ...) (to ...)); used directly as a
+  // consequence (mancala captures, teleports). @java …/effect/FromTo.java
+  if (h === "fromto") {
+    const { positional, named } = parseArgs1to1(node.items);
+    const fromNode = positional.find(n => isList(n) && headOf(n) === "from");
+    const toNode = positional.find(n => isList(n) && headOf(n) === "to");
+    if (fromNode && isList(fromNode) && toNode && isList(toNode)) {
+      return attachThen(compileFromTo1to1(fromNode, toNode, named), positional, equipment);
+    }
+    return { eval(_ctx: Context): Move[] { return []; } };
   }
 
   // ---- (move ...) dispatch -----------------------------------------------
@@ -4972,7 +5012,12 @@ function compileFromTo1to1(
   const toIfNode = toArgs.named.get("if");
   if (toIfNode) { try { toCondition = compileBool1to1(toIfNode, 2); } catch { /* ignore */ } }
 
-  return new FromTo1to1({ locFrom, regionFrom, locTo, regionTo, toCondition, copy });
+  // count:<int> — N-seed transfer (mancala capture). @java FromTo.count
+  let countFn: IntFunction | null = null;
+  const countNode = _named.get("count");
+  if (countNode) { try { countFn = compileInt1to1(countNode); } catch { /* ignore */ } }
+
+  return new FromTo1to1({ locFrom, regionFrom, locTo, regionTo, toCondition, copy, countFn });
 }
 
 // ---------------------------------------------------------------------------

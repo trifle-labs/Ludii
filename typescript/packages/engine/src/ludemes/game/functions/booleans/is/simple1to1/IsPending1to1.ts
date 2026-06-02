@@ -15,10 +15,11 @@ export class IsPending1to1 implements BooleanFunction {
    * @java IsPending.eval(Context): context.state().isPending()
    */
   public eval(ctx: Context): boolean {
-    const state = ctx.state as unknown as { isPending?: () => boolean; pending?: boolean };
-    if (state.isPending) return state.isPending();
-    if (state.pending !== undefined) return state.pending;
-    return false;
+    // @java IsPending.eval: context.state().isPending() — true when ANY value is
+    // on the pending list (non-empty pending set). Note state.isPending(site)
+    // takes a site argument, so check the set's size directly.
+    const state = ctx.state as unknown as { pending?: ReadonlySet<number> };
+    return (state.pending?.size ?? 0) > 0;
   }
 }
 
