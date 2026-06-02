@@ -313,11 +313,19 @@ export class Game1to1 implements Game {
       winner = 0; // draw
     }
 
+    // A moveAgain (continued turn — e.g. a Morris mill → remove) DEFERS phase
+    // transitions until the turn truly ends: the second half of the turn must run
+    // in the SAME phase. Otherwise an emptied hand would flip Placement→Movement
+    // before the mill removal is offered. @java Game.java — phase update is at
+    // end-of-turn, skipped while the same player moves again.
+    const setNextAct = move.actions.find(a => a.actionType() === "SetNextPlayer");
+    const willContinueTurn = move.moveAgain || (setNextAct !== undefined && setNextAct.who() === mover);
+
     // Step 5: Phase transitions (only when game is still active).
     // @java game/Game.java:3117–3141
     // "We update the current Phase for each player if this is a game with phases."
     let stateAfterPhase = newState;
-    if (!over && this.rules.phases !== null) {
+    if (!over && !willContinueTurn && this.rules.phases !== null) {
       const phases = this.rules.phases;
       for (let pid = 1; pid <= this.numPlayers; pid++) {
         const currentPhaseIdx = stateAfterPhase.phase(pid);
