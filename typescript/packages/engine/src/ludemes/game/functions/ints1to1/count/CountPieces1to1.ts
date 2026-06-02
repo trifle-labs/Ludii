@@ -65,6 +65,14 @@ export class CountPieces1to1 implements IntFunction {
       }
     }
 
+    // Pieces at a site: seed/stack count when present (mancala holes, stacks
+    // hold their pieces in countAt), else 1 for a single owned piece.
+    const piecesAt = (i: number): number => {
+      const c = countAt[i] ?? 0;
+      if (c > 0) return c;
+      return (cells[i] ?? 0) !== 0 ? 1 : 0;
+    };
+
     function countAt_(cells: readonly number[], countAtArr: readonly number[], start: number, end: number, pid: number): number {
       let n = 0;
       for (let i = start; i < end; i++) {
@@ -74,21 +82,19 @@ export class CountPieces1to1 implements IntFunction {
           // check what piece is at site
           // whats is not always present — skip name filter if unavailable
         }
-        const depth = i < boardN ? 1 : (countAtArr[i] ?? 0);
-        n += depth;
+        const c = countAtArr[i] ?? 0;
+        n += c > 0 ? c : 1;
       }
       return n;
     }
 
     if (this.isAll) {
-      // Count all pieces (any non-zero owner)
+      // Count all pieces — board seeds (countAt, owner 0 for Shared) + owned
+      // single pieces + hand-slot stacks.
       let total = 0;
       for (let i = 0; i < totalN; i++) {
         if (allowedSites && !allowedSites.has(i)) continue;
-        const owner = cells[i] ?? 0;
-        if (owner === 0) continue;
-        const depth = i < boardN ? 1 : (countAt[i] ?? 0);
-        total += depth;
+        total += piecesAt(i);
       }
       return total;
     }
