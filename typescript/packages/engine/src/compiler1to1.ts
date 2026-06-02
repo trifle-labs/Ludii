@@ -3842,9 +3842,19 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
   // runs at the LANDING site (_evalTo = last). @java …/effect/Sow.java
   if (h === "sow") {
     const { named } = parseArgs1to1(node.items);
-    const applyNode = named.get("apply");
+    const applyNode = named.get("apply");          // captureEffect
+    const ifNode = named.get("if");                // captureRule (default true)
+    const includeSelfNode = named.get("includeself");
+    const backtrackNode = named.get("backtracking");
     let sowApply: MovesFunction | undefined;
     if (applyNode) { try { sowApply = compileMoves1to1(applyNode, equipment); } catch { /* skip */ } }
+    let captureRuleFn: BooleanFunction | undefined;
+    if (ifNode) { try { captureRuleFn = compileBool1to1(ifNode, 2); } catch { /* default true */ } }
+    let backtrackFn: BooleanFunction | undefined;
+    const backtrackAlways = backtrackNode !== undefined && isIdent(backtrackNode) && backtrackNode.name.toLowerCase() === "true";
+    if (backtrackNode && !backtrackAlways) { try { backtrackFn = compileBool1to1(backtrackNode, 2); } catch { /* none */ } }
+    const includeSelf = !(includeSelfNode !== undefined && isIdent(includeSelfNode) && includeSelfNode.name.toLowerCase() === "false");
+    const hasBacktrack = backtrackAlways || backtrackFn !== undefined;
     return { eval(ctx: Context): Move[] {
       const game = ctx.game as unknown as Game1to1;
       const trackEntry = [...(game.equipment?.tracks?.values() ?? [])][0];
@@ -3857,36 +3867,59 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       const pos0 = track.indexOf(hole);
       if (seeds <= 0 || pos0 < 0) return [];
       // Clear the source hole, then drop one seed per subsequent track site (in
-      // sow order). A running per-site count lets a seed that WRAPS back onto the
-      // (now-cleared) source land on a base of 0, and emits one SetCount per seed
-      // so the LAST action's `to` is the final sown hole — needed by
-      // (last To afterConsequence). @java game/.../effect/Sow.java
+      // sow order). includeSelf:False skips the origin when wrapping. A running
+      // per-site count lets a wrap-around seed base on the cleared 0, and one
+      // SetCount per seed keeps the LAST action's `to` = the final sown hole
+      // (needed by (last To afterConsequence)). @java game/.../effect/Sow.java
       const running = new Map<number, number>();
       running.set(hole, 0);
       const actions: import("./action/index.js").Action[] = [new ActionSetCount({ to: hole, count: 0 })];
-      let pos = pos0, last = hole;
+      let pos = pos0, last = hole, lastPos = pos0;
       for (let i = 0; i < seeds; i++) {
         pos++; if (pos >= track.length) { if (loop) pos = 0; else break; }
+        // Skip the origin hole when includeSelf is false.
+        if (!includeSelf && track[pos] === hole) {
+          pos++; if (pos >= track.length) { if (loop) pos = 0; else break; }
+        }
         const s = track[pos]!;
         const base = running.has(s) ? running.get(s)! : ctx.state.countAtSite(s);
         const nc = base + 1;
         running.set(s, nc);
         actions.push(new ActionSetCount({ to: s, count: nc }));
-        last = s;
+        last = s; lastPos = pos;
       }
       let moveAgain = false;
       if (sowApply) {
-        // @java Sow.java — the apply: consequence runs at the LANDING site in the
-        // state AFTER the seeds have been distributed (source hole cleared, each
-        // landing incremented). Build that post-sow state and evaluate against it.
+        // @java Sow.java capture phase: apply the sow to a temp state, then WHILE
+        // captureRule holds at the current `to`, apply the captureEffect from the
+        // origin; with backtracking, step `to` back along the track and repeat.
         let postState = ctx.state;
         for (const a of actions) postState = a.apply(postState);
-        const postCtx = ctx.withState(postState);
-        postCtx._evalTo = last;
-        postCtx._evalFrom = hole;
-        try {
-          for (const am of sowApply.eval(postCtx)) { for (const a of am.actions) actions.push(a); if (am.moveAgain) moveAgain = true; }
-        } catch { /* ignore */ }
+        let to = last, tpos = lastPos;
+        let guard = 0;
+        for (;;) {
+          const capCtx = ctx.withState(postState);
+          capCtx._evalFrom = hole;
+          capCtx._evalTo = to;
+          if (captureRuleFn && !captureRuleFn.eval(capCtx)) break;
+          let produced = false;
+          try {
+            for (const am of sowApply.eval(capCtx)) {
+              for (const a of am.actions) { actions.push(a); postState = a.apply(postState); produced = true; }
+              if (am.moveAgain) moveAgain = true;
+            }
+          } catch { /* ignore */ }
+          if (!hasBacktrack) break;
+          if (++guard > 64) break;
+          // Backtrack to the previous track site.
+          tpos = tpos - 1; if (tpos < 0) { if (loop) tpos = track.length - 1; else break; }
+          to = track[tpos]!;
+          const btCtx = ctx.withState(postState);
+          btCtx._evalFrom = hole; btCtx._evalTo = to;
+          if (backtrackFn && !backtrackFn.eval(btCtx)) break;
+          if (to === hole) break;
+          if (!produced && captureRuleFn) { /* allow re-check at new to */ }
+        }
       }
       return [new Move({
         id: `sow:${hole}`, label: "Sow", siteIndices: [hole], mover: ctx.state.mover,
