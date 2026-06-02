@@ -3650,6 +3650,70 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     }
   }
 
+  // ---- (enclose (from <site>) [<dirn>] (between if:<cond> (apply (remove (between))))) ----
+  // Go-family capture: from the pivot, find adjacent ENEMY groups that are now
+  // fully surrounded (no liberties) and capture them (remove every group stone).
+  // Used both as a real capture move (Go/Gonnect: in a then-consequence) and in
+  // `(can Move (enclose …))` for the NoGo no-capture rule.
+  // @java game/rules/play/moves/nonDecision/effect/Enclose.java
+  if (h === "enclose") {
+    const { positional } = parseArgs1to1(node.items);
+    const fromNode = positional.find(n => isList(n) && headOf(n) === "from");
+    const fromInner = fromNode && isList(fromNode) ? parseArgs1to1(fromNode.items).positional[0] : undefined;
+    const fromFn: IntFunction = fromInner ? compileInt1to1(fromInner) : { eval: (ctx: Context): number => ctx._evalTo };
+    let dirnName = "Orthogonal";
+    const dirnIdent = positional.find(n => isIdent(n) && n.name.toLowerCase() !== "from");
+    if (dirnIdent && isIdent(dirnIdent)) dirnName = dirnIdent.name;
+    return {
+      eval(ctx: Context): Move[] {
+        const from = fromFn.eval(ctx);
+        if (from < 0) return [];
+        const mover = ctx.state.mover;
+        const cells = ctx.state.cells;
+        const ctxAny = ctx as unknown as { _radials?: CellFlatRadials[] };
+        const radials = ctxAny._radials;
+        if (!radials) return [];
+        const orthoNbrs = (s: number): number[] => {
+          const cr = radials[s];
+          if (!cr) return [];
+          const out: number[] = [];
+          for (const { ray, opposite } of radialsForDirection(cr, dirnName)) {
+            if (ray[1] !== undefined) out.push(ray[1]);
+            if (opposite[1] !== undefined) out.push(opposite[1]);
+          }
+          return out;
+        };
+        const captured = new Set<number>();
+        for (const a of orthoNbrs(from)) {
+          if (captured.has(a)) continue;
+          const enemyWhat = cells[a] ?? 0;
+          if (enemyWhat === 0 || enemyWhat === mover) continue; // empty or friend
+          // BFS the enemy group; capture it iff it has NO empty (liberty) neighbour.
+          const group: number[] = [];
+          const seen = new Set<number>([a]);
+          const stack = [a];
+          let hasLiberty = false;
+          while (stack.length) {
+            const sNode = stack.pop()!;
+            group.push(sNode);
+            for (const nb of orthoNbrs(sNode)) {
+              const w = cells[nb] ?? 0;
+              if (w === 0) hasLiberty = true;
+              else if (w === enemyWhat && !seen.has(nb)) { seen.add(nb); stack.push(nb); }
+            }
+          }
+          if (!hasLiberty) for (const g of group) captured.add(g);
+        }
+        if (captured.size === 0) return [];
+        const actions = [...captured].map(s => new ActionRemove({ to: s }));
+        return [new Move({
+          id: `enclose:${from}`, label: "Enclose", siteIndices: [from],
+          mover, placedOwner: mover, actions,
+        })];
+      },
+    };
+  }
+
   // ---- (moveAgain) as a moves generator ----------------------------------
   // Emits a sentinel move carrying the same-player continuation. Only meaningful
   // inside a (then ...) consequence (resolved by withThenConsequence/attachThen);
