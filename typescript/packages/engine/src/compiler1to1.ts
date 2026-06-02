@@ -4768,8 +4768,11 @@ function compilePlaceRule1to1(node: LudList, equipment?: Equipment1to1): StartRu
       ? (roleNode.name as RoleType | "Shared")
       : "Mover";
     const offset = offsetNode && isNumber(offsetNode) ? offsetNode.value : 0;
+    // count:N — number of pieces seeded into the hand slot (e.g. 20 goats). @java Place.count
+    const phCountNode = named.get("count");
+    const phCount = phCountNode && isNumber(phCountNode) ? phCountNode.value : 1;
     // pieceId without suffix is the piece name (e.g. "Disc" not "Disc1")
-    return new PlaceAtHandSite1to1(pieceId, role, offset);
+    return new PlaceAtHandSite1to1(pieceId, role, offset, phCount);
   }
 
   // Try to compile the second arg as a RegionFunction (union, intersection, etc.)

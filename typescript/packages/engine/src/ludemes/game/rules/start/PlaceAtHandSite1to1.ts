@@ -21,11 +21,14 @@ export class PlaceAtHandSite1to1 implements StartRule {
   private readonly role: RoleType | "Shared";
   /** Slot offset within the hand (0-based). */
   private readonly offset: number;
+  /** Number of pieces to seed at the hand slot (the `count:` arg, default 1). */
+  private readonly count: number;
 
-  public constructor(pieceId: string, role: RoleType | "Shared", offset = 0) {
+  public constructor(pieceId: string, role: RoleType | "Shared", offset = 0, count = 1) {
     this.pieceId = pieceId;
     this.role = role;
     this.offset = offset;
+    this.count = count;
   }
 
   public applyToInitialState(
@@ -79,6 +82,6 @@ export class PlaceAtHandSite1to1 implements StartRule {
 
     cells[handSite] = owner;
     whats[handSite] = piece.index;
-    countAt[handSite] = 1; // One piece available at this hand slot
+    countAt[handSite] = this.count; // `count:N` pieces available at this hand slot
   }
 }
