@@ -1840,13 +1840,26 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
       // Generic unknown (sites X ...) — return empty rather than throw to avoid cascade
       return { eval(_ctx: Context): number[] { return []; } };
     }
-    // (sites { num1 num2 ... }) or (sites { "A1" "B2" ... }) — curly list of sites
+    // (sites { num1 num2 ... }) / (sites { "A1" "B2" ... }) / (sites { <int-expr> … })
     if (first && isList(first) && first.delimiter === "curly") {
       const coordStrings2: string[] = [];
       const numSites2: number[] = [];
+      const exprFns2: IntFunction[] = [];
       for (const item of first.items) {
         if (isString(item)) coordStrings2.push(item.value);
         else if (isNumber(item)) numSites2.push(item.value);
+        else if (isList(item) || isIdent(item)) { try { exprFns2.push(compileInt1to1(item)); } catch { /* skip */ } }
+      }
+      // Expression items (e.g. {(NextHoleFrom (LastHole) 1)}) — eval at runtime.
+      if (exprFns2.length > 0) {
+        const fns = exprFns2, lits = numSites2, coords = coordStrings2;
+        return { eval(ctx: Context): number[] {
+          const g = ctx.game as unknown as Game1to1;
+          const W = g.equipment?.board?.width ?? 0, H = g.equipment?.board?.height ?? 0;
+          const out: number[] = [...lits, ...coords.map(c => algebraicToSite(c, W, H))];
+          for (const f of fns) { const s = f.eval(ctx); if (s >= 0) out.push(s); }
+          return out.filter(s => s >= 0);
+        }};
       }
       if (coordStrings2.length > 0) {
         const cs2 = coordStrings2;
