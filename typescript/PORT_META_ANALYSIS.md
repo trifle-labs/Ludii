@@ -28,6 +28,7 @@ Rating = parity yield per unit effort, as observed. ★★★ = high-leverage,
 
 ## Known minefields (☠ — net-negative, do not re-attempt without a new idea)
 
+- **Step direction-SET + relative-direction restriction** (`(move Step (directions {Rightward Leftward Forwards}) …)`): making Step honor the specified direction set (instead of defaulting to Adjacent 8-dir) + resolving relatives (Forwards→N/S by mover) REGRESSED board/space −2 AND made Addi Kul fail at ply 1 instead of 225. The relative→absolute mapping is board-orientation-dependent (P1/P2 facing isn't uniformly N/S; some boards/games orient differently), and the one-way (single-direction) restriction breaks games that need bidirectional. The Adjacent over-generation, while wrong, accidentally matches more often. Needs per-board player-facing metadata + faithful RelativeDirection, not a 2-player N/S heuristic. (2026-06-02, reverted.)
 - **Graph-board side-region orientation** (`(sites Top/Bottom/Left/Right)` via trajectories xOf/yOf extremes): the y-axis convention is NOT uniform across graph boards — Adugo's "Top" is min-y, but applying min-y globally REGRESSED board/space −2 and hunt −7 (other graph boards orient the opposite way). The flat W×H formula and the graph yOf disagree on up/down. Needs per-board-family orientation metadata, not a global min/max rule. (2026-06-02, reverted.)
 
 - ActionMoveStacking full/partial-stack move semantics + ActionAddCount count-transfer OWNER logic (Bashni/Lasca/Moo/Murus/At-Tab).
