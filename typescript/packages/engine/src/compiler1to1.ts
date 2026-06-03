@@ -3796,15 +3796,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
   // inside a (then ...) consequence (resolved by withThenConsequence/attachThen);
   // never added to a real move list directly.
   // @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
-  if (h === "moveagain") {
-    return { eval(ctx: Context): Move[] {
-      const mover = ctx.state.mover;
-      return [new Move({
-        id: "moveAgain", label: "MoveAgain", siteIndices: [0], mover, placedOwner: mover,
-        actions: [new ActionSetNextPlayer(mover)], moveAgain: true,
-      })];
-    }};
-  }
+  // (moveAgain) RELOCATED → registered faithful class MoveAgain1to1 (registry1to1-moves.ts).
 
   // ---- (sow [apply:<effect>]) — mancala sow, used inside (then (sow …)) -------
   // Picks up the seeds at the selected hole (_evalTo) and distributes one per
@@ -4818,19 +4810,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
 
   // ---- (pass) / (move Pass) — explicit pass move ----------------------------
   // @java game/rules/play/moves/nonDecision/effect/Pass.java
-  if (h === "pass") {
-    return { eval(ctx: Context): Move[] {
-      const mover = ctx.state.mover;
-      return [new Move({
-        id: "pass",
-        label: "Pass",
-        siteIndices: [],
-        mover,
-        placedOwner: mover,
-        actions: [new ActionPass()],
-      })];
-    }};
-  }
+  // (pass) RELOCATED → registered faithful class Pass1to1 (registry1to1-moves.ts).
 
   // ---- (max Moves <moves>) / (max Captures <moves>) — keep only max-capture moves ------
   // @java game/rules/play/moves/nonDecision/effect/requirement/max/Max.java
