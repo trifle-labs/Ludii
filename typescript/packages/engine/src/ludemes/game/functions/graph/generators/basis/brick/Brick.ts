@@ -10,6 +10,8 @@ import { Graph } from "../../../../../../../eval/graph/graph.js";
 import { genBrick } from "../../../../../../../eval/graph/named-tilings.js";
 import { Basis } from "../Basis.js";
 import { SquareOrRectangleOnBrick } from "./SquareOrRectangleOnBrick.js";
+import { DiamondOrPrismOnBrick } from "./DiamondOrPrismOnBrick.js";
+import { SpiralOnBrick } from "./SpiralOnBrick.js";
 import type { BrickShapeType } from "./BrickShapeType.js";
 
 /** @java Brick — null placeholder (use constructBrick instead). */
@@ -28,7 +30,20 @@ export function constructBrick(
   dimB?: number,
   trim = false,
 ): GraphFunction {
-  const st = (shape ?? "Square").toLowerCase();
-  if (st === "limping") return { eval: (_s: string) => genBrick("Limping", dimA, dimB, trim), dim: () => [dimA] };
-  return new SquareOrRectangleOnBrick(dimA, dimB, trim);
+  const st = shape ?? (dimB !== undefined && dimB !== dimA ? "Rectangle" : "Square");
+  switch (st) {
+    case "Square":
+    case "Rectangle":
+      return new SquareOrRectangleOnBrick(dimA, dimB, trim);
+    case "Limping":
+      return { eval: (_s: string) => genBrick("Limping", dimA, dimB, trim), dim: () => [dimA] };
+    case "Diamond":
+      return new DiamondOrPrismOnBrick(dimA, undefined, trim);
+    case "Prism":
+      return new DiamondOrPrismOnBrick(dimA, dimB ?? dimA, trim);
+    case "Spiral":
+      return new SpiralOnBrick(dimA);
+    default:
+      throw new Error(`Shape ${st} not supported for Brick tiling.`);
+  }
 }

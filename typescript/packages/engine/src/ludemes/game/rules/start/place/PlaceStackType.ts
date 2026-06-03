@@ -1,2 +1,11 @@
 // @java Core/src/game/rules/start/place/PlaceStackType.java
-// TODO Phase 2: faithful port from PlaceStackType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines properties that can be placed as a stack in the starting rules.
+ *
+ * @java game/rules/start/place/PlaceStackType.java
+ */
+export enum PlaceStackType {
+  /** To place a stack. */
+  Stack = "Stack",
+}

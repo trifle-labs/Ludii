@@ -1,2 +1,10 @@
 // @java Core/src/game/functions/booleans/is/IsRegularGraphType.java
-// TODO Phase 2: faithful port from IsRegularGraphType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is test for a regular graph.
+ * @java game.functions.booleans.is.IsRegularGraphType
+ */
+export enum IsRegularGraphType {
+  /** To check the graph is regular. */
+  RegularGraph = "RegularGraph",
+}

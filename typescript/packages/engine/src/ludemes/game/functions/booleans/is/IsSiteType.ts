@@ -1,2 +1,14 @@
 // @java Core/src/game/functions/booleans/is/IsSiteType.java
-// TODO Phase 2: faithful port from IsSiteType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is test for a site.
+ *
+ * @author Eric.Piette
+ */
+export enum IsSiteType {
+  /** To check if a site is empty. */
+  Empty = 0,
+
+  /** To check if a site is occupied. */
+  Occupied = 1,
+}

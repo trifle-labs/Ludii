@@ -1,2 +1,11 @@
 // @java Core/src/game/functions/booleans/is/IsInType.java
-// TODO Phase 2: faithful port from IsInType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is test according for the In test.
+ *
+ * @author Eric.Piette
+ */
+export enum IsInType {
+  /** To check if a specific location is in a region. */
+  In = 0,
+}

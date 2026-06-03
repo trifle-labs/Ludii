@@ -1,2 +1,10 @@
 // @java Core/src/game/functions/booleans/is/IsEdgeType.java
-// TODO Phase 2: faithful port from IsEdgeType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is for two edges.
+ * @java game.functions.booleans.is.IsEdgeType
+ */
+export enum IsEdgeType {
+  /** To check if two edges are crossing each other. */
+  Crossing = "Crossing",
+}

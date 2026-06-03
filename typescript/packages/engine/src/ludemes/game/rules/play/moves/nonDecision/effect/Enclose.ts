@@ -1,2 +1,231 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Enclose.java
-// TODO Phase 2: faithful port from Enclose.java (currently handled in compile.ts shared moves/effect logic or not implemented as a standalone per-class case).
+/**
+ * Applies a move to an enclosed group.
+ *
+ * Java parity: game/rules/play/moves/nonDecision/effect/Enclose.java
+ *
+ * @remarks A group of components is 'enclosed' if it has no adjacent empty
+ *          sites, where board sides count as boundaries. This ludeme is used
+ *          for surround capture games such as Go.
+ *
+ *          Coverage-only transliteration. NOT registered in the 1:1 moves
+ *          registry. The live path is handled by Enclose1to1.ts (if exists).
+ */
+
+import type { Context } from "../../../../../../../context.js";
+import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
+import type { Move } from "../../../../../../../move.js";
+import type { Then } from "./Then.js";
+import { Move as LudiiMove } from "../../../../../../../move.js";
+
+/** Topology interface needed for adjacency queries */
+interface TopoElement {
+  readonly index: number;
+}
+
+interface Trajectory {
+  steps(type: string, from: number, toType: string, dir: string): Array<{ to: { id: () => number } }>;
+}
+
+interface GraphElements extends Array<TopoElement> {
+  readonly length: number;
+}
+
+interface Topology {
+  getGraphElements(type: string): GraphElements;
+  trajectories(): Trajectory;
+}
+
+export class Enclose implements MovesFunction {
+  /** @java Enclose.startFn */
+  private readonly startFn: IntFunction;
+
+  /** @java Enclose.dirnChoice — direction function name */
+  private readonly dirnName: string;
+
+  /** @java Enclose.targetRule — condition on between sites */
+  private readonly targetRule: BooleanFunction;
+
+  /** @java Enclose.numEmptySitesInGroupEnclosed — liberties allowed */
+  private readonly numEmptySitesInGroup: IntFunction;
+
+  /** @java Enclose.effect — move applied on each enclosed site */
+  private readonly effect: MovesFunction;
+
+  /** @java Enclose.type */
+  private readonly type: string | null;
+
+  /** @java Effect.then */
+  private readonly thenClause: Then | null;
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/Enclose.java — constructor
+   */
+  public constructor(opts: {
+    startFn: IntFunction;
+    dirnName?: string;
+    targetRule: BooleanFunction;
+    numEmptySitesInGroup?: IntFunction;
+    effect: MovesFunction;
+    type?: string | null;
+    then?: Then | null;
+  }) {
+    this.startFn = opts.startFn;
+    this.dirnName = opts.dirnName ?? "Adjacent";
+    this.targetRule = opts.targetRule;
+    this.numEmptySitesInGroup = opts.numEmptySitesInGroup ?? { eval: () => 0 };
+    this.effect = opts.effect;
+    this.type = opts.type ?? null;
+    this.thenClause = opts.then ?? null;
+  }
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/Enclose.java — eval(Context)
+   *
+   * 1. Resolve from = startFn.eval(context)
+   * 2. Get adjacency around from (satisfying targetRule or empty if numException > 0)
+   * 3. BFS expand each group of target-satisfying sites
+   * 4. If group has no liberties (empty neighbours outside the group), apply effect
+   */
+  public eval(ctx: Context): Move[] {
+    const from = this.startFn.eval(ctx);
+    if (from < 0) return [];
+
+    const origBetween = ctx._evalBetween;
+    const origTo = ctx._evalTo;
+
+    // Topology lookup — requires topology on context
+    const ctxAny = ctx as unknown as {
+      topology?: Topology;
+      _siteType?: string;
+    };
+
+    const topology = ctxAny.topology;
+    if (!topology) {
+      throw new Error("not yet wired: Enclose requires topology on Context");
+    }
+
+    const realType = this.type ?? ctxAny._siteType ?? "Cell";
+    const graphElements = topology.getGraphElements(realType);
+    if (from >= graphElements.length) return [];
+
+    const numException = this.numEmptySitesInGroup.eval(ctx);
+    const mover = ctx.state.mover;
+    const cs = ctx.state;
+
+    // @java Enclose.java:146-163 — get all sites around from satisfying targetRule
+    const isTarget = (loc: number): boolean => {
+      ctx._evalBetween = loc;
+      return this.targetRule.eval(ctx);
+    };
+
+    const aroundTarget: number[] = [];
+    const trajectories = topology.trajectories();
+    const steps = trajectories.steps(realType, from, realType, this.dirnName);
+    for (const step of steps) {
+      const between = step.to.id();
+      if (!aroundTarget.includes(between)) {
+        if (isTarget(between)) {
+          aroundTarget.push(between);
+        } else if (numException > 0 && cs.whatAtSite(between) === 0) {
+          aroundTarget.push(between);
+        }
+      }
+    }
+
+    const sitesChecked: boolean[] = new Array(graphElements.length).fill(false);
+    const allMoves: LudiiMove[] = [];
+    const graphSize = graphElements.length;
+
+    // @java Enclose.java:170-305 — for each potential target, BFS and check liberties
+    aroundTargetLoop:
+    for (const target of aroundTarget) {
+      if (sitesChecked[target]) continue;
+
+      let numExceptionToUse = numException;
+      if (numExceptionToUse > 0 && cs.whatAtSite(target) === 0) {
+        numExceptionToUse--;
+      }
+
+      // BFS to find the connected group
+      const enclosedGroup: boolean[] = new Array(graphSize).fill(false);
+      const enclosedGroupList: number[] = [];
+      enclosedGroup[target] = true;
+      enclosedGroupList.push(target);
+
+      let i = 0;
+      while (i < enclosedGroupList.length) {
+        const site = enclosedGroupList[i]!;
+        const siteSteps = trajectories.steps(realType, site, realType, this.dirnName);
+
+        for (const step of siteSteps) {
+          const between = step.to.id();
+          if (enclosedGroup[between]) continue;
+
+          if (isTarget(between)) {
+            enclosedGroup[between] = true;
+            enclosedGroupList.push(between);
+          } else if (cs.whatAtSite(between) === 0) {
+            if (numExceptionToUse > 0) {
+              enclosedGroup[between] = true;
+              enclosedGroupList.push(between);
+              numExceptionToUse--;
+            } else {
+              // Liberty found — group is not enclosed
+              continue aroundTargetLoop;
+            }
+          }
+        }
+
+        sitesChecked[site] = true;
+        i++;
+      }
+
+      // @java Enclose.java:237-258 — check for liberties in the full group
+      for (const siteGroup of enclosedGroupList) {
+        const groupSteps = trajectories.steps(realType, siteGroup, realType, this.dirnName);
+        for (const step of groupSteps) {
+          const to = step.to.id();
+          if (!enclosedGroup[to] && cs.whatAtSite(to) === 0) {
+            // Liberty — this group is not fully enclosed
+            continue aroundTargetLoop;
+          }
+        }
+      }
+
+      // @java Enclose.java:298-304 — group is enclosed, apply effect to each member
+      for (const between of enclosedGroupList) {
+        ctx._evalBetween = between;
+        const effectMoves = this.effect.eval(ctx);
+        allMoves.push(...effectMoves.map(m => {
+          // Ensure mover is set
+          if (m.mover !== mover) {
+            return new LudiiMove({
+              id: m.id,
+              label: m.label,
+              siteIndices: [...m.siteIndices],
+              mover,
+              placedOwner: mover,
+              actions: [...m.actions],
+            });
+          }
+          return m;
+        }));
+      }
+    }
+
+    ctx._evalTo = origTo;
+    ctx._evalBetween = origBetween;
+
+    // @java Enclose.java:311-313 — then clause
+    if (this.thenClause != null) {
+      const thenMoves = this.thenClause.eval(ctx);
+      return allMoves.map(m => m.withConsequence(
+        thenMoves.flatMap(tm => [...tm.actions]),
+        false,
+      ));
+    }
+
+    return allMoves;
+  }
+}

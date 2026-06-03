@@ -1,2 +1,11 @@
 // @java Core/src/game/functions/booleans/is/IsGroupType.java
-// TODO Phase 2: faithful port from IsGroupType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is test according to a region.
+ *
+ * @author Cedric Antoine
+ */
+export enum IsGroupType {
+  /** To check for freedom of a specific region. */
+  Freedom = 0,
+}

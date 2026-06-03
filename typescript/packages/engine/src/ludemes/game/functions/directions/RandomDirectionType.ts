@@ -1,5 +1,11 @@
 // @java Core/src/game/functions/directions/RandomDirectionType.java
 
-// STUB: Java RandomDirectionType is an enum with only `Random`
-// (RandomDirectionType.java:6-10). It has no standalone `.lud` head to
-// register, and direction subtype dispatch is not wired.
+/**
+ * Defines the types of random direction to choose.
+ *
+ * @java game.functions.directions.RandomDirectionType
+ */
+export enum RandomDirectionType {
+  /** Random direction from a set of directions. */
+  Random = "Random",
+}

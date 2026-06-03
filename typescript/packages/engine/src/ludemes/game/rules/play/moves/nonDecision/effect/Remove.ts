@@ -1,2 +1,131 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Remove.java
-// TODO Phase 2: faithful port from Remove.java (currently handled in compile.ts shared moves/effect logic or not implemented as a standalone per-class case).
+/**
+ * Removes an item from a site.
+ *
+ * Java parity: game/rules/play/moves/nonDecision/effect/Remove.java
+ *
+ * @remarks If the site is empty, the move is not applied. Coverage-only
+ *          transliteration — NOT registered in the 1:1 moves registry.
+ */
+
+import type { Context } from "../../../../../../../context.js";
+import type { IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
+import type { Move } from "../../../../../../../move.js";
+import type { Then } from "./Then.js";
+import { ActionRemove } from "../../../../../../../action/action-remove.js";
+import { Move as LudiiMove } from "../../../../../../../move.js";
+
+/** OFF constant matching Java's Constants.OFF = -1 */
+const OFF = -1;
+
+export class Remove implements MovesFunction {
+  /** @java Remove.regionFunction — which sites to remove from */
+  private readonly locationFn: IntFunction | null;
+  private readonly regionFn: RegionFunction | null;
+
+  /** @java Remove.countFn — number of pieces to remove [default 1] */
+  private readonly countFn: IntFunction;
+
+  /** @java Remove.levelFn — level of the piece to remove [default top] */
+  private readonly levelFn: IntFunction | null;
+
+  /** @java Remove.type — site type */
+  private readonly type: string | null;
+
+  /** @java Remove.when — when to apply removal (null = immediately, "EndOfTurn" = deferred) */
+  private readonly when: string | null;
+
+  /** @java Effect.then */
+  private readonly thenClause: Then | null;
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/Remove.java — constructor
+   *
+   * @param locationFn  Single-site function (mutually exclusive with regionFn)
+   * @param regionFn    Multi-site region function (mutually exclusive with locationFn)
+   * @param countFn     Number of pieces to remove [1]
+   * @param levelFn     Level to remove from [top]
+   * @param type        Site type [null = default]
+   * @param when        "EndOfTurn" or null for immediate
+   * @param thenClause  Subsequent moves
+   */
+  public constructor(opts: {
+    locationFn?: IntFunction | null;
+    regionFn?: RegionFunction | null;
+    countFn?: IntFunction | null;
+    levelFn?: IntFunction | null;
+    type?: string | null;
+    when?: string | null;
+    then?: Then | null;
+  }) {
+    this.locationFn = opts.locationFn ?? null;
+    this.regionFn = opts.regionFn ?? null;
+    this.countFn = opts.countFn ?? { eval: () => 1 };
+    this.levelFn = opts.levelFn ?? null;
+    this.type = opts.type ?? null;
+    this.when = opts.when ?? null;
+    this.thenClause = opts.then ?? null;
+  }
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/Remove.java — eval(Context)
+   *
+   * For each location in the region (or single location), emit a remove move
+   * if the site is non-empty.
+   */
+  public eval(ctx: Context): Move[] {
+    // @java Remove.java:107 — locs = regionFunction.eval(context)
+    const locs: number[] = (this.regionFn != null)
+      ? this.regionFn.eval(ctx)
+      : [this.locationFn != null ? this.locationFn.eval(ctx) : ctx._evalTo];
+
+    const count = this.countFn.eval(ctx);
+    const mover = ctx.state.mover;
+    const moves: LudiiMove[] = [];
+
+    for (const loc of locs) {
+      if (loc < 0) continue;
+
+      // @java Remove.java:127-129 — skip empty sites
+      const what = ctx.state.whatAtSite(loc);
+      if (what <= 0) continue;
+
+      // @java Remove.java:131 — applyNow = when != EndOfTurn
+      const applyNow = this.when !== "EndOfTurn";
+
+      const actions: import("../../../../../../../action/index.js").Action[] = [];
+
+      // @java Remove.java:139 — primary ActionRemove
+      const actionRemove = new ActionRemove({ to: loc });
+      actions.push(actionRemove);
+
+      // @java Remove.java:144-149 — additional removes for count > 1
+      let remaining = count - 1;
+      while (remaining > 0) {
+        actions.push(new ActionRemove({ to: loc }));
+        remaining--;
+      }
+
+      const move = new LudiiMove({
+        id: `remove:${mover}:${loc}`,
+        label: `Remove(${loc})`,
+        siteIndices: [loc],
+        mover,
+        placedOwner: mover,
+        actions,
+      });
+      moves.push(move);
+    }
+
+    // @java Remove.java:154-155 — then clause
+    if (this.thenClause != null) {
+      const thenMoves = this.thenClause.eval(ctx);
+      return moves.map(m => m.withConsequence(
+        thenMoves.flatMap(tm => [...tm.actions]),
+        false,
+      ));
+    }
+
+    return moves;
+  }
+}

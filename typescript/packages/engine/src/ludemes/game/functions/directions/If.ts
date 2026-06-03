@@ -1,6 +1,59 @@
 // @java Core/src/game/functions/directions/If.java
 
-// STUB: the registry has a nominal `dir` category, but compileDirections() does
-// not look up registered direction ludemes. Java If chooses between two
-// DirectionsFunction branches at convert time (If.java:127-144); leave
-// unregistered until the direction dispatcher is wired.
+import type { Context } from "../../../../context.js";
+import type { BooleanFunction, DirectionsFunction } from "../../../base.js";
+
+/**
+ * Returns one of two direction sets depending on a boolean condition.
+ *
+ * Java parity: If extends DirectionsFunction. It holds a condition
+ * (BooleanFunction) and two DirectionsFunction branches.
+ * convertToAbsolute delegates to whichever branch the condition selects.
+ *
+ * @java game.functions.directions.If
+ * @author Eric.Piette
+ */
+export class If implements DirectionsFunction {
+  /** Direction function when the condition is true. @java If.directionFunctionOk */
+  private readonly directionFunctionOk: DirectionsFunction;
+
+  /** Direction function when the condition is false. @java If.directionFunctionNotOk */
+  private readonly directionFunctionNotOk: DirectionsFunction;
+
+  /** The condition. @java If.condition */
+  private readonly condition: BooleanFunction;
+
+  /**
+   * @java If(BooleanFunction condition, Direction directionsOk, Direction directionsNotOk)
+   */
+  public constructor(
+    condition: BooleanFunction,
+    directionFunctionOk: DirectionsFunction,
+    directionFunctionNotOk: DirectionsFunction,
+  ) {
+    this.condition = condition;
+    this.directionFunctionOk = directionFunctionOk;
+    this.directionFunctionNotOk = directionFunctionNotOk;
+  }
+
+  /**
+   * Returns the selected direction set based on condition.
+   * @java If.convertToAbsolute — delegates to the true or false branch.
+   */
+  public eval(ctx: Context): string[] {
+    if (this.condition.eval(ctx)) {
+      return this.directionFunctionOk.eval(ctx);
+    }
+    return this.directionFunctionNotOk.eval(ctx);
+  }
+
+  /** @java If.isStatic */
+  public isStatic(): boolean {
+    return false;
+  }
+
+  /** @java If.toString */
+  public toString(): string {
+    return "";
+  }
+}

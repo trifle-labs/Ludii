@@ -1,2 +1,11 @@
 // @java Core/src/game/functions/booleans/is/IsTriggeredType.java
-// TODO Phase 2: faithful port from IsTriggeredType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is test to trigger an event.
+ *
+ * @author Eric.Piette
+ */
+export enum IsTriggeredType {
+  /** To check if a player is triggered. */
+  Triggered = 0,
+}

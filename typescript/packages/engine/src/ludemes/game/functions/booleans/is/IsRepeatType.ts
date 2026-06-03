@@ -1,2 +1,13 @@
 // @java Core/src/game/functions/booleans/is/IsRepeatType.java
-// TODO Phase 2: faithful port from IsRepeatType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is test according to a repetition.
+ *
+ * @author Eric.Piette
+ */
+export enum IsRepeatType {
+  /**
+   * To check if a site was already encounter previously.
+   */
+  Repeat = 0,
+}

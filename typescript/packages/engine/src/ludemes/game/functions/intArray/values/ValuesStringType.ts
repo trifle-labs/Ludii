@@ -1,5 +1,18 @@
 // @java Core/src/game/functions/intArray/values/ValuesStringType.java
 
-// STUB: Java ValuesStringType is an enum with only `Remembered`
-// (ValuesStringType.java:8-11). It is parsed as the first argument of
-// `(values Remembered ...)`, so there is no separate TS ludeme head to register.
+/**
+ * Defines the types of values with only a string parameter.
+ *
+ * @java game/functions/intArray/values/ValuesStringType.java
+ *
+ * Java parity: enum ValuesStringType { Remembered }
+ */
+
+/**
+ * Enum of value-string types for the (values ...) ludeme.
+ * @java game.functions.intArray.values.ValuesStringType
+ */
+export enum ValuesStringType {
+  /** Values remembered previously. */
+  Remembered = "Remembered",
+}

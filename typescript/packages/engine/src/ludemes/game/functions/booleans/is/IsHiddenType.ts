@@ -1,2 +1,11 @@
 // @java Core/src/game/functions/booleans/is/IsHiddenType.java
-// TODO Phase 2: faithful port from IsHiddenType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is test according to hidden information.
+ *
+ * @author Eric.Piette
+ */
+export enum IsHiddenType {
+  /** To check if a specific site is hidden to a specific player. */
+  Hidden = 0,
+}

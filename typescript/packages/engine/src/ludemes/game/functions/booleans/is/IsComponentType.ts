@@ -1,2 +1,14 @@
 // @java Core/src/game/functions/booleans/is/IsComponentType.java
-// TODO Phase 2: faithful port from IsComponentType.java (currently not implemented as a standalone head)
+
+/**
+ * Defines the types of Is test according to a component and a site/region.
+ *
+ * @author Eric.Piette
+ */
+export enum IsComponentType {
+  /** To check if a location is under threat. */
+  Threatened = 0,
+
+  /** To check if a specific piece is on the designed region. */
+  Within = 1,
+}
