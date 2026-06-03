@@ -3604,7 +3604,7 @@ function withMoveAgainWrapper(inner: MovesFunction): MovesFunction {
  *
  * @java game/rules/play/moves/nonDecision/effect/Then.java
  */
-function withThenConsequence(inner: MovesFunction, thenGen: MovesFunction): MovesFunction {
+export function withThenConsequence(inner: MovesFunction, thenGen: MovesFunction): MovesFunction {
   return {
     eval(ctx: Context): Move[] {
       const c = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
@@ -3638,7 +3638,7 @@ function withThenConsequence(inner: MovesFunction, thenGen: MovesFunction): Move
  * with withThenConsequence; otherwise return inner unchanged (byte-identical for
  * moves with no `then`).
  */
-function attachThen(
+export function attachThen(
   inner: MovesFunction,
   positional: readonly LudNode[],
   equipment?: Equipment1to1,
@@ -3668,7 +3668,7 @@ function attachThen(
  *
  * @java game/util/moves/Piece.java — component() returns the component index fn
  */
-function compilePieceArg1to1(
+export function compilePieceArg1to1(
   node: LudList,
   equipment: Equipment1to1,
 ): { what: IntFunction; owner: number } | null {
@@ -3767,7 +3767,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
   // Pattern mirrors compileInt1to1 (line ~172) / compileRegion1to1 (line ~1160).
   // ---------------------------------------------------------------------------
   {
-    const env: Compile1to1Env = { numPlayers: 2 };
+    const env: Compile1to1Env = { numPlayers: 2, equipment };
     const plainCtor = lookupMoves1to1(h!);
     if (plainCtor) return plainCtor(node, env);
     // Compound "move:<Subtype>": (move Add ...), (move Hop ...), (move Step ...)
@@ -4965,7 +4965,7 @@ function findRegionInToArgs(positional: LudNode[]): LudNode | undefined {
 
 /** Flatten a move argument list, unwrapping curly-brace arrays.
  *  Silently skips sub-moves that fail to compile (tolerant for (or ...) inside piece generators). */
-function flattenMovesList(positional: LudNode[], equipment?: Equipment1to1): MovesFunction[] {
+export function flattenMovesList(positional: LudNode[], equipment?: Equipment1to1): MovesFunction[] {
   const moves: MovesFunction[] = [];
   for (const p of positional) {
     if (isList(p) && p.delimiter === "curly") {
@@ -4982,7 +4982,7 @@ function flattenMovesList(positional: LudNode[], equipment?: Equipment1to1): Mov
 }
 
 /** Compile (move (from ...) (to ...)) as FromTo1to1. */
-function compileFromTo1to1(
+export function compileFromTo1to1(
   fromNode: LudList,
   toNode: LudList,
   _named: Map<string, LudNode>,

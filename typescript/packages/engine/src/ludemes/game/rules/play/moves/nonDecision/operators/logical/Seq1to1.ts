@@ -21,14 +21,17 @@
  * moves from the first non-empty sub-list (matching the inline seq handler
  * in compileMoves1to1Impl). Full sequential application deferred.
  *
- * NOTE: NOT registered — the inline compileMoves1to1Impl handles "seq".
- * This is a faithful coverage class for structural completeness.
+ * Registered via registerMoves1to1("seq", ...) — logic relocated VERBATIM
+ * from the inline compileMoves1to1Impl handler (shadows the inline branch).
  */
 
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { Operator1to1 } from "../../operator/Operator1to1.js";
+import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
+import { parseArgs1to1, flattenMovesList } from "../../../../../../../../compiler1to1.js";
+import { type LudList, type LudNode } from "@ludii/typescript-language";
 
 /**
  * @java game/rules/play/moves/nonDecision/operators/logical/Seq.java
@@ -71,3 +74,11 @@ export class Seq1to1 extends Operator1to1 {
     return [];
   }
 }
+
+// @java Seq.java — compile factory: parse (seq { ... }) / (seq <moves1> <moves2>).
+// Logic relocated VERBATIM from the inline compileMoves1to1Impl "seq" handler.
+registerMoves1to1("seq", (node: LudNode, env: Compile1to1Env): MovesFunction => {
+  const { positional } = parseArgs1to1((node as LudList).items);
+  const subMoves = flattenMovesList(positional, env.equipment as Parameters<typeof flattenMovesList>[1]);
+  return new Seq1to1(subMoves);
+});

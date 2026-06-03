@@ -14,14 +14,17 @@
  *       moves.moves().get(j).then().add(then().moves());
  *   return moves;
  *
- * NOTE: NOT registered — the inline compileMoves1to1Impl handles "and".
- * This is a faithful coverage class only.
+ * Registered via registerMoves1to1("and", ...) — logic relocated VERBATIM
+ * from the inline compileMoves1to1Impl handler (shadows the inline branch).
  */
 
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { Operator1to1 } from "../../operator/Operator1to1.js";
+import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
+import { parseArgs1to1, flattenMovesList } from "../../../../../../../../compiler1to1.js";
+import { type LudList, type LudNode } from "@ludii/typescript-language";
 
 /**
  * @java game/rules/play/moves/nonDecision/operators/logical/And.java
@@ -63,3 +66,11 @@ export class And1to1 extends Operator1to1 {
     return result;
   }
 }
+
+// @java And.java — compile factory: parse (and { ... }) / (and <moves1> <moves2>).
+// Logic relocated VERBATIM from the inline compileMoves1to1Impl "and" handler.
+registerMoves1to1("and", (node: LudNode, env: Compile1to1Env): MovesFunction => {
+  const { positional } = parseArgs1to1((node as LudList).items);
+  const subMoves = flattenMovesList(positional, env.equipment as Parameters<typeof flattenMovesList>[1]);
+  return new And1to1(subMoves);
+});

@@ -42,6 +42,12 @@ import type {
 export interface Compile1to1Env {
   /** Number of players in the game being compiled. */
   readonly numPlayers: number;
+  /**
+   * The compiled equipment, when available at the call site (moves registry
+   * lookups thread it so relocated handlers can compile equipment-dependent
+   * sub-moves — piece args, hand sites — exactly as the inline handlers did).
+   */
+  readonly equipment?: unknown;
 }
 
 // ---------------------------------------------------------------------------
