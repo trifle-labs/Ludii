@@ -9,4 +9,9 @@
  */
 
 // (moves package sub-barrels are added here as they are ported)
+
+// nonDecision/effect — live faithful registered move classes (logic relocated
+// verbatim from the inline compiler1to1 handlers; registry shadows inline).
+import "./game/rules/play/moves/nonDecision/effect/Enclose1to1.js";
+
 export {};
