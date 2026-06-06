@@ -59,15 +59,19 @@ export class Compiler {
   private deepestMiss: { depth: number; msg: string } | null = null;
   private depth = 0;
 
+  private deepestMissMsg(): string | null {
+    return this.deepestMiss ? this.deepestMiss.msg : null;
+  }
+
   public compile<T = unknown>(ludAst: LudNode, opts: CompilerOptions = {}): T {
     const env: CompilerEnv = { numPlayers: opts.env?.numPlayers ?? 2 };
     this.deepestMiss = null;
     try {
       return this.compileActual<T>(findGameNode(ludAst), "game", env);
     } catch (e) {
-      const dm: { depth: number; msg: string } | null = this.deepestMiss;
-      if (e instanceof CompilerMatchError && dm) {
-        throw new Error(`${e.message}  [deepest: ${dm.msg}]`);
+      const missMsg = this.deepestMissMsg();
+      if (e instanceof CompilerMatchError && missMsg) {
+        throw new Error(`${e.message}  [deepest: ${missMsg}]`);
       }
       throw e;
     }
