@@ -1,135 +1,43 @@
 // @java Core/src/game/functions/region/foreach/ForEach.java
 
-import { isIdent, isList, listHead, type LudList } from "@ludii/typescript-language";
-import {
-  compileBool,
-  compileInt,
-  compileRegion,
-  LudemeCompileError,
-  type CompileEnv,
-  parseArgs,
-} from "../../../../../eval/compile.js";
-import type { BoolFn, RegionFn } from "../../../../../eval/eval-context.js";
+/**
+ * Returns a region filtering with a condition or built according to different
+ * player/team/level indices. This class is a dispatch facade — it should never
+ * be eval()‑ed directly; only its static construct() results are used.
+ *
+ * @java game/functions/region/foreach/ForEach.java
+ * @author Eric.Piette
+ */
 
-function addUnique(out: number[], seen: Set<number>, sites: readonly number[]): void {
-  for (const site of sites) {
-    if (!seen.has(site)) {
-      seen.add(site);
-      out.push(site);
-    }
-  }
-}
+import type { Context } from "../../../../../context.js";
+import type { EvalScratch } from "../../../../base.js";
+import { BaseRegionFunction } from "../BaseRegionFunction.js";
 
-export function compileRegionForEach(node: LudList, env: CompileEnv): RegionFn {
-  const { positional, named } = parseArgs(node.items.slice(1));
-
-  const ofNode = named.get("of");
-  if (ofNode) {
-    const ofRegion = compileRegion(ofNode, env);
-    const bodyNode = positional[0];
-    if (!bodyNode) return { eval: () => [] };
-    const body = compileRegion(bodyNode, env);
-    return {
-      eval: (ctx) => {
-        // ForEachSiteInRegion.eval binds context.site to each site in ofRegion
-        // and unions the body region without duplicates (ForEachSiteInRegion.java:54-75).
-        const out: number[] = [];
-        const seen = new Set<number>();
-        for (const site of ofRegion.eval(ctx)) {
-          addUnique(out, seen, body.eval(ctx.withFrame({ site })));
-        }
-        return out;
-      },
-    };
+/**
+ * Dispatch-only class. In Java the static construct() overloads select a
+ * concrete subclass (ForEachLevel, ForEachTeam, ForEachSite,
+ * ForEachSiteInRegion, ForEachPlayer). This TS version mirrors that: the class
+ * itself throws on eval() and every static factory returns the matching
+ * subclass instance.
+ *
+ * @java game.functions.region.foreach.ForEach
+ */
+export class ForEach extends BaseRegionFunction {
+  private constructor() {
+    super();
   }
 
-  const kindNode = positional[0];
-  if (kindNode && isIdent(kindNode) && kindNode.name === "Level") {
-    const atNode = named.get("at");
-    if (!atNode) return { eval: () => [] };
-    const at = compileInt(atNode, env);
-    const condNode = named.get("if") ?? named.get("If");
-    const cond: BoolFn | undefined = condNode ? compileBool(condNode, env) : undefined;
-    const startAtNode = named.get("startAt");
-    const startAt = startAtNode ? compileInt(startAtNode, env) : { eval: () => -1 };
-    const fromBottom = positional.some((p) => isIdent(p) && p.name === "FromBottom");
-    return {
-      eval: (ctx) => {
-        // ForEachLevel.eval iterates stack levels from top by default or bottom
-        // when requested, binding context.level and filtering by If
-        // (ForEachLevel.java:74-113).
-        const site = at.eval(ctx);
-        if (site < 0) return [];
-        const stackSize = ctx.state.stackSize(site);
-        const out: number[] = [];
-        let start = startAt.eval(ctx);
-        if (fromBottom) {
-          if (start < 0) start = 0;
-          for (let level = start; level < stackSize; level += 1) {
-            const sub = ctx.withFrame({ level });
-            if (!cond || cond.eval(sub)) out.push(level);
-          }
-        } else {
-          if (start < 0) start = stackSize - 1;
-          if (start >= stackSize) start = stackSize - 1;
-          for (let level = start; level >= 0; level -= 1) {
-            const sub = ctx.withFrame({ level });
-            if (!cond || cond.eval(sub)) out.push(level);
-          }
-        }
-        return out;
-      },
-    };
+  /**
+   * @java ForEach.eval(Context)
+   * Should never be called — ForEach is a pure dispatch class.
+   */
+  public override eval(_ctx: Context & EvalScratch): number[] {
+    // @java ForEach.java:139-141 — throw if called directly
+    throw new Error("ForEach.eval(): Should never be called directly.");
   }
 
-  if (kindNode && isIdent(kindNode) && kindNode.name === "Team") {
-    // ForEachTeam.eval sets context.team to the full player array for each
-    // non-empty team (ForEachTeam.java:43-68). EvalFrame has no team slot yet,
-    // so the outer forEach constructor cannot be registered faithfully.
-    throw new LudemeCompileError("(forEach Team ...) needs EvalFrame.team support.");
+  /** @java ForEach.isStatic() */
+  public override isStatic(): boolean {
+    return false;
   }
-
-  if (kindNode && isList(kindNode) && listHead(kindNode) === "players") {
-    const playersRegion = compileRegion(kindNode, env);
-    const bodyNode = positional[1];
-    if (!bodyNode) return { eval: () => [] };
-    const body = compileRegion(bodyNode, env);
-    return {
-      eval: (ctx) => {
-        // ForEachPlayer.eval binds context.player to each requested player and
-        // unions body sites without duplicates (ForEachPlayer.java:53-90).
-        const out: number[] = [];
-        const seen = new Set<number>();
-        for (const player of playersRegion.eval(ctx)) {
-          if (player < 0 || player > ctx.context.game.numPlayers) continue;
-          addUnique(out, seen, body.eval(ctx.withFrame({ player })));
-        }
-        return out;
-      },
-    };
-  }
-
-  const siteKeyword = kindNode && isIdent(kindNode) && kindNode.name === "Site";
-  const regionNode = siteKeyword ? positional[1] : kindNode;
-  if (regionNode && isList(regionNode)) {
-    const region = compileRegion(regionNode, env);
-    const ifNode = named.get("if") ?? named.get("If");
-    if (ifNode) {
-      const cond = compileBool(ifNode, env);
-      return {
-        eval: (ctx) => {
-          // ForEachSite.eval binds context.site for each original site and keeps
-          // sites whose condition is true (ForEachSite.java:55-72).
-          const out: number[] = [];
-          for (const site of region.eval(ctx)) {
-            if (cond.eval(ctx.withFrame({ site }))) out.push(site);
-          }
-          return out;
-        },
-      };
-    }
-    return { eval: (ctx) => region.eval(ctx) };
-  }
-
-  return { eval: () => [] };
 }

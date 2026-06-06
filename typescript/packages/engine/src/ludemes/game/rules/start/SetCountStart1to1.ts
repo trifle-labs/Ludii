@@ -28,12 +28,17 @@ export class SetCountStart1to1 implements StartRule {
     numPlayers: number,
   ): void {
     const sites = this.evalRegion(equipment, numPlayers);
+    // NOTE: do NOT set whats[site] for mancala (count-based) seeding.
+    // In mancala, emptiness is determined by countAt=0, not by whats.
+    // Setting whats causes isEmptySite() to always return false for board
+    // holes (even with 0 seeds), breaking (is Empty ...) predicates.
+    // @java ContainerState.isEmpty(site) for mancala returns count(site)==0
+    void whats;
+    void cells;
     for (const site of sites) {
       if (site < 0 || site >= countAt.length) continue;
       countAt[site] = this.count;
-      if (this.what > 0) { whats[site] = this.what; }
     }
-    void cells;
   }
 
   private evalRegion(equipment: Equipment1to1, numPlayers: number): number[] {

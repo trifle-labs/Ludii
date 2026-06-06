@@ -1,3 +1,15 @@
 // @java Core/src/game/functions/region/sites/SitesAroundType.java
 
-// TODO Phase 2: faithful port from SitesAroundType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies sets of sites around other sites.
+ *
+ * @java game/functions/region/sites/SitesAroundType.java
+ * @author Eric.Piette
+ */
+export enum SitesAroundType {
+  /**
+   * Sites around a given region or site according to specified directions and
+   * conditions.
+   */
+  Around = "Around",
+}

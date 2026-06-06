@@ -1,56 +1,229 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Flip.java
+/**
+ * Is used to flip a piece.
+ *
+ * Java parity: game/rules/play/moves/nonDecision/effect/Flip.java
+ *
+ * @remarks For a stacked site, removes every level in order then re-adds them
+ *          in reverse order, applying the flip-state mapping from the component's
+ *          Flips table to each level.  For a single piece, emits an
+ *          ActionSetState carrying the new flipped state.
+ */
 
-import { type LudList } from "@ludii/typescript-language";
+import type { Context } from "../../../../../../../context.js";
+import type { IntFunction, MovesFunction } from "../../../../../../base.js";
+import type { Move } from "../../../../../../../move.js";
+import type { Then } from "./Then.js";
+import { ActionAdd } from "../../../../../../../action/action-add.js";
+import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { ActionSetState } from "../../../../../../../action/action-set-state.js";
-import {
-  compileInt,
-  type CompileEnv,
-  type EffectFn,
-} from "../../../../../../../eval/compile.js";
-import { register } from "../../../../../../registry.js";
+import { Move as LudiiMove } from "../../../../../../../move.js";
 
-export function compileFlip(
-  node: LudList,
-  env: CompileEnv,
-): EffectFn | undefined {
-  // `(flip <site>)` — toggle the piece's local state between the two faces
-  // declared by its `(flips a b)` attribute (Reversi/Othello discs, Ludus
-  // Latrunculorum's Vagi). Java: Flip.eval reads the component's getFlips()
-  // pair and emits ActionSetState with the opposite face.
-  // Java: Core/src/game/rules/play/moves/nonDecision/effect/Flip.java
-  const siteNode = node.items[1];
-  if (!siteNode) return undefined;
-  let siteFn;
-  try {
-    siteFn = compileInt(siteNode, env);
-  } catch {
-    return undefined;
-  }
-  const flipsById = env.componentFlipsById;
-  // A single flippable component is the common case; precompute the lone
-  // declared flip-pair as a fallback when the site's `what` can't resolve one
-  // (neutral discs are stored with who==0, so whatAtSite reads 0).
-  const soleFlips = (() => {
-    let found: [number, number] | undefined;
-    let count = 0;
-    for (const f of flipsById ?? []) {
-      if (f) {
-        found = f;
-        count += 1;
-      }
-    }
-    return count === 1 ? found : undefined;
-  })();
-  return (ctx) => {
-    const s = siteFn.eval(ctx);
-    if (s < 0 || s >= ctx.board.numSites) return [];
-    const what = ctx.state.whats[s] ?? 0;
-    const flips = (what > 0 ? flipsById?.[what] : undefined) ?? soleFlips;
-    if (!flips) return [];
-    const cur = ctx.state.stateAtSite(s);
-    const next = cur === flips[0] ? flips[1] : flips[0];
-    return [new ActionSetState({ to: s, state: next })];
-  };
+/** Java parity: Constants.OFF = -1 */
+const OFF = -1;
+
+/**
+ * Minimal interface for a component's Flips table.
+ * @java game.util.moves.Flips
+ */
+interface Flips {
+  flipState(state: number): number;
 }
 
-register("effect", "flip", compileFlip as any);
+/**
+ * Minimal component interface — only the subset Flip.eval() touches.
+ * @java game.equipment.component.Component
+ */
+interface Component {
+  getFlips(): Flips | null;
+}
+
+/**
+ * Minimal game context extension for Flip, using an escape hatch so we do
+ * not have to modify the TS Context/Game interfaces.
+ */
+type FlipContext = Context & {
+  // @java Context.containerId()  — int[] mapping site → container id
+  containerId(): number[];
+  // @java Context.containerState(cid) → ContainerState
+  containerState(cid: number): {
+    sizeStack(loc: number, type: string): number;
+    what(loc: number, level: number, type: string): number;
+    state(loc: number, level: number, type: string): number;
+    rotation(loc: number, level: number, type: string): number;
+    value(loc: number, level: number, type: string): number;
+    state(loc: number, type: string): number;
+    what(loc: number, type: string): number;
+  };
+  // @java Context.components() — Component[] indexed by what-value
+  components(): Component[];
+  // @java Context.board().defaultSite()
+  board(): { defaultSite(): string };
+};
+
+export class Flip implements MovesFunction {
+  /** @java Flip.locFn — location to flip [(to)] */
+  private readonly locFn: IntFunction;
+
+  /** @java Flip.type — Cell/Edge/Vertex */
+  private readonly type: string | null;
+
+  /** @java Effect.then */
+  private readonly thenClause: Then | null;
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/Flip.java — constructor
+   *
+   * @param type        Graph element type [default board default]
+   * @param loc         Location to flip [(to)]
+   * @param thenClause  Subsequent moves
+   */
+  public constructor(
+    type: string | null = null,
+    loc: IntFunction | null = null,
+    thenClause: Then | null = null,
+  ) {
+    // @java Flip.java:62-63 — locFn = (loc == null) ? To.instance() : loc
+    this.locFn = loc ?? { eval: (ctx: Context) => ctx._evalTo };
+    this.type = type;
+    this.thenClause = thenClause;
+  }
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/Flip.java — eval(Context)
+   */
+  public eval(ctx: Context): Move[] {
+    const fc = ctx as unknown as FlipContext;
+    const moves: LudiiMove[] = [];
+
+    const loc = this.locFn.eval(ctx);
+
+    // @java Flip.java:73-76 — return empty if loc == OFF
+    if (loc === OFF) return moves;
+
+    // @java Flip.java:78-83 — resolve container id and site type
+    const containerIds = fc.containerId();
+    const cid = loc >= containerIds.length ? 0 : (containerIds[loc] ?? 0);
+    let realType: string;
+    if (cid > 0) {
+      realType = "Cell";
+    } else if (this.type !== null) {
+      realType = this.type;
+    } else {
+      realType = fc.board().defaultSite();
+    }
+
+    const cs = fc.containerState(cid);
+    const stackSize = cs.sizeStack(loc, realType);
+    const mover = ctx.state.mover;
+
+    if (stackSize > 1) {
+      // @java Flip.java:88-115 — stacked flip: remove all levels then re-add
+      // in reverse order with flipped states
+      const move = new LudiiMove({
+        id: `flip:stack:${mover}:${loc}`,
+        label: `Flip(stack@${loc})`,
+        siteIndices: [loc],
+        mover,
+        placedOwner: mover,
+        actions: [],
+      });
+
+      const whats: number[] = [];
+      const states: number[] = [];
+      const rotations: number[] = [];
+      const values: number[] = [];
+
+      for (let level = 0; level < stackSize; level++) {
+        whats.push(cs.what(loc, level, realType));
+        states.push(cs.state(loc, level, realType));
+        rotations.push(cs.rotation(loc, level, realType));
+        values.push(cs.value(loc, level, realType));
+      }
+
+      // Build remove actions for each level (from level 0 up)
+      const removeActions = [];
+      for (let level = 0; level < stackSize; level++) {
+        removeActions.push(new ActionRemove({ to: loc }));
+      }
+
+      // Build add actions in reverse order, applying flip mapping
+      const addActions = [];
+      const components = fc.components();
+      for (let level = 0; level < stackSize; level++) {
+        const what = whats[whats.length - level - 1] ?? 0;
+        const value = values[values.length - level - 1] ?? 0;
+        const rotation = rotations[rotations.length - level - 1] ?? 0;
+        let state = states[states.length - level - 1] ?? 0;
+
+        const component = components[what];
+        if (component) {
+          const flips = component.getFlips();
+          if (flips !== null) {
+            state = flips.flipState(state);
+          }
+        }
+
+        addActions.push(new ActionAdd({
+          to: loc,
+          what: what > 0 ? what : 1,
+          state,
+          rotation,
+          value,
+          onStack: true,
+        }));
+      }
+
+      const allActions = [...removeActions, ...addActions];
+      const builtMove = new LudiiMove({
+        id: `flip:stack:${mover}:${loc}`,
+        label: `Flip(stack@${loc})`,
+        siteIndices: [loc],
+        mover,
+        placedOwner: mover,
+        actions: allActions,
+      });
+      moves.push(builtMove);
+    } else if (stackSize === 1) {
+      // @java Flip.java:117-135 — single piece flip: ActionSetState with new flipped state
+      const currentState = ctx.state.stateAtSite(loc);
+      const whatValue = ctx.state.whatAtSite(loc);
+
+      if (whatValue === 0) return moves;
+
+      const components = fc.components();
+      const component = components[whatValue];
+      if (!component) return moves;
+
+      const flips = component.getFlips();
+      if (flips === null) return moves;
+
+      const newState = flips.flipState(currentState);
+
+      const action = new ActionSetState({ to: loc, state: newState });
+      const m = new LudiiMove({
+        id: `flip:${mover}:${loc}`,
+        label: `Flip(${loc})`,
+        siteIndices: [loc],
+        mover,
+        placedOwner: mover,
+        actions: [action],
+      });
+      moves.push(m);
+    }
+
+    // @java Flip.java:137-139 — then clause
+    if (this.thenClause !== null) {
+      const thenMoves = this.thenClause.eval(ctx);
+      const thenActions = thenMoves.flatMap(tm => [...tm.actions]);
+      return moves.map(m => m.withConsequence(thenActions, false));
+    }
+
+    return moves;
+  }
+
+  /** @java Flip.isStatic() — delegates to locFn */
+  public isStatic(): boolean {
+    return (this.locFn as unknown as { isStatic?(): boolean }).isStatic?.() ?? false;
+  }
+}

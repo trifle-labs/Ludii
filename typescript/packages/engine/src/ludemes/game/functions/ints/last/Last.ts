@@ -1,84 +1,47 @@
 // @java Core/src/game/functions/ints/last/Last.java
 
-import { isIdent, type LudList } from "@ludii/typescript-language";
-import {
-  compileBool,
-  parseArgs,
-  type CompileEnv,
-} from "../../../../../eval/compile.js";
-import type { IntFn } from "../../../../../eval/eval-context.js";
-import { OFF } from "../../../../../eval/eval-context.js";
-import type { Move } from "../../../../../move.js";
-import { register } from "../../../../registry.js";
+/**
+ * Returns a site related to the last move.
+ *
+ * @java game/functions/ints/last/Last.java
+ * @author Eric Piette
+ *
+ * @remarks This is a static-factory-only dispatcher class. Its eval() should
+ *          never be called directly — all real work is done by the concrete
+ *          subclasses (LastFrom, LastLevelFrom, LastTo, LastLevelTo) returned by
+ *          the construct() factory.
+ */
 
-export function compileLast(node: LudList, env: CompileEnv): IntFn {
-  const { positional, named } = parseArgs(node.items.slice(1));
-  const which = positional[0];
-  const field = which && isIdent(which) ? which.name : "To";
-  const afterConsequenceNode = named.get("afterConsequence");
-  const afterConsequenceFn = afterConsequenceNode
-    ? compileBool(afterConsequenceNode, env)
-    : { eval: () => false };
+import { BaseIntFunction } from "../BaseIntFunction.js";
+import type { Context } from "../../../../../context.js";
 
-  return {
-    eval: (ctx) => {
-      const moves = ctx.context.trial.moves;
-      const lastMove = moves[moves.length - 1];
-      if (!lastMove) return OFF;
-
-      // @java Last.java:32-47 dispatches LastType to these four concrete
-      // functions; LastFrom.java:49-55 and LastTo.java:50-62 read the
-      // non-decision endpoint unless the BooleanFunction asks for subsequents;
-      // LastLevelFrom.java:49-55 and LastLevelTo.java:49-55 mirror that for
-      // stack levels.
-      const afterConsequence = afterConsequenceFn.eval(ctx);
-      switch (field) {
-        case "From":
-          return afterConsequence
-            ? endpointAfterSubsequents(lastMove, "from")
-            : lastMove.fromNonDecision();
-        case "LevelFrom":
-          return afterConsequence
-            ? levelAfterSubsequents(lastMove, "from")
-            : (lastMove.actions.find((a) => a.isDecision())?.levelFrom() ?? 0);
-        case "LevelTo":
-          return afterConsequence
-            ? levelAfterSubsequents(lastMove, "to")
-            : (lastMove.actions.find((a) => a.isDecision())?.levelTo() ?? 0);
-        case "To":
-        default:
-          return afterConsequence
-            ? endpointAfterSubsequents(lastMove, "to")
-            : lastMove.toNonDecision();
-      }
-    },
-  };
-}
-
-function endpointAfterSubsequents(move: Move, endpoint: "from" | "to"): number {
-  // @java Move.java:1024-1037 / 1081-1094: scan the full action list backwards,
-  // skip OFF endpoints, and return UNDEFINED/OFF when no action supplies one.
-  for (let i = move.actions.length - 1; i >= 0; i -= 1) {
-    const action = move.actions[i];
-    if (!action) continue;
-    const value = endpoint === "from" ? action.from() : action.to();
-    if (value !== OFF) return value;
+/**
+ * Root Last class — should never have eval() called on it directly.
+ * Mirrors Java Last which throws UnsupportedOperationException from eval().
+ *
+ * @java game/functions/ints/last/Last.java
+ */
+export class Last extends BaseIntFunction {
+  /**
+   * Private constructor — Last is a static-factory-only class in Java.
+   * @java Last() — private
+   */
+  private constructor() {
+    super();
   }
-  return OFF;
-}
 
-function levelAfterSubsequents(move: Move, endpoint: "from" | "to"): number {
-  // @java Move.java:1043-1056 / 1100-1113: the level comes from the same last
-  // action whose from/to endpoint is not OFF.
-  for (let i = move.actions.length - 1; i >= 0; i -= 1) {
-    const action = move.actions[i];
-    if (!action) continue;
-    const value = endpoint === "from" ? action.from() : action.to();
-    if (value !== OFF) {
-      return endpoint === "from" ? action.levelFrom() : action.levelTo();
-    }
+  /**
+   * @java Last.eval(Context) — throws UnsupportedOperationException
+   * Should not be called; dispatch always goes to a concrete subtype.
+   */
+  public override eval(_context: Context): number {
+    // Should not be called, should only be called on subclasses
+    throw new Error("Last.eval(): Should never be called directly.");
   }
-  return OFF;
-}
 
-register("int", "last", compileLast as any);
+  /** @java Last.isStatic() — should never be reached */
+  public isStatic(): boolean {
+    // Should never be there
+    return false;
+  }
+}

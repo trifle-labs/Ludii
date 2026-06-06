@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/region/sites/SitesSideType.java
 
-// TODO Phase 2: faithful port from SitesSideType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies a set of sites according to certain sides of the board.
+ *
+ * @java game/functions/region/sites/SitesSideType.java
+ * @author Eric.Piette and cambolbro
+ */
+export enum SitesSideType {
+  /** External sites along any the side of the board. */
+  Side = "Side",
+}

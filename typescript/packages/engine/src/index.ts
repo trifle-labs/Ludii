@@ -130,7 +130,6 @@ export {
   scoreForPlayer,
   type TrainingSample,
 } from "./ai/index.js";
-export { AlternatingMode } from "./alternating-mode.js";
 export type { API } from "./api.js";
 export { getBuiltinDefines } from "./builtin-defines.js";
 export {
@@ -141,21 +140,7 @@ export {
 } from "./concept.js";
 export { Context } from "./context.js";
 export {
-  DiceGame,
-  type DiceGameOptions,
-  type DiceMode,
-} from "./dice-game.js";
-export {
   type BoolFn,
-  type CompileEnv,
-  compileBool,
-  compileDirections,
-  compileEnd,
-  compileInt,
-  compileLudemeAst,
-  compileLudemeSource,
-  compileMoves,
-  compileRegion,
   type Dir,
   type DirectionsFn,
   type EndOutcome,
@@ -164,8 +149,6 @@ export {
   type EvalFrame,
   type IntFn,
   InterpBoard,
-  LudemeCompileError,
-  LudemeGame,
   type MovesFn,
   OFF as EVAL_OFF,
   type RegionFn,
@@ -183,51 +166,22 @@ export {
   triHexagonMask,
   triRectangleMask,
 } from "./eval/index.js";
-export {
-  FlatBoardGame,
-  type FlatBoardGameOptions,
-  ticTacToeGame,
-} from "./flat-board-game.js";
-export type { Game } from "./game.js";
-export { GameLoader } from "./game-loader.js";
-export { HexGame, type HexGameOptions, hexGame } from "./hex-game.js";
-export {
-  compileLudAst,
-  compileLudSource,
-  LudCompileError,
-} from "./lud-compiler.js";
-export {
-  collectTopLevelDefines,
-  expandDefines,
-} from "./lud-defines.js";
+export { collectTopLevelDefines, expandDefines } from "./lud-defines.js";
 export { applyOptions, collectDefaultOptions } from "./lud-options.js";
 export { Move, type MoveInit } from "./move.js";
 export { SeededRng } from "./rng.js";
 export { SplitMix64 } from "./eval/split-mix64.js";
-export {
-  StackGame,
-  type StackGameOptions,
-  type StackWinMode,
-} from "./stack-game.js";
 export {
   type CellView,
   type ContainerStateView,
   State,
 } from "./state.js";
 export {
-  type MovementKind,
-  type StepAdjacency,
-  StepGame,
-  type StepGameOptions,
-  type StepWinMode,
-} from "./step-game.js";
-export {
   FlatTopology,
   type TopologyCell,
   type TopologyEdge,
   type TopologyVertex,
 } from "./topology.js";
-export { TriGame, type TriGameOptions, triGame } from "./tri-game.js";
 export { Trial, type TrialOptions, type TrialStatus } from "./trial.js";
 // 1:1 Java→TS port path
 export { play1to1 } from "./play1to1.js";

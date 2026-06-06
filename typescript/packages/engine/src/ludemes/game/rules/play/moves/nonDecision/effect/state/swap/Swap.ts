@@ -1,69 +1,165 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/state/swap/Swap.java
+/**
+ * Swaps two players or two pieces.
+ *
+ * Java parity: game/rules/play/moves/nonDecision/effect/state/swap/Swap.java
+ *
+ * @remarks This is a factory class — `Swap.construct()` returns either a
+ *          SwapPieces or a SwapPlayers instance, never a Swap directly.
+ *          The `eval()` method intentionally throws (matching Java).
+ */
 
-import { isIdent, type LudList } from "@ludii/typescript-language";
-import { ActionPass } from "../../../../../../../../../action/action-pass.js";
-import { ActionSwap } from "../../../../../../../../../action/action-swap.js";
-import {
-  EMPTY_MOVES,
-  compileInt,
-  type CompileEnv,
-} from "../../../../../../../../../eval/compile.js";
-import type { MovesFn } from "../../../../../../../../../eval/eval-context.js";
-import { Move } from "../../../../../../../../../move.js";
-import { register } from "../../../../../../../../registry.js";
+import type { Context } from "../../../../../../../../../context.js";
+import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
+import type { Move } from "../../../../../../../../../move.js";
+import type { Then } from "../../Then.js";
+import { SwapSitesType } from "./SwapSitesType.js";
+import { SwapPlayersType } from "./SwapPlayersType.js";
+import { SwapPieces } from "./sites/SwapPieces.js";
+import { SwapPlayers } from "./players/SwapPlayers.js";
 
-export function compileMoveSwap(
-  node: LudList,
-  env: CompileEnv,
-): MovesFn {
-  // Moved verbatim from src/eval/compile.ts:13002.
-  // (move Swap Players …) — player-order swap (not modelled → Pass).
-  // (move Swap Pieces <site1> <site2>) — swap the pieces at two sites.
-  const subNode = node.items[2];
-  const subName = subNode && isIdent(subNode) ? subNode.name : "";
-  if (subName === "Players") {
-    return {
-      generate: (ctx) => {
-        const mover = ctx.mover;
-        return [
-          new Move({
-            id: `swapPlayers:${mover}`,
-            label: "SwapPlayers",
-            siteIndices: [0],
-            mover,
-            placedOwner: mover,
-            actions: [new ActionPass()],
-          }),
-        ];
-      },
-    };
+// Re-export for callers that only import from this file
+export { SwapSitesType, SwapPlayersType };
+
+export class Swap implements MovesFunction {
+  // @java Swap.java:115-118 — private default constructor
+  private constructor() {}
+
+  // -------------------------------------------------------------------------
+
+  /**
+   * Factory: swap two pieces.
+   *
+   * @java game/rules/play/moves/nonDecision/effect/state/swap/Swap.java —
+   *        construct(SwapSitesType, IntFunction, IntFunction, Then)
+   *
+   * @param swapType  Must be SwapSitesType.Pieces
+   * @param locA      First location [lastFrom if null]
+   * @param locB      Second location [lastTo if null]
+   * @param then      Subsequent moves [null]
+   */
+  public static constructPieces(
+    swapType: SwapSitesType,
+    locA: IntFunction | null = null,
+    locB: IntFunction | null = null,
+    then: Then | null = null,
+  ): MovesFunction {
+    // @java Swap.java:47-53
+    switch (swapType) {
+      case SwapSitesType.Pieces:
+        return new SwapPieces(
+          locA ?? { eval: (ctx: Context) => ctx._evalFrom },
+          locB ?? { eval: (ctx: Context) => ctx._evalTo },
+          then,
+        );
+      default:
+        break;
+    }
+    throw new Error(`Swap.constructPieces(): SwapSitesType '${String(swapType)}' is not implemented.`);
   }
-  if (subName === "Pieces") {
-    const s1Node = node.items[3];
-    const s2Node = node.items[4];
-    if (!s1Node || !s2Node) return EMPTY_MOVES;
-    const s1Fn = compileInt(s1Node, env);
-    const s2Fn = compileInt(s2Node, env);
-    return {
-      generate: (ctx) => {
-        const mover = ctx.mover;
-        const a = s1Fn.eval(ctx);
-        const b = s2Fn.eval(ctx);
-        if (a < 0 || b < 0) return [];
-        return [
-          new Move({
-            id: `swapPieces:${a}:${b}:${mover}`,
-            label: `SwapPieces ${a}<->${b}`,
-            siteIndices: [b],
-            mover,
-            placedOwner: mover,
-            actions: [new ActionSwap(a, b)],
-          }),
-        ];
-      },
-    };
+
+  /**
+   * Factory: swap two players.
+   *
+   * @java game/rules/play/moves/nonDecision/effect/state/swap/Swap.java —
+   *        construct(SwapPlayersType, IntFunction, RoleType, IntFunction, RoleType, Then)
+   *
+   * Exactly one of (player1 / role1) must be non-null, and exactly one of
+   * (player2 / role2) must be non-null.
+   *
+   * @param takeType  Must be SwapPlayersType.Players
+   * @param player1   Index fn for first player [null if role1 is used]
+   * @param role1     Role string for first player [null if player1 is used]
+   * @param player2   Index fn for second player [null if role2 is used]
+   * @param role2     Role string for second player [null if player2 is used]
+   * @param then      Subsequent moves [null]
+   */
+  public static constructPlayers(
+    takeType: SwapPlayersType,
+    player1: IntFunction | null,
+    role1: string | null,
+    player2: IntFunction | null,
+    role2: string | null,
+    then: Then | null = null,
+  ): MovesFunction {
+    // @java Swap.java:83-99 — validate @Or constraints
+    const numNonNull1 = (player1 !== null ? 1 : 0) + (role1 !== null ? 1 : 0);
+    if (numNonNull1 !== 1) {
+      throw new Error("Swap.constructPlayers(): Exactly one player1 or role1 parameter must be non-null.");
+    }
+    const numNonNull2 = (player2 !== null ? 1 : 0) + (role2 !== null ? 1 : 0);
+    if (numNonNull2 !== 1) {
+      throw new Error("Swap.constructPlayers(): Exactly one player2 or role2 parameter must be non-null.");
+    }
+
+    // @java Swap.java:101-106 — RoleType.toIntFunction(role) for null player args
+    const p1fn = player1 ?? roleToIntFunction(role1!);
+    const p2fn = player2 ?? roleToIntFunction(role2!);
+
+    switch (takeType) {
+      case SwapPlayersType.Players:
+        return new SwapPlayers(p1fn, p2fn, then);
+      default:
+        break;
+    }
+    throw new Error(`Swap.constructPlayers(): SwapPlayersType '${String(takeType)}' is not implemented.`);
   }
-  return EMPTY_MOVES;
+
+  // -------------------------------------------------------------------------
+
+  /**
+   * @java Swap.java:122-124 — should never be called directly
+   */
+  public eval(_ctx: Context): Move[] {
+    throw new Error("Swap.eval(): Should never be called directly.");
+  }
+
+  /**
+   * @java Swap.java:130 — isStatic() always false (should never be called)
+   */
+  public isStatic(): boolean {
+    return false;
+  }
+
+  /**
+   * @java Swap.java:150-153 — canMoveTo() should never be called
+   */
+  public canMoveTo(_ctx: Context, _target: number): boolean {
+    throw new Error("Swap.canMoveTo(): Should never be called directly.");
+  }
 }
 
-register("moves", "swap", compileMoveSwap as any);
+// ---------------------------------------------------------------------------
+// Helpers
+
+/**
+ * Minimal port of Java's RoleType.toIntFunction — maps a role string to
+ * an IntFunction that resolves the player index from context at eval time.
+ *
+ * @java game.types.play.RoleType.toIntFunction(RoleType)
+ */
+function roleToIntFunction(role: string): IntFunction {
+  return {
+    eval: (ctx: Context) => {
+      switch (role) {
+        case "Mover":
+          return ctx.state.mover;
+        case "Next": {
+          const n = ctx.state.mover;
+          const numP = ctx.numPlayers();
+          return (n % numP) + 1;
+        }
+        case "P1":
+          return 1;
+        case "P2":
+          return 2;
+        case "P3":
+          return 3;
+        case "P4":
+          return 4;
+        default:
+          return ctx.state.mover;
+      }
+    },
+  };
+}

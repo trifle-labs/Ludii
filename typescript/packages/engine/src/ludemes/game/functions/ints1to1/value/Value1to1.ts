@@ -34,13 +34,13 @@ export class ValuePiece1to1 implements IntFunction {
   /**
    * @java game/functions/ints/value/piece/ValuePiece.java — eval
    * Returns value stored on the component at the given site.
-   * In the 1:1 model we store per-site values in state.values array.
+   * In the 1:1 model we store per-site values in state.valueAt (via state.valueAtSite()).
+   * @java ContainerStateStacks.value(site, type) — returns valueStack[site]
    */
   public eval(ctx: Context): number {
     const s = this.siteFn.eval(ctx);
     if (s < 0) return 0;
-    const valuesAny = ctx.state as unknown as { values?: readonly number[] };
-    return valuesAny.values?.[s] ?? 0;
+    return ctx.state.valueAtSite(s);
   }
 }
 
@@ -56,12 +56,13 @@ export class ValuePlayer1to1 implements IntFunction {
 
   /**
    * @java game/functions/ints/value/player/ValuePlayer.java — eval
-   * Returns persistent value for the given player (stored in state).
-   * In 1:1 model: not tracked, return 0.
+   * Returns persistent value for the given player (stored in state.valuesPlayer).
+   * @java State.java — value(playerIndex) returns valuesPlayer[pid].
    */
-  public eval(_ctx: Context): number {
-    // @java context.value(playerFn.eval(context)) — not tracked in 1:1 path
-    return 0;
+  public eval(ctx: Context): number {
+    const pid = this.playerFn.eval(ctx);
+    // valuePlayer returns -1 (UNDEFINED) when unset; Java treats UNDEFINED as -1.
+    return ctx.state.valuePlayer(pid);
   }
 }
 
@@ -105,8 +106,14 @@ export class ValueTurnLimit1to1 implements IntFunction {
 export class ValuePending1to1 implements IntFunction {
   /** @java game/functions/ints/value/simple/ValuePending.java — eval: context.state().pendingValue() */
   public eval(ctx: Context): number {
-    const stateAny = ctx.state as unknown as { pendingValue?: number };
-    return stateAny.pendingValue ?? 0;
+    // Java State.pendingValue() returns the first pending value added via
+    // ActionSetPending. In the 1:1 TS model, pending is stored as a Set<number>;
+    // return the first element. @java Core/src/other/state/State.java — pendingValue()
+    const pending = ctx.state.pending;
+    if (pending && pending.size > 0) {
+      return pending.values().next().value ?? 0;
+    }
+    return 0;
   }
 }
 

@@ -20,12 +20,13 @@ import type { Context } from "../../../../../context.js";
 import type { IntFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
-import { isIdent, isString } from "@ludii/typescript-language";
+import { isIdent, isString, isList } from "@ludii/typescript-language";
 import type { RoleType } from "../../../../base.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
 import { HandSite } from "../../ints/state1to1/HandSite.js";
 import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1, compileRegion1to1 } from "../../../../../compiler1to1.js";
+import { parseArgs1to1, compileInt1to1, compileRegion1to1, compileBool1to1 } from "../../../../../compiler1to1.js";
+import type { BooleanFunction } from "../../../../base.js";
 
 // ---------------------------------------------------------------------------
 // count:Pips  (sum of all dice face values)
@@ -83,6 +84,25 @@ registerInt1to1("handsite", (node: LudNode, _env: Compile1to1Env): IntFunction =
       : 0;
     return new HandSite(roleName, offset);
   }
+  // Dynamic player ID: (handSite (who at:(to))) — roleNode is a list (IntFunction).
+  // @java HandSite.java — role can be a dynamic IntFunction (player index at runtime).
+  // e.g. HittingCapture: (handSite (who at:(to))) sends opponent's piece to their own hand.
+  if (roleNode && isList(roleNode as LudNode)) {
+    try {
+      const playerIdFn: IntFunction = compileInt1to1(roleNode as LudNode);
+      const offsetNode = positional[1];
+      const offset = (offsetNode && (offsetNode as { kind?: string; value?: number }).kind === "number")
+        ? ((offsetNode as unknown as { value: number }).value)
+        : 0;
+      return {
+        eval(ctx: Context): number {
+          const playerId = playerIdFn.eval(ctx);
+          const game = ctx.game as import("../../../../Game1to1.js").Game1to1;
+          return game.equipment.handSiteFor(playerId, offset);
+        }
+      };
+    } catch { /* fall through to default */ }
+  }
   return new HandSite("Mover", 0);
 });
 
@@ -105,9 +125,11 @@ registerInt1to1("regionsite", (node: LudNode, _env: Compile1to1Env): IntFunction
 // TrackSite
 // ---------------------------------------------------------------------------
 registerInt1to1("tracksite", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  // (trackSite Move <from> steps:<N>) — the site N steps along the track from
-  // <from>, wrapping when the track loops. Also FirstSite / LastSite.
+  // (trackSite Move [<from>] [<role>] ["Name"] steps:<N>) — the site N steps
+  // along the mover's track from <from>, wrapping when the track loops.
+  // Also FirstSite / LastSite.
   // @java game/functions/ints/board/trackSite/TrackSite.java
+  // @java game/functions/ints/board/trackSite/move/TrackSiteMove.java
   const items = (node as LudList).items;
   const { positional, named } = parseArgs1to1(items);
   const sub = (positional[0] && (positional[0] as { name?: string }).name)
@@ -119,14 +141,96 @@ registerInt1to1("tracksite", (node: LudNode, _env: Compile1to1Env): IntFunction 
   const stepsNode = named.get("steps");
   let stepsFn: IntFunction | undefined;
   if (stepsNode) { try { stepsFn = compileInt1to1(stepsNode); } catch { /* default 1 */ } }
+  // if:<cond> — used by (trackSite FirstSite ... if:(is Empty (to))) to filter sites.
+  // @java TrackSiteFirstTrack.java — condFn scanned from the from position until true.
+  const ifNode = named.get("if");
+  let condFnTs: BooleanFunction | null = null;
+  if (ifNode) { try { condFnTs = compileBool1to1(ifNode, 2); } catch { /* skip */ } }
+  const capturedCondFn = condFnTs;
+  // Extract optional track name (string positional) and role kind (ident positional).
+  // @java TrackSiteMove: selects track by name.contains(name) && owner==playerId
+  let tsTrackName: string | null = null;
+  let tsRoleKind: string | null = null;
+  for (let pi = 1; pi < positional.length; pi++) {
+    const pn = positional[pi];
+    if (!pn) continue;
+    if (isString(pn) && tsTrackName === null) { tsTrackName = pn.value; }
+    else if (isIdent(pn) && tsRoleKind === null) {
+      const rk = (pn as { name: string }).name.toLowerCase();
+      if (rk === "mover" || rk === "next" || rk === "player" || (rk.startsWith("p") && !isNaN(parseInt(rk.slice(1), 10)))) {
+        tsRoleKind = rk;
+      }
+    }
+  }
+  const tsFixedPid = (tsRoleKind && tsRoleKind.startsWith("p") && !isNaN(parseInt(tsRoleKind.slice(1), 10)))
+    ? parseInt(tsRoleKind.slice(1), 10) : -1;
+  const capturedTsTrackName = tsTrackName;
+  const capturedTsRoleKind = tsRoleKind;
   return { eval(ctx: Context): number {
-    const game = ctx.game as unknown as { equipment?: { tracks?: ReadonlyMap<string, { sites: readonly number[]; loop: boolean }> } };
-    const trackEntry = [...(game.equipment?.tracks?.values() ?? [])][0];
+    const game = ctx.game as unknown as Game1to1;
+    const tracksMap = game.equipment?.tracks;
+    if (!tracksMap) return -1;
+    // Resolve player id (default = mover, matching Java TrackSiteMove default)
+    // @java TrackSiteMove.eval(): playerId = player.eval(context)
+    let playerId = ctx.state.mover;
+    if (capturedTsRoleKind === "next") playerId = (ctx.state.mover % ctx.game.numPlayers) + 1;
+    else if (capturedTsRoleKind === "player") playerId = ctx._evalPlayer ?? ctx.state.mover;
+    else if (tsFixedPid > 0) playerId = tsFixedPid;
+    // Select track: by name+owner, then name-only, then owned, then shared, then first.
+    // @java TrackSiteMove.eval(): select ownedTracks(playerId) or tracksWithNoOwner
+    let trackEntry: { sites: readonly number[]; loop: boolean; owner: number } | undefined;
+    if (capturedTsTrackName !== null) {
+      for (const [tName, t] of tracksMap) {
+        if (tName.includes(capturedTsTrackName) && t.owner === playerId) { trackEntry = t; break; }
+      }
+      if (!trackEntry) {
+        for (const [tName, t] of tracksMap) {
+          if (tName.includes(capturedTsTrackName)) { trackEntry = t; break; }
+        }
+      }
+    }
+    if (!trackEntry) {
+      for (const [, t] of tracksMap) { if (t.owner === playerId) { trackEntry = t; break; } }
+    }
+    if (!trackEntry) {
+      for (const [, t] of tracksMap) { if (t.owner === 0) { trackEntry = t; break; } }
+    }
+    if (!trackEntry) { trackEntry = [...tracksMap.values()][0]; }
     if (!trackEntry) return -1;
     const track = trackEntry.sites;
-    if (sub === "firstsite") return track[0] ?? -1;
+    // (trackSite FirstSite ... from:<site> if:<cond>) — scan from the from-position
+    // forward on the track, returning the first site satisfying the condition.
+    // @java TrackSiteFirstTrack.java — eval(): find `from` in track, scan forward
+    //   (wrapping if loop), return first site where condFn.eval(ctx) is true.
+    if (sub === "firstsite") {
+      if (capturedCondFn === null) {
+        // No condition: return from-site if given, else track[0]
+        const fromSite = fromFn ? fromFn.eval(ctx) : -1;
+        if (fromSite >= 0) return fromSite;
+        return track[0] ?? -1;
+      }
+      // Find starting position from `from:`
+      const startSite = fromFn ? fromFn.eval(ctx) : -1;
+      const startPos = startSite >= 0 ? track.indexOf(startSite) : 0;
+      if (startPos < 0) return -1;
+      const n = track.length;
+      const origTo = ctx._evalTo;
+      for (let j = 0; j < n; j++) {
+        const idx = (startPos + j) % n;
+        const site = track[idx]!;
+        ctx._evalTo = site;
+        const ok = capturedCondFn.eval(ctx);
+        ctx._evalTo = origTo;
+        if (ok) return site;
+      }
+      ctx._evalTo = origTo;
+      return -1;
+    }
     if (sub === "lastsite") return track[track.length - 1] ?? -1;
-    const from = fromFn ? fromFn.eval(ctx) : ctx._evalTo;
+    // Default from-site is ctx._evalFrom (the current piece/iterator position),
+    // matching Java's TrackSite.eval() which uses context.from() when no explicit
+    // from site is given. @java game/functions/ints/board/trackSite/TrackSite.java
+    const from = fromFn ? fromFn.eval(ctx) : ctx._evalFrom;
     if (from < 0) return -1;
     const pos = track.indexOf(from);
     if (pos < 0) return -1;
@@ -163,13 +267,21 @@ registerInt1to1("state", (node: LudNode, _env: Compile1to1Env): IntFunction => {
         eval(ctx: Context): number {
           const s = siteFn.eval(ctx);
           if (s < 0) return 0;
-          const stateAny = ctx.state as unknown as { siteState?: readonly number[] };
-          return stateAny.siteState?.[s] ?? 0;
+          // State.stateAt[s] stores per-site piece state (cube number, move distance, etc.).
+          // @java ContainerStateStacks.state(site, type) — returns stateStack[site]
+          return ctx.state.stateAtSite(s);
         }
       };
     } catch { /* fall through */ }
   }
-  return { eval: (_ctx: Context) => 0 };
+  // Bare (state) — no site arg. Return the iterator's current site's state.
+  return {
+    eval(ctx: Context): number {
+      const s = (ctx as unknown as { _evalSite?: number })._evalSite;
+      const site = (s !== undefined && s >= 0) ? s : ctx._evalFrom;
+      return site >= 0 ? ctx.state.stateAtSite(site) : 0;
+    }
+  };
 });
 
 // ---------------------------------------------------------------------------
@@ -207,14 +319,32 @@ registerInt1to1("values", (_node: LudNode, _env: Compile1to1Env): IntFunction =>
 });
 
 // ---------------------------------------------------------------------------
-// face — face index of a site (stub: return site)
+// face — face VALUE of the die at the given board site.
+// @java game/functions/ints/board/Face.java — eval()
+// In Java, Face.eval() returns the resolved face value of the die component
+// at the given site. The TS engine stores die face values in diceValues[dieIdx],
+// where dieIdx = site - diceSiteBase. Reads equipment from ctx.game at eval time
+// so this works even when compiled inside piece generators (before equipment is
+// finalized at the top level).
 // ---------------------------------------------------------------------------
 registerInt1to1("face", (node: LudNode, _env: Compile1to1Env): IntFunction => {
   const { positional } = parseArgs1to1((node as LudList).items);
+  let siteFn: IntFunction;
   if (positional[0]) {
-    try { return compileInt1to1(positional[0]); } catch { /* fall through */ }
+    try { siteFn = compileInt1to1(positional[0]); } catch { siteFn = { eval: (_ctx: Context) => 0 }; }
+  } else {
+    siteFn = { eval: (_ctx: Context) => 0 };
   }
-  return { eval: (_ctx: Context) => 0 };
+  return { eval: (ctx: Context): number => {
+    const site = siteFn.eval(ctx);
+    // Read dice info from ctx.game.equipment at eval time.
+    const eq = (ctx.game as unknown as Game1to1).equipment;
+    if (!eq || eq.diceSiteBase < 0 || eq.diceSpecs.length === 0) return 0;
+    const dieIdx = site - eq.diceSiteBase;
+    if (dieIdx < 0 || dieIdx >= eq.diceSpecs.length) return 0;
+    // diceValues[dieIdx] holds the face value set during (roll).
+    return ctx.state.diceValues[dieIdx] ?? 0;
+  }};
 });
 
 // ---------------------------------------------------------------------------

@@ -40,6 +40,9 @@ import { Context } from "../context.js";
 import type { Game } from "../game.js";
 import { Move } from "../move.js";
 import { ActionPass } from "../action/action-pass.js";
+import { ActionSwapPlayers } from "../action/action-swap-players.js";
+import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
+import { ActionRemove } from "../action/action-remove.js";
 import { State } from "../state.js";
 import { Trial } from "../trial.js";
 
@@ -115,8 +118,32 @@ export class Game1to1 implements Game {
    */
   public readonly notAllPass: boolean;
 
+  /**
+   * Whether the game uses the swap (pie) rule: `(meta (swap))`.
+   * When true, on P2's first move, a SwapPlayers decision move is added.
+   *
+   * @java game/rules/meta/Swap.java — Swap.apply(context, legalMoves)
+   * @java game/Game.java:2855 — calls Swap.apply after generating regular moves
+   */
+  public readonly usesSwapRule: boolean;
+
   /** Component labels array (index 0 unused, 1-based). */
   private readonly componentLabels: string[];
+
+  /**
+   * Static map table for (mapEntry ...) lookups.
+   * Keys: map name (or "__default__"), values: player-id→site-id maps.
+   * @java game/equipment/other/Map.java — Equipment.maps()
+   */
+  public readonly _maps?: Map<string, Map<number, number>>;
+
+  /**
+   * Per-player facing direction (0-indexed 45°-units: 0=N, 1=NE, 2=E, 3=SE,
+   * 4=S, 5=SW, 6=W, 7=NW). Only set when (players {(player SE) ...}) form is
+   * used; absent → default N/S for P1/P2.
+   * @java game/players/Player.java — Direction.direction()
+   */
+  public readonly _playerDirs?: Map<number, number>;
 
   public constructor(
     name: string,
@@ -125,6 +152,8 @@ export class Game1to1 implements Game {
     rules: Rules1to1,
     startRules: StartRule[] = [],
     notAllPass = false,
+    usesSwapRule = false,
+    playerDirs?: Map<number, number>,
   ) {
     this.name = name;
     this.id = name;
@@ -133,6 +162,7 @@ export class Game1to1 implements Game {
     this.rules = rules;
     this.startRules = startRules;
     this.notAllPass = notAllPass;
+    this.usesSwapRule = usesSwapRule;
     this.width = equipment.board.width;
     this.height = equipment.board.height;
     this.numSites = equipment.board.numSites;
@@ -142,6 +172,18 @@ export class Game1to1 implements Game {
     this.componentLabels = new Array(equipment.pieces.length + 1).fill("");
     for (const piece of equipment.pieces) {
       this.componentLabels[piece.index] = `${piece.name}${piece.owner}`;
+    }
+
+    // Extract static map table from equipment (compiled from (map ...) equipment items).
+    // @java game/equipment/other/Map.java — Equipment.maps() lookup table
+    const pendingMaps = (equipment.board as unknown as { _pendingMaps?: Map<string, Map<number, number>> })._pendingMaps;
+    if (pendingMaps && pendingMaps.size > 0) {
+      this._maps = pendingMaps;
+    }
+
+    // Store per-player facing directions (from (players {(player SE) ...})).
+    if (playerDirs && playerDirs.size > 0) {
+      this._playerDirs = playerDirs;
     }
   }
 
@@ -157,12 +199,20 @@ export class Game1to1 implements Game {
     const cells = new Array<number>(totalSites).fill(0);
     const whats = new Array<number>(totalSites).fill(0);
     const countAt = new Array<number>(totalSites).fill(0);
+    // Per-site state and value arrays (from state:N / value:N in place rules).
+    // @java ActionAdd.apply() — setStateAt / setValueAt on the initial container state.
+    const stateAt = new Array<number>(totalSites).fill(0);
+    const valueAt = new Array<number>(totalSites).fill(0);
 
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      rule.applyToInitialState(cells, whats, countAt, this.equipment, this.numPlayers);
+      rule.applyToInitialState(cells, whats, countAt, this.equipment, this.numPlayers, stateAt, valueAt);
     }
+
+    // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
+    const hasNonZeroState = stateAt.some(v => v !== 0);
+    const hasNonZeroValue = valueAt.some(v => v !== 0);
 
     // Compute initial phase indices for each player.
     // @java other/state/State.java — initPhase(game)
@@ -184,12 +234,48 @@ export class Game1to1 implements Game {
       }
     }
 
-    const state = new State(1, cells, this.componentLabels, {
+    // Initialize diceValues: one slot per die, pre-filled with 0 so
+    // ActionUpdateDice dice-value mode can write to diceValues[i].
+    // @java Game.java — start() initialises currentDice containers to 0.
+    const numDice = this.equipment.diceSpecs.length;
+    const initialDiceValues = numDice > 0 ? new Array(numDice).fill(0) : undefined;
+
+    let state = new State(1, cells, this.componentLabels, {
       numPlayers: this.numPlayers,
       whats,
       countAt,
       phases: initialPhases,
+      diceValues: initialDiceValues,
+      stateAt: hasNonZeroState ? stateAt : undefined,
+      valueAt: hasNonZeroValue ? valueAt : undefined,
     });
+
+    // Apply remembered-value start rules (from (set RememberValue "name" <region>)).
+    // @java game/rules/start/set/remember/SetRememberValue.java — eval() calls ActionRememberValue.apply()
+    const initRemembered = (this.equipment as unknown as { _initialRemembered?: Map<string, number[]> })._initialRemembered;
+    if (initRemembered) {
+      for (const [key, values] of initRemembered) {
+        for (const v of values) {
+          state = state.withRemember(key, v);
+        }
+      }
+    }
+
+    // Apply hidden-info start rules (from (set Hidden ... to:P1)).
+    // @java game/rules/start/set/hidden/SetHidden.java — eval() calls ActionSetHidden.apply()
+    const initHidden = (this.equipment as unknown as { _initialHidden?: Map<string, boolean> })._initialHidden;
+    if (initHidden) {
+      for (const [key, val] of initHidden) {
+        const colonIdx = key.indexOf(':');
+        const pidStr = key.slice(0, colonIdx);
+        const siteStr = key.slice(colonIdx + 1);
+        const pid = Number(pidStr);
+        const site = Number(siteStr);
+        if (pid >= 0 && pid < this.numPlayers + 1 && site >= 0 && site < totalSites) {
+          state = state.withHidden(pid, site, val);
+        }
+      }
+    }
 
     const trial = new Trial([], false, -1);
     const ctx = new Context(this, state, trial);
@@ -218,7 +304,36 @@ export class Game1to1 implements Game {
     ctx._evalValue = 0;
 
     const movesGen = this.getPlayForMover(ctx);
-    const generated = movesGen.moves.eval(ctx);
+    const generated: Move[] = [...movesGen.moves.eval(ctx)];
+
+    // @java game/Game.java:2855 — Swap.apply(context, legalMoves)
+    // @java game/rules/meta/Swap.java:apply — fires when usesSwapRule() &&
+    //   trial.moveNumber() == game.players().count() - 1 (i.e. P2's first move).
+    if (
+      this.usesSwapRule &&
+      ctx.trial.numMoves === this.numPlayers - 1
+    ) {
+      const mover = ctx.state.mover;
+      const moverLastTurn = ctx.trial.lastTurnMover(mover);
+      if (moverLastTurn !== -1 && moverLastTurn !== mover) {
+        // Build the SwapPlayers move: ActionSwap(pid1=mover, pid2=lastTurnMover)
+        // with decision=true, plus ActionSetNextPlayer(mover) to keep the same mover.
+        // @java game/rules/play/moves/nonDecision/effect/state/swap/players/SwapPlayers.java:eval()
+        const swapAction = new ActionSwapPlayers(mover, moverLastTurn);
+        swapAction.setDecision(true);
+        const setNextAction = new ActionSetNextPlayer(mover);
+        const swapMove = new Move({
+          id: "swap-players",
+          label: "Swap",
+          siteIndices: [],
+          mover,
+          placedOwner: mover,
+          actions: [swapAction, setNextAction],
+        });
+        generated.push(swapMove);
+      }
+    }
+
     if (generated.length > 0) {
       return generated;
     }
@@ -260,8 +375,31 @@ export class Game1to1 implements Game {
 
     const mover = context.state.mover;
 
-    // Step 1: Apply move actions.
-    const newState = move.applyTo(context.state, context.rng);
+    // Step 1: Clear pending state then apply move actions.
+    // @java Game.java:3047 — state.rebootPending() before every move.apply()
+    // This ensures each apply() starts with a clean pending set; ActionSetPending
+    // in the current move may re-add to it.
+    let newState = move.applyTo(context.state.withPendingClear(), context.rng);
+
+    // Step 1b: Flush deferred (at:EndOfTurn) captures when the turn ENDS.
+    // Java parity: Move.apply() lines 544-591 — when !containsReplayAction (turn ends),
+    // applies ActionRemove for each site in sitesToRemove, then calls reInitCapturedPiece().
+    // @java Core/src/other/move/Move.java lines 544-591
+    {
+      const setNextActEarly = move.actions.find(a => a.actionType() === "SetNextPlayer");
+      const turningOver = !move.moveAgain && !(setNextActEarly !== undefined && setNextActEarly.who() === mover);
+      if (turningOver && newState.sitesToRemove.length > 0) {
+        // Remove all deferred capture sites.
+        for (const site of newState.sitesToRemove) {
+          if (!newState.isEmptySite(site)) {
+            newState = new ActionRemove({ to: site }).apply(newState);
+          }
+        }
+        newState = newState.withClearedSitesToRemove();
+      } else if (!turningOver) {
+        // Turn continues: keep sitesToRemove for the next hop (it's ToClear)
+      }
+    }
 
     // Step 2: Build eval context with the move recorded.
     // Set _evalTo so IsLine's (through: LastTo) resolves to the placed site.
@@ -313,19 +451,19 @@ export class Game1to1 implements Game {
       winner = 0; // draw
     }
 
-    // A moveAgain (continued turn — e.g. a Morris mill → remove) DEFERS phase
-    // transitions until the turn truly ends: the second half of the turn must run
-    // in the SAME phase. Otherwise an emptied hand would flip Placement→Movement
-    // before the mill removal is offered. @java Game.java — phase update is at
-    // end-of-turn, skipped while the same player moves again.
     const setNextAct = move.actions.find(a => a.actionType() === "SetNextPlayer");
     const willContinueTurn = move.moveAgain || (setNextAct !== undefined && setNextAct.who() === mover);
 
     // Step 5: Phase transitions (only when game is still active).
     // @java game/Game.java:3117–3141
     // "We update the current Phase for each player if this is a game with phases."
+    // NOTE: Java always evaluates phase transitions, even during moveAgain. The TS
+    // previously deferred them to prevent Placement→Movement flip during Morris
+    // mill removals, but that broke Nerenchi Keliya where the moveAgain causes
+    // a Movement→Capture transition. Java's SameTurn check handles the Morris
+    // case correctly without deferral. @java Game.java:3119-3141
     let stateAfterPhase = newState;
-    if (!over && !willContinueTurn && this.rules.phases !== null) {
+    if (!over && this.rules.phases !== null) {
       const phases = this.rules.phases;
       for (let pid = 1; pid <= this.numPlayers; pid++) {
         const currentPhaseIdx = stateAfterPhase.phase(pid);
@@ -472,12 +610,26 @@ export class Game1to1 implements Game {
    *
    * Temporarily builds a context for the new mover and checks if they have
    * any legal moves. Updates state.stalemated[newMover] accordingly.
+   *
+   * IMPORTANT: Uses a CLONED rng so that dice rolling during the stalemated
+   * check does NOT advance the real RNG. Java's applyInternal does NOT call
+   * computeStalemated on every apply — it only does so lazily (when a pass is
+   * played without the stalemated flag being set). In the TS 1:1 path we call
+   * it eagerly but MUST isolate the RNG so that race/escape games (which roll
+   * dice in (do (roll) next:...)) don't consume extra RNG values here and
+   * desync the dice sequence for the next real move.
+   * @java game/Game.java:3044 — computeStalemated called only on unexpected pass
    */
   private computeStalemated(state: State, baseCtx: Context1to1): State {
     const newMover = state.mover;
     // Build a temporary context for the new mover to check for legal moves.
+    // Clone the RNG so that (roll) inside the stalemated check does NOT consume
+    // values from the real RNG stream — Java's Do.eval() in the stalemated path
+    // operates on a TempContext with its own cloned RNG state, so dice rolled
+    // here must not advance the authoritative RNG.
     const tempTrial = baseCtx.trial;
-    const tempCtx = new Context(this, state, tempTrial, baseCtx.rng) as Context1to1;
+    const clonedRng = baseCtx.rng.clone();
+    const tempCtx = new Context(this, state, tempTrial, clonedRng) as Context1to1;
     tempCtx._radials = baseCtx._radials;
     tempCtx._trajectories = baseCtx._trajectories;
     tempCtx._evalTo = -1;

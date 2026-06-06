@@ -251,6 +251,18 @@ export class ActionMove extends BaseAction {
     }
     next = next.withCell(this.toIndex, movingOwner);
     next = next.withWhatAt(this.toIndex, movingWhat);
+    // Java parity: ActionMoveTopPiece always sets count=1 at the destination
+    // (line 439: csTo.setSite(..., who, what, 1, ...)), even for board→board moves.
+    // This is critical when a piece is knocked back to an empty hand site (cells=0,
+    // countAt=0): without setting countAt=1, (forEach Piece container:mover) cannot
+    // detect the returned piece. It is safe for board sites: the stateAt-cleared source
+    // branch (fromCount==1 → withCountAt(fromIndex, 0)) mirrors Java's csFrom.remove()
+    // and correctly clears countAt when the piece later leaves.
+    // @java other/action/move/move/ActionMoveTopPiece.java — apply(), non-stacking branch
+    //   csTo.setSite(context.state(), to, who, what, 1, ...)
+    if (this.fromIndex !== this.toIndex && (state.countAt[this.toIndex] ?? 0) === 0) {
+      next = next.withCountAt(this.toIndex, 1);
+    }
     next = this.applyDestAttrs(next, destState, destRotation, destValue);
     next = this.transferHidden(next, state, fromCount <= 1);
     return this.maintainTracks(next, movingWhat);

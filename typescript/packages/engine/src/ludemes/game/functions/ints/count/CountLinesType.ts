@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/ints/count/CountLinesType.java
 
-// TODO Phase 2: Java grammar enum for Count.java dispatch; no standalone compile.ts case.
+/**
+ * Defines the types of line properties that can be counted within a game.
+ *
+ * @java game/functions/ints/count/CountLinesType.java
+ * @author Cedric.Antoine
+ */
+export enum CountLinesType {
+  /** Size of the biggest Line on the board. */
+  SizeBiggestLine = "SizeBiggestLine",
+}

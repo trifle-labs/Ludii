@@ -69,22 +69,16 @@ let verbose = false;
 // ---------------------------------------------------------------------------
 // Load engine (dynamic import to allow async)
 // ---------------------------------------------------------------------------
-let compileLudemeSource;
 let SplitMix64;
-// ENGINE_1TO1=1: use the faithful 1:1 ludeme-object path (play1to1) instead of
-// the interpreter (compileLudemeSource). Only TTT and simple placement games are
-// supported by the 1:1 path currently.
-const USE_1TO1 = process.env.ENGINE_1TO1 === '1';
+// The legacy interpreter (compileLudemeSource) has been removed. The faithful
+// 1:1 Java→TS ludeme-object path (play1to1) is now the ONLY engine path.
+const USE_1TO1 = true;
 let play1to1;
 try {
   const engine = await import(DIST_INDEX);
-  compileLudemeSource = engine.compileLudemeSource;
   SplitMix64 = engine.SplitMix64;
-  if (USE_1TO1) {
-    play1to1 = engine.play1to1;
-    if (!play1to1) throw new Error('play1to1 not exported from engine dist');
-    console.log('[ENGINE_1TO1] Using 1:1 ludeme-object path (play1to1)');
-  }
+  play1to1 = engine.play1to1;
+  if (!play1to1) throw new Error('play1to1 not exported from engine dist');
 } catch (e) {
   console.error('Failed to load engine from', DIST_INDEX, ':', e.message);
   process.exit(1);
@@ -243,6 +237,21 @@ function resolveGamePath(gameRelPath, trialPath) {
   return absPath; // missing or ambiguous → keep original (yields COMPILE_FAIL)
 }
 
+/**
+ * Resolve a subgame name (e.g. "GrandTrictracSubgame") to its .lud source.
+ * Uses the existing basename index to find the file anywhere under LUD_ROOT.
+ * Returns null when the subgame cannot be located.
+ */
+function resolveSubgameSrc(name) {
+  if (!ludBasenameIndex) ludBasenameIndex = buildLudIndex();
+  const key = name.toLowerCase() + '.lud';
+  const matches = ludBasenameIndex.get(key);
+  if (matches && matches.length > 0) {
+    try { return readFileSync(matches[0], 'utf8'); } catch { /* fall through */ }
+  }
+  return null;
+}
+
 function loadGame(gameRelPath, trialPath) {
   // gameRelPath is like "../Common/res/lud/board/hunt/Bagh Bandi.lud"
   const absPath = resolveGamePath(gameRelPath, trialPath);
@@ -251,8 +260,10 @@ function loadGame(gameRelPath, trialPath) {
   let result;
   try {
     const src = readFileSync(absPath, 'utf8');
-    // ENGINE_1TO1 gate: use 1:1 ludeme-object path for supported games
-    const game = USE_1TO1 ? play1to1(src) : compileLudemeSource(src);
+    // ENGINE_1TO1 gate: use 1:1 ludeme-object path for supported games.
+    // Pass a resolveSubgame callback so that (match ...) game files can
+    // transparently compile their first referenced subgame.
+    const game = play1to1(src, { resolveSubgame: resolveSubgameSrc });
     result = { game };
   } catch (e) {
     result = { error: e };

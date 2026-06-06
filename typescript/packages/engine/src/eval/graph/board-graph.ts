@@ -479,6 +479,14 @@ export function toGraph(node: LudNode, vertexMode = false): Graph | undefined {
     case "merge":
     case "union": {
       const gs = operandGraphs(pos, vertexMode);
+      // @java game/functions/graph/operators/Merge.eval — Java does NOT reorder
+      // the merged graph. Each sub-graph (e.g. square) reorders itself internally,
+      // but the merge result preserves the per-sub-graph vertex order: sub-graph 0
+      // sites come first (0..N0-1), then sub-graph 1's new sites (N0..N0+N1-1),
+      // etc. Applying reorderByPosition here produces globally y*100+x sorted IDs
+      // that differ from Java's recorded trial indices for Alquerque+triangle boards
+      // (e.g. AlquerqueBoardWithBottomAndTopTriangles, AlquerqueGraphWithFourTriangles)
+      // and all other merge boards where sub-graph ordering determines site indices.
       return gs.length > 0 ? merge(gs) : undefined;
     }
     case "intersect": {

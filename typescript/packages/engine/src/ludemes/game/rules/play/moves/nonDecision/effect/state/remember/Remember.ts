@@ -16,6 +16,9 @@ import type { Then } from "../../Then.js";
 import { RememberState } from "./state/RememberState.js";
 import { ActionRememberValue } from "../../../../../../../../../action/action-remember.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../../registry1to1.js";
+import { parseArgs1to1, compileInt1to1 } from "../../../../../../../../../compiler1to1.js";
+import { isIdent, isString, type LudNode } from "@ludii/typescript-language";
 
 /** @java RememberValueType enum */
 export type RememberValueType = "Value";
@@ -142,3 +145,64 @@ export class Remember implements MovesFunction {
     throw new Error("Remember.eval(): Should never be called directly.");
   }
 }
+
+// ---------------------------------------------------------------------------
+// Registry entry — (remember Value "key" <intExpr>) as a MovesFunction
+// @java game/rules/play/moves/nonDecision/effect/state/remember/value/RememberValue.java
+//
+// (remember ...) can appear at the top of a moves tree (e.g. inside an
+// apply: argument of (sow ...) or inside (then (remember ...))). The compiler
+// dispatches here via lookupMoves1to1("remember").
+//
+// Argument layout (items[1..]):
+//   positional[0] — ident "Value" (subtype)
+//   positional[1] — string key, e.g. "CapturedP1"  (or absent → unnamed)
+//   positional[2] — IntFunction, e.g. (score Mover)
+// Named args:
+//   unique: (boolean) — if present, only remember unique values
+// ---------------------------------------------------------------------------
+registerMoves1to1("remember", (node: LudNode, _env: Compile1to1Env): MovesFunction => {
+  const { positional, named } = parseArgs1to1((node as unknown as { items: LudNode[] }).items);
+
+  // positional[0]: subtype ident (e.g. "Value" or "State")
+  const subtypeNode = positional[0];
+  const subtype = (subtypeNode && isIdent(subtypeNode)) ? subtypeNode.name : "Value";
+
+  if (subtype.toLowerCase() === "state") {
+    // (remember State) — remember the current game state
+    return Remember.constructState("State", null);
+  }
+
+  // (remember Value ["key"] <intExpr>) — remember an integer value
+  // positional[1]: optional string key; positional[2]: int expression
+  // If positional[1] is a string, it's the name key; otherwise unnamed (key=null)
+  let nameKey: string | null = null;
+  let valueNodeIdx = 1;
+  if (positional[1] && isString(positional[1] as LudNode)) {
+    nameKey = (positional[1] as { value: string }).value;
+    valueNodeIdx = 2;
+  }
+
+  const valueNode = positional[valueNodeIdx];
+  if (!valueNode) {
+    // No value expression — stub returning empty
+    return { eval(_ctx: Context): Move[] { return []; } };
+  }
+
+  let valueFn: IntFunction;
+  try {
+    valueFn = compileInt1to1(valueNode);
+  } catch {
+    return { eval(_ctx: Context): Move[] { return []; } };
+  }
+
+  const uniqueNode = named.get("unique");
+  let uniqueFn: BooleanFunction | null = null;
+  if (uniqueNode) {
+    if (isIdent(uniqueNode) && (uniqueNode as { name: string }).name.toLowerCase() === "true") {
+      uniqueFn = { eval(_ctx: Context): boolean { return true; } };
+    }
+  }
+
+  return Remember.constructValue("Value", nameKey, valueFn, uniqueFn, null);
+});

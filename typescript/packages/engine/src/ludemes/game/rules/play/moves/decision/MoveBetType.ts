@@ -1,3 +1,16 @@
 // @java Core/src/game/rules/play/moves/decision/MoveBetType.java
 
-// TODO Phase 2: faithful port from MoveBetType.java (currently handled in compile.ts compileMoveLudeme shared logic).
+/**
+ * Defines the types of decision move corresponding to bet.
+ *
+ * @java game/rules/play/moves/decision/MoveBetType.java
+ *
+ * Java original:
+ *   public enum MoveBetType { Bet }
+ */
+
+/** @java game/rules/play/moves/decision/MoveBetType.java */
+export enum MoveBetType {
+  /** Makes a bet move. */
+  Bet = "Bet",
+}

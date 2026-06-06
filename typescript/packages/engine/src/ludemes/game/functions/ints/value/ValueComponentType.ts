@@ -1,3 +1,15 @@
 // @java Core/src/game/functions/ints/value/ValueComponentType.java
 
-// TODO Phase 2: faithful port from ValueComponentType.java (currently handled in compile.ts compileInt shared value logic).
+/**
+ * Defines the types of properties than can be returned by the super ludeme
+ * value according to a component.
+ *
+ * @java game/functions/ints/value/ValueComponentType.java
+ * @author Eric.Piette
+ */
+export enum ValueComponentType {
+  /**
+   * To get the value of a component.
+   */
+  Piece = "Piece",
+}

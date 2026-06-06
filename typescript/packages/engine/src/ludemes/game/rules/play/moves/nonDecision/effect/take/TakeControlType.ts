@@ -1,2 +1,12 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/take/TakeControlType.java
-// TODO Phase 2: Java grammar enum for shared moves/effect dispatch; no standalone compile.ts case.
+
+/**
+ * Defines the types to take the control of pieces for the super ludeme Take.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/take/TakeControlType.java
+ * @author Eric.Piette
+ */
+export enum TakeControlType {
+  /** To take the control of enemy pieces. */
+  Control = "Control",
+}

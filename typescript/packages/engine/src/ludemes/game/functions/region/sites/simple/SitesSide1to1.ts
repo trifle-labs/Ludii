@@ -16,7 +16,25 @@ import type { Game1to1 } from "../../../../../Game1to1.js";
 export class SitesBottom implements RegionFunction {
   public eval(ctx: Context): number[] {
     const game = ctx.game as unknown as Game1to1;
-    const W = game.equipment.board.width;
+    const board = game.equipment.board;
+    const traj = board.trajectories;
+    // Graph boards: iterate all sites, find min-y, return those matching it.
+    // @java other/topology/Topology.java — bottom(SiteType) via Properties.BOTTOM
+    if (traj !== null) {
+      const n = board.numSites;
+      let minY = Number.POSITIVE_INFINITY;
+      for (let s = 0; s < n; s++) {
+        const y = traj.yOf(s);
+        if (y < minY) minY = y;
+      }
+      const result: number[] = [];
+      for (let s = 0; s < n; s++) {
+        if (Math.abs(traj.yOf(s) - minY) < 0.001) result.push(s);
+      }
+      return result;
+    }
+    // Rectangular path: row 0 sites are indices 0..W-1.
+    const W = board.width;
     return Array.from({ length: W }, (_, i) => i);
   }
 }
@@ -25,8 +43,26 @@ export class SitesBottom implements RegionFunction {
 export class SitesTop implements RegionFunction {
   public eval(ctx: Context): number[] {
     const game = ctx.game as unknown as Game1to1;
-    const W = game.equipment.board.width;
-    const H = game.equipment.board.height;
+    const board = game.equipment.board;
+    const traj = board.trajectories;
+    // Graph boards: iterate all sites, find max-y, return those matching it.
+    // @java other/topology/Topology.java — top(SiteType) via Properties.TOP
+    if (traj !== null) {
+      const n = board.numSites;
+      let maxY = Number.NEGATIVE_INFINITY;
+      for (let s = 0; s < n; s++) {
+        const y = traj.yOf(s);
+        if (y > maxY) maxY = y;
+      }
+      const result: number[] = [];
+      for (let s = 0; s < n; s++) {
+        if (Math.abs(traj.yOf(s) - maxY) < 0.001) result.push(s);
+      }
+      return result;
+    }
+    // Rectangular path: top row starts at (H-1)*W.
+    const W = board.width;
+    const H = board.height;
     const rowStart = (H - 1) * W;
     return Array.from({ length: W }, (_, i) => rowStart + i);
   }
@@ -36,8 +72,26 @@ export class SitesTop implements RegionFunction {
 export class SitesLeft implements RegionFunction {
   public eval(ctx: Context): number[] {
     const game = ctx.game as unknown as Game1to1;
-    const W = game.equipment.board.width;
-    const H = game.equipment.board.height;
+    const board = game.equipment.board;
+    const traj = board.trajectories;
+    // Graph boards: iterate all sites, find min-x, return those matching it.
+    // @java other/topology/Topology.java — left(SiteType) via Properties.LEFT
+    if (traj !== null) {
+      const n = board.numSites;
+      let minX = Number.POSITIVE_INFINITY;
+      for (let s = 0; s < n; s++) {
+        const x = traj.xOf(s);
+        if (x < minX) minX = x;
+      }
+      const result: number[] = [];
+      for (let s = 0; s < n; s++) {
+        if (Math.abs(traj.xOf(s) - minX) < 0.001) result.push(s);
+      }
+      return result;
+    }
+    // Rectangular path: left column has x=0, indices i*W for i in 0..H-1.
+    const W = board.width;
+    const H = board.height;
     return Array.from({ length: H }, (_, i) => i * W);
   }
 }
@@ -46,8 +100,26 @@ export class SitesLeft implements RegionFunction {
 export class SitesRight implements RegionFunction {
   public eval(ctx: Context): number[] {
     const game = ctx.game as unknown as Game1to1;
-    const W = game.equipment.board.width;
-    const H = game.equipment.board.height;
+    const board = game.equipment.board;
+    const traj = board.trajectories;
+    // Graph boards: iterate all sites, find max-x, return those matching it.
+    // @java other/topology/Topology.java — right(SiteType) via Properties.RIGHT
+    if (traj !== null) {
+      const n = board.numSites;
+      let maxX = Number.NEGATIVE_INFINITY;
+      for (let s = 0; s < n; s++) {
+        const x = traj.xOf(s);
+        if (x > maxX) maxX = x;
+      }
+      const result: number[] = [];
+      for (let s = 0; s < n; s++) {
+        if (Math.abs(traj.xOf(s) - maxX) < 0.001) result.push(s);
+      }
+      return result;
+    }
+    // Rectangular path: right column has x=W-1, indices i*W+(W-1) for i in 0..H-1.
+    const W = board.width;
+    const H = board.height;
     return Array.from({ length: H }, (_, i) => i * W + (W - 1));
   }
 }
@@ -60,9 +132,36 @@ export class SitesRow implements RegionFunction {
   }
   public eval(ctx: Context): number[] {
     const game = ctx.game as unknown as Game1to1;
-    const W = game.equipment.board.width;
-    const H = game.equipment.board.height;
+    const board = game.equipment.board;
     const row = this.rowFn.eval(ctx);
+    // Graph boards: use trajectory y-coordinates to identify sites in the row.
+    // Row N is the N-th distinct y-level (0-based from bottom), matching Java's
+    // Topology.rows() which groups sites by unique y-coordinate values.
+    // @java other/topology/Topology.java — row(SiteType) via Properties.ROW
+    const traj = board.trajectories;
+    if (traj !== null) {
+      const n = board.numSites;
+      // Collect all distinct y-values, sorted ascending (bottom-first).
+      const ys: number[] = [];
+      for (let s = 0; s < n; s++) ys.push(traj.yOf(s));
+      // Deduplicate with tolerance.
+      const uniqueYs: number[] = [];
+      for (const y of ys) {
+        if (!uniqueYs.some(uy => Math.abs(uy - y) < 0.1)) uniqueYs.push(y);
+      }
+      uniqueYs.sort((a, b) => a - b);
+      // Row N = the N-th unique y-level.
+      if (row < 0 || row >= uniqueYs.length) return [];
+      const targetY = uniqueYs[row]!;
+      const result: number[] = [];
+      for (let s = 0; s < n; s++) {
+        if (Math.abs(traj.yOf(s) - targetY) < 0.1) result.push(s);
+      }
+      return result;
+    }
+    // Rectangular path: row N = sites N*W .. N*W+W-1.
+    const W = board.width;
+    const H = board.height;
     if (row < 0 || row >= H) return [];
     const rowStart = row * W;
     return Array.from({ length: W }, (_, i) => rowStart + i);
@@ -77,9 +176,34 @@ export class SitesColumn implements RegionFunction {
   }
   public eval(ctx: Context): number[] {
     const game = ctx.game as unknown as Game1to1;
-    const W = game.equipment.board.width;
-    const H = game.equipment.board.height;
+    const board = game.equipment.board;
     const col = this.colFn.eval(ctx);
+    // Graph boards: use trajectory x-coordinates to identify sites in the column.
+    // Column N is the N-th distinct x-level (0-based from left), matching Java's
+    // Topology.columns() which groups sites by unique x-coordinate values.
+    // @java other/topology/Topology.java — column(SiteType) via Properties.COLUMN
+    const traj = board.trajectories;
+    if (traj !== null) {
+      const n = board.numSites;
+      // Collect all distinct x-values, sorted ascending (left-first).
+      const xs: number[] = [];
+      for (let s = 0; s < n; s++) xs.push(traj.xOf(s));
+      const uniqueXs: number[] = [];
+      for (const x of xs) {
+        if (!uniqueXs.some(ux => Math.abs(ux - x) < 0.1)) uniqueXs.push(x);
+      }
+      uniqueXs.sort((a, b) => a - b);
+      if (col < 0 || col >= uniqueXs.length) return [];
+      const targetX = uniqueXs[col]!;
+      const result: number[] = [];
+      for (let s = 0; s < n; s++) {
+        if (Math.abs(traj.xOf(s) - targetX) < 0.1) result.push(s);
+      }
+      return result;
+    }
+    // Rectangular path: column N = sites i*W+N for i in 0..H-1.
+    const W = board.width;
+    const H = board.height;
     if (col < 0 || col >= W) return [];
     return Array.from({ length: H }, (_, i) => i * W + col);
   }
@@ -116,10 +240,40 @@ export class SitesPhase implements RegionFunction {
 export class SitesCorners implements RegionFunction {
   public eval(ctx: Context): number[] {
     const game = ctx.game as unknown as Game1to1;
-    const W = game.equipment.board.width;
-    const H = game.equipment.board.height;
+    const board = game.equipment.board;
+    // For graph boards (non-rectangular): corners are the sites at extreme
+    // positions — minimum/maximum x and y coordinates. Returns up to 4 sites
+    // (one per corner of the bounding box).
+    // @java other/topology/Topology.java — corners(SiteType) via Properties.CORNER
+    const traj = board.trajectories;
+    if (traj !== null) {
+      const n = board.numSites;
+      if (n === 0) return [];
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (let s = 0; s < n; s++) {
+        const x = traj.xOf(s), y = traj.yOf(s);
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+      }
+      const TOL = 0.5;
+      const corners: number[] = [];
+      const seen = new Set<number>();
+      for (let s = 0; s < n; s++) {
+        const x = traj.xOf(s), y = traj.yOf(s);
+        if (
+          (Math.abs(x - minX) < TOL || Math.abs(x - maxX) < TOL) &&
+          (Math.abs(y - minY) < TOL || Math.abs(y - maxY) < TOL)
+        ) {
+          if (!seen.has(s)) { seen.add(s); corners.push(s); }
+        }
+      }
+      return corners;
+    }
+    // Rectangular path: corners are site 0, W-1, n-W, n-1.
+    const W = board.width;
+    const H = board.height;
     if (W === 0 || H === 0) return [];
-    const n = game.equipment.board.numSites;
+    const n = board.numSites;
     return [0, W - 1, n - W, n - 1].filter((v, i, a) => a.indexOf(v) === i);
   }
 }

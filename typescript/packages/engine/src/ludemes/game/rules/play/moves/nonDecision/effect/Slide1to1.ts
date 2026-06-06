@@ -20,6 +20,7 @@ import type { Move } from "../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../base.js";
 import type { CellFlatRadials } from "../../../../../../topology-radials.js";
 import type { Action } from "../../../../../../../action/index.js";
+import type { Trajectories } from "../../../../../../../eval/graph/trajectories.js";
 import { radialsForDirection } from "../../../../../../topology-radials.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
@@ -67,10 +68,14 @@ export class Slide1to1 implements MovesFunction {
     try { applyActions = this.applyGen.eval(ctx).flatMap(m => [...m.actions]); }
     catch { applyActions = []; }
     if (applyActions.length === 0) return makeMoveAction(from, to, mover);
+    // @java Slide.java: action.setDecision(true) marks ActionMove as decision action
+    // so Move.from()/to() reads from ActionMove, not the prepended capture ActionRemove.
+    const moveAction = new ActionMove({ from, to });
+    moveAction.setDecision(true);
     return new LudiiMove({
       id: `slide:${mover}:${from}:${to}`, label: `Slide(${from}→${to})`,
       siteIndices: [from, to], mover, placedOwner: mover,
-      actions: [...applyActions, new ActionMove({ from, to })],
+      actions: [...applyActions, moveAction],
     });
   }
 
@@ -85,7 +90,7 @@ export class Slide1to1 implements MovesFunction {
     const from = ctx._evalFrom;
     if (from < 0) return [];
 
-    const ctxAny = ctx as unknown as { _radials?: CellFlatRadials[] };
+    const ctxAny = ctx as unknown as { _radials?: CellFlatRadials[]; _trajectories?: Trajectories | null };
     const radials = ctxAny._radials;
     if (!radials) return [];
 
@@ -96,8 +101,29 @@ export class Slide1to1 implements MovesFunction {
     const mover = state.mover;
     const moves: LudiiMove[] = [];
 
-    // Select axes by direction.
-    const axes = radialsForDirection(cellRadials, this.dirnName);
+    // Graph-board (hex/tri/etc.) trajectories for direction-aware radial lookup.
+    // For non-square boards, axis indices (0,1,2,3 = EW,NS,NESW,NWSE) do NOT apply.
+    // @java Slide.java — dirnChoice.convertToAbsolute(context) + Radials lookup
+    const traj = ctxAny._trajectories ?? null;
+
+    // Select axes by direction, using trajectories when available for graph boards.
+    // For specific compass directions (N/SW/etc.) on graph boards, use trajectory lookup only —
+    // falling back to the index table gives wrong axes (the hex board's axis indices don't map
+    // to compass headings). For group directions (Adjacent/Orthogonal/Diagonal), use the table.
+    const GROUP_DIRS_SLIDE = new Set(["adjacent", "orthogonal", "diagonal", "all"]);
+    let axes: readonly { ray: readonly number[]; opposite: readonly number[] }[];
+    if (traj) {
+      const distinct = traj.distinctRadialsByName(from, this.dirnName);
+      if (distinct.length > 0) {
+        axes = distinct.map(r => ({ ray: r.ray, opposite: r.opposites[0] ?? [from] }));
+      } else if (!GROUP_DIRS_SLIDE.has(this.dirnName.toLowerCase())) {
+        axes = []; // specific direction not available from this site on graph board
+      } else {
+        axes = radialsForDirection(cellRadials, this.dirnName);
+      }
+    } else {
+      axes = radialsForDirection(cellRadials, this.dirnName);
+    }
 
     // Walk a single ray: while intermediate squares are empty (go-rule), test the
     // landing rule at each square and emit a move if it passes; the FIRST occupied

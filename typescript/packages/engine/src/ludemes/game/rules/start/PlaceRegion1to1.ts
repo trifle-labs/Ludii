@@ -23,11 +23,23 @@ export class PlaceRegion1to1 implements StartRule {
   private readonly regionFn: RegionFunction;
   /** Pieces to place at each site (the `count:` arg, default 1). @java Place.count */
   private readonly count: number;
+  /** Per-site state value from `state:N` (-1 = unset). */
+  private readonly stateValue: number;
+  /** Per-site value from `value:N` (-1 = unset). */
+  private readonly valueValue: number;
 
-  public constructor(pieceId: string, regionFn: RegionFunction, count = 1) {
+  public constructor(
+    pieceId: string,
+    regionFn: RegionFunction,
+    count = 1,
+    stateValue = -1,
+    valueValue = -1,
+  ) {
     this.pieceId = pieceId;
     this.regionFn = regionFn;
     this.count = count;
+    this.stateValue = stateValue;
+    this.valueValue = valueValue;
   }
 
   public applyToInitialState(
@@ -36,6 +48,8 @@ export class PlaceRegion1to1 implements StartRule {
     countAt: number[],
     equipment: Equipment1to1,
     numPlayers: number,
+    stateAt?: number[],
+    valueAt?: number[],
   ): void {
     // Parse player number from the piece id suffix.
     const match = this.pieceId.match(/^(.*?)(\d+)$/);
@@ -58,6 +72,12 @@ export class PlaceRegion1to1 implements StartRule {
       cells[site] = owner;
       whats[site] = piece.index;
       countAt[site] = this.count;
+      if (stateAt && this.stateValue >= 0) {
+        stateAt[site] = this.stateValue;
+      }
+      if (valueAt && this.valueValue >= 0) {
+        valueAt[site] = this.valueValue;
+      }
     }
   }
 

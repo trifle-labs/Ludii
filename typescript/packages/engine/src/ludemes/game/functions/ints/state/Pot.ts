@@ -1,21 +1,71 @@
 // @java Core/src/game/functions/ints/state/Pot.java
 
-import { type LudList } from "@ludii/typescript-language";
-import {
-  LudemeCompileError,
-  parseArgs,
-  type CompileEnv,
-} from "../../../../../eval/compile.js";
-import type { IntFn } from "../../../../../eval/eval-context.js";
-import { register } from "../../../../registry.js";
+/**
+ * Returns the pot of the game.
+ *
+ * @java game/functions/ints/state/Pot.java
+ * @author Eric.Piette
+ */
 
-export function compilePot(node: LudList, _env: CompileEnv): IntFn {
-  const { positional, named } = parseArgs(node.items.slice(1));
-  if (positional.length !== 0 || named.size !== 0) {
-    throw new LudemeCompileError("(pot) expects no arguments.");
+import type { Context } from "../../../../../context.js";
+import { BaseIntFunction } from "../BaseIntFunction.js";
+
+/**
+ * Returns the pot of the game.
+ *
+ * @java game/functions/ints/state/Pot.java
+ */
+export class Pot extends BaseIntFunction {
+  /**
+   * @java Pot()
+   */
+  public constructor() {
+    super();
+    // Nothing to do.
   }
-  // Java eval returns `context.state().pot()` directly (Pot.java:31-33).
-  return { eval: (ctx) => ctx.state.pot };
-}
 
-register("int", "pot", compilePot as any);
+  /**
+   * @java Pot.eval(Context)
+   *
+   * Returns the pot value from the game state.
+   */
+  public override eval(context: Context): number {
+    // Java: return context.state().pot();
+    return (context.state as unknown as { pot?: () => number }).pot?.() ?? 0;
+  }
+
+  /** @java Pot.isStatic() */
+  public isStatic(): boolean {
+    return false;
+  }
+
+  /** @java Pot.gameFlags(Game) */
+  public gameFlags(_game: unknown): number {
+    return 0;
+  }
+
+  /** @java Pot.concepts(Game) */
+  public override concepts(_game: unknown): Set<number> {
+    return new Set<number>();
+  }
+
+  /** @java Pot.writesEvalContextRecursive() */
+  public override writesEvalContextRecursive(): Set<number> {
+    return new Set<number>();
+  }
+
+  /** @java Pot.readsEvalContextRecursive() */
+  public override readsEvalContextRecursive(): Set<number> {
+    return new Set<number>();
+  }
+
+  /** @java Pot.preprocess(Game) */
+  public preprocess(_game: unknown): void {
+    // nothing to do
+  }
+
+  /** @java Pot.toEnglish(Game) */
+  public override toEnglish(_game: unknown): string {
+    return "the pot";
+  }
+}

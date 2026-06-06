@@ -1,7 +1,19 @@
 // @java Core/src/game/functions/booleans/all/AllSitesType.java
 
-// Java enum values only; runtime dispatch is implemented by All.ts / sites/*
-// (AllSitesType.java:9-15). No registry entry: enum declarations are not
-// standalone ludemes in the current TS dispatcher.
+/**
+ * Defines the query types that can be used for an (all ...) test related to sites.
+ *
+ * @java game/functions/booleans/all/AllSitesType.java
+ * @author Eric.Piette
+ */
+export enum AllSitesType {
+  /** Returns whether all the sites satisfy a condition. */
+  Sites = "Sites",
+
+  /** Returns whether all the sites are different. */
+  Different = "Different",
+}
+
+// Backward-compat string-union constants used by existing dispatchers.
 export const ALL_SITES_TYPES = ["Sites", "Different"] as const;
-export type AllSitesType = (typeof ALL_SITES_TYPES)[number];
+export type AllSitesTypeStr = (typeof ALL_SITES_TYPES)[number];

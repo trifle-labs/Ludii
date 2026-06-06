@@ -89,9 +89,9 @@ export class Var1to1 implements IntFunction {
       // in slot 0 (SetVar writes ActionSetTemp(0, value) → temps[0]).
       return ctx.state.temp(0);
     }
-    // getValue(key) — stored in state's namedValues map
-    const stateAny = ctx.state as unknown as { _namedValues?: Map<string, number> };
-    return stateAny._namedValues?.get(this.key) ?? 0;
+    // getValue(key) — stored in state.vars (written by ActionSetVar via state.withVar).
+    // @java State.getValue(key) returns Constants.OFF (-1) when absent.
+    return ctx.state.getVar(this.key);
   }
 }
 

@@ -1,39 +1,115 @@
 // @java Core/src/game/functions/region/sites/index/SitesState.java
 
-import {
-  isIdent,
-  type LudList,
-} from "@ludii/typescript-language";
-import {
-  compileInt,
-  parseArgs,
-  type CompileEnv,
-} from "../../../../../../eval/compile.js";
-import type { RegionFn } from "../../../../../../eval/eval-context.js";
-import { register } from "../../../../../registry.js";
+/**
+ * Returns all sites with a specified state value.
+ *
+ * @java game/functions/region/sites/index/SitesState.java
+ * @author Eric Piette and cambolbro
+ */
 
-const SITE_TYPE_IDENTS = new Set(["Cell", "Vertex", "Edge"]);
+import type { Context } from "../../../../../../context.js";
+import type { IntFunction, EvalScratch } from "../../../../../base.js";
+import { BaseRegionFunction } from "../../BaseRegionFunction.js";
 
-export function compileSitesState(node: LudList, env: CompileEnv): RegionFn {
-  const { positional } = parseArgs(node.items.slice(2));
-  const valNode = positional.find(
-    (p) => !(isIdent(p) && SITE_TYPE_IDENTS.has(p.name)),
-  );
-  if (!valNode) return { eval: () => [] };
-  const valFn = compileInt(valNode, env);
-  return {
-    eval: (ctx) => {
-      const want = valFn.eval(ctx);
-      const out: number[] = [];
-      const n = ctx.board.numSites;
-      for (let s = 0; s < n; s += 1) {
-        if (ctx.board.isOnBoard(s) && ctx.state.stateAtSite(s) === want) {
-          out.push(s);
-        }
-      }
-      return out;
-    },
-  };
+/** Minimal ContainerState shape for state(site, type) access. */
+interface ContainerStateLike {
+  state(site: number, type: string): number;
+  numSites?(): number;
 }
 
-register("region", "State", compileSitesState as any);
+/**
+ * Returns all sites with a specified state value.
+ *
+ * @java game/functions/region/sites/index/SitesState.java
+ */
+export class SitesState extends BaseRegionFunction {
+  /** @java SitesState — stateValue */
+  private readonly stateValue: IntFunction;
+
+  /**
+   * @param elementType The graph element type.
+   * @param stateValue  The value of the local state.
+   * @java SitesState(SiteType, IntFunction)
+   */
+  public constructor(elementType: string | null, stateValue: IntFunction) {
+    super();
+    this.siteType = elementType;
+    this.stateValue = stateValue;
+  }
+
+  /**
+   * Returns all sites whose local state equals stateValue.
+   *
+   * @java SitesState.eval(Context)
+   *
+   * Java parity:
+   *   final TIntArrayList sites = new TIntArrayList();
+   *   final int stateId = stateValue.eval(context);
+   *   final ContainerState cs = context.containerState(0);
+   *   final int sitesTo = context.containers()[0].numSites();
+   *   for (int site = 0; site < sitesTo; site++)
+   *     if (cs.state(site, type) == stateId) sites.add(site);
+   *   return new Region(sites.toArray());
+   */
+  public override eval(ctx: Context & EvalScratch): number[] {
+    const sites: number[] = [];
+
+    // @java final int stateId = stateValue.eval(context)
+    const stateId = this.stateValue.eval(ctx);
+
+    // @java final SiteType realType = (type != null) ? type : ...
+    const realType: string = this.siteType ?? (
+      (ctx as unknown as { board?: { defaultSite?: () => string } }).board?.defaultSite?.() ?? "Cell"
+    );
+
+    // @java final ContainerState cs = context.containerState(0)
+    const ctxAny = ctx as unknown as {
+      containerState?: (n: number) => ContainerStateLike;
+      state?: {
+        containerStates?: () => ContainerStateLike[];
+      };
+    };
+
+    let cs: ContainerStateLike | null = null;
+    if (typeof ctxAny.containerState === "function") {
+      cs = ctxAny.containerState(0);
+    } else {
+      const cstates = ctxAny.state?.containerStates?.();
+      if (cstates && cstates.length > 0) {
+        cs = cstates[0] ?? null;
+      }
+    }
+
+    if (!cs) {
+      return [];
+    }
+
+    // @java final int sitesTo = context.containers()[0].numSites()
+    const game = ctx.game as unknown as {
+      equipment?: { containers?: Array<{ numSites: number }>; board?: { numSites?: number } };
+    };
+    const sitesTo =
+      game.equipment?.containers?.[0]?.numSites
+      ?? game.equipment?.board?.numSites
+      ?? ctx.state.cells.length;
+
+    // @java for (int site = 0; site < sitesTo; site++) if (cs.state(site, type) == stateId) sites.add(site)
+    for (let site = 0; site < sitesTo; site++) {
+      if (cs.state(site, realType) === stateId) {
+        sites.push(site);
+      }
+    }
+
+    return sites;
+  }
+
+  /** @java SitesState.isStatic() — false */
+  public override isStatic(): boolean {
+    return false;
+  }
+
+  /** @java SitesState.toString() */
+  public override toString(): string {
+    return "SitesState()";
+  }
+}

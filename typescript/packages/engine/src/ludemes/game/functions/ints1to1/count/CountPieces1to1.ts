@@ -40,9 +40,12 @@ export class CountPieces1to1 implements IntFunction {
   /**
    * @java game/functions/ints/count/component/CountPieces.java — eval(Context)
    * Counts pieces on board sites + hand slots.
+   * For stacking games: counts all pieces across all stack levels.
+   * @java CountPieces.java — for stacking games, iterates cs.sizeStack(site) levels.
    */
   public eval(ctx: Context): number {
     const cells = ctx.state.cells;
+    const stacks = ctx.state.stacks;
     const countAt = ctx.state.countAt;
     const g = ctx.game as unknown as Game1to1;
     const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
@@ -54,53 +57,59 @@ export class CountPieces1to1 implements IntFunction {
       allowedSites = new Set(this.whereFn.eval(ctx));
     }
 
-    // Resolve optional piece name filter (component index set)
-    let nameFilter: Set<number> | null = null;
-    if (this.pieceName && g.equipment?.pieces) {
-      nameFilter = new Set<number>();
-      for (const p of g.equipment.pieces) {
-        if (p.name.toLowerCase() === this.pieceName.toLowerCase()) {
-          nameFilter.add(p.index);
-        }
-      }
-    }
-
-    // Pieces at a site: seed/stack count when present (mancala holes, stacks
-    // hold their pieces in countAt), else 1 for a single owned piece.
-    const piecesAt = (i: number): number => {
-      const c = countAt[i] ?? 0;
-      if (c > 0) return c;
-      return (cells[i] ?? 0) !== 0 ? 1 : 0;
-    };
-
-    function countAt_(cells: readonly number[], countAtArr: readonly number[], start: number, end: number, pid: number): number {
-      let n = 0;
-      for (let i = start; i < end; i++) {
-        if (allowedSites && !allowedSites.has(i)) continue;
-        if (cells[i] !== pid) continue;
-        if (nameFilter) {
-          // check what piece is at site
-          // whats is not always present — skip name filter if unavailable
-        }
-        const c = countAtArr[i] ?? 0;
-        n += c > 0 ? c : 1;
-      }
-      return n;
-    }
-
     if (this.isAll) {
       // Count all pieces — board seeds (countAt, owner 0 for Shared) + owned
       // single pieces + hand-slot stacks.
+      // For stacking games, sum all non-zero stack levels.
       let total = 0;
       for (let i = 0; i < totalN; i++) {
         if (allowedSites && !allowedSites.has(i)) continue;
-        total += piecesAt(i);
+        if (i < boardN) {
+          const stack = stacks[i];
+          if (stack && stack.length > 0) {
+            total += stack.filter(o => o !== 0).length;
+          } else {
+            const c = countAt[i] ?? 0;
+            if (c > 0) total += c;
+            else if ((cells[i] ?? 0) !== 0) total++;
+          }
+        } else {
+          // Hand slot: countAt[i] pieces
+          const c = countAt[i] ?? 0;
+          if (c > 0) total += c;
+          else if ((cells[i] ?? 0) !== 0) total++;
+        }
       }
       return total;
     }
 
     const pid = this.whoFn.eval(ctx);
-    return countAt_(cells, countAt, 0, totalN, pid);
+    let n = 0;
+    for (let i = 0; i < totalN; i++) {
+      if (allowedSites && !allowedSites.has(i)) continue;
+      if (i < boardN) {
+        // Board site: count all stack levels owned by pid
+        // @java CountPieces: for stacking games, iterates all levels via cs.sizeStack(site)
+        const stack = stacks[i];
+        if (stack && stack.length > 0) {
+          for (const owner of stack) {
+            if (owner === pid) n++;
+          }
+        } else {
+          // Non-stacking or non-materialized: use cells + countAt
+          if (cells[i] === pid) {
+            const c = countAt[i] ?? 0;
+            n += c > 0 ? c : 1;
+          }
+        }
+      } else {
+        // Hand slot: countAt[i] pieces if owned by pid
+        if (cells[i] === pid) {
+          n += countAt[i] ?? 0;
+        }
+      }
+    }
+    return n;
   }
 }
 

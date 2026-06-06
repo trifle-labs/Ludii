@@ -5,8 +5,9 @@
  * forming a line of the given minimum length.
  *
  * For the TTT 1:1 path we implement the common case:
- *   (is Line N)         — through:=(last To), who:=Mover, dirn:=Adjacent
- *   (is Line N dirn)    — explicit direction
+ *   (is Line N)                  — through:=(last To), who:=Mover, dirn:=Adjacent
+ *   (is Line N dirn)             — explicit direction
+ *   (is Line N dirn exact:True)  — line must be exactly N (not part of longer)
  *
  * Java parity (IsLine.eval simplified for non-stacking, non-puzzle case):
  *   1. pivot = through.eval(context)  [default: LastTo = context.to()]
@@ -14,7 +15,7 @@
  *   3. For each distinct radial from pivot in the requested direction:
  *      a. Walk forward ray counting contiguous matching cells
  *      b. Walk opposite ray extending the count
- *      c. If count >= len (non-exact), return true
+ *      c. If exact: count === len; else count >= len → return true
  *   4. Return false
  */
 
@@ -28,13 +29,19 @@ export class IsLine implements BooleanFunction {
   private readonly lengthFn: IntFunction;
   /** Direction name string, e.g. "Adjacent". @java IsLine.dirn */
   private readonly dirnName: string;
+  /**
+   * When true, the line must be exactly `len` long — not part of a longer line.
+   * @java IsLine.exactLength
+   */
+  private readonly exact: boolean;
 
   /**
    * @java game/functions/booleans/is/line/IsLine.java — constructor
    */
-  public constructor(length: IntFunction, dirnName = "Adjacent") {
+  public constructor(length: IntFunction, dirnName = "Adjacent", exact = false) {
     this.lengthFn = length;
     this.dirnName = dirnName;
+    this.exact = exact;
   }
 
   /**
@@ -65,6 +72,15 @@ export class IsLine implements BooleanFunction {
       return w === pivotWhat;
     };
 
+    /**
+     * Test whether `count` satisfies the length condition.
+     * exact=false: count >= len
+     * exact=true:  count === len (not part of a longer line)
+     * @java IsLine.eval — exactLength branch
+     */
+    const matchesLen = (count: number): boolean =>
+      this.exact ? count === len : count >= len;
+
     // For graph-based boards (hex/tri/concentric/etc.), use the Trajectories
     // object to get direction-correct distinct radials via distinctRadialsByName.
     // @java other/topology/Topology.java — preGenerateDirection(game)
@@ -88,7 +104,7 @@ export class IsLine implements BooleanFunction {
           if (s === undefined || !matchFn(s)) break;
           count++;
         }
-        if (count >= len) return true;
+        if (matchesLen(count)) return true;
       }
       return false;
     }
@@ -105,7 +121,7 @@ export class IsLine implements BooleanFunction {
     const selectedAxes = selectAxes(cellRadials.axes, this.dirnName);
 
     // Java IsLine.eval lines 333-519: for each distinct radial, walk forward
-    // then opposite, return true if count >= len.
+    // then opposite, return true if count satisfies len condition.
     for (const { ray, opposite } of selectedAxes) {
       if (!ray || !opposite) continue; // guard against sparse axis arrays
       let count = 1; // pivot itself
@@ -121,7 +137,7 @@ export class IsLine implements BooleanFunction {
         count++;
       }
 
-      if (count >= len) return true;
+      if (matchesLen(count)) return true;
     }
 
     return false;

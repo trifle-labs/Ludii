@@ -1,5 +1,11 @@
 # Ludii Port — Meta-Analysis of Techniques
 
+> **2026-06-04 — Interpreter deleted.** The bespoke interpreter (`eval/compile.ts` et al.)
+> has been physically removed from the tree. Technique **T1 (Monolithic interpreter fixes)
+> is DEAD (☠)** — there is no interpreter to fix. The only path is the faithful 1:1 port
+> (`play1to1`/`compiler1to1` + one TS class per Java ludeme). Disregard any technique below
+> that operates on the interpreter.
+
 A living record of HOW the port is being driven, not WHAT was fixed (that's
 `PORT_PROGRESS.md`). Purpose: rate each technique's effectiveness so we can tell
 when a vein is exhausted and deliberately switch method instead of grinding a

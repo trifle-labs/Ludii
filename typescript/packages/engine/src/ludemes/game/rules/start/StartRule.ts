@@ -24,6 +24,8 @@ export interface StartRule {
    * @param countAt     countAt[site] = piece count at site (mutable)
    * @param equipment   equipment for resolving piece names and hand sites
    * @param numPlayers  number of players
+   * @param stateAt     stateAt[site] = per-site state value (mutable, optional)
+   * @param valueAt     valueAt[site] = per-site value (mutable, optional)
    */
   applyToInitialState(
     cells: number[],
@@ -31,5 +33,7 @@ export interface StartRule {
     countAt: number[],
     equipment: Equipment1to1,
     numPlayers: number,
+    stateAt?: number[],
+    valueAt?: number[],
   ): void;
 }

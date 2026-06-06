@@ -86,7 +86,10 @@ export class SizeStack1to1 implements IntFunction {
   /** @java game/functions/ints/size/site/SizeStack.java — eval: state.stateStack(site).size() */
   public eval(ctx: Context): number {
     const s = this.siteFn.eval(ctx);
-    return ctx.state.countAtSite(s);
+    if (s < 0) return 0;
+    // stackSize returns the true stack height (max of stacks[s].length, countAt[s], 1 if occupied)
+    // @java ContainerState.sizeStack(site) — used by (size Stack at:site)
+    return ctx.state.stackSize(s);
   }
 }
 

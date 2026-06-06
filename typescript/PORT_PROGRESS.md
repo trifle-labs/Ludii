@@ -6,6 +6,19 @@ All work is on engine repo `/Users/billy/GitHub/trifle-labs/Ludii` branch `copil
 Baselines held all session: unit tests **501 pass / 0 fail**; parity sweep run as 3 shards (`--shard k/3`).
 
 ---
+## ⮕ 2026-06-04 — INTERPRETER PHYSICALLY DELETED (user mandate: "rip off the bandaid").
+The bespoke interpreter and all scaffolding around it are now **gone from the tree**, not just
+unused: `eval/compile.ts` (15.6k lines), `lud-compiler.ts`, `eval/ludeme-game.ts`, `game-loader.ts`,
+the old closure `registry.ts` + `ludemes/index.ts`, ~251 closure-style ludeme files, the bespoke
+"MVE" games (`flat-board-game.ts`/`hex-game.ts`/`tri-game.ts`/`step-game.ts`/`stack-game.ts`/
+`dice-game.ts`/`alternating-mode.ts`), all `dbg-*`/`diag-*`/probe `.mjs` debug scripts, and the
+interpreter-era unit tests (47 files). The replay harness now runs **play1to1 only** (the
+`ENGINE_1TO1` toggle is removed). `tsc` is green. The "interpreter parity" number is dead —
+the only metric is now the faithful 1:1 engine. This was the right call: the harness's *default*
+path had been `compileLudemeSource` (the interpreter), so the previously-reported ~35% was the
+independently-rewritten interpreter, not the port.
+
+---
 ## ⮕ ACTIVE DIRECTION (2026-06-01, user mandate) — FULL 1:1 Java→TS PORT; the custom interpreter is discarded.
 See `PORT_META_ANALYSIS.md` Reflection 9. The bespoke `eval/compile.ts` interpreter is NOT the goal (Java has no monolithic interpreter — each ludeme is a class with `eval()`). New goal: faithfully port every Java engine file as a 1:1 class, build the ludeme tree with a direct compiler, run the trials, debug. **New metric: # trials playing through the 1:1 engine (`ENGINE_1TO1=1`), not interpreter parity.** Corpus-wide 1:1 state (shard 0/6 sample, 2026-06-01): **OUTCOME_OK ~6.6%, MOVE_MISMATCH ~47.5% (compile+run, debug phase), COMPILE_FAIL ~37%, WINNER_MISMATCH ~8.2%.** board/space leads (16% / CF 16) since porting focused there. Top corpus-wide compile blockers (= next port targets): **EquipmentError (69 — generic Equipment1to1 gap, highest leverage)**, `(is Threatened)` 23, IntFunction-from-list 18, `(move Promote)` 15, `(forEach Die)`+`(all DiceEqual)` 11, play `max` 7. Process: run the 1:1 path → COMPILE_FAIL reasons name the next unhandled ludeme heads → port those classes faithfully → repeat. Interpreter parity (55.2%) is now legacy/reference only.
 

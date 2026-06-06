@@ -23,15 +23,19 @@ export class ActionMoveStacking extends BaseAction {
 
   public override apply(state: State): State {
     const stackSize = state.stackSize(this.fromIndex);
-    const piece =
-      stackSize > 0
-        ? state.stackAt(this.fromIndex, stackSize - 1)
-        : (state.cells[this.fromIndex] ?? 0);
+    // Get the top-level owner. If stacks[from] is not yet materialized (empty array)
+    // but the site is occupied (cells[from] > 0), fall back to cells[from].
+    // @java ActionMoveStacking.apply: relocates the TOP piece of the source stack.
+    const stackTop = stackSize > 0 ? state.stackAt(this.fromIndex, stackSize - 1) : 0;
+    const piece = stackTop > 0 ? stackTop : (state.cells[this.fromIndex] ?? 0);
     if (piece === 0) return state;
-    const popped =
-      stackSize > 0
-        ? state.withStackPop(this.fromIndex)
-        : state.withCell(this.fromIndex, 0);
+    // Pop the top from source: if stacks array is non-empty use withStackPop,
+    // else just clear the cell (non-materialized single piece).
+    const sourceStack = state.stacks[this.fromIndex];
+    const hasMaterializedStack = sourceStack !== undefined && sourceStack.length > 0;
+    const popped = hasMaterializedStack
+      ? state.withStackPop(this.fromIndex)
+      : state.withCell(this.fromIndex, 0);
     return popped.withStackPush(this.toIndex, piece);
   }
   public override actionType(): ActionType {

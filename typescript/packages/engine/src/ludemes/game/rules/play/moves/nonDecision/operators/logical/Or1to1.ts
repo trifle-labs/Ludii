@@ -23,8 +23,8 @@ import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { Operator1to1 } from "../../operator/Operator1to1.js";
 import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
-import { parseArgs1to1, flattenMovesList } from "../../../../../../../../compiler1to1.js";
-import { type LudList, type LudNode } from "@ludii/typescript-language";
+import { parseArgs1to1, flattenMovesList, attachThen, headOf } from "../../../../../../../../compiler1to1.js";
+import { type LudList, type LudNode, isList } from "@ludii/typescript-language";
 
 /**
  * @java game/rules/play/moves/nonDecision/operators/logical/Or.java
@@ -69,9 +69,18 @@ export class Or1to1 extends Operator1to1 {
 }
 
 // @java Or.java — compile factory: parse (or { ... }) / (or <moves1> <moves2>).
-// Logic relocated VERBATIM from the inline compileMoves1to1Impl "or" handler.
+// Java Or.eval (lines 155-157) adds the then() consequence to every generated move:
+//   if (then() != null) for (j) moves.get(j).then().add(then().moves());
+// The (then ...) must NOT appear as a sub-move-generator — filter it out first,
+// then wrap via attachThen so it fires as an after-consequence on every move.
+// @java game/rules/play/moves/nonDecision/operators/logical/Or.java — eval(Context):155-157
 registerMoves1to1("or", (node: LudNode, env: Compile1to1Env): MovesFunction => {
   const { positional } = parseArgs1to1((node as LudList).items);
-  const subMoves = flattenMovesList(positional, env.equipment as Parameters<typeof flattenMovesList>[1]);
-  return new Or1to1(subMoves);
+  // Exclude (then ...) nodes — they are afterConsequences, not sub-generators.
+  const nonThenPositional = positional.filter(
+    (p): p is LudNode => !(isList(p as LudNode) && headOf(p as LudNode) === "then"),
+  );
+  const equip = env.equipment as Parameters<typeof flattenMovesList>[1];
+  const subMoves = flattenMovesList(nonThenPositional, equip);
+  return attachThen(new Or1to1(subMoves), positional, equip);
 });

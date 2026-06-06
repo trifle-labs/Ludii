@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/ints/board/where/WhereLevelType.java
 
-// TODO Phase 2: faithful port from WhereLevelType.java (currently handled in compile.ts compileInt shared where logic).
+/**
+ * Defines the type of integer to return with the ludeme (where ...)
+ *
+ * @java game/functions/ints/board/where/WhereLevelType.java
+ * @author Eric.Piette
+ */
+export enum WhereLevelType {
+  /** The first level on a site where a piece is. */
+  Level = "Level",
+}

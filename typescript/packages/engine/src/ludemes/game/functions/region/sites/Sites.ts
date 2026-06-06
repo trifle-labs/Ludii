@@ -1,3 +1,992 @@
 // @java Core/src/game/functions/region/sites/Sites.java
 
-// TODO Phase 2: faithful port from Sites.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Returns the specified set of sites.
+ *
+ * @java game/functions/region/sites/Sites.java
+ * @author Eric.Piette
+ *
+ * This is a pure factory/dispatcher class. Its own eval() returns null and is
+ * never called; all real logic lives in the concrete sub-classes it constructs.
+ */
+
+import type { Context } from "../../../../../context.js";
+import type { EvalScratch, RegionFunction, IntFunction, BooleanFunction, IntArrayFunction } from "../../../../base.js";
+import { BaseRegionFunction } from "../BaseRegionFunction.js";
+
+// ---- Sub-class imports (ported classes) ------------------------------------
+import { SitesContext } from "./context/SitesContext.js";
+import { SitesCoords } from "./coords/SitesCoords.js";
+import { SitesCrossing } from "./crossing/SitesCrossing.js";
+import { SitesCustom } from "./custom/SitesCustom.js";
+import { SitesGroup } from "./group/SitesGroup.js";
+import { SitesHiddenCount } from "./hidden/SitesHiddenCount.js";
+import { SitesHiddenRotation } from "./hidden/SitesHiddenRotation.js";
+import { SitesHiddenState } from "./hidden/SitesHiddenState.js";
+import { SitesHiddenValue } from "./hidden/SitesHiddenValue.js";
+import { SitesHiddenWhat } from "./hidden/SitesHiddenWhat.js";
+import { SitesHiddenWho } from "./hidden/SitesHiddenWho.js";
+import { SitesIncident } from "./incidents/SitesIncident.js";
+import { SitesLineOfSight } from "./lineOfSight/SitesLineOfSight.js";
+import { SitesOccupied } from "./occupied/SitesOccupied.js";
+import { SitesEquipmentRegion } from "./player/SitesEquipmentRegion.js";
+import { SitesHand } from "./player/SitesHand.js";
+import { SitesRandom } from "./random/SitesRandom.js";
+import { SitesBottom } from "./simple/SitesBottom.js";
+import { SitesCentre } from "./simple/SitesCentre.js";
+import { SitesConcaveCorners } from "./simple/SitesConcaveCorners.js";
+import { SitesConvexCorners } from "./simple/SitesConvexCorners.js";
+import { SitesHint } from "./simple/SitesHint.js";
+import { SitesLeft } from "./simple/SitesLeft.js";
+import { SitesRight } from "./simple/SitesRight.js";
+import { SitesTop } from "./simple/SitesTop.js";
+import { LineOfSightType } from "./LineOfSightType.js";
+
+// ---- Type imports (enum discriminators) ------------------------------------
+import type { SitesAroundType } from "./SitesAroundType.js";
+import type { SitesBetweenType } from "./SitesBetweenType.js";
+import type { SitesCrossingType } from "./SitesCrossingType.js";
+import type { SitesDirectionType } from "./SitesDirectionType.js";
+import type { SitesDistanceType } from "./SitesDistanceType.js";
+import type { SitesEdgeType } from "./SitesEdgeType.js";
+import type { SitesGroupType } from "./SitesGroupType.js";
+import type { SitesHiddenType } from "./SitesHiddenType.js";
+import type { SitesIncidentType } from "./SitesIncidentType.js";
+import type { SitesIndexType } from "./SitesIndexType.js";
+import type { SitesOccupiedType } from "./SitesOccupiedType.js";
+import type { SitesPlayerType } from "./SitesPlayerType.js";
+import type { SitesPieceType } from "./SitesPieceType.js";
+import type { SitesSimpleType } from "./SitesSimpleType.js";
+
+/** Internal type alias for topology accessor shape. */
+type TopologyLike = {
+  top(type: string): Array<{ index(): number }>;
+  bottom(type: string): Array<{ index(): number }>;
+  left(type: string): Array<{ index(): number }>;
+  right(type: string): Array<{ index(): number }>;
+  inner(type: string): Array<{ index(): number }>;
+  outer(type: string): Array<{ index(): number }>;
+  major(type: string): Array<{ index(): number }>;
+  minor(type: string): Array<{ index(): number }>;
+  perimeter(type: string): Array<{ index(): number }>;
+  centre(type: string): Array<{ index(): number }>;
+  axial(type: string): Array<{ index(): number }>;
+  horizontal(type: string): Array<{ index(): number }>;
+  vertical(type: string): Array<{ index(): number }>;
+  angled(type: string): Array<{ index(): number }>;
+  slash(type: string): Array<{ index(): number }>;
+  slosh(type: string): Array<{ index(): number }>;
+  rows(type: string): Array<Array<{ index(): number }>>;
+  columns(type: string): Array<Array<{ index(): number }>>;
+  phases(type: string): Array<Array<{ index(): number }>>;
+  layers(type: string): Array<Array<{ index(): number }>>;
+};
+
+/** A constant IntFunction wrapping a fixed value. */
+function constIntFn(val: number): IntFunction {
+  return { eval(_ctx: Context & EvalScratch) { return val; } };
+}
+
+/**
+ * Returns the specified set of sites. This class acts as a pure factory/dispatcher.
+ *
+ * @java game.functions.region.sites.Sites
+ */
+export class Sites extends BaseRegionFunction {
+  /**
+   * Private constructor — Java class has no public ctor.
+   * @java Sites()
+   */
+  private constructor() {
+    super();
+  }
+
+  /**
+   * @java Sites.eval(Context) — always returns null (never called directly).
+   */
+  public override eval(_ctx: Context & EvalScratch): number[] {
+    return [];
+  }
+
+  // ---- Factory methods mirroring Java static construct() overloads -----------
+
+  /**
+   * For getting the sites iterated in ForEach Moves.
+   * @java Sites.construct() → SitesContext
+   * @example (sites)
+   */
+  public static constructContext(): RegionFunction {
+    return new SitesContext();
+  }
+
+  /**
+   * For getting sites without any parameter or only the graph element type.
+   * @java Sites.construct(SitesSimpleType, SiteType) → various simple classes
+   * @example (sites Top)
+   * @example (sites Playable)
+   */
+  public static constructSimple(
+    regionType: SitesSimpleType,
+    elementType: string | null = null,
+  ): RegionFunction {
+    // @java switch(regionType) { case Top: return new SitesTop(elementType); ... }
+    const rt = regionType as unknown as string;
+
+    // Helper: get topology and call a named method
+    const makeTopologyFn = (methodName: keyof TopologyLike, type: string | null): RegionFunction =>
+      new (class extends BaseRegionFunction {
+        private readonly _type: string | null;
+        constructor(t: string | null) { super(); this._type = t; }
+        override eval(ctx: Context & EvalScratch): number[] {
+          const realType = this._type ??
+            ((ctx as unknown as { board?(): { defaultSite(): string } }).board?.()?.defaultSite() ?? "Cell");
+          const topology = (ctx as unknown as { topology?(): TopologyLike }).topology?.();
+          if (topology) {
+            const method = topology[methodName] as ((t: string) => Array<{ index(): number }>) | undefined;
+            if (typeof method === "function") return method.call(topology, realType).map((e) => e.index());
+          }
+          return [];
+        }
+        override isStatic(): boolean { return true; }
+      })(type);
+
+    switch (rt) {
+      case "Board":
+        // @java SitesBoard — all board sites
+        return new (class extends BaseRegionFunction {
+          override eval(ctx: Context & EvalScratch): number[] {
+            const n = ctx.state.cells.length;
+            return Array.from({ length: n }, (_, i) => i);
+          }
+          override isStatic(): boolean { return true; }
+        })();
+      case "Bottom":
+        return new SitesBottom(elementType);
+      case "Corners": {
+        const et = elementType;
+        return new (class extends BaseRegionFunction {
+          private readonly _type: string | null;
+          constructor(t: string | null) { super(); this._type = t; }
+          override eval(ctx: Context & EvalScratch): number[] {
+            const g = ctx.game as unknown as {
+              equipment?: { board?: { width?: number; height?: number; numSites?: number } }
+            };
+            const W = g.equipment?.board?.width ?? 0;
+            const H = g.equipment?.board?.height ?? 0;
+            if (W === 0 || H === 0) return [];
+            const n = g.equipment?.board?.numSites ?? (W * H);
+            return [0, W - 1, n - W, n - 1].filter((v, i, a) => a.indexOf(v) === i);
+          }
+          override isStatic(): boolean { return true; }
+        })(et);
+      }
+      case "ConcaveCorners":
+        return new SitesConcaveCorners(elementType);
+      case "ConvexCorners":
+        return new SitesConvexCorners(elementType);
+      case "Hint":
+        return new SitesHint();
+      case "Inner":
+        return makeTopologyFn("inner", elementType);
+      case "Left":
+        return new SitesLeft(elementType);
+      case "LineOfPlay":
+        // @java SitesLineOfPlay — not yet ported
+        return new (class extends BaseRegionFunction {
+          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+        })();
+      case "Major":
+        return makeTopologyFn("major", elementType);
+      case "Minor":
+        return makeTopologyFn("minor", elementType);
+      case "Outer":
+        return makeTopologyFn("outer", elementType);
+      case "Right":
+        return new SitesRight(elementType);
+      case "ToClear":
+        // @java SitesToClear — not yet ported as non-1to1
+        return new (class extends BaseRegionFunction {
+          override eval(ctx: Context & EvalScratch): number[] {
+            const sites = (ctx as unknown as {
+              state?: { toClear?(): number[] }
+            }).state?.toClear?.();
+            return sites ?? [];
+          }
+        })();
+      case "Top":
+        return new SitesTop(elementType);
+      case "Pending":
+        return new (class extends BaseRegionFunction {
+          override eval(ctx: Context & EvalScratch): number[] {
+            const sites = (ctx as unknown as {
+              state?: { pendingSites?(): number[] }
+            }).state?.pendingSites?.();
+            return sites ?? [];
+          }
+        })();
+      case "Playable":
+        // @java SitesPlayable — not yet ported faithfully
+        return new (class extends BaseRegionFunction {
+          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+        })();
+      case "LastTo":
+        return new (class extends BaseRegionFunction {
+          override eval(ctx: Context & EvalScratch): number[] {
+            const to = ctx._evalTo ?? -1;
+            return to >= 0 ? [to] : [];
+          }
+        })();
+      case "LastFrom":
+        return new (class extends BaseRegionFunction {
+          override eval(ctx: Context & EvalScratch): number[] {
+            const from = ctx._evalFrom ?? -1;
+            return from >= 0 ? [from] : [];
+          }
+        })();
+      case "Centre":
+        return new SitesCentre(elementType);
+      case "Perimeter":
+        return makeTopologyFn("perimeter", elementType);
+      default:
+        throw new Error(`Sites(): A SitesSimpleType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites according to their coordinates.
+   * @java Sites.construct(SiteType, String[]) → SitesCoords
+   * @example (sites {"A1" "B1"})
+   */
+  public static constructCoords(
+    elementType: string | null,
+    coords: string[],
+  ): RegionFunction {
+    // @java return new SitesCoords(elementType, coords);
+    return new SitesCoords(elementType, coords);
+  }
+
+  /**
+   * For creating a region from a list of site indices or an IntArrayFunction.
+   * @java Sites.construct(IntFunction[], IntArrayFunction) → SitesCustom
+   * @example (sites {1..10})
+   */
+  public static constructCustom(
+    sites: IntFunction[] | null,
+    array: IntArrayFunction | null,
+  ): RegionFunction {
+    // @java if (sites != null) return new SitesCustom(sites); else return new SitesCustom(array);
+    if (sites !== null && sites.length > 0) {
+      // Wrap array of IntFunctions as a single IntArrayFunction
+      const wrappedArray: IntArrayFunction = {
+        eval(ctx: Context & EvalScratch): number[] {
+          return sites.map((f) => f.eval(ctx));
+        }
+      };
+      return new SitesCustom(wrappedArray);
+    } else {
+      return new SitesCustom(array as IntArrayFunction);
+    }
+  }
+
+  /**
+   * For getting sites belonging to a part of the board (row, column, phase, etc.).
+   * @java Sites.construct(SitesIndexType, SiteType, IntFunction) → various index classes
+   * @example (sites Row 1)
+   */
+  public static constructIndex(
+    regionType: SitesIndexType,
+    elementType: string | null,
+    index: IntFunction | null,
+  ): RegionFunction {
+    // @java switch(regionType) { case Row: return new SitesRow(...); ... }
+    const rt = regionType as unknown as string;
+
+    const makeNestedTopologyFn = (methodName: string): RegionFunction =>
+      new (class extends BaseRegionFunction {
+        private readonly _type: string | null;
+        private readonly _idx: IntFunction | null;
+        constructor(t: string | null, i: IntFunction | null) { super(); this._type = t; this._idx = i; }
+        override eval(ctx: Context & EvalScratch): number[] {
+          const realType = this._type ??
+            ((ctx as unknown as { board?(): { defaultSite(): string } }).board?.()?.defaultSite() ?? "Cell");
+          const topology = (ctx as unknown as { topology?(): TopologyLike }).topology?.();
+          if (!topology) return [];
+          const method = (topology as unknown as Record<string, (t: string) => Array<Array<{ index(): number }>>>)[methodName];
+          if (typeof method !== "function") return [];
+          const idxVal = this._idx !== null ? this._idx.eval(ctx) : 0;
+          const lists = method.call(topology, realType);
+          if (idxVal < 0 || idxVal >= lists.length) return [];
+          return lists[idxVal]!.map((e) => e.index());
+        }
+        override isStatic(): boolean { return false; }
+      })(elementType, index);
+
+    switch (rt) {
+      case "Cell":
+        // @java SitesCell — vertices that make up a cell
+        return new (class extends BaseRegionFunction {
+          private readonly _type: string | null;
+          private readonly _idx: IntFunction | null;
+          constructor(t: string | null, i: IntFunction | null) { super(); this._type = t; this._idx = i; }
+          override eval(ctx: Context & EvalScratch): number[] {
+            const topology = (ctx as unknown as { topology?(): TopologyLike }).topology?.();
+            if (!topology) return [];
+            // cells() returns all cells; if index given, return the Nth
+            const idxVal = this._idx !== null ? this._idx.eval(ctx) : -1;
+            if (idxVal >= 0) {
+              const cell = (topology as unknown as { cells(): Array<{ index(): number; vertices: Array<{ index(): number }> }> }).cells()[idxVal];
+              if (!cell) return [];
+              return cell.vertices.map((v) => v.index());
+            }
+            return (topology as unknown as { cells(): Array<{ index(): number }> }).cells().map((c) => c.index());
+          }
+          override isStatic(): boolean { return true; }
+        })(elementType, index);
+      case "Column":
+        return makeNestedTopologyFn("columns");
+      case "Layer":
+        return makeNestedTopologyFn("layers");
+      case "Edge":
+        // @java SitesEdge — end points of an edge at given index
+        return new (class extends BaseRegionFunction {
+          private readonly _idx: IntFunction | null;
+          constructor(i: IntFunction | null) { super(); this._idx = i; }
+          override eval(ctx: Context & EvalScratch): number[] {
+            const topology = (ctx as unknown as { topology?(): TopologyLike }).topology?.();
+            if (!topology) return [];
+            const idxVal = this._idx !== null ? this._idx.eval(ctx) : -1;
+            const edges = (topology as unknown as { edges(): Array<{ index(): number; va: { index(): number }; vb: { index(): number } }> }).edges();
+            if (idxVal >= 0 && idxVal < edges.length) {
+              const edge = edges[idxVal]!;
+              return [edge.va.index(), edge.vb.index()];
+            }
+            return edges.map((e) => e.index());
+          }
+          override isStatic(): boolean { return true; }
+        })(index);
+      case "Phase":
+        return makeNestedTopologyFn("phases");
+      case "Row":
+        return makeNestedTopologyFn("rows");
+      case "State": {
+        // @java SitesState(elementType, index) — sites with a specific state value
+        const idxFn = index;
+        return new (class extends BaseRegionFunction {
+          override eval(ctx: Context & EvalScratch): number[] {
+            const val = idxFn !== null ? idxFn.eval(ctx) : 0;
+            const state = ctx.state;
+            const n = state.cells.length;
+            const result: number[] = [];
+            for (let i = 0; i < n; i++) {
+              const s = (state as unknown as { stateAt?(i: number): number }).stateAt?.(i);
+              if (s === val) result.push(i);
+            }
+            return result;
+          }
+          override isStatic(): boolean { return false; }
+        })();
+      }
+      case "Empty": {
+        // @java SitesEmpty.construct(elementType, index)
+        return new (class extends BaseRegionFunction {
+          override eval(ctx: Context & EvalScratch): number[] {
+            const state = ctx.state;
+            const n = state.cells.length;
+            const result: number[] = [];
+            for (let i = 0; i < n; i++) {
+              if (state.isEmptySite(i)) result.push(i);
+            }
+            return result;
+          }
+          override isStatic(): boolean { return false; }
+        })();
+      }
+      case "Support":
+        // @java SitesSupport — not yet ported
+        return new (class extends BaseRegionFunction {
+          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+        })();
+      default:
+        throw new Error(`Sites(): A SitesIndexType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites incident to another.
+   * @java Sites.construct(SitesIncidentType, SiteType, SiteType, IntFunction, Player, RoleType) → SitesIncident
+   * @example (sites Incident Edge of:Vertex at:(last To))
+   */
+  public static constructIncident(
+    regionType: SitesIncidentType,
+    resultType: string,
+    of: string,
+    at: IntFunction,
+    owner: IntFunction | null,
+    _roleOwner: unknown,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Incident":
+        // @java SitesIncident(resultType, of, at, owner, roleOwner)
+        // TS SitesIncident constructor: (resultType, ofType, indexFn, ownerFn)
+        return new SitesIncident(resultType, of, at, owner);
+      default:
+        throw new Error(`Sites(): A SitesIncidentType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites occupied by player(s).
+   * @java Sites.construct(SitesOccupiedType, ...) → SitesOccupied
+   * @example (sites Occupied by:Mover)
+   */
+  public static constructOccupied(
+    regionType: SitesOccupiedType,
+    by: unknown,
+    By: unknown,
+    _container: IntFunction | null,
+    _Container: string | null,
+    component: IntFunction | null,
+    _Component: string | null,
+    _components: string[] | null,
+    top: boolean | null,
+    on: string | null,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Occupied": {
+        // @java return new SitesOccupied(by, By, container, Container, component, Component, components, top, on);
+        // TS SitesOccupied constructor: (who: IntFunction, role: RoleType | null, component, top, siteType)
+        const whoFn: IntFunction = by !== null
+          ? resolveIntFn(by)
+          : By !== null
+            ? resolveRoleIntFn(By as string)
+            : constIntFn(-1);
+        // The TS SitesOccupied role param is typed as a specific union — use `as unknown`
+        const roleVal = (By !== null ? (By as string) : null) as unknown as null;
+        return new SitesOccupied(whoFn, roleVal, component, top ?? true, on);
+      }
+      default:
+        throw new Error(`Sites(): A SitesOccupiedType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites relative to a player (hand, winning).
+   * @java Sites.construct(SitesPlayerType, SiteType, Player, RoleType, NonDecision, String) → SitesHand/SitesWinning
+   * @example (sites Hand Mover)
+   */
+  public static constructPlayer(
+    regionType: SitesPlayerType,
+    _elementType: string | null,
+    pid: unknown,
+    role: unknown,
+    _moves: unknown,
+    _name: string | null,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Hand":
+        // @java return new SitesHand(pid, role);
+        // TS SitesHand constructor: (index: IntFunction | null, role: RoleType | null)
+        return new SitesHand(
+          pid !== null ? resolveIntFn(pid) : null,
+          role as string | null,
+        );
+      case "Winning":
+        // @java SitesWinning — not yet ported in non-1to1 path
+        return new (class extends BaseRegionFunction {
+          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+        })();
+      default:
+        throw new Error(`Sites(): A SitesPlayerType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites of a region defined in the equipment or of a single coordinate.
+   * @java Sites.construct(Player, RoleType, SiteType, String) → SitesEquipmentRegion/SitesCoords
+   * @example (sites P1)
+   * @example (sites "E5")
+   */
+  public static constructEquipmentOrCoord(
+    player: unknown,
+    role: unknown,
+    siteType: string | null,
+    name: string | null,
+  ): RegionFunction {
+    // @java if (StringRoutines.isCoordinate(name)) return new SitesCoords(siteType, new String[]{name});
+    if (name !== null && isCoordinate(name)) {
+      return new SitesCoords(siteType, [name]);
+    }
+    // @java return new SitesEquipmentRegion(player, role, name);
+    // TS SitesEquipmentRegion constructor: (index: IntFunction | null, name: string)
+    const indexFn = player !== null ? resolveIntFn(player) :
+      role !== null ? resolveRoleIntFn(role as string) : null;
+    return new SitesEquipmentRegion(indexFn, name ?? "");
+  }
+
+  /**
+   * For getting sites around another.
+   * @java Sites.construct(SitesAroundType, ...) → SitesAround
+   */
+  public static constructAround(
+    regionType: SitesAroundType,
+    _typeLoc: string | null,
+    _where: IntFunction | null,
+    _regionWhere: RegionFunction | null,
+    _type: unknown,
+    _distance: IntFunction | null,
+    _directions: unknown,
+    _condition: BooleanFunction | null,
+    _includeSelf: BooleanFunction | null,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Around":
+        // @java return new SitesAround(typeLoc, where, regionWhere, type, distance, directions, If, includeSelf);
+        // SitesAround not yet ported as non-1to1
+        return new (class extends BaseRegionFunction {
+          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+        })();
+      default:
+        throw new Error(`Sites(): A SitesAroundType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting the sites (in the same radial) between two others sites.
+   * @java Sites.construct(SitesBetweenType, ...) → SitesBetween
+   */
+  public static constructBetween(
+    regionType: SitesBetweenType,
+    _directions: unknown,
+    _type: string | null,
+    _from: IntFunction,
+    _fromIncluded: BooleanFunction | null,
+    _to: IntFunction,
+    _toIncluded: BooleanFunction | null,
+    _cond: BooleanFunction | null,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Between":
+        // @java return new SitesBetween(directions, type, from, fromIncluded, to, toIncluded, cond);
+        // The between-two-sites class is not yet ported in non-1to1 path
+        return new (class extends BaseRegionFunction {
+          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+        })();
+      default:
+        throw new Error(`Sites(): A SitesBetweenType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites crossing another site.
+   * @java Sites.construct(SitesCrossingType, IntFunction, Player, RoleType) → SitesCrossing
+   * @example (sites Crossing at:(last To) All)
+   */
+  public static constructCrossing(
+    regionType: SitesCrossingType,
+    at: IntFunction,
+    who: unknown,
+    role: unknown,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Crossing": {
+        // @java return new SitesCrossing(at, who, role);
+        // TS SitesCrossing constructor: (startLocationFn: IntFunction, roleFunc: IntFunction)
+        const roleFn = who !== null ? resolveIntFn(who) :
+          role !== null ? resolveRoleIntFn(role as string) : constIntFn(-1);
+        return new SitesCrossing(at, roleFn);
+      }
+      default:
+        throw new Error(`Sites(): A SitesCrossingType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites of a group.
+   * @java Sites.construct(SitesGroupType, ...) → SitesGroup
+   * @example (sites Group Vertex at:(site))
+   */
+  public static constructGroup(
+    regionType: SitesGroupType,
+    _type: string | null,
+    at: IntFunction | null,
+    From: RegionFunction | null,
+    _directions: unknown,
+    condition: BooleanFunction | null,
+    isVisible: BooleanFunction | null,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Group": {
+        // @java return new SitesGroup(type, at, From, directions, If, isVisible);
+        // TS SitesGroup constructor: (startLocationFn: IntArrayFunction, condition, directionName, isVisibleFn)
+        // Build a start-location IntArrayFunction from at or From
+        const startFn: IntArrayFunction = at !== null
+          ? { eval(ctx: Context & EvalScratch): number[] { return [at.eval(ctx)]; } }
+          : From !== null
+            ? { eval(ctx: Context & EvalScratch): number[] { return From.eval(ctx); } }
+            : { eval(_ctx: Context & EvalScratch): number[] { return []; } };
+        const dirName: string = (_directions as { name?: string } | null)?.name ?? "Adjacent";
+        return new SitesGroup(startFn, condition, dirName, isVisible);
+      }
+      default:
+        throw new Error(`Sites(): A SitesGroupType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites relative to edges.
+   * @java Sites.construct(SitesEdgeType) → SitesAxial/SitesHorizontal/etc.
+   * @example (sites Axial)
+   */
+  public static constructEdge(regionType: SitesEdgeType): RegionFunction {
+    const rt = regionType as unknown as string;
+    // @java switch(regionType) { case Axial: return new SitesAxial(); ... }
+    // Use topology escape-hatch via method name.
+    const makeEdgeSites = (methodName: string): RegionFunction =>
+      new (class extends BaseRegionFunction {
+        override eval(ctx: Context & EvalScratch): number[] {
+          const topology = (ctx as unknown as { topology?(): TopologyLike }).topology?.();
+          if (topology) {
+            const method = (topology as unknown as Record<string, (t: string) => Array<{ index(): number }>>)[methodName];
+            if (typeof method === "function") {
+              return method.call(topology, "Edge").map((e) => e.index());
+            }
+          }
+          return [];
+        }
+        override isStatic(): boolean { return true; }
+      })();
+
+    switch (rt) {
+      case "Axial":      return makeEdgeSites("axial");
+      case "Horizontal": return makeEdgeSites("horizontal");
+      case "Vertical":   return makeEdgeSites("vertical");
+      case "Angled":     return makeEdgeSites("angled");
+      case "Slash":      return makeEdgeSites("slash");
+      case "Slosh":      return makeEdgeSites("slosh");
+      default:
+        throw new Error(`Sites(): A SitesEdgeType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites with specific hidden information for a player.
+   * @java Sites.construct(SitesHiddenType, HiddenData, SiteType, Player, RoleType) → SitesHidden*
+   * @example (sites Hidden to:Mover)
+   */
+  public static constructHidden(
+    regionType: SitesHiddenType,
+    dataType: string | null,
+    type: string | null,
+    toPlayer: unknown,
+    toRole: unknown,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    if (rt !== "Hidden") {
+      throw new Error(`Sites(): A SitesHiddenType is not implemented: ${regionType}`);
+    }
+    // @java whoFn — combine toPlayer/toRole into a player-index function
+    const whoFn: IntFunction = toPlayer !== null
+      ? resolveIntFn(toPlayer)
+      : toRole !== null
+        ? resolveRoleIntFn(toRole as string)
+        : constIntFn(-1);
+    if (dataType === null) {
+      // @java return new SitesHidden(type, to, To);
+      return new SitesHiddenWhat(type, whoFn);
+    }
+    switch (dataType) {
+      case "What":     return new SitesHiddenWhat(type, whoFn);
+      case "Who":      return new SitesHiddenWho(type, whoFn);
+      case "Count":    return new SitesHiddenCount(type, whoFn);
+      case "State":    return new SitesHiddenState(type, whoFn);
+      case "Rotation": return new SitesHiddenRotation(type, whoFn);
+      case "Value":    return new SitesHiddenValue(type, whoFn);
+      default:
+        throw new Error(`Sites(): A HiddenData is not implemented: ${dataType}`);
+    }
+  }
+
+  /**
+   * For getting sites in a direction from another.
+   * @java Sites.construct(SitesDirectionType, ...) → SitesDirection
+   */
+  public static constructDirection(
+    regionType: SitesDirectionType,
+    _from: IntFunction | null,
+    _From: RegionFunction | null,
+    _directions: unknown,
+    _included: BooleanFunction | null,
+    _stop: BooleanFunction | null,
+    _stopIncluded: BooleanFunction | null,
+    _distance: IntFunction | null,
+    _type: string | null,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Direction":
+        // @java return new SitesDirection(from, From, directions, included, stop, stopIncluded, distance, type);
+        // SitesDirection not yet ported in non-1to1 path
+        return new (class extends BaseRegionFunction {
+          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+        })();
+      default:
+        throw new Error(`Sites(): A SitesDirectionType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites at a specific distance from another.
+   * @java Sites.construct(SitesDistanceType, ...) → SitesDistance
+   */
+  public static constructDistance(
+    regionType: SitesDistanceType,
+    _elementType: string | null,
+    _relation: unknown,
+    _stepMove: unknown,
+    _newRotation: IntFunction | null,
+    _from: IntFunction,
+    _distance: unknown,
+  ): RegionFunction {
+    const rt = regionType as unknown as string;
+    switch (rt) {
+      case "Distance":
+        // @java return new SitesDistance(elementType, relation, stepMove, newRotation, from, distance);
+        // SitesDistance not yet ported in non-1to1 path
+        return new (class extends BaseRegionFunction {
+          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+        })();
+      default:
+        throw new Error(`Sites(): A SitesDistanceType is not implemented: ${regionType}`);
+    }
+  }
+
+  /**
+   * For getting sites in the line of sight.
+   * @java Sites.construct(SitesLineOfSightType, ...) → SitesLineOfSight
+   */
+  public static constructLineOfSight(
+    _regionType: unknown,
+    typeLoS: LineOfSightType | null,
+    typeLoc: string | null,
+    at: IntFunction | null,
+    directions: unknown,
+  ): RegionFunction {
+    // @java return new SitesLineOfSight(typeLoS, typeLoc, at, directions);
+    // TS SitesLineOfSight constructor: (typeLoS, typeLoc, loc: IntFunction, directionName: string)
+    const dirName = typeof directions === "string"
+      ? directions
+      : (directions as { name?: string } | null)?.name ?? "Adjacent";
+    const locFn: IntFunction = at !== null ? at : constIntFn(-1);
+    return new SitesLineOfSight(typeLoS, typeLoc, locFn, dirName);
+  }
+
+  /**
+   * For getting a random site in a region.
+   * @java Sites.construct(SitesRandomType, RegionFunction, IntFunction) → SitesRandom
+   * @example (sites Random)
+   */
+  public static constructRandom(
+    _regionType: unknown,
+    region: RegionFunction | null,
+    num: IntFunction | null,
+  ): RegionFunction {
+    // @java return new SitesRandom(region, num);
+    // TS SitesRandom constructor: (region: RegionFunction, numSitesFn: IntFunction)
+    const regionFn: RegionFunction = region !== null ? region : new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+    const numFn: IntFunction = num !== null ? num : constIntFn(1);
+    return new SitesRandom(regionFn, numFn);
+  }
+
+  /**
+   * For getting sites based on from/to/between positions of moves.
+   * @java Sites.construct(SitesMoveType, Moves) → SitesFrom/SitesTo/SitesBetween(moves)
+   */
+  public static constructMoves(
+    _moveType: string,
+    _moves: unknown,
+  ): RegionFunction {
+    // @java return new SitesFrom/To/Between(moves);
+    // Move-based site classes not yet ported in non-1to1 path
+    return new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+  }
+
+  /**
+   * For getting sites relative to a track.
+   * @java Sites.construct(SitesTrackType, ...) → SitesTrack
+   */
+  public static constructTrack(
+    _regionType: unknown,
+    _pid: unknown,
+    _role: unknown,
+    _name: string | null,
+    _from: IntFunction | null,
+    _to: IntFunction | null,
+  ): RegionFunction {
+    // @java return new SitesTrack(pid, role, name, from, to);
+    // SitesTrack not yet ported in non-1to1 path
+    return new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+  }
+
+  /**
+   * For getting sites in a loop or making the loop.
+   * @java Sites.construct(SitesLoopType, ...) → SitesLoop
+   */
+  public static constructLoop(
+    _regionType: unknown,
+    _inside: BooleanFunction | null,
+    _type: string | null,
+    _surround: unknown,
+    _surroundList: unknown,
+    _directions: unknown,
+    _colour: IntFunction | null,
+    _start: IntFunction | null,
+    _regionStart: RegionFunction | null,
+  ): RegionFunction {
+    // @java return new SitesLoop(inside, type, surround, surroundList, directions, colour, start, regionStart);
+    // SitesLoop is stubbed
+    return new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+  }
+
+  /**
+   * For getting sites in a pattern.
+   * @java Sites.construct(SitesPatternType, ...) → SitesPattern
+   */
+  public static constructPattern(
+    _regionType: unknown,
+    _walk: unknown,
+    _type: string | null,
+    _from: IntFunction | null,
+    _what: IntFunction | null,
+    _whats: IntFunction[] | null,
+  ): RegionFunction {
+    // @java return new SitesPattern(walk, type, from, what, whats);
+    return new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+  }
+
+  /**
+   * For getting sites occupied by a large piece from its root.
+   * @java Sites.construct(SitesLargePieceType, SiteType, IntFunction) → SitesLargePiece
+   */
+  public static constructLargePiece(
+    _regionType: unknown,
+    _type: string | null,
+    _at: IntFunction,
+  ): RegionFunction {
+    // @java return new SitesLargePiece(type, at);
+    return new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+  }
+
+  /**
+   * For getting sites relative to a piece (start positions).
+   * @java Sites.construct(SitesPieceType, Piece) → SitesStart
+   */
+  public static constructPiece(
+    _regionType: SitesPieceType,
+    _pid: unknown,
+  ): RegionFunction {
+    // @java return new SitesStart(pid);
+    return new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+  }
+
+  /**
+   * For getting sites relative to sides of the board.
+   * @java Sites.construct(SitesSideType, SiteType, Player, RoleType, CompassDirection) → SitesSide
+   */
+  public static constructSide(
+    _regionType: unknown,
+    _elementType: string | null,
+    _player: unknown,
+    _role: unknown,
+    _direction: unknown,
+  ): RegionFunction {
+    // @java return new SitesSide(elementType, player, role, direction);
+    return new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+  }
+
+  /**
+   * For getting sites of a walk.
+   * @java Sites.construct(SiteType, IntFunction, StepType[][], BooleanFunction) → SitesWalk
+   */
+  public static constructWalk(
+    _elementType: string | null,
+    _index: IntFunction | null,
+    _possibleSteps: unknown,
+    _rotations: BooleanFunction | null,
+  ): RegionFunction {
+    // @java return new SitesWalk(elementType, index, possibleSteps, rotations);
+    return new (class extends BaseRegionFunction {
+      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+    })();
+  }
+}
+
+// ---- Helpers ----------------------------------------------------------------
+
+/**
+ * Checks if a string looks like a board coordinate (e.g. "A1", "E5", "Z12").
+ * @java main.StringRoutines.isCoordinate(String)
+ */
+function isCoordinate(name: string | null | undefined): boolean {
+  if (!name) return false;
+  return /^[A-Za-z]+\d+$/.test(name.trim());
+}
+
+/**
+ * Converts an arbitrary player-like value into an IntFunction.
+ * @java RoleType.toIntFunction or Player.index()
+ */
+function resolveIntFn(player: unknown): IntFunction {
+  const p = player as { index?(): number; eval?(ctx: unknown): number } | null;
+  if (p === null || p === undefined) return constIntFn(-1);
+  if (typeof p.eval === "function") return p as IntFunction;
+  if (typeof p.index === "function") {
+    const idx = p.index();
+    return { eval(_ctx: Context & EvalScratch) { return idx; } };
+  }
+  if (typeof p === "number") {
+    const idx = p as unknown as number;
+    return { eval(_ctx: Context & EvalScratch) { return idx; } };
+  }
+  return constIntFn(-1);
+}
+
+/**
+ * Converts a RoleType string into an IntFunction resolving via context.
+ * @java RoleType.toIntFunction(RoleType)
+ */
+function resolveRoleIntFn(role: string): IntFunction {
+  if (role === "Mover") return { eval(ctx: Context & EvalScratch) { return ctx.state.mover; } };
+  if (role === "Next") return {
+    eval(ctx: Context & EvalScratch) {
+      return (ctx.state as unknown as { next?: number }).next ?? ctx.state.mover;
+    }
+  };
+  if (role === "P1") return constIntFn(1);
+  if (role === "P2") return constIntFn(2);
+  if (role === "P3") return constIntFn(3);
+  if (role === "P4") return constIntFn(4);
+  return constIntFn(-1);
+}

@@ -1,3 +1,13 @@
 // @java Core/src/game/functions/ints/card/CardSimpleType.java
 
-// TODO Phase 2: Java grammar enum for Card.java dispatch; no standalone compile.ts case.
+/**
+ * Defines the types of properties which can be returned for the Card super
+ * ludeme with no parameter.
+ *
+ * @java game/functions/ints/card/CardSimpleType.java
+ * @author Eric.Piette
+ */
+export enum CardSimpleType {
+  /** To return the trump suit of the game. */
+  TrumpSuit = "TrumpSuit",
+}

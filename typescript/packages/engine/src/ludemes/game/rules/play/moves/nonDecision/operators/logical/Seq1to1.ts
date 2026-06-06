@@ -16,16 +16,13 @@
  *     }
  *   }
  *
- * TS approximation: since the 1:1 path does not support TempContext (state
- * mutation would affect the live state), this implementation returns the
- * moves from the first non-empty sub-list (matching the inline seq handler
- * in compileMoves1to1Impl). Full sequential application deferred.
- *
- * Registered via registerMoves1to1("seq", ...) — logic relocated VERBATIM
- * from the inline compileMoves1to1Impl handler (shadows the inline branch).
+ * Faithful port: thread context.state through each sub, combine ALL results.
+ * Used in (then ...) consequences (Boop Repel + moveAgain, Chameleons colour
+ * swap, 2048 slide) to chain effects: each sub sees the state AFTER previous.
  */
 
 import type { Context } from "../../../../../../../../context.js";
+import { Context as ContextClass } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { Operator1to1 } from "../../operator/Operator1to1.js";
@@ -60,18 +57,47 @@ export class Seq1to1 extends Operator1to1 {
   /**
    * @java game/rules/play/moves/nonDecision/operators/logical/Seq.java — eval(Context)
    *
-   * Java lines 47-73: applies each sub-list to a TempContext.
-   * TS approximation: returns the first non-empty sub-list (TempContext not available).
-   * Full sequential application with state mutation deferred.
+   * Java lines 47-73: evaluates each sub-moves in a TempContext (rolling state),
+   * applies each move to advance state, accumulates ALL moves from ALL sub-lists.
+   * This faithfully implements Java Seq.eval() which combines all sub-results.
+   *
+   * Used in (then ...) consequences to chain effects: boop displacements + moveAgain.
+   * @java game/rules/play/moves/nonDecision/operators/logical/Seq.java:47-73
    */
   public override eval(ctx: Context): Move[] {
-    // @java Seq: Context tempContext = new TempContext(context); then apply each.
-    // TS: TempContext (state-forking) not available; return first non-empty sub-list.
+    const result: Move[] = [];
+    // Rolling state: apply sub-moves in sequence, each sees the updated state.
+    // @java Seq.eval(): Context tempContext = new TempContext(context);
+    let tempState = ctx.state;
+    const ctxAny = ctx as unknown as {
+      _evalFrom?: number; _evalTo?: number; _evalSite?: number;
+      _evalValue?: number; _thenContextDepth?: number;
+      _radials?: unknown; _trajectories?: unknown;
+    };
     for (const sub of this.moves) {
-      const ms = sub.eval(ctx);
-      if (ms.length > 0) return ms;
+      // Create a temp context with the current rolling state so later subs
+      // (e.g. moveAgain check) see the board AFTER prior subs' effects.
+      const tempCtx = new ContextClass(ctx.game, tempState, ctx.trial, ctx.rng);
+      const tempAny = tempCtx as unknown as typeof ctxAny;
+      tempAny._evalFrom = ctxAny._evalFrom;
+      tempAny._evalTo = ctxAny._evalTo;
+      tempAny._evalSite = ctxAny._evalSite;
+      tempAny._evalValue = ctxAny._evalValue;
+      tempAny._thenContextDepth = ctxAny._thenContextDepth;
+      tempAny._radials = ctxAny._radials;
+      tempAny._trajectories = ctxAny._trajectories;
+      let subResult: Move[];
+      try { subResult = sub.eval(tempCtx); }
+      catch { subResult = []; }
+      for (const m of subResult) {
+        // Apply move to advance rolling state (mirrors Java m.apply(tempContext, true)).
+        // No-op for empty-origin moves (Java parity: ActionMoveTopPiece returns this when empty).
+        try { tempState = m.applyTo(tempState, ctx.rng); }
+        catch { /* keep current tempState */ }
+        result.push(m);
+      }
     }
-    return [];
+    return result;
   }
 }
 

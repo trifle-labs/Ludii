@@ -1,2 +1,13 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/take/TakeSimpleType.java
-// TODO Phase 2: Java grammar enum for shared moves/effect dispatch; no standalone compile.ts case.
+
+/**
+ * Defines the types of properties which can be take for the Take super ludeme
+ * with no parameter.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/take/TakeSimpleType.java
+ * @author Eric.Piette
+ */
+export enum TakeSimpleType {
+  /** To take a domino from the bag. */
+  Domino = "Domino",
+}

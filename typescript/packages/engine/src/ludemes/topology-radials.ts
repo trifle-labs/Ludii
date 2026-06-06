@@ -115,38 +115,46 @@ export function radialsForDirection(
   // Adjacent = all 8 directions = all 4 axes
   // Orthogonal = N,S,E,W = axes 0 (EW) + 1 (NS)
   // Diagonal = NE,NW,SE,SW = axes 2 (NESW) + 3 (NWSE)
+  //
+  // NOTE: For non-square boards (hex/tri/concentric), `axes` has fewer than 4
+  // entries. The index-based lookups below use the correct non-null assertion
+  // operator AND filter undefined results so callers never receive undefined
+  // FlatRadial elements. Graph boards should prefer using Trajectories.distinctRadialsByName
+  // for direction-correct lookups (done by Step1to1 / Slide1to1 / Hop evaluators).
+  // @java game/util/directions/AbsoluteDirection.java — axis assignment for square boards
+  const notUndefined = (x: FlatRadial | undefined): x is FlatRadial => x !== undefined;
   switch (upper) {
     case "ADJACENT":
     case "ALL":
-      return axes; // all 4 axes
+      return axes; // all available axes (3 for hex, 4 for square, etc.)
     case "ORTHOGONAL":
-      return [axes[0]!, axes[1]!]; // EW, NS
+      return [axes[0], axes[1]].filter(notUndefined); // EW, NS
     case "DIAGONAL":
-      return [axes[2]!, axes[3]!]; // NESW, NWSE
+      return [axes[2], axes[3]].filter(notUndefined); // NESW, NWSE
     case "E":
     case "EAST":
-      return [axes[0]!];
+      return axes[0] ? [axes[0]] : [];
     case "W":
     case "WEST":
-      return [{ ray: axes[0]!.opposite, opposite: axes[0]!.ray }];
+      return axes[0] ? [{ ray: axes[0].opposite, opposite: axes[0].ray }] : [];
     case "N":
     case "NORTH":
-      return [axes[1]!];
+      return axes[1] ? [axes[1]] : [];
     case "S":
     case "SOUTH":
-      return [{ ray: axes[1]!.opposite, opposite: axes[1]!.ray }];
+      return axes[1] ? [{ ray: axes[1].opposite, opposite: axes[1].ray }] : [];
     case "NE":
     case "NORTHEAST":
-      return [axes[2]!];
+      return axes[2] ? [axes[2]] : [];
     case "SW":
     case "SOUTHWEST":
-      return [{ ray: axes[2]!.opposite, opposite: axes[2]!.ray }];
+      return axes[2] ? [{ ray: axes[2].opposite, opposite: axes[2].ray }] : [];
     case "NW":
     case "NORTHWEST":
-      return [axes[3]!];
+      return axes[3] ? [axes[3]] : [];
     case "SE":
     case "SOUTHEAST":
-      return [{ ray: axes[3]!.opposite, opposite: axes[3]!.ray }];
+      return axes[3] ? [{ ray: axes[3].opposite, opposite: axes[3].ray }] : [];
     default:
       // Fallback: Adjacent
       return axes;

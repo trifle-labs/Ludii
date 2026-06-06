@@ -1,2 +1,12 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/state/remember/RememberValueType.java
-// TODO Phase 2: Java grammar enum for shared moves/effect dispatch; no standalone compile.ts case.
+
+/**
+ * Defines the types of the super ludeme Remember for values.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/state/remember/RememberValueType.java
+ * @author Eric.Piette
+ */
+export enum RememberValueType {
+  /** To remember a value. */
+  Value = "Value",
+}

@@ -58,6 +58,20 @@ export class Context {
    */
   public _evalPlayer?: number;
 
+  /**
+   * Java parity: Context.region() / setRegion(Region).
+   * Carries the "current group" set by (all Groups ...) / (forEach Group ...) so
+   * that (sites) with no args (SitesContext) can return the group's site list.
+   * Mutable eval-scratch; not part of the immutable State.
+   * @java other/context/Context.java — region()/setRegion(Region)
+   */
+  public _evalRegion: { sites(): number[] } | null = null;
+
+  /** Java parity: Context.region(). */
+  public region(): { sites(): number[] } | null { return this._evalRegion; }
+  /** Java parity: Context.setRegion(Region). */
+  public setRegion(r: { sites(): number[] } | null): void { this._evalRegion = r; }
+
   /** Java parity: Context.to(). */
   public getEvalTo(): number { return this._evalTo; }
   /** Java parity: Context.setTo(int). */

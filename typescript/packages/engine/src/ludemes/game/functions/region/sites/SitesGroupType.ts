@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/region/sites/SitesGroupType.java
 
-// TODO Phase 2: faithful port from SitesGroupType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies sets of sites in a same group.
+ *
+ * @java game/functions/region/sites/SitesGroupType.java
+ * @author Eric.Piette
+ */
+export enum SitesGroupType {
+  /** Sites of belonging to a same group. */
+  Group = "Group",
+}

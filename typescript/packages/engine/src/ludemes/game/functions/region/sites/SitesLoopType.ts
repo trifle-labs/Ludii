@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/region/sites/SitesLoopType.java
 
-// TODO Phase 2: faithful port from SitesLoopType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies sets of sites based on a loop.
+ *
+ * @java game/functions/region/sites/SitesLoopType.java
+ * @author Eric Piette
+ */
+export enum SitesLoopType {
+  /** Looping sites. */
+  Loop = "Loop",
+}

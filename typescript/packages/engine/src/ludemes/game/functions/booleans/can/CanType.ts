@@ -1,3 +1,11 @@
 // @java Core/src/game/functions/booleans/can/CanType.java
 
-// TODO Phase 2: faithful port from CanType.java (currently handled in compile.ts compileBool shared can logic).
+/**
+ * Defines the types properties that 'can' be tested.
+ *
+ * @java game/functions/booleans/can/CanType.java
+ */
+export enum CanType {
+  /** Checks if a list of moves is not empty. */
+  Move = "Move",
+}

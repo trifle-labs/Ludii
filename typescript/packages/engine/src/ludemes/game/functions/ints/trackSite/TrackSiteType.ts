@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/ints/trackSite/TrackSiteType.java
 
-// TODO Phase 2: faithful port from TrackSiteType.java (currently handled in compile.ts compileInt shared trackSite logic).
+/**
+ * Defines the types of sites related to a track.
+ *
+ * @java game/functions/ints/trackSite/TrackSiteType.java
+ * @author Eric.Piette
+ */
+export enum TrackSiteType {
+  /** The end site of a track. */
+  EndSite = "EndSite",
+}

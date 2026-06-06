@@ -16,5 +16,6 @@ import "./game/rules/play/moves/nonDecision/effect/requirement/AvoidStoredState1
 import "./game/rules/play/moves/nonDecision/effect/requirement/Satisfy1to1.js";
 import "./game/rules/play/moves/nonDecision/effect/state/AddScore1to1.js";
 import "./game/rules/play/moves/nonDecision/effect/state/forget/Forget1to1.js";
+import "./game/rules/play/moves/nonDecision/effect/state/remember/Remember.js";
 
 export {};

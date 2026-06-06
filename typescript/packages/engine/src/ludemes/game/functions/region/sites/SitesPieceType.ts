@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/region/sites/SitesPieceType.java
 
-// TODO Phase 2: faithful port from SitesPieceType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies sets of sites associated with given pieces.
+ *
+ * @java game/functions/region/sites/SitesPieceType.java
+ * @author Eric.Piette
+ */
+export enum SitesPieceType {
+  /** Sites in which a piece start the game. */
+  Start = "Start",
+}

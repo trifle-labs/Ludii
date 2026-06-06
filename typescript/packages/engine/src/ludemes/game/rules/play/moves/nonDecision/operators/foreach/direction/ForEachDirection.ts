@@ -1,3 +1,367 @@
 // @java Core/src/game/rules/play/moves/nonDecision/operators/foreach/direction/ForEachDirection.java
 
-// TODO Phase 2: faithful port from ForEachDirection.java (currently handled in compile.ts compileMoves shared logic).
+/**
+ * Applies a move for each site reached according to a direction.
+ *
+ * @java game/rules/play/moves/nonDecision/operators/foreach/direction/ForEachDirection.java
+ * @author Eric.Piette
+ *
+ * @remarks In case of different directions and conditions to follow before
+ *          applying a move (e.g. Xiangqi).
+ */
+
+import type { Context } from "../../../../../../../../../context.js";
+import { Move } from "../../../../../../../../../move.js";
+import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
+import { Effect } from "../../../effect/Effect.js";
+import type { ThenLike } from "../../../../Moves.js";
+
+/** Java parity: Constants.OFF = -1 */
+const OFF = -1;
+
+/**
+ * Minimal type for a radial step list entry.
+ * @java game/util/graph/Radial.java — steps()[].id()
+ */
+interface RadialStep {
+  id(): number;
+}
+
+/**
+ * Applies a move for each site reached according to a direction.
+ *
+ * @java game/rules/play/moves/nonDecision/operators/foreach/direction/ForEachDirection.java
+ */
+export class ForEachDirection extends Effect {
+  /** @java ForEachDirection.startLocationFn — location of the piece. */
+  private readonly startLocationFn: IntFunction;
+
+  /** @java ForEachDirection.min — min limit of the move. */
+  private readonly min: IntFunction;
+
+  /** @java ForEachDirection.limit — limit to apply the moves. */
+  private readonly limit: IntFunction;
+
+  /** @java ForEachDirection.dirnChoice — direction chosen. */
+  private readonly dirnChoice: DirectionsFunction;
+
+  /** @java ForEachDirection.rule — the rule to respect on the location to go. */
+  private readonly rule: BooleanFunction | null;
+
+  /** @java ForEachDirection.betweenRule — the rule to respect on the sites to cross. */
+  private readonly betweenRule: BooleanFunction | null;
+
+  /** @java ForEachDirection.movesToApply — moves to apply from each direction. */
+  private readonly movesToApply: MovesFunction;
+
+  /** @java ForEachDirection.type — Cell/Edge/Vertex. */
+  private siteType: string | null;
+
+  // -------------------------------------------------------------------------
+
+  /**
+   * @java ForEachDirection constructor
+   * @param startLocationFn From location function.
+   * @param min             Min path length.
+   * @param limit           Max path length.
+   * @param dirnChoice      Direction function.
+   * @param rule            Rule on to-site (may be null).
+   * @param betweenRule     Rule on between-sites (may be null).
+   * @param movesToApply    Moves to apply.
+   * @param siteType        Cell/Edge/Vertex type (may be null → use default).
+   * @param then            Subsequent moves.
+   */
+  public constructor(
+    startLocationFn: IntFunction,
+    min: IntFunction,
+    limit: IntFunction,
+    dirnChoice: DirectionsFunction,
+    rule: BooleanFunction | null,
+    betweenRule: BooleanFunction | null,
+    movesToApply: MovesFunction,
+    siteType: string | null,
+    then: ThenLike | null = null,
+  ) {
+    super(then);
+    this.startLocationFn = startLocationFn;
+    this.min = min;
+    this.limit = limit;
+    this.dirnChoice = dirnChoice;
+    this.rule = rule;
+    this.betweenRule = betweenRule;
+    this.movesToApply = movesToApply;
+    this.siteType = siteType;
+  }
+
+  // -------------------------------------------------------------------------
+
+  /**
+   * @java ForEachDirection.eval(Context)
+   *
+   * Walks radials from the from-site in each chosen direction, applying movesToApply
+   * for each reachable to-site that passes the rule check.
+   *
+   * TS port uses `_radials` topology and escape-hatch casts for the Java topology API
+   * (graph.getGraphElements, graph.trajectories, etc.).
+   */
+  public override eval(context: Context): Move[] {
+    const returnMoves: Move[] = [];
+
+    // @java final int from = startLocationFn.eval(context);
+    const from = this.startLocationFn.eval(context);
+
+    // @java if (from <= Constants.OFF) return moves;
+    if (from <= OFF) return returnMoves;
+
+    // Attempt to use the escape-hatch topology API if available.
+    // Java: final Topology graph = context.topology();
+    const ctxAny = context as unknown as {
+      _radials?: Array<Record<string, Array<{ ray: number[]; opposite: number[] }>>>;
+      _evalFrom?: number;
+      _evalTo?: number;
+      _evalBetween?: number;
+    };
+
+    // Prefer the Java-style topology when available (via escape-hatch)
+    const topologyCtx = context as unknown as {
+      topology?(): {
+        getGraphElements(type: string): Array<{ index(): number }>;
+        supportedDirections(type: string): Array<{ toAbsolute(): string }>;
+        trajectories(): {
+          steps(type: string, from: number, type2: string, dir: string): Array<{ to(): { id(): number } }>;
+          radials(type: string | null, fromIdx: number, dir: string): Array<{
+            steps(): RadialStep[];
+          }>;
+        };
+      };
+      game?(): {
+        board(): { defaultSite(): string };
+      };
+      from?(): number;
+      to?(): number;
+      between?(): number;
+      setFrom?(v: number): void;
+      setTo?(v: number): void;
+      setBetween?(v: number): void;
+      components?(): Array<{ index(): number } | null>;
+      containerState?(cid: number): { what(site: number, type: string | null): number } | null;
+      containerId?(): number[];
+    };
+
+    // Resolve the site type
+    const realType = this.siteType ?? topologyCtx.game?.()?.board?.()?.defaultSite?.() ?? "Cell";
+
+    // Get from / to / between from context eval scratch
+    const contextFrom = topologyCtx.from?.() ?? ctxAny._evalFrom ?? OFF;
+    const contextTo = topologyCtx.to?.() ?? ctxAny._evalTo ?? OFF;
+
+    // Save original context scratch values
+    const origFrom = topologyCtx.from?.() ?? ctxAny._evalFrom ?? OFF;
+    const origBetween = topologyCtx.between?.() ?? ctxAny._evalBetween ?? OFF;
+    const origTo = topologyCtx.to?.() ?? ctxAny._evalTo ?? OFF;
+
+    const minPathLength = this.min.eval(context);
+    const maxPathLength = this.limit.eval(context);
+
+    // Try using the Java-style topology API
+    const topology = topologyCtx.topology?.();
+    if (topology) {
+      // @java final TopologyElement fromV = graph.getGraphElements(realType).get(from);
+      const graphElements = topology.getGraphElements(realType);
+      if (from >= graphElements.length) return returnMoves;
+
+      const fromV = graphElements[from]!;
+
+      // @java Determine if we need to find newDirection (contextTo != UNDEFINED)
+      let newDirection: string | null = null;
+      if (contextTo !== OFF && contextTo !== -1) {
+        const directionsSupported = topology.supportedDirections(realType);
+        outer:
+        for (const direction of directionsSupported) {
+          const absoluteDirection = direction.toAbsolute();
+          const steps = topology.trajectories().steps(realType, contextFrom, realType, absoluteDirection);
+          for (const step of steps) {
+            if (step.to().id() === contextTo) {
+              newDirection = absoluteDirection;
+              break outer;
+            }
+          }
+        }
+      }
+
+      // @java final List<AbsoluteDirection> directions = dirnChoice.convertToAbsolute(...)
+      // In TS, dirnChoice.eval returns string[] direction names
+      const directions = this.dirnChoice.eval(context);
+
+      for (const direction of directions) {
+        // @java final List<Radial> radials = graph.trajectories().radials(type, fromV.index(), direction);
+        const radials = topology.trajectories().radials(this.siteType, fromV.index(), direction);
+
+        for (const radial of radials) {
+          const steps = radial.steps();
+          for (let toIdx = 1; toIdx < steps.length && toIdx <= maxPathLength; toIdx++) {
+            const to = steps[toIdx]!.id();
+
+            // @java Check the middle rule
+            if (this.betweenRule !== null && minPathLength > 1 && toIdx < minPathLength) {
+              if (topologyCtx.setBetween) topologyCtx.setBetween(to);
+              else ctxAny._evalBetween = to;
+              if (!this.betweenRule.eval(context)) break;
+              if (topologyCtx.setBetween) topologyCtx.setBetween(origBetween);
+              else ctxAny._evalBetween = origBetween;
+            }
+
+            if (topologyCtx.setTo) topologyCtx.setTo(to);
+            else ctxAny._evalTo = to;
+
+            if (this.rule === null || this.rule.eval(context)) {
+              if (toIdx >= minPathLength) {
+                // @java final Moves movesApplied = movesToApply.eval(context);
+                const movesApplied = this.movesToApply.eval(context);
+
+                for (const m of movesApplied) {
+                  // @java MoveUtilities.chainRuleCrossProduct(context, moves, null, m, false)
+                  // In TS, just add the move with the updated to/from context
+                  const saveFrom = topologyCtx.from?.() ?? ctxAny._evalFrom ?? OFF;
+                  const saveTo = topologyCtx.to?.() ?? ctxAny._evalTo ?? OFF;
+
+                  if (topologyCtx.setFrom) topologyCtx.setFrom(to);
+                  else ctxAny._evalFrom = to;
+
+                  if (topologyCtx.setTo) topologyCtx.setTo(OFF);
+                  else ctxAny._evalTo = OFF;
+
+                  // Add the move to returnMoves (TS parity of chainRuleCrossProduct with null nextRule)
+                  returnMoves.push(new Move({
+                    id: m.id + `:forEachDir_${direction}_${from}_${to}`,
+                    label: m.label,
+                    siteIndices: m.siteIndices,
+                    mover: m.mover,
+                    placedOwner: m.placedOwner,
+                    actions: m.actions,
+                    fromSite: m.fromSite,
+                    toSite: m.toSite,
+                  }));
+
+                  if (topologyCtx.setTo) topologyCtx.setTo(saveTo);
+                  else ctxAny._evalTo = saveTo;
+
+                  if (topologyCtx.setFrom) topologyCtx.setFrom(saveFrom);
+                  else ctxAny._evalFrom = saveFrom;
+                }
+              }
+            } else {
+              break;
+            }
+          }
+        }
+      }
+
+      // Restore context scratch
+      if (topologyCtx.setTo) topologyCtx.setTo(origTo);
+      else ctxAny._evalTo = origTo;
+
+      if (topologyCtx.setBetween) topologyCtx.setBetween(origBetween);
+      else ctxAny._evalBetween = origBetween;
+
+      if (topologyCtx.setFrom) topologyCtx.setFrom(origFrom);
+      else ctxAny._evalFrom = origFrom;
+
+      return returnMoves;
+    }
+
+    // Fallback: use _radials topology (flat radials from compiler1to1 path)
+    const radials = ctxAny._radials;
+    if (!radials) {
+      // No topology available — return empty
+      return returnMoves;
+    }
+
+    const cellRadials = radials[from];
+    if (!cellRadials) return returnMoves;
+
+    const mover = (context.state as unknown as { mover?: number }).mover ?? 1;
+
+    // Save scratch
+    const savedFrom = ctxAny._evalFrom ?? OFF;
+    const savedTo = ctxAny._evalTo ?? OFF;
+    const savedBetween = ctxAny._evalBetween ?? OFF;
+
+    ctxAny._evalFrom = from;
+
+    const directions = this.dirnChoice.eval(context);
+
+    for (const dirName of directions) {
+      const dirsForCell = cellRadials[dirName] ?? [];
+      for (const { ray } of dirsForCell) {
+        for (let toIdx = 1; toIdx < ray.length && toIdx <= maxPathLength; toIdx++) {
+          const to = ray[toIdx]!;
+
+          // Check the between rule
+          if (this.betweenRule !== null && minPathLength > 1 && toIdx < minPathLength) {
+            ctxAny._evalBetween = to;
+            if (!this.betweenRule.eval(context)) break;
+            ctxAny._evalBetween = savedBetween;
+          }
+
+          ctxAny._evalTo = to;
+
+          if (this.rule === null || this.rule.eval(context)) {
+            if (toIdx >= minPathLength) {
+              // Apply movesToApply
+              const saveTo2: number = ctxAny._evalTo ?? OFF;
+              const saveFrom2: number = ctxAny._evalFrom ?? OFF;
+              ctxAny._evalFrom = to;
+              ctxAny._evalTo = OFF;
+              const movesApplied = this.movesToApply.eval(context);
+              ctxAny._evalTo = saveTo2;
+              ctxAny._evalFrom = saveFrom2;
+
+              for (const m of movesApplied) {
+                returnMoves.push(new Move({
+                  id: m.id + `:forEachDir_${dirName}_${from}_${to}`,
+                  label: m.label,
+                  siteIndices: m.siteIndices.length > 0 ? m.siteIndices : [from, to],
+                  mover: m.mover > 0 ? m.mover : mover,
+                  placedOwner: m.placedOwner > 0 ? m.placedOwner : mover,
+                  actions: m.actions,
+                  fromSite: m.fromSite,
+                  toSite: m.toSite,
+                }));
+              }
+            }
+          } else {
+            break;
+          }
+        }
+      }
+    }
+
+    // Restore context scratch
+    ctxAny._evalTo = savedTo;
+    ctxAny._evalBetween = savedBetween;
+    ctxAny._evalFrom = savedFrom;
+
+    return returnMoves;
+  }
+
+  // -------------------------------------------------------------------------
+
+  /**
+   * @java ForEachDirection.isStatic()
+   */
+  public override isStatic(): boolean {
+    if (!(this.startLocationFn as unknown as { isStatic?(): boolean }).isStatic?.()) return false;
+    if (this.rule !== null && !(this.rule as unknown as { isStatic?(): boolean }).isStatic?.()) return false;
+    if (this.betweenRule !== null && !(this.betweenRule as unknown as { isStatic?(): boolean }).isStatic?.()) return false;
+    return (this.movesToApply as unknown as { isStatic?(): boolean }).isStatic?.() ?? false;
+  }
+
+  /**
+   * @java ForEachDirection.preprocess(Game)
+   */
+  public override preprocess(): void {
+    // @java type = SiteType.use(type, game); + delegate to children
+    super.preprocess();
+  }
+}

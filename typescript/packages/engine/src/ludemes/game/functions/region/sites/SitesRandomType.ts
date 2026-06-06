@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/region/sites/SitesRandomType.java
 
-// TODO Phase 2: faithful port from SitesRandomType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies sets of random sites.
+ *
+ * @java game/functions/region/sites/SitesRandomType.java
+ * @author Eric.Piette
+ */
+export enum SitesRandomType {
+  /** Sites randomly selected in a region. */
+  Random = "Random",
+}

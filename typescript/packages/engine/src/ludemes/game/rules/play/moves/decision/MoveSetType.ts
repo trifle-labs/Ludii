@@ -1,3 +1,16 @@
 // @java Core/src/game/rules/play/moves/decision/MoveSetType.java
 
-// TODO Phase 2: faithful port from MoveSetType.java (currently handled in compile.ts compileMoveLudeme shared logic).
+/**
+ * Defines the types of decision move corresponding to a set move.
+ *
+ * @java game/rules/play/moves/decision/MoveSetType.java
+ *
+ * Java original:
+ *   public enum MoveSetType { Set }
+ */
+
+/** @java game/rules/play/moves/decision/MoveSetType.java */
+export enum MoveSetType {
+  /** Makes a set move. */
+  Set = "Set",
+}

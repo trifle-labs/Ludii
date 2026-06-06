@@ -30,15 +30,31 @@ export class PlaceSites1to1 implements StartRule {
   /** Pieces to place at each site (the `count:` arg, default 1). @java Place.count */
   private readonly count: number;
 
+  /** Per-site state value from `state:N` in the place rule (default -1 = unset). */
+  private readonly stateValue: number;
+
+  /** Per-site value from `value:N` in the place rule (default -1 = unset). */
+  private readonly valueValue: number;
+
   /**
-   * @param pieceId Full piece identifier (e.g. "Ball1")
-   * @param sites   Site indices for placement
-   * @param count   Pieces per site (default 1; mancala sow seeds use 4, etc.)
+   * @param pieceId    Full piece identifier (e.g. "Ball1")
+   * @param sites      Site indices for placement
+   * @param count      Pieces per site (default 1; mancala sow seeds use 4, etc.)
+   * @param stateValue Per-site state (from `state:N`), or -1 if not specified
+   * @param valueValue Per-site value (from `value:N`), or -1 if not specified
    */
-  public constructor(pieceId: string, sites: readonly number[], count = 1) {
+  public constructor(
+    pieceId: string,
+    sites: readonly number[],
+    count = 1,
+    stateValue = -1,
+    valueValue = -1,
+  ) {
     this.pieceId = pieceId;
     this.sites = sites;
     this.count = count;
+    this.stateValue = stateValue;
+    this.valueValue = valueValue;
   }
 
   /**
@@ -50,6 +66,8 @@ export class PlaceSites1to1 implements StartRule {
     countAt: number[],
     equipment: Equipment1to1,
     _numPlayers: number,
+    stateAt?: number[],
+    valueAt?: number[],
   ): void {
     // Parse player number from the piece id suffix.
     // "Ball1" → name="Ball", owner=1
@@ -70,6 +88,14 @@ export class PlaceSites1to1 implements StartRule {
       cells[site] = owner;
       whats[site] = piece.index;
       countAt[site] = this.count;
+      // Apply state:N and value:N if specified.
+      // @java ActionAdd.apply() — sets stateAt and valueAt alongside cells/whats.
+      if (stateAt && this.stateValue >= 0) {
+        stateAt[site] = this.stateValue;
+      }
+      if (valueAt && this.valueValue >= 0) {
+        valueAt[site] = this.valueValue;
+      }
     }
   }
 }

@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/region/sites/SitesTrackType.java
 
-// TODO Phase 2: faithful port from SitesTrackType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies sets of sites associated with track.
+ *
+ * @java game/functions/region/sites/SitesTrackType.java
+ * @author Eric.Piette
+ */
+export enum SitesTrackType {
+  /** Sites in a player's track. */
+  Track = "Track",
+}

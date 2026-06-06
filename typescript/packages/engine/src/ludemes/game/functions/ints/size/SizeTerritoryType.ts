@@ -1,5 +1,12 @@
 // @java Core/src/game/functions/ints/size/SizeTerritoryType.java
 
-// Java grammar enum for Size.construct(...); no standalone ludeme head to
-// register. Only member: Territory (SizeTerritoryType.java:8-12).
-export type SizeTerritoryType = "Territory";
+/**
+ * Defines the types of territory which the size can be returned.
+ *
+ * @java game/functions/ints/size/SizeTerritoryType.java
+ * @author Eric.Piette
+ */
+export enum SizeTerritoryType {
+  /** Size of the region surrounded by a specific player. */
+  Territory = "Territory",
+}

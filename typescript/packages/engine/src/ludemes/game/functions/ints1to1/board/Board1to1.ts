@@ -462,10 +462,23 @@ registerInt1to1("id", (node: LudNode, _env: Compile1to1Env): IntFunction => {
           const g = ctx.game as unknown as { equipment?: { pieces?: Array<{ name: string; owner: number; index: number }> } };
           const pieces = g.equipment?.pieces;
           if (!pieces) return 0;
-          const match = pieces.find(p =>
+          // 1. Exact name+owner match
+          const exactMatch = pieces.find(p =>
             p.name.toLowerCase() === nameConst.toLowerCase() && p.owner === ownerConst
           );
-          return match ? match.index : 0;
+          if (exactMatch) return exactMatch.index;
+          // 2. Piece name with trailing player-index suffix: "SmallCat1" → name="SmallCat", owner=1
+          // @java Ludii piece naming: "PieceName" + playerIndex (e.g. "SmallCat1", "SmallCat2")
+          const m = nameConst.match(/^(.*?)(\d+)$/);
+          if (m) {
+            const baseName = m[1]!;
+            const ownerFromName = parseInt(m[2]!, 10);
+            const suffixMatch = pieces.find(p =>
+              p.name.toLowerCase() === baseName.toLowerCase() && p.owner === ownerFromName
+            );
+            if (suffixMatch) return suffixMatch.index;
+          }
+          return 0;
         }
       };
     }

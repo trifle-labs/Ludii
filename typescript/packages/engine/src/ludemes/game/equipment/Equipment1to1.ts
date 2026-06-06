@@ -88,6 +88,22 @@ export class Equipment1to1 {
   public readonly namedPlayerRegions: ReadonlyMap<string, ReadonlyMap<number, import("../../base.js").RegionFunction>>;
 
   /**
+   * Dice face specifications, one entry per physical die.
+   * Each entry lists the face VALUES printed on that die (e.g. [1,2,3,4,5,6]).
+   * Populated from `(dice facesByDie:{{…}{…}} num:N)` or `(dice num:N)`.
+   * Empty when the game has no dice.
+   * @java game/equipment/container/other/Dice.java
+   */
+  public readonly diceSpecs: readonly { readonly faces: readonly number[] }[];
+
+  /**
+   * Site index at which dice containers start (= totalSites before dice).
+   * diceSiteBase + i is the board-state site for die i.
+   * -1 when the game has no dice.
+   */
+  public readonly diceSiteBase: number;
+
+  /**
    * @java game/equipment/Equipment.java — create()
    *
    * Assigns 1-based component indices to pieces, matching Java's Equipment.
@@ -100,6 +116,7 @@ export class Equipment1to1 {
     playerRegions: Map<number, import("../../base.js").RegionFunction> = new Map(),
     tracks: Map<string, { sites: readonly number[]; loop: boolean; owner: number }> = new Map(),
     namedPlayerRegions: Map<string, Map<number, import("../../base.js").RegionFunction>> = new Map(),
+    diceSpecs: { faces: number[] }[] = [],
   ) {
     this.board = board;
     this.tracks = tracks;
@@ -125,6 +142,19 @@ export class Equipment1to1 {
       nextSite += hand.size;
     }
     this.handSiteOf = handMap;
+
+    // Dice container sites: allocated after hand sites, one slot per die.
+    // @java game/equipment/container/other/Dice.java — each Die is a container
+    // with one site; Java Equipment.sitesFrom() assigns consecutive indices.
+    if (diceSpecs.length > 0) {
+      this.diceSiteBase = nextSite;
+      nextSite += diceSpecs.length;
+      this.diceSpecs = Object.freeze(diceSpecs.map(d => Object.freeze({ faces: Object.freeze([...d.faces]) })));
+    } else {
+      this.diceSiteBase = -1;
+      this.diceSpecs = Object.freeze([]);
+    }
+
     this.totalSites = nextSite;
     this.playerRegions = playerRegions;
   }

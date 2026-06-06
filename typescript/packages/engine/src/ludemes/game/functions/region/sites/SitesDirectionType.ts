@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/region/sites/SitesDirectionType.java
 
-// TODO Phase 2: faithful port from SitesDirectionType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies sets of board sites according to a direction.
+ *
+ * @java game/functions/region/sites/SitesDirectionType.java
+ * @author Eric.Piette
+ */
+export enum SitesDirectionType {
+  /** Sites in a specific absolute direction from a site. */
+  Direction = "Direction",
+}

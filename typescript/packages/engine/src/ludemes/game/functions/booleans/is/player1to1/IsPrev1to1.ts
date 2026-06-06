@@ -30,11 +30,23 @@ export class IsPrev1to1 implements BooleanFunction {
    * the same player moves again, so prev == mover — this is the "SameTurn"
    * idiom (`(is Prev Mover)`) that gates Morris mill-removal turns. Using the
    * cyclic predecessor instead makes `(is Prev Mover)` permanently false.
+   *
+   * In a (then ...) consequence context, the current move has already been
+   * appended to trial.moves so that (last To)/(last From) resolve correctly.
+   * We therefore look at moves[last-1] (ply before the current move) rather
+   * than moves[last] (the current move itself).
+   * @java Then.java — evaluates in post-move context; context.prev() reads
+   * state.prev which is the mover of the ply BEFORE the current one.
    */
   public eval(ctx: Context): boolean {
     const moves = ctx.trial.moves;
     if (moves.length === 0) return false;
-    const prev = moves[moves.length - 1]!.mover;
+    // When in a then-consequence context (_thenContextDepth > 0), the current
+    // move has been added to the trial — the "previous" mover is moves[last-1].
+    const inThen = (ctx as unknown as { _thenContextDepth?: number })._thenContextDepth ?? 0;
+    const prevIdx = inThen > 0 ? moves.length - 2 : moves.length - 1;
+    if (prevIdx < 0) return false;
+    const prev = moves[prevIdx]!.mover;
     return this.who.eval(ctx) === prev;
   }
 }

@@ -1,7 +1,16 @@
 // @java Core/src/game/functions/booleans/all/AllGroupsType.java
 
-// Java enum value only; runtime dispatch is implemented by All.ts / groups/*
-// (AllGroupsType.java:8-11). No registry entry: enum declarations are not
-// standalone ludemes in the current TS dispatcher.
+/**
+ * Defines the query types that can be used for an (all ...) test for the groups.
+ *
+ * @java game/functions/booleans/all/AllGroupsType.java
+ * @author Eric.Piette
+ */
+export enum AllGroupsType {
+  /** Returns whether all the groups verify a condition. */
+  Groups = "Groups",
+}
+
+// Backward-compat string-union constants used by existing dispatchers.
 export const ALL_GROUPS_TYPES = ["Groups"] as const;
-export type AllGroupsType = (typeof ALL_GROUPS_TYPES)[number];
+export type AllGroupsTypeStr = (typeof ALL_GROUPS_TYPES)[number];

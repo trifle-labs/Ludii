@@ -7,8 +7,6 @@
  *
  * Java parity: all seven return sites where a specific piece of information
  * is hidden from a given player, using ContainerState.isHidden*(pid, site).
- * The 1:1 state does not model per-site hidden info (no ContainerState
- * hidden-flag layer), so all return [].
  *
  * A factory for `sites:hidden` dispatches to the appropriate class based
  * on the optional `hiddenData` second positional argument:
@@ -38,13 +36,43 @@ import { parseArgs1to1 } from "../../../../../../compiler1to1.js";
 
 /**
  * Base class for all hidden-site queries.
- * The 1:1 state does not model hidden information, so always returns [].
+ * Queries `ctx.state.isHidden(pid, site)` — the TS 1:1 State models per-site
+ * hidden flags via `hiddenForPlayer` (see state.ts).
+ *
+ * `fixedPid` encodes the role at compile time:
+ *   >= 1   → concrete player (P1, P2, …)
+ *   -1     → resolve from ctx at eval time (Mover, Next, etc.)
+ *
  * @java game/functions/region/sites/hidden/SitesHidden.java — eval(Context)
  */
 class SitesHiddenBase implements RegionFunction {
-  public eval(_ctx: Context): number[] {
-    // @java ContainerState.isHidden*(pid, site) — not modelled in 1:1 state
-    return [];
+  /** Pre-resolved player id (>= 1) or -1 for Mover/dynamic role. */
+  protected readonly fixedPid: number;
+  /** Lowercased role string used for dynamic resolution. */
+  protected readonly roleStr: string;
+
+  constructor(fixedPid: number, roleStr: string) {
+    this.fixedPid = fixedPid;
+    this.roleStr = roleStr;
+  }
+
+  /**
+   * @java SitesHidden.eval(Context) — iterate board sites, collect hidden ones.
+   * The TS 1:1 state collapses all hidden-info sub-types (What/Who/State/Count/…)
+   * into a single per-player boolean per site, so every sub-class uses the same
+   * `isHidden(pid, site)` query.
+   */
+  public eval(ctx: Context): number[] {
+    const g = ctx.game as unknown as { equipment?: { board?: { numSites?: number } } };
+    const boardN = g.equipment?.board?.numSites ?? ctx.state.cells.length;
+    const pid = this.fixedPid >= 1 ? this.fixedPid
+      : this.roleStr === "next" ? (ctx.state.mover % ctx.game.numPlayers) + 1
+      : ctx.state.mover; // "mover" or fallback
+    const result: number[] = [];
+    for (let s = 0; s < boardN; s++) {
+      if (ctx.state.isHidden(pid, s)) result.push(s);
+    }
+    return result;
   }
 }
 
@@ -75,20 +103,27 @@ export class SitesHiddenValue1to1 extends SitesHiddenBase {}
 registerRegion1to1("sites:hidden", (node: LudNode, _env: Compile1to1Env): RegionFunction => {
   // Grammar: (sites Hidden [<hiddenData>] [<siteType>] to:<player>)
   // The hiddenData ident (What|Who|State|Count|Rotation|Value) is optional 2nd arg.
-  const { positional } = parseArgs1to1(isList(node) ? node.items : []);
+  const { positional, named } = parseArgs1to1(isList(node) ? node.items : []);
   // positional[0] = "Hidden", positional[1] = hiddenData ident (if present)
   const secondArg = positional[1];
   const hiddenDataName = (secondArg && isIdent(secondArg))
     ? secondArg.name.toLowerCase()
     : null;
 
+  // Resolve the target player at compile time.
+  // @java SitesHidden.java — whoFn = RoleType.toIntFunction(To)
+  const toNode = named.get("to");
+  const roleStr = toNode && isIdent(toNode) ? toNode.name.toLowerCase() : "mover";
+  const fixedPid = roleStr.startsWith("p") && !isNaN(parseInt(roleStr.slice(1), 10))
+    ? parseInt(roleStr.slice(1), 10) : -1;
+
   switch (hiddenDataName) {
-    case "what":      return new SitesHiddenWhat1to1();
-    case "who":       return new SitesHiddenWho1to1();
-    case "state":     return new SitesHiddenState1to1();
-    case "count":     return new SitesHiddenCount1to1();
-    case "rotation":  return new SitesHiddenRotation1to1();
-    case "value":     return new SitesHiddenValue1to1();
-    default:          return new SitesHidden1to1();
+    case "what":      return new SitesHiddenWhat1to1(fixedPid, roleStr);
+    case "who":       return new SitesHiddenWho1to1(fixedPid, roleStr);
+    case "state":     return new SitesHiddenState1to1(fixedPid, roleStr);
+    case "count":     return new SitesHiddenCount1to1(fixedPid, roleStr);
+    case "rotation":  return new SitesHiddenRotation1to1(fixedPid, roleStr);
+    case "value":     return new SitesHiddenValue1to1(fixedPid, roleStr);
+    default:          return new SitesHidden1to1(fixedPid, roleStr);
   }
 });

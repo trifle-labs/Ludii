@@ -70,6 +70,7 @@ export { ActionSetVar } from "./action-set-var.js";
 export { ActionSubStackMove } from "./action-stack-move.js";
 export { ActionStoreStateInContext } from "./action-store-state.js";
 export { ActionSwap } from "./action-swap.js";
+export { ActionSwapPlayers } from "./action-swap-players.js";
 export { ActionToggle } from "./action-toggle.js";
 export { ActionTrigger } from "./action-trigger.js";
 export { ACTION_TYPES, type ActionType, isActionType } from "./action-type.js";

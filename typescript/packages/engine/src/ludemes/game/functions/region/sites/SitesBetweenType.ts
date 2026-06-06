@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/region/sites/SitesBetweenType.java
 
-// TODO Phase 2: faithful port from SitesBetweenType.java (currently handled in compile.ts compileSites shared logic)
+/**
+ * Specifies sets of sites between two sites.
+ *
+ * @java game/functions/region/sites/SitesBetweenType.java
+ * @author Eric.Piette
+ */
+export enum SitesBetweenType {
+  /** Sites which are between two others sites. */
+  Between = "Between",
+}

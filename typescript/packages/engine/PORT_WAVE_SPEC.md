@@ -1,9 +1,11 @@
 # 1:1 Port Wave — Shared Agent Contract
 
 You are porting Ludii engine ludeme classes from **Java → TypeScript, faithfully 1:1**.
-This is a PURE port. The legacy interpreter (`src/eval/compile.ts`, `src/lud-compiler.ts`) is
-**DEAD** — never read it, import it, or edit it. Each Java ludeme class becomes one faithful
-TS class that implements an `eval(ctx)` and self-registers in the 1:1 registry.
+This is a PURE port. The legacy interpreter (`eval/compile.ts`, `lud-compiler.ts`, the old
+closure `registry.ts`, and the bespoke `*-game.ts` MVE games) has been **DELETED** — it no
+longer exists in the tree. `play1to1` → `compiler1to1` (the faithful 1:1 ludeme-object path)
+is now the ONLY engine. Each Java ludeme class becomes one faithful TS class that implements
+an `eval(ctx)` and self-registers in the 1:1 registry.
 
 ## Paths
 - Engine working dir: `/Users/billy/GitHub/trifle-labs/Ludii/typescript/packages/engine`

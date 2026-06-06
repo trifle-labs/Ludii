@@ -1,2 +1,12 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/state/forget/ForgetValueType.java
-// TODO Phase 2: Java grammar enum for shared moves/effect dispatch; no standalone compile.ts case.
+
+/**
+ * Defines the types of the super ludeme Forget for values.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/state/forget/ForgetValueType.java
+ * @author Eric.Piette
+ */
+export enum ForgetValueType {
+  /** To forget a value. */
+  Value = "Value",
+}

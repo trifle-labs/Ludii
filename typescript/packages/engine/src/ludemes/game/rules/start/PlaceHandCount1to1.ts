@@ -54,20 +54,42 @@ export class PlaceHandCount1to1 implements StartRule {
     numPlayers: number,
   ): void {
     for (let p = 1; p <= numPlayers; p++) {
-      const handSite = equipment.handSiteFor(p, 0);
-      if (handSite < 0) continue; // No hand for this player.
-
       // Find the component for this player matching the piece name.
       const piece = equipment.pieces.find(
         pi => pi.owner === p && pi.name.toLowerCase() === this.pieceName.toLowerCase(),
       );
       if (piece === undefined) continue;
 
-      // Place count pieces in the hand.
-      if (handSite < cells.length) {
-        cells[handSite] = p;           // who = player
-        whats[handSite] = piece.index; // what = component index
-        countAt[handSite] = this.count; // count = N pieces available
+      // Place count pieces in the first available hand slot.
+      // Multiple (place "X" "Hand") rules may fill consecutive slots.
+      // @java Game.start() → ActionAdd(to=handSite+offset, what=componentIdx)
+      const hand = equipment.hands.find(h => h.owner === p);
+      if (!hand) continue;
+      const base = equipment.handSiteFor(p, 0);
+      if (base < 0) continue;
+
+      // Find the first empty slot in this player's hand.
+      let slotFound = false;
+      for (let offset = 0; offset < hand.size; offset++) {
+        const slot = base + offset;
+        if (slot >= cells.length) break;
+        // Empty slot: cells[slot] === 0 AND whats[slot] === 0
+        if ((cells[slot] ?? 0) === 0 && (whats[slot] ?? 0) === 0) {
+          cells[slot] = p;
+          whats[slot] = piece.index;
+          countAt[slot] = this.count;
+          slotFound = true;
+          break;
+        }
+      }
+      if (!slotFound) {
+        // Fallback: use slot 0 (overwrite)
+        const slot = base;
+        if (slot < cells.length) {
+          cells[slot] = p;
+          whats[slot] = piece.index;
+          countAt[slot] = this.count;
+        }
       }
     }
   }

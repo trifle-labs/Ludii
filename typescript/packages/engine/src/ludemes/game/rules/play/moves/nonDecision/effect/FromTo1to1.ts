@@ -31,6 +31,7 @@ import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import { ActionCopy } from "../../../../../../../action/action-copy.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
+import { ActionMoveStacking } from "../../../../../../../action/action-move-stacking.js";
 import type { Game1to1 } from "../../../../../../Game1to1.js";
 
 export class FromTo1to1 implements MovesFunction {
@@ -80,6 +81,22 @@ export class FromTo1to1 implements MovesFunction {
    */
   private readonly countFn: IntFunction | null;
 
+  /**
+   * Optional capture/apply effect evaluated at the destination site.
+   * Compiled from `(to ... (apply if:<cond> <effect>))` or `("HittingCapture" ...)`.
+   * When non-null, the effect's moves are evaluated at (to) and their actions are
+   * prepended to the main move (Java parity: sideEffect.eval pre-actions in FromTo).
+   * @java game/rules/play/moves/nonDecision/effect/FromTo.java — sideEffect field
+   */
+  private readonly applyEffect: MovesFunction | null;
+
+  /**
+   * If true, the move stacks on top of the destination rather than replacing it.
+   * Corresponds to `stack:True` in the lud and generates ActionMoveStacking.
+   * @java game/rules/play/moves/nonDecision/effect/FromTo.java — stack field
+   */
+  private readonly stack: boolean;
+
   public constructor(opts: {
     locFrom?: IntFunction | null;
     regionFrom?: RegionFunction | null;
@@ -88,6 +105,8 @@ export class FromTo1to1 implements MovesFunction {
     toCondition?: BooleanFunction | null;
     copy?: boolean;
     countFn?: IntFunction | null;
+    applyEffect?: MovesFunction | null;
+    stack?: boolean;
   }) {
     this.locFrom = opts.locFrom ?? null;
     this.regionFrom = opts.regionFrom ?? null;
@@ -96,6 +115,8 @@ export class FromTo1to1 implements MovesFunction {
     this.toCondition = opts.toCondition ?? null;
     this.copy = opts.copy ?? false;
     this.countFn = opts.countFn ?? null;
+    this.applyEffect = opts.applyEffect ?? null;
+    this.stack = opts.stack ?? false;
   }
 
   /**
@@ -139,6 +160,13 @@ export class FromTo1to1 implements MovesFunction {
         what = state.whatAtSite(from);
         who = state.cells[from] ?? 0;
         hasContent = what > 0 || who > 0;
+        // For count-based transfers (mancala sow/BetweenRounds), also check countAt[from].
+        // Mancala holes/stores track seeds with countAt, not cells/whats.
+        // @java FromTo.java — Java checks context.containerState().count(from) > 0
+        if (!hasContent && this.countFn !== null) {
+          const cnt = state.countAt[from] ?? 0;
+          if (cnt > 0) { hasContent = true; what = mover; who = mover; }
+        }
       }
 
       if (!hasContent) continue;
@@ -158,14 +186,31 @@ export class FromTo1to1 implements MovesFunction {
         // Check to condition.
         if (this.toCondition !== null && !this.toCondition.eval(ctx)) continue;
 
+        // Evaluate apply/capture effect at the destination, if any.
+        // @java FromTo.java: sideEffect.eval(context) fires BEFORE the main move action.
+        // The effect's moves are evaluated with _evalTo=to so (apply if:("IsEnemyAt" (to)) ...)
+        // correctly reads the destination piece. Their actions are prepended to the main move.
+        const preActions: Move["actions"][number][] = [];
+        if (this.applyEffect !== null) {
+          const effectMoves = this.applyEffect.eval(ctx);
+          for (const em of effectMoves) {
+            for (const a of em.actions) preActions.push(a);
+          }
+        }
+
         // Build the move.
         // copy:True (Order and Chaos) → ActionCopy: place at destination but keep source intact.
+        // stack:True (Abande-style) → ActionMoveStacking: push onto destination stack.
         // Regular (from hand or board) → ActionMove: move piece, decrement hand count if needed.
         let action;
         if (this.copy) {
           // (move ... copy:True) — duplicate piece, source unchanged.
           // @java FromTo.java: ActionCopy when copy is true.
           action = new ActionCopy(from, to);
+        } else if (this.stack) {
+          // (move ... stack:True) — move piece onto top of destination stack.
+          // @java FromTo.java — stack:True generates ActionMoveStacking (pops from, pushes to).
+          action = new ActionMoveStacking(from, to);
         } else if (this.countFn !== null) {
           // (fromTo … count:N) — non-stacking N-seed transfer (mancala capture):
           // decrement source by N, increment dest by N. @java ActionMove(transferCount).
@@ -184,13 +229,15 @@ export class FromTo1to1 implements MovesFunction {
 
         // Seed/Shared content has owner 0; the placed owner falls back to the
         // mover (the player performing the move) so the Move stays well-formed.
+        // Pre-actions from the apply/capture effect precede the main move action.
         result.push(new Move({
           id: `fromto:${mover}:${from}:${to}`,
           label: `FromTo(${from}→${to})`,
           siteIndices: [from, to],
           mover,
           placedOwner: who >= 1 ? who : mover,
-          actions: [action],
+          actions: [...preActions, action],
+          decisionIndex: preActions.length,
         }));
       }
     }

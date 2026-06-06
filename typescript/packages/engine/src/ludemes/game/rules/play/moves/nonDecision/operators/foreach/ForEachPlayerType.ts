@@ -1,3 +1,14 @@
 // @java Core/src/game/rules/play/moves/nonDecision/operators/foreach/ForEachPlayerType.java
 
-// TODO Phase 2: faithful port from ForEachPlayerType.java (currently handled in compile.ts compileMoves shared logic).
+/**
+ * Defines the player which can be iterated in the ForEach super ludeme.
+ *
+ * @java game/rules/play/moves/nonDecision/operators/foreach/ForEachPlayerType.java
+ * @author Eric.Piette
+ */
+export enum ForEachPlayerType {
+  /**
+   * To iterate through the players to generate moves.
+   */
+  Player = "Player",
+}

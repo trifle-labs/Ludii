@@ -17,7 +17,7 @@ import type { IntFunction } from "../../../../../base.js";
 import { IntConstant } from "../../../ints/IntConstant.js";
 
 registerBool1to1("is:line", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
+  const { positional, named } = parseArgs1to1((node as LudList).items);
   // positional[0] = "Line", positional[1] = length int-fn, positional[2] = optional dirn
   const lenNode = positional[1];
   const len: IntFunction = lenNode ? compileInt1to1(lenNode) : new IntConstant(3);
@@ -33,5 +33,11 @@ registerBool1to1("is:line", (node: LudNode, _env: Compile1to1Env): BooleanFuncti
     }
   }
 
-  return new IsLine(len, dirnName);
+  // exact:True — line must be exactly len, not part of a longer line.
+  // @java IsLine.exactLength — when true, count must equal len exactly.
+  const exactNode = named.get("exact");
+  const exact = exactNode !== undefined && isIdent(exactNode) &&
+    exactNode.name.toLowerCase() === "true";
+
+  return new IsLine(len, dirnName, exact);
 });

@@ -1,5 +1,12 @@
 // @java Core/src/game/functions/ints/size/SizeSiteType.java
 
-// Java grammar enum for Size.construct(...); no standalone ludeme head to
-// register. Only member: Stack (SizeSiteType.java:8-12).
-export type SizeSiteType = "Stack";
+/**
+ * Defines the types of sites which the size can be returned.
+ *
+ * @java game/functions/ints/size/SizeSiteType.java
+ * @author Eric.Piette
+ */
+export enum SizeSiteType {
+  /** Size of the stack at a location (if any). */
+  Stack = "Stack",
+}

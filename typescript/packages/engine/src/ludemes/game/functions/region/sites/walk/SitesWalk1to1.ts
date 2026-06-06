@@ -38,7 +38,7 @@ const NAMED_WALKS: ReadonlyMap<string, readonly (readonly string[])[]> = new Map
 ]);
 
 /** Parse a walk node into a list of step sequences. */
-function parseWalks(node: LudNode | undefined): readonly (readonly string[])[] {
+export function parseWalks(node: LudNode | undefined): readonly (readonly string[])[] {
   if (!node) return [];
   if (isString(node)) return NAMED_WALKS.get(node.value) ?? [];
   if (!isList(node)) return [];

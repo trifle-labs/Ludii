@@ -1,3 +1,16 @@
 // @java Core/src/game/rules/play/moves/decision/MoveShootType.java
 
-// TODO Phase 2: faithful port from MoveShootType.java (currently handled in compile.ts compileMoveLudeme shared logic).
+/**
+ * Defines the types of decision move corresponding to a shoot move.
+ *
+ * @java game/rules/play/moves/decision/MoveShootType.java
+ *
+ * Java original:
+ *   public enum MoveShootType { Shoot }
+ */
+
+/** @java game/rules/play/moves/decision/MoveShootType.java */
+export enum MoveShootType {
+  /** Makes a shoot move. */
+  Shoot = "Shoot",
+}

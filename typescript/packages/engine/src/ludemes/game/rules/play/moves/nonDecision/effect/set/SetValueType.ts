@@ -1,2 +1,14 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/set/SetValueType.java
-// TODO Phase 2: Java grammar enum for shared moves/effect dispatch; no standalone compile.ts case.
+
+/**
+ * Defines the types of integer values that can be set in the game state.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/set/SetValueType.java
+ */
+export enum SetValueType {
+  /** Sets the counter of the game state. */
+  Counter = "Counter",
+
+  /** Sets the pot of the game state. */
+  Pot = "Pot",
+}

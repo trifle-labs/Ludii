@@ -1,3 +1,12 @@
 // @java Core/src/game/functions/booleans/was/WasType.java
 
-// TODO Phase 2: faithful port from WasType.java (currently handled in compile.ts compileBool shared was logic).
+/**
+ * Defines the types of events that can be queried.
+ *
+ * @java game/functions/booleans/was/WasType.java
+ * @author Eric.Piette
+ */
+export enum WasType {
+  /** Whether the last move was a pass. */
+  Pass = 0,
+}

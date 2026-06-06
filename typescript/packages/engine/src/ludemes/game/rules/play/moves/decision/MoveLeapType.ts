@@ -1,3 +1,16 @@
 // @java Core/src/game/rules/play/moves/decision/MoveLeapType.java
 
-// TODO Phase 2: faithful port from MoveLeapType.java (currently handled in compile.ts compileMoveLudeme shared logic).
+/**
+ * Defines the types of decision move corresponding to a leap move.
+ *
+ * @java game/rules/play/moves/decision/MoveLeapType.java
+ *
+ * Java original:
+ *   public enum MoveLeapType { Leap }
+ */
+
+/** @java game/rules/play/moves/decision/MoveLeapType.java */
+export enum MoveLeapType {
+  /** Makes a Leap move. */
+  Leap = "Leap",
+}

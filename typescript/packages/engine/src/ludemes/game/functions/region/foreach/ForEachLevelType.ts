@@ -1,5 +1,17 @@
 // @java Core/src/game/functions/region/foreach/ForEachLevelType.java
 
-// TODO: enum-only Java type. The outer ForEach.construct port in ../ForEach.ts
-// handles the Level arm but is not registered until Team context support exists
-// (ForEach.java:46-57; ForEachLevelType.java:8-13).
+/**
+ * Defines the types of ForEachLevel ludeme.
+ *
+ * @java game/functions/region/foreach/ForEachLevelType.java
+ * @author Eric.Piette
+ */
+
+/**
+ * Iterates through level of a site.
+ * @java game.functions.region.foreach.ForEachLevelType
+ */
+export enum ForEachLevelType {
+  /** Level to iterate. */
+  Level = "Level",
+}

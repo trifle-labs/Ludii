@@ -1,3 +1,16 @@
 // @java Core/src/game/rules/play/moves/decision/MoveHopType.java
 
-// TODO Phase 2: faithful port from MoveHopType.java (currently handled in compile.ts compileMoveLudeme shared logic).
+/**
+ * Defines the types of decision move corresponding to a hop move.
+ *
+ * @java game/rules/play/moves/decision/MoveHopType.java
+ *
+ * Java original:
+ *   public enum MoveHopType { Hop }
+ */
+
+/** @java game/rules/play/moves/decision/MoveHopType.java */
+export enum MoveHopType {
+  /** Makes a Hop move. */
+  Hop = "Hop",
+}

@@ -15,6 +15,8 @@
 import "./game/rules/play/moves/nonDecision/effect/Enclose1to1.js";
 import "./game/rules/play/moves/nonDecision/effect/Pass1to1.js";
 import "./game/rules/play/moves/nonDecision/effect/state/MoveAgain1to1.js";
+import "./game/rules/play/moves/nonDecision/effect/Custodial.js";
+import "./game/rules/play/moves/nonDecision/effect/Intervene.js";
 
 import "./registry1to1-mig-simple.js";
 import "./registry1to1-mig-operators.js";
