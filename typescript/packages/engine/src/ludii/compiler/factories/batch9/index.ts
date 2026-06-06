@@ -8,13 +8,22 @@ import { FloatTan1to1 } from "../../../../ludemes/game/functions/floats1to1/math
 import { Subdivide } from "../../../../ludemes/game/functions/graph/operators/Subdivide.js";
 import { Trim } from "../../../../ludemes/game/functions/graph/operators/Trim.js";
 import { constructTiling } from "../../../../ludemes/game/functions/graph/generators/basis/tiling/Tiling.js";
+import { CustomOn33344 } from "../../../../ludemes/game/functions/graph/generators/basis/tiling/tiling33344/CustomOn33344.js";
+import { CustomOn3464 } from "../../../../ludemes/game/functions/graph/generators/basis/tiling/tiling3464/CustomOn3464.js";
+import { CustomOn3636 } from "../../../../ludemes/game/functions/graph/generators/basis/tiling/tiling3636/CustomOn3636.js";
+import { CustomOn488 } from "../../../../ludemes/game/functions/graph/generators/basis/tiling/tiling488/CustomOn488.js";
+import { Tiling33434 } from "../../../../ludemes/game/functions/graph/generators/basis/tiling/tiling33434/Tiling33434.js";
 import { constructTri } from "../../../../ludemes/game/functions/graph/generators/basis/tri/Tri.js";
+import { CustomOnTri } from "../../../../ludemes/game/functions/graph/generators/basis/tri/CustomOnTri.js";
 import { Wedge } from "../../../../ludemes/game/functions/graph/generators/shape/Wedge.js";
+import { Keep } from "../../../../ludemes/game/functions/graph/operators/Keep.js";
 import { Team } from "../../../../ludemes/game/functions/intArray/iteraror/Team.js";
 import { ValuesRemembered } from "../../../../ludemes/game/functions/intArray/values/ValuesRemembered.js";
 import { IntConstant } from "../../../../ludemes/game/functions/ints/IntConstant.js";
 import { ToInt } from "../../../../ludemes/game/functions/ints/ToInt.js";
 import type { JavaIntFunction } from "../../../../ludemes/game/functions/ints/IntFunction.js";
+import { Between1to1 as IteratorBetween, From1to1 as IteratorFrom, To1to1 as IteratorTo } from "../../../../ludemes/game/functions/ints1to1/iterator/Iterator1to1.js";
+import { What1to1, Who1to1 } from "../../../../ludemes/game/functions/ints1to1/board/Board1to1.js";
 import { TrackSite } from "../../../../ludemes/game/functions/ints/trackSite/TrackSite.js";
 import { TrackSiteFirstType } from "../../../../ludemes/game/functions/ints/trackSite/TrackSiteFirstType.js";
 import { TrackSiteMoveType } from "../../../../ludemes/game/functions/ints/trackSite/TrackSiteMoveType.js";
@@ -29,6 +38,8 @@ import { ValueMoveLimit } from "../../../../ludemes/game/functions/ints/value/si
 import { ValuePending } from "../../../../ludemes/game/functions/ints/value/simple/ValuePending.js";
 import { ValueTurnLimit } from "../../../../ludemes/game/functions/ints/value/simple/ValueTurnLimit.js";
 import { Score1to1, Var1to1 } from "../../../../ludemes/game/functions/ints1to1/state/State1to1.js";
+import { IsEnemy1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsEnemy1to1.js";
+import { IsFriend1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsFriend1to1.js";
 import { Tile } from "../../../../ludemes/game/equipment/component/tile/Tile.js";
 import { SurakartaBoard } from "../../../../ludemes/game/equipment/container/board/custom/SurakartaBoard.js";
 import { Subgame1to1 } from "../../../../ludemes/game/match/Subgame1to1.js";
@@ -42,6 +53,8 @@ import { SetCount1to1 } from "../../../../ludemes/game/rules/start/set/sites/Set
 import { SetPhase1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetPhase.js";
 import { SetSite1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetSite.js";
 import { Then } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
+import { Remove } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Remove.js";
+import { Surround } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Surround.js";
 import { Trigger } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Trigger.js";
 import { Vote } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Vote.js";
 import { While } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/While.js";
@@ -62,6 +75,11 @@ import type { SiteType } from "../../../../ludemes/other/action/SiteType.js";
 import type { StepType } from "../../../../ludemes/game/types/board/StepType.js";
 import type { Path } from "../../../../ludemes/game/equipment/component/tile/Path.js";
 import type { Flips } from "../../../../ludemes/game/equipment/component/tile/Tile.js";
+import { Poly } from "../../../../ludemes/game/util/graph/Poly.js";
+import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js";
+import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
+import { Piece1to1 } from "../../../../ludemes/game/util/moves/Piece1to1.js";
+import { To1to1 } from "../../../../ludemes/game/util/moves/To1to1.js";
 import type { ArgBundle } from "../../ArgBundle.js";
 import type { LudemeRegistry } from "../../LudemeRegistry.js";
 
@@ -72,7 +90,7 @@ export function registerBatch9(registry: LudemeRegistry): void {
   registry.registerLudeme("subdivide:subdivide", (b) => new Subdivide(requireGraph(b, 0), optionalNumber(b.named.get("min")) ?? 1));
   registry.registerLudeme("subgame:subgame", makeSubgame);
   registry.registerLudeme("surakartaBoard:surakartaBoard", makeSurakartaBoard);
-  registry.registerLudeme("surround:surround", deferred("surround"));
+  registry.registerLudeme("surround:surround", makeSurround);
   registry.registerLudeme("swap.swap:swap", makeSwap);
   registry.registerLudeme("take:take", makeTake);
   registry.registerLudeme("tan:tan", (b) => new FloatTan1to1(requireFloatFunction(b, 0)));
@@ -94,10 +112,10 @@ export function registerBatch9(registry: LudemeRegistry): void {
   registry.registerLudeme("vote:vote", makeVote);
   registry.registerLudeme("was:was", makeWas);
   registry.registerLudeme("wedge:wedge", (b) => new Wedge(requireNumber(b, 0), optionalNumber(b.positional[1]) ?? undefined));
-  registry.registerLudeme("what:what", deferred("what"));
+  registry.registerLudeme("what:what", makeWhat);
   registry.registerLudeme("where:where", makeWhere);
   registry.registerLudeme("while:while", (b) => new While(requireBooleanFunction(b, 0), requireMoves(b.positional[1]), optionalMoves(b.positional[2])));
-  registry.registerLudeme("who:who", deferred("who"));
+  registry.registerLudeme("who:who", makeWho);
   registry.registerLudeme("xor:xor", (b) => new Xor1to1(requireBooleanFunction(b, 0), requireBooleanFunction(b, 1)));
 }
 
@@ -158,6 +176,24 @@ function makeSurakartaBoard(b: ArgBundle): SurakartaBoard {
   );
 }
 
+function makeSurround(b: ArgBundle): Surround {
+  const values = flatten(b.positional);
+  const from = values.find((v): v is From1to1 => v instanceof From1to1) ?? null;
+  const between = values.find((v): v is Between1to1 => v instanceof Between1to1) ?? null;
+  const to = values.find((v): v is To1to1 => v instanceof To1to1) ?? null;
+  const withPiece = values.find((v): v is Piece1to1 => v instanceof Piece1to1) ?? null;
+  return new Surround({
+    startLocationFn: from?.locFn() ?? new IteratorFrom(),
+    dirnChoice: values.find((v): v is string => typeof v === "string") ?? undefined,
+    targetRule: between?.condition() ?? new IsEnemy1to1(new IteratorBetween()),
+    friendRule: to?.condFn() ?? new IsFriend1to1(new IteratorTo()),
+    exception: optionalIntFunction(b.named.get("except")) ?? javaIntConstant(0),
+    withAtLeastPiece: withPiece?.component() ?? null,
+    effect: movesEffect(between?.effectFn()) ?? new Remove({ locationFn: new IteratorBetween() }),
+    then: lastThen(values) as never,
+  });
+}
+
 function makeSwap(b: ArgBundle): MovesFunction {
   const kind = requireString(b, 0);
   if (kind === "Players") {
@@ -180,13 +216,13 @@ function makeSwap(b: ArgBundle): MovesFunction {
       optionalThen(b.positional[3]),
     );
   }
-  throw new Error("factory not yet wired: swap");
+  throw new Error(`unsupported swap type: ${kind}`);
 }
 
 function makeTake(b: ArgBundle): MovesFunction {
   const kind = requireString(b, 0);
   if (kind === "Domino") return Take.constructSimple(TakeSimpleType.Domino, optionalMoves(b.positional[1]));
-  if (kind !== "Control") throw new Error("factory not yet wired: take");
+  if (kind !== "Control") throw new Error(`unsupported take type: ${kind}`);
 
   const of = b.named.get("of");
   const by = b.named.get("by");
@@ -223,11 +259,15 @@ function makeTile(b: ArgBundle): Tile {
 
 function makeTiling(b: ArgBundle): GraphFunction {
   const tiling = requireString(b, 0);
-  if (Array.isArray(b.positional[1]) || (b.positional[1] !== undefined && typeof b.positional[1] !== "number")) {
-    throw new Error("factory not yet wired: tiling");
+  const shape = b.positional[1];
+  const poly = polyPoints(shape);
+  if (poly) return customTiling(tiling, poly, true);
+  if (isNumberArray(shape)) return customTiling(tiling, shape, false);
+  if (shape !== undefined && typeof shape !== "number") {
+    throw new Error(`unsupported tiling shape: ${tiling}`);
   }
   const dims = b.positional.slice(1).filter((v): v is number => typeof v === "number");
-  if (dims.length === 0) throw new Error("factory not yet wired: tiling");
+  if (dims.length === 0) throw new Error("tiling: missing dimension");
   return constructTiling(tiling as never, dims[0]!, dims[1]);
 }
 
@@ -286,14 +326,17 @@ function makeTrackSite(b: ArgBundle): IntFunction {
       optionalBooleanFunction(b.named.get("if")) as never,
     );
   }
-  throw new Error("factory not yet wired: trackSite");
+  throw new Error(`unsupported trackSite type: ${kind}`);
 }
 
 function makeTri(b: ArgBundle): GraphFunction {
   const first = b.positional[0];
+  const poly = polyPoints(first);
+  if (poly) return new CustomOnTri(poly, true);
+  if (isNumberArray(first)) return new CustomOnTri(first);
   if (typeof first === "number") return constructTri(null, first, optionalNumber(b.positional[1]) ?? undefined);
   if (typeof first === "string") return constructTri(first as never, requireNumber(b, 1), optionalNumber(b.positional[2]) ?? undefined);
-  throw new Error("factory not yet wired: tri");
+  throw new Error("unsupported tri shape");
 }
 
 function makeTrigger(b: ArgBundle): Trigger {
@@ -326,12 +369,13 @@ function makeValue(b: ArgBundle): IntFunction {
     case "Random":
       return new ValueRandom(b.positional[1] as Range);
     default:
-      throw new Error("factory not yet wired: value");
+      throw new Error(`unsupported value type: ${kind}`);
   }
 }
 
 function makeValues(b: ArgBundle): ValuesRemembered {
-  if (requireString(b, 0) !== "Remembered") throw new Error("factory not yet wired: values");
+  const kind = requireString(b, 0);
+  if (kind !== "Remembered") throw new Error(`unsupported values type: ${kind}`);
   return new ValuesRemembered(optionalString(b.positional[1]));
 }
 
@@ -345,8 +389,17 @@ function makeVote(b: ArgBundle): Vote {
 }
 
 function makeWas(b: ArgBundle): WasPass {
-  if (requireString(b, 0) !== "Pass") throw new Error("factory not yet wired: was");
+  const kind = requireString(b, 0);
+  if (kind !== "Pass") throw new Error(`unsupported was type: ${kind}`);
   return new WasPass();
+}
+
+function makeWhat(b: ArgBundle): What1to1 {
+  return new What1to1(requireIntFunctionValue(siteArg(b)));
+}
+
+function makeWho(b: ArgBundle): Who1to1 {
+  return new Who1to1(requireIntFunctionValue(siteArg(b)));
 }
 
 function makeWhere(b: ArgBundle): IntFunction {
@@ -382,10 +435,82 @@ function makeWhere(b: ArgBundle): IntFunction {
   return WhereSite.byWhat(requireIntFunctionValue(b.positional[0]), optionalSiteType(b.positional[1]));
 }
 
+function customTiling(tiling: string, shape: [number, number][] | number[], isPoly: boolean): GraphFunction {
+  switch (tiling) {
+    case "T333333_33434":
+      return constructTiling(tiling as never, 2);
+    case "T3636":
+      return new CustomOn3636(shape, isPoly);
+    case "T3464":
+      return new CustomOn3464(shape, isPoly);
+    case "T33344":
+      return new CustomOn33344(shape, isPoly);
+    case "T488":
+      return new CustomOn488(shape, isPoly);
+    case "T4612":
+      return constructTiling(tiling as never, 3);
+    case "T31212":
+      return constructTiling(tiling as never, 3);
+    case "T33336":
+      return constructTiling(tiling as never, 3);
+    case "T33434":
+      return isPoly ? new Keep(new Tiling33434(5), shape as [number, number][]) : new Tiling33434(3);
+    default:
+      throw new Error(`unsupported tiling type: ${tiling}`);
+  }
+}
+
+function siteArg(b: ArgBundle): unknown {
+  if (b.named.has("at")) return b.named.get("at");
+  return b.positional.find((v) => !isSiteTypeString(v));
+}
+
+function movesEffect(value: unknown): MovesFunction | null {
+  if (value === undefined || value === null) return null;
+  if (!isMovesFunction(value)) throw new Error("surround: expected between effect moves");
+  return value;
+}
+
+function lastThen(values: readonly unknown[]): Then | null {
+  for (let i = values.length - 1; i >= 0; i--) {
+    const value = values[i];
+    if (value instanceof Then) return value;
+  }
+  return null;
+}
+
+function polyPoints(value: unknown): [number, number][] | null {
+  if (value instanceof Poly) return value.polygon().points().map((p) => [p.x, p.y]);
+  if (isPointList(value)) return value.map((p) => [p[0], p[1]]);
+  return null;
+}
+
+function isPointList(value: unknown): value is [number, number][] {
+  return Array.isArray(value) && value.every((point) =>
+    Array.isArray(point) && point.length === 2 && point.every((coord) => typeof coord === "number"));
+}
+
+function isNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "number");
+}
+
+function flatten(values: readonly unknown[]): unknown[] {
+  const out: unknown[] = [];
+  for (const value of values) {
+    if (Array.isArray(value) && !isPointList(value)) out.push(...flatten(value));
+    else out.push(value);
+  }
+  return out;
+}
+
+function isSiteTypeString(value: unknown): boolean {
+  return value === "Cell" || value === "Edge" || value === "Vertex";
+}
+
 function startSites(b: ArgBundle): number[] {
   if (b.named.has("at")) return [asNumber(b.named.get("at"))];
   if (b.named.has("to")) return requireNumberArray(b.named.get("to"), "set sites to");
-  throw new Error("factory not yet wired: set");
+  throw new Error("set: expected at or to sites");
 }
 
 function deferred(keyword: string): () => never {
@@ -518,7 +643,7 @@ function optionalRoleOwner(value: unknown): number | null {
 
 function numericRole(role: string): NumericRoleType {
   const value = NumericRoleType[role as keyof typeof NumericRoleType];
-  if (value === undefined) throw new Error("factory not yet wired: value");
+  if (value === undefined) throw new Error(`unsupported role type: ${role}`);
   return value;
 }
 

@@ -8,6 +8,7 @@ import { IntConstant } from "../../../../ludemes/game/functions/ints/IntConstant
 import { PathExtent } from "../../../../ludemes/game/functions/ints/tile/PathExtent.js";
 import { Pips1to1 } from "../../../../ludemes/game/functions/ints1to1/iterator/Iterator1to1.js";
 import { Pot } from "../../../../ludemes/game/functions/ints/state/Pot.js";
+import { Prev1to1 } from "../../../../ludemes/game/functions/ints1to1/state/State1to1.js";
 import { Hand } from "../../../../ludemes/game/equipment/container/other/Hand.js";
 import { Path } from "../../../../ludemes/game/equipment/component/tile/Path.js";
 import { GamePlayer1to1 } from "../../../../ludemes/game/players/GamePlayer1to1.js";
@@ -57,6 +58,7 @@ import type { LudemeRegistry } from "../../LudemeRegistry.js";
 type Pt = readonly [number, number];
 type ThenLike = never;
 type SiteType = string | null;
+type PlaceCount = { item(): string; count(): IntFunction };
 
 export function registerBatch6(registry: LudemeRegistry): void {
   registry.registerLudeme("note:note", noteFactory);
@@ -81,7 +83,7 @@ export function registerBatch6(registry: LudemeRegistry): void {
   registry.registerLudeme("players.player:player", playerFactory);
   registry.registerLudeme("poly:poly", polyFactory);
   registry.registerLudeme("pot:pot", potFactory);
-  registry.registerLudeme("prev:prev", deferred("prev"));
+  registry.registerLudeme("prev:prev", prevFactory);
   registry.registerLudeme("priority:priority", priorityFactory);
   registry.registerLudeme("promote:promote", promoteFactory);
   registry.registerLudeme("propose:propose", proposeFactory);
@@ -93,8 +95,9 @@ export function registerBatch6(registry: LudemeRegistry): void {
 function noteFactory(b: ArgBundle): Note {
   const playerMessage = intFromRoleOrValue(b.named.get("player"));
   const to = b.named.get("to");
+  const hasTo = to !== undefined && to !== null;
   const playerFn = to instanceof Player1to1 ? to.index() : intFromRoleOrValue(to) ?? roleInt("All");
-  const role = typeof to === "string" ? to : "All";
+  const role = typeof to === "string" ? to : hasTo ? "Player" : "All";
   const message = firstPositional(b);
   if (typeof message === "string") return new Note({ playerFn, role, playerMessage, message });
   if (isIntFunction(message)) return new Note({ playerFn, role, playerMessage, messageInt: message });
@@ -128,7 +131,7 @@ function forEachFactory(b: ArgBundle): MovesFunction {
   switch (kind) {
     case "Direction": {
       const from = findInstance(b, From1to1);
-      const direction = firstOf<DirectionsFunction>(b, isDirectionsFunction) ?? adjacentDirections();
+      const direction = firstDirectionFunction(b) ?? adjacentDirections();
       const between = b.positional.find(isBetweenLike);
       const to = findInstance(b, To1to1);
       const moves = firstMovesAfterKind(b);
@@ -182,7 +185,7 @@ function forEachFactory(b: ArgBundle): MovesFunction {
     case "Group":
       return new ForEachGroup(
         firstSiteTypeAfterKind(b),
-        firstOf<DirectionsFunction>(b, isDirectionsFunction) ?? null,
+        firstDirectionFunction(b),
         asBooleanFn(b.named.get("if")) ?? null,
         requiredLastMoves(b, "forEach Group moves"),
         thenArg(b),
@@ -214,7 +217,7 @@ function forEachFactory(b: ArgBundle): MovesFunction {
         thenArg(b),
       );
     default:
-      throw new Error("factory not yet wired: forEach");
+      throw new Error(`factory batch6: unsupported forEach type ${kind}`);
   }
 }
 
@@ -286,7 +289,7 @@ function phaseFactory(b: ArgBundle): Phase {
   const name = requiredString(b.positional[0], "phase name");
   const role = firstRoleAfterIndex(b, 1);
   const play = firstOf<Play1to1>(b, (v): v is Play1to1 => v instanceof Play1to1);
-  if (!play) throw new Error("factory not yet wired: phase");
+  if (!play) throw new Error("factory batch6: expected play for phase");
   const end = b.positional.find((v): v is ConstructorParameters<typeof Phase>[2] => isObject(v) && "eval" in v) ?? null;
   const next = flatten(b.positional).filter((v) => isObject(v) && "targetName" in v) as ConstructorParameters<typeof Phase>[3];
   return new Phase(name, play, end, next, roleToPlayerId(role ?? "Shared"));
@@ -303,7 +306,15 @@ function pipsFactory(): Pips1to1 {
 function placeFactory(b: ArgBundle): unknown {
   const kind = b.positional[0];
   if (kind === "Random") {
-    if (b.clause.raw.includes("<math.count>")) throw new Error("factory not yet wired: place");
+    const counts = firstPlaceCountArray(b);
+    if (counts) {
+      return Place.constructRandomCounts(
+        "Random" as never,
+        counts,
+        requiredIntFn(lastNumberOrInt(b), "place Random where"),
+        firstSiteTypeAfterKind(b),
+      );
+    }
     if (Array.isArray(b.named.get("count"))) {
       return Place.constructRandomStack(
         "Random" as never,
@@ -414,6 +425,13 @@ function potFactory(): Pot {
   return new Pot();
 }
 
+function prevFactory(b: ArgBundle): Prev1to1 {
+  const type = b.positional[0];
+  if (type === undefined || type === "Mover") return new Prev1to1();
+  if (type !== "MoverLastTurn") throw new Error("factory batch6: expected PrevType for prev");
+  throw new Error("factory not yet wired: prev MoverLastTurn");
+}
+
 function priorityFactory(b: ArgBundle): Priority {
   const moves = flatten(b.positional).filter(isMovesFunction);
   if (moves.length === 2 && !Array.isArray(b.positional[0])) return Priority.fromTwo(moves[0]!, moves[1]!, thenArg(b));
@@ -422,7 +440,7 @@ function priorityFactory(b: ArgBundle): Priority {
 
 function promoteFactory(b: ArgBundle): Promote {
   const piece = b.positional.find(isPieceLike);
-  if (!piece) throw new Error("factory not yet wired: promote");
+  if (!piece) throw new Error("factory batch6: expected piece for promote");
   return new Promote(
     firstOf<IntFunction>(b, isIntFunction) ?? iteratorTo(),
     piece.getNames() ?? (piece.getName() ? [piece.getName()!] : null),
@@ -444,9 +462,9 @@ function proposeFactory(b: ArgBundle): Propose {
 
 function pushFactory(b: ArgBundle): Push {
   const from = findInstance(b, From1to1);
-  const direction = firstOf<DirectionsFunction>(b, isDirectionsFunction);
-  if (!direction) throw new Error("factory not yet wired: push");
-  return new Push(from?.locFn() ?? iteratorFrom(), direction, thenArg(b));
+  const direction = firstDirectionFunction(b);
+  if (!direction) throw new Error("factory batch6: expected direction for push");
+  return new Push(from?.locFn() ?? iteratorTo(), direction, thenArg(b));
 }
 
 function quadhexFactory(b: ArgBundle): Quadhex {
@@ -455,12 +473,6 @@ function quadhexFactory(b: ArgBundle): Quadhex {
 
 function randomFactory(b: ArgBundle): Random {
   return Random.fromNum(requiredMoves(b.positional[0], "random moves"), requiredIntFn(b.named.get("num"), "random num"));
-}
-
-function deferred(keyword: string): () => never {
-  return () => {
-    throw new Error(`factory not yet wired: ${keyword}`);
-  };
 }
 
 function flatten(values: readonly unknown[]): unknown[] {
@@ -603,6 +615,34 @@ function firstStringArrayAfterFirst(b: ArgBundle): string[] | null {
   return b.positional.slice(1).find((v): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string")) ?? null;
 }
 
+function firstPlaceCountArray(b: ArgBundle): PlaceCount[] | null {
+  for (const value of b.positional) {
+    const counts = normalizePlaceCountArray(value);
+    if (counts) return counts;
+  }
+  return null;
+}
+
+function normalizePlaceCountArray(value: unknown): PlaceCount[] | null {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const counts = value.map(normalizePlaceCount);
+  return counts.every((count): count is PlaceCount => count !== null) ? counts : null;
+}
+
+function normalizePlaceCount(value: unknown): PlaceCount | null {
+  if (!isObject(value)) return null;
+  const item = value.item;
+  const count = value.count;
+  if (typeof item === "function" && typeof count === "function") return value as PlaceCount;
+  if (typeof item === "string" && isIntFunction(count)) {
+    return {
+      item: () => item,
+      count: () => count,
+    };
+  }
+  return null;
+}
+
 function firstNumberArray(b: ArgBundle): unknown {
   return b.positional.find((v) => Array.isArray(v) && flatten(v).every((x) => typeof x === "number" || isIntFunction(x)));
 }
@@ -677,6 +717,19 @@ function adjacentDirections(): DirectionsFunction {
   return { eval: () => ["Adjacent"] };
 }
 
+function firstDirectionFunction(b: ArgBundle): DirectionsFunction | null {
+  return firstOf<DirectionsFunction>(b, isDirectionsFunction) ?? directionFunction(firstDirectionName(b));
+}
+
+function directionFunction(name: string | null): DirectionsFunction | null {
+  return name === null ? null : { eval: () => [name] };
+}
+
+function firstDirectionName(b: ArgBundle): string | null {
+  return flatten(b.positional).find((value): value is string =>
+    typeof value === "string" && DIRECTION_NAMES.has(value)) ?? null;
+}
+
 function toPoints(value: unknown): Pt[] {
   if (!Array.isArray(value)) return [];
   if (value.every((v) => Array.isArray(v) && v.length >= 2)) {
@@ -732,6 +785,16 @@ function isSiteType(value: unknown): value is string {
 function isRoleType(value: string): boolean {
   return ["Mover", "Next", "Prev", "All", "Each", "Shared", "Team", "Neutral"].includes(value) || /^P\d+$/.test(value);
 }
+
+const DIRECTION_NAMES = new Set([
+  "All", "Angled", "Adjacent", "Axial", "Orthogonal", "Diagonal", "OffDiagonal",
+  "SameLayer", "Upward", "Downward", "Rotational", "Base", "Support",
+  "N", "E", "S", "W", "NE", "SE", "NW", "SW",
+  "NNW", "WNW", "WSW", "SSW", "SSE", "ESE", "ENE", "NNE",
+  "CW", "CCW", "In", "Out",
+  "U", "UN", "UNE", "UE", "USE", "US", "USW", "UW", "UNW",
+  "D", "DN", "DNE", "DE", "DSE", "DS", "DSW", "DW", "DNW",
+]);
 
 function isMovesFunction(value: unknown): value is MovesFunction {
   return isObject(value) && typeof value.eval === "function" && !isIntFunction(value) && !isRegionFunction(value) && !isGraphFunction(value);

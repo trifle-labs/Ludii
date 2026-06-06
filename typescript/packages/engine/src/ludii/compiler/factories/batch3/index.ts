@@ -27,6 +27,17 @@ import { constructHex } from "../../../../ludemes/game/functions/graph/generator
 import { Hints } from "../../../../ludemes/game/equipment/other/Hints.js";
 import { Hole } from "../../../../ludemes/game/functions/graph/operators/Hole.js";
 import { Hop } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Hop.js";
+import {
+  FloatAbs1to1,
+  FloatAdd1to1,
+  FloatDiv1to1,
+  FloatExp1to1,
+  FloatMax1to1,
+  FloatMin1to1,
+  FloatMul1to1,
+  FloatPow1to1,
+  FloatSub1to1,
+} from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
 import { Difference1to1 } from "../../../../ludemes/game/functions/intArray/math/Difference1to1.js";
 import { If1to1 as IntArrayIf1to1 } from "../../../../ludemes/game/functions/intArray/math/If1to1.js";
 import { Intersection1to1 } from "../../../../ludemes/game/functions/intArray/math/Intersection1to1.js";
@@ -69,15 +80,45 @@ export function registerBatch3(registry: LudemeRegistry): void {
 
   registry.registerLudeme("exact:exact", (b) => new Exact(asIntFunction(b.positional[0])));
 
-  registry.registerLudeme("exp:exp", notWired("exp"));
-  registry.registerLudeme("floats.math.-:-", notWired("-"));
-  registry.registerLudeme("floats.math.*:*", notWired("*"));
-  registry.registerLudeme("floats.math./:/", notWired("/"));
-  registry.registerLudeme("floats.math.^:^", notWired("^"));
-  registry.registerLudeme("floats.math.+:+", notWired("+"));
-  registry.registerLudeme("floats.math.abs:abs", notWired("abs"));
-  registry.registerLudeme("floats.math.max:max", notWired("max"));
-  registry.registerLudeme("floats.math.min:min", notWired("min"));
+  registry.registerLudeme("exp:exp", (b) => new FloatExp1to1(requireFloatArg(b, 0)));
+  registry.registerLudeme("floats.math.-:-", (b) => {
+    const args = floatArgs(b);
+    if (args.length !== 2) throw new Error("factory -: expected two float arguments");
+    return new FloatSub1to1(args[0]!, args[1]!);
+  });
+  registry.registerLudeme("floats.math.*:*", (b) => {
+    const args = floatArgs(b);
+    if (args.length === 2) return new FloatMul1to1(args[0]!, args[1]!);
+    return new FloatMul1to1(args);
+  });
+  registry.registerLudeme("floats.math./:/", (b) => {
+    const args = floatArgs(b);
+    if (args.length !== 2) throw new Error("factory /: expected two float arguments");
+    return new FloatDiv1to1(args[0]!, args[1]!);
+  });
+  registry.registerLudeme("floats.math.^:^", (b) => {
+    const args = floatArgs(b);
+    if (args.length !== 2) throw new Error("factory ^: expected two float arguments");
+    return new FloatPow1to1(args[0]!, args[1]!);
+  });
+  registry.registerLudeme("floats.math.+:+", (b) => {
+    const args = floatArgs(b);
+    if (args.length === 2) return new FloatAdd1to1(args[0]!, args[1]!);
+    return new FloatAdd1to1(args);
+  });
+  registry.registerLudeme("floats.math.abs:abs", (b) => new FloatAbs1to1(requireFloatArg(b, 0)));
+  registry.registerLudeme("floats.math.max:max", (b) => {
+    const args = floatArgs(b);
+    if (args.length === 0) throw new Error("factory max: expected at least one float argument");
+    if (args.length === 2) return new FloatMax1to1(args[0]!, args[1]!);
+    return new FloatMax1to1(args);
+  });
+  registry.registerLudeme("floats.math.min:min", (b) => {
+    const args = floatArgs(b);
+    if (args.length === 0) throw new Error("factory min: expected at least one float argument");
+    if (args.length === 2) return new FloatMin1to1(args[0]!, args[1]!);
+    return new FloatMin1to1(args);
+  });
 
   registry.registerLudeme("expand:expand", (b) => {
     const origin = optionalNamedInt(b, "origin");
@@ -110,7 +151,7 @@ export function registerBatch3(registry: LudemeRegistry): void {
       if (isRoleType(value)) owner = value;
       else trackName = value;
     }
-    if (!moves) throw new Error("factory not yet wired: firstMoveOnTrack");
+    if (!moves) throw new Error("factory firstMoveOnTrack: missing moves");
     return new FirstMoveOnTrack(trackName, owner, moves, then);
   });
 
@@ -125,7 +166,7 @@ export function registerBatch3(registry: LudemeRegistry): void {
   registry.registerLudeme("forall:forall", (b) => {
     const type = requireString(b, 0) as PuzzleElementType;
     const constraint = findFirst(b, isBooleanFunction);
-    if (!constraint) throw new Error("factory not yet wired: forAll");
+    if (!constraint) throw new Error("factory forAll: missing constraint");
     return new ForAll(type, constraint);
   });
 
@@ -137,14 +178,14 @@ export function registerBatch3(registry: LudemeRegistry): void {
     const name = values.find((v): v is string => typeof v === "string" && v !== "All") ?? null;
     if (values.some((v) => v === "All")) return new ForgetValueAll(name, then);
     const value = values.find(isIntLike);
-    if (value === undefined) throw new Error("factory not yet wired: forget");
+    if (value === undefined) throw new Error("factory forget: missing value");
     return new ForgetValue(name, asIntFunction(value), then);
   });
 
   registry.registerLudeme("fromto:fromto", (b) => {
     const from = findFirst(b, (v): v is From1to1 => v instanceof From1to1);
     const to = findFirst(b, (v): v is To1to1 => v instanceof To1to1);
-    if (!from || !to) throw new Error("factory not yet wired: fromTo");
+    if (!from || !to) throw new Error("factory fromTo: missing from or to");
     return new FromTo({
       locFrom: from.locFn(),
       levelFrom: from.levelFn(),
@@ -163,18 +204,18 @@ export function registerBatch3(registry: LudemeRegistry): void {
   });
 
   registry.registerLudeme("game:game", (b, env) => {
-    if (b.positional.length === 1) throw new Error("factory not yet wired: game");
+    if (b.positional.length === 1) throw new Error("factory game: missing equipment and rules");
     const name = requireString(b, 0);
     const players = findFirstValue(b, isPlayerCount) ?? env.numPlayers;
     const equipment = findFirst(b, (v): v is Equipment1to1 => v instanceof Equipment1to1);
     const rules = findFirst(b, (v): v is Rules1to1 => v instanceof Rules1to1);
-    if (!equipment || !rules) throw new Error("factory not yet wired: game");
+    if (!equipment || !rules) throw new Error("factory game: missing equipment or rules");
     return new Game1to1(name, players, equipment, rules, [], false, false);
   });
 
   registry.registerLudeme("games:games", (b) => {
     const games = flatten(b.positional).filter((v): v is Subgame1to1 => v instanceof Subgame1to1);
-    if (games.length === 0) throw new Error("factory not yet wired: games");
+    if (games.length === 0) throw new Error("factory games: missing subgames");
     return new Games1to1(games);
   });
 
@@ -196,7 +237,7 @@ export function registerBatch3(registry: LudemeRegistry): void {
     if (typeof args[0] === "number") {
       return constructHex(null, args[0], optionalNumber(args[1]));
     }
-    throw new Error("factory not yet wired: hex");
+    throw new Error("factory hex: expected shape or dimension");
   });
 
   registry.registerLudeme("hints:hints", (b) => {
@@ -209,7 +250,7 @@ export function registerBatch3(registry: LudemeRegistry): void {
   registry.registerLudeme("hole:hole", (b) => {
     const graph = findFirst(b, isGraphFunction);
     const polygon = b.positional.find(isPointList);
-    if (!graph || !polygon) throw new Error("factory not yet wired: hole");
+    if (!graph || !polygon) throw new Error("factory hole: missing graph or polygon");
     return new Hole(graph, polygon);
   });
 
@@ -217,7 +258,7 @@ export function registerBatch3(registry: LudemeRegistry): void {
     const from = findFirst(b, (v): v is From1to1 => v instanceof From1to1);
     const to = findFirst(b, (v): v is To1to1 => v instanceof To1to1);
     const between = findFirst(b, (v): v is Between1to1 => v instanceof Between1to1);
-    if (!to) throw new Error("factory not yet wired: hop");
+    if (!to) throw new Error("factory hop: missing to");
 
     return new Hop({
       startLocationFn: from?.locFn() ?? evalFromFunction(),
@@ -261,23 +302,23 @@ export function registerBatch3(registry: LudemeRegistry): void {
 function makeStartForEach(b: ArgBundle): unknown {
   const first = b.positional[0];
   const startRule = findLast(b, isStartRule);
-  if (!startRule) throw new Error("factory not yet wired: forEach");
+  if (!startRule) throw new Error("factory forEach: missing start rule");
 
   if (first === "Player") return new StartForEachPlayer(startRule);
   if (first === "Team") return new StartForEachTeam(startRule);
   if (first === "Value") {
     const min = optionalNamedInt(b, "min");
     const max = optionalNamedInt(b, "max");
-    if (!min || !max) throw new Error("factory not yet wired: forEach");
+    if (!min || !max) throw new Error("factory forEach Value: missing min or max");
     return new StartForEachValue(min, max, startRule);
   }
   if (first === "Site") {
     const region = findFirst(b, isRegionFunction);
-    if (!region) throw new Error("factory not yet wired: forEach");
+    if (!region) throw new Error("factory forEach Site: missing region");
     return new StartForEachSite(region, optionalNamedBooleanFunction(b, "if") ?? null, startRule);
   }
   if (isIntArrayFunction(first)) return new StartForEachPlayer(first, startRule);
-  throw new Error("factory not yet wired: forEach");
+  throw new Error("factory forEach: unsupported iteration type");
 }
 
 function notWired(keyword: string): () => never {
@@ -350,6 +391,14 @@ function asFloatFunction(value: unknown): FloatFunction {
   if (typeof value === "number") return new FloatConstant(value);
   if (typeof (value as FloatFunction | null)?.eval === "function") return value as FloatFunction;
   throw new Error("factory: expected float function");
+}
+
+function requireFloatArg(b: ArgBundle, index: number): FloatFunction {
+  return asFloatFunction(flatten(b.positional)[index]);
+}
+
+function floatArgs(b: ArgBundle): FloatFunction[] {
+  return flatten(b.positional).map(asFloatFunction);
 }
 
 function asRange(value: unknown): RangeFunction1to1 {
@@ -505,14 +554,14 @@ function toEffectAsMoves(to: To1to1): MovesFunction | null {
   const effect = to.effectFn();
   if (effect === null) return null;
   if (isMovesFunction(effect)) return effect;
-  throw new Error("factory not yet wired: hop");
+  throw new Error("factory hop: to effect is not a moves function");
 }
 
 function betweenEffectAsMoves(between: Between1to1 | undefined): MovesFunction | null {
   const effect = between?.effectFn() ?? null;
   if (effect === null) return null;
   if (isMovesFunction(effect)) return effect;
-  throw new Error("factory not yet wired: hop");
+  throw new Error("factory hop: between effect is not a moves function");
 }
 
 function isPointList(value: unknown): value is ReadonlyArray<readonly [number, number]> {

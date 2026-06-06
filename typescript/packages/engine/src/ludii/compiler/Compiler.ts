@@ -184,6 +184,7 @@ export class Compiler {
     if (arg.name !== null) {
       const namedNode = namedNodes.get(arg.name.toLowerCase());
       if (!namedNode && isGrammarListArg(arg)) {
+        if (!arg.optional) return null;
         const named = new Map(outNamed);
         named.set(arg.name.toLowerCase(), []);
         return { posIndex, positional: [...outPositional], named };
@@ -219,13 +220,13 @@ export class Compiler {
         if (isList(node) && node.delimiter === "curly") {
           return { matched: true, value: node.items.map((item) => this.compileActual(item, listElementSymbol(arg), env)) };
         }
-        return { matched: true, value: [this.compileActual(node, listElementSymbol(arg), env)] };
+        return { matched: false };
       }
       if (isGrammarListArg(arg)) {
         if (isList(node) && node.delimiter === "curly") {
           return { matched: true, value: node.items.map((item) => this.compileActual(item, listElementSymbol(arg), env)) };
         }
-        return { matched: true, value: [this.compileActual(node, listElementSymbol(arg), env)] };
+        return { matched: false };
       }
       let firstError: unknown;
       for (const symbol of alternativeSymbols(arg.symbol)) {
@@ -261,7 +262,7 @@ export class Compiler {
         if (clause.keyword !== null) {
           if (sameKeyword(clause.keyword, keyword)) out.push({ symbol, clause, clauseIndex });
         } else if (clause.alias !== null) {
-          visit(clause.alias);
+          visit(stripSymbol(clause.alias));
         }
       });
     };
@@ -284,6 +285,9 @@ export class Compiler {
       if (isIdent(node)) {
         const n = Number(node.name);
         if (Number.isFinite(n)) return { matched: true, value: n };
+        if (symbol === "int" && node.name.toLowerCase() === "number") {
+          return { matched: true, value: { eval: (ctx: { _evalValue?: number }) => ctx._evalValue ?? 0 } };
+        }
       }
       return { matched: false };
     }
@@ -311,7 +315,7 @@ export class Compiler {
       if (!rule) return false;
       for (const clause of rule.clauses) {
         if (clause.keyword !== null) continue;
-        const alias = clause.alias;
+        const alias = clause.alias ? stripSymbol(clause.alias) : null;
         if (!alias) continue;
         if (sameKeyword(alias, ident)) return true;
         if (this.grammar.has(alias) && visit(alias)) return true;

@@ -34,6 +34,7 @@ import { Select } from "../../../../ludemes/game/rules/play/moves/nonDecision/ef
 import { Seq1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/Seq1to1.js";
 import { Shoot } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Shoot.js";
 import { Shoot1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Shoot1to1.js";
+import { Satisfy1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/Satisfy1to1.js";
 import { FloatSin1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
 import { Site1to1 } from "../../../../ludemes/game/functions/ints1to1/iterator/Iterator1to1.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
@@ -54,7 +55,7 @@ import type {
   RoleType,
 } from "../../../../ludemes/base.js";
 import type { Phase } from "../../../../ludemes/game/rules/phase/Phase.js";
-import type { End } from "../../../../ludemes/game/rules/end/End.js";
+import { End } from "../../../../ludemes/game/rules/end/End.js";
 import type { Play1to1 } from "../../../../ludemes/game/rules/play/Play1to1.js";
 import type { ArgBundle } from "../../ArgBundle.js";
 import type { LudemeRegistry } from "../../LudemeRegistry.js";
@@ -72,10 +73,10 @@ export function registerBatch7(registry: LudemeRegistry): void {
     if (value !== LastRegionType.Between && value !== "Between") throw notWired("last");
     return Last.construct(LastRegionType.Between);
   });
-  registry.registerLudeme("region.math.difference:difference", () => { throw notWired("difference"); });
+  registry.registerLudeme("region.math.difference:difference", regionDifferenceFactory);
   registry.registerLudeme("region.math.if:if", () => { throw notWired("if"); });
-  registry.registerLudeme("region.math.intersection:intersection", () => { throw notWired("intersection"); });
-  registry.registerLudeme("region.math.union:union", () => { throw notWired("union"); });
+  registry.registerLudeme("region.math.intersection:intersection", regionIntersectionFactory);
+  registry.registerLudeme("region.math.union:union", regionUnionFactory);
   registry.registerLudeme("regions:regions", regionsFactory);
   registry.registerLudeme("regionSite:regionSite", () => { throw notWired("regionSite"); });
   registry.registerLudeme("regular:regular", regularFactory);
@@ -93,7 +94,7 @@ export function registerBatch7(registry: LudemeRegistry): void {
     optionalSiteType(b),
   ));
   registry.registerLudeme("rules.rules:rules", rulesFactory);
-  registry.registerLudeme("satisfy:satisfy", () => { throw notWired("satisfy"); });
+  registry.registerLudeme("satisfy:satisfy", () => new Satisfy1to1());
   registry.registerLudeme("scale:scale", scaleFactory);
   registry.registerLudeme("select:select", selectFactory);
   registry.registerLudeme("seq:seq", (b) => new Seq1to1(flatten(b.positional).filter(isMovesFunction)));
@@ -167,6 +168,35 @@ function regionsFactory(b: ArgBundle): Regions {
   );
 }
 
+function regionDifferenceFactory(b: ArgBundle): RegionFunction {
+  const source = toRegion(b.positional[0]);
+  const remove = toRegion(b.positional[1]);
+  return {
+    eval: (ctx) => {
+      const removed = new Set(remove.eval(ctx));
+      return source.eval(ctx).filter((site) => !removed.has(site));
+    },
+  };
+}
+
+function regionIntersectionFactory(b: ArgBundle): RegionFunction {
+  const a = toRegion(b.positional[0]);
+  const c = toRegion(b.positional[1]);
+  return {
+    eval: (ctx) => {
+      const keep = new Set(c.eval(ctx));
+      return a.eval(ctx).filter((site) => keep.has(site));
+    },
+  };
+}
+
+function regionUnionFactory(b: ArgBundle): RegionFunction {
+  const regions = flatten(b.positional).map(toRegion);
+  return {
+    eval: (ctx) => [...new Set(regions.flatMap((region) => region.eval(ctx)))],
+  };
+}
+
 function regularFactory(b: ArgBundle): Regular {
   const values = flatten(b.positional);
   const star = values.includes("Star") ? "Star" : undefined;
@@ -222,11 +252,13 @@ function rotationFactory(b: ArgBundle): Rotation {
 function rulesFactory(b: ArgBundle): Rules1to1 {
   const play = flatten(b.positional).find(isPlay) ?? null;
   const end = flatten(b.positional).find(isEnd) ?? null;
-  const phases = flatten(b.positional).filter(isPhase);
+  const phases = [
+    ...flatten(b.positional).filter(isPhase),
+    ...flatten([b.named.get("phases")]).filter(isPhase),
+  ];
   if (!end) throw new Error("factory rules: missing end");
   if (phases.length > 0) {
-    if (!play) throw new Error("factory rules: phases form requires shared play in this TS port");
-    return new Rules1to1(play, end, phases);
+    return new Rules1to1(play ?? phases[0]!.play, end, phases);
   }
   if (!play) throw new Error("factory rules: missing play");
   return new Rules1to1(play, end);
@@ -522,7 +554,7 @@ function isPlay(value: unknown): value is Play1to1 {
 }
 
 function isEnd(value: unknown): value is End {
-  return value !== null && typeof value === "object" && Array.isArray((value as { endRules?: unknown }).endRules);
+  return value instanceof End;
 }
 
 function isPhase(value: unknown): value is Phase {

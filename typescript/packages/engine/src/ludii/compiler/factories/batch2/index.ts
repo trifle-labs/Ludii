@@ -12,6 +12,7 @@ import type {
 } from "../../../../ludemes/base.js";
 import { BooleanConstant } from "../../../../ludemes/game/functions/booleans/BooleanConstant.js";
 import { IsSolved } from "../../../../ludemes/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.js";
+import { IsEnemy1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsEnemy1to1.js";
 import { DimAbs1to1 } from "../../../../ludemes/game/functions/dim/math/Abs1to1.js";
 import { DimAdd1to1 } from "../../../../ludemes/game/functions/dim/math/Add1to1.js";
 import { DimDiv1to1 } from "../../../../ludemes/game/functions/dim/math/Div1to1.js";
@@ -21,6 +22,7 @@ import { DimMul1to1 } from "../../../../ludemes/game/functions/dim/math/Mul1to1.
 import { DimPow1to1 } from "../../../../ludemes/game/functions/dim/math/Pow1to1.js";
 import { DimSub1to1 } from "../../../../ludemes/game/functions/dim/math/Sub1to1.js";
 import { DimConstant1to1, type DimFunction1to1 } from "../../../../ludemes/game/functions/dim/DimConstant1to1.js";
+import { Who1to1 } from "../../../../ludemes/game/functions/ints1to1/board/Board1to1.js";
 import { Difference } from "../../../../ludemes/game/functions/directions/Difference.js";
 import { Directions1to1Static } from "../../../../ludemes/game/functions/directions/Directions1to1.js";
 import { If as DirectionIf } from "../../../../ludemes/game/functions/directions/If.js";
@@ -47,10 +49,12 @@ import { Result } from "../../../../ludemes/game/rules/end/Result.js";
 import { Score } from "../../../../ludemes/game/util/end/Score.js";
 import { Add } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Add.js";
 import { Deal } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Deal.js";
+import { Directional } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Directional.js";
 import { Do } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/Do.js";
 import { Enclose } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Enclose.js";
 import { Remove } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Remove.js";
 import { Step } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Step.js";
+import { Then } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
 import { SetHidden } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.js";
 import { SetNextPlayer } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/nextPlayer/SetNextPlayer.js";
 import { SetScore1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetScore1to1.js";
@@ -96,7 +100,7 @@ export function registerBatch2(registry: LudemeRegistry): void {
   registry.registerLudeme("dim.math.abs:abs", (b) => new DimAbs1to1(requireDim(b, 0)));
   registry.registerLudeme("dim.math.max:max", (b) => new DimMax1to1(requireDim(b, 0), requireDim(b, 1)));
   registry.registerLudeme("dim.math.min:min", (b) => new DimMin1to1(requireDim(b, 0), requireDim(b, 1)));
-  registry.registerLudeme("directional:directional", () => deferred("directional"));
+  registry.registerLudeme("directional:directional", makeDirectional);
   registry.registerLudeme("directions:directions", makeDirections);
   registry.registerLudeme("directions.difference:difference", (b) =>
     new Difference(requireDirections(b, 0), requireDirections(b, 1)));
@@ -202,11 +206,11 @@ function makeDomino(b: ArgBundle): Domino {
 function makeAdd(b: ArgBundle): Add {
   if (b.named.has("count") || b.named.has("stack") || thenMoves(b)) deferred("add");
   const piece = firstOf(b, isPieceArg);
-  if (piece) deferred("add piece");
   const to = firstOf(b, isTo);
-  const region = to?.regionFn();
-  if (!region) deferred("add");
-  return new Add(region);
+  const region = to?.regionFn() ?? singleSiteRegion(to?.locFn() ?? lastTo());
+  const pieceFn = piece === null ? null : addPieceFn(piece);
+  if (piece !== null && pieceFn === null) deferred("add piece");
+  return new Add(region, pieceFn);
 }
 
 function makeRemove(b: ArgBundle): Remove {
@@ -254,8 +258,29 @@ function makeSetPlayerOrSite(b: ArgBundle, kind: string): MovesFunction {
   const player = firstIntFunctionAfter(b, 0);
   const role = firstRoleAfter(b, 0);
   if (kind === "Value") return new SetValuePlayer(player, role, value, thenMoves(b));
-  if (thenMoves(b)) deferred("set Score");
   return new SetScore1to1(player ?? roleToIntFunction(role ?? "Mover"), value);
+}
+
+function makeDirectional(b: ArgBundle): Directional {
+  const from = firstOf(b, isFrom);
+  const to = firstOf(b, isTo);
+  const toFn = lastTo();
+  const effect = firstMovesFunctionAfter(b, 0) ?? new Remove({
+    locationFn: toFn,
+    regionFn: null,
+    countFn: null,
+    levelFn: null,
+    type: to?.siteType() ?? firstSiteType(b),
+    when: null,
+    then: null,
+  });
+  return new Directional({
+    startLocationFn: from?.locFn() ?? lastTo(),
+    targetRule: to?.condFn() ?? new IsEnemy1to1(new Who1to1(toFn)),
+    effect,
+    dirnChoice: firstDirectionsFunction(b) ?? directionFromName(firstDirectionName(b)),
+    then: null,
+  });
 }
 
 function makeSetRotation(b: ArgBundle): SetRotation {
@@ -306,12 +331,20 @@ function makeStep(b: ArgBundle): Step {
 function makeEnclose(b: ArgBundle): Enclose {
   const from = firstOf(b, isFrom);
   const between = firstBetweenLike(b);
-  const effect = between?.effect ?? firstMovesFunctionAfter(b, 0);
-  if (!effect) deferred("enclose");
+  const betweenFn = betweenInt();
+  const effect = between?.effect ?? firstMovesFunctionAfter(b, 0) ?? new Remove({
+    locationFn: betweenFn,
+    regionFn: null,
+    countFn: null,
+    levelFn: null,
+    type: firstSiteType(b),
+    when: null,
+    then: null,
+  });
   return new Enclose({
     startFn: from?.locFn() ?? lastTo(),
     dirnName: firstDirectionName(b) ?? "Adjacent",
-    targetRule: between?.cond ?? trueBool(),
+    targetRule: between?.cond ?? new IsEnemy1to1(new Who1to1(betweenFn)),
     numEmptySitesInGroup: intNamed(b, "numexception") ?? new IntConstant(0),
     effect,
     type: firstSiteType(b),
@@ -538,7 +571,7 @@ function requireMovesFunction(b: ArgBundle, index: number): MovesFunction {
 }
 
 function thenMoves(b: ArgBundle): MovesFunction | null {
-  return flatten(b.positional).find(isMovesFunction) ?? null;
+  return optionalThen(b)?.moves() ?? null;
 }
 
 function firstMovesFunctionAfter(b: ArgBundle, start: number): MovesFunction | null {
@@ -561,6 +594,10 @@ function firstDirectionsFunction(b: ArgBundle): DirectionsFunction | null {
 
 function firstDirectionName(b: ArgBundle): string | null {
   return flatten(b.positional).find((v): v is string => typeof v === "string" && ABSOLUTE_DIRECTIONS.has(v)) ?? null;
+}
+
+function directionFromName(name: string | null): DirectionsFunction | null {
+  return name === null ? null : new Directions1to1Static([name]);
 }
 
 function requireGraphFunction(b: ArgBundle, index: number): GraphFunction {
@@ -615,6 +652,47 @@ function firstBetweenLike(b: ArgBundle): { cond?: BooleanFunction; effect?: Move
     typeof value === "object" && value !== null && ("cond" in value || "effect" in value)) ?? null;
 }
 
+function optionalThen(b: ArgBundle): Then | null {
+  return flatten([...b.positional, ...b.named.values()]).find((v): v is Then => v instanceof Then) ?? null;
+}
+
+function singleSiteRegion(siteFn: IntFunction): RegionFunction {
+  return { eval: (ctx) => [siteFn.eval(ctx)] };
+}
+
+function betweenInt(): IntFunction {
+  return { eval: (ctx) => ctx._evalBetween };
+}
+
+function addPieceFn(piece: Piece1to1): { what: IntFunction; owner: number; state?: IntFunction } | null {
+  const component = piece.component();
+  if (component !== null) return { what: component, owner: -1, state: piece.state() ?? undefined };
+
+  const name = piece.getName();
+  if (name === null || piece.components() !== null || piece.getNames() !== null) return null;
+
+  const owner = ownerSuffix(name);
+  const baseName = name.replace(/\d+$/, "").toLowerCase();
+  return {
+    what: {
+      eval: (ctx) => {
+        const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ name: string; owner: number; index: number }> } })
+          .equipment?.pieces ?? [];
+        const exact = pieces.find((p) => `${p.name}${p.owner}`.toLowerCase() === name.toLowerCase());
+        const byBase = pieces.find((p) => p.name.toLowerCase() === baseName && (owner === null || p.owner === owner));
+        return exact?.index ?? byBase?.index ?? (owner ?? ctx.state.mover);
+      },
+    },
+    owner: owner ?? -1,
+    state: piece.state() ?? undefined,
+  };
+}
+
+function ownerSuffix(name: string): number | null {
+  const match = name.match(/\d+$/);
+  return match ? Number(match[0]) : null;
+}
+
 function isSiteType(value: unknown): value is SiteType {
   return value === "Cell" || value === "Edge" || value === "Vertex";
 }
@@ -648,7 +726,7 @@ function isRegionFunction(value: unknown): value is RegionFunction {
 }
 
 function isMovesFunction(value: unknown): value is MovesFunction {
-  return hasEval(value) && (isKnownMove(value) || (!(value instanceof IntConstant) && !(value instanceof Face) && !(value instanceof BooleanConstant) && !(value instanceof IsSolved) && !isDirectionsFunction(value)));
+  return hasEval(value) && !(value instanceof Then) && (isKnownMove(value) || (!(value instanceof IntConstant) && !(value instanceof Face) && !(value instanceof BooleanConstant) && !(value instanceof IsSolved) && !isDirectionsFunction(value)));
 }
 
 function isDirectionsFunction(value: unknown): value is DirectionsFunction {
@@ -686,6 +764,7 @@ function hasEval(value: unknown): boolean {
 function isKnownMove(value: unknown): value is MovesFunction {
   return value instanceof Add ||
     value instanceof Deal ||
+    value instanceof Directional ||
     value instanceof Do ||
     value instanceof Enclose ||
     value instanceof Remove ||

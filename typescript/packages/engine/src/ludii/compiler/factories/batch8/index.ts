@@ -37,6 +37,7 @@ import { SitesFrom } from "../../../../ludemes/game/functions/region/sites/moves
 import { SitesTo } from "../../../../ludemes/game/functions/region/sites/moves/SitesTo.js";
 import { SitesGroup } from "../../../../ludemes/game/functions/region/sites/group/SitesGroup.js";
 import { SitesHiddenCount } from "../../../../ludemes/game/functions/region/sites/hidden/SitesHiddenCount.js";
+import { SitesHidden1to1 } from "../../../../ludemes/game/functions/region/sites/hidden/SitesHidden1to1.js";
 import { SitesHiddenRotation } from "../../../../ludemes/game/functions/region/sites/hidden/SitesHiddenRotation.js";
 import { SitesHiddenState } from "../../../../ludemes/game/functions/region/sites/hidden/SitesHiddenState.js";
 import { SitesHiddenValue } from "../../../../ludemes/game/functions/region/sites/hidden/SitesHiddenValue.js";
@@ -68,6 +69,7 @@ import { SitesTop } from "../../../../ludemes/game/functions/region/sites/simple
 import { SitesColumn } from "../../../../ludemes/game/functions/region/sites/index/SitesColumn.js";
 import { SitesCell } from "../../../../ludemes/game/functions/region/sites/index/SitesCell.js";
 import { SitesEdge } from "../../../../ludemes/game/functions/region/sites/index/SitesEdge.js";
+import { SitesAngled1to1, SitesAxial1to1, SitesHorizontal1to1, SitesSlash1to1, SitesSlosh1to1, SitesVertical1to1 } from "../../../../ludemes/game/functions/region/sites/edges/SitesEdge1to1.js";
 import { SitesEmpty } from "../../../../ludemes/game/functions/region/sites/index/SitesEmpty.js";
 import { SitesLayer } from "../../../../ludemes/game/functions/region/sites/index/SitesLayer.js";
 import { SitesRow } from "../../../../ludemes/game/functions/region/sites/index/SitesRow.js";
@@ -82,6 +84,14 @@ import { Split1to1 } from "../../../../ludemes/game/rules/start/split/Split.js";
 import type { SplitType } from "../../../../ludemes/game/rules/start/split/SplitType.js";
 import { Start1to1 } from "../../../../ludemes/game/rules/start/Start.js";
 import type { StartRule } from "../../../../ludemes/game/rules/start/StartRule.js";
+import { SetHidden1to1, type HiddenData } from "../../../../ludemes/game/rules/start/set/hidden/SetHidden.js";
+import { SetAmount1to1 } from "../../../../ludemes/game/rules/start/set/player/SetAmount.js";
+import { SetScore1to1 } from "../../../../ludemes/game/rules/start/set/player/SetScore.js";
+import { SetTeam1to1 } from "../../../../ludemes/game/rules/start/set/players/SetTeam.js";
+import { SetRememberValue1to1 } from "../../../../ludemes/game/rules/start/set/remember/SetRememberValue.js";
+import { SetCost1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetCost.js";
+import { SetCount1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetCount.js";
+import { SetPhase1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetPhase.js";
 import { SetSite1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetSite.js";
 
 export function registerBatch8(registry: LudemeRegistry): void {
@@ -212,7 +222,7 @@ function makeSites(b: ArgBundle): RegionFunction {
 }
 
 function makeAmbiguousSites(b: ArgBundle, first: string): RegionFunction {
-  if (isSitesEdgeType(first)) throw deferred(`sites ${first}`);
+  if (isSitesEdgeType(first)) return edgeSites(first);
   if (isSitesSimpleType(first)) return simpleSites(first, siteTypeAt(b));
   if (isSitesIndexType(first)) return indexSites(first, siteTypeAt(b), intOrNull(positionalAfterFirstString(b)[0]));
   if (isSiteType(first)) {
@@ -281,7 +291,7 @@ function hiddenSites(b: ArgBundle): RegionFunction {
   const siteType = siteTypeAt(b);
   switch (dataType) {
     case null:
-      throw deferred("sites Hidden");
+      return hiddenAllSites(named(b, "to"));
     case "What": return new SitesHiddenWhat(siteType, who);
     case "Who": return new SitesHiddenWho(siteType, who);
     case "Count": return new SitesHiddenCount(siteType, who);
@@ -413,7 +423,7 @@ function makeSquare(b: ArgBundle): GraphFunction {
 function makeStart(b: ArgBundle): Start1to1 {
   const rules = flatten(b.positional).filter(isStartRule);
   if (rules.length === 0) throw new Error("factory start: missing start rule");
-  return new Start1to1(rules);
+  return new Start1to1(rules as StartRule[]);
 }
 
 function makeDeal(b: ArgBundle): Deal1to1 {
@@ -421,7 +431,29 @@ function makeDeal(b: ArgBundle): Deal1to1 {
 }
 
 function makeStartSet(b: ArgBundle): StartRule {
-  if (stringAt(b, 0) === "Hidden") throw deferred("set Hidden");
+  const kind = stringAt(b, 0);
+  switch (kind) {
+    case "Hidden":
+      return makeSetHidden(b);
+    case "RememberValue":
+      return makeSetRememberValue(b);
+    case "Team":
+      return new SetTeam1to1(requireNumber(b.positional[1]), requireRoleOwnerArray(b.positional[2]));
+    case "Count":
+      return new SetCount1to1(startSetSites(b), requireNumber(b.positional[1]));
+    case "Cost":
+      return new SetCost1to1(startSetSites(b), requireNumber(b.positional[1]));
+    case "Phase":
+      return new SetPhase1to1(startSetSites(b), requireNumber(b.positional[1]));
+    case "Amount":
+      return new SetAmount1to1(roleOwnerOrNull(b.positional[1]), requireLastNumber(b));
+    case "Score": {
+      const role = stringOrNull(b.positional[1]);
+      const score = requireLastNumber(b);
+      if (role === null || role === "Each" || role === "All") return new SetScore1to1(null, [score], true);
+      return new SetScore1to1([requireStaticPlayerId(role, "set Score")], [score], false);
+    }
+  }
   const role = roleOrNull(b.positional[0]);
   if (role === null) throw deferred(`set ${stringAt(b, 0) ?? ""}`.trim());
   const owner = roleToOwner(role);
@@ -429,6 +461,109 @@ function makeStartSet(b: ArgBundle): StartRule {
   const locs = firstNumberArray(b);
   if (typeof loc === "number" || locs) return new SetSite1to1(owner, typeof loc === "number" ? loc : -1, locs ?? null);
   throw deferred("set role sites");
+}
+
+function edgeSites(type: string): RegionFunction {
+  switch (type) {
+    case "Angled": return new SitesAngled1to1();
+    case "Axial": return new SitesAxial1to1();
+    case "Horizontal": return new SitesHorizontal1to1();
+    case "Vertical": return new SitesVertical1to1();
+    case "Slash": return new SitesSlash1to1();
+    case "Slosh": return new SitesSlosh1to1();
+    default: throw deferred(`sites ${type}`);
+  }
+}
+
+function hiddenAllSites(to: unknown): RegionFunction {
+  const { fixedPid, roleStr } = hiddenPlayerArgs(to);
+  return new SitesHidden1to1(fixedPid, roleStr);
+}
+
+function hiddenPlayerArgs(value: unknown): { fixedPid: number; roleStr: string } {
+  if (typeof value === "number" && value >= 1) return { fixedPid: value, roleStr: `p${value}` };
+  if (typeof value === "string") {
+    const roleStr = value.toLowerCase();
+    if (/^p\d+$/.test(roleStr)) return { fixedPid: Number(roleStr.slice(1)), roleStr };
+    return { fixedPid: -1, roleStr };
+  }
+  return { fixedPid: -1, roleStr: "mover" };
+}
+
+function makeSetHidden(b: ArgBundle): SetHidden1to1 {
+  return new SetHidden1to1(
+    hiddenDataArray(b),
+    startSetSites(b, false),
+    numberOrDefault(named(b, "level"), 0),
+    boolValue(named(b, "value"), true),
+    requireStaticPlayerId(requireRoleString(named(b, "to")), "set Hidden"),
+  );
+}
+
+function makeSetRememberValue(b: ArgBundle): SetRememberValue1to1 {
+  const rest = positionalAfterFirstString(b);
+  const name = typeof rest[0] === "string" ? rest[0] : null;
+  const value = name === null ? rest[0] : rest[1];
+  return new SetRememberValue1to1(name, numberArrayFromValue(value), boolValue(named(b, "unique"), false));
+}
+
+function hiddenDataArray(b: ArgBundle): readonly HiddenData[] | null {
+  const values = positionalAfterFirstString(b).filter(isHiddenData);
+  return values.length === 0 ? null : values;
+}
+
+function startSetSites(b: ArgBundle, includeNamedTo = true): number[] {
+  const at = named(b, "at");
+  if (typeof at === "number") return [at];
+  if (includeNamedTo) {
+    const to = named(b, "to");
+    if (to !== undefined && to !== null) return numberArrayFromValue(to);
+  }
+  const region = b.positional.find((v) => v instanceof Region);
+  if (region instanceof Region) return region.sites();
+  const sites = firstNumberArray(b);
+  if (sites) return sites;
+  const loc = b.positional.find((v, i) => i > 0 && typeof v === "number");
+  if (typeof loc === "number") return [loc];
+  throw deferred("set dynamic region");
+}
+
+function numberArrayFromValue(value: unknown): number[] {
+  if (typeof value === "number") return [value];
+  if (value instanceof Region) return value.sites();
+  if (Array.isArray(value)) return value.map((v) => requireNumber(v));
+  throw deferred("set numeric sites");
+}
+
+function requireLastNumber(b: ArgBundle): number {
+  for (let i = b.positional.length - 1; i >= 0; i--) {
+    const value = b.positional[i];
+    if (typeof value === "number") return value;
+  }
+  throw deferred(`set ${stringAt(b, 0) ?? ""}`.trim());
+}
+
+function requireRoleString(value: unknown): string {
+  if (typeof value === "string") return value;
+  throw deferred("set role");
+}
+
+function roleOwnerOrNull(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string") throw deferred("set role");
+  if (value === "All" || value === "Each") return null;
+  return requireStaticPlayerId(value, "set role");
+}
+
+function requireRoleOwnerArray(value: unknown): number[] {
+  if (!Array.isArray(value)) throw deferred("set Team roles");
+  return value.map((role) => requireStaticPlayerId(requireRoleString(role), "set Team"));
+}
+
+function requireStaticPlayerId(role: string, keyword: string): number {
+  if (/^P\d+$/.test(role)) return Number(role.slice(1));
+  if (role === "Neutral" || role === "Shared") return 0;
+  throw deferred(`${keyword} ${role}`);
 }
 
 function named(b: ArgBundle, key: string): unknown {
@@ -711,7 +846,10 @@ function isMovesFunction(value: unknown): value is MovesFunction {
 }
 
 function isStartRule(value: unknown): value is StartRule {
-  return typeof (value as StartRule | null)?.applyToInitialState === "function";
+  return (
+    typeof (value as StartRule | null)?.applyToInitialState === "function" ||
+    typeof (value as { eval?: unknown } | null)?.eval === "function"
+  );
 }
 
 function isThen(value: unknown): value is Then {

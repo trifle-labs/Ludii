@@ -16,16 +16,24 @@ import { IfBool1to1 } from "../../../../ludemes/game/functions/booleans/math1to1
 import { NoMoves } from "../../../../ludemes/game/functions/booleans/no1to1/NoMoves.js";
 import { NoPieces1to1 } from "../../../../ludemes/game/functions/booleans/no1to1/NoPieces.js";
 import { IsFreedom1to1 } from "../../../../ludemes/game/functions/booleans/is/component1to1/IsFreedom1to1.js";
+import { IsWithin } from "../../../../ludemes/game/functions/booleans/is/component/IsWithin.js";
 import { IsIn1to1 } from "../../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
 import { IsEven1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsEven1to1.js";
 import { IsFlat1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsFlat1to1.js";
 import { IsOdd1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsOdd1to1.js";
 import { IsVisited1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsVisited1to1.js";
+import { IsPipsMatch } from "../../../../ludemes/game/functions/booleans/is/integer/IsPipsMatch.js";
+import { IsSidesMatch } from "../../../../ludemes/game/functions/booleans/is/integer/IsSidesMatch.js";
 import { IsTarget1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsTarget1to1.js";
 import { IsLine } from "../../../../ludemes/game/functions/booleans/is/line/IsLine.js";
 import { IsRelated1to1 } from "../../../../ludemes/game/functions/booleans/is/related/IsRelated1to1.js";
+import { AllDifferent } from "../../../../ludemes/game/functions/booleans/deductionPuzzle/all/AllDifferent.js";
+import { IsUnique } from "../../../../ludemes/game/functions/booleans/deductionPuzzle/is/graph/IsUnique.js";
+import { IsCount } from "../../../../ludemes/game/functions/booleans/deductionPuzzle/is/regionResult/IsCount.js";
+import { IsSum } from "../../../../ludemes/game/functions/booleans/deductionPuzzle/is/regionResult/IsSum.js";
 import { IntConstant } from "../../../../ludemes/game/functions/ints/IntConstant.js";
 import type { JavaIntFunction } from "../../../../ludemes/game/functions/ints/IntFunction.js";
+import { Counter1to1 } from "../../../../ludemes/game/functions/ints1to1/state/State1to1.js";
 import { CardTrumpSuit1to1 } from "../../../../ludemes/game/functions/ints/card/simple/CardTrumpSuit1to1.js";
 import { CardRank } from "../../../../ludemes/game/functions/ints/card/site/CardRank.js";
 import { CardSuit } from "../../../../ludemes/game/functions/ints/card/site/CardSuit.js";
@@ -75,9 +83,9 @@ export function registerBatch1(registry: LudemeRegistry): void {
   registry.registerLudeme("booleans.is.is:odd", (b) => new IsOdd1to1(requireIntFunction(b, 1)));
   registry.registerLudeme("booleans.is.is:flat", () => new IsFlat1to1());
   registry.registerLudeme("booleans.is.is:visited", (b) => new IsVisited1to1(optionalIntFunction(b, 1) ?? lastTo()));
-  registry.registerLudeme("booleans.is.is:pipsmatch", () => deferred("is PipsMatch"));
-  registry.registerLudeme("booleans.is.is:sidesmatch", () => deferred("is SidesMatch"));
-  registry.registerLudeme("booleans.is.is:within", () => deferred("is Within"));
+  registry.registerLudeme("booleans.is.is:pipsmatch", (b) => new IsPipsMatch(optionalIntFunction(b, 1)));
+  registry.registerLudeme("booleans.is.is:sidesmatch", (b) => new IsSidesMatch(optionalIntFunction(b, 1)));
+  registry.registerLudeme("booleans.is.is:within", makeIsWithin);
   registry.registerLudeme("booleans.is.is:connect", () => deferred("is Connect"));
 
   registry.registerLudeme("booleans.math.if:if", makeBooleanIf);
@@ -105,15 +113,15 @@ export function registerBatch1(registry: LudemeRegistry): void {
   registry.registerLudeme("cos:cos", (b) => new FloatCos1to1(requireFloatFunction(b, 0)));
   registry.registerLudeme("cost:cost", (b) => new Cost(siteTypeAt(b, 0), asJavaIntFunctionOrNull(intNamed(b, "at")), regionNamed(b, "in")));
   registry.registerLudeme("count.count:count", makeCount);
-  registry.registerLudeme("counter:counter", () => deferred("counter"));
+  registry.registerLudeme("counter:counter", () => new Counter1to1());
   registry.registerLudeme("countSizeBiggestGroup:countSizeBiggestGroup", (b) =>
     new CountSizeBiggestGroup1to1(boolNamed(b, "if") ?? boolNamed(b, "isvisible") ?? null),
   );
   registry.registerLudeme("custodial:custodial", makeCustodial);
   registry.registerLudeme("deck:deck", makeDeck);
-  registry.registerLudeme("deductionPuzzle.all.all:different", () => deferred("all Different"));
-  registry.registerLudeme("deductionPuzzle.is.is:unique", () => deferred("is Unique"));
-  registry.registerLudeme("deductionPuzzle.is.is:is", () => deferred("deduction puzzle is region result"));
+  registry.registerLudeme("deductionPuzzle.all.all:different", makePuzzleAllDifferent);
+  registry.registerLudeme("deductionPuzzle.is.is:unique", (b) => new IsUnique(firstSiteType(b)));
+  registry.registerLudeme("deductionPuzzle.is.is:is", makePuzzleIs);
 }
 
 function makeIsIn(b: ArgBundle): BooleanFunction {
@@ -154,6 +162,12 @@ function makeIsTarget(b: ArgBundle): BooleanFunction {
   const configuration = numberArrayAt(b, 1) ?? numberArrayAt(b, 4);
   if (!configuration) deferred("is Target");
   return new IsTarget1to1(configuration, numberArrayNamed(b, "at"));
+}
+
+function makeIsWithin(b: ArgBundle): BooleanFunction {
+  const pieceId = firstIntFunctionAfter(b, 0);
+  if (!pieceId) throw new Error(`factory ${b.symbol}:${b.constructKey}: expected piece id for is Within`);
+  return new IsWithin(pieceId, firstSiteType(b), intNamed(b, "at"), regionNamed(b, "in"));
 }
 
 function makeBooleanIf(b: ArgBundle): BooleanFunction {
@@ -308,6 +322,24 @@ function makeCoord(b: ArgBundle): Coord {
 
 function makeCount(b: ArgBundle): IntFunction {
   const kind = stringAt(b, 0);
+  if (kind === "Cell" || kind === "Stack") {
+    const at = intNamed(b, "at");
+    if (!at) return new IntConstant(0);
+    return { eval: (ctx) => ctx.state.countAtSite(at.eval(ctx)) };
+  }
+  if (kind === "Sites") {
+    const region = regionNamed(b, "in");
+    return { eval: (ctx) => region?.eval(ctx).length ?? 0 };
+  }
+  if (kind === "Rows") {
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { height: number } } }).equipment.board.height };
+  }
+  if (kind === "Columns") {
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { width: number } } }).equipment.board.width };
+  }
+  if (kind === "Cells") {
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
+  }
   if (kind === "SizeBiggestLine") {
     return new CountSizeBiggestLine(
       siteTypeAt(b, 1),
@@ -342,6 +374,26 @@ function makeDeck(b: ArgBundle): Deck {
     numberNamed(b, "suits"),
     (cards.length > 0 ? cards : null) as ConstructorParameters<typeof Deck>[3],
   );
+}
+
+function makePuzzleAllDifferent(b: ArgBundle): BooleanFunction {
+  const excepts = intFunctionArrayNamed(b, "excepts");
+  return new AllDifferent(
+    firstSiteType(b),
+    firstRegionFunction(b),
+    intNamed(b, "except"),
+    excepts.length > 0 ? excepts : null,
+  );
+}
+
+function makePuzzleIs(b: ArgBundle): BooleanFunction {
+  const kind = stringAt(b, 0);
+  const result = lastIntFunction(b);
+  if (!result) throw new Error(`factory ${b.symbol}:${b.constructKey}: expected result for deduction puzzle is`);
+  if (kind === "Count") return new IsCount(firstSiteType(b), firstRegionFunction(b), intNamed(b, "of"), result);
+  if (kind === "Sum") return new IsSum(firstSiteType(b), firstRegionFunction(b), firstNonSiteStringAfter(b, 0), result);
+  if (kind === "Unique") return new IsUnique(firstSiteType(b));
+  deferred(`deduction puzzle is ${kind ?? ""}`.trim());
 }
 
 function deferred(keyword: string): never {
@@ -446,6 +498,16 @@ function requireNamedIntFunction(b: ArgBundle, name: string): IntFunction {
   return value;
 }
 
+function intFunctionArrayNamed(b: ArgBundle, name: string): IntFunction[] {
+  const value = b.named.get(name);
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    if (isIntFunction(item)) return item;
+    if (typeof item === "number") return new IntConstant(item);
+    throw new Error(`factory ${b.symbol}:${b.constructKey}: expected named int array ${name}`);
+  });
+}
+
 function asJavaIntFunction(fn: IntFunction): JavaIntFunction {
   const maybe = fn as Partial<JavaIntFunction>;
   return {
@@ -468,6 +530,14 @@ function asJavaIntFunctionOrNull(fn: IntFunction | null): JavaIntFunction | null
 
 function firstIntFunctionAfter(b: ArgBundle, start: number): IntFunction | null {
   for (let i = start + 1; i < b.positional.length; i++) {
+    const value = optionalIntFunction(b, i);
+    if (value) return value;
+  }
+  return null;
+}
+
+function lastIntFunction(b: ArgBundle): IntFunction | null {
+  for (let i = b.positional.length - 1; i >= 0; i--) {
     const value = optionalIntFunction(b, i);
     if (value) return value;
   }
@@ -535,8 +605,20 @@ function siteTypeAt(b: ArgBundle, index: number): SiteType | null {
   return siteTypeFromValue(value);
 }
 
+function firstSiteType(b: ArgBundle): SiteType | null {
+  return flatten(b.positional).find(isSiteType) ?? null;
+}
+
 function siteTypeFromValue(value: unknown): SiteType | null {
   return isSiteType(value) ? value : null;
+}
+
+function firstNonSiteStringAfter(b: ArgBundle, start: number): string | null {
+  for (let i = start + 1; i < b.positional.length; i++) {
+    const value = b.positional[i];
+    if (typeof value === "string" && !isSiteType(value)) return value;
+  }
+  return null;
 }
 
 function requireRole(b: ArgBundle, index: number): BaseRoleType {

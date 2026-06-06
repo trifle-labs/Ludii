@@ -6,6 +6,8 @@ import { Or1to1 as BooleanOr } from "../../../../ludemes/game/functions/booleans
 import { Not1to1 } from "../../../../ludemes/game/functions/booleans/math1to1/Not1to1.js";
 import { Merge } from "../../../../ludemes/game/functions/graph/operators/Merge.js";
 import { Max as MaxRequirement } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/Max.js";
+import { MaxCaptures } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxCaptures.js";
+import { MaxMoves } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxMoves.js";
 import { Meta } from "../../../../ludemes/game/rules/meta/Meta.js";
 import { No } from "../../../../ludemes/game/rules/meta/no/No.js";
 import { Swap as MetaSwap } from "../../../../ludemes/game/rules/meta/Swap.js";
@@ -16,7 +18,9 @@ import { Step } from "../../../../ludemes/game/rules/play/moves/nonDecision/effe
 import { Shoot } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Shoot.js";
 import { Select } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Select.js";
 import { Add } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Add.js";
+import { Claim1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Claim1to1.js";
 import { Remove } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Remove.js";
+import { Leap } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Leap.js";
 import { Promote } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Promote.js";
 import { Hop } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Hop.js";
 import { FromTo } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/FromTo.js";
@@ -28,7 +32,19 @@ import { MoveAgain1to1 } from "../../../../ludemes/game/rules/play/moves/nonDeci
 import { SetNextPlayer } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/nextPlayer/SetNextPlayer.js";
 import { SetRotation } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.js";
 import { SetTrumpSuit } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/suit/SetTrumpSuit.js";
+import { SetTeam } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/team/SetTeam.js";
+import { SetHidden, type HiddenData } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.js";
+import { SetPending } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.js";
+import { SetScore1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetScore1to1.js";
+import { SetValuePlayer } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetValuePlayer.js";
+import { SetCount1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/site/SetCount1to1.js";
+import { SetState1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/site/SetState1to1.js";
+import { SetValue } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/site/SetValue.js";
+import { SetCounter } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/value/SetCounter.js";
+import { SetPot } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/value/SetPot.js";
+import { SetVar1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/var/SetVar1to1.js";
 import { Swap as MoveSwap, SwapPlayersType, SwapSitesType } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/state/swap/Swap.js";
+import { SitesWalk1to1 } from "../../../../ludemes/game/functions/region/sites/walk/SitesWalk1to1.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { To1to1 } from "../../../../ludemes/game/util/moves/To1to1.js";
 import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js";
@@ -76,7 +92,12 @@ export function registerBatch5(registry: LudemeRegistry): void {
         optionalThen(b),
       );
     }
-    if (kind === "Moves" || kind === "Captures") throw notWired(`max ${kind}`);
+    if (kind === "Moves" || kind === "Captures") {
+      const moves = requireMoves(findFirst(b, isMovesFunction), `max ${kind}`);
+      const withValue = optionalBooleanFunctionNamed(b, "withValue") ?? falseFunction();
+      const then = movesFromThen(optionalThenLike(b));
+      return kind === "Moves" ? new MaxMoves(moves, withValue, then) : new MaxCaptures(moves, withValue, then);
+    }
     throw notWired("max");
   });
 
@@ -233,9 +254,43 @@ function makeRemove(b: ArgBundle): Remove {
 
 function makeSet(b: ArgBundle): MovesFunction {
   const kind = requireString(b, 0);
+  const then = movesFromThen(optionalThenLike(b));
+  if (kind === "Team") {
+    const team = firstIntishAfterKind(b, "Team");
+    const roles = firstStringArray(b) ?? flatten(b.positional)
+      .filter((v): v is string => typeof v === "string" && v !== "Team" && isRoleTypeName(v));
+    if (team === undefined || roles.length === 0) throw notWired("move Set Team");
+    return new SetTeam(asIntFunction(team, "set Team"), roles, then);
+  }
+  if (kind === "Hidden") {
+    const dataTypes = hiddenDataTypes(b);
+    const at = namedValue(b, "at");
+    const region = flatten(b.positional).find(isRegionFunction);
+    const player = namedValue(b, "to");
+    const role = namedValue(b, "To", "to");
+    const whoFn = player instanceof Player1to1
+      ? player.index()
+      : isIntish(player)
+        ? asIntFunction(player, "set Hidden to")
+        : null;
+    const roleName = typeof role === "string" ? role : null;
+    if (at === undefined && !region) throw notWired("move Set Hidden");
+    if (whoFn === null && roleName === null) throw notWired("move Set Hidden");
+    return new SetHidden(
+      dataTypes,
+      optionalSiteType(flatten(b.positional).find(isSiteTypeName)) ?? null,
+      asOptionalIntFunction(at, "set Hidden at"),
+      region ?? null,
+      asOptionalIntFunction(namedValue(b, "level"), "set Hidden level"),
+      optionalBooleanFunctionValue(namedValue(b, "value") ?? flatten(b.positional).find(isBooleanFunction)),
+      whoFn,
+      roleName,
+      then,
+    );
+  }
   if (kind === "TrumpSuit") {
     const suit = flatten(b.positional).find((v) => v !== "Set" && v !== "TrumpSuit" && isIntish(v));
-    return new SetTrumpSuit(asOptionalIntFunction(suit, "set TrumpSuit"), movesFromThen(optionalThenLike(b)));
+    return new SetTrumpSuit(asOptionalIntFunction(suit, "set TrumpSuit"), then);
   }
   if (kind === "NextPlayer") {
     const player = findFirst(b, isPlayer);
@@ -243,7 +298,7 @@ function makeSet(b: ArgBundle): MovesFunction {
     return new SetNextPlayer({
       who: player?.index() ?? null,
       nextPlayers: ints ?? null,
-      then: movesFromThen(optionalThenLike(b)),
+      then,
     });
   }
   if (kind === "Rotation") {
@@ -257,10 +312,66 @@ function makeSet(b: ArgBundle): MovesFunction {
       directionFns.length > 0 ? directionFns : null,
       optionalBooleanFunctionNamed(b, "previous"),
       optionalBooleanFunctionNamed(b, "next"),
-      movesFromThen(optionalThenLike(b)),
+      then,
     );
   }
+  if (kind === "Value") {
+    if (namedValue(b, "at") !== undefined || !hasPlayerOrRoleAfterKind(b, "Value")) return makeSetSiteValue(b, then);
+    return makeSetPlayerValue(b, then);
+  }
+  if (kind === "Score") return makeSetScore(b);
+  if (kind === "Pending") {
+    const payload = firstNonDiscriminator(b, "Pending");
+    return new SetPending(
+      isRegionFunction(payload) ? null : asOptionalIntFunction(payload, "set Pending"),
+      isRegionFunction(payload) ? payload : null,
+      then,
+    );
+  }
+  if (kind === "Var") {
+    const name = flatten(b.positional).find((v): v is string => typeof v === "string" && v !== "Var") ?? null;
+    const value = firstIntishAfterKind(b, "Var");
+    return new SetVar1to1(name, asOptionalIntFunction(value, "set Var") ?? new IntConstant(-1));
+  }
+  if (kind === "Counter") return new SetCounter(asOptionalIntFunction(firstIntishAfterKind(b, "Counter"), "set Counter"), then);
+  if (kind === "Pot") return new SetPot(asOptionalIntFunction(firstIntishAfterKind(b, "Pot"), "set Pot"), then);
+  if (kind === "Count") {
+    const atNamed = namedValue(b, "at");
+    const at = requireIntFunction(atNamed ?? firstIntishAfterKind(b, "Count"), "set Count at");
+    const value = requireIntFunction(atNamed === undefined ? secondIntishAfterKind(b, "Count") : firstIntishAfterKind(b, "Count"), "set Count value");
+    return new SetCount1to1(at, value);
+  }
+  if (kind === "State") {
+    const atNamed = namedValue(b, "at");
+    const at = requireIntFunction(atNamed ?? firstIntishAfterKind(b, "State"), "set State at");
+    const value = requireIntFunction(atNamed === undefined ? secondIntishAfterKind(b, "State") : firstIntishAfterKind(b, "State"), "set State value");
+    return new SetState1to1(at, value);
+  }
   throw new Error(`factory not yet wired: move Set ${kind}`);
+}
+
+function makeSetPlayerValue(b: ArgBundle, then: MovesFunction | null): SetValuePlayer {
+  const player = findFirst(b, isPlayer);
+  const role = firstRoleAfterKind(b, "Value");
+  const value = requireIntFunction(firstIntishAfterKind(b, "Value", player?.index()), "set Value");
+  return new SetValuePlayer(player?.index() ?? null, player ? null : role, value, then);
+}
+
+function makeSetSiteValue(b: ArgBundle, then: MovesFunction | null): SetValue {
+  const atNamed = namedValue(b, "at");
+  const at = requireIntFunction(atNamed ?? firstIntishAfterKind(b, "Value"), "set Value at");
+  const level = asOptionalIntFunction(namedValue(b, "level"), "set Value level");
+  const value = requireIntFunction(atNamed === undefined ? secondIntishAfterKind(b, "Value") : firstIntishAfterKind(b, "Value"), "set Value value");
+  return new SetValue(optionalSiteType(flatten(b.positional).find(isSiteTypeName)), at, level, value, then);
+}
+
+function makeSetScore(b: ArgBundle): SetScore1to1 {
+  const player = findFirst(b, isPlayer);
+  const role = firstRoleAfterKind(b, "Score");
+  const playerFn = player?.index() ?? (role ? roleIntFunction(role) : null);
+  const scoreFn = firstIntishAfterKind(b, "Score", playerFn);
+  if (playerFn === null || scoreFn === undefined) throw notWired("move Set Score");
+  return new SetScore1to1(playerFn, asIntFunction(scoreFn, "set Score"));
 }
 
 function makeMoveSwap(b: ArgBundle): MovesFunction {
@@ -348,13 +459,39 @@ function makeAdd(b: ArgBundle): Add {
   );
 }
 
+function makeClaim(b: ArgBundle): Claim1to1 {
+  const to = requireTo(findFirst(b, isTo), "move Claim");
+  const region = to.regionFn() ?? singleSiteRegion(to.locFn() ?? new IteratorTo());
+  return new Claim1to1(new Add(region));
+}
+
+function makeLeap(b: ArgBundle): Leap {
+  const from = findFirst(b, isFrom);
+  const to = requireTo(findFirst(b, isTo), "move Leap");
+  const walk = new SitesWalk1to1(
+    from?.locFn() ?? new IteratorFrom(),
+    normaliseWalks(findRaw(b.positional, isStepList)),
+    optionalBooleanFunctionValue(namedValue(b, "rotations")) ?? trueFunction(),
+  );
+  return new Leap({
+    startLocationFn: from?.locFn() ?? new IteratorFrom(),
+    fromCondition: from?.condFn() ?? null,
+    walk,
+    forward: optionalBooleanFunctionValue(namedValue(b, "forward")) ?? falseFunction(),
+    goRule: to.condFn() ?? trueFunction(),
+    sideEffect: null,
+    then: optionalThen(b),
+  });
+}
+
 function makeMoveFallback(b: ArgBundle): MovesFunction {
   const kind = typeof b.positional[0] === "string" ? b.positional[0] : null;
   if (kind === "Pass") return new Pass1to1();
   if (kind === "PlayCard") return new PlayCard(optionalThen(b));
-  if (kind === "Leap") throw notWired("move Leap");
+  if (kind === "Leap") return makeLeap(b);
   if (kind === "Bet") throw notWired("move Bet");
   if (kind === "Add") return makeAdd(b);
+  if (kind === "Claim") return makeClaim(b);
   if (kind === "Move") throw notWired(`move ${kind}`);
   if (findFirst(b, isFrom) && findFirst(b, isTo)) {
     const from = requireFrom(findFirst(b, isFrom), "move from-to");
@@ -463,8 +600,60 @@ function findFirst<T>(b: ArgBundle, guard: (value: unknown) => value is T): T | 
   return flatten(b.positional).find(guard);
 }
 
+function namedValue(b: ArgBundle, ...names: string[]): unknown {
+  for (const name of names) {
+    if (b.named.has(name)) return b.named.get(name);
+  }
+  return undefined;
+}
+
 function firstNonDiscriminator(b: ArgBundle, discriminator: string): unknown {
   return flatten(b.positional).find((value) => value !== discriminator && !(typeof value === "string" && isSiteTypeName(value)));
+}
+
+function firstIntishAfterKind(b: ArgBundle, kind: string, except?: unknown): number | IntFunction | undefined {
+  return flatten(b.positional).find((value): value is number | IntFunction =>
+    value !== kind && value !== except && isIntish(value),
+  );
+}
+
+function secondIntishAfterKind(b: ArgBundle, kind: string): number | IntFunction | undefined {
+  return flatten(b.positional).filter((value): value is number | IntFunction => value !== kind && isIntish(value))[1];
+}
+
+function firstRoleAfterKind(b: ArgBundle, kind: string): string | null {
+  return flatten(b.positional).find((value): value is string =>
+    typeof value === "string" && value !== kind && isRoleTypeName(value),
+  ) ?? null;
+}
+
+function firstStringArray(b: ArgBundle): string[] | null {
+  return findRaw(b.positional, (value): value is string[] =>
+    Array.isArray(value) && value.every((entry) => typeof entry === "string"),
+  ) ?? null;
+}
+
+function hasPlayerOrRoleAfterKind(b: ArgBundle, kind: string): boolean {
+  return findFirst(b, isPlayer) !== undefined || firstRoleAfterKind(b, kind) !== null;
+}
+
+function hiddenDataTypes(b: ArgBundle): HiddenData[] | null {
+  const values = flatten(b.positional);
+  const arrayValue = findRaw(b.positional, (value): value is HiddenData[] => Array.isArray(value) && value.every(isHiddenDataName));
+  if (arrayValue) return arrayValue;
+  const dataType = values.find(isHiddenDataName);
+  return dataType ? [dataType] : null;
+}
+
+function findRaw<T>(values: readonly unknown[], guard: (value: unknown) => value is T): T | undefined {
+  for (const value of values) {
+    if (guard(value)) return value;
+    if (Array.isArray(value)) {
+      const nested = findRaw(value, guard);
+      if (nested !== undefined) return nested;
+    }
+  }
+  return undefined;
 }
 
 function firstAfterKindString(b: ArgBundle, discriminator: string): string | null {
@@ -498,6 +687,11 @@ function optionalBooleanFunctionNamed(b: ArgBundle, name: string): BooleanFuncti
   return isBooleanFunction(value) ? value : null;
 }
 
+function optionalBooleanFunctionValue(value: unknown): BooleanFunction | null {
+  if (typeof value === "boolean") return value ? trueFunction() : falseFunction();
+  return isBooleanFunction(value) ? value : null;
+}
+
 function optionalThen(b: ArgBundle): Then | null {
   return flatten(b.positional).find(isThen) ?? null;
 }
@@ -521,6 +715,10 @@ function asIntFunction(value: unknown, label: string): IntFunction {
   if (typeof value === "number") return new IntConstant(value);
   if (isIntFunction(value)) return value;
   throw new Error(`factory not yet wired: ${label}`);
+}
+
+function requireIntFunction(value: unknown, label: string): IntFunction {
+  return asIntFunction(value, label);
 }
 
 function requireBooleanFunction(value: unknown, label: string): BooleanFunction {
@@ -614,11 +812,11 @@ function isBooleanFunction(value: unknown): value is BooleanFunction {
 }
 
 function isRegionFunction(value: unknown): value is RegionFunction {
-  return typeof (value as RegionFunction | null)?.eval === "function" && !isIntFunction(value) && !isBooleanFunction(value) && !isMovesFunction(value);
+  return typeof (value as RegionFunction | null)?.eval === "function" && !isIntFunction(value) && !isBooleanFunction(value) && !isKnownMove(value);
 }
 
 function isMovesFunction(value: unknown): value is MovesFunction {
-  return typeof (value as MovesFunction | null)?.eval === "function" && !isIntFunction(value) && !isBooleanFunction(value);
+  return isKnownMove(value);
 }
 
 function isGraphFunction(value: unknown): value is GraphFunction {
@@ -630,11 +828,56 @@ function isIntArrayFunction(value: unknown): value is IntArrayFunction {
 }
 
 function isKnownNonIntFunction(value: unknown): boolean {
-  return value instanceof From1to1 || value instanceof To1to1 || value instanceof Between1to1 || value instanceof Player1to1 || value instanceof Piece1to1;
+  return value instanceof From1to1 ||
+    value instanceof To1to1 ||
+    value instanceof Between1to1 ||
+    value instanceof Player1to1 ||
+    value instanceof Piece1to1 ||
+    isRegionLikeObject(value);
 }
 
 function isKnownNonBooleanFunction(value: unknown): boolean {
   return isKnownNonIntFunction(value);
+}
+
+function isKnownMove(value: unknown): value is MovesFunction {
+  return value instanceof Add ||
+    value instanceof Claim1to1 ||
+    value instanceof Slide ||
+    value instanceof Step ||
+    value instanceof Shoot ||
+    value instanceof Select ||
+    value instanceof Remove ||
+    value instanceof Leap ||
+    value instanceof Promote ||
+    value instanceof Hop ||
+    value instanceof FromTo ||
+    value instanceof Pass1to1 ||
+    value instanceof PlayCard ||
+    value instanceof Propose ||
+    value instanceof Vote ||
+    value instanceof SetNextPlayer ||
+    value instanceof SetRotation ||
+    value instanceof SetTrumpSuit ||
+    value instanceof SetTeam ||
+    value instanceof SetHidden ||
+    value instanceof SetPending ||
+    value instanceof SetScore1to1 ||
+    value instanceof SetValuePlayer ||
+    value instanceof SetCount1to1 ||
+    value instanceof SetState1to1 ||
+    value instanceof SetValue ||
+    value instanceof SetCounter ||
+    value instanceof SetPot ||
+    value instanceof SetVar1to1 ||
+    value instanceof MaxMoves ||
+    value instanceof MaxCaptures;
+}
+
+function isRegionLikeObject(value: unknown): boolean {
+  if (value === null || typeof value !== "object") return false;
+  const name = value.constructor?.name ?? "";
+  return name.startsWith("Sites") || name.startsWith("Region");
 }
 
 function isFrom(value: unknown): value is From1to1 {
@@ -682,8 +925,28 @@ function isLandmarkTypeName(value: unknown): value is string {
   return typeof value === "string" && Object.prototype.hasOwnProperty.call(LandmarkType, value);
 }
 
+function isHiddenDataName(value: unknown): value is HiddenData {
+  return value === "What" || value === "Who" || value === "State" || value === "Count" || value === "Rotation" || value === "Value";
+}
+
 function isDirectionName(value: unknown): value is string {
   return typeof value === "string" && /^(Adjacent|Orthogonal|Diagonal|All|Forward|Backward|Leftward|Rightward|SameDirection|Opposite|N|S|E|W|NE|NW|SE|SW|NNE|ENE|ESE|SSE|SSW|WSW|WNW|NNW)$/.test(value);
+}
+
+function isStepList(value: unknown): value is readonly unknown[] {
+  return Array.isArray(value) &&
+    (value.every((entry) => typeof entry === "string") || value.every(Array.isArray));
+}
+
+function normaliseWalks(value: readonly unknown[] | undefined): readonly (readonly string[])[] {
+  if (value === undefined) throw notWired("move Leap");
+  if (value.every((entry) => typeof entry === "string")) return [value as readonly string[]];
+  return value.map((entry) => {
+    if (!Array.isArray(entry) || !entry.every((step) => typeof step === "string")) {
+      throw notWired("move Leap");
+    }
+    return entry as readonly string[];
+  });
 }
 
 function notWired(keyword: string): Error {

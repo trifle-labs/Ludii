@@ -15,6 +15,9 @@ import { IsHidden1to1 } from "../../../../ludemes/game/functions/booleans/is/is1
 import { IsCycle1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsCycle1to1.js";
 import { IsLastFrom1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsLastFrom1to1.js";
 import { IsLastTo1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsLastTo1to1.js";
+import { IsLoop1to1 } from "../../../../ludemes/game/functions/booleans/is/loop1to1/IsLoop1to1.js";
+import { IsPath1to1 } from "../../../../ludemes/game/functions/booleans/is/path1to1/IsPath1to1.js";
+import { IsPattern1to1 } from "../../../../ludemes/game/functions/booleans/is/pattern1to1/IsPattern1to1.js";
 import { IsRepeat1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsRepeat1to1.js";
 import { IsTriggered1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsTriggered1to1.js";
 import { IsActive1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsActive1to1.js";
@@ -90,10 +93,15 @@ export function registerBatch0(registry: LudemeRegistry): void {
   registry.registerLudeme(">=:>=", (b): Ge1to1 =>
     new Ge1to1(toIntFunction(requirePos(b, 0)), toIntFunction(requirePos(b, 1))));
 
-  registry.registerLudeme("addScore:addScore", (b): AddScore1to1 => {
-    if (hasThen(b) || Array.isArray(b.positional[0])) throw deferred("addScore");
+  registry.registerLudeme("addScore:addScore", (b): MovesFunction => {
+    if (hasThen(b)) throw deferred("addScore");
     const who = requirePos(b, 0);
     if (who instanceof Player1to1) throw deferred("addScore");
+    if (Array.isArray(who)) {
+      const scores = asArray(requirePos(b, 1));
+      if (who.length !== scores.length) throw new Error("factory addScore:addScore: player and score lists must have same length");
+      return new AddScoreList(who.map(roleNameFromAddScoreValue), scores.map(toIntFunction));
+    }
     return new AddScore1to1(toRoleName(who), toIntFunction(requirePos(b, 1)));
   });
 
@@ -253,13 +261,11 @@ function makeIs(b: ArgBundle): BooleanFunction {
       optionalNamed(b, "odd", toBooleanFunction) ?? falseFunction(),
       optionalNamed(b, "even", toBooleanFunction) ?? falseFunction(),
     );
-    case "Path":
-      throw deferred("is");
+    case "Path": return makePath(b);
     case "Empty": return new IsEmpty1to1(toIntFunction(lastNonSiteTypePos(b) ?? -1));
     case "Occupied": return new IsOccupied1to1(toIntFunction(lastNonSiteTypePos(b) ?? -1));
-    case "Pattern":
-    case "Loop":
-      throw deferred("is");
+    case "Pattern": return makePattern(b);
+    case "Loop": return makeLoop(b);
     default:
       throw deferred("is");
   }
@@ -273,6 +279,73 @@ function makeAngle(b: ArgBundle, predicate: "acute" | "right" | "obtuse" | "refl
     booleans[1] ?? falseFunction(),
     predicate,
   );
+}
+
+function makePath(b: ArgBundle): IsPath1to1 {
+  const type = firstSiteType(b, 1);
+  if (type === null) throw new Error("factory is Path: missing site type");
+  const range = rangeBounds(requireNamed(b, "length", (value) => value));
+  return new IsPath1to1(
+    type,
+    optionalNamed(b, "from", toIntFunction) ?? new LastTo1to1(),
+    toIntFunction(firstNonKindNonSiteValue(b, "Path") ?? "Mover"),
+    range.minFn,
+    range.maxFn,
+    optionalNamed(b, "closed", toBooleanFunction) ?? falseFunction(),
+  );
+}
+
+function makePattern(b: ArgBundle): IsPattern1to1 {
+  const froms = b.named.get("froms");
+  if (froms !== undefined && (!Array.isArray(froms) || froms.length > 0)) throw deferred("is");
+
+  const walk = patternWalk(b.positional.find(isStepArray) ?? []);
+  const what = b.named.get("what");
+  const whats = b.named.get("whats");
+  const whatsFn = Array.isArray(whats) && whats.length > 0
+    ? whats.map(toIntFunction)
+    : what === undefined
+      ? null
+      : [toIntFunction(what)];
+
+  return new IsPattern1to1(
+    walk,
+    optionalNamed(b, "from", toIntFunction) ?? new LastTo1to1(),
+    whatsFn,
+  );
+}
+
+function makeLoop(b: ArgBundle): IsLoop1to1 {
+  if (b.named.has("surround")) throw deferred("is");
+  if ((optionalNamed(b, "path", toBoolean) ?? false) === true) throw deferred("is");
+  if (flatten(b.positional).some((value) => Array.isArray(value) && value.some(isRoleValue))) throw deferred("is");
+  if (b.positional.some((value) => value !== "Loop" && isRegionFunction(value))) throw deferred("is");
+
+  const type = firstSiteType(b, 1);
+  if (type !== null && type !== "Cell") throw deferred("is");
+
+  const ints = b.positional
+    .filter((value) => value !== "Loop" && !isSiteType(value) && !isDirectionToken(value))
+    .filter(isIntFunctionLike)
+    .map(toIntFunction);
+
+  return new IsLoop1to1(
+    ints[1] ?? new LastTo1to1(),
+    ints[0] ?? roleToIntFunction("Mover"),
+    findDirection(b) ?? "Adjacent",
+  );
+}
+
+class AddScoreList implements MovesFunction {
+  private readonly delegates: readonly AddScore1to1[];
+
+  public constructor(roles: readonly (RoleType | "All" | "Each")[], scores: readonly IntFunction[]) {
+    this.delegates = roles.map((role, index) => new AddScore1to1(role, scores[index] ?? null));
+  }
+
+  public eval(...args: Parameters<MovesFunction["eval"]>): ReturnType<MovesFunction["eval"]> {
+    return this.delegates.flatMap((delegate) => delegate.eval(...args));
+  }
 }
 
 function requireNonSitesComparison(b: ArgBundle, keyword: string): void {
@@ -375,8 +448,21 @@ function asArray(value: unknown): readonly unknown[] {
   return Array.isArray(value) ? value : [value];
 }
 
+function flatten(values: readonly unknown[]): unknown[] {
+  const out: unknown[] = [];
+  for (const value of values) {
+    if (Array.isArray(value)) out.push(...flatten(value));
+    else out.push(value);
+  }
+  return out;
+}
+
 function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every((item) => typeof item === "number");
+}
+
+function isSiteType(value: unknown): value is SiteType {
+  return value === "Cell" || value === "Edge" || value === "Vertex";
 }
 
 function hasEval(value: unknown): value is { eval: (...args: never[]) => unknown } {
@@ -385,6 +471,14 @@ function hasEval(value: unknown): value is { eval: (...args: never[]) => unknown
 
 function isBooleanFunction(value: unknown): value is BooleanFunction {
   return hasEval(value);
+}
+
+function isRegionFunction(value: unknown): value is RegionFunction {
+  return hasEval(value) && !isIntFunctionLike(value);
+}
+
+function isIntFunctionLike(value: unknown): boolean {
+  return typeof value === "number" || typeof value === "string" || value instanceof Player1to1 || hasEval(value);
 }
 
 function optionalThen(b: ArgBundle): ThenLike | null {
@@ -399,7 +493,7 @@ function hasThen(b: ArgBundle): boolean {
 function firstSiteType(b: ArgBundle, startIndex = 0): SiteType | null {
   for (let i = startIndex; i < b.positional.length; i++) {
     const value = b.positional[i];
-    if (value === "Cell" || value === "Edge" || value === "Vertex") return value;
+    if (isSiteType(value)) return value;
   }
   return null;
 }
@@ -422,6 +516,10 @@ function findDirection(b: ArgBundle): string | null {
   return typeof value === "string" ? value : null;
 }
 
+function isDirectionToken(value: unknown): boolean {
+  return typeof value === "string" && isDirectionName(value);
+}
+
 function isDirectionName(value: string): boolean {
   return !["Cell", "Edge", "Vertex", "Mover", "Next", "Prev", "All", "Each", "Shared", "Neutral"].includes(value)
     && !/^P\d+$/.test(value);
@@ -434,6 +532,43 @@ function directionFunction(direction: string): DirectionsFunction {
 function toTilingBoardlessType(value: unknown): TilingBoardlessType {
   if (value === "Square" || value === "Triangular" || value === "Hexagonal") return value;
   throw new Error(`factory: expected TilingBoardlessType, got ${String(value)}`);
+}
+
+function firstNonKindNonSiteValue(b: ArgBundle, kind: string): unknown | undefined {
+  return b.positional.find((value) => value !== kind && !isSiteType(value));
+}
+
+function rangeBounds(value: unknown): { minFn: IntFunction; maxFn: IntFunction } {
+  const range = value as { minFn?: unknown; maxFn?: unknown } | null;
+  if (range !== null && hasEval(value) && isIntFunction(range.minFn) && isIntFunction(range.maxFn)) {
+    return { minFn: range.minFn, maxFn: range.maxFn };
+  }
+  if (isIntFunctionLike(value)) {
+    const fn = toIntFunction(value);
+    return { minFn: fn, maxFn: fn };
+  }
+  throw new Error(`factory: expected range-compatible value, got ${String(value)}`);
+}
+
+function isIntFunction(value: unknown): value is IntFunction {
+  return hasEval(value);
+}
+
+function isStepArray(value: unknown): value is readonly string[] {
+  return Array.isArray(value) && value.every((item) => item === "F" || item === "R" || item === "L");
+}
+
+function patternWalk(value: readonly string[]): ConstructorParameters<typeof IsPattern1to1>[0] {
+  return value.map((step) => step.toUpperCase()).filter((step) => step === "F" || step === "R" || step === "L") as ConstructorParameters<typeof IsPattern1to1>[0];
+}
+
+function roleNameFromAddScoreValue(value: unknown): RoleType | "All" | "Each" {
+  if (value instanceof Player1to1 || typeof value === "number" || (hasEval(value) && typeof value !== "string")) throw deferred("addScore");
+  return toRoleName(value);
+}
+
+function isRoleValue(value: unknown): boolean {
+  return typeof value === "string" && !isSiteType(value) && !isDirectionName(value);
 }
 
 function falseFunction(): BooleanFunction {

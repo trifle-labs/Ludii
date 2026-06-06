@@ -57,6 +57,7 @@ import {
   To1to1 as IterTo,
 } from "../../../../ludemes/game/functions/ints1to1/iterator/Iterator1to1.js";
 import { Layer } from "../../../../ludemes/game/functions/ints/board/Layer.js";
+import { MapEntry1to1 } from "../../../../ludemes/game/functions/ints1to1/board/Board1to1.js";
 import { SitesWalk1to1 } from "../../../../ludemes/game/functions/region/sites/walk/SitesWalk1to1.js";
 import { FloatLog1to1, FloatLog10_1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
 import { AndBool } from "../../../../ludemes/game/functions/booleans/math1to1/AndBool.js";
@@ -110,7 +111,7 @@ export function registerBatch4(registry: LudemeRegistry): void {
   registry.registerLudeme("makeFaces:makeFaces", makeFacesFactory);
   registry.registerLudeme("mancalaBoard:mancalaBoard", mancalaBoardFactory);
   registry.registerLudeme("map:map", mapFactory);
-  registry.registerLudeme("mapEntry:mapEntry", notWired("mapEntry"));
+  registry.registerLudeme("mapEntry:mapEntry", mapEntryFactory);
   registry.registerLudeme("match:match", matchFactory);
   registry.registerLudeme("matchScore:matchScore", matchScoreFactory);
   registry.registerLudeme("math.and:and", andBoolFactory);
@@ -326,6 +327,21 @@ function mapFactory(b: ArgBundle): LudiiMap {
   throw new Error("factory not yet wired: map");
 }
 
+function mapEntryFactory(b: ArgBundle): MapEntry1to1 {
+  const flat = flatten(b.positional);
+  let name: string | null = null;
+  let keyValue: unknown;
+
+  if (typeof flat[0] === "string" && !(flat.length === 1 && isRoleTypeName(flat[0]))) {
+    name = flat[0];
+    keyValue = flat[1];
+  } else {
+    keyValue = flat[0];
+  }
+
+  return new MapEntry1to1(name, mapEntryKeyFn(requireValue(keyValue, "mapEntry key")));
+}
+
 function matchFactory(b: ArgBundle, env: { numPlayers: number }): Match1to1 {
   if (b.positional.length === 1) throw new Error("factory not yet wired: match");
   const name = requireString(b.positional[0], "match name");
@@ -531,6 +547,23 @@ function firstStringExcept(b: ArgBundle, excluded: readonly string[]): string | 
 function toRoleType(value: string): RoleType {
   if (value in RoleType) return RoleType[value as keyof typeof RoleType];
   throw new Error(`factory not yet wired: matchScore (${value})`);
+}
+
+function mapEntryKeyFn(value: unknown): IntFunction {
+  if (typeof value !== "string") return toIntFn(value);
+  if (!isRoleTypeName(value)) return toIntFn(value);
+  if (/^P\d+$/.test(value)) return new IntConstant(Number(value.slice(1)));
+  if (/^Team\d+$/.test(value)) return new IntConstant(Number(value.slice(4)));
+  if (value === "Mover") return { eval: (ctx) => ctx.state.mover };
+  if (value === "Next") return { eval: (ctx) => (ctx.state.mover % ctx.game.numPlayers) + 1 };
+  if (value === "Prev") return { eval: (ctx) => (ctx.state as unknown as { prev?: number }).prev ?? ctx.state.mover };
+  if (value === "Player") return { eval: (ctx) => ctx._evalPlayer ?? ctx.state.mover };
+  if (value === "Neutral") return new IntConstant(0);
+  return new IntConstant(0);
+}
+
+function isRoleTypeName(value: string): boolean {
+  return value in RoleType;
 }
 
 function notWired(keyword: string): () => never {
