@@ -19,6 +19,14 @@ export class LudemeRegistry {
     }
   }
 
+  public overlayKeysFrom(other: LudemeRegistry, keys: readonly string[]): void {
+    for (const key of keys) {
+      const normalised = normaliseKey(key);
+      const factory = other.factories.get(normalised);
+      if (factory) this.factories.set(normalised, factory);
+    }
+  }
+
   public construct<T = unknown>(bundle: ArgBundle, env: CompilerEnv): T {
     const keys = [
       `${bundle.symbol}:${bundle.constructKey}`,

@@ -596,8 +596,19 @@ function stringOrNull(value: unknown): string | null {
 }
 
 function firstNumberArray(b: ArgBundle): number[] | null {
-  const arr = flatten(b.positional).find((value): value is number[] => Array.isArray(value) && value.every((v) => typeof v === "number"));
+  const arr = findNumberArray(b.positional);
   return arr ?? null;
+}
+
+function findNumberArray(values: readonly unknown[]): number[] | null {
+  for (const value of values) {
+    if (Array.isArray(value)) {
+      if (value.every((v) => typeof v === "number")) return value;
+      const nested = findNumberArray(value);
+      if (nested) return nested;
+    }
+  }
+  return null;
 }
 
 function firstArrayOfStrings(b: ArgBundle): string[] | null {

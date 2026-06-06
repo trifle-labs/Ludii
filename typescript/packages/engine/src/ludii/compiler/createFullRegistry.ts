@@ -27,9 +27,13 @@ export function createFullRegistry(): LudemeRegistry {
   registerBatch7(r);
   registerBatch8(r);
   registerBatch9(r);
-  // NOTE: the TTT factories (createTicTacToeRegistry) are intentionally NOT
-  // overlaid — they are hand-specialized for Tic-Tac-Toe (e.g. the board factory
-  // assumes a specific graph) and shadow the general batch factories, breaking
-  // arbitrary games. The batch factories are the general, grammar-faithful ones.
+  // Overlay only hand-specialised factories that fill gaps in the batch registry.
+  // Broad TTT factories such as board/equipment/rules are intentionally excluded:
+  // they assume Tic-Tac-Toe shapes and shadow the general batch factories.
+  r.overlayKeysFrom(createTicTacToeRegistry(), [
+    "move:add",
+    "sites:empty",
+    "is:line",
+  ]);
   return r;
 }

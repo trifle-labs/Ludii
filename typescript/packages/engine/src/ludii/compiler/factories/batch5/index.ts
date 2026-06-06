@@ -15,6 +15,7 @@ import { Slide } from "../../../../ludemes/game/rules/play/moves/nonDecision/eff
 import { Step } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Step.js";
 import { Shoot } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Shoot.js";
 import { Select } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Select.js";
+import { Add } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Add.js";
 import { Remove } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Remove.js";
 import { Promote } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Promote.js";
 import { Hop } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Hop.js";
@@ -336,13 +337,25 @@ function makeMessageMove(b: ArgBundle): MovesFunction {
   throw new Error(`factory not yet wired: move ${kind}`);
 }
 
+function makeAdd(b: ArgBundle): Add {
+  const to = requireTo(findFirst(b, isTo), "move Add");
+  const region = to.regionFn() ?? singleSiteRegion(to.locFn() ?? new IteratorTo());
+  const piece = findFirst(b, isPiece);
+  const component = piece?.component();
+  return new Add(
+    region,
+    component ? { what: component, owner: -1, state: piece?.state() ?? undefined } : null,
+  );
+}
+
 function makeMoveFallback(b: ArgBundle): MovesFunction {
   const kind = typeof b.positional[0] === "string" ? b.positional[0] : null;
   if (kind === "Pass") return new Pass1to1();
   if (kind === "PlayCard") return new PlayCard(optionalThen(b));
   if (kind === "Leap") throw notWired("move Leap");
   if (kind === "Bet") throw notWired("move Bet");
-  if (kind === "Add" || kind === "Move") throw notWired(`move ${kind}`);
+  if (kind === "Add") return makeAdd(b);
+  if (kind === "Move") throw notWired(`move ${kind}`);
   if (findFirst(b, isFrom) && findFirst(b, isTo)) {
     const from = requireFrom(findFirst(b, isFrom), "move from-to");
     const to = requireTo(findFirst(b, isTo), "move from-to");
@@ -364,6 +377,10 @@ function makeMoveFallback(b: ArgBundle): MovesFunction {
     });
   }
   throw notWired("move");
+}
+
+function singleSiteRegion(siteFn: IntFunction): RegionFunction {
+  return { eval: (ctx) => [siteFn.eval(ctx)] };
 }
 
 function makeBetween(b: ArgBundle): Between1to1 {

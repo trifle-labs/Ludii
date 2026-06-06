@@ -34,7 +34,9 @@ import { Die } from "../../../../ludemes/game/equipment/component/Die.js";
 import { Card as EquipmentCard } from "../../../../ludemes/game/util/equipment/Card.js";
 import { Domino } from "../../../../ludemes/game/equipment/component/tile/Domino.js";
 import { Dominoes } from "../../../../ludemes/game/equipment/other/Dominoes.js";
-import { Equipment } from "../../../../ludemes/game/equipment/Equipment.js";
+import { Equipment1to1 } from "../../../../ludemes/game/equipment/Equipment1to1.js";
+import { Board1to1 } from "../../../../ludemes/game/equipment/container/board/Board1to1.js";
+import { Piece } from "../../../../ludemes/game/equipment/component/Piece.js";
 import type { Item, RoleType as EquipmentRoleType } from "../../../../ludemes/game/equipment/Item.js";
 import { Hint } from "../../../../ludemes/game/util/equipment/Hint.js";
 import { Set as DeductionSet } from "../../../../ludemes/game/rules/start/deductionPuzzle/Set.js";
@@ -326,9 +328,11 @@ function makeEndIf(b: ArgBundle, numPlayers: number): EndIf {
   return new EndIf(condition, result, numPlayers);
 }
 
-function makeEquipment(b: ArgBundle): Equipment {
-  const items = flatten(b.positional).filter(isItem);
-  return new Equipment(items);
+function makeEquipment(b: ArgBundle): Equipment1to1 {
+  const values = flatten(b.positional);
+  const board = values.find((value): value is Board1to1 => value instanceof Board1to1);
+  if (!board) throw new Error("factory equipment: missing board");
+  return new Equipment1to1(board, values.filter((value): value is Piece => value instanceof Piece));
 }
 
 function deferred(keyword: string): never {

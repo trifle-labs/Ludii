@@ -39,6 +39,7 @@ import { CountSizeBiggestGroup1to1 } from "../../../../ludemes/game/functions/in
 import { CountSizeBiggestLine } from "../../../../ludemes/game/functions/ints/count/sizeBiggestLine/CountSizeBiggestLine.js";
 import { FloatCos1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
 import type { GraphFunction } from "../../../../ludemes/game/functions/graph/GraphFunction.js";
+import { Trajectories } from "../../../../eval/graph/trajectories.js";
 import { constructBrick } from "../../../../ludemes/game/functions/graph/generators/basis/brick/Brick.js";
 import type { BrickShapeType } from "../../../../ludemes/game/functions/graph/generators/basis/brick/BrickShapeType.js";
 import { Celtic } from "../../../../ludemes/game/functions/graph/generators/basis/celtic/Celtic.js";
@@ -272,7 +273,30 @@ function makeConcentric(b: ArgBundle): GraphFunction {
 function makeBoard(b: ArgBundle): Board1to1 {
   const existing = b.positional.find((v): v is Board1to1 => v instanceof Board1to1);
   if (existing) return existing;
-  deferred("board");
+  const graphFn = b.positional.find(isGraphFunction);
+  if (!graphFn) deferred("board");
+  const siteType = siteTypeFromValue(b.named.get("use")) ?? "Cell";
+  let graph = graphFn.eval(siteType);
+  let traj = new Trajectories(graph, siteType);
+  if (traj.numSites === 0 && (siteType === "Cell" || siteType === "Edge")) {
+    graph = graphFn.eval("Vertex");
+    traj = new Trajectories(graph, "Vertex");
+  }
+  if (traj.numSites === 0) deferred("board");
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let site = 0; site < traj.numSites; site += 1) {
+    minX = Math.min(minX, traj.xOf(site));
+    maxX = Math.max(maxX, traj.xOf(site));
+    minY = Math.min(minY, traj.yOf(site));
+    maxY = Math.max(maxY, traj.yOf(site));
+  }
+  const width = Math.max(1, Math.ceil(maxX - minX) + 1);
+  const height = Math.max(1, Math.ceil(maxY - minY) + 1);
+  return new Board1to1(width, height, traj.numSites, traj, graph.faces.length);
 }
 
 function makeCoord(b: ArgBundle): Coord {
@@ -508,6 +532,10 @@ function arrayAt(b: ArgBundle, index: number): unknown[] | null {
 
 function siteTypeAt(b: ArgBundle, index: number): SiteType | null {
   const value = stringAt(b, index);
+  return siteTypeFromValue(value);
+}
+
+function siteTypeFromValue(value: unknown): SiteType | null {
   return isSiteType(value) ? value : null;
 }
 

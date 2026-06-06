@@ -62,6 +62,8 @@ import { FloatLog1to1, FloatLog10_1to1 } from "../../../../ludemes/game/function
 import { AndBool } from "../../../../ludemes/game/functions/booleans/math1to1/AndBool.js";
 
 import { MancalaBoard } from "../../../../ludemes/game/equipment/container/board/custom/MancalaBoard.js";
+import { Board1to1 } from "../../../../ludemes/game/equipment/container/board/Board1to1.js";
+import { buildMancalaGraph } from "../../../../eval/graph/board-graph.js";
 import type { TrackDescriptor } from "../../../../ludemes/game/equipment/container/board/Board.js";
 import type { StoreType } from "../../../../ludemes/game/types/board/StoreType.js";
 import { Map as LudiiMap } from "../../../../ludemes/game/equipment/other/Map.js";
@@ -293,15 +295,18 @@ function makeFacesFactory(b: ArgBundle): MakeFaces {
   return new MakeFaces(graph);
 }
 
-function mancalaBoardFactory(b: ArgBundle): MancalaBoard {
+function mancalaBoardFactory(b: ArgBundle): Board1to1 | MancalaBoard {
   const rows = numberValue(requireValue(b.positional[0], "mancala rows"));
   const columns = numberValue(requireValue(b.positional[1], "mancala columns"));
+  const store = (named(b, "store") as StoreType | undefined) ?? null;
+  const spec = buildMancalaGraph(rows, columns, store !== "None");
+  if (spec) return new Board1to1(spec.width, spec.height, spec.numSites, spec.traj, spec.numFaces);
   const tracksValue =
     b.positional.find(isTrackList) ?? flatten(b.positional).find(isTrackDescriptor);
   return new MancalaBoard(
     rows,
     columns,
-    (named(b, "store") as StoreType | undefined) ?? null,
+    store,
     optionalNumber(named(b, "numStores")),
     optionalBoolean(named(b, "largeStack")),
     isTrackDescriptor(tracksValue) ? tracksValue : null,
