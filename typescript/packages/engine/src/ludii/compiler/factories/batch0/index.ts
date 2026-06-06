@@ -162,9 +162,7 @@ export function registerBatch0(registry: LudemeRegistry): void {
     throw deferred("bet");
   });
 
-  registry.registerLudeme("board.id:id", () => {
-    throw deferred("id");
-  });
+  registry.registerLudeme("board.id:id", makeId);
 
   registry.registerLudeme("board.phase:phase", () => {
     throw deferred("phase");
@@ -281,6 +279,25 @@ function makeAngle(b: ArgBundle, predicate: "acute" | "right" | "obtuse" | "refl
   );
 }
 
+function makeId(b: ArgBundle): IntFunction {
+  const first = b.positional[0];
+  const second = b.positional[1];
+  if (typeof first === "string" && second === undefined && isRoleValue(first)) return roleToIntFunction(first);
+  if (typeof first !== "string") return roleToIntFunction(String(first ?? "Mover"));
+  const owner = typeof second === "string" ? roleToStaticOwner(second) : null;
+  return {
+    eval(ctx): number {
+      const pieces = (ctx.game as unknown as { equipment?: { pieces?: readonly { name: string; owner: number; index: number }[] } }).equipment?.pieces ?? [];
+      const parsed = parsePieceNameOwner(first);
+      const name = parsed?.name ?? first;
+      const ownerId = owner ?? parsed?.owner ?? -1;
+      const piece = pieces.find((p) => p.name === name && (ownerId < 0 || p.owner === ownerId))
+        ?? pieces.find((p) => `${p.name}${p.owner}` === first);
+      return piece?.index ?? roleToIntFunction(first).eval(ctx);
+    },
+  };
+}
+
 function makePath(b: ArgBundle): IsPath1to1 {
   const type = firstSiteType(b, 1);
   if (type === null) throw new Error("factory is Path: missing site type");
@@ -389,6 +406,20 @@ function roleToIntFunction(role: string): IntFunction {
       return match ? Number(match[1]) : ctx.state.mover;
     },
   };
+}
+
+function roleToStaticOwner(role: string): number {
+  const key = role.toLowerCase();
+  const match = /^p(\d+)$/.exec(key);
+  if (match) return Number(match[1]);
+  if (key === "neutral" || key === "shared") return 0;
+  return -1;
+}
+
+function parsePieceNameOwner(value: string): { name: string; owner: number } | null {
+  const match = /^(.+?)(\d+)$/.exec(value);
+  if (!match) return null;
+  return { name: match[1]!, owner: Number(match[2]) };
 }
 
 function toRoleName(value: unknown): RoleType | "Each" {

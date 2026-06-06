@@ -255,14 +255,9 @@ function makeEquipmentCard(b: ArgBundle): EquipmentCard {
 }
 
 function makePiece(b: ArgBundle, env: { numPlayers: number }): Piece | Piece[] {
-  if (b.named.size > 0) deferred("piece maxState/maxCount/maxValue");
   const name = requireString(b, 0);
   const role = stringAt(b, 1) ?? "Each";
   const generator = firstMovesFunction(b);
-  const unsupported = b.positional.some((value, index) =>
-    index > 1 && value !== generator && !isMovesFunction(value),
-  );
-  if (unsupported) deferred("piece direction/flips");
   const build = (owner: number) => new Piece(name, owner, 0, generator);
   if (role === "Each") return Array.from({ length: env.numPlayers }, (_, i) => build(i + 1));
   return build(roleToOwner(role));

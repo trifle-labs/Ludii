@@ -55,9 +55,22 @@ export class Compiler {
     private readonly registry: LudemeRegistry,
   ) {}
 
+  /** Deepest clause-match failure detail in the current compile (by recursion depth). */
+  private deepestMiss: { depth: number; msg: string } | null = null;
+  private depth = 0;
+
   public compile<T = unknown>(ludAst: LudNode, opts: CompilerOptions = {}): T {
     const env: CompilerEnv = { numPlayers: opts.env?.numPlayers ?? 2 };
-    return this.compileActual<T>(findGameNode(ludAst), "game", env);
+    this.deepestMiss = null;
+    try {
+      return this.compileActual<T>(findGameNode(ludAst), "game", env);
+    } catch (e) {
+      const dm: { depth: number; msg: string } | null = this.deepestMiss;
+      if (e instanceof CompilerMatchError && dm) {
+        throw new Error(`${e.message}  [deepest: ${dm.msg}]`);
+      }
+      throw e;
+    }
   }
 
   public compileActual<T = unknown>(
@@ -104,6 +117,14 @@ export class Compiler {
       return this.registry.construct<T>(bundle, env);
     }
 
+    if (this.deepestMiss === null || this.depth > this.deepestMiss.depth) {
+      this.deepestMiss = {
+        depth: this.depth,
+        msg: candidates.length === 0
+          ? `no grammar candidate: keyword '${head}' is not a <${expectedSymbol}>`
+          : `<${expectedSymbol}> '${head}': args matched none of ${candidates.length} clause(s)`,
+      };
+    }
     throw new CompilerMatchError(`Compiler: no <${expectedSymbol}> clause matched ${describeNode(node)}`);
   }
 
@@ -215,6 +236,7 @@ export class Compiler {
     node: LudNode,
     env: CompilerEnv,
   ): { matched: boolean; value?: unknown; error?: unknown } {
+    this.depth++;
     try {
       if (arg.list) {
         if (isList(node) && node.delimiter === "curly") {
@@ -245,6 +267,8 @@ export class Compiler {
     } catch (error) {
       if (error instanceof CompilerMatchError) return { matched: false };
       return { matched: false, error };
+    } finally {
+      this.depth--;
     }
   }
 
@@ -262,7 +286,7 @@ export class Compiler {
         if (clause.keyword !== null) {
           if (sameKeyword(clause.keyword, keyword)) out.push({ symbol, clause, clauseIndex });
         } else if (clause.alias !== null) {
-          visit(stripSymbol(clause.alias));
+          for (const alias of alternativeSymbols(clause.alias)) visit(alias);
         }
       });
     };
@@ -315,10 +339,11 @@ export class Compiler {
       if (!rule) return false;
       for (const clause of rule.clauses) {
         if (clause.keyword !== null) continue;
-        const alias = clause.alias ? stripSymbol(clause.alias) : null;
-        if (!alias) continue;
-        if (sameKeyword(alias, ident)) return true;
-        if (this.grammar.has(alias) && visit(alias)) return true;
+        if (!clause.alias) continue;
+        for (const alias of alternativeSymbols(clause.alias)) {
+          if (sameKeyword(alias, ident)) return true;
+          if (this.grammar.has(alias) && visit(alias)) return true;
+        }
       }
       return false;
     };
@@ -404,6 +429,11 @@ function alternativeSymbols(symbol: string): string[] {
 
 function stripSymbol(symbol: string): string {
   let out = symbol.trim();
+  if (out === "<>") return "<";
+  if (out === "<<=>") return "<=";
+  if (out === "<=>") return "=";
+  if (out === "<>>") return ">";
+  if (out === "<>=") return ">=";
   const colon = out.lastIndexOf(":");
   if (colon !== -1) out = out.slice(colon + 1).trim();
   while (out.startsWith("[") || out.startsWith("(") || out.startsWith("{")) out = out.slice(1).trim();
