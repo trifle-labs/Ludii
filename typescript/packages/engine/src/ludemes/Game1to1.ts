@@ -278,6 +278,25 @@ export class Game1to1 implements Game {
     }
 
     const trial = new Trial([], false, -1);
+
+    // Populate trial._startingPos: for each piece type (component index), record its initial sites.
+    // @java game/Game.java — start() → context.trial().startingPos() populated by Add.apply()
+    // In Java, ActionAdd.apply() adds each start site to trial.startingPos[componentIndex].
+    // Here we reconstruct it from the initial cells/whats arrays post start-rule application.
+    // This is needed for (sites Start (piece ...)) in defines like InitialPawnMove.
+    {
+      const startingPos: number[][] = [];
+      for (let site = 0; site < whats.length; site++) {
+        const what = whats[site]!;
+        if (what > 0) {
+          // Ensure array is long enough
+          while (startingPos.length <= what) startingPos.push([]);
+          startingPos[what]!.push(site);
+        }
+      }
+      trial._startingPos = startingPos;
+    }
+
     const ctx = new Context(this, state, trial);
 
     return attachRadials(ctx, this.equipment.board.radials, this.equipment.board.trajectories);

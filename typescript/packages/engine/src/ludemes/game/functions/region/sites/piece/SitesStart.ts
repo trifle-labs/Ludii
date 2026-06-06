@@ -72,29 +72,17 @@ export class SitesStart extends BaseRegionFunction {
     }
 
     // @java return context.trial().startingPos().get(index)
-    const startingPos = (ctx.trial as unknown as {
-      startingPos?: () => Array<number[] | { sites?: number[]; toArray?(): number[] }>;
-      _startingPos?: Array<number[] | { sites?: number[]; toArray?(): number[] }>;
-    }).startingPos?.()
-      ?? (ctx.trial as unknown as { _startingPos?: Array<number[]> })._startingPos;
+    // In TS, Trial._startingPos is a number[][] populated by Game1to1.start().
+    const startingPos: number[][] | null = ctx.trial._startingPos
+      ?? (ctx.trial as unknown as { _startingPos?: number[][] | null })._startingPos
+      ?? null;
 
-    if (!startingPos || index >= startingPos.length) {
+    if (!startingPos || index < 0 || index >= startingPos.length) {
       return [];
     }
 
     const posEntry = startingPos[index];
-    if (!posEntry) return [];
-
-    // Handle both plain number[] and Region-like objects
-    if (Array.isArray(posEntry)) {
-      return posEntry as number[];
-    }
-    // @java Region.sites() or Region.toArray()
-    const regionLike = posEntry as { sites?: number[]; toArray?(): number[] };
-    if (Array.isArray(regionLike.sites)) return regionLike.sites;
-    if (typeof regionLike.toArray === "function") return regionLike.toArray();
-
-    return [];
+    return posEntry ?? [];
   }
 
   /**

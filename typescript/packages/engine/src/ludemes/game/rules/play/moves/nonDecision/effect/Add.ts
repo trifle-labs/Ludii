@@ -30,22 +30,22 @@ export class Add implements MovesFunction {
 
   /**
    * Optional: specific piece component index to place.
-   * When non-null, this is called to get the `what` (component index) and
-   * `owner` for the ActionAdd, rather than using `mover`.
+   * When non-null, this is called to get the `what` (component index),
+   * `owner`, and optional `state` for the ActionAdd, rather than using `mover`.
    *
-   * @java Add.java — piece.component().index() / piece.owner()
+   * @java Add.java — piece.component().index() / piece.owner() / piece state
    */
-  private readonly pieceFn: { what: IntFunction; owner: number } | null;
+  private readonly pieceFn: { what: IntFunction; owner: number; state?: IntFunction } | null;
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Add.java — constructor
    *
    * @param toRegion  The region of valid target sites
-   * @param pieceFn   Optional specific piece to place (what + owner)
+   * @param pieceFn   Optional specific piece to place (what + owner + optional state)
    */
   public constructor(
     toRegion: RegionFunction,
-    pieceFn: { what: IntFunction; owner: number } | null = null,
+    pieceFn: { what: IntFunction; owner: number; state?: IntFunction } | null = null,
   ) {
     this.toRegion = toRegion;
     this.pieceFn = pieceFn;
@@ -56,6 +56,8 @@ export class Add implements MovesFunction {
    *
    * For each site in the region, emit one Move with an ActionAdd.
    * If pieceFn is provided, uses the specified piece; otherwise uses mover's piece.
+   * The optional `state` from pieceFn (e.g. `state:(mover)`) sets the placed piece's
+   * state in the ActionAdd, enabling territory ownership tracking.
    *
    * Java lines 263-300: `for (int toSite = ...) { ActionAdd action = ... }`
    */
@@ -68,12 +70,19 @@ export class Add implements MovesFunction {
     let what: number;
     let owner: number;
     let placedOwner: number;
+    let stateVal: number | undefined;
     if (this.pieceFn) {
       what = this.pieceFn.what.eval(ctx);
       // owner = -1 means "use mover" (e.g. (piece (mover)))
       owner = this.pieceFn.owner < 0 ? mover : this.pieceFn.owner;
       // For neutral pieces (owner=0), move is attributed to the mover
       placedOwner = owner > 0 ? owner : mover;
+      // Optional state field: e.g. (piece "Disc0" state:(mover)) sets state=mover
+      // @java Add.java — ActionAdd includes the piece's state parameter
+      if (this.pieceFn.state) {
+        const sv = this.pieceFn.state.eval(ctx);
+        if (sv >= 0) stateVal = sv;
+      }
     } else {
       // Default: mover's own piece
       // @java Add.java:263 — ActionAdd(to, what, who, ...)
@@ -86,7 +95,7 @@ export class Add implements MovesFunction {
     for (const site of sites) {
       if (site < 0) continue;
 
-      const action = new ActionAdd({ to: site, what, owner });
+      const action = new ActionAdd({ to: site, what, owner, ...(stateVal !== undefined ? { state: stateVal } : {}) });
 
       moves.push(new Move({
         id: `add:${mover}:${site}`,

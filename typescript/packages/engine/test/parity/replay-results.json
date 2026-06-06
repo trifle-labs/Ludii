@@ -1,13 +1,13 @@
 {
   "summary": {
-    "totalTrials": 14,
-    "elapsed_s": 0.6,
+    "totalTrials": 2,
+    "elapsed_s": 0,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 12,
+      "MOVE_MISMATCH": 2,
       "WINNER_MISMATCH": 0,
-      "OUTCOME_OK": 2,
+      "OUTCOME_OK": 0,
       "REPLAY_OK_NO_OUTCOME": 0
     }
   },
@@ -15,71 +15,16 @@
     "COMPILE_FAIL": [],
     "MOVE_MISMATCH": [
       [
-        "board/sow/three_rows/Gabata (Adowa)",
-        2
-      ],
-      [
-        "board/sow/three_rows/Gabata (Aksum)",
-        2
-      ],
-      [
-        "board/sow/three_rows/Rab'e",
-        2
-      ],
-      [
-        "board/sow/three_rows/Selus",
-        2
-      ],
-      [
-        "board/sow/three_rows/Selus (Massawa)",
-        2
-      ],
-      [
-        "board/sow/three_rows/The Concentration Game",
+        "board/race/escape/Ashta-kashte",
         2
       ]
     ]
   },
   "exampleMismatches": [
     {
-      "game": "board/sow/three_rows/Gabata (Adowa)",
-      "ply": 102,
-      "recMove": "mover=1,from=17,to=17",
-      "tsMoveCount": 5,
-      "sampleTsMoves": [
-        "mover=2,from=15,to=15,isPass=false",
-        "mover=2,from=13,to=13,isPass=false",
-        "mover=2,from=6,to=6,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/sow/three_rows/Gabata (Adowa)",
-      "ply": 132,
-      "recMove": "mover=1,from=2,to=2",
-      "tsMoveCount": 5,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=4,to=4,isPass=false",
-        "mover=1,from=11,to=11,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/sow/three_rows/Gabata (Aksum)",
-      "ply": 113,
-      "recMove": "mover=2,from=14,to=14",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=2,from=16,to=16,isPass=false",
-        "mover=2,from=15,to=15,isPass=false"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/sow/three_rows/Gabata (Aksum)",
-      "ply": 46,
-      "recMove": "mover=1,from=0,to=0",
+      "game": "board/race/escape/Ashta-kashte",
+      "ply": 2,
+      "recMove": "mover=1,from=49,to=27",
       "tsMoveCount": 1,
       "sampleTsMoves": [
         "mover=1,from=-1,to=-1,isPass=true"
@@ -87,184 +32,40 @@
       "detail": "No matching TS move"
     },
     {
-      "game": "board/sow/three_rows/Rab'e",
-      "ply": 17,
-      "recMove": "mover=1,from=-1,to=-1[Pass]",
+      "game": "board/race/escape/Ashta-kashte",
+      "ply": 10,
+      "recMove": "mover=1,from=49,to=27",
       "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=1,from=15,to=15,isPass=false"
+        "mover=1,from=-1,to=-1,isPass=true"
       ],
       "detail": "No matching TS move"
     }
   ],
   "perTrial": [
     {
-      "bucket": "OUTCOME_OK",
-      "game": "board/sow/three_rows/Abalala'e",
-      "plyReplayed": 103,
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Abalala'e/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "OUTCOME_OK",
-      "game": "board/sow/three_rows/Abalala'e",
-      "plyReplayed": 143,
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Abalala'e/RandomTrial_1.txt"
-    },
-    {
       "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Gabata (Adowa)",
-      "ply": 102,
+      "game": "board/race/escape/Ashta-kashte",
+      "ply": 2,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=17,to=17",
-      "tsMoveCount": 5,
-      "sampleTsMoves": [
-        "mover=2,from=15,to=15,isPass=false",
-        "mover=2,from=13,to=13,isPass=false",
-        "mover=2,from=6,to=6,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Gabata (Adowa)/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Gabata (Adowa)",
-      "ply": 132,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=2,to=2",
-      "tsMoveCount": 5,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=4,to=4,isPass=false",
-        "mover=1,from=11,to=11,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Gabata (Adowa)/RandomTrial_1.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Gabata (Aksum)",
-      "ply": 113,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=14,to=14",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=2,from=16,to=16,isPass=false",
-        "mover=2,from=15,to=15,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Gabata (Aksum)/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Gabata (Aksum)",
-      "ply": 46,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=0,to=0",
+      "recMove": "mover=1,from=49,to=27",
       "tsMoveCount": 1,
       "sampleTsMoves": [
         "mover=1,from=-1,to=-1,isPass=true"
       ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Gabata (Aksum)/RandomTrial_1.txt"
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Ashta-kashte/RandomTrial_0.txt"
     },
     {
       "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Rab'e",
-      "ply": 17,
+      "game": "board/race/escape/Ashta-kashte",
+      "ply": 10,
       "detail": "No matching TS move",
-      "recMove": "mover=1,from=-1,to=-1[Pass]",
+      "recMove": "mover=1,from=49,to=27",
       "tsMoveCount": 1,
       "sampleTsMoves": [
-        "mover=1,from=15,to=15,isPass=false"
+        "mover=1,from=-1,to=-1,isPass=true"
       ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Rab'e/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Rab'e",
-      "ply": 12,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=-1,to=-1[Pass]",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=2,from=10,to=10,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Rab'e/RandomTrial_1.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Selus",
-      "ply": 21,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=3,to=3",
-      "tsMoveCount": 2,
-      "sampleTsMoves": [
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=5,to=5,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Selus",
-      "ply": 13,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=7,to=7",
-      "tsMoveCount": 5,
-      "sampleTsMoves": [
-        "mover=2,from=6,to=6,isPass=false",
-        "mover=2,from=12,to=12,isPass=false",
-        "mover=2,from=14,to=14,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus/RandomTrial_1.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Selus (Massawa)",
-      "ply": 91,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=18,to=2",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=18,to=9,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus (Massawa)/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/Selus (Massawa)",
-      "ply": 101,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=18,to=10",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=18,to=9,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Selus (Massawa)/RandomTrial_1.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/The Concentration Game",
-      "ply": 18,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=2,to=2",
-      "tsMoveCount": 3,
-      "sampleTsMoves": [
-        "mover=1,from=4,to=4,isPass=false",
-        "mover=1,from=1,to=1,isPass=false",
-        "mover=1,from=3,to=3,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/The Concentration Game/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/sow/three_rows/The Concentration Game",
-      "ply": 25,
-      "detail": "No matching TS move",
-      "recMove": "mover=2,from=7,to=7",
-      "tsMoveCount": 4,
-      "sampleTsMoves": [
-        "mover=2,from=8,to=8,isPass=false",
-        "mover=2,from=9,to=9,isPass=false",
-        "mover=2,from=10,to=10,isPass=false"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/The Concentration Game/RandomTrial_1.txt"
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Ashta-kashte/RandomTrial_1.txt"
     }
   ]
 }

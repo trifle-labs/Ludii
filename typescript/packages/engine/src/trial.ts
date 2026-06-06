@@ -41,6 +41,14 @@ export class Trial {
   public readonly previousStatesWithinATurn: readonly number[];
   public readonly ranking: readonly number[];
 
+  /**
+   * Starting positions per component index.
+   * @java other/trial/Trial.java — startingPos: List<Region>
+   * Populated by Game1to1.start() from the initial board placement.
+   * Used by (sites Start (piece ...)) in defines like InitialPawnMove.
+   */
+  public _startingPos: number[][] | null = null;
+
   public constructor(
     moves: readonly Move[],
     over: boolean,
@@ -85,12 +93,16 @@ export class Trial {
   }
 
   public withMove(move: Move, over: boolean, winner: number): Trial {
-    return new Trial([...this.moves, move], over, winner, {
+    const t = new Trial([...this.moves, move], over, winner, {
       numInitialPlacementMoves: this.numInitialPlacementMoves,
       previousStates: this.previousStates,
       previousStatesWithinATurn: this.previousStatesWithinATurn,
       ranking: this.ranking,
     });
+    // Carry forward _startingPos (immutable starting positions, never changes during play).
+    // @java Trial.java — startingPos is set once at game start and never modified.
+    t._startingPos = this._startingPos;
+    return t;
   }
 
   /**
@@ -100,12 +112,14 @@ export class Trial {
    */
   public saveState(state: State): Trial {
     const hash = state.hash();
-    return new Trial(this.moves, this.over, this.winner, {
+    const t = new Trial(this.moves, this.over, this.winner, {
       numInitialPlacementMoves: this.numInitialPlacementMoves,
       previousStates: [...this.previousStates, hash],
       previousStatesWithinATurn: [...this.previousStatesWithinATurn, hash],
       ranking: this.ranking,
     });
+    t._startingPos = this._startingPos;
+    return t;
   }
 
   /**
@@ -114,21 +128,25 @@ export class Trial {
    * for repetition detection across consecutive turns).
    */
   public newTurn(): Trial {
-    return new Trial(this.moves, this.over, this.winner, {
+    const t = new Trial(this.moves, this.over, this.winner, {
       numInitialPlacementMoves: this.numInitialPlacementMoves,
       previousStates: this.previousStates,
       previousStatesWithinATurn: [],
       ranking: this.ranking,
     });
+    t._startingPos = this._startingPos;
+    return t;
   }
 
   public withRanking(ranking: readonly number[]): Trial {
-    return new Trial(this.moves, this.over, this.winner, {
+    const t = new Trial(this.moves, this.over, this.winner, {
       numInitialPlacementMoves: this.numInitialPlacementMoves,
       previousStates: this.previousStates,
       previousStatesWithinATurn: this.previousStatesWithinATurn,
       ranking,
     });
+    t._startingPos = this._startingPos;
+    return t;
   }
 
   /** Java parity: `Trial.lastMove()` — undefined when no moves yet. */

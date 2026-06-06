@@ -60,6 +60,7 @@ import { IntConstant } from "./ludemes/game/functions/ints/IntConstant.js";
 import { IsLine } from "./ludemes/game/functions/booleans/is/line/IsLine.js";
 import { IsDecided } from "./ludemes/game/functions/booleans/is/string/IsDecided.js";
 import { SitesEmpty } from "./ludemes/game/functions/region/sites/SitesEmpty.js";
+import { SitesStart } from "./ludemes/game/functions/region/sites/piece/SitesStart.js";
 import { CountMoves } from "./ludemes/game/functions/ints/count1to1/CountMoves.js";
 import { IsEven } from "./ludemes/game/functions/booleans/math1to1/IsEven.js";
 import { OrBool } from "./ludemes/game/functions/booleans/math1to1/OrBool.js";
@@ -1501,6 +1502,13 @@ export function compileInt1to1(node: LudNode | undefined): IntFunction {
 
 export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
   if (!node) throw new Error("compiler1to1: expected RegionFunction node");
+  // Handle number literal: bare integer site index → singleton region [n].
+  // @java game/functions/region/sites/index/SiteIndex.java — eval: returns [index]
+  // Used in (set Count N at:2) where `at:2` is a bare integer site index.
+  if (isNumber(node)) {
+    const siteIdx = node.value;
+    return { eval(_ctx: Context): number[] { return [siteIdx]; } };
+  }
   // Handle ident: bare P1/P2/... or SiteType idents — return empty region instead of throw
   if (!isList(node)) {
     if (isIdent(node)) {
@@ -1595,6 +1603,26 @@ export function compileRegion1to1(node: LudNode | undefined): RegionFunction {
         }};
       }
       if (kind === "empty") return new SitesEmpty();
+      // (sites Start (piece <indexFn>)) — sites where the specified component starts.
+      // @java game/functions/region/sites/piece/SitesStart.java
+      // Used in InitialPawnMove: (is In (from) (sites Start (piece (what at:(from)))))
+      // indexFn = the component index = (what at:(from)) (piece type at from-site).
+      if (kind === "start") {
+        // The argument is a (piece <indexFn>) form; extract the indexFn.
+        const pieceArgNode = positional[1];
+        let indexFn: IntFunction | null = null;
+        if (pieceArgNode && isList(pieceArgNode) && headOf(pieceArgNode) === "piece") {
+          const pieceArgs = parseArgs1to1(pieceArgNode.items);
+          const pieceIndexNode = pieceArgs.positional[0];
+          if (pieceIndexNode) {
+            try { indexFn = compileInt1to1(pieceIndexNode); } catch { /* null */ }
+          }
+        } else if (pieceArgNode) {
+          // No (piece ...) wrapper — treat positional[1] directly as an indexFn
+          try { indexFn = compileInt1to1(pieceArgNode); } catch { /* null */ }
+        }
+        return new SitesStart(indexFn);
+      }
       // (sites Between from:<intFn> to:<intFn> [fromIncluded:true] [toIncluded:true])
       // @java game/functions/region/sites/between/SitesBetween.java — eval(Context)
       // Returns all sites strictly between `from` and `to` along the same radial.
@@ -3788,6 +3816,39 @@ export function compileBool1to1(
         return new NoMoves("Mover");
       }
       if (kind === "pieces") {
+        // (no Pieces in:<region>) — check if there are no pieces (countAt > 0) in
+        // the region. Java NoPieces with in: uses whereFn to filter the owned-positions.
+        // For mancala (Shared pieces), this means: no nonzero count in any filtered site.
+        // @java game/functions/booleans/no/pieces/NoPieces.java — whereFn
+        const { named: noNamed } = parseArgs1to1(node.items);
+        const inNode = noNamed.get("in");
+        if (inNode) {
+          try {
+            const regionFn = compileRegion1to1(inNode);
+            // Determine role (if given) for ownership check
+            const roleNode2 = positional[1];
+            const role2 = (roleNode2 && isIdent(roleNode2)) ? roleNode2.name.toLowerCase() : null;
+            return { eval(ctx: Context): boolean {
+              const sites = regionFn.eval(ctx);
+              const state = ctx.state;
+              const g = ctx.game as unknown as Game1to1;
+              const boardSize = g.equipment?.board?.numSites ?? state.cells.length;
+              for (const s of sites) {
+                if (s < 0 || s >= boardSize) continue;
+                // For Shared/mancala: check countAt > 0
+                if ((state.countAt[s] ?? 0) > 0) return false;
+                // For player-owned games: also check cells ownership
+                if (role2 && role2 !== "all") {
+                  let pid = state.mover;
+                  if (role2 === "next") pid = (state.mover % ctx.game.numPlayers) + 1;
+                  else if (role2.startsWith("p") && !isNaN(parseInt(role2.slice(1), 10))) pid = parseInt(role2.slice(1), 10);
+                  if ((state.cells[s] ?? 0) === pid) return false;
+                }
+              }
+              return true;
+            }};
+          } catch { /* fall through to default */ }
+        }
         const roleNode = positional[1];
         if (roleNode && isIdent(roleNode)) {
           return new NoPieces1to1(roleNode.name as RoleType);
@@ -4728,10 +4789,18 @@ export function attachThen(
 export function compilePieceArg1to1(
   node: LudList,
   equipment: Equipment1to1,
-): { what: IntFunction; owner: number } | null {
+): { what: IntFunction; owner: number; state?: IntFunction } | null {
   const pArgs = parseArgs1to1(node.items);
   const first = pArgs.positional[0];
   if (!first) return null;
+
+  // Extract optional state:<intFn> named argument — @java Piece.java state() accessor
+  // (piece "Disc0" state:(mover)) sets the placed piece's state to the mover index.
+  let stateFn: IntFunction | undefined;
+  const stateNode = pArgs.named.get("state");
+  if (stateNode) {
+    try { stateFn = compileInt1to1(stateNode); } catch { /* ignore */ }
+  }
 
   // (piece "Name0") — fixed piece name with optional owner suffix
   if (isString(first)) {
@@ -4746,13 +4815,13 @@ export function compilePieceArg1to1(
     if (!match) return null;
     const idx = match.index;
     const owner = match.owner;
-    return { what: { eval: (_ctx: Context) => idx }, owner };
+    return { what: { eval: (_ctx: Context) => idx }, owner, state: stateFn };
   }
 
   // (piece (mover)) — use mover's primary piece
   if (isList(first) && headOf(first) === "mover") {
     // Returns mover index; owner = mover at eval time
-    return { what: { eval: (ctx: Context) => ctx.state.mover }, owner: -1 }; // owner=-1 means "use mover"
+    return { what: { eval: (ctx: Context) => ctx.state.mover }, owner: -1, state: stateFn }; // owner=-1 means "use mover"
   }
 
   // (piece (id "Name0")) / (piece (id "Name" Role)) — piece by name with optional dynamic owner
@@ -4805,6 +4874,7 @@ export function compilePieceArg1to1(
             }
           },
           owner: -1, // -1 = dynamic (use what's owner from above), handled in Add.eval
+          state: stateFn,
         };
       }
     }
@@ -4953,7 +5023,10 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     const skipIfNode = named.get("skipif");
     let skipIfFn: BooleanFunction | undefined;
     if (skipIfNode) { try { skipIfFn = compileBool1to1(skipIfNode, 2); } catch { /* none */ } }
-    return { eval(ctx: Context): Move[] {
+    // @java Sow.java — the (then ...) positional arg is a post-sow consequence
+    // (e.g. (if (is Occupied ...) (moveAgain)) for multi-lap sowing). Capture it
+    // here so attachThen() can wrap the sow generator below.
+    const sowInnerGen = { eval(ctx: Context): Move[] {
       const game = ctx.game as unknown as Game1to1;
       const allTracks = [...(game.equipment?.tracks?.entries() ?? [])];
       const wantOwner = ownerFn ? ownerFn.eval(ctx) : -1;
@@ -5085,6 +5158,10 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
         placedOwner: ctx.state.mover, actions, moveAgain,
       })];
     }};
+    // Attach any (then ...) consequence from the sow node's positional args.
+    // @java Sow.java — then field: evaluated in post-sow context to allow
+    //   per-lap effects like (moveAgain) for multi-lap sowing.
+    return attachThen(sowInnerGen, positional, equipment);
   }
 
   // ---- (fromTo (from ...) (to ...) [count:N] [(then ...)]) — standalone -----
@@ -5240,7 +5317,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       // Extract optional (piece "Name") or (piece (mover)) argument.
       // @java Add.java — piece.component().index() and piece.owner()
       const pieceNode = positional.find(n => isList(n) && headOf(n) === "piece");
-      let pieceFn: { what: IntFunction; owner: number } | null = null;
+      let pieceFn: { what: IntFunction; owner: number; state?: IntFunction } | null = null;
       if (pieceNode && isList(pieceNode) && equipment) {
         pieceFn = compilePieceArg1to1(pieceNode, equipment);
       }
@@ -5339,6 +5416,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
               let what: number;
               let owner: number;
               let placedOwner: number;
+              let stateValApply: number | undefined;
               if (pieceFn) {
                 what = pieceFn.what.eval(ctx);
                 if (pieceFn.owner < 0) {
@@ -5352,12 +5430,21 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
                   owner = pieceFn.owner;
                 }
                 placedOwner = owner > 0 ? owner : mover;
+                // Optional piece state (e.g. state:(mover))
+                if (pieceFn.state) {
+                  const sv = pieceFn.state.eval(ctx);
+                  if (sv >= 0) stateValApply = sv;
+                }
               } else {
                 what = mover;
                 owner = mover;
                 placedOwner = mover;
               }
-              const addAction = new ActionAdd({ to: site, what, owner });
+              const addAction = new ActionAdd({ to: site, what, owner, ...(stateValApply !== undefined ? { state: stateValApply } : {}) });
+              // Mark the Add as the decision action so Move.from()/to() read the
+              // placement site (site X), not the prepended apply-effect action
+              // (e.g. ActionSetScore with from=-1). Java ActionAdd.decision=true.
+              addAction.setDecision(true);
               moves.push(new Move({
                 id: `add-apply:${mover}:${site}`,
                 label: `Add(${site})`,
@@ -5365,6 +5452,10 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
                 mover,
                 placedOwner,
                 actions: [...applyActions, addAction],
+                // Point the decision baseline past the prepended apply actions so
+                // from()/to() fall back to the Add action when isDecision() is the
+                // discriminant. Java parity: ActionAdd.isDecision() = true.
+                decisionIndex: applyActions.length,
               }));
             }
             return moves;
@@ -5906,14 +5997,18 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
 
     // (move Pass) — generate a pass move
     // @java game/rules/play/moves/nonDecision/effect/Pass.java
+    // A (move Pass (then ...)) consequence (e.g. Bechi's all-pass cleanup) is
+    // attached via attachThen so post-pass effects (clear board, forget values)
+    // are folded into the pass move's action list.
     if (first && isIdent(first) && first.name.toLowerCase() === "pass") {
-      return { eval(ctx: Context): Move[] {
+      const passGen = { eval(ctx: Context): Move[] {
         const mover = ctx.state.mover;
         return [new Move({
           id: "pass", label: "Pass", siteIndices: [0], mover, placedOwner: mover,
           actions: [new ActionPass()],
         })];
       }};
+      return attachThen(passGen, positional, equipment);
     }
 
     // (move Shoot [(piece "Name")] [(from ...)] [(dirn ...)])
@@ -5943,7 +6038,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       return new Shoot1to1(pieceId, dirnName);
     }
 
-    // (move Slide [direction] [(then (moveAgain))])
+    // (move Slide [direction] [(between ...)] [(to ...)] [(then ...)])
     if (first && isIdent(first) && first.name.toLowerCase() === "slide") {
       const dirnNode = positional[1];
       let dirnName = "Adjacent";
@@ -5951,7 +6046,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
         dirnName = dirnNode.name;
       }
       // Parse (to if:<cond> (apply <effect>)) — landing rule + capture (chess).
-      // @java Slide.java: toRule = to.cond(); sideEffect = to.effect()
+      // @java Slide.java: stopRule = to.cond(); sideEffect = to.effect()
       let slideToCond: BooleanFunction | undefined;
       let slideApply: MovesFunction | undefined;
       const slideToNode = positional.find(n => isList(n) && headOf(n) === "to");
@@ -5970,7 +6065,57 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
           try { slideApply = compileMoves1to1(applyEffectNode, equipment); } catch { /* skip */ }
         }
       }
-      const slideMoves: MovesFunction = new Slide1to1(dirnName, slideToCond ?? undefined, slideApply);
+      // Parse (between [(exact N) | (range min max) | (max N)] [if:<goRule>]) — distance constraints.
+      // @java Slide.java: minFn = between.range().minFn(); limit = between.range().maxFn(); goRule = between.condition()
+      // Default: min=-1 (Constants.UNDEFINED, no minimum), max=1000 (Constants.MAX_DISTANCE, unlimited).
+      let slideMinDist = -1;
+      let slideMaxDist = 1000;
+      let slideGoRule: BooleanFunction | undefined;
+      const slideBetweenNode = positional.find(n => isList(n) && headOf(n) === "between");
+      if (slideBetweenNode && isList(slideBetweenNode)) {
+        const sbArgs = parseArgs1to1(slideBetweenNode.items);
+        // Parse the range sub-expression: (exact N), (range min max), (max N)
+        for (const bp of sbArgs.positional) {
+          if (!isList(bp)) continue;
+          const bph = headOf(bp);
+          if (bph === "exact") {
+            // (exact N) → min=N, max=N
+            const exArgs = parseArgs1to1(bp.items);
+            const exVal = exArgs.positional[0];
+            if (exVal) {
+              try {
+                const n = compileInt1to1(exVal).eval({ state: { mover: 1 } } as unknown as Context);
+                slideMinDist = n;
+                slideMaxDist = n;
+              } catch { /* skip */ }
+            }
+          } else if (bph === "range") {
+            // (range min max) → separate min and max
+            const rArgs = parseArgs1to1(bp.items);
+            const rMin = rArgs.positional[0];
+            const rMax = rArgs.positional[1];
+            if (rMin) { try { slideMinDist = compileInt1to1(rMin).eval({ state: { mover: 1 } } as unknown as Context); } catch { /* skip */ } }
+            if (rMax) { try { slideMaxDist = compileInt1to1(rMax).eval({ state: { mover: 1 } } as unknown as Context); } catch { /* skip */ } }
+          } else if (bph === "max") {
+            // (max N) → min=1 (default minimum), max=N
+            const mArgs = parseArgs1to1(bp.items);
+            const mVal = mArgs.positional[0];
+            if (mVal) { try { slideMaxDist = compileInt1to1(mVal).eval({ state: { mover: 1 } } as unknown as Context); } catch { /* skip */ } }
+            slideMinDist = 1;
+          }
+        }
+        // Parse the go-rule: if:<cond> on between sites
+        const sbIf = sbArgs.named.get("if");
+        if (sbIf) { try { slideGoRule = compileBool1to1(sbIf, 2); } catch { /* default empty-between */ } }
+      }
+      const slideMoves: MovesFunction = new Slide1to1(
+        dirnName,
+        slideToCond ?? null,   // null = no (to if:...) clause → Java stopRule=null (unlimited slide)
+        slideApply,
+        slideGoRule ?? undefined,
+        slideMinDist,
+        slideMaxDist,
+      );
       // (then <moves>) consequence chaining (incl. conditional moveAgain).
       // @java game/rules/play/moves/nonDecision/effect/Then.java — eval wraps each move
       // @java game/rules/play/moves/nonDecision/effect/state/MoveAgain.java
@@ -6839,18 +6984,89 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     };
   }
 
-  // ---- (append <moves1> <moves2>) — same as (and ...) ----------------------
+  // ---- (append <list> [then:<moves>]) — compound-move builder ---------------
   // @java game/rules/play/moves/nonDecision/operators/logical/Append.java
+  //
+  // Java semantics (Append.eval):
+  //   1. Evaluate `list` (the single NonDecision sub-generator).
+  //   2. If evaluated list is EMPTY → return empty (then is NOT applied).
+  //   3. Mark each sub-move as decision=true.
+  //   4. Merge ALL sub-moves' actions into ONE compound Move via new Move(evaluated).
+  //   5. Attach `then` as a consequence on that single merged move.
+  //
+  // The previous (incorrect) TS implementation treated every positional as a
+  // parallel sub-generator and unioned outputs, wrongly including `(then ...)`
+  // as a standalone move generator rather than a consequence. This produced
+  // 132 SetScore-only moves in MacBeth's Playing phase instead of the correct
+  // custodial+consequence compound moves.
   if (h === "append") {
     const { positional } = parseArgs1to1(node.items);
-    const subMoves = flattenMovesList(positional, equipment);
+    // Separate the `list` (first non-then positional) from the `then` clause.
+    const appendListNode = positional.find(p => !(isList(p) && headOf(p as import("@ludii/typescript-language").LudList) === "then"));
+    const appendThenNode = positional.find(p => isList(p) && headOf(p as import("@ludii/typescript-language").LudList) === "then");
+    if (!appendListNode) {
+      return { eval(_ctx: Context): Move[] { return []; } };
+    }
+    let appendListFn: MovesFunction;
+    try { appendListFn = compileMoves1to1(appendListNode, equipment); }
+    catch { return { eval(_ctx: Context): Move[] { return []; } }; }
+    let appendThenFn: MovesFunction | null = null;
+    if (appendThenNode && isList(appendThenNode)) {
+      const { positional: thenPos } = parseArgs1to1((appendThenNode as import("@ludii/typescript-language").LudList).items);
+      const thenInner = thenPos[0];
+      if (thenInner) {
+        try { appendThenFn = compileMoves1to1(thenInner, equipment); } catch { /* skip */ }
+      }
+    }
+    const appendThenFnFinal = appendThenFn;
     return {
       eval(ctx: Context): Move[] {
-        const all: Move[] = [];
-        for (const sub of subMoves) {
-          for (const m of sub.eval(ctx)) all.push(m);
+        // Step 1: evaluate the list
+        const evaluated = appendListFn.eval(ctx);
+        // Step 2: if empty, return empty (then is NOT applied — Java parity)
+        if (evaluated.length === 0) return [];
+        // Step 3: merge all sub-move actions into one compound Move.
+        // @java new Move(evaluated) — concatenates all action lists.
+        const mover = ctx.state.mover;
+        // The first sub-move provides the decision context (from/to/mover).
+        const first = evaluated[0]!;
+        // Mark each sub-move's first action as decision (Java setDecision(true) per sub-move).
+        const mergedActions: import("./action/index.js").Action[] = [];
+        for (const sm of evaluated) {
+          for (const a of sm.actions) mergedActions.push(a);
         }
-        return all;
+        // Build the merged move using the first sub-move's from/to as the decision site.
+        const mergedSiteIndices = evaluated.flatMap(sm => [...sm.siteIndices]);
+        const compound = new Move({
+          id: `append:${mover}:${first.id}`,
+          label: `Append(${first.label})`,
+          siteIndices: mergedSiteIndices.length > 0 ? mergedSiteIndices : [0],
+          mover,
+          placedOwner: first.placedOwner,
+          actions: mergedActions,
+          // Preserve the decision index from the first sub-move so from()/to() point
+          // to the placement action (Add) rather than any prepended effect actions.
+          decisionIndex: first.decisionIndex,
+          fromSite: first.fromSite,
+          toSite: first.toSite,
+        });
+        // Step 5: apply then-consequence if present.
+        if (appendThenFnFinal) {
+          try {
+            const postState = compound.applyTo(ctx.state, ctx.rng);
+            const postTrial = ctx.trial.withMove(compound, false, -1);
+            const postCtx = new Context(ctx.game, postState, postTrial, ctx.rng);
+            (postCtx as unknown as { _evalFrom?: number })._evalFrom = compound.from();
+            (postCtx as unknown as { _evalTo?: number })._evalTo = compound.to();
+            const thenMoves = appendThenFnFinal.eval(postCtx);
+            const extraActions = thenMoves.flatMap(tm => [...tm.actions]);
+            const moveAgain = thenMoves.some(tm => tm.moveAgain);
+            if (extraActions.length > 0 || moveAgain) {
+              return [compound.withConsequence(extraActions, moveAgain)];
+            }
+          } catch { /* fall through to returning compound without then */ }
+        }
+        return [compound];
       }
     };
   }

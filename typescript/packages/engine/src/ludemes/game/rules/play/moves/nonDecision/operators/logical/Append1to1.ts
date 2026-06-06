@@ -9,34 +9,42 @@
  * Java eval (lines 53-77):
  *   final FastArrayList<Move> evaluated = list.eval(context).moves();
  *   for (final Move m : evaluated) m.setDecision(true);
- *   if (evaluated.size() == 0) return moves;
- *   final Move newMove = new Move(evaluated);
+ *   if (evaluated.size() == 0) return moves;   // empty → no output, then NOT applied
+ *   final Move newMove = new Move(evaluated);  // merge all actions into ONE compound Move
  *   newMove.setMover(context.state().mover());
  *   moves.moves().add(newMove);
  *   if (then() != null) newMove.then().add(then().moves());
  *   return moves;
  *
- * The TS 1:1 approximation: collect all sub-moves into a flat list,
- * because the TS Move type does not have an "action-sequence" constructor
- * that merges multiple moves into one compound move.
+ * Key semantic: (append <list> [(then <consequence>)]):
+ *   1. Evaluates <list> only
+ *   2. If <list> empty → return [] (then is NOT applied)
+ *   3. Merges ALL result moves' actions into ONE compound Move
+ *   4. Attaches then as a consequence
  *
- * Registered via registerMoves1to1("append", ...) — logic relocated VERBATIM
- * from the inline compileMoves1to1Impl handler (shadows the inline branch).
+ * The previous (wrong) TS approximation treated every positional as a parallel
+ * sub-generator and unioned outputs, wrongly including `(then ...)` as a
+ * standalone move generator. This produced 132 SetScore-only moves in MacBeth's
+ * Playing phase instead of the correct custodial+consequence compound moves.
  */
 
-import type { Context } from "../../../../../../../../context.js";
-import type { Move } from "../../../../../../../../move.js";
+import { Context } from "../../../../../../../../context.js";
+import { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { Operator1to1 } from "../../operator/Operator1to1.js";
 import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
-import { parseArgs1to1, flattenMovesList } from "../../../../../../../../compiler1to1.js";
-import { type LudList, type LudNode } from "@ludii/typescript-language";
+import {
+  parseArgs1to1,
+  compileMoves1to1,
+  headOf,
+} from "../../../../../../../../compiler1to1.js";
+import { isList, type LudList, type LudNode } from "@ludii/typescript-language";
 
 /**
  * @java game/rules/play/moves/nonDecision/operators/logical/Append.java
  *
- * Appends sub-move-lists, returning a flat union (TS approximation of the
- * Java compound-Move construction).
+ * Faithful compound-move builder: merges all sub-moves from `list` into
+ * a single compound Move, then attaches `then` as a consequence.
  *
  * Java:
  *   public final class Append extends Operator
@@ -49,47 +57,108 @@ export class Append1to1 extends Operator1to1 {
   private readonly list: MovesFunction;
 
   /**
-   * @java game/rules/play/moves/nonDecision/operators/logical/Append.java — constructor(NonDecision, Then)
-   * @param list The sub-moves to collect.
+   * Optional then-consequence generator. @java Append extends Operator (super.then())
    */
-  public constructor(list: MovesFunction) {
+  private readonly thenFn: MovesFunction | null;
+
+  /**
+   * @java game/rules/play/moves/nonDecision/operators/logical/Append.java — constructor(NonDecision, Then)
+   * @param list The sub-moves to collect and merge.
+   * @param thenFn Optional then-consequence generator.
+   */
+  public constructor(list: MovesFunction, thenFn: MovesFunction | null = null) {
     super();
     this.list = list;
+    this.thenFn = thenFn;
   }
 
   /**
    * @java game/rules/play/moves/nonDecision/operators/logical/Append.java — eval(Context)
    *
-   * Java lines 53-77 (simplified):
+   * Java lines 53-77:
    *   evaluated = list.eval(context).moves()
-   *   if empty → return empty
-   *   newMove = new Move(evaluated)   // compound
+   *   for m in evaluated: m.setDecision(true)
+   *   if empty → return empty (then NOT applied)
+   *   newMove = new Move(evaluated)   // compound: merges all actions
    *   newMove.setMover(mover)
-   *   moves.add(newMove)
-   *
-   * TS approximation: return the flat sub-moves list.
-   * Full compound-move merging requires Move constructor features not yet
-   * in the TS port (new Move(FastArrayList<Move>)); this is the closest
-   * faithful implementation without that constructor.
+   *   if then != null: newMove.then().add(then.moves())
+   *   return [newMove]
    */
   public override eval(ctx: Context): Move[] {
-    // @java Append: final FastArrayList<Move> evaluated = list.eval(context).moves();
-    return this.list.eval(ctx);
+    // Step 1: evaluate the list sub-generator
+    const evaluated = this.list.eval(ctx);
+    // Step 2: if empty, return empty (then is NOT applied — Java parity)
+    if (evaluated.length === 0) return [];
+    // Step 3: merge all sub-moves' actions into one compound Move
+    // @java new Move(evaluated) — concatenates all action lists
+    const mover = ctx.state.mover;
+    const first = evaluated[0]!;
+    const mergedActions: Move["actions"][number][] = [];
+    for (const sm of evaluated) {
+      for (const a of sm.actions) mergedActions.push(a);
+    }
+    const mergedSiteIndices = evaluated.flatMap(sm => [...sm.siteIndices]);
+    const compound = new Move({
+      id: `append:${mover}:${first.id}`,
+      label: `Append(${first.label})`,
+      siteIndices: mergedSiteIndices.length > 0 ? mergedSiteIndices : [0],
+      mover,
+      placedOwner: first.placedOwner,
+      actions: mergedActions,
+      decisionIndex: first.decisionIndex,
+      fromSite: first.fromSite,
+      toSite: first.toSite,
+    });
+    // Step 4: apply then-consequence if present
+    // @java newMove.then().add(then().moves())
+    if (this.thenFn) {
+      try {
+        const postState = compound.applyTo(ctx.state, ctx.rng);
+        const postTrial = ctx.trial.withMove(compound, false, -1);
+        const postCtx = new Context(ctx.game, postState, postTrial, ctx.rng);
+        (postCtx as unknown as { _evalFrom?: number })._evalFrom = compound.from();
+        (postCtx as unknown as { _evalTo?: number })._evalTo = compound.to();
+        const thenMoves = this.thenFn.eval(postCtx);
+        const extraActions = thenMoves.flatMap(tm => [...tm.actions]);
+        const moveAgain = thenMoves.some(tm => tm.moveAgain);
+        if (extraActions.length > 0 || moveAgain) {
+          return [compound.withConsequence(extraActions, moveAgain)];
+        }
+      } catch { /* fall through to returning compound without then */ }
+    }
+    return [compound];
   }
 }
 
-// @java Append.java — compile factory: parse (append { ... }) / (append <moves1> <moves2>).
-// Logic relocated VERBATIM from the inline compileMoves1to1Impl "append" handler.
+// @java Append.java — compile factory: parse (append <list> [(then <consequence>)]).
+// Faithful Java semantics: list is the ONLY sub-generator; (then ...) is a consequence,
+// not a parallel sub-generator. If the list produces 0 moves, return []. Otherwise
+// merge all sub-move actions into ONE compound Move and attach then.
 registerMoves1to1("append", (node: LudNode, env: Compile1to1Env): MovesFunction => {
   const { positional } = parseArgs1to1((node as LudList).items);
-  const subMoves = flattenMovesList(positional, env.equipment as Parameters<typeof flattenMovesList>[1]);
-  return {
-    eval(ctx: Context): Move[] {
-      const all: Move[] = [];
-      for (const sub of subMoves) {
-        for (const m of sub.eval(ctx)) all.push(m);
-      }
-      return all;
+  // Separate the `list` (first non-then positional) from the `then` clause.
+  const appendListNode = positional.find(p => !(isList(p) && headOf(p as LudList) === "then"));
+  const appendThenNode = positional.find(p => isList(p) && headOf(p as LudList) === "then");
+
+  if (!appendListNode) {
+    return { eval(_ctx: Context): Move[] { return []; } };
+  }
+
+  let appendListFn: MovesFunction;
+  try {
+    appendListFn = compileMoves1to1(appendListNode, env.equipment as import("../../../../../../../../ludemes/game/equipment/Equipment1to1.js").Equipment1to1 | undefined);
+  } catch {
+    return { eval(_ctx: Context): Move[] { return []; } };
+  }
+
+  let appendThenFn: MovesFunction | null = null;
+  if (appendThenNode && isList(appendThenNode)) {
+    const { positional: thenPos } = parseArgs1to1((appendThenNode as LudList).items);
+    const thenInner = thenPos[0];
+    if (thenInner) {
+      try { appendThenFn = compileMoves1to1(thenInner, env.equipment as import("../../../../../../../../ludemes/game/equipment/Equipment1to1.js").Equipment1to1 | undefined); } catch { /* skip */ }
     }
-  };
+  }
+
+  return new Append1to1(appendListFn, appendThenFn);
 });

@@ -52,9 +52,12 @@ const COMPASS_IDX: Record<string, number> = {
  *   Forwards = [d-1, d, d+1] (forward-left, forward, forward-right)
  *   Backwards = the opposite 3
  *
+ * "Forward" (singular, no "s") = SINGLE direction (just the primary facing direction).
+ *   This is different from "Forwards" which includes diagonals.
+ *
  * @java game/util/directions/RelativeDirection.java
  */
-function resolveRelativeDir(
+export function resolveRelativeDir(
   dirName: string,
   mover: number,
   playerDirs?: Map<number, number>,
@@ -76,20 +79,29 @@ function resolveRelativeDir(
   const dn = dirName.toLowerCase();
   switch (dn) {
     // GROUP directions (3 compass headings in the forward half-plane).
-    // @java RelativeDirection.Forwards.convertToAbsolute(playerDir) returns 3 absolute directions.
-    case "forwards": case "forward":
-      // For a player facing direction d, "Forwards" covers d-1, d, d+1 (the 3 forward-ish dirs).
+    // @java RelativeDirection.Forwards (with 's') = forward half-plane = 3 compass dirs.
+    // @java RelativeDirection.Forward  (no 's')   = primary facing direction = 1 compass dir.
+    case "forwards":
+      // "Forwards" (plural) covers d-1, d, d+1 (the 3 forward-ish dirs) for custom player dirs.
       if (playerDirs && playerDirs.has(mover)) {
-        // Custom player direction: return the forward cone of 3.
         return [
           COMPASS[(facingDir + 7) % 8]!,  // forward-left
           COMPASS[facingDir]!,              // primary forward
           COMPASS[(facingDir + 1) % 8]!,  // forward-right
         ];
       }
-      // Default 2-player case (P1=N, P2=S): return a single direction for backward compat.
+      // Default 2-player case (P1=N, P2=S): return 3 directions.
+      return [
+        COMPASS[(facingDir + 7) % 8]!,
+        COMPASS[facingDir]!,
+        COMPASS[(facingDir + 1) % 8]!,
+      ];
+    case "forward":
+      // "Forward" (singular) = exactly the primary facing direction (no diagonals).
+      // @java RelativeDirection.Forward.convertToAbsolute(playerDir) = single compass dir
       return COMPASS[facingDir % 8]!;
-    case "backwards": case "backward":
+    case "backwards":
+      // "Backwards" (plural) = backward half-plane = 3 dirs.
       if (playerDirs && playerDirs.has(mover)) {
         const back = (facingDir + 4) % 8;
         return [
@@ -98,6 +110,13 @@ function resolveRelativeDir(
           COMPASS[(back + 1) % 8]!,
         ];
       }
+      return [
+        COMPASS[(facingDir + 4 + 7) % 8]!,
+        COMPASS[(facingDir + 4) % 8]!,
+        COMPASS[(facingDir + 4 + 1) % 8]!,
+      ];
+    case "backward":
+      // "Backward" (singular) = single backward direction.
       return COMPASS[(facingDir + 4) % 8]!;
     case "rightward": case "right":      return COMPASS[(facingDir + 2) % 8]!;
     case "leftward": case "left":        return COMPASS[(facingDir + 6) % 8]!;
