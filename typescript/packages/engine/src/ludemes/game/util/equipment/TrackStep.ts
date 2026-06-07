@@ -1,7 +1,7 @@
 // @java Core/src/game/util/equipment/TrackStep.java
 //
 // Defines a single step within a track. Exactly one of dim, dirn, step
-// is non-null — validated at construction. Matches Java's @Or semantics.
+// is non-null, matching Java's @Or constructor semantics.
 
 import { type TrackStepType } from "../../types/board/TrackStepType.js";
 
@@ -26,27 +26,29 @@ export class TrackStep {
   public readonly step: TrackStepType | null;
 
   /**
-   * Constructor — exactly one parameter must be non-null.
+   * Constructor defining either a number, a direction or a step type.
+   * Exactly one parameter must be non-null.
+   *
    * @java TrackStep(@Or Integer dim, @Or CompassDirection dirn, @Or TrackStepType step)
+   * @param dim  Dim function or integer.
+   * @param dirn Compass direction.
+   * @param step Track step type: Off/End/Repeat.
    */
   public constructor(
-    dim: number | null | undefined,
-    dirn: CompassDirectionName | null | undefined,
-    step: TrackStepType | null | undefined,
+    dim: number | null,
+    dirn: CompassDirectionName | null,
+    step: TrackStepType | null,
   ) {
-    const dimOrNull = dim ?? null;
-    const dirnOrNull = dirn ?? null;
-    const stepOrNull = step ?? null;
     const numNonNull =
-      (dimOrNull !== null ? 1 : 0) +
-      (dirnOrNull !== null ? 1 : 0) +
-      (stepOrNull !== null ? 1 : 0);
+      (dim !== null ? 1 : 0) +
+      (dirn !== null ? 1 : 0) +
+      (step !== null ? 1 : 0);
     if (numNonNull !== 1) {
-      throw new Error("TrackStep: exactly one parameter must be non-null.");
+      throw new Error("TrackStep(): Exactly one parameter must be non-null.");
     }
-    this.dim = dimOrNull;
-    this.dirn = dirnOrNull;
-    this.step = stepOrNull;
+    this.dim = dim;
+    this.dirn = dirn;
+    this.step = step;
   }
 
   /** @java TrackStep.hashCode() */

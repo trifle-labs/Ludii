@@ -12,9 +12,20 @@ function tsCtorArity(file) {
   if (!m) return { kind: 'no-ctor' };
   const body = m[1].trim();
   if (!body) return { arity: 0, hasConstructStatics: /static\s+construct/.test(src) };
-  let depth = 0, n = 1;
-  for (const c of body) { if ('([{<'.includes(c)) depth++; else if (')]}>'.includes(c)) depth--; else if (c === ',' && depth === 0) n++; }
-  return { arity: n, hasConstructStatics: /static\s+construct/.test(src) };
+  // Split into top-level params and count NON-EMPTY ones, so a prettier-style
+  // trailing comma in multi-line constructors isn't counted as a phantom param
+  // (previously every such ctor read as arity+1).
+  const parts = [];
+  let depth = 0, cur = '';
+  for (const c of body) {
+    if ('([{<'.includes(c)) { depth++; cur += c; }
+    else if (')]}>'.includes(c)) { depth--; cur += c; }
+    else if (c === ',' && depth === 0) { parts.push(cur); cur = ''; }
+    else cur += c;
+  }
+  parts.push(cur);
+  const arity = parts.filter((p) => p.trim().length > 0).length;
+  return { arity, hasConstructStatics: /static\s+construct/.test(src) };
 }
 
 let checked = 0, drift = 0, noTs = 0; const report = [];

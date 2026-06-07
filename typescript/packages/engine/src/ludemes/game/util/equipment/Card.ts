@@ -50,9 +50,9 @@ export class Card {
     type: CardType,
     rank: number,
     value: number,
-    trumpRank?: number,
-    trumpValue?: number,
-    biased?: number,
+    trumpRank?: number | null,
+    trumpValue?: number | null,
+    biased?: number | null,
   ) {
     this.type = type;
     this.rank = rank;

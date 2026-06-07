@@ -14,10 +14,18 @@ export class End {
   private readonly rules: readonly EndRuleFunction[];
 
   /**
-   * @java game/rules/end/End.java — constructor
+   * @java game/rules/end/End.java — constructor(@Or EndRule endRule, @Or EndRule[] endRules)
    */
-  public constructor(rules: readonly EndRuleFunction[]) {
-    this.rules = rules;
+  public constructor(
+    endRule: EndRuleFunction | null,
+    endRules: readonly EndRuleFunction[] | null,
+  ) {
+    const numNonNull = (endRule != null ? 1 : 0) + (endRules != null ? 1 : 0);
+    if (numNonNull !== 1) {
+      throw new Error("Exactly one Or parameter must be non-null.");
+    }
+
+    this.rules = endRule != null ? [endRule] : endRules!;
   }
 
   /**

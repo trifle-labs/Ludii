@@ -8,16 +8,20 @@
  */
 
 import type { Context } from "../../../../context.js";
-import type { RoleType, ResultType } from "../../../base.js";
+import type { RoleTypeFull } from "../../types/play/RoleType.js";
+import type { ResultTypeFull } from "../../types/play/ResultType.js";
 
 export class Result {
+  public readonly who: RoleTypeFull;
+  public readonly result: ResultTypeFull;
+
   /**
-   * @java game/rules/end/Result.java — constructor
+   * @java game/rules/end/Result.java — constructor(RoleType who, ResultType result)
    */
-  public constructor(
-    public readonly who: RoleType,
-    public readonly result: ResultType,
-  ) {}
+  public constructor(who: RoleTypeFull, result: ResultTypeFull) {
+    this.who = who;
+    this.result = result;
+  }
 
   /**
    * Resolve `who` to a concrete 1-based player index.

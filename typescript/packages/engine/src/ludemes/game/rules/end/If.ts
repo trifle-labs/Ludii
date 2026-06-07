@@ -15,20 +15,34 @@ import type { Result } from "./Result.js";
 
 export class If implements EndRuleFunction {
   private readonly condition: BooleanFunction;
-  private readonly result: Result;
-  private readonly numPlayers: number;
+  private readonly subconditions: readonly If[] | null;
+  private readonly defaultResult: Result | null;
 
   /**
    * @java game/rules/end/If.java — constructor
    *
-   * @param condition  The boolean test (e.g. IsLine)
-   * @param result     The result to apply when the condition fires
-   * @param numPlayers Number of players (needed for "Next" role resolution)
+   * @param test   Condition to end the game.
+   * @param sub    Sub-condition to check.
+   * @param subs   Sub-conditions to check.
+   * @param result Default result to return if no sub-condition is satisfied.
    */
-  public constructor(condition: BooleanFunction, result: Result, numPlayers: number) {
-    this.condition = condition;
-    this.result = result;
-    this.numPlayers = numPlayers;
+  public constructor(
+    test: BooleanFunction,
+    sub: If | null = null,
+    subs: readonly If[] | null = null,
+    result: Result | null = null,
+  ) {
+    let numNonNull = 0;
+    if (sub !== null) numNonNull++;
+    if (subs !== null) numNonNull++;
+
+    if (numNonNull > 1) {
+      throw new Error("Can't have more than one non-null Or parameter.");
+    }
+
+    this.condition = test;
+    this.subconditions = subs !== null ? subs : sub !== null ? [sub] : null;
+    this.defaultResult = result;
   }
 
   /**
@@ -38,15 +52,24 @@ export class If implements EndRuleFunction {
   public eval(ctx: Context): EndResult | null {
     if (!this.condition.eval(ctx)) return null;
 
+    if (this.subconditions !== null) {
+      for (const sub of this.subconditions) {
+        const subResult = sub.eval(ctx);
+        if (subResult !== null) return subResult;
+      }
+    }
+
+    if (this.defaultResult === null) return null;
+
     const mover = ctx.state.mover;
     // @java game/functions/ints/board/Id.java:122 — case Next uses state.next()
-    const who = this.result.resolveWho(mover, this.numPlayers, ctx);
-    const resultType = this.result.result;
+    const n = ctx.game.numPlayers;
+    const who = this.defaultResult.resolveWho(mover, n, ctx);
+    const resultType = this.defaultResult.result;
 
     // Build rankings array: [0, rank_p1, rank_p2, ...]
     // Java parity: winner gets 1.0, loser gets numPlayers+1 rank (worst),
     // draw gives all players (numPlayers+1)/2.
-    const n = this.numPlayers;
     const ranking = new Array<number>(n + 1).fill(0);
     ranking[0] = 0; // unused slot
 

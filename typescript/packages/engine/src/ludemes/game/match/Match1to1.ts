@@ -14,6 +14,8 @@
  */
 
 import type { End } from "../rules/end/End.js";
+import { GamePlayers1to1 } from "../players/GamePlayers1to1.js";
+import type { Games1to1 } from "./Games1to1.js";
 import type { Subgame1to1 } from "./Subgame1to1.js";
 
 /**
@@ -28,11 +30,14 @@ export class Match1to1 {
   /** The number of players. @java Match → Game.players().count() */
   public readonly numPlayers: number;
 
+  /** Players record. @java Game.players */
+  private readonly playersRecord: GamePlayers1to1;
+
   /**
    * The subgame instances that make up the match.
    * @java Match.instances
    */
-  public readonly instances: readonly Subgame1to1[];
+  private readonly _instances: readonly Subgame1to1[];
 
   /**
    * The match-level end rules.
@@ -41,28 +46,44 @@ export class Match1to1 {
   public readonly end: End;
 
   /**
-   * @java game/match/Match.java — constructor(String name, Players players, Games games, End end)
+   * @java game/match/Match.java — constructor(String name, @Opt Players players, Games games, End end)
    */
   public constructor(
     name: string,
-    numPlayers: number,
-    instances: readonly Subgame1to1[],
+    players: GamePlayers1to1 | null | undefined,
+    games: Games1to1,
     end: End,
   ) {
+    const instances = games.games();
     if (instances.length === 0) {
       throw new Error("A match needs at least one game.");
     }
     this.name = name;
-    this.numPlayers = numPlayers;
-    this.instances = instances.slice();
+    this.playersRecord = players ?? GamePlayers1to1.fromCount(2);
+    this.numPlayers = this.playersRecord.count();
+    this._instances = instances.slice();
     this.end = end;
+  }
+
+  /**
+   * @java Game.players()
+   */
+  public players(): GamePlayers1to1 {
+    return this.playersRecord;
+  }
+
+  /**
+   * @java Match.instances()
+   */
+  public instances(): readonly Subgame1to1[] {
+    return this._instances;
   }
 
   /**
    * @java Match.instances()
    */
   public getInstances(): readonly Subgame1to1[] {
-    return this.instances;
+    return this._instances;
   }
 
   /**

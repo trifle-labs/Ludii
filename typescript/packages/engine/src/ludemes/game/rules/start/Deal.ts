@@ -39,13 +39,13 @@ export class Deal1to1 implements StartRule {
   private readonly count: number;
 
   /**
-   * @param dealType  Cards or Dominoes
-   * @param count     number of items per player (default 1)
+   * @param type   Cards or Dominoes
+   * @param count  optional number of items per player (default 1)
    * @java game/rules/start/Deal.java — constructor(DealableType type, @Opt Integer count)
    */
-  public constructor(dealType: DealableType, count = 1) {
-    this.dealType = dealType;
-    this.count = count;
+  public constructor(type: DealableType, count?: number | null) {
+    this.dealType = type;
+    this.count = count ?? 1;
   }
 
   /**

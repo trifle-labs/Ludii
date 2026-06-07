@@ -11,7 +11,12 @@
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import { IntConstant } from "../../../../functions/ints/IntConstant.js";
+import type { IntFunction } from "../../../../../base.js";
 import type { StartRule } from "../../StartRule.js";
+
+/** @java game/types/play/RoleType.java */
+export type RoleType = string;
 
 /**
  * @java game/rules/start/set/player/SetScore.java
@@ -21,13 +26,13 @@ import type { StartRule } from "../../StartRule.js";
  */
 export class SetScore1to1 implements StartRule {
   /**
-   * Player ids to set, or null if `initSameScoreToEachPlayer` applies.
+   * Player functions to set, or empty if `initSameScoreToEachPlayer` applies.
    * Java: players[] (length 0 when Each/All roleType).
    */
-  private readonly playerIds: readonly number[] | null;
+  private readonly players: readonly IntFunction[];
 
-  /** Score values parallel to playerIds, or single value for each-player mode. */
-  private readonly scores: readonly number[];
+  /** Score functions parallel to playerIds, or single value for each-player mode. */
+  private readonly scores: readonly (IntFunction | null)[];
 
   /**
    * True when the Java roleType is Each/All — set same score to every player.
@@ -36,18 +41,20 @@ export class SetScore1to1 implements StartRule {
   private readonly initSameScoreToEachPlayer: boolean;
 
   /**
-   * @param playerIds                player 1-based ids, or null for each-player mode
-   * @param scores                   score values (parallel to playerIds, or single entry)
-   * @param initSameScoreToEachPlayer true if Each/All roleType
+   * @param role  The roleType of a player.
+   * @param score The new score of a player.
+   * @java SetScore(RoleType role, @Opt IntFunction score)
    */
-  public constructor(
-    playerIds: readonly number[] | null,
-    scores: readonly number[],
-    initSameScoreToEachPlayer: boolean,
-  ) {
-    this.playerIds = playerIds;
-    this.scores = scores;
-    this.initSameScoreToEachPlayer = initSameScoreToEachPlayer;
+  public constructor(role: RoleType, score: IntFunction | null = null) {
+    if (role === "Each" || role === "All") {
+      this.initSameScoreToEachPlayer = true;
+      this.players = [];
+    } else {
+      this.initSameScoreToEachPlayer = false;
+      this.players = [roleToIntFunction(role)];
+    }
+
+    this.scores = [score];
   }
 
   /**
@@ -65,8 +72,29 @@ export class SetScore1to1 implements StartRule {
   ): void {
     // Deferred: State.scores[] not accessible via applyToInitialState.
     // Java: ActionSetScore(pid, score, Boolean.FALSE).apply(context) for each player.
-    void this.playerIds;
+    void this.players;
     void this.scores;
     void this.initSameScoreToEachPlayer;
   }
+}
+
+function roleToIntFunction(role: RoleType): IntFunction {
+  const owner = staticRoleOwner(role);
+  if (owner !== null) return new IntConstant(owner);
+
+  return {
+    eval: (ctx: Parameters<IntFunction["eval"]>[0]): number => {
+      if (role === "Mover") return ctx.state.mover;
+      if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (role === "Player") return ctx._evalPlayer ?? ctx.state.mover;
+      return 0;
+    },
+  };
+}
+
+function staticRoleOwner(role: RoleType): number | null {
+  if (/^P\d+$/.test(role)) return Number(role.slice(1));
+  if (role === "Neutral" || role === "Shared") return 0;
+  return null;
 }

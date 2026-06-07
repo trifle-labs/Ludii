@@ -15,14 +15,21 @@
 import type { Play1to1 } from "../play/Play1to1.js";
 import type { End } from "../end/End.js";
 import type { NextPhase } from "./NextPhase.js";
+import type { Mode1to1 } from "../../mode/Mode1to1.js";
+import type { Playout } from "../../../other/playout/Playout.js";
+import type { RoleTypeFull } from "../../types/play/RoleType.js";
+
+type PhaseRoleType = RoleTypeFull | string;
 
 export class Phase {
   /** Name of the phase. @java Phase.name() */
   public readonly name: string;
+  /** Owner role of this phase. @java Phase.owner() */
+  public readonly role: PhaseRoleType;
   /** Move logic. @java Phase.play() */
-  public readonly play: Play1to1;
+  public play: Play1to1;
   /** Per-phase end logic (optional). @java Phase.end() */
-  public readonly end: End | null;
+  public end: End | null;
   /** Conditions to transition to another phase. @java Phase.nextPhase() */
   public readonly nextPhases: readonly NextPhase[];
   /**
@@ -31,22 +38,79 @@ export class Phase {
    * Used by State.initPhase() to assign initial phases to players.
    */
   public readonly ownerPlayerId: number;
+  /** Mode for this phase. @java Phase.mode() */
+  private readonly modeValue: Mode1to1 | null;
+  /** Playout implementation to use inside this phase. @java Phase.playout() */
+  private playoutValue: Playout | null;
 
   /**
-   * @java game/rules/phase/Phase.java — constructor
-   * @param ownerPlayerId  0 = Shared (all players), N = player N only (P1=1, P2=2, ...)
+   * @java game/rules/phase/Phase.java — Phase(name, role, mode, play, end, nextPhase, nextPhases)
    */
   public constructor(
     name: string,
+    role: PhaseRoleType | null | undefined,
+    mode: Mode1to1 | null | undefined,
     play: Play1to1,
-    end: End | null = null,
-    nextPhases: NextPhase[] = [],
-    ownerPlayerId = 0,
+    end?: End | null,
+    nextPhase?: NextPhase | null,
+    nextPhases?: readonly NextPhase[] | null,
   ) {
+    if (nextPhase != null && nextPhases != null) {
+      throw new Error("Zero or one Or parameter must be non-null.");
+    }
+
     this.name = name;
+    this.role = role ?? "Shared";
+    this.modeValue = mode ?? null;
     this.play = play;
-    this.end = end;
-    this.nextPhases = nextPhases;
-    this.ownerPlayerId = ownerPlayerId;
+    this.end = end ?? null;
+    this.nextPhases = nextPhase != null ? [nextPhase] : nextPhases ?? [];
+    this.ownerPlayerId = phaseRoleOwner(this.role);
+    this.playoutValue = null;
   }
+
+  /** @java Phase.mode() */
+  public mode(): Mode1to1 | null {
+    return this.modeValue;
+  }
+
+  /** @java Phase.nextPhase() */
+  public nextPhase(): readonly NextPhase[] {
+    return this.nextPhases;
+  }
+
+  /** @java Phase.owner() */
+  public owner(): PhaseRoleType {
+    return this.role;
+  }
+
+  /** @java Phase.setPlay(Play) */
+  public setPlay(play: Play1to1): void {
+    this.play = play;
+  }
+
+  /** @java Phase.setEnd(End) */
+  public setEnd(end: End | null): void {
+    this.end = end;
+  }
+
+  /** @java Phase.playout() */
+  public playout(): Playout | null {
+    return this.playoutValue;
+  }
+
+  /** @java Phase.setPlayout(Playout) */
+  public setPlayout(playout: Playout | null): void {
+    this.playoutValue = playout;
+  }
+}
+
+function phaseRoleOwner(role: PhaseRoleType): number {
+  const player = /^P(\d+)$/.exec(role);
+  if (player) return Number(player[1]);
+
+  const team = /^Team(\d+)$/.exec(role);
+  if (team) return Number(team[1]);
+
+  return 0;
 }

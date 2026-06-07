@@ -416,14 +416,14 @@ function mapEntryFactory(b: ArgBundle): MapEntry1to1 {
   return new MapEntry1to1(name, mapEntryKeyFn(requireValue(keyValue, "mapEntry key")));
 }
 
-function matchFactory(b: ArgBundle, env: { numPlayers: number }): Match1to1 {
+function matchFactory(b: ArgBundle, _env: { numPlayers: number }): Match1to1 {
   if (b.positional.length === 1) throw new Error("factory not yet wired: match");
   const name = requireString(b.positional[0], "match name");
   const players = first(b, (v): v is GamePlayers1to1 => v instanceof GamePlayers1to1);
   const games = first(b, (v): v is Games1to1 => v instanceof Games1to1);
   const end = first(b, isEnd);
   if (!games || !end) throw new Error("factory not yet wired: match");
-  return new Match1to1(name, players?.count() ?? env.numPlayers, games.games(), end);
+  return new Match1to1(name, players, games, end);
 }
 
 function matchScoreFactory(b: ArgBundle): MatchScore {

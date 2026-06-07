@@ -11,6 +11,8 @@
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { IntFunction, RegionFunction } from "../../../../../base.js";
+import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { StartRule } from "../../StartRule.js";
 
 /**
@@ -21,19 +23,36 @@ import type { StartRule } from "../../StartRule.js";
  * topology (distinct from the per-player phases in State.phases[]).
  */
 export class SetPhase1to1 implements StartRule {
-  /** Site indices where phase will be set. */
-  private readonly sites: readonly number[];
+  /** The phase value function. */
+  private readonly phaseFn: IntFunction;
 
-  /** The phase value to set. */
-  private readonly phase: number;
+  /** Type of graph element to set. */
+  private readonly type: SiteType | null;
+
+  /** The single site to set, if the @Or site argument was used. */
+  private readonly site: IntFunction | null;
+
+  /** The region to set, if the @Or region argument was used. */
+  private readonly region: RegionFunction | null;
 
   /**
-   * @param sites  site indices (pre-evaluated region)
-   * @param phase  phase value (pre-evaluated IntFunction)
+   * @java public SetPhase(IntFunction phase, @Opt SiteType type, @Or IntFunction site, @Or RegionFunction region)
+   *
+   * @param phase  The new phase.
+   * @param type   The type of the graph element.
+   * @param site   The site to set.
+   * @param region The region to set.
    */
-  public constructor(sites: readonly number[], phase: number) {
-    this.sites = sites;
-    this.phase = phase;
+  public constructor(
+    phase: IntFunction,
+    type: SiteType | null | undefined,
+    site: IntFunction | null | undefined,
+    region: RegionFunction | null | undefined,
+  ) {
+    this.phaseFn = phase;
+    this.type = type ?? null;
+    this.site = site ?? null;
+    this.region = region ?? null;
   }
 
   /**
@@ -51,7 +70,9 @@ export class SetPhase1to1 implements StartRule {
   ): void {
     // Deferred: per-site topology phase array not available in applyToInitialState.
     // Java: ActionSetPhase(type, loc, phaseFn.eval(context)) for each loc in region.
-    void this.sites;
-    void this.phase;
+    void this.phaseFn;
+    void this.type;
+    void this.site;
+    void this.region;
   }
 }

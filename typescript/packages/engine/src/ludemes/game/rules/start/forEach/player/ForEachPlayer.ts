@@ -45,14 +45,12 @@ export class ForEachPlayer {
   public constructor(players: IntArrayFunction, startRule: JavaStartRule);
   public constructor(
     startRuleOrPlayers: JavaStartRule | IntArrayFunction,
-    startRuleArg?: JavaStartRule,
+    startRule: JavaStartRule | null = null,
   ) {
-    if (startRuleArg !== undefined) {
-      // Two-argument form: (IntArrayFunction, StartRule)
+    if (startRule !== null) {
       this.playersFn = startRuleOrPlayers as IntArrayFunction;
-      this.startRule = startRuleArg;
+      this.startRule = startRule;
     } else {
-      // One-argument form: (StartRule)
       this.playersFn = null;
       this.startRule = startRuleOrPlayers as JavaStartRule;
     }

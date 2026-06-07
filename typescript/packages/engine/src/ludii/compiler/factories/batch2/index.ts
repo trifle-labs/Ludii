@@ -219,10 +219,10 @@ export function registerBatch2(registry: LudemeRegistry): void {
   registry.registerLudeme("effect.set.set:set", makeEffectSet);
   registry.registerLudeme("effect.step:step", makeStep);
   registry.registerLudeme("enclose:enclose", makeEnclose);
-  registry.registerLudeme("end:end", (b) => new End(flatten(b.positional).filter(isEndRuleFunction)));
+  registry.registerLudeme("end:end", (b) => new End(null, flatten(b.positional).filter(isEndRuleFunction)));
   registry.registerLudeme("end.forEach:forEach", (b, env) =>
     new EndForEach((stringAt(b, 0) ?? "Shared").toLowerCase(), requireNamedBooleanFunction(b, "if"), requireResult(b), env.numPlayers));
-  registry.registerLudeme("end.if:if", (b, env) => makeEndIf(b, env.numPlayers));
+  registry.registerLudeme("end.if:if", (b) => makeEndIf(b));
   registry.registerLudeme("end.score:score", (b) => new Score(requireString(b, 0) as unknown as ConstructorParameters<typeof Score>[0], requireIntFunction(b, 1)));
   registry.registerLudeme("equipment:equipment", makeEquipment);
   registry.registerLudeme("equipment.card:card", (b) =>
@@ -230,9 +230,9 @@ export function registerBatch2(registry: LudemeRegistry): void {
       requireString(b, 0) as ConstructorParameters<typeof EquipmentCard>[0],
       requireNamedNumber(b, "rank"),
       requireNamedNumber(b, "value"),
-      numberNamed(b, "trumprank") ?? undefined,
-      numberNamed(b, "trumpvalue") ?? undefined,
-      numberNamed(b, "biased") ?? undefined,
+      numberNamed(b, "trumprank"),
+      numberNamed(b, "trumpvalue"),
+      numberNamed(b, "biased"),
     ));
   registry.registerLudeme("equipment.hint:hint", (b) => {
     const first = b.positional[0];
@@ -483,7 +483,7 @@ function gridNeighbours(board: Board1to1, site: number): number[] {
 
 function makeRulesFallback(b: ArgBundle): Rules1to1 {
   const values = flatten([...b.positional, ...b.named.values()]);
-  const end = values.find((v): v is End => v instanceof End) ?? new End([]);
+  const end = values.find((v): v is End => v instanceof End) ?? new End(null, []);
   const phases = values.filter((v): v is Phase => v instanceof Phase);
   const play = firstOfValue(values, isPlay);
   if (phases.length > 0) {
@@ -726,13 +726,13 @@ function makeEnclose(b: ArgBundle): Enclose {
   });
 }
 
-function makeEndIf(b: ArgBundle, numPlayers: number): EndIf {
-  const subconditions = flatten(b.positional).filter((v): v is EndIf => v instanceof EndIf);
-  if (subconditions.length > 0) deferred("end if subconditions");
+function makeEndIf(b: ArgBundle): EndIf {
   const condition = requireBooleanFunction(b, 0);
-  const result = flatten(b.positional).find((v): v is Result => v instanceof Result);
+  const sub = b.positional.find((v): v is EndIf => v instanceof EndIf) ?? null;
+  const subs = b.positional.find((v): v is EndIf[] => Array.isArray(v) && v.every((item) => item instanceof EndIf)) ?? null;
+  const result = b.positional.find((v): v is Result => v instanceof Result) ?? null;
   if (!result) throw new Error(`factory ${b.symbol}:${b.constructKey}: expected result`);
-  return new EndIf(condition, result, numPlayers);
+  return new EndIf(condition, sub, subs, result);
 }
 
 function makeEquipment(b: ArgBundle): Equipment1to1 {
@@ -1051,10 +1051,12 @@ function isPlay(value: unknown): value is Play1to1 {
 function phaseWithPlay(phase: Phase, play: Play1to1): Phase {
   return new Phase(
     phase.name,
+    phase.role,
+    phase.mode(),
     play,
     phase.end,
+    null,
     [...phase.nextPhases],
-    phase.ownerPlayerId,
   );
 }
 

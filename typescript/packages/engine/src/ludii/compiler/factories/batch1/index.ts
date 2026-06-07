@@ -141,7 +141,7 @@ export function registerBatch1(registry: LudemeRegistry): void {
   registry.registerLudeme("brick:brick", makeBrick);
   registry.registerLudeme("byScore:byScore", (b, env) => {
     if (flatten(b.positional).length > 0) deferred("byScore finalScore");
-    return new ByScore(env.numPlayers, [], boolNamed(b, "misere") ?? falseBool());
+    return new ByScore(null, boolNamed(b, "misere") ?? falseBool());
   });
   registry.registerLudeme("can:can", makeCan);
   registry.registerLudeme("card.card:card", makeCardInt);

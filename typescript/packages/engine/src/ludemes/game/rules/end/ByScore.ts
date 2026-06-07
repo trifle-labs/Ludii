@@ -17,6 +17,9 @@
 
 import type { Context } from "../../../../context.js";
 import type { BooleanFunction, EndResult, EndRuleFunction } from "../../../base.js";
+import { RoleType, roleTypeOwner } from "../../util/end/RoleType.js";
+import type { Score } from "../../util/end/Score.js";
+import type { Score1to1 } from "../../util/end/Score1to1.js";
 
 /**
  * Optional score-override entry: set player `pid`'s score to `score` before ranking.
@@ -35,27 +38,22 @@ export interface FinalScoreEntry {
  */
 export class ByScore implements EndRuleFunction {
   /** Optional per-player final score overrides. @java ByScore.finalScore */
-  private readonly finalScore: readonly FinalScoreEntry[];
+  private readonly finalScore: readonly (Score | Score1to1 | FinalScoreEntry)[] | null;
   /** Misere: lowest score wins when true. @java ByScore.misereFn */
   private readonly misereFn: BooleanFunction;
-  /** Number of players (known at compile time). */
-  private readonly numPlayers: number;
 
   /**
    * @java game/rules/end/ByScore.java — constructor(Score[] finalScore, BooleanFunction misere)
    *
-   * @param numPlayers  Number of players (needed for ranking array).
    * @param finalScore  Optional score overrides per player.
-   * @param misereFn    If true, lowest score wins (misere variant).
+   * @param misere      If true, lowest score wins (misere variant).
    */
   public constructor(
-    numPlayers: number,
-    finalScore: readonly FinalScoreEntry[] = [],
-    misereFn: BooleanFunction = { eval: () => false },
+    finalScore?: readonly Score[] | null,
+    misere?: BooleanFunction | null,
   ) {
-    this.numPlayers = numPlayers;
-    this.finalScore = finalScore;
-    this.misereFn   = misereFn;
+    this.finalScore = finalScore ?? null;
+    this.misereFn   = misere ?? { eval: () => false };
   }
 
   /**
@@ -67,17 +65,20 @@ export class ByScore implements EndRuleFunction {
    * 4. Return EndResult with winner (rank 1.0) and ranking array.
    */
   public eval(ctx: Context): EndResult | null {
-    const n = this.numPlayers;
+    const n = ctx.numPlayers();
     const stateAny = ctx.state as unknown as { scores?: number[] };
     const scores = stateAny.scores ?? new Array<number>(n + 1).fill(0);
 
     // Apply optional finalScore overrides.
     // @java ByScore.eval:63-70 — context.setScore(pid, scoreToSet)
     const allScores = [...scores];
-    for (const entry of this.finalScore) {
-      const v = entry.score.eval(ctx);
-      if (entry.pid >= 1 && entry.pid <= n) {
-        allScores[entry.pid] = v;
+    if (this.finalScore !== null) {
+      for (const entry of this.finalScore) {
+        const pid = scoreEntryPlayerId(entry, ctx);
+        const v = scoreEntryValue(entry, ctx);
+        if (pid >= 1 && pid <= n) {
+          allScores[pid] = v;
+        }
       }
     }
 
@@ -143,4 +144,40 @@ export class ByScore implements EndRuleFunction {
 
     return { winner, over: true, ranking };
   }
+}
+
+function scoreEntryPlayerId(entry: Score | Score1to1 | FinalScoreEntry, ctx: Context): number {
+  const scoreEntry = entry as unknown as {
+    pid?: number;
+    role?: unknown;
+    getRole?: () => unknown;
+  };
+  if (scoreEntry.pid !== undefined) return scoreEntry.pid;
+  if (scoreEntry.role !== undefined) return roleToPlayerId(scoreEntry.role, ctx);
+  return roleToPlayerId(scoreEntry.getRole?.(), ctx);
+}
+
+function scoreEntryValue(entry: Score | Score1to1 | FinalScoreEntry, ctx: Context): number {
+  const scoreEntry = entry as unknown as {
+    score?: import("../../../base.js").IntFunction | (() => import("../../../base.js").IntFunction);
+  };
+  if (typeof scoreEntry.score === "function") return scoreEntry.score().eval(ctx);
+  return scoreEntry.score!.eval(ctx);
+}
+
+function roleToPlayerId(role: unknown, ctx: Context): number {
+  if (typeof role === "number") {
+    const owner = roleTypeOwner(role);
+    if (owner >= 0) return owner;
+    if (role === RoleType.Mover) return ctx.state.mover;
+    if (role === RoleType.Next) return (ctx.state.mover % ctx.game.numPlayers) + 1;
+    if (role === RoleType.Prev) return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+    if (role === RoleType.Neutral) return 0;
+  }
+  if (role === "Mover") return ctx.state.mover;
+  if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+  if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+  if (role === "Neutral") return 0;
+  const match = /^P(\d+)$/.exec(String(role));
+  return match ? Number(match[1]) : 0;
 }

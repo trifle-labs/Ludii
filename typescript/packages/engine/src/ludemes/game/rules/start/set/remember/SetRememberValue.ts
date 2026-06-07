@@ -12,6 +12,8 @@
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import { BooleanConstant } from "../../../../functions/booleans/BooleanConstant.js";
+import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../base.js";
 import type { StartRule } from "../../StartRule.js";
 
 /**
@@ -29,24 +31,36 @@ export class SetRememberValue1to1 implements StartRule {
    */
   private readonly name: string | null;
 
-  /** Pre-evaluated values to remember. Java: values (IntArrayFromRegion). */
-  private readonly values: readonly number[];
+  /** Single value to remember. Java constructor: @Or IntFunction value. */
+  private readonly value: IntFunction | null;
+
+  /** Region of values to remember. Java constructor: @Or RegionFunction regionValue. */
+  private readonly regionValue: RegionFunction | null;
 
   /**
    * If true, only remember a value if it is not already in the bucket.
    * Java: uniqueFn evaluated at start.
    */
-  private readonly unique: boolean;
+  private readonly uniqueFn: BooleanFunction;
 
   /**
-   * @param name    bucket name, or null for the default bucket
-   * @param values  integer values to remember
-   * @param unique  only add values not already present
+   * @java SetRememberValue(@Opt String, @Or IntFunction, @Or RegionFunction, @Opt @Name BooleanFunction)
+   *
+   * @param name        bucket name, or null for the default bucket
+   * @param value       single integer value to remember
+   * @param regionValue region-valued source of values to remember
+   * @param unique      only add values not already present
    */
-  public constructor(name: string | null, values: readonly number[], unique: boolean) {
-    this.name = name;
-    this.values = values;
-    this.unique = unique;
+  public constructor(
+    name: string | null | undefined,
+    value: IntFunction | null | undefined,
+    regionValue: RegionFunction | null | undefined,
+    unique?: BooleanFunction | null,
+  ) {
+    this.name = name ?? null;
+    this.value = value ?? null;
+    this.regionValue = regionValue ?? null;
+    this.uniqueFn = unique ?? new BooleanConstant(false);
   }
 
   /**
@@ -66,7 +80,8 @@ export class SetRememberValue1to1 implements StartRule {
     // Deferred: State.remembered map not accessible via applyToInitialState interface.
     // Java: ActionRememberValue(name, valueToRemember).apply(context) for each value.
     void this.name;
-    void this.values;
-    void this.unique;
+    void this.value;
+    void this.regionValue;
+    void this.uniqueFn;
   }
 }

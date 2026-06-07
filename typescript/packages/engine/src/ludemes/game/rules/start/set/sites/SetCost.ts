@@ -12,6 +12,8 @@
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { IntFunction, RegionFunction } from "../../../../../base.js";
+import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { StartRule } from "../../StartRule.js";
 
 /**
@@ -22,19 +24,36 @@ import type { StartRule } from "../../StartRule.js";
  * ActionSetCost writes to.
  */
 export class SetCost1to1 implements StartRule {
-  /** Site indices where cost will be set. */
-  private readonly sites: readonly number[];
+  /** The cost value function. */
+  private readonly costFn: IntFunction;
 
-  /** The cost value to set. */
-  private readonly cost: number;
+  /** Type of graph element to set. */
+  private readonly type: SiteType | null;
+
+  /** The single site to set, if the @Or site argument was used. */
+  private readonly site: IntFunction | null;
+
+  /** The region to set, if the @Or region argument was used. */
+  private readonly region: RegionFunction | null;
 
   /**
-   * @param sites  site indices (pre-evaluated region)
-   * @param cost   cost value (pre-evaluated IntFunction)
+   * @java public SetCost(IntFunction cost, @Opt SiteType type, @Or IntFunction site, @Or RegionFunction region)
+   *
+   * @param cost   The new cost.
+   * @param type   The type of the graph element.
+   * @param site   The site to set.
+   * @param region The region to set.
    */
-  public constructor(sites: readonly number[], cost: number) {
-    this.sites = sites;
-    this.cost = cost;
+  public constructor(
+    cost: IntFunction,
+    type: SiteType | null | undefined,
+    site: IntFunction | null | undefined,
+    region: RegionFunction | null | undefined,
+  ) {
+    this.costFn = cost;
+    this.type = type ?? null;
+    this.site = site ?? null;
+    this.region = region ?? null;
   }
 
   /**
@@ -52,8 +71,9 @@ export class SetCost1to1 implements StartRule {
   ): void {
     // Deferred: costAt[] not available in applyToInitialState signature.
     // Java: ActionSetCost(type, loc, costFn.eval(context)) for each loc in region.
-    // this.sites and this.cost are correctly stored for future use.
-    void this.sites;
-    void this.cost;
+    void this.costFn;
+    void this.type;
+    void this.site;
+    void this.region;
   }
 }

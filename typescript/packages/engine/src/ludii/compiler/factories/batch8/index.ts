@@ -13,6 +13,8 @@ import type { GraphFunction } from "../../../../ludemes/game/functions/graph/Gra
 import { BooleanConstant } from "../../../../ludemes/game/functions/booleans/BooleanConstant.js";
 import { FloatSqrt1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
 import { IntConstant } from "../../../../ludemes/game/functions/ints/IntConstant.js";
+import { RegionConstant } from "../../../../ludemes/game/functions/region/RegionConstant.js";
+import { BaseRegionFunction } from "../../../../ludemes/game/functions/region/BaseRegionFunction.js";
 import { LastTo } from "../../../../ludemes/game/functions/ints/last/LastTo.js";
 import { SizeArray1to1, SizeGroup1to1, SizeStack1to1 } from "../../../../ludemes/game/functions/ints1to1/size/Size1to1.js";
 import { SizeLargePiece } from "../../../../ludemes/game/functions/ints/size/largePiece/SizeLargePiece.js";
@@ -475,7 +477,8 @@ function makeStart(b: ArgBundle): Start1to1 {
 }
 
 function makeDeal(b: ArgBundle): Deal1to1 {
-  return new Deal1to1(requireStringValue(b.positional[0]) as never, numberOrDefault(b.positional[1], 1));
+  const count = typeof b.positional[1] === "number" ? b.positional[1] : null;
+  return new Deal1to1(requireStringValue(b.positional[0]) as never, count);
 }
 
 function makeStartSet(b: ArgBundle): StartRule {
@@ -490,16 +493,15 @@ function makeStartSet(b: ArgBundle): StartRule {
     case "Count":
       return new SetCount1to1(startSetSites(b), requireNumber(b.positional[1]));
     case "Cost":
-      return new SetCost1to1(startSetSites(b), requireNumber(b.positional[1]));
+      return new SetCost1to1(new IntConstant(requireNumber(b.positional[1])), null, null, new RegionConstant(startSetSites(b)));
     case "Phase":
-      return new SetPhase1to1(startSetSites(b), requireNumber(b.positional[1]));
+      return new SetPhase1to1(new IntConstant(requireNumber(b.positional[1])), null, null, new RegionConstant(startSetSites(b)));
     case "Amount":
       return new SetAmount1to1(roleOwnerOrNull(b.positional[1]), requireLastNumber(b));
     case "Score": {
       const role = stringOrNull(b.positional[1]);
       const score = requireLastNumber(b);
-      if (role === null || role === "Each" || role === "All") return new SetScore1to1(null, [score], true);
-      return new SetScore1to1([requireStaticPlayerId(role, "set Score")], [score], false);
+      return new SetScore1to1(role ?? "Each", new IntConstant(score));
     }
   }
   const role = roleOrNull(b.positional[0]);
@@ -612,8 +614,15 @@ function makeSetHidden(b: ArgBundle): SetHidden1to1 {
 function makeSetRememberValue(b: ArgBundle): SetRememberValue1to1 {
   const rest = positionalAfterFirstString(b);
   const name = typeof rest[0] === "string" ? rest[0] : null;
-  const value = name === null ? rest[0] : rest[1];
-  return new SetRememberValue1to1(name, numberArrayFromValue(value), boolValue(named(b, "unique"), false));
+  const source = rememberValueSource(name === null ? rest[0] : rest[1]);
+  return new SetRememberValue1to1(name, source.value, source.regionValue, boolOrDefault(named(b, "unique"), false));
+}
+
+function rememberValueSource(value: unknown): { value: IntFunction | null; regionValue: RegionFunction | null } {
+  if (value instanceof Region) return { value: null, regionValue: new RegionConstant(value.sites()) };
+  if (Array.isArray(value)) return { value: null, regionValue: new RegionConstant(value.map((v) => requireNumber(v))) };
+  if (value instanceof BaseRegionFunction) return { value: null, regionValue: value };
+  return { value: requireIntFn(value), regionValue: null };
 }
 
 function hiddenDataArray(b: ArgBundle): readonly HiddenData[] | null {

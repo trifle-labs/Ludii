@@ -12,6 +12,7 @@ import { Add } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/A
 import { To1to1 } from "../../../ludemes/game/util/moves/To1to1.js";
 import { Rules1to1 } from "../../../ludemes/game/rules/Rules1to1.js";
 import { Game1to1 } from "../../../ludemes/Game1to1.js";
+import { GamePlayers1to1 } from "../../../ludemes/game/players/GamePlayers1to1.js";
 import type {
   BooleanFunction,
   EndRuleFunction,
@@ -32,7 +33,7 @@ export function createTicTacToeRegistry(): LudemeRegistry {
     const equipment = findFirst<Equipment1to1>(b, isEquipment);
     const rules = findFirst<Rules1to1>(b, isRules);
     if (!equipment || !rules) throw new Error("TTT factory game: missing equipment or rules");
-    return new Game1to1(name, players, equipment, rules, [], false, false);
+    return new Game1to1(name, GamePlayers1to1.fromCount(players), null, equipment, rules);
   });
 
   registerAliases(registry, ["players", "players:players"], (b, env): number => {
@@ -99,11 +100,11 @@ export function createTicTacToeRegistry(): LudemeRegistry {
 
   registerAliases(registry, ["end", "end:end"], (b): End => {
     const rules = flatten(b.positional).filter(isEndRule);
-    return new End(rules);
+    return new End(null, rules);
   });
 
-  registry.registerLudeme("end.if:if", (b, env): If => makeEndIf(b, env.numPlayers));
-  registry.registerLudeme("if", (b, env): If => makeEndIf(b, env.numPlayers));
+  registry.registerLudeme("end.if:if", (b): If => makeEndIf(b));
+  registry.registerLudeme("if", (b): If => makeEndIf(b));
 
   registerAliases(registry, ["result", "result:result"], (b): Result => {
     const role = requireString(b, 0) as RoleType;
@@ -129,11 +130,11 @@ function registerAliases<T>(
   for (const key of keys) registry.registerLudeme(key, factory);
 }
 
-function makeEndIf(b: ArgBundle, numPlayers: number): If {
+function makeEndIf(b: ArgBundle): If {
   const condition = findFirst<BooleanFunction>(b, isBooleanFunction);
   const result = findFirst<Result>(b, isResult);
   if (!condition || !result) throw new Error("TTT factory if: missing condition or result");
-  return new If(condition, result, numPlayers);
+  return new If(condition, null, null, result);
 }
 
 function flatten(values: readonly unknown[]): unknown[] {

@@ -36,6 +36,8 @@ import { ForEachTeam } from "../../../../ludemes/game/rules/play/moves/nonDecisi
 import { ForEachValue } from "../../../../ludemes/game/rules/play/moves/nonDecision/operators/foreach/value/ForEachValue.js";
 import { Place } from "../../../../ludemes/game/rules/start/place/Place.js";
 import { Phase } from "../../../../ludemes/game/rules/phase/Phase.js";
+import type { NextPhase } from "../../../../ludemes/game/rules/phase/NextPhase.js";
+import type { End } from "../../../../ludemes/game/rules/end/End.js";
 import { Payoff } from "../../../../ludemes/game/util/end/Payoff.js";
 import { Poly } from "../../../../ludemes/game/util/graph/Poly.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
@@ -278,12 +280,9 @@ function payoffFactory(b: ArgBundle): Payoff {
   return new Payoff(requiredString(b.positional[0], "payoff role") as never, asFloatFn(b.positional[1]) ?? new FloatConstant(requiredNumber(b.positional[1], "payoff")));
 }
 
-function payoffsFactory(b: ArgBundle, env: { numPlayers: number }): Payoffs {
-  const entries = flatten(b.positional).filter((v): v is Payoff => v instanceof Payoff).map((p) => ({
-    pid: roleToPlayerId(String(p.role)),
-    payoff: p.payoff,
-  }));
-  return new Payoffs(env.numPlayers, entries);
+function payoffsFactory(b: ArgBundle): Payoffs {
+  const payoffs = flatten(b.positional).filter((v): v is Payoff => v instanceof Payoff);
+  return new Payoffs(payoffs);
 }
 
 function phaseFactory(b: ArgBundle): Phase {
@@ -291,13 +290,9 @@ function phaseFactory(b: ArgBundle): Phase {
   const role = firstRoleAfterIndex(b, 1);
   const play = firstOf<Play1to1>(b, (v): v is Play1to1 => v instanceof Play1to1);
   if (!play) throw new Error("factory batch6: expected play for phase");
-  const end = b.positional.find((v): v is ConstructorParameters<typeof Phase>[2] => isObject(v) && "eval" in v) ?? null;
-  const next = flatten(b.positional).filter((v) => isObject(v) && "targetName" in v) as ConstructorParameters<typeof Phase>[3];
-  const phase = new Phase(name, play, end, next, roleToPlayerId(role ?? "Shared")) as Phase & { setPlay(play: Play1to1): void };
-  phase.setPlay = (nextPlay: Play1to1): void => {
-    Object.defineProperty(phase, "play", { value: nextPlay, writable: true, configurable: true });
-  };
-  return phase;
+  const end = b.positional.find((v): v is End => isObject(v) && "eval" in v) ?? null;
+  const next = flatten(b.positional).filter((v): v is NextPhase => isObject(v) && "targetName" in v);
+  return new Phase(name, role ?? null, null, play, end, null, next);
 }
 
 function pinFactory(b: ArgBundle): Pin {
@@ -407,11 +402,11 @@ function playCardFactory(b: ArgBundle): PlayCard {
   return new PlayCard(thenArg(b));
 }
 
-function playersFactory(b: ArgBundle, env: { numPlayers: number }): number | GamePlayers1to1 {
+function playersFactory(b: ArgBundle, env: { numPlayers: number }): GamePlayers1to1 {
   const first = b.positional[0];
   if (typeof first === "number") {
     env.numPlayers = first;
-    return first;
+    return GamePlayers1to1.fromCount(first);
   }
   const players = flatten(b.positional).filter((v): v is GamePlayer1to1 => v instanceof GamePlayer1to1);
   env.numPlayers = players.length;

@@ -16,6 +16,7 @@
 
 import type { Context } from "../../../../context.js";
 import type { EndResult, EndRuleFunction, FloatFunction } from "../../../base.js";
+import type { Payoff } from "../../util/end/Payoff.js";
 
 /**
  * One payoff entry: player `pid` gets the payoff computed by `payoff`.
@@ -31,22 +32,15 @@ export interface PayoffEntry {
  */
 export class Payoffs implements EndRuleFunction {
   /** Per-player payoff definitions. @java Payoffs.finalPayoff */
-  private readonly finalPayoff: readonly PayoffEntry[];
-  /** Number of players. */
-  private readonly numPlayers: number;
+  private readonly finalPayoff: readonly Payoff[] | null;
 
   /**
    * @java game/rules/end/Payoffs.java — constructor(Payoff[] finalPayoffs)
    *
-   * @param numPlayers  Number of players.
-   * @param finalPayoff Per-player payoff entries.
+   * @param finalPayoffs The final score of each player.
    */
-  public constructor(
-    numPlayers: number,
-    finalPayoff: readonly PayoffEntry[] = [],
-  ) {
-    this.numPlayers = numPlayers;
-    this.finalPayoff = finalPayoff;
+  public constructor(finalPayoffs: readonly Payoff[] | null) {
+    this.finalPayoff = finalPayoffs;
   }
 
   /**
@@ -58,7 +52,7 @@ export class Payoffs implements EndRuleFunction {
    * 4. Return EndResult with winner (rank 1.0) and ranking array.
    */
   public eval(ctx: Context): EndResult | null {
-    const n = this.numPlayers;
+    const n = ctx.game.numPlayers;
 
     // Build payoff array (read from state.payoffs[] if available, else 0).
     const stateAny = ctx.state as unknown as { payoffs?: number[] };
@@ -71,10 +65,13 @@ export class Payoffs implements EndRuleFunction {
 
     // Apply finalPayoff overrides.
     // @java Payoffs.eval:49-58 — context.setPayoff(pid, payoffToSet)
-    for (const entry of this.finalPayoff) {
-      const v = entry.payoff.eval(ctx);
-      if (entry.pid >= 1 && entry.pid <= n) {
-        allPayoffs[entry.pid] = v;
+    if (this.finalPayoff !== null) {
+      for (const payoff of this.finalPayoff) {
+        const pid = roleToPlayerId(payoff.role, ctx);
+        const v = payoff.payoff.eval(ctx);
+        if (pid >= 1 && pid <= n) {
+          allPayoffs[pid] = v;
+        }
       }
     }
 
@@ -118,4 +115,13 @@ export class Payoffs implements EndRuleFunction {
 
     return { winner, over: true, ranking };
   }
+}
+
+function roleToPlayerId(role: unknown, ctx: Context): number {
+  if (role === "Mover") return ctx.state.mover;
+  if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+  if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+  if (role === "Neutral") return 0;
+  const match = /^P(\d+)$/.exec(String(role));
+  return match ? Number(match[1]) : 0;
 }

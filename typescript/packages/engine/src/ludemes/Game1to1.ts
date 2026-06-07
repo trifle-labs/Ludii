@@ -47,6 +47,8 @@ import { State } from "../state.js";
 import { Trial } from "../trial.js";
 
 import type { Equipment1to1 } from "./game/equipment/Equipment1to1.js";
+import { Mode1to1 } from "./game/mode/Mode1to1.js";
+import { GamePlayers1to1 } from "./game/players/GamePlayers1to1.js";
 import type { Rules1to1 } from "./game/rules/Rules1to1.js";
 import type { Phase } from "./game/rules/phase/Phase.js";
 import type { StartRule } from "./game/rules/start/StartRule.js";
@@ -85,6 +87,15 @@ function attachRadials(
 // Java constant: UNDEFINED = -1
 const UNDEFINED = -1;
 
+interface Game1to1PortOptions {
+  readonly startRules?: readonly StartRule[];
+  readonly notAllPass?: boolean;
+  readonly usesSwapRule?: boolean;
+  readonly playerDirs?: Map<number, number>;
+}
+
+const GAME_PORT_OPTIONS = new WeakMap<Rules1to1, Game1to1PortOptions>();
+
 // ---------------------------------------------------------------------------
 // Game1to1
 // ---------------------------------------------------------------------------
@@ -102,6 +113,10 @@ export class Game1to1 implements Game {
   public readonly height: number;
   /** @java Game.numSites() */
   public readonly numSites: number;
+  /** Players record. @java Game.players */
+  private readonly playersRecord: GamePlayers1to1;
+  /** Mode record. @java Game.mode */
+  private readonly modeRecord: Mode1to1;
   /** Equipment (board + pieces + hands). */
   public readonly equipment: Equipment1to1;
   /** Rules (play + end + optional phases). */
@@ -145,24 +160,41 @@ export class Game1to1 implements Game {
    */
   public readonly _playerDirs?: Map<number, number>;
 
+  /**
+   * Carries TS-port-only construction details that are not Java Game constructor
+   * parameters. The next Game1to1 constructed with these Rules consumes them.
+   */
+  public static setPortOptions(rules: Rules1to1, options: Game1to1PortOptions): void {
+    GAME_PORT_OPTIONS.set(rules, options);
+  }
+
   public constructor(
     name: string,
-    numPlayers: number,
+    players: GamePlayers1to1 | null,
+    mode: Mode1to1 | null,
     equipment: Equipment1to1,
     rules: Rules1to1,
-    startRules: StartRule[] = [],
-    notAllPass = false,
-    usesSwapRule = false,
-    playerDirs?: Map<number, number>,
   ) {
     this.name = name;
     this.id = name;
-    this.numPlayers = numPlayers;
+    this.playersRecord = players ?? GamePlayers1to1.fromCount(2);
+    this.numPlayers = this.playersRecord.count();
+    if (this.numPlayers === 0) {
+      this.modeRecord = new Mode1to1("Simulation");
+    } else if (this.numPlayers === 1) {
+      this.modeRecord = new Mode1to1("Alternating");
+    } else if (mode !== null && mode !== undefined) {
+      this.modeRecord = mode;
+    } else {
+      this.modeRecord = new Mode1to1("Alternating");
+    }
     this.equipment = equipment;
     this.rules = rules;
-    this.startRules = startRules;
-    this.notAllPass = notAllPass;
-    this.usesSwapRule = usesSwapRule;
+    const portOptions = GAME_PORT_OPTIONS.get(rules);
+    GAME_PORT_OPTIONS.delete(rules);
+    this.startRules = portOptions?.startRules ?? [];
+    this.notAllPass = portOptions?.notAllPass ?? false;
+    this.usesSwapRule = portOptions?.usesSwapRule ?? false;
     this.width = equipment.board.width;
     this.height = equipment.board.height;
     this.numSites = equipment.board.numSites;
@@ -182,9 +214,24 @@ export class Game1to1 implements Game {
     }
 
     // Store per-player facing directions (from (players {(player SE) ...})).
+    const playerDirs = portOptions?.playerDirs;
     if (playerDirs && playerDirs.size > 0) {
       this._playerDirs = playerDirs;
     }
+  }
+
+  /**
+   * @java Game.players()
+   */
+  public players(): GamePlayers1to1 {
+    return this.playersRecord;
+  }
+
+  /**
+   * @java Game.mode()
+   */
+  public mode(): Mode1to1 {
+    return this.modeRecord;
   }
 
   /**

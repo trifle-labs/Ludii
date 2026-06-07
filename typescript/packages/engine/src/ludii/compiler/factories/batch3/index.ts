@@ -18,6 +18,7 @@ import { ForgetValue } from "../../../../ludemes/game/rules/play/moves/nonDecisi
 import { ForgetValueAll } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/state/forget/value/ForgetValueAll.js";
 import { FromTo } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/FromTo.js";
 import { Game1to1 } from "../../../../ludemes/Game1to1.js";
+import { GamePlayers1to1 } from "../../../../ludemes/game/players/GamePlayers1to1.js";
 import { Equipment1to1 } from "../../../../ludemes/game/equipment/Equipment1to1.js";
 import { Rules1to1 } from "../../../../ludemes/game/rules/Rules1to1.js";
 import { Games1to1 } from "../../../../ludemes/game/match/Games1to1.js";
@@ -224,7 +225,7 @@ export function registerBatch3(registry: LudemeRegistry): void {
     const equipment = findFirst(b, (v): v is Equipment1to1 => v instanceof Equipment1to1);
     const rules = findFirst(b, (v): v is Rules1to1 => v instanceof Rules1to1);
     if (!equipment || !rules) throw new Error("factory game: missing equipment or rules");
-    return new Game1to1(name, players, equipment, rules, [], false, false);
+    return new Game1to1(name, GamePlayers1to1.fromCount(players), null, equipment, rules);
   });
 
   registry.registerLudeme("games:games", (b) => {

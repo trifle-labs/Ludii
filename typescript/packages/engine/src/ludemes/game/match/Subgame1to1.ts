@@ -42,9 +42,9 @@ export class Subgame1to1 {
    */
   public constructor(
     name: string,
-    option: string | null,
-    next: IntFunction | null,
-    result: IntFunction | null,
+    option: string | null = null,
+    next: IntFunction | null = null,
+    result: IntFunction | null = null,
   ) {
     this.gameName = name;
     this.optionName = option;

@@ -80,6 +80,25 @@ function booleanConstant(val: boolean): JavaBooleanConstant {
   };
 }
 
+function isJavaIntFunction(value: unknown): value is JavaIntFunction {
+  return typeof value === "object"
+    && value !== null
+    && typeof (value as JavaIntFunction).eval === "function";
+}
+
+function isJavaCountArray(value: unknown, argCount: number, where: unknown): value is JavaCount[] {
+  return Array.isArray(value)
+    && argCount <= 3
+    && isJavaIntFunction(where)
+    && (
+      value.length === 0
+      || (
+        typeof (value[0] as JavaCount | undefined)?.item === "function"
+        && typeof (value[0] as JavaCount | undefined)?.count === "function"
+      )
+    );
+}
+
 /**
  * Places pieces randomly in a specified container.
  *
@@ -132,11 +151,11 @@ export class PlaceRandom {
   public constructor(
     region: RegionFunction | null,
     item: string[],
-    count: JavaIntFunction | null,
-    value: JavaIntFunction | null,
-    state: JavaIntFunction | null,
-    type: string | null,
-    randPiecOrder: JavaBooleanConstant | null,
+    count?: JavaIntFunction | null,
+    value?: JavaIntFunction | null,
+    state?: JavaIntFunction | null,
+    type?: string | null,
+    randPiecOrder?: JavaBooleanConstant | null,
   );
 
   /**
@@ -150,7 +169,7 @@ export class PlaceRandom {
     value: JavaIntFunction | null,
     state: JavaIntFunction | null,
     where: JavaIntFunction,
-    type: string | null,
+    type?: string | null,
   );
 
   /**
@@ -161,31 +180,31 @@ export class PlaceRandom {
   public constructor(
     items: JavaCount[],
     where: JavaIntFunction,
-    type: string | null,
+    type?: string | null,
   );
 
   public constructor(
     arg0: RegionFunction | null | string[] | JavaCount[],
     arg1: string[] | JavaIntFunction[] | null | JavaIntFunction,
-    arg2: JavaIntFunction | null | string | null = null,
+    arg2: JavaIntFunction | null | string | undefined,
     arg3?: JavaIntFunction | null,
     arg4?: JavaIntFunction | string | null,
     arg5?: string | null,
     arg6?: JavaBooleanConstant | null,
   ) {
-    // Dispatch based on argument shapes
-    if (Array.isArray(arg0) && arg0.length > 0 && typeof (arg0 as unknown[])[0] === "object" && (arg0 as JavaCount[])[0]?.item !== undefined && typeof (arg0 as JavaCount[])[0]?.item === "function") {
+    // Dispatch based on Java constructor arity and argument shapes.
+    if (isJavaCountArray(arg0, arguments.length, arg1)) {
       // Constructor 3: (Count[], IntFunction, SiteType)
       const items = arg0 as JavaCount[];
       const where = arg1 as JavaIntFunction;
-      const type = arg2 as string | null;
+      const type = arg2 as string | null | undefined;
 
       this.region = PlaceRandom.NULL_REGION;
       this.item = null;
       this.countFn = intConstant(1);
       this.where = where;
       this.stack = true;
-      this.type = type;
+      this.type = type ?? null;
       this.stateFn = intConstant(OFF);
       this.valueFn = intConstant(OFF);
       this.randPiecOrderFn = booleanConstant(false);
@@ -199,7 +218,7 @@ export class PlaceRandom {
           this.counts[i] = it.count();
         }
       }
-    } else if (Array.isArray(arg0) && (arg4 !== undefined && arg4 !== null && typeof arg4 === "object" && typeof (arg4 as JavaIntFunction).eval === "function")) {
+    } else if (Array.isArray(arg0) && isJavaIntFunction(arg4)) {
       // Constructor 2: (String[], IntFunction[], IntFunction, IntFunction, IntFunction, SiteType)
       const pieces = arg0 as string[];
       const count = arg1 as JavaIntFunction[] | null;

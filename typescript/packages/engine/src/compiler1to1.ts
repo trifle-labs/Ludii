@@ -140,6 +140,7 @@ import { PlaceRegion1to1 } from "./ludemes/game/rules/start/PlaceRegion1to1.js";
 
 // Game
 import { Game1to1 } from "./ludemes/Game1to1.js";
+import { GamePlayers1to1 } from "./ludemes/game/players/GamePlayers1to1.js";
 
 import { Context } from "./context.js";
 import { Move } from "./move.js";
@@ -4337,7 +4338,7 @@ function compileEndRule1to1(node: LudNode, numPlayers: number): EndRuleFunction 
     }
 
     const result = compileResult1to1(resultNode);
-    return new If(condition, result, numPlayers);
+    return new If(condition, null, null, result);
   }
 
   // (forEach <roleType> if:<cond> (result Player <type>))
@@ -4519,7 +4520,7 @@ function compileEnd1to1(node: LudNode, numPlayers: number): End {
   const rules: EndRuleFunction[] = [];
 
   if (positional.length === 0) {
-    return new End([]);
+    return new End(null, []);
   }
 
   const first = positional[0]!;
@@ -4527,7 +4528,7 @@ function compileEnd1to1(node: LudNode, numPlayers: number): End {
   // (end (byScore ...)) — direct byScore result
   // @java game/rules/end/ByScore.java
   if (isList(first) && headOf(first) === "byscore") {
-    return new End([compileByScore1to1(first, numPlayers)]);
+    return new End(compileByScore1to1(first, numPlayers), null);
   }
 
   if (isList(first) && first.delimiter === "curly") {
@@ -4554,7 +4555,7 @@ function compileEnd1to1(node: LudNode, numPlayers: number): End {
     throw new Error("compiler1to1: end rule content must be a list or curly-list");
   }
 
-  return new End(rules);
+  return new End(null, rules);
 }
 
 // ---------------------------------------------------------------------------
@@ -8036,52 +8037,10 @@ function compileStart1to1(node: LudNode, numPlayers: number, equipment?: Equipme
         if (toNode && (countLit > 0 || countFn !== null)) {
           try {
             const regionFn = compileRegion1to1(toNode);
-            // Seed component = the first declared piece (often "Seed"), if any.
-            const seedWhat = equipment && equipment.pieces.length > 0 ? equipment.pieces[0]!.index : 0;
             if (countLit > 0) {
-              rules.push(new SetCountStart1to1(regionFn, countLit, seedWhat));
+              rules.push(new SetCountStart1to1(new IntConstant(countLit), null, null, regionFn));
             } else if (countFn !== null) {
-              // Dynamic count: evaluate the IntFunction at rule-apply time using a fake context.
-              const capturedCountFn = countFn;
-              const capturedSeedWhat = seedWhat;
-              const capturedEquipmentForCount = equipment;
-              rules.push({
-                applyToInitialState(
-                  cells: number[],
-                  whats: number[],
-                  countAt: number[],
-                  equip: Equipment1to1,
-                  numPlayers: number,
-                ): void {
-                  const fakeGame2 = { numPlayers, equipment: equip } as unknown as Game1to1;
-                  const fakeCtx2 = {
-                    game: fakeGame2,
-                    state: {
-                      mover: 1,
-                      cells: new Array(equip.totalSites).fill(0),
-                      isEmptySite: () => true,
-                      vars: new Map<string, number>(),
-                      getVar: () => -1,
-                      remembered: new Map<string, readonly number[]>(),
-                      rememberedFor: () => [],
-                      pending: new Set<number>(),
-                      diceValues: [],
-                    },
-                    _evalFrom: -1, _evalTo: -1, _evalValue: 0,
-                    _radials: equip.board.radials,
-                  } as unknown as Context;
-                  const n = capturedCountFn.eval(fakeCtx2);
-                  if (n > 0) {
-                    const sites = (() => {
-                      try { return regionFn.eval(fakeCtx2); } catch { return []; }
-                    })();
-                    void whats; void cells; void capturedSeedWhat; void capturedEquipmentForCount;
-                    for (const site of sites) {
-                      if (site >= 0 && site < countAt.length) countAt[site] = n;
-                    }
-                  }
-                }
-              });
+              rules.push(new SetCountStart1to1(countFn, null, null, regionFn));
             }
           } catch { /* skip */ }
         }
@@ -9186,14 +9145,10 @@ function compilePhasesItems(
     // Second positional arg: optional owner role (P1/P2/Shared/All etc.)
     // @java Phase.java:64 — @Opt RoleType role
     // @java State.initPhase: assigns initial phase index to each player based on this.
-    let ownerPlayerId = 0; // 0 = Shared (all players)
+    let phaseRole: string | null = null;
     const ownerNode = pArgs.positional[1];
     if (ownerNode && isIdent(ownerNode)) {
-      const ownerName = ownerNode.name.toLowerCase();
-      if (ownerName.startsWith("p") && !isNaN(parseInt(ownerName.slice(1), 10))) {
-        ownerPlayerId = parseInt(ownerName.slice(1), 10);
-      }
-      // "Shared", "All", "Each", "Mover", "Next" → ownerPlayerId = 0 (Shared)
+      phaseRole = ownerNode.name;
     }
 
     // Find (play ...), (end ...), (nextPhase ...) children
@@ -9219,7 +9174,7 @@ function compilePhasesItems(
     }
 
     if (!phasePlay) throw new Error(`compiler1to1: (phase "${phaseName}") missing (play ...)`);
-    phases.push(new Phase(phaseName, phasePlay, phaseEnd, phaseNextPhases, ownerPlayerId));
+    phases.push(new Phase(phaseName, phaseRole, null, phasePlay, phaseEnd, null, phaseNextPhases));
   }
 
   if (phases.length === 0) {
@@ -9375,7 +9330,7 @@ export function compileNode1to1(gameNode: LudList): Game1to1 {
   // @java game/Game.java:3061-3066 — phase-level end rule evaluation
   if (!end) {
     if (phases !== null && phases.length > 0 && phases.some(p => p.end !== null)) {
-      end = new End([]);
+      end = new End(null, []);
     } else {
       throw new Error("compiler1to1: (rules ...) missing (end ...)");
     }
@@ -9401,6 +9356,11 @@ export function compileNode1to1(gameNode: LudList): Game1to1 {
   }
   const notAllPass = containsPassMove(gameNode);
 
-  return new Game1to1(gameName, numPlayers, equipment, rules, startRules, notAllPass, usesSwapRule,
-    playerDirs.size > 0 ? playerDirs : undefined);
+  Game1to1.setPortOptions(rules, {
+    startRules,
+    notAllPass,
+    usesSwapRule,
+    playerDirs: playerDirs.size > 0 ? playerDirs : undefined,
+  });
+  return new Game1to1(gameName, GamePlayers1to1.fromCount(numPlayers), null, equipment, rules);
 }

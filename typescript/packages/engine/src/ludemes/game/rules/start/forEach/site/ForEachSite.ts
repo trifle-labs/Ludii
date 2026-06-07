@@ -38,19 +38,19 @@ export class ForEachSite {
 
   /**
    * @param regionFn     The original region.
-   * @param condition    The condition to satisfy (null → always true).
+   * @param If           The condition to satisfy (null → always true).
    * @param startingRule The starting rule to apply.
    *
-   * @java ForEachSite(RegionFunction, BooleanFunction, StartRule)
+   * @java ForEachSite(RegionFunction, @Opt @Name BooleanFunction If, StartRule)
    */
   public constructor(
     regionFn: RegionFunction,
-    condition: BooleanFunction | null,
+    If: BooleanFunction | null | undefined,
     startingRule: JavaStartRule,
   ) {
     this.region = regionFn;
     // Java: this.condition = If == null ? new BooleanConstant(true) : If;
-    this.condition = condition ?? { eval: () => true };
+    this.condition = If ?? { eval: () => true };
     this.startRule = startingRule;
   }
 

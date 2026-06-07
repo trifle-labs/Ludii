@@ -22,6 +22,8 @@ import { Keep } from "../../../../ludemes/game/functions/graph/operators/Keep.js
 import { Team } from "../../../../ludemes/game/functions/intArray/iteraror/Team.js";
 import { ValuesRemembered } from "../../../../ludemes/game/functions/intArray/values/ValuesRemembered.js";
 import { IntConstant } from "../../../../ludemes/game/functions/ints/IntConstant.js";
+import { RegionConstant } from "../../../../ludemes/game/functions/region/RegionConstant.js";
+import { BaseRegionFunction } from "../../../../ludemes/game/functions/region/BaseRegionFunction.js";
 import { ToInt } from "../../../../ludemes/game/functions/ints/ToInt.js";
 import type { JavaIntFunction } from "../../../../ludemes/game/functions/ints/IntFunction.js";
 import { Between1to1 as IteratorBetween, From1to1 as IteratorFrom, To1to1 as IteratorTo } from "../../../../ludemes/game/functions/ints1to1/iterator/Iterator1to1.js";
@@ -310,22 +312,22 @@ function makeStartSet(b: ArgBundle): unknown {
     case "RememberValue": {
       const hasName = typeof b.positional[1] === "string";
       const name = hasName ? optionalString(b.positional[1]) : null;
-      const value = hasName ? b.positional[2] : b.positional[1];
-      const unique = optionalBoolean(b.named.get("unique")) ?? false;
-      if (isRegionFunction(value) || isIntArrayLike(value)) {
-        return new DynamicValuesStartRule(value as IntArrayFunction, (values) => new SetRememberValue1to1(name, values, unique));
-      }
-      const values = Array.isArray(value) ? value.map(asNumber) : [asNumber(value)];
-      return new SetRememberValue1to1(name, values, unique);
+      const source = rememberValueSource(hasName ? b.positional[2] : b.positional[1]);
+      return new SetRememberValue1to1(
+        name,
+        source.value,
+        source.regionValue,
+        optionalBooleanFunction(b.named.get("unique")) ?? new BooleanConstant(false),
+      );
     }
     case "Team":
       return new SetTeam1to1(requireNumber(b, 1), requireRoleOwners(b.positional[2]));
     case "Count":
       return startSitesRule(b, (sites) => new SetCount1to1(sites, requireNumber(b, 1)));
     case "Cost":
-      return startSitesRule(b, (sites) => new SetCost1to1(sites, requireNumber(b, 1)));
+      return startSitesRule(b, (sites) => new SetCost1to1(new IntConstant(requireNumber(b, 1)), null, null, new RegionConstant(sites)));
     case "Phase":
-      return startSitesRule(b, (sites) => new SetPhase1to1(sites, requireNumber(b, 1)));
+      return startSitesRule(b, (sites) => new SetPhase1to1(new IntConstant(requireNumber(b, 1)), null, null, new RegionConstant(sites)));
     case "Hidden": {
       const dataTypes = hiddenDataTypes(b.positional[1]);
       const level = optionalNumber(b.named.get("level")) ?? 0;
@@ -338,8 +340,7 @@ function makeStartSet(b: ArgBundle): unknown {
     case "Score": {
       const role = optionalString(b.positional[1]);
       const score = requireLastNumber(b);
-      if (role === null || role === "Each" || role === "All") return new SetScore1to1(null, [score], true);
-      return new SetScore1to1([roleOwner(role)], [score], false);
+      return new SetScore1to1(role ?? "Each", new IntConstant(score));
     }
     default: {
       const owner = roleOwner(kind);
@@ -350,6 +351,12 @@ function makeStartSet(b: ArgBundle): unknown {
       return new SetSite1to1(owner, site, null);
     }
   }
+}
+
+function rememberValueSource(value: unknown): { value: IntFunction | null; regionValue: RegionFunction | null } {
+  if (Array.isArray(value)) return { value: null, regionValue: new RegionConstant(value.map(asNumber)) };
+  if (value instanceof BaseRegionFunction) return { value: null, regionValue: value };
+  return { value: requireIntFunctionValue(value), regionValue: null };
 }
 
 function makeScore(b: ArgBundle): Score1to1 {
@@ -393,9 +400,10 @@ function makeCountSteps(b: ArgBundle): IntFunction {
 }
 
 function makeSubgame(b: ArgBundle): Subgame1to1 {
+  const option = b.positional.find((value, index) => index > 0 && typeof value === "string");
   return new Subgame1to1(
     requireString(b, 0),
-    optionalString(b.positional[1]),
+    optionalString(option),
     optionalIntFunction(b.named.get("next")),
     optionalIntFunction(b.named.get("result")),
   );
