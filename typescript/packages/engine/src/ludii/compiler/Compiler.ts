@@ -91,6 +91,22 @@ export class Compiler {
     env: CompilerEnv,
     required = true,
   ): T {
+    // Any clause-match misses recorded while compiling a subtree that ultimately
+    // SUCCEEDS are benign probes (e.g. trying (players {(player N)}) against the
+    // (players <int>) clause). Discard them on success so deepestMiss reflects
+    // only the genuinely-failed subtree — the true blocker.
+    const snap = this.deepestMiss;
+    const result = this.compileActualInner<T>(node, expectedSymbol, env, required);
+    this.deepestMiss = snap;
+    return result;
+  }
+
+  private compileActualInner<T = unknown>(
+    node: LudNode,
+    expectedSymbol: string,
+    env: CompilerEnv,
+    required = true,
+  ): T {
     const terminal = this.tryCompileTerminal(node, expectedSymbol);
     if (terminal.matched) return terminal.value as T;
 
