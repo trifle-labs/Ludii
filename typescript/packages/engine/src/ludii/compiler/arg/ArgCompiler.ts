@@ -445,9 +445,28 @@ export class ArgCompiler {
 
     try {
       if (info.executable.kind === "construct") {
-        if (typeof ctor.construct !== "function") return null;
-        if (ctor.construct.length !== info.args.length) return null;
-        return ctor.construct(...info.args);
+        // Java overloads `construct(...)` by signature; TS cannot, so the faithful
+        // port named the overloads `constructSimple`/`constructIndex`/… on the
+        // class. Try the static methods named `construct*` with a matching arity,
+        // returning the first that yields a non-null result.
+        const ctorObj = ctor as unknown as Record<string, unknown>;
+        const exact = ctorObj["construct"];
+        const fns: Array<(...a: unknown[]) => unknown> = [];
+        if (typeof exact === "function" && (exact as { length: number }).length === info.args.length)
+          fns.push(exact as (...a: unknown[]) => unknown);
+        for (const name of Object.getOwnPropertyNames(ctorObj)) {
+          if (name === "construct" || !name.startsWith("construct")) continue;
+          const fn = ctorObj[name];
+          if (typeof fn === "function" && (fn as { length: number }).length === info.args.length)
+            fns.push(fn as (...a: unknown[]) => unknown);
+        }
+        for (const fn of fns) {
+          try {
+            const result = fn.apply(ctor, [...info.args]);
+            if (result !== null && result !== undefined) return result;
+          } catch { /* try next construct* overload */ }
+        }
+        return null;
       }
       if (ctor.length !== info.args.length) return null;
       return new ctor(...info.args);
