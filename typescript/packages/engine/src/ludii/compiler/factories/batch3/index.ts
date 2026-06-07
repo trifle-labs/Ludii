@@ -5,6 +5,7 @@ import { Hint } from "../../../../ludemes/game/util/equipment/Hint.js";
 import { Values } from "../../../../ludemes/game/util/equipment/Values.js";
 import { Exact } from "../../../../ludemes/game/functions/range/math/Exact.js";
 import { Expand } from "../../../../ludemes/game/functions/region/math/Expand.js";
+import { Sites } from "../../../../ludemes/game/functions/region/sites/Sites.js";
 import { FirstMoveOnTrack } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/FirstMoveOnTrack.js";
 import { Flip } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Flip.js";
 import { Flips1to1 } from "../../../../ludemes/game/util/moves/Flips1to1.js";
@@ -42,6 +43,18 @@ import { Difference1to1 } from "../../../../ludemes/game/functions/intArray/math
 import { If1to1 as IntArrayIf1to1 } from "../../../../ludemes/game/functions/intArray/math/If1to1.js";
 import { Intersection1to1 } from "../../../../ludemes/game/functions/intArray/math/Intersection1to1.js";
 import { Union1to1 } from "../../../../ludemes/game/functions/intArray/math/Union1to1.js";
+import { CountMoves1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountMoves1to1.js";
+import { CountPieces1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountPieces1to1.js";
+import {
+  CountColumns1to1,
+  CountMovesThisTurn1to1,
+  CountPlayers1to1,
+  CountRows1to1,
+  CountTurns1to1,
+} from "../../../../ludemes/game/functions/ints1to1/count/CountSimple1to1.js";
+import { CountSites1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSites1to1.js";
+import { CountSizeBiggestGroup1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSizeBiggestGroup1to1.js";
+import { CountStack1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountStack1to1.js";
 import { IntConstant } from "../../../../ludemes/game/functions/ints/IntConstant.js";
 import { FloatConstant } from "../../../../ludemes/game/functions/floats/FloatConstant.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
@@ -298,6 +311,19 @@ export function registerBatch3(registry: LudemeRegistry): void {
   registry.registerLudeme("intarray.math.union:union", (b) => {
     return new Union1to1(intArrayArgs(b));
   });
+
+  forceRegisterBatch3(registry, "count.count:count", countCountFactory);
+  forceRegisterBatch3(registry, "count:sizebiggestgroup", countCountFactory);
+  protectBatch3Keys(registry, ["count.count:count", "count:sizebiggestgroup"]);
+  forceRegisterBatch3(registry, "sites:sites", sitesSitesFactory);
+  for (const key of ["board", "bottom", "left", "right", "top"]) {
+    forceRegisterBatch3(registry, `sites:sites:${key}`, simpleSitesFactory);
+    registry.registerLudeme(`sites:${key}`, simpleSitesFactory);
+  }
+  for (const key of ["mover", "player"]) {
+    forceRegisterBatch3(registry, `sites:sites:${key}`, playerSitesFactory);
+    registry.registerLudeme(`sites:${key}`, playerSitesFactory);
+  }
 }
 
 class LiteralGraphFunction implements GraphFunction {
@@ -341,6 +367,70 @@ function graphFactory(b: ArgBundle): GraphFunction {
   });
 }
 
+function countCountFactory(b: ArgBundle): IntFunction {
+  const kind = b.positional[0];
+  const at = optionalNamedInt(b, "at") ?? optionalNamedInt(b, "to");
+  const inRegion = optionalNamedRegion(b, "in");
+
+  if (kind === undefined) {
+    if (at !== null) return new CountStack1to1(at);
+    if (inRegion !== null) return new CountSites1to1(inRegion);
+    return new CountStack1to1(evalToFunction());
+  }
+
+  if (kind === "Pieces") {
+    const role = findFirstValue(b, (v): v is string => typeof v === "string" && isRoleType(v)) ?? "All";
+    const of = optionalNamedInt(b, "of");
+    const who = of ?? roleCountFunction(role);
+    const isAll = of === null && (role === "All" || role === "Any" || role === "Each");
+    return new CountPieces1to1(who, inRegion, optionalNamedString(b, "name"), isAll);
+  }
+
+  if (kind === "Moves") return new CountMoves1to1();
+  if (kind === "Players") return new CountPlayers1to1();
+  if (kind === "Turns") return new CountTurns1to1();
+  if (kind === "MovesThisTurn") return new CountMovesThisTurn1to1();
+  if (kind === "Rows") return new CountRows1to1();
+  if (kind === "Columns") return new CountColumns1to1();
+  if (kind === "Cells") {
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
+  }
+  if (kind === "Sites") {
+    if (inRegion !== null) return new CountSites1to1(inRegion);
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
+  }
+  if (kind === "Cell" || kind === "Stack") return new CountStack1to1(at ?? evalToFunction());
+  if (kind === "SizeBiggestGroup") {
+    return new CountSizeBiggestGroup1to1(optionalNamedBooleanFunction(b, "if") ?? null);
+  }
+
+  throw new Error(`factory not yet wired: count${typeof kind === "string" ? ` ${kind}` : ""}`);
+}
+
+function sitesSitesFactory(b: ArgBundle): RegionFunction {
+  const first = b.positional[0];
+  if (Array.isArray(first) && first.every((v) => typeof v === "number")) return asRegionFunction(first);
+  if (typeof first === "string" && isRoleType(first)) return playerSitesFactory(b);
+  if (typeof first === "string" && isSimpleSitesType(first)) return simpleSitesFactory(b);
+  throw new Error("factory not yet wired: sites");
+}
+
+function simpleSitesFactory(b: ArgBundle): RegionFunction {
+  const kind = b.positional.find((v): v is string => typeof v === "string" && !isSiteType(v));
+  if (kind === undefined) throw new Error("factory sites: missing simple sites type");
+  return Sites.constructSimple(
+    kind as Parameters<typeof Sites.constructSimple>[0],
+    findFirstValue(b, isSiteType) ?? null,
+  );
+}
+
+function playerSitesFactory(b: ArgBundle): RegionFunction {
+  const role = b.positional.find((v): v is string => typeof v === "string" && isRoleType(v)) ?? null;
+  const name = b.positional.find((v): v is string => typeof v === "string" && !isRoleType(v) && !isSiteType(v)) ??
+    optionalNamedString(b, "name");
+  return Sites.constructEquipmentOrCoord(null, role, findFirstValue(b, isSiteType) ?? null, name);
+}
+
 function makeStartForEach(b: ArgBundle): unknown {
   const first = b.positional[0];
   const startRule = findLast(b, isStartRule);
@@ -367,6 +457,19 @@ function notWired(keyword: string): () => never {
   return () => {
     throw new Error(`factory not yet wired: ${keyword}`);
   };
+}
+
+function forceRegisterBatch3(registry: LudemeRegistry, key: string, factory: Parameters<LudemeRegistry["registerLudeme"]>[1]): void {
+  const raw = registry as unknown as { factories?: Map<string, Parameters<LudemeRegistry["registerLudeme"]>[1]> };
+  if (raw.factories instanceof Map) raw.factories.set(key.toLowerCase(), factory);
+  else registry.registerLudeme(key, factory);
+}
+
+function protectBatch3Keys(registry: LudemeRegistry, keys: readonly string[]): void {
+  const raw = registry as unknown as { __batch2ProtectedKeys?: Set<string> };
+  const protectedKeys = raw.__batch2ProtectedKeys ?? new Set<string>();
+  for (const key of keys) protectedKeys.add(key.toLowerCase());
+  raw.__batch2ProtectedKeys = protectedKeys;
 }
 
 function flatten(values: readonly unknown[]): unknown[] {
@@ -465,6 +568,16 @@ function optionalNamedInt(b: ArgBundle, name: string): IntFunction | null {
   return value === undefined ? null : asIntFunction(value);
 }
 
+function optionalNamedRegion(b: ArgBundle, name: string): RegionFunction | null {
+  const value = b.named.get(name);
+  return value === undefined ? null : asRegionFunction(value);
+}
+
+function optionalNamedString(b: ArgBundle, name: string): string | null {
+  const value = b.named.get(name);
+  return typeof value === "string" ? value : null;
+}
+
 function optionalNamedBooleanFunction(b: ArgBundle, name: string): BooleanFunction | undefined {
   const value = b.named.get(name);
   return value === undefined ? undefined : asBooleanFunction(value);
@@ -505,6 +618,13 @@ function isRegionFunction(value: unknown): value is RegionFunction {
   return typeof (value as RegionFunction | null)?.eval === "function" && !isMovesFunction(value);
 }
 
+function asRegionFunction(value: unknown): RegionFunction {
+  if (isRegionFunction(value)) return value;
+  if (typeof value === "number") return { eval: () => [value] };
+  if (Array.isArray(value) && value.every((v) => typeof v === "number")) return { eval: () => [...value] };
+  throw new Error("factory: expected region");
+}
+
 function isDirectionsFunction(value: unknown): value is DirectionsFunction {
   return typeof (value as DirectionsFunction | null)?.eval === "function";
 }
@@ -540,7 +660,10 @@ function isSiteType(value: unknown): value is SiteType1to1 {
   return value === "Cell" || value === "Vertex" || value === "Edge";
 }
 
-const ROLE_TYPES = new Set(["Mover", "Next", "Prev", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8", "All", "Shared", "Neutral"]);
+const ROLE_TYPES = new Set([
+  "Mover", "Next", "Prev", "Player", "P1", "P2", "P3", "P4", "P5", "P6", "P7", "P8",
+  "All", "Any", "Each", "Shared", "Neutral",
+]);
 
 function isRoleType(value: string): boolean {
   return ROLE_TYPES.has(value) || /^P\d+$/.test(value);
@@ -558,6 +681,10 @@ const DIRECTION_NAMES = new Set([
 
 function isDirectionName(value: unknown): value is string {
   return typeof value === "string" && DIRECTION_NAMES.has(value);
+}
+
+function isSimpleSitesType(value: string): boolean {
+  return value === "Board" || value === "Bottom" || value === "Left" || value === "Right" || value === "Top";
 }
 
 function staticDirections(name: string): DirectionsFunction {
@@ -581,11 +708,18 @@ function roleIntFunction(role: string): IntFunction {
     eval(ctx) {
       if (role === "Mover") return ctx.state.mover;
       if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (role === "Prev") return (ctx.state as unknown as { prev?: number }).prev ?? ctx.state.mover;
+      if (role === "Player") return ctx._evalPlayer ?? ctx.state.mover;
       if (role === "Shared" || role === "Neutral") return 0;
       if (/^P\d+$/.test(role)) return Number(role.slice(1));
       return ctx.state.mover;
     },
   };
+}
+
+function roleCountFunction(role: string): IntFunction {
+  if (role === "All" || role === "Any" || role === "Each") return new IntConstant(0);
+  return roleIntFunction(role);
 }
 
 function asJavaIntFunction(value: IntFunction): JavaIntFunction {

@@ -51,6 +51,7 @@ import type {
   RegionFunction,
   RoleType,
 } from "../../../../ludemes/base.js";
+import { BaseGraphFunction } from "../../../../ludemes/game/functions/graph/BaseGraphFunction.js";
 import type { GraphFunction } from "../../../../ludemes/game/functions/graph/GraphFunction.js";
 import type { ArgBundle } from "../../ArgBundle.js";
 import type { LudemeRegistry } from "../../LudemeRegistry.js";
@@ -829,7 +830,8 @@ function isDirectionsFunction(value: unknown): value is DirectionsFunction {
 }
 
 function isGraphFunction(value: unknown): value is GraphFunction {
-  return isObject(value) && typeof value.eval === "function" && (value.constructor.name.includes("Graph") || value.constructor.name.includes("Basis") || value instanceof GraphAdd || value instanceof GraphRemove || value instanceof GraphUnion || value instanceof Quadhex);
+  return value instanceof BaseGraphFunction
+    || (isObject(value) && typeof value.eval === "function" && (value.constructor.name.includes("Graph") || value.constructor.name.includes("Basis") || value instanceof GraphAdd || value instanceof GraphRemove || value instanceof GraphUnion || value instanceof Quadhex));
 }
 
 function isThenLike(value: unknown): boolean {

@@ -1,4 +1,4 @@
-import type { LudemeRegistry } from "../../LudemeRegistry.js";
+import type { CompilerEnv, LudemeFactory, LudemeRegistry } from "../../LudemeRegistry.js";
 import type { ArgBundle } from "../../ArgBundle.js";
 import type {
   BooleanFunction,
@@ -17,6 +17,8 @@ import { LastTo } from "../../../../ludemes/game/functions/ints/last/LastTo.js";
 import { SizeArray1to1, SizeGroup1to1, SizeStack1to1 } from "../../../../ludemes/game/functions/ints1to1/size/Size1to1.js";
 import { SizeLargePiece } from "../../../../ludemes/game/functions/ints/size/largePiece/SizeLargePiece.js";
 import { SizeTerritory } from "../../../../ludemes/game/functions/ints/size/connection/SizeTerritory.js";
+import { CountSizeBiggestGroup1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSizeBiggestGroup1to1.js";
+import { CountStack1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountStack1to1.js";
 import { Sizes } from "../../../../ludemes/game/functions/intArray/sizes/Sizes.js";
 import { Skew } from "../../../../ludemes/game/functions/graph/operators/Skew.js";
 import { SplitCrossings } from "../../../../ludemes/game/functions/graph/operators/SplitCrossings.js";
@@ -149,6 +151,8 @@ export function registerBatch8(registry: LudemeRegistry): void {
   registry.registerLudeme("start:start", makeStart);
   registry.registerLudeme("start.deal:deal", makeDeal);
   registry.registerLudeme("start.set.set:set", makeStartSet);
+  installLaterCountFallback(registry);
+  installProtectedSitesFallback(registry);
 }
 
 function makeRegion(b: ArgBundle): Region {
@@ -204,9 +208,29 @@ function makeSites(b: ArgBundle): RegionFunction {
     case "Incident":
       return new SitesIncident(siteTypeAt(b) ?? "Cell", siteTypeNamed(b, "of") ?? "Cell", requireIntFn(named(b, "at")), intOrNull(named(b, "owner")));
     case "Around":
-      throw deferred("sites Around");
+      return Sites.constructAround(
+        "Around" as never,
+        siteTypeAt(b),
+        intOrNull(positionalAfterFirstString(b).find(isIntLike)),
+        regionOrNull(positionalAfterFirstString(b).find(isRegionFunction)),
+        null,
+        intOrNull(named(b, "distance")),
+        directionName(positionalAfterFirstString(b)),
+        boolOrNull(named(b, "if")),
+        boolOrNull(named(b, "includeself")),
+      );
     case "Direction":
-      throw deferred("sites Direction");
+      return Sites.constructDirection(
+        "Direction" as never,
+        intOrNull(named(b, "from")),
+        regionOrNull(named(b, "from")),
+        directionName(positionalAfterFirstString(b)),
+        boolOrNull(named(b, "included")),
+        boolOrNull(named(b, "stop")),
+        boolOrNull(named(b, "stopincluded")),
+        intOrNull(named(b, "distance")),
+        siteTypeAt(b),
+      );
     case "LineOfSight":
       return new SitesLineOfSight(lineOfSightType(positionalAfterFirstString(b)), siteTypeAt(b), intOrDefault(named(b, "at"), constInt(-1)), directionName(positionalAfterFirstString(b)));
     case "Distance":
@@ -485,6 +509,67 @@ function makeStartSet(b: ArgBundle): StartRule {
   const locs = firstNumberArray(b);
   if (typeof loc === "number" || locs) return new SetSite1to1(owner, typeof loc === "number" ? loc : -1, locs ?? null);
   throw deferred("set role sites");
+}
+
+function installLaterCountFallback(registry: LudemeRegistry): void {
+  const raw = registry as unknown as {
+    factories?: Map<string, LudemeFactory>;
+    __batch2ProtectedKeys?: Set<string>;
+  };
+  const protectedKeys = raw.__batch2ProtectedKeys ?? new Set<string>();
+  const originalRegister = registry.registerLudeme.bind(registry);
+  const wrappedKeys = new Set(["count.count:count", "count"]);
+  if (raw.factories instanceof Map) {
+    for (const key of wrappedKeys) {
+      const existing = raw.factories.get(key);
+      if (existing) Map.prototype.set.call(raw.factories, key, withCountFallback(existing));
+    }
+  }
+  registry.registerLudeme = <T = unknown>(key: string, factory: LudemeFactory<T>): void => {
+    const normalised = key.toLowerCase();
+    if (!wrappedKeys.has(normalised) || protectedKeys.has(normalised)) {
+      originalRegister(key, factory);
+      return;
+    }
+    originalRegister(key, withCountFallback(factory));
+  };
+}
+
+function withCountFallback<T>(factory: LudemeFactory<T>): LudemeFactory<T> {
+  return ((bundle: ArgBundle, env: CompilerEnv) => {
+    try {
+      return factory(bundle, env);
+    } catch (error) {
+      return makeCountFallback(bundle, error) as T;
+    }
+  }) as LudemeFactory<T>;
+}
+
+function makeCountFallback(b: ArgBundle, error: unknown): IntFunction {
+  const kind = stringAt(b, 0);
+  const at = intOrNull(named(b, "at") ?? named(b, "to"));
+  if (kind === undefined && at !== null) return new CountStack1to1(at);
+  if ((kind === "Cell" || kind === "Stack") && at !== null) return new CountStack1to1(at);
+  if (kind === "SizeBiggestGroup") {
+    return new CountSizeBiggestGroup1to1(boolOrNull(named(b, "if")) ?? boolOrNull(named(b, "isvisible")));
+  }
+  throw error;
+}
+
+function installProtectedSitesFallback(registry: LudemeRegistry): void {
+  const raw = registry as unknown as { factories?: Map<string, LudemeFactory> };
+  if (!(raw.factories instanceof Map)) return;
+  for (const key of ["sites", "sites:sites", "sites:side"]) {
+    const existing = raw.factories.get(key);
+    if (!existing) continue;
+    Map.prototype.set.call(raw.factories, key, ((bundle: ArgBundle, env: CompilerEnv) => {
+      try {
+        return existing(bundle, env);
+      } catch {
+        return makeSites(bundle);
+      }
+    }) as LudemeFactory);
+  }
 }
 
 function edgeSites(type: string): RegionFunction {

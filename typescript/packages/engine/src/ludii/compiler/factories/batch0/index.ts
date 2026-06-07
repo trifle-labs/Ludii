@@ -18,6 +18,7 @@ import { IsHidden1to1 } from "../../../../ludemes/game/functions/booleans/is/is1
 import { IsCycle1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsCycle1to1.js";
 import { IsLastFrom1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsLastFrom1to1.js";
 import { IsLastTo1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsLastTo1to1.js";
+import { IsAnyDie1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsAnyDie1to1.js";
 import { IsLoop1to1 } from "../../../../ludemes/game/functions/booleans/is/loop1to1/IsLoop1to1.js";
 import { IsPath1to1 } from "../../../../ludemes/game/functions/booleans/is/path1to1/IsPath1to1.js";
 import { IsPattern1to1 } from "../../../../ludemes/game/functions/booleans/is/pattern1to1/IsPattern1to1.js";
@@ -167,9 +168,7 @@ export function registerBatch0(registry: LudemeRegistry): void {
 
   registry.registerLudeme("board.id:id", makeId);
 
-  registry.registerLudeme("board.phase:phase", () => {
-    throw deferred("phase");
-  });
+  registry.registerLudeme("board.phase:phase", makeBoardPhase);
 
   registry.registerLudeme("board.track:track", (b): Track => {
     const name = optionalString(b.positional[0]) ?? null;
@@ -241,6 +240,7 @@ function makeIs(b: ArgBundle): BooleanFunction {
     case "Friend": return new IsFriend1to1(toIntFunction(b.positional[1] ?? "Mover"));
     case "Enemy": return new IsEnemy1to1(toIntFunction(b.positional[1] ?? "Next"));
     case "Active": return new IsActive1to1(toIntFunction(b.positional[1] ?? "Mover"));
+    case "AnyDie": return new IsAnyDie1to1(toIntFunction(b.positional[1] ?? new IntConstant(0)));
     case "Even": return new IsEven1to1(toIntFunction(requirePos(b, 1)));
     case "Crossing": return new IsCrossing1to1(toIntFunction(requirePos(b, 1)), toIntFunction(requirePos(b, 2)));
     case "Decided": return new IsDecided(requireStringValue(requirePos(b, 1)));
@@ -308,6 +308,36 @@ function makeId(b: ArgBundle): IntFunction {
       const piece = pieces.find((p) => p.name === name && (ownerId < 0 || p.owner === ownerId))
         ?? pieces.find((p) => `${p.name}${p.owner}` === first);
       return piece?.index ?? roleToIntFunction(first).eval(ctx);
+    },
+  };
+}
+
+function makeBoardPhase(b: ArgBundle): IntFunction {
+  const type = firstSiteType(b);
+  const of = requireNamed(b, "of", toIntFunction);
+  return {
+    eval(ctx): number {
+      const index = of.eval(ctx);
+      if (index < 0) return -1;
+
+      const topology = (ctx as unknown as {
+        topology?: () => {
+          getGraphElements(type: SiteType): Array<{ phase(): number }>;
+        };
+      }).topology?.();
+      if (topology) {
+        const elements = topology.getGraphElements(type ?? "Cell");
+        return elements[index]?.phase() ?? -1;
+      }
+
+      const width = (ctx.game as unknown as { width?: number }).width;
+      if (width !== undefined && width > 0) {
+        const col = index % width;
+        const row = Math.floor(index / width);
+        return (row + col) % 2;
+      }
+
+      return 0;
     },
   };
 }

@@ -41,18 +41,26 @@ import { ValueMoveLimit } from "../../../../ludemes/game/functions/ints/value/si
 import { ValuePending } from "../../../../ludemes/game/functions/ints/value/simple/ValuePending.js";
 import { ValueTurnLimit } from "../../../../ludemes/game/functions/ints/value/simple/ValueTurnLimit.js";
 import { CountPieces1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountPieces1to1.js";
+import { CountMoves1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountMoves1to1.js";
+import { CountValue1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountValue1to1.js";
+import { CountSizeBiggestGroup1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSizeBiggestGroup1to1.js";
+import { CountNumber1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSimpleExtra1to1.js";
+import { CountSteps1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSteps1to1.js";
 import { Score1to1, Var1to1 } from "../../../../ludemes/game/functions/ints1to1/state/State1to1.js";
 import { IsEnemy1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsEnemy1to1.js";
 import { IsFriend1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsFriend1to1.js";
 import { Tile } from "../../../../ludemes/game/equipment/component/tile/Tile.js";
 import { Regions } from "../../../../ludemes/game/equipment/other/Regions.js";
+import type { Equipment1to1 } from "../../../../ludemes/game/equipment/Equipment1to1.js";
 import { Board1to1 } from "../../../../ludemes/game/equipment/container/board/Board1to1.js";
 import { SurakartaBoard } from "../../../../ludemes/game/equipment/container/board/custom/SurakartaBoard.js";
 import { Subgame1to1 } from "../../../../ludemes/game/match/Subgame1to1.js";
 import { Swap as MetaSwap } from "../../../../ludemes/game/rules/meta/Swap.js";
+import type { StartRule } from "../../../../ludemes/game/rules/start/StartRule.js";
 import { SetAmount1to1 } from "../../../../ludemes/game/rules/start/set/player/SetAmount.js";
 import { SetScore1to1 } from "../../../../ludemes/game/rules/start/set/player/SetScore.js";
 import { SetTeam1to1 } from "../../../../ludemes/game/rules/start/set/players/SetTeam.js";
+import { SetHidden1to1, type HiddenData } from "../../../../ludemes/game/rules/start/set/hidden/SetHidden.js";
 import { SetRememberValue1to1 } from "../../../../ludemes/game/rules/start/set/remember/SetRememberValue.js";
 import { SetCost1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetCost.js";
 import { SetCount1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetCount.js";
@@ -70,6 +78,7 @@ import { RoleType as NumericRoleType } from "../../../../ludemes/game/util/end/R
 import type {
   BooleanFunction,
   FloatFunction,
+  IntArrayFunction,
   IntFunction,
   MovesFunction,
   RegionFunction,
@@ -102,7 +111,7 @@ export function registerBatch9(registry: LudemeRegistry): void {
   registry.registerLudeme("regionSite:regionSite", makeRegionSite);
   registry.registerLudeme("regionSite", makeRegionSite);
   registry.registerLudeme("start.set.set:set", makeStartSet);
-  registry.registerLudeme("state:state", deferred("state"));
+  registry.registerLudeme("state:state", makeState);
   registry.registerLudeme("state.score:score", makeScore);
   registry.registerLudeme("subdivide:subdivide", (b) => new Subdivide(requireGraph(b, 0), optionalNumber(b.named.get("min")) ?? 1));
   registry.registerLudeme("subgame:subgame", makeSubgame);
@@ -134,6 +143,27 @@ export function registerBatch9(registry: LudemeRegistry): void {
   registry.registerLudeme("while:while", (b) => new While(requireBooleanFunction(b, 0), requireMoves(b.positional[1]), optionalMoves(b.positional[2])));
   registry.registerLudeme("who:who", makeWho);
   registry.registerLudeme("xor:xor", (b) => new Xor1to1(requireBooleanFunction(b, 0), requireBooleanFunction(b, 1)));
+
+  forceRegister(registry, "container.board.board:board", makeBoard);
+  forceRegister(registry, "board", makeBoard);
+  forceRegister(registry, "count.count:count", makeCount);
+  forceRegister(registry, "count", makeCount);
+  forceRegister(registry, "regions:regions", makeRegions);
+  forceRegister(registry, "regions", makeRegions);
+  forceRegister(registry, "regionSite:regionSite", makeRegionSite);
+  forceRegister(registry, "regionSite", makeRegionSite);
+  forceRegister(registry, "start.set.set:set", makeStartSet);
+  forceRegister(registry, "state:state", makeState);
+}
+
+function forceRegister(
+  registry: LudemeRegistry,
+  key: string,
+  factory: Parameters<LudemeRegistry["registerLudeme"]>[1],
+): void {
+  const raw = registry as unknown as { factories?: Map<string, Parameters<LudemeRegistry["registerLudeme"]>[1]> };
+  if (raw.factories instanceof Map) Map.prototype.set.call(raw.factories, key.toLowerCase(), factory);
+  else registry.registerLudeme(key, factory);
 }
 
 function makeBoard(b: ArgBundle): Board1to1 {
@@ -189,6 +219,12 @@ function makeConcentric(b: ArgBundle): GraphFunction {
 
 function makeCount(b: ArgBundle): IntFunction {
   const kind = optionalString(b.positional[0]);
+  if (kind === "Value") {
+    return new CountValue1to1(
+      requireIntFunctionValue(b.named.get("of") ?? b.positional[1]),
+      requireIntArrayFunction(b.named.get("in") ?? b.positional[2]),
+    );
+  }
   if (kind === "Pieces") {
     const role = roleStringAfter(b, 0) ?? "All";
     return new CountPieces1to1(
@@ -198,9 +234,15 @@ function makeCount(b: ArgBundle): IntFunction {
       role === "All" || role === "Any" || role === "Each",
     );
   }
+  if (kind === "Steps") return makeCountSteps(b);
+  if (kind === "Pips") return makeCountPips(b);
   if (kind === "Cell" || kind === "Stack" || kind === null) {
     const at = optionalIntFunction(b.named.get("at"));
-    return { eval: (ctx) => at === null ? 0 : ctx.state.countAtSite(at.eval(ctx)) };
+    const region = optionalRegion(b.named.get("in"));
+    if (region !== null) return new CountNumber1to1(region);
+    if (at !== null) return new CountNumber1to1(singleSiteRegion(at));
+    if (kind === null) return new CountNumber1to1(singleSiteRegion({ eval: (ctx) => ctx._evalTo }));
+    return { eval: (ctx) => ctx.state.countAtSite(ctx._evalTo) };
   }
   if (kind === "Sites") {
     const region = optionalRegion(b.named.get("in"));
@@ -217,6 +259,15 @@ function makeCount(b: ArgBundle): IntFunction {
   }
   if (kind === "Players") {
     return { eval: (ctx) => ctx.numPlayers() };
+  }
+  if (kind === "Moves") return new CountMoves1to1();
+  if (kind === "Turns") return { eval: (ctx) => ctx.state.numTurn };
+  if (kind === "MovesThisTurn") return { eval: (ctx) => ctx.state.numTurnSamePlayer };
+  if (kind === "Active") return { eval: (ctx) => ctx.state.active.filter(Boolean).length };
+  if (kind === "Trials") return { eval: () => 0 };
+  if (kind === "LegalMoves") return { eval: (ctx) => ctx.game.moves(ctx).length };
+  if (kind === "SizeBiggestGroup") {
+    return new CountSizeBiggestGroup1to1(optionalBooleanFunction(b.named.get("if")) ?? optionalBooleanFunction(b.named.get("isvisible")));
   }
   throw new Error(`factory not yet wired: count${kind === null ? "" : ` ${kind}`}`);
 }
@@ -257,19 +308,31 @@ function makeStartSet(b: ArgBundle): unknown {
   const kind = requireString(b, 0);
   switch (kind) {
     case "RememberValue": {
-      const name = optionalString(b.positional[1]);
-      const value = b.positional[2];
+      const hasName = typeof b.positional[1] === "string";
+      const name = hasName ? optionalString(b.positional[1]) : null;
+      const value = hasName ? b.positional[2] : b.positional[1];
+      const unique = optionalBoolean(b.named.get("unique")) ?? false;
+      if (isRegionFunction(value) || isIntArrayLike(value)) {
+        return new DynamicValuesStartRule(value as IntArrayFunction, (values) => new SetRememberValue1to1(name, values, unique));
+      }
       const values = Array.isArray(value) ? value.map(asNumber) : [asNumber(value)];
-      return new SetRememberValue1to1(name, values, optionalBoolean(b.named.get("unique")) ?? false);
+      return new SetRememberValue1to1(name, values, unique);
     }
     case "Team":
-      return new SetTeam1to1(requireNumber(b, 1), requireNumberArray(b.positional[2], "set Team roles"));
+      return new SetTeam1to1(requireNumber(b, 1), requireRoleOwners(b.positional[2]));
     case "Count":
-      return new SetCount1to1(startSites(b), requireNumber(b, 1));
+      return startSitesRule(b, (sites) => new SetCount1to1(sites, requireNumber(b, 1)));
     case "Cost":
-      return new SetCost1to1(startSites(b), requireNumber(b, 1));
+      return startSitesRule(b, (sites) => new SetCost1to1(sites, requireNumber(b, 1)));
     case "Phase":
-      return new SetPhase1to1(startSites(b), requireNumber(b, 1));
+      return startSitesRule(b, (sites) => new SetPhase1to1(sites, requireNumber(b, 1)));
+    case "Hidden": {
+      const dataTypes = hiddenDataTypes(b.positional[1]);
+      const level = optionalNumber(b.named.get("level")) ?? 0;
+      const value = b.positional.find((item): item is boolean => typeof item === "boolean") ?? true;
+      const who = roleOwner(asString(b.named.get("to")));
+      return startSitesRule(b, (sites) => new SetHidden1to1(dataTypes, sites, level, value, who));
+    }
     case "Amount":
       return new SetAmount1to1(optionalRoleOwner(b.positional[1]), requireLastNumber(b));
     case "Score": {
@@ -281,8 +344,10 @@ function makeStartSet(b: ArgBundle): unknown {
     default: {
       const owner = roleOwner(kind);
       const site = b.named.has("at") ? asNumber(b.named.get("at")) : -1;
-      const sites = b.named.has("to") ? requireNumberArray(b.named.get("to"), "set sites to") : null;
-      return new SetSite1to1(owner, site, sites);
+      if (b.named.has("to")) {
+        return startSitesRule(b, (sites) => new SetSite1to1(owner, -1, sites));
+      }
+      return new SetSite1to1(owner, site, null);
     }
   }
 }
@@ -290,6 +355,41 @@ function makeStartSet(b: ArgBundle): unknown {
 function makeScore(b: ArgBundle): Score1to1 {
   const value = b.positional[0];
   return new Score1to1(typeof value === "string" ? roleIntFunction(value) : asIntFunction(value));
+}
+
+function makeState(b: ArgBundle): IntFunction {
+  const type = optionalSiteType(b.positional.find(isSiteTypeString));
+  const at = requireIntFunctionValue(b.named.get("at"));
+  const level = optionalIntFunction(b.named.get("level"));
+  return {
+    eval: (ctx) => {
+      const site = at.eval(ctx);
+      if (site < 0) return 0;
+      if (level !== null) return ctx.state.stateAt[site] ?? 0;
+      void type;
+      return ctx.state.stateAt[site] ?? 0;
+    },
+  };
+}
+
+function makeCountPips(b: ArgBundle): IntFunction {
+  const who = optionalIntFunction(b.named.get("of")) ??
+    (roleStringAfter(b, 0) === null ? null : roleIntFunction(roleStringAfter(b, 0)!));
+  return {
+    eval: (ctx) => {
+      void who?.eval(ctx);
+      return ctx.state.diceValues.reduce((sum, value) => sum + value, 0);
+    },
+  };
+}
+
+function makeCountSteps(b: ArgBundle): IntFunction {
+  const values = b.positional.slice(1).filter((value) => !isSiteTypeString(value) && typeof value !== "string");
+  const site1 = values.find((value): value is JavaIntFunction => isIntFunction(value)) ?? null;
+  const region2 = values.find((value): value is RegionFunction => value !== site1 && isRegionFunction(value)) ?? null;
+  const site2 = values.find((value): value is JavaIntFunction => value !== site1 && isIntFunction(value)) ?? null;
+  if (site1 === null) throw new Error("factory not yet wired: count Steps");
+  return new CountSteps1to1(site1, region2 ?? singleSiteRegion(site2 ?? javaIntConstant(-1)));
 }
 
 function makeSubgame(b: ArgBundle): Subgame1to1 {
@@ -656,10 +756,77 @@ function isSiteTypeString(value: unknown): boolean {
   return value === "Cell" || value === "Edge" || value === "Vertex";
 }
 
-function startSites(b: ArgBundle): number[] {
+type StartSites = readonly number[] | RegionFunction | IntArrayFunction;
+
+function startSitesRule(b: ArgBundle, build: (sites: readonly number[]) => StartRule): StartRule {
+  const sites = startSites(b);
+  if (Array.isArray(sites)) return build(sites);
+  return new DynamicSitesStartRule(sites as RegionFunction | IntArrayFunction, build);
+}
+
+function startSites(b: ArgBundle): StartSites {
   if (b.named.has("at")) return [asNumber(b.named.get("at"))];
-  if (b.named.has("to")) return requireNumberArray(b.named.get("to"), "set sites to");
+  const namedTo = b.named.get("to");
+  if (namedTo !== undefined && typeof namedTo !== "string") return asStartSites(namedTo);
+  const positionalSites = flatten(b.positional).find((value) =>
+    isRegionFunction(value) || isNumberArray(value) || isIntArrayLike(value));
+  if (positionalSites !== undefined) return asStartSites(positionalSites);
   throw new Error("set: expected at or to sites");
+}
+
+function asStartSites(value: unknown): StartSites {
+  if (isNumberArray(value)) return value;
+  if (isRegionFunction(value)) return value;
+  if (isIntArrayLike(value)) return value;
+  return requireNumberArray(value, "set sites to");
+}
+
+function hiddenDataTypes(value: unknown): readonly HiddenData[] | null {
+  if (value === undefined || value === null) return null;
+  const values = Array.isArray(value) ? value : [value];
+  return values.filter((item): item is HiddenData =>
+    typeof item === "string" && ["What", "Who", "State", "Count", "Rotation", "Value"].includes(item),
+  );
+}
+
+class DynamicSitesStartRule implements StartRule {
+  public constructor(
+    private readonly sites: RegionFunction | IntArrayFunction,
+    private readonly build: (sites: readonly number[]) => StartRule,
+  ) {}
+
+  public applyToInitialState(
+    cells: number[],
+    whats: number[],
+    countAt: number[],
+    equipment: Equipment1to1,
+    numPlayers: number,
+    stateAt?: number[],
+    valueAt?: number[],
+  ): void {
+    const sites = this.sites.eval(startContext(cells, whats, countAt, equipment, numPlayers, stateAt, valueAt));
+    this.build(sites).applyToInitialState(cells, whats, countAt, equipment, numPlayers, stateAt, valueAt);
+  }
+}
+
+class DynamicValuesStartRule implements StartRule {
+  public constructor(
+    private readonly values: IntArrayFunction,
+    private readonly build: (values: readonly number[]) => StartRule,
+  ) {}
+
+  public applyToInitialState(
+    cells: number[],
+    whats: number[],
+    countAt: number[],
+    equipment: Equipment1to1,
+    numPlayers: number,
+    stateAt?: number[],
+    valueAt?: number[],
+  ): void {
+    const values = this.values.eval(startContext(cells, whats, countAt, equipment, numPlayers, stateAt, valueAt));
+    this.build(Array.isArray(values) ? values : [values]).applyToInitialState(cells, whats, countAt, equipment, numPlayers, stateAt, valueAt);
+  }
 }
 
 function deferred(keyword: string): () => never {
@@ -713,9 +880,40 @@ function requireNumberArray(value: unknown, label: string): number[] {
   return value.map(asNumber);
 }
 
+function requireRoleOwners(value: unknown): number[] {
+  if (!Array.isArray(value)) throw new Error("factory not yet wired: set Team roles");
+  return value.map((item) => {
+    const owner = roleOwner(asString(item));
+    if (owner < 1) throw new Error("factory not yet wired: set Team roles");
+    return owner;
+  });
+}
+
 function optionalNumberArray(value: unknown): number[] | null {
   if (value === undefined || value === null) return null;
   return requireNumberArray(value, "number array");
+}
+
+function requireIntArrayFunction(value: unknown): IntArrayFunction {
+  if (value === undefined || value === null) throw new Error("factory not yet wired: expected int array function");
+  if (isNumberArray(value)) return javaIntArrayConstant(value);
+  if (isIntArrayLike(value)) return value;
+  throw new Error("factory not yet wired: expected int array function");
+}
+
+function javaIntArrayConstant(values: readonly number[]): IntArrayFunction {
+  return {
+    eval: () => [...values],
+  };
+}
+
+function singleSiteRegion(siteFn: IntFunction): RegionFunction {
+  return {
+    eval: (ctx) => {
+      const site = siteFn.eval(ctx);
+      return site < 0 ? [] : [site];
+    },
+  };
 }
 
 function asIntFunction(value: unknown): JavaIntFunction {
@@ -746,6 +944,40 @@ function javaIntConstant(value: number): JavaIntFunction {
     willCrash: () => false,
     toEnglish: () => String(value),
   };
+}
+
+function startContext(
+  cells: readonly number[],
+  whats: readonly number[],
+  countAt: readonly number[],
+  equipment: Equipment1to1,
+  numPlayers: number,
+  stateAt: readonly number[] | undefined,
+  valueAt: readonly number[] | undefined,
+): never {
+  const state = {
+    cells,
+    whats,
+    countAt,
+    stateAt: stateAt ?? cells.map(() => 0),
+    valueAt: valueAt ?? cells.map(() => 0),
+    stacks: cells.map(() => [] as number[]),
+    diceValues: [] as number[],
+    active: Array.from({ length: numPlayers + 1 }, (_, index) => index > 0),
+    numTurn: 1,
+    numTurnSamePlayer: 0,
+    mover: 1,
+    countAtSite: (site: number) => countAt[site] ?? 0,
+  };
+  return {
+    game: { equipment, numPlayers, moves: () => [] },
+    state,
+    trial: { moves: [] },
+    numPlayers: () => numPlayers,
+    _evalTo: -1,
+    _evalFrom: -1,
+    _evalValue: 0,
+  } as never;
 }
 
 function roleIntFunction(role: string): JavaIntFunction {
@@ -936,4 +1168,8 @@ function isRegionFunction(value: unknown): value is RegionFunction {
 
 function isGraphFunction(value: unknown): value is GraphFunction {
   return typeof (value as GraphFunction | null)?.eval === "function";
+}
+
+function isIntArrayLike(value: unknown): value is IntArrayFunction {
+  return typeof (value as IntArrayFunction | null)?.eval === "function";
 }

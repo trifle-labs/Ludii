@@ -5,6 +5,20 @@ import { Mover1to1, Next1to1 } from "../../../../ludemes/game/functions/ints1to1
 import { Or1to1 as BooleanOr } from "../../../../ludemes/game/functions/booleans/math1to1/Or1to1.js";
 import { Not1to1 } from "../../../../ludemes/game/functions/booleans/math1to1/Not1to1.js";
 import { IsEven1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsEven1to1.js";
+import { IsOdd1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsOdd1to1.js";
+import { IsVisited1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsVisited1to1.js";
+import { IsIn1to1 } from "../../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
+import { IsEmpty1to1 } from "../../../../ludemes/game/functions/booleans/is/site1to1/IsEmpty1to1.js";
+import { IsOccupied1to1 } from "../../../../ludemes/game/functions/booleans/is/site1to1/IsOccupied1to1.js";
+import { IsActive1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsActive1to1.js";
+import { IsEnemy1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsEnemy1to1.js";
+import { IsFriend1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsFriend1to1.js";
+import { IsMover1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsMover1to1.js";
+import { IsNext1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsNext1to1.js";
+import { IsPrev1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsPrev1to1.js";
+import { IsBlocked1to1 } from "../../../../ludemes/game/functions/booleans/is/simple1to1/IsBlocked1to1.js";
+import { IsFull1to1 } from "../../../../ludemes/game/functions/booleans/is/simple1to1/IsFull1to1.js";
+import { IsPending1to1 } from "../../../../ludemes/game/functions/booleans/is/simple1to1/IsPending1to1.js";
 import { IsWithin } from "../../../../ludemes/game/functions/booleans/is/component/IsWithin.js";
 import { Merge } from "../../../../ludemes/game/functions/graph/operators/Merge.js";
 import { Concentric } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/Concentric.js";
@@ -170,6 +184,7 @@ export function registerBatch5(registry: LudemeRegistry): void {
   registry.registerLudeme("is", makeIsFallback);
   registry.registerLudeme("regions", makeRegionsFallback);
   registry.registerLudeme("rules", makeRulesFallback);
+  registry.registerLudeme("sites:sites", makeSitesFallback);
   registry.registerLudeme("sites", makeSitesFallback);
 }
 
@@ -288,6 +303,52 @@ function makeConcentricFallback(b: ArgBundle): GraphFunction {
 function makeIsFallback(b: ArgBundle): BooleanFunction {
   const kind = optionalString(b.positional[0]);
   if (kind === "Even") return new IsEven1to1(requireIntFunction(firstIntishAfterKind(b, "Even"), "is Even"));
+  if (kind === "Odd") return new IsOdd1to1(requireIntFunction(firstIntishAfterKind(b, "Odd"), "is Odd"));
+  if (kind === "Visited") {
+    return new IsVisited1to1(
+      asOptionalIntFunction(firstIntishAfterKind(b, "Visited"), "is Visited") ?? new IteratorTo(),
+    );
+  }
+  if (kind === "In") {
+    const values = flatten(b.positional).filter((value) => value !== "In" && !isSiteTypeName(value));
+    const site = values.find(isIntish);
+    const region = values.find(isRegionFunction);
+    return new IsIn1to1(
+      asOptionalIntFunction(site, "is In") ?? new IteratorTo(),
+      requireRegionFunction(region, "is In"),
+    );
+  }
+  if (kind === "Empty") {
+    return new IsEmpty1to1(
+      asOptionalIntFunction(firstIntishAfterKind(b, "Empty"), "is Empty") ?? new IteratorTo(),
+    );
+  }
+  if (kind === "Occupied") {
+    return new IsOccupied1to1(
+      asOptionalIntFunction(firstIntishAfterKind(b, "Occupied"), "is Occupied") ?? new IteratorTo(),
+    );
+  }
+  if (kind === "Mover") {
+    return new IsMover1to1(firstPlayerIntAfterKind(b, "Mover") ?? roleIntFunction("Mover"));
+  }
+  if (kind === "Next") {
+    return new IsNext1to1(firstPlayerIntAfterKind(b, "Next") ?? new IntConstant(-1));
+  }
+  if (kind === "Prev") {
+    return new IsPrev1to1(firstPlayerIntAfterKind(b, "Prev") ?? new IntConstant(-1));
+  }
+  if (kind === "Enemy") {
+    return new IsEnemy1to1(firstPlayerIntAfterKind(b, "Enemy") ?? new IntConstant(-1));
+  }
+  if (kind === "Friend" || kind === "Friendly") {
+    return new IsFriend1to1(firstPlayerIntAfterKind(b, kind) ?? new IntConstant(-1));
+  }
+  if (kind === "Active") {
+    return new IsActive1to1(firstPlayerIntAfterKind(b, "Active") ?? roleIntFunction("Mover"));
+  }
+  if (kind === "Full") return new IsFull1to1();
+  if (kind === "Pending") return new IsPending1to1();
+  if (kind === "Blocked") return new IsBlocked1to1();
   if (kind === "Within") {
     const pieceId = requireIntFunction(firstIntishAfterKind(b, "Within"), "is Within piece");
     return new IsWithin(
@@ -332,12 +393,46 @@ function makeRulesFallback(b: ArgBundle): Rules1to1 {
 
 function makeSitesFallback(b: ArgBundle): RegionFunction {
   const kind = optionalString(b.positional[0]);
+  if (kind === null) {
+    const siteType = optionalSiteType(namedValue(b, "type", "siteType")) ?? optionalSiteType(flatten(b.positional).find(isSiteTypeName)) ?? null;
+    const coords = firstStringArray(b);
+    if (coords !== null) return Sites.constructCoords(siteType, coords);
+    const sites = firstNumberArray(b);
+    if (sites !== undefined) return Sites.constructCustom(sites.map((site) => new IntConstant(site)), null);
+    const array = flatten(b.positional).find(isIntArrayFunction);
+    if (array !== undefined) return Sites.constructCustom(null, array);
+    return Sites.constructContext();
+  }
+  if (isRoleTypeName(kind)) {
+    const values = flatten(b.positional);
+    const siteType = optionalSiteType(namedValue(b, "type", "siteType")) ?? optionalSiteType(values.find(isSiteTypeName)) ?? null;
+    const name = values.find((value): value is string =>
+      typeof value === "string" && value !== kind && value !== siteType && !isRoleTypeName(value),
+    ) ?? null;
+    return Sites.constructEquipmentOrCoord(roleIntFunction(kind), null, siteType, name);
+  }
+  if (isSitesSimpleTypeName(kind)) {
+    const values = flatten(b.positional);
+    const siteType = optionalSiteType(namedValue(b, "type", "siteType")) ?? optionalSiteType(values.find(isSiteTypeName)) ?? null;
+    return Sites.constructSimple((kind === "Center" ? "Centre" : kind) as never, siteType);
+  }
+  if (isSitesIndexTypeName(kind)) {
+    const values = flatten(b.positional);
+    const siteType = optionalSiteType(namedValue(b, "type", "siteType")) ?? optionalSiteType(values.find(isSiteTypeName)) ?? null;
+    return Sites.constructIndex(
+      kind as never,
+      siteType,
+      asOptionalIntFunction(firstIntishAfterKind(b, kind), `sites ${kind}`),
+    );
+  }
   if (kind !== "Side") throw notWired(`sites${kind ? ` ${kind}` : ""}`);
   const values = flatten(b.positional);
-  const siteType = optionalSiteType(values.find(isSiteTypeName)) ?? null;
-  const sideArg = values.find((value) => value !== "Side" && value !== siteType);
-  const role = typeof sideArg === "string" && isRoleTypeName(sideArg) ? sideArg : null;
-  const direction = typeof sideArg === "string" && role === null ? sideArg : null;
+  const siteType = optionalSiteType(namedValue(b, "type", "siteType")) ?? optionalSiteType(values.find(isSiteTypeName)) ?? null;
+  const stringArgs = values.filter((value): value is string =>
+    typeof value === "string" && value !== "Side" && value !== siteType,
+  );
+  const role = stringArgs.find(isRoleTypeName) ?? null;
+  const direction = stringArgs.find((value) => value !== role && !isRoleTypeName(value)) ?? null;
   const player = findFirst(b, isPlayer);
   return Sites.constructSide("Side", siteType, player, role, direction);
 }
@@ -821,6 +916,16 @@ function firstRoleAfterKind(b: ArgBundle, kind: string): string | null {
   ) ?? null;
 }
 
+function firstPlayerIntAfterKind(b: ArgBundle, kind: string): IntFunction | null {
+  for (const value of flatten(b.positional)) {
+    if (value === kind || isSiteTypeName(value)) continue;
+    if (value instanceof Player1to1) return value.index();
+    if (isIntish(value)) return asIntFunction(value, `is ${kind}`);
+    if (typeof value === "string" && isRoleTypeName(value)) return roleIntFunction(value);
+  }
+  return null;
+}
+
 function firstStringArray(b: ArgBundle): string[] | null {
   return findRaw(b.positional, (value): value is string[] =>
     Array.isArray(value) && value.every((entry) => typeof entry === "string"),
@@ -945,6 +1050,11 @@ function requireIntArrayFunction(value: unknown, label: string): IntArrayFunctio
   throw new Error(`factory not yet wired: ${label}`);
 }
 
+function requireRegionFunction(value: unknown, label: string): RegionFunction {
+  if (isRegionFunction(value)) return value;
+  throw new Error(`factory not yet wired: ${label}`);
+}
+
 function requireFrom(value: From1to1 | undefined, label: string): From1to1 {
   if (!value) throw new Error(`factory not yet wired: ${label}`);
   return value;
@@ -993,6 +1103,8 @@ function roleIntFunction(role: string): IntFunction {
     eval: (ctx) => {
       if (role === "Mover") return ctx.state.mover;
       if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (role === "Player") return ctx._evalPlayer ?? 0;
       if (role === "Shared" || role === "All") return ctx.game.numPlayers + 1;
       if (/^P\d+$/.test(role)) return Number(role.slice(1));
       return 0;
@@ -1152,6 +1264,15 @@ function isHiddenDataName(value: unknown): value is HiddenData {
 
 function isStaticRegionName(value: unknown): value is string {
   return typeof value === "string" && /^(AllSites|Board|Corners|Sides|Centre|Center|Top|Bottom|Left|Right|Inner|Outer|Perimeter|Major|Minor)$/.test(value);
+}
+
+function isSitesSimpleTypeName(value: unknown): value is string {
+  return typeof value === "string" &&
+    /^(Board|Bottom|Corners|ConcaveCorners|ConvexCorners|Hint|Inner|Left|LineOfPlay|Major|Minor|Outer|Right|ToClear|Top|Pending|Playable|LastTo|LastFrom|Centre|Center|Perimeter)$/.test(value);
+}
+
+function isSitesIndexTypeName(value: unknown): value is string {
+  return typeof value === "string" && /^(Cell|Column|Layer|Edge|Phase|Row|State|Empty|Support)$/.test(value);
 }
 
 function isDirectionName(value: unknown): value is string {

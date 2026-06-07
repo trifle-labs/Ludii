@@ -21,6 +21,7 @@ import { Last } from "../../../../ludemes/game/functions/region/last/Last.js";
 import { LastRegionType } from "../../../../ludemes/game/functions/region/last/LastRegionType.js";
 import { RegionConstant } from "../../../../ludemes/game/functions/region/RegionConstant.js";
 import { Sites } from "../../../../ludemes/game/functions/region/sites/Sites.js";
+import { SitesSimpleType } from "../../../../ludemes/game/functions/region/sites/SitesSimpleType.js";
 import { Regions } from "../../../../ludemes/game/equipment/other/Regions.js";
 import { Remember } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/state/remember/Remember.js";
 import { Random } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Random.js";
@@ -76,7 +77,7 @@ export function registerBatch7(registry: LudemeRegistry): void {
     return Last.construct(LastRegionType.Between);
   });
   registry.registerLudeme("region.math.difference:difference", regionDifferenceFactory);
-  registry.registerLudeme("region.math.if:if", () => { throw notWired("if"); });
+  registry.registerLudeme("region.math.if:if", regionIfFactory);
   registry.registerLudeme("region.math.intersection:intersection", regionIntersectionFactory);
   registry.registerLudeme("region.math.union:union", regionUnionFactory);
   registry.registerLudeme("regions:regions", regionsFactory);
@@ -104,6 +105,21 @@ export function registerBatch7(registry: LudemeRegistry): void {
   registry.registerLudeme("shoot:shoot", shootFactory);
   registry.registerLudeme("sin:sin", (b) => new FloatSin1to1(requireFloatFn(b, 0)));
   registry.registerLudeme("site:site", () => new Site1to1());
+  for (const simpleType of [
+    SitesSimpleType.Board,
+    SitesSimpleType.Top,
+    SitesSimpleType.Bottom,
+    SitesSimpleType.Left,
+    SitesSimpleType.Right,
+    SitesSimpleType.Inner,
+    SitesSimpleType.Outer,
+    SitesSimpleType.Perimeter,
+    SitesSimpleType.Corners,
+    SitesSimpleType.Centre,
+  ]) {
+    registry.registerLudeme(`sites:${simpleType.toLowerCase()}`, sitesSimpleFactory(simpleType));
+  }
+  registry.registerLudeme("sites:player", (b) => Sites.constructEquipmentOrCoord(null, requireString(b, 0), optionalSiteType(b), null));
   registry.registerLudeme("sites:region", sitesRegionFactory);
 }
 
@@ -209,6 +225,15 @@ function regionIntersectionFactory(b: ArgBundle): RegionFunction {
       const keep = new Set(c.eval(ctx));
       return a.eval(ctx).filter((site) => keep.has(site));
     },
+  };
+}
+
+function regionIfFactory(b: ArgBundle): RegionFunction {
+  const condition = toBooleanFn(b.positional[0]);
+  const ok = toRegion(b.positional[1]);
+  const notOk = b.positional[2] === undefined ? new RegionConstant([]) : toRegion(b.positional[2]);
+  return {
+    eval: (ctx) => condition.eval(ctx) ? ok.eval(ctx) : notOk.eval(ctx),
   };
 }
 
@@ -365,6 +390,10 @@ function sitesRegionFactory(b: ArgBundle): RegionFunction {
   const strings = values.filter((v): v is string => typeof v === "string");
   if (strings.length > 0) return Sites.constructCoords(null, strings);
   throw notWired("region");
+}
+
+function sitesSimpleFactory(simpleType: SitesSimpleType): (b: ArgBundle) => RegionFunction {
+  return (b) => Sites.constructSimple(simpleType, optionalSiteType(b));
 }
 
 function requireGraph(b: ArgBundle): GraphFunction {

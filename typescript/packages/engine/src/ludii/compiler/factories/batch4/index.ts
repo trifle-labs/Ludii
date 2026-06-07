@@ -29,6 +29,8 @@ import { Poly } from "../../../../ludemes/game/util/graph/Poly.js";
 import { Intervene } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Intervene.js";
 import { Leap } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Leap.js";
 import { Then } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
+import { MaxCaptures } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxCaptures.js";
+import { MaxMoves } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxMoves.js";
 import { And as AndMoves } from "../../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/And.js";
 import { Or as OrMoves } from "../../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/Or.js";
 import { If as IfMoves } from "../../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/If.js";
@@ -62,6 +64,22 @@ import { MapEntry1to1 } from "../../../../ludemes/game/functions/ints1to1/board/
 import { SitesWalk1to1 } from "../../../../ludemes/game/functions/region/sites/walk/SitesWalk1to1.js";
 import { FloatLog1to1, FloatLog10_1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
 import { AndBool } from "../../../../ludemes/game/functions/booleans/math1to1/AndBool.js";
+import { CountMoves1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountMoves1to1.js";
+import { CountPieces1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountPieces1to1.js";
+import { CountSites1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSites1to1.js";
+import {
+  CountColumns1to1,
+  CountMovesThisTurn1to1,
+  CountPlayers1to1,
+  CountRows1to1,
+  CountTurns1to1,
+} from "../../../../ludemes/game/functions/ints1to1/count/CountSimple1to1.js";
+import { CountCells1to1, CountNumber1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSimpleExtra1to1.js";
+import { CountEdges1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountEdges1to1.js";
+import { CountVertices1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountVertices1to1.js";
+import { CountPhases } from "../../../../ludemes/game/functions/ints/count/simple/CountPhases.js";
+import { CountTrials } from "../../../../ludemes/game/functions/ints/count/simple/CountTrials.js";
+import { SitesEquipmentRegion } from "../../../../ludemes/game/functions/region/sites/player/SitesEquipmentRegion.js";
 import { IsAnyDie1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsAnyDie1to1.js";
 import { IsEmpty1to1 } from "../../../../ludemes/game/functions/booleans/is/site1to1/IsEmpty1to1.js";
 import { IsIn1to1 } from "../../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
@@ -73,7 +91,16 @@ import { Concentric } from "../../../../ludemes/game/functions/graph/generators/
 import type { ConcentricShapeType } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricShapeType.js";
 import { Shift } from "../../../../ludemes/game/functions/graph/operators/Shift.js";
 import { RegionConstant } from "../../../../ludemes/game/functions/region/RegionConstant.js";
-import { SitesBottom, SitesLeft, SitesRight, SitesTop } from "../../../../ludemes/game/functions/region/sites/simple/SitesSide1to1.js";
+import {
+  SitesBottom,
+  SitesColumn,
+  SitesCorners,
+  SitesLeft,
+  SitesPhase,
+  SitesRight,
+  SitesRow,
+  SitesTop,
+} from "../../../../ludemes/game/functions/region/sites/simple/SitesSide1to1.js";
 import { ArrayValue } from "../../../../ludemes/game/functions/ints/board/ArrayValue.js";
 import { Trajectories } from "../../../../eval/graph/trajectories.js";
 
@@ -137,6 +164,7 @@ export function registerBatch4(registry: LudemeRegistry): void {
   registry.registerLudeme("match:match", matchFactory);
   registry.registerLudeme("matchScore:matchScore", matchScoreFactory);
   registry.registerLudeme("math.and:and", andBoolFactory);
+  registry.registerLudeme("max", maxMovesRequirementFallbackFactory);
 
   registry.registerLudeme("board", boardFallbackFactory);
   registry.registerLudeme("container.board.board:board", boardFallbackFactory);
@@ -148,6 +176,14 @@ export function registerBatch4(registry: LudemeRegistry): void {
   registry.registerLudeme("regions", regionsFallbackFactory);
   registry.registerLudeme("rules", rulesFallbackFactory);
   registry.registerLudeme("shift", shiftFallbackFactory);
+  registry.registerLudeme("sites:player", sitesPlayerFallbackFactory);
+  registry.registerLudeme("sites:mover", sitesPlayerFallbackFactory);
+  registry.registerLudeme("sites:next", sitesPlayerFallbackFactory);
+  registry.registerLudeme("sites:prev", sitesPlayerFallbackFactory);
+  registry.registerLudeme("sites:p1", sitesPlayerFallbackFactory);
+  registry.registerLudeme("sites:p2", sitesPlayerFallbackFactory);
+  registry.registerLudeme("sites:p3", sitesPlayerFallbackFactory);
+  registry.registerLudeme("sites:p4", sitesPlayerFallbackFactory);
   registry.registerLudeme("sites:side", sitesSideFallbackFactory);
 }
 
@@ -395,6 +431,17 @@ function andBoolFactory(b: ArgBundle): BooleanFunction {
   return new AndBool(bools);
 }
 
+function maxMovesRequirementFallbackFactory(b: ArgBundle): MovesFunction {
+  const kind = typeof b.positional[0] === "string" ? b.positional[0] : null;
+  const moves = first(b, isMoveOperand);
+  if (!moves) throw new Error("factory not yet wired: max");
+  const withValue = boolFn(named(b, "withValue"), new BooleanConstant(false));
+  const then = first(b, isThen) as unknown as MovesFunction | undefined;
+  if (kind === "Moves") return new MaxMoves(moves, withValue, then ?? null);
+  if (kind === "Captures") return new MaxCaptures(moves, withValue, then ?? null);
+  throw new Error(`factory not yet wired: max${kind === null ? "" : ` ${kind}`}`);
+}
+
 function boardFallbackFactory(b: ArgBundle): Board1to1 {
   const existing = first(b, (v): v is Board1to1 => v instanceof Board1to1);
   if (existing) return existing;
@@ -448,23 +495,39 @@ function countFallbackFactory(b: ArgBundle): IntFunction {
     const at = intFnOrNull(named(b, "at"));
     if (at !== null) return { eval: (ctx) => ctx.state.countAtSite(at.eval(ctx)) };
     const region = regionFnOrNull(named(b, "in"));
-    if (region !== null) return { eval: (ctx) => region.eval(ctx).reduce((sum: number, site: number) => sum + ctx.state.countAtSite(site), 0) };
+    if (region !== null) return new CountNumber1to1(region);
   }
   if (kind === "Pieces") return countPiecesFn(b);
   if (kind === "Sites") {
     const region = regionFnOrNull(named(b, "in"));
-    return { eval: (ctx) => region?.eval(ctx).length ?? 0 };
+    if (region !== null) return new CountSites1to1(region);
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
   }
-  if (kind === "MovesThisTurn") return { eval: (ctx) => (ctx.trial?.moves.length ?? 0) };
-  if (kind === "Turns") return { eval: (ctx) => ctx.trial?.moves.length ?? 0 };
+  if (kind === "Moves") return new CountMoves1to1();
+  if (kind === "MovesThisTurn") return new CountMovesThisTurn1to1();
+  if (kind === "Players") return new CountPlayers1to1();
+  if (kind === "Turns") return new CountTurns1to1();
+  if (kind === "Trials") return new CountTrials();
+  if (kind === "Phases") return new CountPhases();
   if (kind === "Pips") return { eval: (ctx) => ctx.state.diceValues?.reduce((sum, value) => sum + value, 0) ?? 0 };
   if (kind === "Cell" || kind === "Stack") {
     const at = intFnOrNull(named(b, "at"));
     return { eval: (ctx) => (at === null ? 0 : ctx.state.countAtSite(at.eval(ctx))) };
   }
-  if (kind === "Rows") return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { height: number } } }).equipment.board.height };
-  if (kind === "Columns") return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { width: number } } }).equipment.board.width };
-  if (kind === "Cells") return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
+  if (kind === "Rows") return new CountRows1to1();
+  if (kind === "Columns") return new CountColumns1to1();
+  if (kind === "Cells") return new CountCells1to1();
+  if (kind === "Vertices") return new CountVertices1to1();
+  if (kind === "Edges") return new CountEdges1to1();
+  if (kind === "Value") {
+    return {
+      eval: (ctx) => {
+        const needle = toIntFn(requireValue(b.positional[1], "count Value of")).eval(ctx);
+        const array = toIntArrayFn(requireValue(named(b, "in"), "count Value in")).eval(ctx);
+        return array.filter((value) => value === needle).length;
+      },
+    };
+  }
   throw new Error(`factory not yet wired: count${kind === null ? "" : ` ${kind}`}`);
 }
 
@@ -512,16 +575,13 @@ function regionsFallbackFactory(b: ArgBundle): Regions {
   const intArray = values.find(isNumberArray) ?? null;
   const regionFns = values.filter(isRegionFunction);
   const staticRegions = values.filter((v): v is RegionTypeStatic => typeof v === "string" && isStaticRegionName(v));
-  return new Regions(
-    name,
-    role as ConstructorParameters<typeof Regions>[1],
-    intArray,
-    regionFns.length === 1 ? regionFns[0]! : null,
-    regionFns.length > 1 ? regionFns : null,
-    staticRegions.length === 1 ? staticRegions[0]! : null,
-    staticRegions.length > 1 ? staticRegions : null,
-    null,
-  );
+  const roleArg = role as ConstructorParameters<typeof Regions>[1];
+  if (intArray !== null) return new Regions(name, roleArg, intArray, null, null, null, null, null);
+  if (regionFns.length === 1) return new Regions(name, roleArg, null, regionFns[0]!, null, null, null, null);
+  if (regionFns.length > 1) return new Regions(name, roleArg, null, null, regionFns, null, null, null);
+  if (staticRegions.length === 1) return new Regions(name, roleArg, null, null, null, staticRegions[0]!, null, null);
+  if (staticRegions.length > 1) return new Regions(name, roleArg, null, null, null, null, staticRegions, null);
+  throw new Error("factory regions: missing region");
 }
 
 function rulesFallbackFactory(b: ArgBundle): Rules1to1 {
@@ -545,6 +605,7 @@ function sitesSideFallbackFactory(b: ArgBundle): RegionFunction {
   const direction = flatten(b.positional).find((v): v is string =>
     typeof v === "string" && v !== "Side" && !isSiteType(v) && !looksLikeRole(v),
   );
+  const index = flatten([...b.positional, ...b.named.values()]).find((v): v is IntFunction | number => typeof v === "number" || isIntFunction(v));
   switch (direction) {
     case "N":
     case "Top":
@@ -558,9 +619,27 @@ function sitesSideFallbackFactory(b: ArgBundle): RegionFunction {
     case "W":
     case "Left":
       return new SitesLeft();
+    case "Corners":
+      return new SitesCorners();
+    case "Row":
+      return new SitesRow(toIntFn(index ?? 0));
+    case "Column":
+      return new SitesColumn(toIntFn(index ?? 0));
+    case "Phase":
+      return new SitesPhase(toIntFn(index ?? 0));
     default:
+      if (looksLikeRole(flatten(b.positional).find((v): v is string => typeof v === "string" && looksLikeRole(v)) ?? "")) {
+        return sideForRole(flatten(b.positional).find((v): v is string => typeof v === "string" && looksLikeRole(v))!);
+      }
       throw new Error("factory not yet wired: sites Side");
   }
+}
+
+function sitesPlayerFallbackFactory(b: ArgBundle): RegionFunction {
+  const values = flatten(b.positional);
+  const role = values.find((v): v is string => typeof v === "string" && looksLikeRole(v)) ?? "Player";
+  const name = values.find((v): v is string => typeof v === "string" && !looksLikeRole(v) && !isSiteType(v)) ?? "";
+  return new SitesEquipmentRegion(role === "Player" ? { eval: (ctx) => ctx._evalPlayer ?? ctx.state.mover } : roleToIntFunction(role), name);
 }
 
 function requireIntFunctionList(b: ArgBundle, keyword: string): IntFunction[] {
@@ -670,11 +749,13 @@ function boolFnOrNull(value: unknown): BooleanConstant | null {
 
 function regionFnOrNull(value: unknown): RegionFunction | null {
   if (value === undefined || value === null) return null;
+  if (typeof value === "string") return namedRegionFn(value);
   return isRegionFunction(value) ? value : null;
 }
 
 function toRegionFn(value: unknown): RegionFunction {
   if (isRegionFunction(value)) return value;
+  if (typeof value === "string") return namedRegionFn(value);
   if (typeof value === "number") return new RegionConstant([value]);
   if (isNumberArray(value)) return new RegionConstant(value);
   throw new Error("factory not yet wired: region");
@@ -867,21 +948,14 @@ function roleOwner(value: string): number {
 }
 
 function countPiecesFn(b: ArgBundle): IntFunction {
-  const role = flatten(b.positional).find((v): v is string => typeof v === "string" && looksLikeRole(v)) ?? "Mover";
+  const values = flatten(b.positional.slice(1));
+  const role = values.find((v): v is string => typeof v === "string" && looksLikeRole(v)) ?? "All";
+  const of = intFnOrNull(named(b, "of"));
+  const namedName = named(b, "name");
+  const name = (typeof namedName === "string" ? namedName : null) ??
+    values.find((v): v is string => typeof v === "string" && !looksLikeRole(v) && !isSiteType(v)) ?? null;
   const region = regionFnOrNull(named(b, "in"));
-  return {
-    eval: (ctx) => {
-      const owner = ownerForRole(role, ctx);
-      const board = (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board;
-      const sites = region?.eval(ctx) ?? Array.from({ length: board.numSites }, (_, i) => i);
-      let count = 0;
-      for (const site of sites) {
-        const who = ctx.state.whoAtSiteLevel(site, 0);
-        if (owner === 0 ? who !== 0 : who === owner) count += ctx.state.countAtSite(site);
-      }
-      return count;
-    },
-  };
+  return new CountPieces1to1(of ?? roleToIntFunction(role), region, name, of === null && (role === "All" || role === "Any" || role === "Each"));
 }
 
 function ownerForRole(role: string, ctx: Context): number {
@@ -890,6 +964,55 @@ function ownerForRole(role: string, ctx: Context): number {
   if (role === "Prev") return (ctx.state as unknown as { prev?: number }).prev ?? ctx.state.mover;
   if (role === "Player") return ctx._evalPlayer ?? ctx.state.mover;
   return roleOwner(role);
+}
+
+function roleToIntFunction(role: string): IntFunction {
+  if (/^P\d+$/.test(role)) return new IntConstant(Number(role.slice(1)));
+  if (role === "Mover") return { eval: (ctx) => ctx.state.mover };
+  if (role === "Next") return { eval: (ctx) => (ctx.state.mover % ctx.game.numPlayers) + 1 };
+  if (role === "Prev") return { eval: (ctx) => (ctx.state as unknown as { prev?: number }).prev ?? ctx.state.mover };
+  if (role === "Player") return { eval: (ctx) => ctx._evalPlayer ?? ctx.state.mover };
+  return new IntConstant(0);
+}
+
+function namedRegionFn(name: string): RegionFunction {
+  const key = name.toLowerCase();
+  return {
+    eval: (ctx) => {
+      const equipment = (ctx.game as unknown as {
+        equipment?: {
+          namedPlayerRegions?: ReadonlyMap<string, ReadonlyMap<number, RegionFunction>>;
+          playerRegions?: ReadonlyMap<number, RegionFunction>;
+          board?: { numSites: number };
+        };
+      }).equipment;
+      const byRole = equipment?.namedPlayerRegions?.get(key);
+      if (byRole) {
+        const preferred = byRole.get(ctx._evalPlayer ?? ctx.state.mover) ?? byRole.get(0) ?? byRole.values().next().value;
+        if (preferred) return preferred.eval(ctx);
+      }
+      if (/^P\d+$/.test(name)) {
+        const region = equipment?.playerRegions?.get(Number(name.slice(1)));
+        if (region) return region.eval(ctx);
+      }
+      return [];
+    },
+  };
+}
+
+function sideForRole(role: string): RegionFunction {
+  return {
+    eval: (ctx) => {
+      const owner = ownerForRole(role, ctx);
+      switch (owner) {
+        case 1: return new SitesBottom().eval(ctx);
+        case 2: return new SitesTop().eval(ctx);
+        case 3: return new SitesLeft().eval(ctx);
+        case 4: return new SitesRight().eval(ctx);
+        default: return [];
+      }
+    },
+  };
 }
 
 function playerRegionsFrom(values: unknown[]): Map<number, RegionFunction> {
