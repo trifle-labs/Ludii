@@ -144,7 +144,11 @@ export function registerBatch4(registry: LudemeRegistry): void {
   registry.registerLudeme("iterator.edge:edge", notWired("edge"));
   registry.registerLudeme("iterator.from:from", fromIteratorFactory);
   registry.registerLudeme("iterator.hint:hint", notWired("hint"));
-  registry.registerLudeme("iterator.player:player", notWired("player"));
+  // @java game/functions/ints/iterator/Player.java — eval() returns context.player()
+  // (the current iterated player), represented here as ctx._evalPlayer ?? mover.
+  registry.registerLudeme("iterator.player:player", () => ({
+    eval: (ctx: Context): number => ctx._evalPlayer ?? ctx.state.mover,
+  }));
   registry.registerLudeme("iterator.to:to", () => new IterTo());
   registry.registerLudeme("iterator.track:track", notWired("track"));
   registry.registerLudeme("keep:keep", keepFactory);
