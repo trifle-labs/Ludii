@@ -121,9 +121,11 @@ export class ArgCompiler {
       ...(env.registry ? { registry: env.registry } : {}),
     };
     this.lastDivergence = null;
+    this.deepest = null;
+    this.depth = 0;
     const result = this.compileMaybe(findGameNode(node), expectedJavaTypes.map(parseJavaType), compileEnv);
     if (result === null) {
-      throw new Error(this.lastDivergence ?? `ArgCompiler: could not compile ${describeNode(node)} as ${expectedJavaTypes.join(" | ")}`);
+      throw new Error(this.deepestMsg() ?? this.lastDivergence ?? `ArgCompiler: could not compile ${describeNode(node)} as ${expectedJavaTypes.join(" | ")}`);
     }
     return result as T;
   }
@@ -134,6 +136,21 @@ export class ArgCompiler {
   }
 
   private compileMaybe(
+    node: LudNode,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    this.depth++;
+    const snap = this.deepest;
+    const r = this.compileMaybeInner(node, expectedTypes, env);
+    this.depth--;
+    // Discard misses recorded while compiling a subtree that ultimately
+    // succeeded (benign probes), so `deepest` reflects only the failed subtree.
+    if (r !== null) this.deepest = snap;
+    return r;
+  }
+
+  private compileMaybeInner(
     node: LudNode,
     expectedTypes: readonly JavaType[],
     env: ArgCompilerEnv,
@@ -517,7 +534,14 @@ export class ArgCompiler {
     };
   }
 
+  private deepest: { depth: number; msg: string } | null = null;
+  private depth = 0;
+  private deepestMsg(): string | null { return this.deepest ? this.deepest.msg : null; }
   private note(message: string): void {
+    // Deepest-by-recursion-depth wins, so the recorded divergence is the true
+    // (deepest) bind failure rather than a shallow/benign sibling probe.
+    if (this.deepest === null || this.depth >= this.deepest.depth)
+      this.deepest = { depth: this.depth, msg: message };
     this.lastDivergence = message;
   }
 }
