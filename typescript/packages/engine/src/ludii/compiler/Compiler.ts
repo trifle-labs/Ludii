@@ -21,6 +21,14 @@ import {
 } from "../Language/src/grammar/ebnf-grammar-loader.js";
 import { makeArgBundle } from "./ArgBundle.js";
 import { type CompilerEnv, LudemeRegistry } from "./LudemeRegistry.js";
+// Runtime type tags for the faithful (Java ArgClass-style) type-based arg match.
+// The ported ludeme classes extend these abstract base classes, so `instanceof`
+// reliably identifies a compiled object's function kind.
+import { BaseIntFunction } from "../../ludemes/game/functions/ints/BaseIntFunction.js";
+import { BaseBooleanFunction } from "../../ludemes/game/functions/booleans/BaseBooleanFunction.js";
+import { BaseRegionFunction } from "../../ludemes/game/functions/region/BaseRegionFunction.js";
+import { BaseIntArrayFunction } from "../../ludemes/game/functions/intArray/BaseIntArrayFunction.js";
+import { BaseFloatFunction } from "../../ludemes/game/functions/floats/BaseFloatFunction.js";
 
 export interface CompilerOptions {
   readonly env?: Partial<CompilerEnv>;
@@ -122,6 +130,33 @@ export class Compiler {
       return this.registry.construct<T>(bundle, env);
     }
 
+    // FAITHFUL ArgClass fallback — Java matches arguments by TYPE, not by
+    // grammar-symbol name (it reflects over constructor parameter types and the
+    // class hierarchy, trying every @Or overload). The EBNF symbol tree is a
+    // lossy serialization of that, so a value whose TYPE is valid for the slot
+    // can be rejected by name-matching above. Here we resolve the ludeme by its
+    // keyword GLOBALLY, construct it, and accept it if its runtime type fits the
+    // expected slot — exactly as Java's reflective overload resolution would.
+    if (typeKindFor(expectedSymbol) !== null) {
+      for (const candidate of this.globalCandidates(head)) {
+        if (candidates.some((c) => c.symbol === candidate.symbol && c.clauseIndex === candidate.clauseIndex)) continue;
+        const matched = this.tryMatchClause(node, candidate, env);
+        if (!matched) continue;
+        const bundle = makeArgBundle({
+          clause: candidate.clause,
+          clauseIndex: candidate.clauseIndex,
+          sourceKeyword: head,
+          constructKey: constructKeyFor(head, matched.positional),
+          symbol: candidate.symbol,
+          positional: matched.positional,
+          named: matched.named,
+        });
+        let obj: unknown;
+        try { obj = this.registry.construct(bundle, env); } catch { continue; }
+        if (typeFits(obj, expectedSymbol)) return obj as T;
+      }
+    }
+
     if (required && (this.deepestMiss === null || this.depth > this.deepestMiss.depth)) {
       this.deepestMiss = {
         depth: this.depth,
@@ -131,6 +166,26 @@ export class Compiler {
       };
     }
     throw new CompilerMatchError(`Compiler: no <${expectedSymbol}> clause matched ${describeNode(node)}`);
+  }
+
+  /** Lazy index: keyword -> every grammar clause (any symbol) declaring it. */
+  private globalKeywordIndex: Map<string, Candidate[]> | null = null;
+  private globalCandidates(keyword: string): Candidate[] {
+    if (this.globalKeywordIndex === null) {
+      const idx = new Map<string, Candidate[]>();
+      for (const [symbol, rule] of this.grammar) {
+        rule.clauses.forEach((clause, clauseIndex) => {
+          if (clause.keyword !== null) {
+            const k = clause.keyword.toLowerCase();
+            const arr = idx.get(k) ?? [];
+            arr.push({ symbol, clause, clauseIndex });
+            idx.set(k, arr);
+          }
+        });
+      }
+      this.globalKeywordIndex = idx;
+    }
+    return this.globalKeywordIndex.get(keyword.toLowerCase()) ?? [];
   }
 
   private tryMatchClause(node: LudList, candidate: Candidate, env: CompilerEnv): MatchResult | null {
@@ -413,6 +468,40 @@ function findGameNode(root: LudNode): LudNode {
     }
   }
   return root;
+}
+
+/**
+ * Classify a grammar arg symbol into the runtime function "kind" it expects, or
+ * null for symbols where the type-based fallback should not apply (enums, etc.).
+ */
+function typeKindFor(symbol: string): "number" | "bool" | "region" | "intarray" | null {
+  const s = symbol.toLowerCase();
+  if (s === "int" || s === "dim" || s === "float" || s.startsWith("ints") || s.startsWith("dim.") || s.startsWith("floats")) return "number";
+  if (s === "boolean" || s.startsWith("booleans")) return "bool";
+  if (s === "sites" || s === "region" || s.startsWith("sites") || s.startsWith("region")) return "region";
+  if (s === "intarray" || s.startsWith("intarray")) return "intarray";
+  return null;
+}
+
+/**
+ * Faithful (Java ArgClass-style) type compatibility: does a compiled object fit
+ * the expected slot? Permissive among the value-function kinds Ludii constructors
+ * overload across (e.g. an IntFunction at a region slot — Java wraps it via an
+ * IntFunction constructor overload).
+ */
+function typeFits(obj: unknown, expectedSymbol: string): boolean {
+  const kind = typeKindFor(expectedSymbol);
+  if (kind === null) return false;
+  switch (kind) {
+    case "number":
+      return typeof obj === "number" || obj instanceof BaseIntFunction || obj instanceof BaseFloatFunction;
+    case "bool":
+      return typeof obj === "boolean" || obj instanceof BaseBooleanFunction;
+    case "region":
+      return obj instanceof BaseRegionFunction || obj instanceof BaseIntFunction || obj instanceof BaseIntArrayFunction;
+    case "intarray":
+      return obj instanceof BaseIntArrayFunction || obj instanceof BaseRegionFunction || obj instanceof BaseIntFunction;
+  }
 }
 
 function constructKeyFor(keyword: string, positional: readonly unknown[]): string {
