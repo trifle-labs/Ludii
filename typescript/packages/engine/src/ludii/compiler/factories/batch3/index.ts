@@ -48,6 +48,7 @@ import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { To1to1 } from "../../../../ludemes/game/util/moves/To1to1.js";
 import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js";
 import type { Then } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
+import { Graph } from "../../../../eval/graph/graph.js";
 
 import type {
   BooleanFunction,
@@ -219,7 +220,7 @@ export function registerBatch3(registry: LudemeRegistry): void {
     return new Games1to1(games);
   });
 
-  registry.registerLudeme("graph:graph", notWired("graph"));
+  registry.registerLudeme("graph:graph", graphFactory);
   registry.registerLudeme("gravity:gravity", (b) => new Gravity((findFirstValue(b, isStringValue) as string | undefined) ?? null));
 
   registry.registerLudeme("handsite:handsite", (b) => {
@@ -296,6 +297,47 @@ export function registerBatch3(registry: LudemeRegistry): void {
 
   registry.registerLudeme("intarray.math.union:union", (b) => {
     return new Union1to1(intArrayArgs(b));
+  });
+}
+
+class LiteralGraphFunction implements GraphFunction {
+  private readonly graph: GraphFunction | null;
+  private readonly vertices: ReadonlyArray<readonly [number, number]>;
+  private readonly edges: ReadonlyArray<readonly [number, number]>;
+
+  public constructor(args: {
+    graph?: GraphFunction | null;
+    vertices?: ReadonlyArray<readonly [number, number]>;
+    edges?: ReadonlyArray<readonly [number, number]>;
+  }) {
+    this.graph = args.graph ?? null;
+    this.vertices = args.vertices ?? [];
+    this.edges = args.edges ?? [];
+  }
+
+  public eval(siteType: string): Graph {
+    if (this.graph !== null && this.vertices.length === 0 && this.edges.length === 0) {
+      return this.graph.eval(siteType);
+    }
+
+    const graph = this.graph?.eval(siteType) ?? new Graph();
+    for (const [x, y] of this.vertices) graph.addVertex(x, y);
+    for (const [a, b] of this.edges) graph.addEdge(a, b);
+    graph.makeFaces();
+    return graph;
+  }
+
+  public dim(): number[] {
+    return this.graph?.dim() ?? [];
+  }
+}
+
+function graphFactory(b: ArgBundle): GraphFunction {
+  const graph = findFirst(b, isGraphFunction) ?? null;
+  return new LiteralGraphFunction({
+    graph,
+    vertices: graphPoints(b.named.get("vertices")),
+    edges: graphIndexPairs(b.named.get("edges")),
   });
 }
 
@@ -568,6 +610,22 @@ function isPointList(value: unknown): value is ReadonlyArray<readonly [number, n
   return Array.isArray(value) &&
     value.length > 0 &&
     value.every((p) => Array.isArray(p) && p.length >= 2 && typeof p[0] === "number" && typeof p[1] === "number");
+}
+
+function graphPoints(value: unknown): ReadonlyArray<readonly [number, number]> {
+  if (!Array.isArray(value)) return [];
+  if (!value.every((point) => Array.isArray(point) && point.length >= 2)) {
+    throw new Error("factory graph: expected vertices as coordinate pairs");
+  }
+  return value.map((point) => [asNumber(point[0], "graph vertex x"), asNumber(point[1], "graph vertex y")] as const);
+}
+
+function graphIndexPairs(value: unknown): ReadonlyArray<readonly [number, number]> {
+  if (!Array.isArray(value)) return [];
+  if (!value.every((edge) => Array.isArray(edge) && edge.length >= 2)) {
+    throw new Error("factory graph: expected edges as index pairs");
+  }
+  return value.map((edge) => [asNumber(edge[0], "graph edge a"), asNumber(edge[1], "graph edge b")] as const);
 }
 
 void asFloatFunction;

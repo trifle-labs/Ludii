@@ -3,6 +3,7 @@ import { FloatConstant } from "../../../../ludemes/game/functions/floats/FloatCo
 import { Range } from "../../../../ludemes/game/functions/range/Range.js";
 import { Max as RangeMax } from "../../../../ludemes/game/functions/range/math/Max.js";
 import { Min as RangeMin } from "../../../../ludemes/game/functions/range/math/Min.js";
+import { ArrayValue } from "../../../../ludemes/game/functions/ints/board/ArrayValue.js";
 import { Recoordinate } from "../../../../ludemes/game/functions/graph/operators/Recoordinate.js";
 import { Renumber } from "../../../../ludemes/game/functions/graph/operators/Renumber.js";
 import { Rotate } from "../../../../ludemes/game/functions/graph/operators/Rotate.js";
@@ -43,6 +44,7 @@ import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js"
 import { Piece1to1 } from "../../../../ludemes/game/util/moves/Piece1to1.js";
 import { Then } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
 import { StackDirection } from "../../../../ludemes/game/util/directions/StackDirection.js";
+import { isRegionTypeStatic, type RegionTypeStatic } from "../../../../ludemes/game/types/board/RegionTypeStatic.js";
 import type { GraphFunction } from "../../../../ludemes/game/functions/graph/GraphFunction.js";
 import type {
   BooleanFunction,
@@ -54,7 +56,7 @@ import type {
   ResultType,
   RoleType,
 } from "../../../../ludemes/base.js";
-import type { Phase } from "../../../../ludemes/game/rules/phase/Phase.js";
+import { Phase } from "../../../../ludemes/game/rules/phase/Phase.js";
 import { End } from "../../../../ludemes/game/rules/end/End.js";
 import type { Play1to1 } from "../../../../ludemes/game/rules/play/Play1to1.js";
 import type { ArgBundle } from "../../ArgBundle.js";
@@ -78,7 +80,7 @@ export function registerBatch7(registry: LudemeRegistry): void {
   registry.registerLudeme("region.math.intersection:intersection", regionIntersectionFactory);
   registry.registerLudeme("region.math.union:union", regionUnionFactory);
   registry.registerLudeme("regions:regions", regionsFactory);
-  registry.registerLudeme("regionSite:regionSite", () => { throw notWired("regionSite"); });
+  registry.registerLudeme("regionSite:regionSite", regionSiteFactory);
   registry.registerLudeme("regular:regular", regularFactory);
   registry.registerLudeme("remember:remember", rememberFactory);
   registry.registerLudeme("renumber:renumber", (b) => new Renumber(requireGraph(b), siteTypesFrom(b)));
@@ -148,23 +150,43 @@ function forEachRegionFactory(b: ArgBundle): RegionFunction {
 }
 
 function regionsFactory(b: ArgBundle): Regions {
-  const values = flatten(b.positional);
-  const name = values.find((v): v is string => typeof v === "string" && !looksLikeRole(v)) ?? null;
-  const role = values.find((v): v is string => typeof v === "string" && looksLikeRole(v)) ?? null;
-  const intArray = values.find(isNumberArray) ?? null;
-  const region = values.find(isRegionFunction) ?? null;
-  const regions = values.filter(isRegionFunction);
-  const regionType = values.find((v): v is string => typeof v === "string" && !looksLikeRole(v) && v !== name) ?? null;
-  const regionTypes = values.find(isStringArray) ?? null;
+  let argIndex = 0;
+  const first = b.positional[argIndex];
+  const second = b.positional[argIndex + 1];
+  const name = typeof first === "string" && !looksLikeRole(first) && (b.positional.length > 1 || !isRegionTypeStatic(first))
+    ? first
+    : null;
+  if (name !== null) argIndex++;
+  const roleValue = b.positional[argIndex];
+  const role = typeof roleValue === "string" && looksLikeRole(roleValue) ? roleValue : null;
+  if (role !== null) argIndex++;
+
+  const payload = b.positional.slice(argIndex);
+  const hintRegionLabel = typeof payload[payload.length - 1] === "string" &&
+    payload.length > 1 &&
+    !isRegionTypeStatic(payload[payload.length - 1] as string) &&
+    payload[payload.length - 1] !== second
+    ? payload[payload.length - 1] as string
+    : null;
+  const orPayload = hintRegionLabel !== null ? payload.slice(0, -1) : payload;
+  const flatPayload = flatten(orPayload);
+
+  const intArray = orPayload.find(isNumberArray) ?? null;
+  const regionFns = flatPayload.filter(isRegionFunction);
+  const region = regionFns.length === 1 ? regionFns[0]! : null;
+  const regions = regionFns.length > 1 ? regionFns : null;
+  const staticRegionValues = flatPayload.filter((v): v is RegionTypeStatic => typeof v === "string" && isRegionTypeStatic(v));
+  const regionType = staticRegionValues.length === 1 ? staticRegionValues[0]! : null;
+  const regionTypes = staticRegionValues.length > 1 ? staticRegionValues : null;
   return new Regions(
     name,
     role as ConstructorParameters<typeof Regions>[1],
     intArray,
     region,
-    regions.length > 1 ? regions : null,
+    regions,
     regionType as ConstructorParameters<typeof Regions>[5],
     regionTypes as ConstructorParameters<typeof Regions>[6],
-    null,
+    hintRegionLabel,
   );
 }
 
@@ -249,6 +271,14 @@ function rotationFactory(b: ArgBundle): Rotation {
   );
 }
 
+function regionSiteFactory(b: ArgBundle): IntFunction {
+  const region = firstRegion(b);
+  return new ArrayValue(
+    regionAsIntArray(region),
+    requireNamedIntFn(b, "index") as ConstructorParameters<typeof ArrayValue>[1],
+  );
+}
+
 function rulesFactory(b: ArgBundle): Rules1to1 {
   const play = flatten(b.positional).find(isPlay) ?? null;
   const end = flatten(b.positional).find(isEnd) ?? null;
@@ -289,9 +319,12 @@ function selectFactory(b: ArgBundle): Select {
 }
 
 function shiftFactory(b: ArgBundle): Shift {
-  const nums = b.positional.filter((v): v is number => typeof v === "number");
-  if (nums.length < 2) throw new Error("factory shift: missing dx/dy");
-  return new Shift(nums[0]!, nums[1]!, requireGraph(b));
+  const graph = requireGraph(b);
+  const args = b.positional.filter((v) => !isGraphFunction(v));
+  const dxArg = b.named.get("dx") ?? args[0];
+  const dyArg = b.named.get("dy") ?? args[1];
+  if (dxArg === undefined || dyArg === undefined) throw new Error("factory shift: missing dx/dy");
+  return new Shift(staticFloatValue(dxArg, "dx"), staticFloatValue(dyArg, "dy"), graph);
 }
 
 function shootFactory(b: ArgBundle): MovesFunction {
@@ -431,6 +464,20 @@ function toBooleanFn(value: unknown): BooleanFunction {
   throw new Error("factory: expected boolean function");
 }
 
+function regionAsIntArray(region: RegionFunction): ConstructorParameters<typeof ArrayValue>[0] {
+  return {
+    eval: (ctx) => region.eval(ctx),
+    isStatic: () => false,
+    concepts: () => new Set<number>(),
+    writesEvalContextRecursive: () => new Set<number>(),
+    readsEvalContextRecursive: () => new Set<number>(),
+    missingRequirement: () => false,
+    willCrash: () => false,
+    preprocess: () => undefined,
+    toEnglish: () => "region",
+  };
+}
+
 function toRegion(value: unknown): RegionFunction {
   if (isRegionFunction(value)) return value;
   if (typeof value === "number") return new RegionConstant([value]);
@@ -452,6 +499,16 @@ function contextRegion(field: "_evalFrom" | "_evalTo"): RegionFunction {
 
 function contextInt(field: "_evalFrom" | "_evalTo"): IntFunction {
   return { eval: (ctx) => ctx[field] };
+}
+
+function staticFloatValue(value: unknown, label: string): number {
+  if (typeof value === "number") return value;
+  if (!isFloatFunction(value)) throw new Error(`factory shift: expected ${label}`);
+  try {
+    return value.eval({} as Parameters<FloatFunction["eval"]>[0]);
+  } catch {
+    throw new Error(`factory shift: expected static ${label}`);
+  }
 }
 
 const trueFn: BooleanFunction = { eval: () => true };
@@ -499,7 +556,17 @@ function flatten(values: readonly unknown[]): unknown[] {
 }
 
 function looksLikeRole(value: string): boolean {
-  return value === "Mover" || value === "Next" || value === "All" || /^P\d+$/.test(value);
+  return [
+    "Mover",
+    "Next",
+    "Prev",
+    "All",
+    "Each",
+    "Shared",
+    "Neutral",
+    "Enemy",
+    "Friend",
+  ].includes(value) || /^P\d+$/.test(value) || /^Team\d+$/.test(value);
 }
 
 function isNumberArray(value: unknown): value is number[] {
@@ -558,7 +625,8 @@ function isEnd(value: unknown): value is End {
 }
 
 function isPhase(value: unknown): value is Phase {
-  return value !== null && typeof value === "object" && typeof (value as { setPlay?: unknown }).setPlay === "function";
+  return value instanceof Phase ||
+    (value !== null && typeof value === "object" && isPlay((value as { play?: unknown }).play));
 }
 
 function notWired(keyword: string): Error {

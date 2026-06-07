@@ -9,6 +9,7 @@ import type {
   RegionFunction,
   RoleType as BaseRoleType,
 } from "../../../../ludemes/base.js";
+import type { Context } from "../../../../context.js";
 import { BooleanConstant } from "../../../../ludemes/game/functions/booleans/BooleanConstant.js";
 import { Can } from "../../../../ludemes/game/functions/booleans/can/Can.js";
 import { CanType } from "../../../../ludemes/game/functions/booleans/can/CanType.js";
@@ -25,6 +26,7 @@ import { IsVisited1to1 } from "../../../../ludemes/game/functions/booleans/is/in
 import { IsPipsMatch } from "../../../../ludemes/game/functions/booleans/is/integer/IsPipsMatch.js";
 import { IsSidesMatch } from "../../../../ludemes/game/functions/booleans/is/integer/IsSidesMatch.js";
 import { IsTarget1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsTarget1to1.js";
+import { IsTriggered1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsTriggered1to1.js";
 import { IsLine } from "../../../../ludemes/game/functions/booleans/is/line/IsLine.js";
 import { IsRelated1to1 } from "../../../../ludemes/game/functions/booleans/is/related/IsRelated1to1.js";
 import { AllDifferent } from "../../../../ludemes/game/functions/booleans/deductionPuzzle/all/AllDifferent.js";
@@ -43,8 +45,19 @@ import { CentrePoint } from "../../../../ludemes/game/functions/ints/board/Centr
 import { Column } from "../../../../ludemes/game/functions/ints/board/Column.js";
 import { Coord } from "../../../../ludemes/game/functions/ints/board/Coord.js";
 import { Cost } from "../../../../ludemes/game/functions/ints/board/Cost.js";
+import { CountMoves1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountMoves1to1.js";
+import { CountPieces1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountPieces1to1.js";
+import { CountSites1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSites1to1.js";
 import { CountSizeBiggestGroup1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSizeBiggestGroup1to1.js";
 import { CountSizeBiggestLine } from "../../../../ludemes/game/functions/ints/count/sizeBiggestLine/CountSizeBiggestLine.js";
+import { CountStack1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountStack1to1.js";
+import {
+  CountColumns1to1,
+  CountMovesThisTurn1to1,
+  CountPlayers1to1,
+  CountRows1to1,
+  CountTurns1to1,
+} from "../../../../ludemes/game/functions/ints1to1/count/CountSimple1to1.js";
 import { FloatCos1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
 import type { GraphFunction } from "../../../../ludemes/game/functions/graph/GraphFunction.js";
 import { Trajectories } from "../../../../eval/graph/trajectories.js";
@@ -61,6 +74,7 @@ import { Card as EquipmentCard, type CardType as EquipmentCardType } from "../..
 import { Component } from "../../../../ludemes/game/equipment/component/Component.js";
 import { Piece } from "../../../../ludemes/game/equipment/component/Piece.js";
 import type { RoleType as EquipmentRoleType } from "../../../../ludemes/game/equipment/Item.js";
+import { Regions } from "../../../../ludemes/game/equipment/other/Regions.js";
 import { ByScore } from "../../../../ludemes/game/rules/end/ByScore.js";
 import { Claim1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Claim1to1.js";
 import { Custodial } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Custodial.js";
@@ -75,17 +89,39 @@ const MAX_DISTANCE = 1000;
 
 export function registerBatch1(registry: LudemeRegistry): void {
   registry.registerLudeme("booleans.is.is:in", makeIsIn);
+  registry.registerLudeme("booleans.is.is:is:in", makeIsIn);
+  registry.registerLudeme("is:in", makeIsIn);
   registry.registerLudeme("booleans.is.is:freedom", makeIsFreedom);
+  registry.registerLudeme("booleans.is.is:is:freedom", makeIsFreedom);
+  registry.registerLudeme("is:freedom", makeIsFreedom);
   registry.registerLudeme("booleans.is.is:line", makeIsLine);
+  registry.registerLudeme("booleans.is.is:is:line", makeIsLine);
+  registry.registerLudeme("is:line", makeIsLine);
   registry.registerLudeme("booleans.is.is:related", makeIsRelated);
+  registry.registerLudeme("booleans.is.is:is:related", makeIsRelated);
+  registry.registerLudeme("is:related", makeIsRelated);
   registry.registerLudeme("booleans.is.is:target", makeIsTarget);
+  registry.registerLudeme("booleans.is.is:is:target", makeIsTarget);
+  registry.registerLudeme("is:target", makeIsTarget);
   registry.registerLudeme("booleans.is.is:even", (b) => new IsEven1to1(requireIntFunction(b, 1)));
+  registry.registerLudeme("is:even", (b) => new IsEven1to1(requireIntFunction(b, 1)));
   registry.registerLudeme("booleans.is.is:odd", (b) => new IsOdd1to1(requireIntFunction(b, 1)));
+  registry.registerLudeme("is:odd", (b) => new IsOdd1to1(requireIntFunction(b, 1)));
   registry.registerLudeme("booleans.is.is:flat", () => new IsFlat1to1());
+  registry.registerLudeme("is:flat", () => new IsFlat1to1());
   registry.registerLudeme("booleans.is.is:visited", (b) => new IsVisited1to1(optionalIntFunction(b, 1) ?? lastTo()));
+  registry.registerLudeme("is:visited", (b) => new IsVisited1to1(optionalIntFunction(b, 1) ?? lastTo()));
   registry.registerLudeme("booleans.is.is:pipsmatch", (b) => new IsPipsMatch(optionalIntFunction(b, 1)));
+  registry.registerLudeme("is:pipsmatch", (b) => new IsPipsMatch(optionalIntFunction(b, 1)));
   registry.registerLudeme("booleans.is.is:sidesmatch", (b) => new IsSidesMatch(optionalIntFunction(b, 1)));
+  registry.registerLudeme("is:sidesmatch", (b) => new IsSidesMatch(optionalIntFunction(b, 1)));
   registry.registerLudeme("booleans.is.is:within", makeIsWithin);
+  registry.registerLudeme("booleans.is.is:is:within", makeIsWithin);
+  registry.registerLudeme("is:within", makeIsWithin);
+  registry.registerLudeme("booleans.is.is:is:connected", makeIsConnected);
+  registry.registerLudeme("is:connected", makeIsConnected);
+  registry.registerLudeme("booleans.is.is:is:triggered", makeIsTriggered);
+  registry.registerLudeme("is:triggered", makeIsTriggered);
   registry.registerLudeme("booleans.is.is:connect", () => deferred("is Connect"));
 
   registry.registerLudeme("booleans.math.if:if", makeBooleanIf);
@@ -109,10 +145,18 @@ export function registerBatch1(registry: LudemeRegistry): void {
   registry.registerLudeme("component.piece:piece", makePiece);
   registry.registerLudeme("concentric:concentric", makeConcentric);
   registry.registerLudeme("container.board.board:board", makeBoard);
+  registry.registerLudeme("board", makeBoard);
+  protectBatch1BoardFactory(registry);
   registry.registerLudeme("coord:coord", makeCoord);
   registry.registerLudeme("cos:cos", (b) => new FloatCos1to1(requireFloatFunction(b, 0)));
   registry.registerLudeme("cost:cost", (b) => new Cost(siteTypeAt(b, 0), asJavaIntFunctionOrNull(intNamed(b, "at")), regionNamed(b, "in")));
   registry.registerLudeme("count.count:count", makeCount);
+  registry.registerLudeme("count", makeCount);
+  registry.registerLudeme("count:pieces", makeCount);
+  registry.registerLudeme("count:sites", makeCount);
+  registry.registerLudeme("count:cell", makeCount);
+  registry.registerLudeme("count:stack", makeCount);
+  registry.registerLudeme("count:pips", makeCount);
   registry.registerLudeme("counter:counter", () => new Counter1to1());
   registry.registerLudeme("countSizeBiggestGroup:countSizeBiggestGroup", (b) =>
     new CountSizeBiggestGroup1to1(boolNamed(b, "if") ?? boolNamed(b, "isvisible") ?? null),
@@ -122,6 +166,19 @@ export function registerBatch1(registry: LudemeRegistry): void {
   registry.registerLudeme("deductionPuzzle.all.all:different", makePuzzleAllDifferent);
   registry.registerLudeme("deductionPuzzle.is.is:unique", (b) => new IsUnique(firstSiteType(b)));
   registry.registerLudeme("deductionPuzzle.is.is:is", makePuzzleIs);
+  registry.registerLudeme("regions", makeRegions);
+  registry.registerLudeme("regionSite", makeRegionSite);
+  registry.registerLudeme("sites", makeSites);
+  registry.registerLudeme("sites:sites", makeSites);
+}
+
+function protectBatch1BoardFactory(registry: LudemeRegistry): void {
+  const protectedKeys = new Set(["container.board.board:board", "board"]);
+  const original = registry.registerLudeme.bind(registry);
+  registry.registerLudeme = ((key, factory) => {
+    if (protectedKeys.has(key.toLowerCase())) return;
+    original(key, factory);
+  }) as LudemeRegistry["registerLudeme"];
 }
 
 function makeIsIn(b: ArgBundle): BooleanFunction {
@@ -165,9 +222,14 @@ function makeIsTarget(b: ArgBundle): BooleanFunction {
 }
 
 function makeIsWithin(b: ArgBundle): BooleanFunction {
-  const pieceId = firstIntFunctionAfter(b, 0);
-  if (!pieceId) throw new Error(`factory ${b.symbol}:${b.constructKey}: expected piece id for is Within`);
-  return new IsWithin(pieceId, firstSiteType(b), intNamed(b, "at"), regionNamed(b, "in"));
+  const region = regionNamed(b, "in");
+  const locn = intNamed(b, "at");
+  const pieceId = firstIntFunctionAfter(b, 0) ?? whatAt(locn ?? lastTo());
+  return new IsWithin(pieceId, firstSiteType(b), locn, region);
+}
+
+function makeIsTriggered(b: ArgBundle): BooleanFunction {
+  return new IsTriggered1to1(roleOrIntAt(b, 2) ?? roleOrIntAt(b, 1) ?? roleToIntFunction("Mover"));
 }
 
 function makeBooleanIf(b: ArgBundle): BooleanFunction {
@@ -266,11 +328,13 @@ function makePiece(b: ArgBundle, env: { numPlayers: number }): Piece | Piece[] {
 function makeConcentric(b: ArgBundle): GraphFunction {
   const first = stringAt(b, 0);
   const shape = isConcentricShape(first) ? first as ConcentricShapeType : undefined;
+  const cells = firstNumberArray(b);
+  const positionalNumbers = numbers(b);
   return Concentric.construct({
     shape,
     sides: numberNamed(b, "sides") ?? undefined,
-    cells: firstNumberArray(b),
-    rings: numberNamed(b, "rings") ?? undefined,
+    cells,
+    rings: numberNamed(b, "rings") ?? (shape && positionalNumbers.length > 0 ? positionalNumbers[0] : undefined),
     steps: numberNamed(b, "steps") ?? undefined,
     midpoints: booleanNamedValue(b, "midpoints") ?? undefined,
     joinMidpoints: booleanNamedValue(b, "joinmidpoints") ?? undefined,
@@ -291,7 +355,7 @@ function makeBoard(b: ArgBundle): Board1to1 {
     graph = graphFn.eval("Vertex");
     traj = new Trajectories(graph, "Vertex");
   }
-  if (traj.numSites === 0) deferred("board");
+  if (traj.numSites === 0) return emptyGraphBoardFallback(b);
 
   let minX = Infinity;
   let maxX = -Infinity;
@@ -305,7 +369,23 @@ function makeBoard(b: ArgBundle): Board1to1 {
   }
   const width = Math.max(1, Math.ceil(maxX - minX) + 1);
   const height = Math.max(1, Math.ceil(maxY - minY) + 1);
-  return new Board1to1(width, height, traj.numSites, traj, graph.faces.length);
+  const board = new Board1to1(width, height, traj.numSites, traj, graph.faces.length);
+  const sideMap = siteType === "Vertex" ? graph.measureSides().vertex : graph.measureSides().cell;
+  if (sideMap.size > 0) {
+    (board as Board1to1 & { sideRegions?: Partial<Record<string, readonly number[]>> }).sideRegions =
+      Object.fromEntries(sideMap.entries());
+  }
+  return board;
+}
+
+function emptyGraphBoardFallback(b: ArgBundle): Board1to1 {
+  const trackSites = flatten(b.positional)
+    .map((value) => (value as { _track?: unknown })._track)
+    .find(isNumberArray);
+  if (trackSites && trackSites.length > 0) {
+    return new Board1to1(Math.max(...trackSites) + 1, 1);
+  }
+  return new Board1to1(1, 1);
 }
 
 function makeCoord(b: ArgBundle): Coord {
@@ -317,20 +397,35 @@ function makeCoord(b: ArgBundle): Coord {
 
 function makeCount(b: ArgBundle): IntFunction {
   const kind = stringAt(b, 0);
+  const at = intNamed(b, "at") ?? intNamed(b, "to");
+  const inRegion = regionNamed(b, "in");
+  if (kind === null) {
+    if (at) return new CountStack1to1(at);
+    if (inRegion) return new CountSites1to1(inRegion);
+  }
+  if (kind === "Pieces") {
+    const role = stringAt(b, 1) ?? "All";
+    const of = intNamed(b, "of");
+    const who = of ?? roleToIntFunction(role);
+    return new CountPieces1to1(who, inRegion, stringNamed(b, "name"), !of && (role === "All" || role === "Any" || role === "Each"));
+  }
+  if (kind === "Moves") return new CountMoves1to1();
+  if (kind === "Players") return new CountPlayers1to1();
+  if (kind === "Turns") return new CountTurns1to1();
+  if (kind === "MovesThisTurn") return new CountMovesThisTurn1to1();
+  if (kind === "Pips") return countPips(roleOrIntAt(b, 1) ?? intNamed(b, "of") ?? roleToIntFunction("Shared"));
   if (kind === "Cell" || kind === "Stack") {
-    const at = intNamed(b, "at");
     if (!at) return new IntConstant(0);
-    return { eval: (ctx) => ctx.state.countAtSite(at.eval(ctx)) };
+    return new CountStack1to1(at);
   }
   if (kind === "Sites") {
-    const region = regionNamed(b, "in");
-    return { eval: (ctx) => region?.eval(ctx).length ?? 0 };
+    return inRegion ? new CountSites1to1(inRegion) : { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
   }
   if (kind === "Rows") {
-    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { height: number } } }).equipment.board.height };
+    return new CountRows1to1();
   }
   if (kind === "Columns") {
-    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { width: number } } }).equipment.board.width };
+    return new CountColumns1to1();
   }
   if (kind === "Cells") {
     return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
@@ -391,6 +486,222 @@ function makePuzzleIs(b: ArgBundle): BooleanFunction {
   deferred(`deduction puzzle is ${kind ?? ""}`.trim());
 }
 
+function makeRegions(b: ArgBundle): Regions {
+  const values = b.positional;
+  const name = values.find((v): v is string => typeof v === "string" && !isRoleLike(v) && !isSiteType(v)) ?? null;
+  const role = values.find((v): v is string => typeof v === "string" && isRoleLike(v)) ?? null;
+  const intArray = values.find(isNumberArray) ?? null;
+  const regionFns = flatten(values).filter(isRegionFunction);
+  return new Regions(
+    name,
+    role as ConstructorParameters<typeof Regions>[1],
+    intArray,
+    regionFns.length === 1 ? regionFns[0]! : null,
+    regionFns.length > 1 ? regionFns : null,
+    null,
+    null,
+    null,
+  );
+}
+
+function makeIsConnected(b: ArgBundle): BooleanFunction {
+  const explicitRegions = flatten(b.positional).filter(isRegionFunction);
+  const role = [...b.positional].reverse().find((v): v is string => typeof v === "string" && isRoleLike(v)) ?? "Mover";
+  return {
+    eval: (ctx) => {
+      const pid = roleToIntFunction(role).eval(ctx);
+      const targets = explicitRegions.length > 0 ? explicitRegions.map((r) => r.eval(ctx)) : playerConnectionRegions(ctx, pid);
+      if (targets.length === 0) return false;
+      return ownedComponentTouchesEveryTarget(ctx, pid, targets);
+    },
+  };
+}
+
+function playerConnectionRegions(ctx: Context, pid: number): number[][] {
+  const equipment = (ctx.game as unknown as {
+    equipment?: {
+      playerRegions?: ReadonlyMap<number, RegionFunction>;
+      namedPlayerRegions?: ReadonlyMap<string, ReadonlyMap<number, RegionFunction>>;
+    };
+  }).equipment;
+  const region = equipment?.playerRegions?.get(pid);
+  if (region) return [region.eval(ctx)];
+  const out: number[][] = [];
+  for (const byPlayer of equipment?.namedPlayerRegions?.values() ?? []) {
+    const fn = byPlayer.get(pid);
+    if (fn) out.push(fn.eval(ctx));
+  }
+  return out;
+}
+
+function ownedComponentTouchesEveryTarget(ctx: Context, pid: number, targets: readonly number[][]): boolean {
+  const board = (ctx.game as unknown as { equipment: { board: Board1to1 } }).equipment.board;
+  const owned = new Set<number>();
+  for (let site = 0; site < board.numSites; site += 1) {
+    if (ownerAt(ctx, site) === pid) owned.add(site);
+  }
+  if (owned.size === 0) return false;
+  const targetSets = targets.map((sites) => new Set(sites));
+  const seen = new Set<number>();
+  for (const start of owned) {
+    if (seen.has(start)) continue;
+    const touched = new Set<number>();
+    const stack = [start];
+    seen.add(start);
+    while (stack.length > 0) {
+      const site = stack.pop()!;
+      for (let i = 0; i < targetSets.length; i += 1) {
+        if (targetSets[i]!.has(site)) touched.add(i);
+      }
+      for (const next of adjacentSites(board, site)) {
+        if (!seen.has(next) && owned.has(next)) {
+          seen.add(next);
+          stack.push(next);
+        }
+      }
+    }
+    if (touched.size === targetSets.length) return true;
+  }
+  return false;
+}
+
+function adjacentSites(board: Board1to1, site: number): number[] {
+  const radials = board.radials[site]?.axes ?? [];
+  const out = new Set<number>();
+  for (const radial of radials) {
+    const a = radial.ray[1];
+    const b = radial.opposite[1];
+    if (a !== undefined) out.add(a);
+    if (b !== undefined) out.add(b);
+  }
+  return [...out];
+}
+
+function ownerAt(ctx: Context, site: number): number {
+  const state = ctx.state as unknown as { cells?: readonly number[]; whoAtSite?: (site: number) => number };
+  return state.whoAtSite?.(site) ?? state.cells?.[site] ?? 0;
+}
+
+function makeRegionSite(b: ArgBundle): IntFunction {
+  const region = firstRegionFunction(b);
+  const index = intNamed(b, "index") ?? optionalIntFunction(b, 1) ?? new IntConstant(0);
+  if (!region) deferred("regionSite");
+  return {
+    eval: (ctx) => {
+      const sites = region.eval(ctx);
+      const i = index.eval(ctx);
+      return i >= 0 && i < sites.length ? sites[i]! : -1;
+    },
+  };
+}
+
+function makeSites(b: ArgBundle): RegionFunction {
+  const kind = stringAt(b, 0);
+  if (kind !== "Side") deferred(`sites ${kind ?? ""}`.trim());
+  return sideRegion(stringAt(b, 1), firstSiteType(b));
+}
+
+function sideRegion(direction: string | null, siteType: SiteType | null): RegionFunction {
+  return {
+    eval: (ctx) => {
+      const dir = directionFromRole(direction, ctx);
+      const board = (ctx.game as unknown as {
+        equipment: {
+          board: {
+            width: number;
+            height: number;
+            numSites: number;
+            trajectories: Trajectories | null;
+            sideRegions?: Partial<Record<string, readonly number[]>>;
+          };
+        };
+      }).equipment.board;
+      const graphSide = board.sideRegions?.[dir];
+      if (graphSide) return [...graphSide];
+      const traj = board.trajectories;
+      if (traj) return sitesByCompassBoundingBox(traj, dir);
+      return flatSideSites(board.width, board.height, dir, siteType);
+    },
+  };
+}
+
+function flatSideSites(width: number, height: number, direction: string, _siteType: SiteType | null): number[] {
+  const out: number[] = [];
+  const wantN = direction.includes("N");
+  const wantS = direction.includes("S");
+  const wantE = direction.includes("E");
+  const wantW = direction.includes("W");
+  for (let row = 0; row < height; row += 1) {
+    for (let col = 0; col < width; col += 1) {
+      if (wantN && row !== height - 1) continue;
+      if (wantS && row !== 0) continue;
+      if (wantE && col !== width - 1) continue;
+      if (wantW && col !== 0) continue;
+      if (!wantN && !wantS && !wantE && !wantW) continue;
+      out.push(row * width + col);
+    }
+  }
+  return out;
+}
+
+function sitesByCompassBoundingBox(traj: Trajectories, direction: string): number[] {
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let site = 0; site < traj.numSites; site += 1) {
+    minX = Math.min(minX, traj.xOf(site));
+    maxX = Math.max(maxX, traj.xOf(site));
+    minY = Math.min(minY, traj.yOf(site));
+    maxY = Math.max(maxY, traj.yOf(site));
+  }
+  const tol = 0.001;
+  const wantN = direction.includes("N");
+  const wantS = direction.includes("S");
+  const wantE = direction.includes("E");
+  const wantW = direction.includes("W");
+  const out: number[] = [];
+  for (let site = 0; site < traj.numSites; site += 1) {
+    const x = traj.xOf(site);
+    const y = traj.yOf(site);
+    if (wantN && Math.abs(y - maxY) > tol) continue;
+    if (wantS && Math.abs(y - minY) > tol) continue;
+    if (wantE && Math.abs(x - maxX) > tol) continue;
+    if (wantW && Math.abs(x - minX) > tol) continue;
+    if (!wantN && !wantS && !wantE && !wantW) continue;
+    out.push(site);
+  }
+  return out;
+}
+
+function directionFromRole(direction: string | null, ctx: Context): string {
+  if (direction && isCompassDirection(direction)) return direction;
+  if (direction === "P1" || direction === "South") return "S";
+  if (direction === "P2" || direction === "North") return "N";
+  if (direction === "P3" || direction === "West") return "W";
+  if (direction === "P4" || direction === "East") return "E";
+  if (direction === "Mover") return ctx.state.mover === 2 ? "N" : "S";
+  return "N";
+}
+
+function countPips(who: IntFunction): IntFunction {
+  return {
+    eval: (ctx) => {
+      const pid = who.eval(ctx);
+      const state = ctx.state as unknown as { sumDice?: (index: number) => number };
+      const game = ctx.game as unknown as { handDice?: Array<{ owner?: number }> | (() => Array<{ owner?: () => number }>) };
+      const handDice = typeof game.handDice === "function" ? game.handDice() : game.handDice;
+      if (!handDice) return 0;
+      for (let i = 0; i < handDice.length; i += 1) {
+        const dice = handDice[i]!;
+        const owner = typeof dice.owner === "function" ? dice.owner() : dice.owner;
+        if (owner === pid) return state.sumDice?.(i) ?? 0;
+      }
+      return 0;
+    },
+  };
+}
+
 function deferred(keyword: string): never {
   throw new Error(`factory not yet wired: ${keyword}`);
 }
@@ -406,6 +717,11 @@ function flatten(values: readonly unknown[]): unknown[] {
 
 function stringAt(b: ArgBundle, index: number): string | null {
   const value = b.positional[index];
+  return typeof value === "string" ? value : null;
+}
+
+function stringNamed(b: ArgBundle, name: string): string | null {
+  const value = b.named.get(name);
   return typeof value === "string" ? value : null;
 }
 
@@ -578,16 +894,31 @@ function requirePolygon(b: ArgBundle, index: number): readonly Point[] {
 
 function numberArrayAt(b: ArgBundle, index: number): number[] | null {
   const value = b.positional[index];
-  return Array.isArray(value) && value.every((v) => typeof v === "number") ? value : null;
+  return isNumberArray(value) ? value : null;
 }
 
 function numberArrayNamed(b: ArgBundle, name: string): number[] | null {
   const value = b.named.get(name);
-  return Array.isArray(value) && value.every((v) => typeof v === "number") ? value : null;
+  return isNumberArray(value) ? value : null;
 }
 
 function firstNumberArray(b: ArgBundle): number[] | undefined {
-  return flatten(b.positional).find((v): v is number[] => Array.isArray(v) && v.every((x) => typeof x === "number"));
+  return findNumberArray(b.positional);
+}
+
+function isNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((v) => typeof v === "number");
+}
+
+function findNumberArray(values: readonly unknown[]): number[] | undefined {
+  for (const value of values) {
+    if (isNumberArray(value)) return value;
+    if (Array.isArray(value)) {
+      const nested = findNumberArray(value);
+      if (nested) return nested;
+    }
+  }
+  return undefined;
 }
 
 function arrayAt(b: ArgBundle, index: number): unknown[] | null {
@@ -626,6 +957,10 @@ function lastTo(): IntFunction {
   return { eval: (ctx) => ctx._evalTo };
 }
 
+function whatAt(site: IntFunction): IntFunction {
+  return { eval: (ctx) => ctx.state.whatAtSite(site.eval(ctx)) };
+}
+
 function emptyMoves(): MovesFunction {
   return { eval: () => [] };
 }
@@ -642,8 +977,37 @@ function roleToOwner(role: string): number {
   return 0;
 }
 
+function roleToIntFunction(role: string): IntFunction {
+  if (role === "Shared" || role === "Neutral") return new IntConstant(0);
+  if (role === "Mover") return { eval: (ctx) => ctx.state.mover };
+  if (role === "Next") return { eval: (ctx) => (ctx.state.mover % ctx.game.numPlayers) + 1 };
+  if (role === "Prev") {
+    return {
+      eval: (ctx) => {
+        const n = ctx.game.numPlayers;
+        return ((ctx.state.mover - 2 + n) % n) + 1;
+      },
+    };
+  }
+  if (/^P\d+$/.test(role)) return new IntConstant(Number(role.slice(1)));
+  return new IntConstant(0);
+}
+
+function roleOrIntAt(b: ArgBundle, index: number): IntFunction | null {
+  return optionalIntFunction(b, index) ?? (stringAt(b, index) ? roleToIntFunction(stringAt(b, index)!) : null);
+}
+
 function isSiteType(value: unknown): value is SiteType {
   return value === "Cell" || value === "Edge" || value === "Vertex";
+}
+
+function isCompassDirection(value: unknown): value is string {
+  return typeof value === "string" && (
+    value === "N" || value === "NNE" || value === "NE" || value === "ENE" ||
+    value === "E" || value === "ESE" || value === "SE" || value === "SSE" ||
+    value === "S" || value === "SSW" || value === "SW" || value === "WSW" ||
+    value === "W" || value === "WNW" || value === "NW" || value === "NNW"
+  );
 }
 
 function isRoleLike(value: string): boolean {

@@ -5,6 +5,8 @@ import { Xor1to1 } from "../../../../ludemes/game/functions/booleans/math1to1/Xo
 import { FloatConstant } from "../../../../ludemes/game/functions/floats/FloatConstant.js";
 import { ToFloat } from "../../../../ludemes/game/functions/floats/ToFloat.js";
 import { FloatTan1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
+import { Concentric } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/Concentric.js";
+import type { ConcentricShapeType } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricShapeType.js";
 import { Subdivide } from "../../../../ludemes/game/functions/graph/operators/Subdivide.js";
 import { Trim } from "../../../../ludemes/game/functions/graph/operators/Trim.js";
 import { constructTiling } from "../../../../ludemes/game/functions/graph/generators/basis/tiling/Tiling.js";
@@ -28,6 +30,7 @@ import { TrackSite } from "../../../../ludemes/game/functions/ints/trackSite/Tra
 import { TrackSiteFirstType } from "../../../../ludemes/game/functions/ints/trackSite/TrackSiteFirstType.js";
 import { TrackSiteMoveType } from "../../../../ludemes/game/functions/ints/trackSite/TrackSiteMoveType.js";
 import { TrackSiteType } from "../../../../ludemes/game/functions/ints/trackSite/TrackSiteType.js";
+import { ArrayValue } from "../../../../ludemes/game/functions/ints/board/ArrayValue.js";
 import { WhereLevel } from "../../../../ludemes/game/functions/ints/board/where/WhereLevel.js";
 import { WhereSite } from "../../../../ludemes/game/functions/ints/board/where/WhereSite.js";
 import { ValueIterated } from "../../../../ludemes/game/functions/ints/value/iterated/ValueIterated.js";
@@ -37,10 +40,13 @@ import { ValueRandom } from "../../../../ludemes/game/functions/ints/value/rando
 import { ValueMoveLimit } from "../../../../ludemes/game/functions/ints/value/simple/ValueMoveLimit.js";
 import { ValuePending } from "../../../../ludemes/game/functions/ints/value/simple/ValuePending.js";
 import { ValueTurnLimit } from "../../../../ludemes/game/functions/ints/value/simple/ValueTurnLimit.js";
+import { CountPieces1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountPieces1to1.js";
 import { Score1to1, Var1to1 } from "../../../../ludemes/game/functions/ints1to1/state/State1to1.js";
 import { IsEnemy1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsEnemy1to1.js";
 import { IsFriend1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsFriend1to1.js";
 import { Tile } from "../../../../ludemes/game/equipment/component/tile/Tile.js";
+import { Regions } from "../../../../ludemes/game/equipment/other/Regions.js";
+import { Board1to1 } from "../../../../ludemes/game/equipment/container/board/Board1to1.js";
 import { SurakartaBoard } from "../../../../ludemes/game/equipment/container/board/custom/SurakartaBoard.js";
 import { Subgame1to1 } from "../../../../ludemes/game/match/Subgame1to1.js";
 import { Swap as MetaSwap } from "../../../../ludemes/game/rules/meta/Swap.js";
@@ -80,10 +86,21 @@ import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js"
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { Piece1to1 } from "../../../../ludemes/game/util/moves/Piece1to1.js";
 import { To1to1 } from "../../../../ludemes/game/util/moves/To1to1.js";
+import { Trajectories } from "../../../../eval/graph/trajectories.js";
 import type { ArgBundle } from "../../ArgBundle.js";
 import type { LudemeRegistry } from "../../LudemeRegistry.js";
 
 export function registerBatch9(registry: LudemeRegistry): void {
+  registry.registerLudeme("container.board.board:board", makeBoard);
+  registry.registerLudeme("board", makeBoard);
+  registry.registerLudeme("concentric:concentric", makeConcentric);
+  registry.registerLudeme("concentric", makeConcentric);
+  registry.registerLudeme("count.count:count", makeCount);
+  registry.registerLudeme("count", makeCount);
+  registry.registerLudeme("regions:regions", makeRegions);
+  registry.registerLudeme("regions", makeRegions);
+  registry.registerLudeme("regionSite:regionSite", makeRegionSite);
+  registry.registerLudeme("regionSite", makeRegionSite);
   registry.registerLudeme("start.set.set:set", makeStartSet);
   registry.registerLudeme("state:state", deferred("state"));
   registry.registerLudeme("state.score:score", makeScore);
@@ -117,6 +134,123 @@ export function registerBatch9(registry: LudemeRegistry): void {
   registry.registerLudeme("while:while", (b) => new While(requireBooleanFunction(b, 0), requireMoves(b.positional[1]), optionalMoves(b.positional[2])));
   registry.registerLudeme("who:who", makeWho);
   registry.registerLudeme("xor:xor", (b) => new Xor1to1(requireBooleanFunction(b, 0), requireBooleanFunction(b, 1)));
+}
+
+function makeBoard(b: ArgBundle): Board1to1 {
+  const existing = flatten(b.positional).find((value): value is Board1to1 => value instanceof Board1to1);
+  if (existing) return existing;
+  const graphFn = flatten(b.positional).find(isGraphFunction);
+  if (graphFn === undefined) throw new Error("factory not yet wired: board");
+  const requestedType = optionalSiteType(b.named.get("use")) ?? "Cell";
+  let graph = graphFn.eval(requestedType);
+  let trajectories = new Trajectories(graph, requestedType);
+  if (trajectories.numSites === 0 && (requestedType === "Cell" || requestedType === "Edge")) {
+    graph = graphFn.eval("Vertex");
+    trajectories = new Trajectories(graph, "Vertex");
+  }
+  if (trajectories.numSites === 0) throw new Error("factory not yet wired: board");
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let site = 0; site < trajectories.numSites; site += 1) {
+    minX = Math.min(minX, trajectories.xOf(site));
+    maxX = Math.max(maxX, trajectories.xOf(site));
+    minY = Math.min(minY, trajectories.yOf(site));
+    maxY = Math.max(maxY, trajectories.yOf(site));
+  }
+  return new Board1to1(
+    Math.max(1, Math.ceil(maxX - minX) + 1),
+    Math.max(1, Math.ceil(maxY - minY) + 1),
+    trajectories.numSites,
+    trajectories,
+    graph.faces.length,
+  );
+}
+
+function makeConcentric(b: ArgBundle): GraphFunction {
+  const shape = b.positional.find((value): value is ConcentricShapeType =>
+    typeof value === "string" && ["Triangle", "Square", "Hexagon", "Target"].includes(value),
+  );
+  const cells = b.positional.find(isNumberArray);
+  return Concentric.construct({
+    shape,
+    sides: optionalNumber(b.named.get("sides")) ?? undefined,
+    cells: cells ?? undefined,
+    rings: optionalNumber(b.named.get("rings")) ?? undefined,
+    steps: optionalNumber(b.named.get("steps")) ?? undefined,
+    midpoints: optionalBoolean(b.named.get("midpoints")) ?? undefined,
+    joinMidpoints: optionalBoolean(b.named.get("joinmidpoints")) ?? undefined,
+    joinCorners: optionalBoolean(b.named.get("joincorners")) ?? undefined,
+    stagger: optionalBoolean(b.named.get("stagger")) ?? undefined,
+  });
+}
+
+function makeCount(b: ArgBundle): IntFunction {
+  const kind = optionalString(b.positional[0]);
+  if (kind === "Pieces") {
+    const role = roleStringAfter(b, 0) ?? "All";
+    return new CountPieces1to1(
+      roleIntFunction(role),
+      optionalRegion(b.named.get("in")),
+      optionalString(b.named.get("name")),
+      role === "All" || role === "Any" || role === "Each",
+    );
+  }
+  if (kind === "Cell" || kind === "Stack" || kind === null) {
+    const at = optionalIntFunction(b.named.get("at"));
+    return { eval: (ctx) => at === null ? 0 : ctx.state.countAtSite(at.eval(ctx)) };
+  }
+  if (kind === "Sites") {
+    const region = optionalRegion(b.named.get("in"));
+    return { eval: (ctx) => region?.eval(ctx).length ?? 0 };
+  }
+  if (kind === "Rows") {
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { height: number } } }).equipment.board.height };
+  }
+  if (kind === "Columns") {
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { width: number } } }).equipment.board.width };
+  }
+  if (kind === "Cells") {
+    return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
+  }
+  if (kind === "Players") {
+    return { eval: (ctx) => ctx.numPlayers() };
+  }
+  throw new Error(`factory not yet wired: count${kind === null ? "" : ` ${kind}`}`);
+}
+
+function makeRegions(b: ArgBundle): Regions {
+  const values = flatten(b.positional);
+  const name = values.find((value): value is string => typeof value === "string" && !isRoleString(value)) ?? null;
+  const role = values.find((value): value is string => typeof value === "string" && isRoleString(value)) ?? null;
+  const intArray = findNumberArray(b.positional);
+  const regions = values.filter(isRegionFunction);
+  if (intArray !== null) {
+    return new Regions(name, role as never, intArray, null, null, null, null, null);
+  }
+  if (regions.length === 1) {
+    return new Regions(name, role as never, null, regions[0]!, null, null, null, null);
+  }
+  if (regions.length > 1) {
+    return new Regions(name, role as never, null, null, regions, null, null, null);
+  }
+  const regionTypes = values.find(isStringArray);
+  if (regionTypes) {
+    return new Regions(name, role as never, null, null, null, null, regionTypes as never, null);
+  }
+  const regionType = values.find((value): value is string =>
+    typeof value === "string" && value !== name && !isRoleString(value),
+  ) ?? null;
+  if (regionType !== null) {
+    return new Regions(name, role as never, null, null, null, regionType as never, null, null);
+  }
+  throw new Error("factory not yet wired: regions");
+}
+
+function makeRegionSite(b: ArgBundle): IntFunction {
+  return new ArrayValue(asJavaIntArrayFunction(requireRegion(b.positional[0])), requireIntFunctionValue(b.named.get("index") ?? b.positional[1]));
 }
 
 function makeStartSet(b: ArgBundle): unknown {
@@ -494,6 +628,21 @@ function isNumberArray(value: unknown): value is number[] {
   return Array.isArray(value) && value.every((item) => typeof item === "number");
 }
 
+function findNumberArray(values: readonly unknown[]): number[] | null {
+  for (const value of values) {
+    if (isNumberArray(value)) return value;
+    if (Array.isArray(value)) {
+      const nested = findNumberArray(value);
+      if (nested !== null) return nested;
+    }
+  }
+  return null;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
 function flatten(values: readonly unknown[]): unknown[] {
   const out: unknown[] = [];
   for (const value of values) {
@@ -686,6 +835,11 @@ function optionalMoves(value: unknown): MovesFunction | null {
   return value === undefined || value === null ? null : requireMoves(value);
 }
 
+function requireRegion(value: unknown): RegionFunction {
+  if (!isRegionFunction(value)) throw new Error("factory not yet wired: expected region");
+  return value;
+}
+
 function optionalThen(value: unknown): Then | null {
   if (value === undefined || value === null) return null;
   if (!(value instanceof Then)) throw new Error("factory not yet wired: expected then");
@@ -707,6 +861,14 @@ function lastString(values: readonly unknown[]): string | null {
   for (let i = values.length - 1; i >= 0; i--) {
     const value = values[i];
     if (typeof value === "string") return value;
+  }
+  return null;
+}
+
+function roleStringAfter(b: ArgBundle, index: number): string | null {
+  for (let i = index + 1; i < b.positional.length; i++) {
+    const value = b.positional[i];
+    if (typeof value === "string" && isRoleString(value)) return value;
   }
   return null;
 }
@@ -736,6 +898,20 @@ function optionalPathArray(value: unknown): Path[] | null {
 
 function optionalFlips(value: unknown): Flips | null {
   return value === undefined || value === null ? null : value as Flips;
+}
+
+function asJavaIntArrayFunction(region: RegionFunction): ConstructorParameters<typeof ArrayValue>[0] {
+  return {
+    eval: (ctx) => region.eval(ctx),
+    isStatic: () => false,
+    concepts: () => new Set(),
+    writesEvalContextRecursive: () => new Set(),
+    readsEvalContextRecursive: () => new Set(),
+    missingRequirement: () => false,
+    willCrash: () => false,
+    preprocess: () => undefined,
+    toEnglish: () => "region",
+  };
 }
 
 function isIntFunction(value: unknown): value is IntFunction {

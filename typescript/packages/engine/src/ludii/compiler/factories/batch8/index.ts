@@ -47,6 +47,7 @@ import { SitesIncident } from "../../../../ludemes/game/functions/region/sites/i
 import { SitesLargePiece } from "../../../../ludemes/game/functions/region/sites/largePiece/SitesLargePiece.js";
 import { SitesLineOfSight } from "../../../../ludemes/game/functions/region/sites/lineOfSight/SitesLineOfSight.js";
 import { LineOfSightType } from "../../../../ludemes/game/functions/region/sites/LineOfSightType.js";
+import { SitesSideType } from "../../../../ludemes/game/functions/region/sites/SitesSideType.js";
 import { SitesLoop } from "../../../../ludemes/game/functions/region/sites/loop/SitesLoop.js";
 import { SitesOccupied } from "../../../../ludemes/game/functions/region/sites/occupied/SitesOccupied.js";
 import { SitesPattern1to1 } from "../../../../ludemes/game/functions/region/sites/pattern/SitesPattern1to1.js";
@@ -93,6 +94,8 @@ import { SetCost1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetC
 import { SetCount1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetCount.js";
 import { SetPhase1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetPhase.js";
 import { SetSite1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetSite.js";
+import { CompassDirection, compassFacing } from "../../../../ludemes/game/util/directions/CompassDirection.js";
+import type { DirectionFacing } from "../../../../ludemes/game/util/directions/DirectionFacing.js";
 
 export function registerBatch8(registry: LudemeRegistry): void {
   registry.registerLudeme("sites:region", makeRegion);
@@ -209,7 +212,7 @@ function makeSites(b: ArgBundle): RegionFunction {
     case "Distance":
       return distanceSites(b);
     case "Side":
-      throw deferred("sites Side");
+      return sideSites(b);
     case "Hand":
       return new SitesHand(playerOrRoleMaybe(positionalAfterFirstString(b)[0]), roleOrNull(positionalAfterFirstString(b)[0]));
     case "Winning":
@@ -309,6 +312,27 @@ function distanceSites(b: ArgBundle): RegionFunction {
     intOrDefault(range.min, constInt(1)),
     intOrDefault(range.max, constInt(1)),
     stringOrNull(b.positional.find((v) => typeof v === "string" && v !== "Distance" && !isSiteType(v))) ?? "Adjacent",
+  );
+}
+
+function sideSites(b: ArgBundle): RegionFunction {
+  const values = positionalAfterFirstString(b);
+  const siteType = siteTypeAt(b);
+  const direction = compassDirectionOrNull(values.find(isCompassDirectionName));
+  if (direction) {
+    return Sites.constructSide(SitesSideType.Side, siteType, null, null, direction);
+  }
+  const role = values.find((v) => typeof v === "string" && isRole(v)) ?? null;
+  if (role !== null) {
+    return Sites.constructSide(SitesSideType.Side, siteType, null, role, null);
+  }
+  const player = values.find(isIntLike);
+  return Sites.constructSide(
+    SitesSideType.Side,
+    siteType,
+    player === undefined ? null : requireIntFn(player),
+    null,
+    null,
   );
 }
 
@@ -890,6 +914,15 @@ function isSiteType(value: unknown): value is string {
 
 function isDirection(value: unknown): value is string {
   return typeof value === "string" && ["Adjacent", "Orthogonal", "Diagonal", "All", "Horizontal", "Vertical", "OffDiagonal", "Rotational", "Forward", "Backward"].includes(value);
+}
+
+function isCompassDirectionName(value: unknown): value is keyof typeof CompassDirection {
+  return typeof value === "string" && typeof CompassDirection[value as keyof typeof CompassDirection] === "number";
+}
+
+function compassDirectionOrNull(value: unknown): DirectionFacing | null {
+  if (!isCompassDirectionName(value)) return null;
+  return compassFacing(CompassDirection[value]);
 }
 
 function isSitesSimpleType(value: string): boolean {

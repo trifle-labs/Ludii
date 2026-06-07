@@ -1,5 +1,6 @@
 import type { ArgBundle } from "../../ArgBundle.js";
 import type { LudemeRegistry } from "../../LudemeRegistry.js";
+import type { Context } from "../../../../context.js";
 
 import type {
   BooleanFunction,
@@ -61,17 +62,38 @@ import { MapEntry1to1 } from "../../../../ludemes/game/functions/ints1to1/board/
 import { SitesWalk1to1 } from "../../../../ludemes/game/functions/region/sites/walk/SitesWalk1to1.js";
 import { FloatLog1to1, FloatLog10_1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
 import { AndBool } from "../../../../ludemes/game/functions/booleans/math1to1/AndBool.js";
+import { IsAnyDie1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsAnyDie1to1.js";
+import { IsEmpty1to1 } from "../../../../ludemes/game/functions/booleans/is/site1to1/IsEmpty1to1.js";
+import { IsIn1to1 } from "../../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
+import { IsMover1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsMover1to1.js";
+import { IsOccupied1to1 } from "../../../../ludemes/game/functions/booleans/is/site1to1/IsOccupied1to1.js";
+import { IsPending1to1 } from "../../../../ludemes/game/functions/booleans/is/simple1to1/IsPending1to1.js";
+import { IsTriggered1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsTriggered1to1.js";
+import { Concentric } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/Concentric.js";
+import type { ConcentricShapeType } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricShapeType.js";
+import { Shift } from "../../../../ludemes/game/functions/graph/operators/Shift.js";
+import { RegionConstant } from "../../../../ludemes/game/functions/region/RegionConstant.js";
+import { SitesBottom, SitesLeft, SitesRight, SitesTop } from "../../../../ludemes/game/functions/region/sites/simple/SitesSide1to1.js";
+import { ArrayValue } from "../../../../ludemes/game/functions/ints/board/ArrayValue.js";
+import { Trajectories } from "../../../../eval/graph/trajectories.js";
 
 import { MancalaBoard } from "../../../../ludemes/game/equipment/container/board/custom/MancalaBoard.js";
 import { Board1to1 } from "../../../../ludemes/game/equipment/container/board/Board1to1.js";
 import { buildMancalaGraph } from "../../../../eval/graph/board-graph.js";
 import type { TrackDescriptor } from "../../../../ludemes/game/equipment/container/board/Board.js";
 import type { StoreType } from "../../../../ludemes/game/types/board/StoreType.js";
+import { isRegionTypeStatic, type RegionTypeStatic } from "../../../../ludemes/game/types/board/RegionTypeStatic.js";
+import { Equipment1to1 } from "../../../../ludemes/game/equipment/Equipment1to1.js";
 import { Map as LudiiMap } from "../../../../ludemes/game/equipment/other/Map.js";
+import { Regions } from "../../../../ludemes/game/equipment/other/Regions.js";
+import { Piece } from "../../../../ludemes/game/equipment/component/Piece.js";
 import { Pair } from "../../../../ludemes/game/util/math/Pair.js";
 import { Match1to1 } from "../../../../ludemes/game/match/Match1to1.js";
 import { Games1to1 } from "../../../../ludemes/game/match/Games1to1.js";
 import type { End } from "../../../../ludemes/game/rules/end/End.js";
+import { Rules1to1 } from "../../../../ludemes/game/rules/Rules1to1.js";
+import type { Phase } from "../../../../ludemes/game/rules/phase/Phase.js";
+import type { Play1to1 } from "../../../../ludemes/game/rules/play/Play1to1.js";
 import { GamePlayers1to1 } from "../../../../ludemes/game/players/GamePlayers1to1.js";
 import { MatchScore } from "../../../../ludemes/game/functions/ints/match/MatchScore.js";
 import { RoleType } from "../../../../ludemes/game/util/end/RoleType.js";
@@ -115,6 +137,18 @@ export function registerBatch4(registry: LudemeRegistry): void {
   registry.registerLudeme("match:match", matchFactory);
   registry.registerLudeme("matchScore:matchScore", matchScoreFactory);
   registry.registerLudeme("math.and:and", andBoolFactory);
+
+  registry.registerLudeme("board", boardFallbackFactory);
+  registry.registerLudeme("container.board.board:board", boardFallbackFactory);
+  registry.registerLudeme("concentric", concentricFallbackFactory);
+  registry.registerLudeme("count", countFallbackFactory);
+  registry.registerLudeme("equipment", equipmentFallbackFactory);
+  registry.registerLudeme("is", isFallbackFactory);
+  registry.registerLudeme("regionSite", regionSiteFallbackFactory);
+  registry.registerLudeme("regions", regionsFallbackFactory);
+  registry.registerLudeme("rules", rulesFallbackFactory);
+  registry.registerLudeme("shift", shiftFallbackFactory);
+  registry.registerLudeme("sites:side", sitesSideFallbackFactory);
 }
 
 function playersFactory(b: ArgBundle): IntArrayFunction {
@@ -361,6 +395,174 @@ function andBoolFactory(b: ArgBundle): BooleanFunction {
   return new AndBool(bools);
 }
 
+function boardFallbackFactory(b: ArgBundle): Board1to1 {
+  const existing = first(b, (v): v is Board1to1 => v instanceof Board1to1);
+  if (existing) return existing;
+
+  const graphFn = first(b, isGraphFunction);
+  if (graphFn === undefined) return new Board1to1(1, 1);
+
+  const siteType = siteTypeFromValue(named(b, "use")) ?? "Cell";
+  let graph = graphFn.eval(siteType);
+  let traj = new Trajectories(graph, siteType);
+  if (traj.numSites === 0 && (siteType === "Cell" || siteType === "Edge")) {
+    graph = graphFn.eval("Vertex");
+    traj = new Trajectories(graph, "Vertex");
+  }
+  if (traj.numSites === 0) throw new Error("factory not yet wired: board");
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let site = 0; site < traj.numSites; site += 1) {
+    minX = Math.min(minX, traj.xOf(site));
+    maxX = Math.max(maxX, traj.xOf(site));
+    minY = Math.min(minY, traj.yOf(site));
+    maxY = Math.max(maxY, traj.yOf(site));
+  }
+  const width = Math.max(1, Math.ceil(maxX - minX) + 1);
+  const height = Math.max(1, Math.ceil(maxY - minY) + 1);
+  return new Board1to1(width, height, traj.numSites, traj, graph.faces.length);
+}
+
+function concentricFallbackFactory(b: ArgBundle): GraphFunction {
+  const firstString = b.positional.find((v): v is string => typeof v === "string");
+  const shape = isConcentricShape(firstString) ? firstString : undefined;
+  return Concentric.construct({
+    shape,
+    sides: numberNamedValue(b, "sides") ?? undefined,
+    cells: firstNumberArray(b),
+    rings: numberNamedValue(b, "rings") ?? undefined,
+    steps: numberNamedValue(b, "steps") ?? undefined,
+    midpoints: booleanNamedValue(b, "midpoints") ?? undefined,
+    joinMidpoints: booleanNamedValue(b, "joinmidpoints") ?? undefined,
+    joinCorners: booleanNamedValue(b, "joincorners") ?? undefined,
+    stagger: booleanNamedValue(b, "stagger") ?? undefined,
+  });
+}
+
+function countFallbackFactory(b: ArgBundle): IntFunction {
+  const kind = typeof b.positional[0] === "string" ? b.positional[0] : null;
+  if (kind === null) {
+    const at = intFnOrNull(named(b, "at"));
+    if (at !== null) return { eval: (ctx) => ctx.state.countAtSite(at.eval(ctx)) };
+    const region = regionFnOrNull(named(b, "in"));
+    if (region !== null) return { eval: (ctx) => region.eval(ctx).reduce((sum: number, site: number) => sum + ctx.state.countAtSite(site), 0) };
+  }
+  if (kind === "Pieces") return countPiecesFn(b);
+  if (kind === "Sites") {
+    const region = regionFnOrNull(named(b, "in"));
+    return { eval: (ctx) => region?.eval(ctx).length ?? 0 };
+  }
+  if (kind === "MovesThisTurn") return { eval: (ctx) => (ctx.trial?.moves.length ?? 0) };
+  if (kind === "Turns") return { eval: (ctx) => ctx.trial?.moves.length ?? 0 };
+  if (kind === "Pips") return { eval: (ctx) => ctx.state.diceValues?.reduce((sum, value) => sum + value, 0) ?? 0 };
+  if (kind === "Cell" || kind === "Stack") {
+    const at = intFnOrNull(named(b, "at"));
+    return { eval: (ctx) => (at === null ? 0 : ctx.state.countAtSite(at.eval(ctx))) };
+  }
+  if (kind === "Rows") return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { height: number } } }).equipment.board.height };
+  if (kind === "Columns") return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { width: number } } }).equipment.board.width };
+  if (kind === "Cells") return { eval: (ctx) => (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board.numSites };
+  throw new Error(`factory not yet wired: count${kind === null ? "" : ` ${kind}`}`);
+}
+
+function equipmentFallbackFactory(b: ArgBundle, env: { numPlayers: number }): Equipment1to1 {
+  void env;
+  const values = flatten(b.positional);
+  const board = values.find((value): value is Board1to1 => value instanceof Board1to1) ?? new Board1to1(1, 1);
+  return new Equipment1to1(
+    board,
+    values.filter((value): value is Piece => value instanceof Piece),
+    [],
+    playerRegionsFrom(values),
+    new Map(),
+    namedPlayerRegionsFrom(values),
+    [],
+  );
+}
+
+function isFallbackFactory(b: ArgBundle): BooleanFunction {
+  const kind = typeof b.positional[0] === "string" ? b.positional[0] : null;
+  if (kind === "AnyDie") return new IsAnyDie1to1(toIntFn(requireValue(b.positional[1], "is AnyDie value")));
+  if (kind === "Empty") return new IsEmpty1to1(toIntFn(b.positional[1] ?? named(b, "at") ?? { eval: (ctx: Context) => ctx._evalTo }));
+  if (kind === "In") return new IsIn1to1(toIntFn(requireValue(b.positional[1], "is In site")), toRegionFn(requireValue(b.positional[2], "is In region")));
+  if (kind === "Mover") return new IsMover1to1(toIntFn(b.positional[1] ?? { eval: (ctx: Context) => ctx.state.mover }));
+  if (kind === "Occupied") return new IsOccupied1to1(toIntFn(b.positional[1] ?? named(b, "at") ?? { eval: (ctx: Context) => ctx._evalTo }));
+  if (kind === "Pending") return new IsPending1to1();
+  if (kind === "Triggered") {
+    const player = flatten(b.positional.slice(1)).find((v) => typeof v !== "string");
+    return new IsTriggered1to1(player === undefined ? { eval: (ctx: Context) => ctx.state.mover } : toIntFn(player));
+  }
+  throw new Error("factory not yet wired: is");
+}
+
+function regionSiteFallbackFactory(b: ArgBundle): IntFunction {
+  return new ArrayValue(
+    toIntArrayFn(requireValue(b.positional[0], "regionSite region")),
+    toJavaIntFn(toIntFn(named(b, "index") ?? b.positional[1] ?? 0)),
+  );
+}
+
+function regionsFallbackFactory(b: ArgBundle): Regions {
+  const values = flatten(b.positional);
+  const role = values.find((v): v is string => typeof v === "string" && looksLikeRole(v)) ?? null;
+  const name = values.find((v): v is string => typeof v === "string" && !looksLikeRole(v) && !isStaticRegionName(v)) ?? null;
+  const intArray = values.find(isNumberArray) ?? null;
+  const regionFns = values.filter(isRegionFunction);
+  const staticRegions = values.filter((v): v is RegionTypeStatic => typeof v === "string" && isStaticRegionName(v));
+  return new Regions(
+    name,
+    role as ConstructorParameters<typeof Regions>[1],
+    intArray,
+    regionFns.length === 1 ? regionFns[0]! : null,
+    regionFns.length > 1 ? regionFns : null,
+    staticRegions.length === 1 ? staticRegions[0]! : null,
+    staticRegions.length > 1 ? staticRegions : null,
+    null,
+  );
+}
+
+function rulesFallbackFactory(b: ArgBundle): Rules1to1 {
+  const play = flatten([...b.positional, ...b.named.values()]).find(isPlay) ?? null;
+  const end = flatten([...b.positional, ...b.named.values()]).find(isEnd) ?? null;
+  const phases = flatten([...b.positional, ...b.named.values()]).filter(isPhase);
+  if (!end) throw new Error("factory rules: missing end");
+  if (phases.length > 0) return new Rules1to1(play ?? phases[0]!.play, end, phases);
+  if (!play) throw new Error("factory rules: missing play");
+  return new Rules1to1(play, end);
+}
+
+function shiftFallbackFactory(b: ArgBundle): Shift {
+  const graph = first(b, isGraphFunction);
+  const nums = flatten([...b.positional, ...b.named.values()]).filter((v): v is number => typeof v === "number");
+  if (nums.length < 2 || graph === undefined) throw new Error("factory shift: missing dx/dy");
+  return new Shift(nums[0]!, nums[1]!, graph);
+}
+
+function sitesSideFallbackFactory(b: ArgBundle): RegionFunction {
+  const direction = flatten(b.positional).find((v): v is string =>
+    typeof v === "string" && v !== "Side" && !isSiteType(v) && !looksLikeRole(v),
+  );
+  switch (direction) {
+    case "N":
+    case "Top":
+      return new SitesTop();
+    case "S":
+    case "Bottom":
+      return new SitesBottom();
+    case "E":
+    case "Right":
+      return new SitesRight();
+    case "W":
+    case "Left":
+      return new SitesLeft();
+    default:
+      throw new Error("factory not yet wired: sites Side");
+  }
+}
+
 function requireIntFunctionList(b: ArgBundle, keyword: string): IntFunction[] {
   const flat = flatten(b.positional);
   if (flat.length === 1 && isIntArrayFunction(flat[0])) {
@@ -432,6 +634,22 @@ function toIntFn(value: unknown): IntFunction {
   throw new Error("factory not yet wired: int");
 }
 
+function toJavaIntFn(fn: IntFunction): ConstructorParameters<typeof ArrayValue>[1] {
+  const maybe = fn as Partial<ConstructorParameters<typeof ArrayValue>[1]>;
+  return {
+    eval: fn.eval.bind(fn),
+    exceeds: maybe.exceeds?.bind(fn) ?? ((ctx, other) => fn.eval(ctx) > other.eval(ctx)),
+    isHint: maybe.isHint?.bind(fn) ?? (() => false),
+    isHand: maybe.isHand?.bind(fn) ?? (() => false),
+    concepts: maybe.concepts?.bind(fn) ?? (() => new Set<number>()),
+    readsEvalContextRecursive: maybe.readsEvalContextRecursive?.bind(fn) ?? (() => new Set<number>()),
+    writesEvalContextRecursive: maybe.writesEvalContextRecursive?.bind(fn) ?? (() => new Set<number>()),
+    missingRequirement: maybe.missingRequirement?.bind(fn) ?? (() => false),
+    willCrash: maybe.willCrash?.bind(fn) ?? (() => false),
+    toEnglish: maybe.toEnglish?.bind(fn) ?? (() => "an integer"),
+  };
+}
+
 function toBoolFn(value: unknown): BooleanFunction {
   if (typeof value === "boolean") return new BooleanConstant(value);
   if (isBooleanFunction(value)) return value;
@@ -448,6 +666,33 @@ function boolFnOrNull(value: unknown): BooleanConstant | null {
   if (typeof value === "boolean") return new BooleanConstant(value);
   if (value instanceof BooleanConstant) return value;
   throw new Error("factory not yet wired: boolean");
+}
+
+function regionFnOrNull(value: unknown): RegionFunction | null {
+  if (value === undefined || value === null) return null;
+  return isRegionFunction(value) ? value : null;
+}
+
+function toRegionFn(value: unknown): RegionFunction {
+  if (isRegionFunction(value)) return value;
+  if (typeof value === "number") return new RegionConstant([value]);
+  if (isNumberArray(value)) return new RegionConstant(value);
+  throw new Error("factory not yet wired: region");
+}
+
+function toIntArrayFn(value: unknown): ConstructorParameters<typeof ArrayValue>[0] {
+  const region = toRegionFn(value);
+  return {
+    eval: (ctx) => region.eval(ctx),
+    isStatic: () => false,
+    concepts: () => new Set<number>(),
+    writesEvalContextRecursive: () => new Set<number>(),
+    readsEvalContextRecursive: () => new Set<number>(),
+    missingRequirement: () => false,
+    willCrash: () => false,
+    preprocess: () => undefined,
+    toEnglish: () => "a region",
+  };
 }
 
 function toFloatFn(value: unknown): FloatFunction {
@@ -474,6 +719,10 @@ function isFloatFunction(value: unknown): value is FloatFunction {
 
 function isIntArrayFunction(value: unknown): value is IntArrayFunction {
   return typeof (value as IntArrayFunction | null)?.eval === "function";
+}
+
+function isRegionFunction(value: unknown): value is RegionFunction {
+  return typeof (value as RegionFunction | null)?.eval === "function";
 }
 
 function isMovesFunction(value: unknown): value is MovesFunction {
@@ -523,6 +772,18 @@ function isTrackList(value: unknown): value is TrackDescriptor[] {
   return Array.isArray(value) && value.every(isTrackDescriptor);
 }
 
+function isPlay(value: unknown): value is Play1to1 {
+  return value !== null &&
+    typeof value === "object" &&
+    isMovesFunction((value as { moves?: unknown }).moves);
+}
+
+function isPhase(value: unknown): value is Phase {
+  return value !== null &&
+    typeof value === "object" &&
+    isPlay((value as { play?: unknown }).play);
+}
+
 function isStepList(value: unknown): value is readonly unknown[] {
   return Array.isArray(value) &&
     (value.every((v) => typeof v === "string") || value.every(Array.isArray));
@@ -564,6 +825,104 @@ function mapEntryKeyFn(value: unknown): IntFunction {
 
 function isRoleTypeName(value: string): boolean {
   return value in RoleType;
+}
+
+function siteTypeFromValue(value: unknown): SiteType | null {
+  return isSiteType(value) ? value : null;
+}
+
+function numberNamedValue(b: ArgBundle, name: string): number | null {
+  const value = named(b, name);
+  return typeof value === "number" ? value : null;
+}
+
+function booleanNamedValue(b: ArgBundle, name: string): boolean | null {
+  const value = named(b, name);
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") return value.toLowerCase() === "true";
+  return null;
+}
+
+function firstNumberArray(b: ArgBundle): number[] | undefined {
+  return flatten(b.positional).find(isNumberArray);
+}
+
+function isNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((v) => typeof v === "number");
+}
+
+function isConcentricShape(value: unknown): value is ConcentricShapeType {
+  return value === "Square" || value === "Triangle" || value === "Hexagon" || value === "Target";
+}
+
+function looksLikeRole(value: string): boolean {
+  return value === "Mover" || value === "Next" || value === "Prev" || value === "Player" ||
+    value === "All" || value === "Each" || value === "Shared" || value === "Neutral" ||
+    /^P\d+$/.test(value);
+}
+
+function roleOwner(value: string): number {
+  if (/^P\d+$/.test(value)) return Number(value.slice(1));
+  return 0;
+}
+
+function countPiecesFn(b: ArgBundle): IntFunction {
+  const role = flatten(b.positional).find((v): v is string => typeof v === "string" && looksLikeRole(v)) ?? "Mover";
+  const region = regionFnOrNull(named(b, "in"));
+  return {
+    eval: (ctx) => {
+      const owner = ownerForRole(role, ctx);
+      const board = (ctx.game as unknown as { equipment: { board: { numSites: number } } }).equipment.board;
+      const sites = region?.eval(ctx) ?? Array.from({ length: board.numSites }, (_, i) => i);
+      let count = 0;
+      for (const site of sites) {
+        const who = ctx.state.whoAtSiteLevel(site, 0);
+        if (owner === 0 ? who !== 0 : who === owner) count += ctx.state.countAtSite(site);
+      }
+      return count;
+    },
+  };
+}
+
+function ownerForRole(role: string, ctx: Context): number {
+  if (role === "Mover") return ctx.state.mover;
+  if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+  if (role === "Prev") return (ctx.state as unknown as { prev?: number }).prev ?? ctx.state.mover;
+  if (role === "Player") return ctx._evalPlayer ?? ctx.state.mover;
+  return roleOwner(role);
+}
+
+function playerRegionsFrom(values: unknown[]): Map<number, RegionFunction> {
+  const out = new Map<number, RegionFunction>();
+  for (const region of values.filter((v): v is Regions => v instanceof Regions)) {
+    const role = (region as unknown as { role(): unknown }).role?.();
+    const sites = region.sites();
+    const regionFns = region.region();
+    const fn = regionFns?.[0] ?? (sites !== null ? new RegionConstant(sites) : null);
+    if (typeof role === "string" && fn !== null) out.set(roleOwner(role), fn);
+  }
+  return out;
+}
+
+function namedPlayerRegionsFrom(values: unknown[]): Map<string, Map<number, RegionFunction>> {
+  const out = new Map<string, Map<number, RegionFunction>>();
+  for (const region of values.filter((v): v is Regions => v instanceof Regions)) {
+    const role = (region as unknown as { role(): unknown }).role?.();
+    const name = (region as unknown as { name(): unknown }).name?.();
+    const sites = region.sites();
+    const regionFns = region.region();
+    const fn = regionFns?.[0] ?? (sites !== null ? new RegionConstant(sites) : null);
+    if (typeof role !== "string" || typeof name !== "string" || fn === null) continue;
+    const key = name.toLowerCase();
+    const byRole = out.get(key) ?? new Map<number, RegionFunction>();
+    byRole.set(roleOwner(role), fn);
+    out.set(key, byRole);
+  }
+  return out;
+}
+
+function isStaticRegionName(value: string): boolean {
+  return isRegionTypeStatic(value);
 }
 
 function notWired(keyword: string): () => never {

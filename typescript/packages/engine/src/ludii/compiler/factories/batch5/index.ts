@@ -4,7 +4,20 @@ import { To1to1 as IteratorTo } from "../../../../ludemes/game/functions/ints1to
 import { Mover1to1, Next1to1 } from "../../../../ludemes/game/functions/ints1to1/state/State1to1.js";
 import { Or1to1 as BooleanOr } from "../../../../ludemes/game/functions/booleans/math1to1/Or1to1.js";
 import { Not1to1 } from "../../../../ludemes/game/functions/booleans/math1to1/Not1to1.js";
+import { IsEven1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsEven1to1.js";
+import { IsWithin } from "../../../../ludemes/game/functions/booleans/is/component/IsWithin.js";
 import { Merge } from "../../../../ludemes/game/functions/graph/operators/Merge.js";
+import { Concentric } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/Concentric.js";
+import { isConcentricShapeType, type ConcentricShapeType } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricShapeType.js";
+import { Board1to1 } from "../../../../ludemes/game/equipment/container/board/Board1to1.js";
+import { Track } from "../../../../ludemes/game/equipment/container/board/Track.js";
+import { Regions } from "../../../../ludemes/game/equipment/other/Regions.js";
+import { Trajectories } from "../../../../eval/graph/trajectories.js";
+import { Sites } from "../../../../ludemes/game/functions/region/sites/Sites.js";
+import { CountPieces1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountPieces1to1.js";
+import { CountMoves1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountMoves1to1.js";
+import { CountPhases } from "../../../../ludemes/game/functions/ints/count/simple/CountPhases.js";
+import { CountTrials } from "../../../../ludemes/game/functions/ints/count/simple/CountTrials.js";
 import { Max as MaxRequirement } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/Max.js";
 import { MaxCaptures } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxCaptures.js";
 import { MaxMoves } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxMoves.js";
@@ -55,6 +68,10 @@ import { Pair } from "../../../../ludemes/game/util/math/Pair.js";
 import { LandmarkType } from "../../../../ludemes/game/util/math/LandmarkType.js";
 import { RoleType as PairRoleType } from "../../../../ludemes/game/util/end/RoleType.js";
 import { NextPhase } from "../../../../ludemes/game/rules/phase/NextPhase.js";
+import { Phase } from "../../../../ludemes/game/rules/phase/Phase.js";
+import { Rules1to1 } from "../../../../ludemes/game/rules/Rules1to1.js";
+import { Play1to1 } from "../../../../ludemes/game/rules/play/Play1to1.js";
+import { End } from "../../../../ludemes/game/rules/end/End.js";
 import type {
   BooleanFunction,
   DirectionsFunction,
@@ -74,6 +91,7 @@ export function registerBatch5(registry: LudemeRegistry): void {
   registry.registerLudeme("math.count:count", (b): Count => {
     return new Count(requireString(b, 0), asIntFunction(requireValue(b, 1), "count"));
   });
+  registry.registerLudeme("count", makeCountFallback);
 
   registry.registerLudeme("math.or:or", (b): BooleanFunction => {
     return new BooleanOr(flatten(b.positional).filter(isBooleanFunction));
@@ -119,6 +137,9 @@ export function registerBatch5(registry: LudemeRegistry): void {
 
   registry.registerLudeme("mode:mode", (b): Mode1to1 => new Mode1to1(requireString(b, 0) as never));
 
+  registry.registerLudeme("board", makeBoardFallback);
+  registry.registerLudeme("concentric", makeConcentricFallback);
+
   registry.registerLudeme("move:slide", makeSlide);
   registry.registerLudeme("move:step", makeStep);
   registry.registerLudeme("move:shoot", makeShoot);
@@ -146,6 +167,179 @@ export function registerBatch5(registry: LudemeRegistry): void {
 
   registry.registerLudeme("nextPhase:nextPhase", makeNextPhase);
   registry.registerLudeme("not:not", (b): Not1to1 => new Not1to1(requireBooleanFunction(b.positional[0], "not")));
+  registry.registerLudeme("is", makeIsFallback);
+  registry.registerLudeme("regions", makeRegionsFallback);
+  registry.registerLudeme("rules", makeRulesFallback);
+  registry.registerLudeme("sites", makeSitesFallback);
+}
+
+function makeCountFallback(b: ArgBundle): IntFunction {
+  const kind = optionalString(b.positional[0]);
+  if (kind === null) {
+    const at = asOptionalIntFunction(namedValue(b, "at"), "count at");
+    if (at !== null) return { eval: (ctx) => ctx.state.countAtSite(at.eval(ctx)) };
+    const region = optionalRegionFunction(namedValue(b, "in"));
+    if (region !== null) {
+      return {
+        eval: (ctx) => region.eval(ctx).reduce((total, site) => total + ctx.state.countAtSite(site), 0),
+      };
+    }
+  }
+  if (kind === "Value") {
+    const of = requireIntFunction(firstIntishAfterKind(b, "Value"), "count Value of");
+    const array = requireIntArrayFunction(namedValue(b, "in"), "count Value in");
+    return {
+      eval: (ctx) => array.eval(ctx).filter((value) => value === of.eval(ctx)).length,
+    };
+  }
+  if (kind === "Pieces") {
+    const role = firstRoleAfterKind(b, "Pieces");
+    const of = asOptionalIntFunction(namedValue(b, "of"), "count Pieces of");
+    return new CountPieces1to1(
+      of ?? (role ? roleIntFunction(role) : roleIntFunction("All")),
+      optionalRegionFunction(namedValue(b, "in")),
+      optionalString(namedValue(b, "name")),
+      of === null && (role === null || role === "All" || role === "Each"),
+    );
+  }
+  if (kind === "Moves") return new CountMoves1to1();
+  if (kind === "Trials") return new CountTrials();
+  if (kind === "Phases") return new CountPhases();
+  if (kind === "Sites") {
+    const region = optionalRegionFunction(namedValue(b, "in")) ?? flatten(b.positional).find(isRegionFunction) ?? null;
+    return { eval: (ctx) => region?.eval(ctx).length ?? 0 };
+  }
+  if (kind === "Rows") return { eval: (ctx) => gameBoard(ctx).height };
+  if (kind === "Columns") return { eval: (ctx) => gameBoard(ctx).width };
+  if (kind === "Cells" || kind === "Vertices") return { eval: (ctx) => gameBoard(ctx).numSites };
+  if (kind === "Edges") return { eval: (ctx) => gameBoard(ctx).trajectories?.numSites ?? 0 };
+  if (kind === "Players") return { eval: (ctx) => ctx.game.numPlayers };
+  if (kind === "Turns" || kind === "MovesThisTurn" || kind === "LegalMoves" || kind === "Active") {
+    return new IntConstant(0);
+  }
+  throw notWired(`count${kind ? ` ${kind}` : ""}`);
+}
+
+function makeBoardFallback(b: ArgBundle): Board1to1 {
+  const existing = flatten(b.positional).find((v): v is Board1to1 => v instanceof Board1to1);
+  if (existing) return existing;
+  const graphFn = flatten(b.positional).find(isGraphFunction);
+  if (graphFn === undefined) throw notWired("board");
+  const requestedType = optionalSiteType(namedValue(b, "use")) ?? "Cell";
+  let graph = graphFn.eval(requestedType);
+  let trajectories = new Trajectories(graph, requestedType);
+  if (trajectories.numSites === 0 && (requestedType === "Cell" || requestedType === "Edge")) {
+    graph = graphFn.eval("Vertex");
+    trajectories = new Trajectories(graph, "Vertex");
+  }
+  if (trajectories.numSites === 0) {
+    const trackBoard = boardFromTrack(b);
+    if (trackBoard !== null) return trackBoard;
+    throw notWired("board");
+  }
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+  for (let site = 0; site < trajectories.numSites; site += 1) {
+    minX = Math.min(minX, trajectories.xOf(site));
+    maxX = Math.max(maxX, trajectories.xOf(site));
+    minY = Math.min(minY, trajectories.yOf(site));
+    maxY = Math.max(maxY, trajectories.yOf(site));
+  }
+  return new Board1to1(
+    Math.max(1, Math.ceil(maxX - minX) + 1),
+    Math.max(1, Math.ceil(maxY - minY) + 1),
+    trajectories.numSites,
+    trajectories,
+    graph.faces.length,
+  );
+}
+
+function boardFromTrack(b: ArgBundle): Board1to1 | null {
+  const tracks = flatten(b.positional).filter((value): value is Track => value instanceof Track);
+  const rawSites = tracks.flatMap((track) => ((track as unknown as { _track?: number[] | null })._track ?? []));
+  if (rawSites.length === 0) return null;
+  const numSites = Math.max(...rawSites) + 1;
+  const width = Math.max(1, Math.ceil(Math.sqrt(numSites)));
+  const height = Math.max(1, Math.ceil(numSites / width));
+  return new Board1to1(width, height);
+}
+
+function makeConcentricFallback(b: ArgBundle): GraphFunction {
+  const first = optionalString(b.positional[0]);
+  const shape = first && isConcentricShapeType(first) ? first as ConcentricShapeType : undefined;
+  const positionalNumbers = flatten(b.positional).filter((value): value is number => typeof value === "number");
+  const cells = firstNumberArray(b);
+  return Concentric.construct({
+    shape,
+    sides: optionalNumber(namedValue(b, "sides")) ?? (!shape && cells === undefined ? positionalNumbers[0] : undefined),
+    cells,
+    rings: optionalNumber(namedValue(b, "rings")) ?? (shape ? positionalNumbers[0] : undefined),
+    steps: optionalNumber(namedValue(b, "steps")) ?? positionalNumbers[1],
+    midpoints: optionalBooleanNamed(b, "midpoints") ?? undefined,
+    joinMidpoints: optionalBooleanNamed(b, "joinmidpoints") ?? undefined,
+    joinCorners: optionalBooleanNamed(b, "joincorners") ?? undefined,
+    stagger: optionalBooleanNamed(b, "stagger") ?? undefined,
+  });
+}
+
+function makeIsFallback(b: ArgBundle): BooleanFunction {
+  const kind = optionalString(b.positional[0]);
+  if (kind === "Even") return new IsEven1to1(requireIntFunction(firstIntishAfterKind(b, "Even"), "is Even"));
+  if (kind === "Within") {
+    const pieceId = requireIntFunction(firstIntishAfterKind(b, "Within"), "is Within piece");
+    return new IsWithin(
+      pieceId,
+      optionalSiteType(flatten(b.positional).find(isSiteTypeName)),
+      asOptionalIntFunction(namedValue(b, "at"), "is Within at"),
+      optionalRegionFunction(namedValue(b, "in")) ?? flatten(b.positional).find(isRegionFunction) ?? null,
+    );
+  }
+  throw notWired(`is${kind ? ` ${kind}` : ""}`);
+}
+
+function makeRegionsFallback(b: ArgBundle): Regions {
+  const values = flatten(b.positional);
+  const role = values.find((value): value is string => typeof value === "string" && isRoleTypeName(value)) ?? null;
+  const name = values.find((value): value is string =>
+    typeof value === "string" && !isRoleTypeName(value) && !isStaticRegionName(value),
+  ) ?? null;
+  const sites = values.find(isNumberArray) ?? null;
+  const regions = values.filter(isRegionFunction);
+  const staticRegions = values.filter(isStaticRegionName);
+  if (sites !== null) return new Regions(name, role as never, sites, null, null, null, null, null);
+  if (regions.length === 1) return new Regions(name, role as never, null, regions[0]!, null, null, null, null);
+  if (regions.length > 1) return new Regions(name, role as never, null, null, regions, null, null, null);
+  if (staticRegions.length === 1) return new Regions(name, role as never, null, null, null, staticRegions[0] as never, null, null);
+  if (staticRegions.length > 1) return new Regions(name, role as never, null, null, null, null, staticRegions as never, null);
+  throw notWired("regions");
+}
+
+function makeRulesFallback(b: ArgBundle): Rules1to1 {
+  const play = flatten(b.positional).find((v): v is Play1to1 => v instanceof Play1to1) ?? null;
+  const end = flatten(b.positional).find((v): v is End => v instanceof End) ?? null;
+  const phases = [
+    ...flatten(b.positional).filter((v): v is Phase => v instanceof Phase),
+    ...flatten([namedValue(b, "phases")]).filter((v): v is Phase => v instanceof Phase),
+  ];
+  if (!end) throw new Error("factory rules: missing end");
+  if (phases.length > 0) return new Rules1to1(play ?? phases[0]!.play, end, phases);
+  if (!play) throw new Error("factory rules: missing play");
+  return new Rules1to1(play, end);
+}
+
+function makeSitesFallback(b: ArgBundle): RegionFunction {
+  const kind = optionalString(b.positional[0]);
+  if (kind !== "Side") throw notWired(`sites${kind ? ` ${kind}` : ""}`);
+  const values = flatten(b.positional);
+  const siteType = optionalSiteType(values.find(isSiteTypeName)) ?? null;
+  const sideArg = values.find((value) => value !== "Side" && value !== siteType);
+  const role = typeof sideArg === "string" && isRoleTypeName(sideArg) ? sideArg : null;
+  const direction = typeof sideArg === "string" && role === null ? sideArg : null;
+  const player = findFirst(b, isPlayer);
+  return Sites.constructSide("Side", siteType, player, role, direction);
 }
 
 function makePair(b: ArgBundle): Pair {
@@ -633,6 +827,12 @@ function firstStringArray(b: ArgBundle): string[] | null {
   ) ?? null;
 }
 
+function firstNumberArray(b: ArgBundle): number[] | undefined {
+  return findRaw(b.positional, (value): value is number[] =>
+    Array.isArray(value) && value.every((entry) => typeof entry === "number"),
+  );
+}
+
 function hasPlayerOrRoleAfterKind(b: ArgBundle, kind: string): boolean {
   return findFirst(b, isPlayer) !== undefined || firstRoleAfterKind(b, kind) !== null;
 }
@@ -672,8 +872,16 @@ function optionalString(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+function optionalNumber(value: unknown): number | null {
+  return typeof value === "number" ? value : null;
+}
+
 function optionalSiteType(value: unknown): SiteTypeName | null {
   return isSiteTypeName(value) ? value : null;
+}
+
+function optionalRegionFunction(value: unknown): RegionFunction | null {
+  return isRegionFunction(value) ? value : null;
 }
 
 function optionalBooleanNamed(b: ArgBundle, name: string): boolean | null {
@@ -732,6 +940,11 @@ function requireMoves(value: MovesFunction | undefined, label: string): MovesFun
   return value;
 }
 
+function requireIntArrayFunction(value: unknown, label: string): IntArrayFunction {
+  if (isIntArrayFunction(value)) return value;
+  throw new Error(`factory not yet wired: ${label}`);
+}
+
 function requireFrom(value: From1to1 | undefined, label: string): From1to1 {
   if (!value) throw new Error(`factory not yet wired: ${label}`);
   return value;
@@ -769,6 +982,10 @@ function directionFunction(name: string): DirectionsFunction {
 
 function intAsRegion(fn: IntFunction): RegionFunction {
   return { eval: (ctx) => [fn.eval(ctx)] };
+}
+
+function gameBoard(ctx: { game: unknown }): Board1to1 {
+  return (ctx.game as { equipment: { board: Board1to1 } }).equipment.board;
 }
 
 function roleIntFunction(role: string): IntFunction {
@@ -825,6 +1042,10 @@ function isGraphFunction(value: unknown): value is GraphFunction {
 
 function isIntArrayFunction(value: unknown): value is IntArrayFunction {
   return typeof (value as IntArrayFunction | null)?.eval === "function";
+}
+
+function isNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((entry) => typeof entry === "number");
 }
 
 function isKnownNonIntFunction(value: unknown): boolean {
@@ -927,6 +1148,10 @@ function isLandmarkTypeName(value: unknown): value is string {
 
 function isHiddenDataName(value: unknown): value is HiddenData {
   return value === "What" || value === "Who" || value === "State" || value === "Count" || value === "Rotation" || value === "Value";
+}
+
+function isStaticRegionName(value: unknown): value is string {
+  return typeof value === "string" && /^(AllSites|Board|Corners|Sides|Centre|Center|Top|Bottom|Left|Right|Inner|Outer|Perimeter|Major|Minor)$/.test(value);
 }
 
 function isDirectionName(value: unknown): value is string {

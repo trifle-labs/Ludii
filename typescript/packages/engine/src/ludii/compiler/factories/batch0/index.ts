@@ -9,8 +9,11 @@ import { AllGroupsType } from "../../../../ludemes/game/functions/booleans/all/A
 import { AllSimpleType } from "../../../../ludemes/game/functions/booleans/all/AllSimpleType.js";
 import { AllSitesType } from "../../../../ludemes/game/functions/booleans/all/AllSitesType.js";
 import { AllValuesType } from "../../../../ludemes/game/functions/booleans/all/AllValuesType.js";
+import { IsWithin } from "../../../../ludemes/game/functions/booleans/is/component/IsWithin.js";
 import { IsAngle1to1 } from "../../../../ludemes/game/functions/booleans/is/angle1to1/IsAngle1to1.js";
 import { IsCrossing1to1 } from "../../../../ludemes/game/functions/booleans/is/edge/IsCrossing1to1.js";
+import { IsIn1to1 } from "../../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
+import { IsEven1to1 } from "../../../../ludemes/game/functions/booleans/is/integer1to1/IsEven1to1.js";
 import { IsHidden1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsHidden1to1.js";
 import { IsCycle1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsCycle1to1.js";
 import { IsLastFrom1to1 } from "../../../../ludemes/game/functions/booleans/is/is1to1/IsLastFrom1to1.js";
@@ -238,6 +241,7 @@ function makeIs(b: ArgBundle): BooleanFunction {
     case "Friend": return new IsFriend1to1(toIntFunction(b.positional[1] ?? "Mover"));
     case "Enemy": return new IsEnemy1to1(toIntFunction(b.positional[1] ?? "Next"));
     case "Active": return new IsActive1to1(toIntFunction(b.positional[1] ?? "Mover"));
+    case "Even": return new IsEven1to1(toIntFunction(requirePos(b, 1)));
     case "Crossing": return new IsCrossing1to1(toIntFunction(requirePos(b, 1)), toIntFunction(requirePos(b, 2)));
     case "Decided": return new IsDecided(requireStringValue(requirePos(b, 1)));
     case "Proposed": return new IsProposed(requireStringValue(requirePos(b, 1)));
@@ -262,10 +266,20 @@ function makeIs(b: ArgBundle): BooleanFunction {
     case "Path": return makePath(b);
     case "Empty": return new IsEmpty1to1(toIntFunction(lastNonSiteTypePos(b) ?? -1));
     case "Occupied": return new IsOccupied1to1(toIntFunction(lastNonSiteTypePos(b) ?? -1));
+    case "In": return new IsIn1to1(
+      toIntFunction(b.positional[1] ?? new LastTo1to1()),
+      toRegionFunction(requirePos(b, 2)),
+    );
+    case "Within": return new IsWithin(
+      toIntFunction(firstNonKindNonSiteValue(b, "Within") ?? "Mover"),
+      firstSiteType(b, 1),
+      optionalNamed(b, "at", toIntFunction),
+      optionalNamed(b, "in", toRegionFunction),
+    );
     case "Pattern": return makePattern(b);
     case "Loop": return makeLoop(b);
     default:
-      throw deferred("is");
+      throw deferred(`is ${kind}`);
   }
 }
 

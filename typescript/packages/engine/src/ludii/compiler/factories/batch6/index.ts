@@ -292,7 +292,11 @@ function phaseFactory(b: ArgBundle): Phase {
   if (!play) throw new Error("factory batch6: expected play for phase");
   const end = b.positional.find((v): v is ConstructorParameters<typeof Phase>[2] => isObject(v) && "eval" in v) ?? null;
   const next = flatten(b.positional).filter((v) => isObject(v) && "targetName" in v) as ConstructorParameters<typeof Phase>[3];
-  return new Phase(name, play, end, next, roleToPlayerId(role ?? "Shared"));
+  const phase = new Phase(name, play, end, next, roleToPlayerId(role ?? "Shared")) as Phase & { setPlay(play: Play1to1): void };
+  phase.setPlay = (nextPlay: Play1to1): void => {
+    Object.defineProperty(phase, "play", { value: nextPlay, writable: true, configurable: true });
+  };
+  return phase;
 }
 
 function pinFactory(b: ArgBundle): Pin {
