@@ -114,7 +114,7 @@ export function registerBatch0(registry: LudemeRegistry): void {
     const steps = optionalNamed(b, "steps", toIntFunction) ?? new IntConstant(1);
     const direction = findDirection(b) ?? "Forward";
     const type = firstSiteType(b);
-    return new Ahead(site as ConstructorParameters<typeof Ahead>[0], steps as ConstructorParameters<typeof Ahead>[1], { name: direction }, type);
+    return new Ahead(type, site as ConstructorParameters<typeof Ahead>[1], steps as ConstructorParameters<typeof Ahead>[2], { name: direction });
   });
 
   registry.registerLudeme("allCombinations:allCombinations", (b): AllCombinations =>

@@ -76,16 +76,16 @@ export class Ahead extends BaseIntFunction {
    * @java Ahead(SiteType, IntFunction, IntFunction, Direction)
    */
   public constructor(
+    type: SiteType | null,
     site: JavaIntFunction,
     steps: JavaIntFunction,
     directions: AheadDirectionsFunction,
-    type: SiteType | null = null,
   ) {
     super();
+    this.type = type;
     this.siteFn = site;
     this.stepsFn = steps;
     this.dirnChoice = directions;
-    this.type = type;
   }
 
   /**
