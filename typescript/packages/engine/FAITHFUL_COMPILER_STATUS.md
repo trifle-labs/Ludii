@@ -40,3 +40,34 @@ Multi-week: complete the diverse factory arg-variants + per-ludeme matcher cases
 compile coverage ≈ dispatcher, THEN diff move-generation game-by-game vs the dispatcher,
 THEN switch `play1to1` to `Compiler` and delete `compiler1to1.ts`. The dispatcher
 (`compiler1to1` / `play1to1`, ~18% behavioural parity) remains the working engine until then.
+
+## Update 2026-06-07: plateau confirmed at ~36%, diagnostics now clean
+Pulled every in-session lever: factory waves (0→32%), grammar operator-parse fix,
+**faithful ArgClass-style TYPE-based arg matching** (global keyword + `instanceof Base*`
+type-fit, replacing lossy EBNF-name matching), and **clean deepest-miss diagnostics**
+(discard misses from successfully-compiled subtrees → pinpoints the true blocker).
+Coverage held at 60-sample 32% / 200-sample 36%. Further factory waves are flat.
+
+Remaining is a deep, CHAINED, per-case long tail: each failing game terminates in a
+specific move/region ludeme arg-variant (e.g. embedded piece-movement `<moves>` defines
+like LeapCapture/PawnMove; `(if …)` end/moves variants; `(move …)`/`(forEach …)`/`(do …)`
+arg shapes). Fixing one reveals the next; coverage only rises when a whole game's chain
+clears. This is multi-week volume best run as a SCHEDULED cadence (parallel Codex
+factory-completion + queued matcher cases against faithful-coverage.mjs), NOT a single
+in-session grind (which is now exhausted — flat per wave).
+
+Current true top blockers (200-game sample):
+  6  no grammar candidate: keyword 'then' is not a <moves>
+  6  <moves> 'move': args matched none of 18 clause(s)
+  5  <phase.phase> 'phase': args matched none of 1 clause(s)
+  5  <moves> 'forEach': args matched none of 11 clause(s)
+  5  <graph> 'add': args matched none of 1 clause(s)
+  4  no grammar candidate: keyword 'end' is not a <play>
+  4  <moves> 'do': args matched none of 1 clause(s)
+  3  no grammar candidate: keyword 'start' is not a <play>
+  3  <item> 'tile': args matched none of 1 clause(s)
+  3  no grammar candidate: keyword 'directions' is not a <moves.to>
+  3  no grammar candidate: keyword '>' is not a <boolean>
+  2  factory batch6: expected int-array function for forEach Value values
+  2  Compiler: headless list cannot match <game>
+  1  <moves.from> 'from': args matched none of 1 clause(s)
