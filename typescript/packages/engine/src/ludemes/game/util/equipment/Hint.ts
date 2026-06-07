@@ -17,25 +17,11 @@ export class Hint {
   public readonly region: readonly number[];
 
   /**
-   * For creating a hint over a region.
-   * @java Hint(Integer[] region, Integer? hint)
-   *
-   * @param region  The locations.
-   * @param hint    The hint value (default 0).
+   * @java Hint(Integer[] region, @Opt Integer hint)
+   * @java Hint(Integer site, @Opt Integer hint)
    */
-  public constructor(region: readonly number[], hint?: number);
-
-  /**
-   * For creating a hint at a single site.
-   * @java Hint(Integer site, Integer? hint)
-   *
-   * @param site  The location.
-   * @param hint  The hint value (default 0).
-   */
-  public constructor(site: number, hint?: number);
-
-  public constructor(regionOrSite: readonly number[] | number, hint?: number) {
-    this.hint = hint ?? 0;
+  public constructor(regionOrSite: readonly number[] | number, hint?: number | null) {
+    this.hint = hint == null ? 0 : hint;
     if (typeof regionOrSite === "number") {
       this.region = [regionOrSite];
     } else {

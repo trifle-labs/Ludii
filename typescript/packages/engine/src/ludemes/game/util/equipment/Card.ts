@@ -3,7 +3,9 @@
 // Faithful port of the Card data class. Carries rank, value, trumpRank,
 // trumpValue, biased, and CardType. All fields are readonly after construction.
 
-import { type CardType } from "./CardType.js";
+import { type CardTypeName } from "../../types/component/CardType.js";
+
+export type CardType = CardTypeName;
 
 /** Sentinel for undefined integer — matches Java Constants.UNDEFINED = -1. */
 const UNDEFINED = -1;
@@ -33,7 +35,9 @@ export class Card {
   public readonly type: CardType;
 
   /**
-   * @java Card(CardType, Integer rank, Integer value, Integer trumpRank?, Integer trumpValue?, Integer biased?)
+   * @java Card(CardType type, @Name Integer rank, @Name Integer value,
+   *            @Opt @Name Integer trumpRank, @Opt @Name Integer trumpValue,
+   *            @Opt @Name Integer biased)
    *
    * @param type       The type of the card.
    * @param rank       The rank of the card.

@@ -490,8 +490,14 @@ export class ArgCompiler {
         this.noteInstFail(`cannot instantiate ${info.className}: no static construct(${info.args.length}) overload (Java construct arity drift)`);
         return null;
       }
-      if (ctor.length !== info.args.length) {
-        this.noteInstFail(`cannot instantiate ${info.className}: TS ctor arity ${ctor.length} != bound args ${info.args.length} (constructor drift)`);
+      // Construct when enough args are bound to satisfy the TS ctor's REQUIRED params.
+      // JS Function.length counts only params before the first default/optional, so a
+      // faithfully-ported class with an @Opt/default tail (e.g. Card: type,rank,value +
+      // 3 optional) reports ctor.length < the bound Java arity; passing all bound args
+      // fills the optionals (and JS ignores any surplus). Only too-FEW args is a real
+      // drift failure.
+      if (info.args.length < ctor.length) {
+        this.noteInstFail(`cannot instantiate ${info.className}: TS ctor needs >=${ctor.length} args but only ${info.args.length} bound (constructor drift)`);
         return null;
       }
       return new ctor(...info.args);

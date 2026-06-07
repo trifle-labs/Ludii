@@ -227,14 +227,19 @@ export function registerBatch2(registry: LudemeRegistry): void {
   registry.registerLudeme("equipment:equipment", makeEquipment);
   registry.registerLudeme("equipment.card:card", (b) =>
     new EquipmentCard(
-      requireString(b, 0) as unknown as ConstructorParameters<typeof EquipmentCard>[0],
+      requireString(b, 0) as ConstructorParameters<typeof EquipmentCard>[0],
       requireNamedNumber(b, "rank"),
       requireNamedNumber(b, "value"),
       numberNamed(b, "trumprank") ?? undefined,
       numberNamed(b, "trumpvalue") ?? undefined,
       numberNamed(b, "biased") ?? undefined,
     ));
-  registry.registerLudeme("equipment.hint:hint", (b) => new Hint(requireNumber(b, 0), numberAt(b, 1) ?? undefined));
+  registry.registerLudeme("equipment.hint:hint", (b) => {
+    const first = b.positional[0];
+    const hint = numberAt(b, 1);
+    if (Array.isArray(first) && first.every((v) => typeof v === "number")) return new Hint(first, hint);
+    return new Hint(requireNumber(b, 0), hint);
+  });
 }
 
 function forceRegister(registry: LudemeRegistry, key: string, factory: LudemeRegistry["construct"] extends never ? never : Parameters<LudemeRegistry["registerLudeme"]>[1]): void {
