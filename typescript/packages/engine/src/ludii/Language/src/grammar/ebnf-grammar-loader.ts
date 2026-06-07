@@ -64,17 +64,18 @@ export type GrammarModel = Map<string, GrammarRule>;
 
 /** Split a rule RHS on top-level `|`, ignoring `|` nested in () [] {} or <...>. */
 function splitTopLevel(rhs: string, sep: string): string[] {
+  // NOTE: we deliberately do NOT track `<`/`>` nesting. Ludii grammar symbols
+  // can be operators (e.g. <>=>, <<=>, <!=>) whose names contain bare `<`/`>`,
+  // which would corrupt angle-depth tracking. Nonterminals never contain a top-
+  // level `|` or space, so tracking only ()/[]/{} is correct and robust.
   const parts: string[] = [];
   let depth = 0;
-  let angle = 0;
   let cur = "";
   for (let i = 0; i < rhs.length; i++) {
     const c = rhs[i]!;
     if (c === "(" || c === "[" || c === "{") depth++;
     else if (c === ")" || c === "]" || c === "}") depth--;
-    else if (c === "<") angle++;
-    else if (c === ">") angle--;
-    if (c === sep && depth === 0 && angle === 0) {
+    if (c === sep && depth === 0) {
       parts.push(cur.trim());
       cur = "";
     } else {
@@ -159,14 +160,13 @@ function parseClause(clauseRaw: string): GrammarClause {
 
 /** Index of the first space not nested inside <>, (), [], {}. */
 function firstTopLevelSpace(s: string): number {
-  let depth = 0, angle = 0;
+  // See splitTopLevel: no `<`/`>` tracking (operator symbols break it).
+  let depth = 0;
   for (let i = 0; i < s.length; i++) {
     const c = s[i]!;
     if (c === "(" || c === "[" || c === "{") depth++;
     else if (c === ")" || c === "]" || c === "}") depth--;
-    else if (c === "<") angle++;
-    else if (c === ">") angle--;
-    else if (c === " " && depth === 0 && angle === 0) return i;
+    else if (c === " " && depth === 0) return i;
   }
   return -1;
 }
