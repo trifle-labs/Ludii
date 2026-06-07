@@ -81,6 +81,7 @@ export class Compiler {
     node: LudNode,
     expectedSymbol: string,
     env: CompilerEnv,
+    required = true,
   ): T {
     const terminal = this.tryCompileTerminal(node, expectedSymbol);
     if (terminal.matched) return terminal.value as T;
@@ -92,7 +93,7 @@ export class Compiler {
     }
 
     if (node.delimiter === "curly") {
-      return node.items.map((item) => this.compileActual(item, expectedSymbol, env)) as T;
+      return node.items.map((item) => this.compileActual(item, expectedSymbol, env, required)) as T;
     }
 
     const head = listHead(node);
@@ -121,7 +122,7 @@ export class Compiler {
       return this.registry.construct<T>(bundle, env);
     }
 
-    if (this.deepestMiss === null || this.depth > this.deepestMiss.depth) {
+    if (required && (this.deepestMiss === null || this.depth > this.deepestMiss.depth)) {
       this.deepestMiss = {
         depth: this.depth,
         msg: candidates.length === 0
@@ -258,20 +259,20 @@ export class Compiler {
     try {
       if (arg.list) {
         if (isList(node) && node.delimiter === "curly") {
-          return { matched: true, value: node.items.map((item) => this.compileActual(item, listElementSymbol(arg), env)) };
+          return { matched: true, value: node.items.map((item) => this.compileActual(item, listElementSymbol(arg), env, !arg.optional)) };
         }
         return { matched: false };
       }
       if (isGrammarListArg(arg)) {
         if (isList(node) && node.delimiter === "curly") {
-          return { matched: true, value: node.items.map((item) => this.compileActual(item, listElementSymbol(arg), env)) };
+          return { matched: true, value: node.items.map((item) => this.compileActual(item, listElementSymbol(arg), env, !arg.optional)) };
         }
         return { matched: false };
       }
       let firstError: unknown;
       for (const symbol of alternativeSymbols(arg.symbol)) {
         try {
-          return { matched: true, value: this.compileActual(node, symbol, env) };
+          return { matched: true, value: this.compileActual(node, symbol, env, !arg.optional) };
         } catch (error) {
           if (error instanceof CompilerMatchError) {
             // Try the next union alternative.
