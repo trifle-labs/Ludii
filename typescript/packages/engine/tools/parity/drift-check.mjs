@@ -1,7 +1,7 @@
 // Drift-checker: for each Java ludeme class, compare its TS class's constructor
 // arity/shape against Java's reflected constructors (ludeme-reflection.json).
 // Turns per-case compiler debugging into a mechanical list of drifted classes.
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 const REFL = JSON.parse(readFileSync(new URL('./ludeme-reflection.json', import.meta.url), 'utf8'));
 const MAP = JSON.parse(readFileSync(new URL('./java-ts-map.json', import.meta.url), 'utf8'));
 
@@ -49,4 +49,4 @@ report.sort((a,b)=> (a.javaConstructCount-b.javaConstructCount));
 console.log(`checked ${checked} mapped ludeme classes; ${drift} with constructor-arity drift; ${noTs} unmapped`);
 console.log('\nSample drifted classes (tsArity not in javaArities):');
 for (const r of report.slice(0, 20)) console.log(`  ${r.cls} ts=${r.tsArity} java=[${r.javaArities}] construct=${r.javaConstructCount} ${r.file.replace('src/ludemes/','')}`);
-import('node:fs').then(fs=>fs.writeFileSync(new URL('./drift-report.json', import.meta.url), JSON.stringify(report,null,1)));
+writeFileSync(new URL('./drift-report.json', import.meta.url), JSON.stringify(report, null, 1));

@@ -34,6 +34,9 @@ mkdir -p "$LOGDIR"
 baseline_errors() { npx tsc -p tsconfig.json 2>&1 | grep -c "error TS"; }
 
 echo "== codex drift-fixer =="
+# Refresh drift-report.json so candidate selection reflects ALREADY-FIXED classes
+# (avoid re-grinding resolved ones). drift-check writes the report synchronously.
+node tools/parity/drift-check.mjs >/dev/null 2>&1 || true
 BASE=$(baseline_errors)
 echo "baseline tsc errors: $BASE  (must stay <= this)"
 if [ "$BASE" != "0" ]; then echo "WARNING: build not green at baseline ($BASE errors)"; fi
