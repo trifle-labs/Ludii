@@ -179,18 +179,32 @@ export class Compiler {
       }
 
       let consumed: ReturnType<Compiler["consumeArg"]>;
+      const missBeforeProbe = this.deepestMiss;
       try {
         consumed = this.consumeArg(arg, positionalNodes, namedNodes, posIndex, outPositional, outNamed, env);
       } catch (error) {
-        if (arg.optional) return go(argIndex + 1, posIndex, outPositional, outNamed);
+        if (arg.optional) {
+          // Benign probe: a node didn't fit this optional arg and is skipped.
+          // Discard any deepestMiss recorded during the probe so it doesn't mask
+          // the real (required-arg) failure elsewhere.
+          this.deepestMiss = missBeforeProbe;
+          return go(argIndex + 1, posIndex, outPositional, outNamed);
+        }
         throw error;
       }
       if (consumed) {
         const tail = go(argIndex + 1, consumed.posIndex, consumed.positional, consumed.named);
         if (tail) return tail;
+        // Optional arg matched but a later required arg failed: backtrack by
+        // skipping it, but KEEP deepestMiss (the deeper failure is real).
+        if (arg.optional) return go(argIndex + 1, posIndex, outPositional, outNamed);
+        return null;
       }
 
-      if (arg.optional) return go(argIndex + 1, posIndex, outPositional, outNamed);
+      if (arg.optional) {
+        this.deepestMiss = missBeforeProbe; // benign: optional arg didn't match, skip
+        return go(argIndex + 1, posIndex, outPositional, outNamed);
+      }
       return null;
     };
 
