@@ -26,10 +26,10 @@ import type { ThenLike } from "./Moves.js";
  */
 export class BaseMoves extends Moves {
   /**
-   * @java game/rules/play/moves/BaseMoves.java — constructor(Then)
+   * @java game/rules/play/moves/BaseMoves.java — ctor(Then)
    * @param then The subsequents of the moves.
    */
-  public constructor(then: ThenLike | null = null) {
+  public constructor(then: ThenLike | null) {
     super(then);
   }
 

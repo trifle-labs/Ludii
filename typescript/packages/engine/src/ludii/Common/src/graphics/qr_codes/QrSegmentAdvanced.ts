@@ -392,9 +392,18 @@ export class QrSegmentAdvanced {
       "////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////" +
       "/////////////////////////////////////////////w==";
 
-    // Decode the base64 table into a 65536-element array (same as Java's static initializer)
+    // Decode the base64 table into a 65536-element array (same as Java's static initializer).
+    // Java's Base64 decoder ignores non-alphabet characters (whitespace etc.); Node's atob
+    // throws on them, so sanitize to the base64 alphabet first. Guard so a decode hiccup in
+    // this (QR-only, game-irrelevant) table can never crash module load.
     const arr = new Array<number>(1 << 16).fill(-1);
-    const bytes = Uint8Array.from(atob(PACKED_QR_KANJI_TO_UNICODE), (c) => c.charCodeAt(0));
+    let bytes: Uint8Array;
+    try {
+      const clean = PACKED_QR_KANJI_TO_UNICODE.replace(/[^A-Za-z0-9+/=]/g, "");
+      bytes = Uint8Array.from(atob(clean), (c) => c.charCodeAt(0));
+    } catch {
+      return arr;
+    }
     for (let i = 0; i < bytes.length; i += 2) {
       const b0 = bytes[i];
       const b1 = bytes[i + 1];

@@ -11,6 +11,12 @@
  */
 
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../base.js";
+import type { Apply } from "../../rules/play/moves/nonDecision/effect/Apply.js";
+
+export interface RangeLike {
+  readonly minFn: IntFunction;
+  readonly maxFn: IntFunction;
+}
 
 /**
  * Gets all the conditions or effects related to the location between
@@ -28,31 +34,40 @@ export class Between1to1 {
   private readonly before: IntFunction | null;
 
   /** @java Between.range — the range of the middle locations. */
-  private readonly range: [IntFunction, IntFunction] | null;
+  private readonly rangeValue: RangeLike | null;
 
   /** @java Between.after — the distance after the range locations. */
   private readonly after: IntFunction | null;
 
   /** @java Between.effect — the effect to apply on the locations. */
-  private readonly effect: (() => void) | null;
+  private readonly effectValue: Apply | null;
 
   /**
    * @java game/util/moves/Between.java — constructor
    */
-  public constructor(opts: {
-    trail?: IntFunction | null;
-    cond?: BooleanFunction | null;
-    before?: IntFunction | null;
-    range?: [IntFunction, IntFunction] | null;
-    after?: IntFunction | null;
-    effect?: (() => void) | null;
-  }) {
-    this.trail = opts.trail ?? null;
-    this.cond = opts.cond ?? null;
-    this.before = opts.before ?? null;
-    this.range = opts.range ?? null;
-    this.after = opts.after ?? null;
-    this.effect = opts.effect ?? null;
+  public constructor(
+    before: IntFunction | { trail?: IntFunction | null; cond?: BooleanFunction | null; before?: IntFunction | null; range?: RangeLike | [IntFunction, IntFunction] | null; after?: IntFunction | null; effect?: Apply | null } | null,
+    range?: RangeLike | null,
+    after?: IntFunction | null,
+    If?: BooleanFunction | null,
+    trail?: IntFunction | null,
+    effect?: Apply | null
+  ) {
+    if (typeof before === "object" && before !== null && !("eval" in before)) {
+      this.trail = before.trail ?? null;
+      this.cond = before.cond ?? null;
+      this.before = before.before ?? null;
+      this.rangeValue = normaliseRange(before.range ?? null);
+      this.after = before.after ?? null;
+      this.effectValue = before.effect ?? null;
+      return;
+    }
+    this.trail = trail ?? null;
+    this.cond = If ?? null;
+    this.before = before ?? null;
+    this.rangeValue = range ?? null;
+    this.after = after ?? null;
+    this.effectValue = effect ?? null;
   }
 
   /** @java Between.trail() */
@@ -72,7 +87,7 @@ export class Between1to1 {
 
   /** @java Between.range() */
   public rangeFn(): [IntFunction, IntFunction] | null {
-    return this.range;
+    return this.rangeValue === null ? null : [this.rangeValue.minFn, this.rangeValue.maxFn];
   }
 
   /** @java Between.after() */
@@ -81,7 +96,23 @@ export class Between1to1 {
   }
 
   /** @java Between.effect() */
-  public effectFn(): (() => void) | null {
-    return this.effect;
+  public range(): RangeLike | null {
+    return this.rangeValue;
   }
+
+  /** @java Between.effect() */
+  public effectFn(): Apply | null {
+    return this.effectValue;
+  }
+
+  /** @java Between.effect() */
+  public effect(): Apply | null {
+    return this.effectValue;
+  }
+}
+
+function normaliseRange(range: RangeLike | [IntFunction, IntFunction] | null): RangeLike | null {
+  if (range === null) return null;
+  if (Array.isArray(range)) return { minFn: range[0], maxFn: range[1] };
+  return range;
 }

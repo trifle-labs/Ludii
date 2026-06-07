@@ -36,3 +36,22 @@ Port `ArgClass.compile()` + `Arg.compile()`/`ArgTerminal` faithfully:
 ## Key faithfulness rules
 - The dispatch + arg-binding is DATA-DRIVEN by ludeme-reflection.json (Java's own reflection), NOT by hand-coded per-keyword logic. The only TS-specific glue is instantiation via JAVA_TS_CTORS (because TS lacks reflection) — everything else mirrors ArgClass.java.
 - When TS diverges from Java, instrument/inspect Java (it runs) to see its resolution and fix TS to match. Do not invent behavior.
+
+## Update 2026-06-07 (PM): ROOT CAUSE PROVEN — instantiation/constructor drift, not the matcher
+
+Coverage this session: **15% → 32%** (60-game sample), build green. Key findings (empirical):
+
+1. **A static-initializer crash masked everything.** `Common/.../qr_codes/QrSegmentAdvanced.ts` decoded a base64 kanji table with `atob` at module load; Node's `atob` is stricter than Java's Base64 (rejects whitespace) and threw, killing the coverage harness. Fixed (sanitize + guard). 15%→20%.
+2. **The deepest-miss diagnostic was lying.** It surfaced benign stale probes (e.g. "array (FR) did not match AbsoluteDirection" — an `@Or` alternative that a sibling combo satisfied) instead of the true blocker. Added `deepestInst` tracker in `ArgCompiler.ts`: when args bind to a Java constructor but the mapped TS class can't be instantiated (ctor-arity drift / no static `construct(n)` / no mapping / ctor throws), that is recorded and OUTRANKS ordinary match-probe `note()`s (and is snapshot/restored in `compileMaybe` like `deepest`). The top failure reasons immediately became real and frequency-ranked.
+3. **Therefore the holistic root cause = constructor drift.** The matcher binds args to Java parameter shapes correctly; INSTANTIATION fails because many ported TS classes have bespoke/drifted constructors that don't accept Java's positional args. This is exactly "what needs to be PORTED": faithful Java-positional constructors. Reflection libraries do NOT fix this (they'd reflect the drifted TS ctors); they're a later self-containment/maintenance win.
+4. **Proven by targeted fixes:** `Directions1to1Static` ctor → Java's `(@Or AbsoluteDirection, @Or AbsoluteDirection[])` (20%→30%, 11 games); `Array1to1` → single 1-arg ctor matching Java's two 1-arg ctors (30%→32%).
+
+NOTE: coverage = COMPILE coverage (compileGame returns non-null). The int/region **eager-vs-lazy representation seam** (ArgCompiler hands raw numbers where ludemes expect IntFunction objects) is a separate BEHAVIORAL-parity concern, not a compile blocker.
+
+### Frequency-ranked worklist (drive the grind by this; re-run `node tools/proof/argcompiler-coverage.mjs`)
+- **12× `game.rules.start.set.Set`** — unmapped; needs static `construct*` dispatchers routing to variants. DEEP: the whole `start/set/*` subsystem is drifted to EAGER ctors (`SetCount1to1(sites:number[], count:number)`) vs Java's lazy `(IntFunction, @Opt SiteType, @Or IntFunction, @Or RegionFunction)`. Re-port subsystem to lazy + add dispatcher.
+- **6× `Sites`/`Pieces` → java.lang.String** — `(count Sites in:…)`/`(no Pieces …)`. The CountSiteType/NoPieceType enums ARE dump-flagged; failure is the 8-param `@Opt/@Or/@Or2/@Name` static `construct` on `functions.ints.count.Count` not binding + needing a TS static `construct(8)`. Deep-ish (complex @Or binding + static method).
+- **4× `(sites)` as ForEachTeamType**, **2× `(id)` as String** — candidate-resolution dead-ends (verify not stale probes).
+- single-class drift fixes (like Directions/Array, usually shallow): `functions.graph.operators.Add` (1≠8), `effect.set.Set` (construct/6), etc.
+
+Sub-agents (workflow + Agent tool, even model:opus) are Sonnet-capped until **Jun 10 3pm**; Codex produces nothing on these complex ports. So bulk parallel constructor re-port resumes Jun 10; solo Opus grinding works now (each fix high-leverage, see numbers).

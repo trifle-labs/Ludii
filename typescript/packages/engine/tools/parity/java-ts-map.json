@@ -1015,6 +1015,10 @@
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Effect.ts",
   "cls": "Effect"
  },
+ "game.rules.play.moves.nonDecision.effect.FromTo": {
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/FromToFaithful.ts",
+  "cls": "FromToFaithful"
+ },
  "game.rules.play.moves.nonDecision.effect.Surround": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Surround.ts",
   "cls": "Surround"
@@ -1032,16 +1036,20 @@
   "cls": "Attract1to1"
  },
  "game.rules.play.moves.nonDecision.effect.Hop": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Hop.ts",
-  "cls": "Hop"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/HopFaithful.ts",
+  "cls": "HopFaithful"
  },
  "game.rules.play.moves.nonDecision.effect.Select": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Select.ts",
   "cls": "Select"
  },
  "game.rules.play.moves.nonDecision.effect.Shoot": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Shoot.ts",
-  "cls": "Shoot"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/ShootFaithful.ts",
+  "cls": "ShootFaithful"
+ },
+ "game.rules.play.moves.nonDecision.effect.Promote": {
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/PromoteFaithful.ts",
+  "cls": "PromoteFaithful"
  },
  "game.rules.play.moves.nonDecision.effect.Deal": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Deal.ts",
@@ -1052,24 +1060,32 @@
   "cls": "Flip"
  },
  "game.rules.play.moves.nonDecision.effect.Intervene": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Intervene.ts",
-  "cls": "Intervene"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/InterveneFaithful.ts",
+  "cls": "InterveneFaithful"
+ },
+ "game.rules.play.moves.nonDecision.effect.Remove": {
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/RemoveFaithful.ts",
+  "cls": "RemoveFaithful"
  },
  "game.rules.play.moves.nonDecision.effect.Vote": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Vote.ts",
   "cls": "Vote"
  },
  "game.rules.play.moves.nonDecision.effect.Custodial": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Custodial.ts",
-  "cls": "Custodial"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/CustodialFaithful.ts",
+  "cls": "CustodialFaithful"
  },
  "game.rules.play.moves.nonDecision.effect.Directional": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Directional1to1.ts",
   "cls": "Directional1to1"
  },
  "game.rules.play.moves.nonDecision.effect.Step": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Step.ts",
-  "cls": "Step"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/StepFaithful.ts",
+  "cls": "StepFaithful"
+ },
+ "game.rules.play.moves.nonDecision.effect.Add": {
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/AddFaithful.ts",
+  "cls": "AddFaithful"
  },
  "game.rules.play.moves.nonDecision.effect.Then": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Then.ts",
@@ -1116,8 +1132,8 @@
   "cls": "MoveAgain1to1"
  },
  "game.rules.play.moves.nonDecision.effect.Slide": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Slide1to1.ts",
-  "cls": "Slide1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/SlideFaithful.ts",
+  "cls": "SlideFaithful"
  },
  "game.rules.play.moves.nonDecision.effect.Random": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Random.ts",
@@ -1163,10 +1179,6 @@
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/requirement/Satisfy1to1.ts",
   "cls": "Satisfy1to1"
  },
- "game.rules.play.moves.nonDecision.effect.Promote": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Promote.ts",
-  "cls": "Promote"
- },
  "game.rules.play.moves.nonDecision.effect.Propose": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Propose.ts",
   "cls": "Propose"
@@ -1187,17 +1199,13 @@
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/take/control/TakeControl.ts",
   "cls": "TakeControl"
  },
- "game.rules.play.moves.nonDecision.effect.Remove": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Remove.ts",
-  "cls": "Remove"
- },
  "game.rules.play.moves.nonDecision.effect.Enclose": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Enclose.ts",
   "cls": "Enclose"
  },
- "game.rules.play.moves.nonDecision.effect.FromTo": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/FromTo.ts",
-  "cls": "FromTo"
+ "game.rules.play.moves.nonDecision.effect.Leap": {
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/LeapFaithful.ts",
+  "cls": "LeapFaithful"
  },
  "game.rules.play.moves.nonDecision.effect.set.Set": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/set/Set.ts",
@@ -1258,14 +1266,6 @@
  "game.rules.play.moves.nonDecision.effect.set.player.SetValuePlayer": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetValuePlayer.ts",
   "cls": "SetValuePlayer"
- },
- "game.rules.play.moves.nonDecision.effect.Add": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Add.ts",
-  "cls": "Add"
- },
- "game.rules.play.moves.nonDecision.effect.Leap": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Leap.ts",
-  "cls": "Leap"
  },
  "game.rules.play.moves.nonDecision.effect.Pass": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Pass1to1.ts",

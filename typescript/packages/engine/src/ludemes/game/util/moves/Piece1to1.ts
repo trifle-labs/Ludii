@@ -40,12 +40,12 @@ export class Piece1to1 {
   /**
    * @java Piece.name — the name of the component (string, before Id resolution).
    */
-  private readonly nameComponent: string | null;
+  private readonly nameComponentValue: string | null;
 
   /**
    * @java Piece.names — the names of the components.
    */
-  private readonly nameComponents: string[] | null;
+  private readonly nameComponentsValue: string[] | null;
 
   /**
    * @java game/util/moves/Piece.java — constructor
@@ -53,18 +53,26 @@ export class Piece1to1 {
    * Exactly one of nameComponent, componentFn, nameComponents, componentsFn
    * must be non-null (Java enforces this with an assertion).
    */
-  public constructor(opts: {
-    nameComponent?: string | null;
-    componentFn?: IntFunction | null;
-    nameComponents?: string[] | null;
-    componentsFn?: IntFunction[] | null;
-    stateFn?: IntFunction | null;
-  }) {
-    this.nameComponent = opts.nameComponent ?? null;
-    this.componentFn = opts.componentFn ?? null;
-    this.nameComponents = opts.nameComponents ?? null;
-    this.componentsFn = opts.componentsFn ?? null;
-    this.stateFn = opts.stateFn ?? null;
+  public constructor(
+    nameComponent: string | { nameComponent?: string | null; componentFn?: IntFunction | null; nameComponents?: string[] | null; componentsFn?: IntFunction[] | null; stateFn?: IntFunction | null } | null,
+    component?: IntFunction | null,
+    nameComponents?: string[] | null,
+    components?: IntFunction[] | null,
+    state?: IntFunction | null
+  ) {
+    if (typeof nameComponent === "object" && nameComponent !== null && !("eval" in nameComponent)) {
+      this.nameComponentValue = nameComponent.nameComponent ?? null;
+      this.componentFn = nameComponent.componentFn ?? null;
+      this.nameComponentsValue = nameComponent.nameComponents ?? null;
+      this.componentsFn = nameComponent.componentsFn ?? null;
+      this.stateFn = nameComponent.stateFn ?? null;
+      return;
+    }
+    this.nameComponentValue = typeof nameComponent === "string" ? nameComponent : null;
+    this.componentFn = component ?? null;
+    this.nameComponentsValue = nameComponents ?? null;
+    this.componentsFn = components ?? null;
+    this.stateFn = state ?? null;
   }
 
   /** @java Piece.component() */
@@ -84,11 +92,21 @@ export class Piece1to1 {
 
   /** @java Piece.nameComponent() */
   public getName(): string | null {
-    return this.nameComponent;
+    return this.nameComponentValue;
+  }
+
+  /** @java Piece.nameComponent() */
+  public nameComponent(): string | null {
+    return this.nameComponentValue;
   }
 
   /** @java Piece.nameComponents() */
   public getNames(): string[] | null {
-    return this.nameComponents;
+    return this.nameComponentsValue;
+  }
+
+  /** @java Piece.nameComponents() */
+  public nameComponents(): string[] | null {
+    return this.nameComponentsValue;
   }
 }

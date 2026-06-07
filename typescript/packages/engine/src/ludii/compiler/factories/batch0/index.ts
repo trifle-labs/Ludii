@@ -140,8 +140,8 @@ export function registerBatch0(registry: LudemeRegistry): void {
   registry.registerLudeme("array:array", (b): Array1to1 => {
     const firstArg = b.clause.args[0]?.symbol;
     const value = requirePos(b, 0);
-    if (firstArg === "sites") return new Array1to1(toRegionFunction(value), null);
-    return new Array1to1(null, asArray(value).map(toIntFunction));
+    if (firstArg === "sites") return new Array1to1(toRegionFunction(value));
+    return new Array1to1(asArray(value).map(toIntFunction));
   });
 
   registry.registerLudeme("arrayValue:arrayValue", (b): ArrayValue =>
@@ -497,7 +497,7 @@ function toRegionFunction(value: unknown): RegionFunction {
 
 function toIntArrayFunction(value: unknown): IntArrayFunction {
   if (hasEval(value)) return value as IntArrayFunction;
-  if (Array.isArray(value)) return new Array1to1(null, value.map(toIntFunction));
+  if (Array.isArray(value)) return new Array1to1(value.map(toIntFunction));
   throw new Error(`factory: expected IntArrayFunction-compatible value, got ${String(value)}`);
 }
 

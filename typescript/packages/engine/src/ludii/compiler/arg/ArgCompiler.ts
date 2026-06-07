@@ -122,6 +122,7 @@ export class ArgCompiler {
     };
     this.lastDivergence = null;
     this.deepest = null;
+    this.deepestInst = null;
     this.depth = 0;
     this.resolveTrace = [];
     const result = this.compileMaybe(findGameNode(node), expectedJavaTypes.map(parseJavaType), compileEnv);
@@ -143,11 +144,15 @@ export class ArgCompiler {
   ): unknown | null {
     this.depth++;
     const snap = this.deepest;
+    const snapInst = this.deepestInst;
     const r = this.compileMaybeInner(node, expectedTypes, env);
     this.depth--;
     // Discard misses recorded while compiling a subtree that ultimately
     // succeeded (benign probes), so `deepest` reflects only the failed subtree.
-    if (r !== null) this.deepest = snap;
+    if (r !== null) {
+      this.deepest = snap;
+      this.deepestInst = snapInst;
+    }
     return r;
   }
 
@@ -454,7 +459,10 @@ export class ArgCompiler {
       construct?: (...args: unknown[]) => unknown;
       length: number;
     } | undefined;
-    if (!ctor) return null;
+    if (!ctor) {
+      this.noteInstFail(`cannot instantiate ${info.className}: no TS constructor mapped`);
+      return null;
+    }
 
     try {
       if (info.executable.kind === "construct") {
@@ -479,11 +487,16 @@ export class ArgCompiler {
             if (result !== null && result !== undefined) return result;
           } catch { /* try next construct* overload */ }
         }
+        this.noteInstFail(`cannot instantiate ${info.className}: no static construct(${info.args.length}) overload (Java construct arity drift)`);
         return null;
       }
-      if (ctor.length !== info.args.length) return null;
+      if (ctor.length !== info.args.length) {
+        this.noteInstFail(`cannot instantiate ${info.className}: TS ctor arity ${ctor.length} != bound args ${info.args.length} (constructor drift)`);
+        return null;
+      }
       return new ctor(...info.args);
-    } catch {
+    } catch (e) {
+      this.noteInstFail(`cannot instantiate ${info.className}: constructor threw (${String((e as Error)?.message ?? e).slice(0, 80)})`);
       return null;
     }
   }
@@ -567,10 +580,25 @@ export class ArgCompiler {
   }
 
   private deepest: { depth: number; msg: string } | null = null;
+  /**
+   * Instantiation-drift failures: the args bound to a Java constructor fine, but
+   * the mapped TS class could not be built (e.g. its ported constructor arity
+   * differs from Java's — constructor drift). These are HIGH-signal real blockers
+   * and outrank ordinary type-match probes (which are often benign stale misses
+   * from alternative @Or/@Opt combos that a sibling later satisfied).
+   */
+  private deepestInst: { depth: number; msg: string } | null = null;
   private depth = 0;
   /** Per-compile resolution trace (token -> resolved Java class), for oracle diff. */
   public resolveTrace: Array<{ token: string; cls: string }> = [];
-  private deepestMsg(): string | null { return this.deepest ? this.deepest.msg : null; }
+  private deepestMsg(): string | null {
+    return this.deepestInst ? this.deepestInst.msg : this.deepest ? this.deepest.msg : null;
+  }
+  private noteInstFail(message: string): void {
+    if (this.deepestInst === null || this.depth >= this.deepestInst.depth)
+      this.deepestInst = { depth: this.depth, msg: message };
+    this.lastDivergence = message;
+  }
   private note(message: string): void {
     // Deepest-by-recursion-depth wins, so the recorded divergence is the true
     // (deepest) bind failure rather than a shallow/benign sibling probe.

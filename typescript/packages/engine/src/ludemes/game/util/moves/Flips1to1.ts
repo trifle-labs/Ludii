@@ -17,7 +17,7 @@ export class Flips1to1 {
   private readonly flipB: number;
 
   /**
-   * @java game/util/moves/Flips.java — constructor(Integer flipA, Integer flipB)
+   * @java game/util/moves/Flips.java — ctor(Integer flipA, Integer flipB)
    */
   public constructor(flipA: number, flipB: number) {
     this.flipA = flipA;

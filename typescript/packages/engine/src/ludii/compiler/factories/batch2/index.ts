@@ -557,9 +557,9 @@ function makeDirections(b: ArgBundle): DirectionsFunction {
   if (stringAt(b, 0) === "Random") deferred("directions Random");
   if (b.named.has("from") || b.named.has("to")) deferred("directions from/to");
   const names = flatten(b.positional).filter((v): v is string => typeof v === "string");
-  if (names.length === 0) return new Directions1to1Static(["Adjacent"]);
+  if (names.length === 0) return new Directions1to1Static(null, ["Adjacent"]);
   if (!names.every((name) => ABSOLUTE_DIRECTIONS.has(name))) deferred("directions relative");
-  return new Directions1to1Static(names);
+  return new Directions1to1Static(null, names);
 }
 
 function makeDomino(b: ArgBundle): Domino {
@@ -692,7 +692,7 @@ function makeStep(b: ArgBundle): Step {
     rule: to?.condFn() ?? trueBool(),
     sideEffect: null,
     stack: booleanNamedValue(b, "stack") ?? false,
-    dirnChoice: firstDirectionsFunction(b) ?? new Directions1to1Static(["Adjacent"]),
+    dirnChoice: firstDirectionsFunction(b) ?? new Directions1to1Static(null, ["Adjacent"]),
     then: null,
   });
 }
@@ -976,7 +976,7 @@ function firstDirectionName(b: ArgBundle): string | null {
 }
 
 function directionFromName(name: string | null): DirectionsFunction | null {
-  return name === null ? null : new Directions1to1Static([name]);
+  return name === null ? null : new Directions1to1Static(name, null);
 }
 
 function requireGraphFunction(b: ArgBundle, index: number): GraphFunction {

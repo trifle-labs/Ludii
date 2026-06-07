@@ -1,60 +1,5 @@
 [
  {
-  "jc": "game.util.moves.Piece",
-  "cls": "Piece1to1",
-  "file": "src/ludemes/game/util/moves/Piece1to1.ts",
-  "tsArity": 1,
-  "javaArities": [
-   5
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.util.moves.From",
-  "cls": "From1to1",
-  "file": "src/ludemes/game/util/moves/From1to1.ts",
-  "tsArity": 1,
-  "javaArities": [
-   5
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.util.moves.To",
-  "cls": "To1to1",
-  "file": "src/ludemes/game/util/moves/To1to1.ts",
-  "tsArity": 1,
-  "javaArities": [
-   7
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.util.moves.Flips",
-  "cls": "Flips1to1",
-  "file": "src/ludemes/game/util/moves/Flips1to1.ts",
-  "tsArity": 3,
-  "javaArities": [
-   2
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.util.moves.Between",
-  "cls": "Between1to1",
-  "file": "src/ludemes/game/util/moves/Between1to1.ts",
-  "tsArity": 1,
-  "javaArities": [
-   6
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
   "jc": "game.util.graph.Situation",
   "cls": "RCL",
   "file": "src/ludemes/game/util/graph/Situation.ts",
@@ -604,67 +549,12 @@
   "hasConstructStatics": false
  },
  {
-  "jc": "game.rules.play.moves.nonDecision.effect.Intervene",
-  "cls": "Intervene",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Intervene.ts",
-  "tsArity": 1,
-  "javaArities": [
-   5
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.rules.play.moves.nonDecision.effect.Leap",
-  "cls": "Leap",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Leap.ts",
-  "tsArity": 1,
-  "javaArities": [
-   6
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.rules.play.moves.nonDecision.effect.Shoot",
-  "cls": "Shoot",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Shoot.ts",
-  "tsArity": 1,
-  "javaArities": [
-   6
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.rules.play.moves.nonDecision.effect.Hop",
-  "cls": "Hop",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Hop.ts",
-  "tsArity": 1,
-  "javaArities": [
-   6
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
   "jc": "game.rules.play.moves.nonDecision.effect.Random",
   "cls": "Random",
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Random.ts",
   "tsArity": 4,
   "javaArities": [
    2
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.rules.play.moves.nonDecision.effect.Remove",
-  "cls": "Remove",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Remove.ts",
-  "tsArity": 1,
-  "javaArities": [
-   7
   ],
   "javaConstructCount": 0,
   "hasConstructStatics": false
@@ -681,34 +571,12 @@
   "hasConstructStatics": false
  },
  {
-  "jc": "game.rules.play.moves.nonDecision.effect.Custodial",
-  "cls": "Custodial",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Custodial.ts",
-  "tsArity": 1,
-  "javaArities": [
-   5
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
   "jc": "game.rules.play.moves.nonDecision.effect.Flip",
   "cls": "Flip",
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Flip.ts",
   "tsArity": 4,
   "javaArities": [
    3
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.rules.play.moves.nonDecision.effect.Add",
-  "cls": "Add",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Add.ts",
-  "tsArity": 3,
-  "javaArities": [
-   5
   ],
   "javaConstructCount": 0,
   "hasConstructStatics": false
@@ -891,34 +759,12 @@
   "hasConstructStatics": false
  },
  {
-  "jc": "game.rules.play.moves.nonDecision.effect.Step",
-  "cls": "Step",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Step.ts",
-  "tsArity": 1,
-  "javaArities": [
-   5
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
   "jc": "game.rules.play.moves.nonDecision.effect.take.control.TakeControl",
   "cls": "TakeControl",
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/take/control/TakeControl.ts",
   "tsArity": 9,
   "javaArities": [
    8
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.rules.play.moves.nonDecision.effect.Promote",
-  "cls": "Promote",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Promote.ts",
-  "tsArity": 8,
-  "javaArities": [
-   6
   ],
   "javaConstructCount": 0,
   "hasConstructStatics": false
@@ -1117,17 +963,6 @@
   "tsArity": 1,
   "javaArities": [
    3
-  ],
-  "javaConstructCount": 0,
-  "hasConstructStatics": false
- },
- {
-  "jc": "game.rules.play.moves.nonDecision.effect.FromTo",
-  "cls": "FromTo",
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/FromTo.ts",
-  "tsArity": 1,
-  "javaArities": [
-   7
   ],
   "javaConstructCount": 0,
   "hasConstructStatics": false

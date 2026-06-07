@@ -46,8 +46,20 @@ const ABSOLUTE_DIRECTION_NAMES = new Set<string>([
 export class Directions1to1Static implements DirectionsFunction {
   private readonly names: readonly string[];
 
-  public constructor(names: readonly string[]) {
-    this.names = names;
+  /**
+   * @java Directions.java:106-123 — Directions(@Or AbsoluteDirection absoluteDirection,
+   * @Or AbsoluteDirection[] absoluteDirections). AbsoluteDirection enum constants are
+   * represented here by their name strings. Mirrors Java:
+   * `this.absoluteDirections = (absoluteDirections != null) ? absoluteDirections
+   *   : new AbsoluteDirection[]{ absoluteDirection }`.
+   */
+  public constructor(
+    absoluteDirection: string | null,
+    absoluteDirections: readonly string[] | null,
+  ) {
+    this.names = (absoluteDirections != null)
+      ? absoluteDirections
+      : (absoluteDirection != null ? [absoluteDirection] : []);
   }
 
   /** @java Directions.java — convertToAbsolute when absoluteDirections != null (precomputed) */
@@ -171,9 +183,9 @@ registerDirections1to1(
 
     if (names.length === 0) {
       // Fallback: default to Adjacent (Java default for empty relativeDirections list)
-      return new Directions1to1Static(["Adjacent"]);
+      return new Directions1to1Static(null, ["Adjacent"]);
     }
 
-    return new Directions1to1Static(names);
+    return new Directions1to1Static(null, names);
   },
 );
