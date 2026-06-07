@@ -96,7 +96,7 @@ public class DumpReflection
 		{
 			final Parameter p = params[i];
 			if (i > 0) sb.append(", ");
-			sb.append("{ \"type\": ").append(quote(p.getType().getName()));
+			sb.append("{ \"name\": ").append(quote(p.getName())).append(", \"type\": ").append(quote(p.getType().getName()));
 			sb.append(", \"array\": ").append(p.getType().isArray());
 			final Set<String> anns = new LinkedHashSet<>();
 			for (final Annotation a : p.getAnnotations())

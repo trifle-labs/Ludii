@@ -35,6 +35,7 @@ export interface ArgCompilerEnv extends CompilerEnv {
 }
 
 interface ReflectionParam {
+  readonly name?: string;
   readonly type: string;
   readonly array: boolean;
   readonly ann: readonly string[];
@@ -449,6 +450,10 @@ export class ArgCompiler {
     if (cached) return cached;
 
     const params = executable.params;
+    // NOTE: .lud named-args use the GRAMMAR LABEL (count:, if:), which can differ
+    // from the raw reflected Java parameter identifier — so we derive labels from
+    // the grammar clause below rather than from p.name. (Using p.name regressed
+    // coverage 15%->3%.)
     const nulls = params.map(() => null as string | null);
     const rule = this.grammar.get(meta.label);
     if (!rule) {
