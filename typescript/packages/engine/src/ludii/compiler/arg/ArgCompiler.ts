@@ -123,6 +123,7 @@ export class ArgCompiler {
     this.lastDivergence = null;
     this.deepest = null;
     this.depth = 0;
+    this.resolveTrace = [];
     const result = this.compileMaybe(findGameNode(node), expectedJavaTypes.map(parseJavaType), compileEnv);
     if (result === null) {
       throw new Error(this.deepestMsg() ?? this.lastDivergence ?? `ArgCompiler: could not compile ${describeNode(node)} as ${expectedJavaTypes.join(" | ")}`);
@@ -188,7 +189,10 @@ export class ArgCompiler {
 
     for (const candidate of candidates) {
       const object = this.compileCandidate(node, candidate, env);
-      if (object !== null) return object;
+      if (object !== null) {
+        this.resolveTrace.push({ token: head, cls: candidate.className });
+        return object;
+      }
     }
 
     this.note(
@@ -333,9 +337,18 @@ export class ArgCompiler {
       if (expectedTypes.some((type) => type.dims === 0 && numericFunctionExpected(type.name, integer))) {
         return value;
       }
+      // Java's ArgTerminal coerces a numeric token to the EXPECTED constant type,
+      // so an integer literal also satisfies float/dim function params (FloatConstant)
+      // and raw Float/Double/long. Order = most-specific first; isAssignable picks
+      // the one matching the expected type.
       const terminalClasses = integer
-        ? ["game.functions.ints.IntConstant", "game.functions.dim.DimConstant", "java.lang.Integer", "int"]
-        : ["game.functions.floats.FloatConstant", "java.lang.Float", "float"];
+        ? [
+            "game.functions.ints.IntConstant", "game.functions.dim.DimConstant",
+            "game.functions.floats.FloatConstant",
+            "java.lang.Integer", "int", "long", "java.lang.Long",
+            "java.lang.Float", "float", "java.lang.Double", "double",
+          ]
+        : ["game.functions.floats.FloatConstant", "game.functions.dim.DimConstant", "java.lang.Float", "float", "java.lang.Double", "double"];
       for (const className of terminalClasses) {
         for (const expected of expectedTypes) {
           if (expected.dims !== 0) continue;
@@ -555,6 +568,8 @@ export class ArgCompiler {
 
   private deepest: { depth: number; msg: string } | null = null;
   private depth = 0;
+  /** Per-compile resolution trace (token -> resolved Java class), for oracle diff. */
+  public resolveTrace: Array<{ token: string; cls: string }> = [];
   private deepestMsg(): string | null { return this.deepest ? this.deepest.msg : null; }
   private note(message: string): void {
     // Deepest-by-recursion-depth wins, so the recorded divergence is the true

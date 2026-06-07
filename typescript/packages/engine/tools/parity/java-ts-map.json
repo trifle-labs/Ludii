@@ -1,7 +1,7 @@
 {
  "other.state.State": {
-  "file": "src/ludemes/other/state/State.ts",
-  "cls": "State1to1"
+  "file": "src/state.ts",
+  "cls": "State"
  },
  "game.Game": {
   "file": "src/ludemes/Game1to1.ts",
@@ -24,16 +24,16 @@
   "cls": "MoveUtilities"
  },
  "other.move.Move": {
-  "file": "src/move.ts",
-  "cls": "Move"
+  "file": "src/ludemes/other/move/LudiiMove.ts",
+  "cls": "LudiiMove"
  },
  "other.move.MoveScore": {
   "file": "src/ludemes/other/move/MoveScore.ts",
   "cls": "MoveScore"
  },
  "other.topology.Topology": {
-  "file": "src/topology.ts",
-  "cls": "FlatTopology"
+  "file": "src/ludemes/other/topology/Topology.ts",
+  "cls": "Topology"
  },
  "other.topology.TopologyElement": {
   "file": "src/ludemes/other/topology/TopologyElement.ts",
@@ -88,7 +88,7 @@
   "cls": "EvalContext"
  },
  "other.context.Context": {
-  "file": "src/context.ts",
+  "file": "src/ludemes/other/context/Context.ts",
   "cls": "Context"
  },
  "other.context.InformationContext": {
@@ -136,7 +136,7 @@
   "cls": "AuxilTrialData"
  },
  "other.trial.Trial": {
-  "file": "src/trial.ts",
+  "file": "src/ludemes/other/trial/Trial.ts",
   "cls": "Trial"
  },
  "other.trial.MatchTrial": {
@@ -348,7 +348,7 @@
   "cls": "CopyOnWriteState"
  },
  "other.action.move.ActionMoveN": {
-  "file": "src/action/action-move-n.ts",
+  "file": "src/ludemes/other/action/move/ActionMoveN.ts",
   "cls": "ActionMoveN"
  },
  "other.action.move.move.ActionMoveLevelFromLevelTo": {
@@ -356,11 +356,11 @@
   "cls": "ActionMoveLevelFromLevelTo"
  },
  "other.action.move.move.ActionMoveLevelFrom": {
-  "file": "src/action/action-move-level.ts",
+  "file": "src/ludemes/other/action/move/move/ActionMoveLevelFrom.ts",
   "cls": "ActionMoveLevelFrom"
  },
  "other.action.move.move.ActionMoveTopPiece": {
-  "file": "src/action/action-move-top-piece.ts",
+  "file": "src/ludemes/other/action/move/move/ActionMoveTopPiece.ts",
   "cls": "ActionMoveTopPiece"
  },
  "other.action.move.move.ActionMoveLevelTo": {
@@ -368,43 +368,43 @@
   "cls": "ActionMoveLevelTo"
  },
  "other.action.move.move.ActionMoveStacking": {
-  "file": "src/action/action-move-stacking.ts",
+  "file": "src/ludemes/other/action/move/move/ActionMoveStacking.ts",
   "cls": "ActionMoveStacking"
  },
  "other.action.move.remove.ActionRemoveNonApplied": {
-  "file": "src/action/action-remove-non-applied.ts",
+  "file": "src/ludemes/other/action/move/remove/ActionRemoveNonApplied.ts",
   "cls": "ActionRemoveNonApplied"
  },
  "other.action.move.remove.ActionRemoveTopPiece": {
-  "file": "src/action/action-remove-top-piece.ts",
+  "file": "src/ludemes/other/action/move/remove/ActionRemoveTopPiece.ts",
   "cls": "ActionRemoveTopPiece"
  },
  "other.action.move.remove.ActionRemoveLevel": {
-  "file": "src/action/action-remove-level.ts",
+  "file": "src/ludemes/other/action/move/remove/ActionRemoveLevel.ts",
   "cls": "ActionRemoveLevel"
  },
  "other.action.move.ActionCopy": {
-  "file": "src/action/action-copy.ts",
+  "file": "src/ludemes/other/action/move/ActionCopy.ts",
   "cls": "ActionCopy"
  },
  "other.action.move.ActionInsert": {
-  "file": "src/action/action-insert.ts",
+  "file": "src/ludemes/other/action/move/ActionInsert.ts",
   "cls": "ActionInsert"
  },
  "other.action.move.ActionSelect": {
-  "file": "src/action/action-select.ts",
+  "file": "src/ludemes/other/action/move/ActionSelect.ts",
   "cls": "ActionSelect"
  },
  "other.action.move.ActionSubStackMove": {
-  "file": "src/action/action-stack-move.ts",
+  "file": "src/ludemes/other/action/move/ActionSubStackMove.ts",
   "cls": "ActionSubStackMove"
  },
  "other.action.move.ActionAdd": {
-  "file": "src/action/action-add.ts",
+  "file": "src/ludemes/other/action/move/ActionAdd.ts",
   "cls": "ActionAdd"
  },
  "other.action.move.ActionPromote": {
-  "file": "src/action/action-promote.ts",
+  "file": "src/ludemes/other/action/move/ActionPromote.ts",
   "cls": "ActionPromote"
  },
  "other.action.hidden.ActionSetHiddenWhat": {
@@ -420,7 +420,7 @@
   "cls": "ActionSetHiddenWho"
  },
  "other.action.hidden.ActionSetHidden": {
-  "file": "src/action/action-set-hidden.ts",
+  "file": "src/ludemes/other/action/hidden/ActionSetHidden.ts",
   "cls": "ActionSetHidden"
  },
  "other.action.hidden.ActionSetHiddenValue": {
@@ -436,135 +436,135 @@
   "cls": "ActionSetHiddenState"
  },
  "other.action.puzzle.ActionReset": {
-  "file": "src/action/action-reset.ts",
+  "file": "src/ludemes/other/action/puzzle/ActionReset.ts",
   "cls": "ActionReset"
  },
  "other.action.puzzle.ActionToggle": {
-  "file": "src/action/action-toggle.ts",
+  "file": "src/ludemes/other/action/puzzle/ActionToggle.ts",
   "cls": "ActionToggle"
  },
  "other.action.puzzle.ActionSet": {
-  "file": "src/action/action-set-value-puzzle.ts",
+  "file": "src/ludemes/other/action/puzzle/ActionSet.ts",
   "cls": "ActionSet"
  },
  "other.action.die.ActionUseDie": {
-  "file": "src/action/action-use-die.ts",
+  "file": "src/ludemes/other/action/die/ActionUseDie.ts",
   "cls": "ActionUseDie"
  },
  "other.action.die.ActionUpdateDice": {
-  "file": "src/action/action-update-dice.ts",
+  "file": "src/ludemes/other/action/die/ActionUpdateDice.ts",
   "cls": "ActionUpdateDice"
  },
  "other.action.die.ActionSetDiceAllEqual": {
-  "file": "src/action/action-set-dice-all-equal.ts",
+  "file": "src/ludemes/other/action/die/ActionSetDiceAllEqual.ts",
   "cls": "ActionSetDiceAllEqual"
  },
  "other.action.cards.ActionSetTrumpSuit": {
-  "file": "src/action/action-set-trump-suit.ts",
+  "file": "src/ludemes/other/action/cards/ActionSetTrumpSuit.ts",
   "cls": "ActionSetTrumpSuit"
  },
  "other.action.graph.ActionSetPhase": {
-  "file": "src/action/action-set-phase.ts",
+  "file": "src/ludemes/other/action/graph/ActionSetPhase.ts",
   "cls": "ActionSetPhase"
  },
  "other.action.graph.ActionSetCost": {
-  "file": "src/action/action-set-cost.ts",
+  "file": "src/ludemes/other/action/graph/ActionSetCost.ts",
   "cls": "ActionSetCost"
  },
  "other.action.others.ActionSwap": {
-  "file": "src/action/action-swap.ts",
+  "file": "src/ludemes/other/action/others/ActionSwap.ts",
   "cls": "ActionSwap"
  },
  "other.action.others.ActionForfeit": {
-  "file": "src/action/action-forfeit.ts",
+  "file": "src/ludemes/other/action/others/ActionForfeit.ts",
   "cls": "ActionForfeit"
  },
  "other.action.others.ActionPass": {
-  "file": "src/action/action-pass.ts",
+  "file": "src/ludemes/other/action/others/ActionPass.ts",
   "cls": "ActionPass"
  },
  "other.action.others.ActionSetValueOfPlayer": {
-  "file": "src/action/action-set-value-of-player.ts",
+  "file": "src/ludemes/other/action/others/ActionSetValueOfPlayer.ts",
   "cls": "ActionSetValueOfPlayer"
  },
  "other.action.others.ActionNote": {
-  "file": "src/action/action-note.ts",
+  "file": "src/ludemes/other/action/others/ActionNote.ts",
   "cls": "ActionNote"
  },
  "other.action.others.ActionPropose": {
-  "file": "src/action/action-propose.ts",
+  "file": "src/ludemes/other/action/others/ActionPropose.ts",
   "cls": "ActionPropose"
  },
  "other.action.others.ActionVote": {
-  "file": "src/action/action-vote.ts",
+  "file": "src/ludemes/other/action/others/ActionVote.ts",
   "cls": "ActionVote"
  },
  "other.action.others.ActionNextInstance": {
-  "file": "src/action/action-next-instance.ts",
+  "file": "src/ludemes/other/action/others/ActionNextInstance.ts",
   "cls": "ActionNextInstance"
  },
  "other.action.state.ActionSetCounter": {
-  "file": "src/action/action-set-counter.ts",
+  "file": "src/ludemes/other/action/state/ActionSetCounter.ts",
   "cls": "ActionSetCounter"
  },
  "other.action.state.ActionBet": {
-  "file": "src/action/action-bet.ts",
+  "file": "src/ludemes/other/action/state/ActionBet.ts",
   "cls": "ActionBet"
  },
  "other.action.state.ActionSetNextPlayer": {
-  "file": "src/action/action-set-next-player.ts",
+  "file": "src/ludemes/other/action/state/ActionSetNextPlayer.ts",
   "cls": "ActionSetNextPlayer"
  },
  "other.action.state.ActionTrigger": {
-  "file": "src/action/action-trigger.ts",
+  "file": "src/ludemes/other/action/state/ActionTrigger.ts",
   "cls": "ActionTrigger"
  },
  "other.action.state.ActionSetRotation": {
-  "file": "src/action/action-set-rotation.ts",
+  "file": "src/ludemes/other/action/state/ActionSetRotation.ts",
   "cls": "ActionSetRotation"
  },
  "other.action.state.ActionAddPlayerToTeam": {
-  "file": "src/action/action-add-player-to-team.ts",
+  "file": "src/ludemes/other/action/state/ActionAddPlayerToTeam.ts",
   "cls": "ActionAddPlayerToTeam"
  },
  "other.action.state.ActionSetValue": {
-  "file": "src/action/action-set-value.ts",
+  "file": "src/ludemes/other/action/state/ActionSetValue.ts",
   "cls": "ActionSetValue"
  },
  "other.action.state.ActionSetVar": {
-  "file": "src/action/action-set-var.ts",
+  "file": "src/ludemes/other/action/state/ActionSetVar.ts",
   "cls": "ActionSetVar"
  },
  "other.action.state.ActionSetPending": {
-  "file": "src/action/action-set-pending.ts",
+  "file": "src/ludemes/other/action/state/ActionSetPending.ts",
   "cls": "ActionSetPending"
  },
  "other.action.state.ActionSetAmount": {
-  "file": "src/action/action-set-amount.ts",
+  "file": "src/ludemes/other/action/state/ActionSetAmount.ts",
   "cls": "ActionSetAmount"
  },
  "other.action.state.ActionSetCount": {
-  "file": "src/action/action-set-count.ts",
+  "file": "src/ludemes/other/action/state/ActionSetCount.ts",
   "cls": "ActionSetCount"
  },
  "other.action.state.ActionSetScore": {
-  "file": "src/action/action-set-score.ts",
+  "file": "src/ludemes/other/action/state/ActionSetScore.ts",
   "cls": "ActionSetScore"
  },
  "other.action.state.ActionSetState": {
-  "file": "src/action/action-set-state.ts",
+  "file": "src/ludemes/other/action/state/ActionSetState.ts",
   "cls": "ActionSetState"
  },
  "other.action.state.ActionSetTemp": {
-  "file": "src/action/action-set-temp.ts",
+  "file": "src/ludemes/other/action/state/ActionSetTemp.ts",
   "cls": "ActionSetTemp"
  },
  "other.action.state.ActionStoreStateInContext": {
-  "file": "src/action/action-store-state.ts",
+  "file": "src/ludemes/other/action/state/ActionStoreStateInContext.ts",
   "cls": "ActionStoreStateInContext"
  },
  "other.action.state.ActionRememberValue": {
-  "file": "src/action/action-remember.ts",
+  "file": "src/ludemes/other/action/state/ActionRememberValue.ts",
   "cls": "ActionRememberValue"
  },
  "other.action.state.ActionForgetValue": {
@@ -572,11 +572,11 @@
   "cls": "ActionForgetValue"
  },
  "other.action.state.ActionSetPot": {
-  "file": "src/action/action-set-pot.ts",
+  "file": "src/ludemes/other/action/state/ActionSetPot.ts",
   "cls": "ActionSetPot"
  },
  "other.action.Action": {
-  "file": "src/action/action.ts",
+  "file": "src/ludemes/other/action/Action.ts",
   "cls": "BaseAction"
  },
  "other.concept.EndConcepts": {
@@ -684,24 +684,24 @@
   "cls": "Optimiser"
  },
  "game.util.math.Count": {
-  "file": "src/ludemes/game/util/math/Count1to1.ts",
-  "cls": "Count1to1"
+  "file": "src/ludemes/game/util/math/Count.ts",
+  "cls": "Count"
  },
  "game.util.math.Pair": {
-  "file": "src/ludemes/game/util/math/Pair1to1.ts",
-  "cls": "Pair1to1"
+  "file": "src/ludemes/game/util/math/Pair.ts",
+  "cls": "Pair"
  },
  "game.util.end.Score": {
-  "file": "src/ludemes/game/util/end/Score1to1.ts",
-  "cls": "Score1to1"
+  "file": "src/ludemes/game/util/end/Score.ts",
+  "cls": "Score"
  },
  "game.util.end.Payoff": {
   "file": "src/ludemes/game/util/end/Payoff.ts",
   "cls": "Payoff"
  },
  "game.util.equipment.Hint": {
-  "file": "src/ludemes/game/util/equipment/Hint1to1.ts",
-  "cls": "Hint1to1"
+  "file": "src/ludemes/game/util/equipment/Hint.ts",
+  "cls": "Hint"
  },
  "game.util.equipment.Card": {
   "file": "src/ludemes/game/util/equipment/Card.ts",
@@ -756,8 +756,8 @@
   "cls": "Split1to1"
  },
  "game.rules.start.forEach.value.ForEachValue": {
-  "file": "src/ludemes/game/rules/start/forEach/value/ForEachValue.ts",
-  "cls": "ForEachValue"
+  "file": "src/ludemes/game/rules/start/forEach/value/ForEachValue1to1.ts",
+  "cls": "ForEachValue1to1"
  },
  "game.rules.start.forEach.ForEach": {
   "file": "src/ludemes/game/rules/start/forEach/ForEach.ts",
@@ -768,28 +768,28 @@
   "cls": "ForEachTeam"
  },
  "game.rules.start.forEach.site.ForEachSite": {
-  "file": "src/ludemes/game/rules/start/forEach/site/ForEachSite1to1.ts",
-  "cls": "ForEachSite1to1"
+  "file": "src/ludemes/game/rules/start/forEach/site/ForEachSite.ts",
+  "cls": "ForEachSite"
  },
  "game.rules.start.forEach.player.ForEachPlayer": {
-  "file": "src/ludemes/game/rules/start/forEach/player/ForEachPlayer1to1.ts",
-  "cls": "ForEachPlayer1to1"
+  "file": "src/ludemes/game/rules/start/forEach/player/ForEachPlayer.ts",
+  "cls": "ForEachPlayer"
  },
  "game.rules.start.deductionPuzzle.Set": {
   "file": "src/ludemes/game/rules/start/deductionPuzzle/Set.ts",
   "cls": "Set"
  },
  "game.rules.start.set.sites.SetCount": {
-  "file": "src/ludemes/game/rules/start/set/sites/SetCount.ts",
-  "cls": "SetCount1to1"
+  "file": "src/ludemes/game/rules/start/SetCountStart1to1.ts",
+  "cls": "SetCountStart1to1"
  },
  "game.rules.start.Deal": {
   "file": "src/ludemes/game/rules/start/Deal.ts",
   "cls": "Deal1to1"
  },
  "game.rules.start.place.StartPlacementType": {
-  "file": "src/ludemes/game/rules/start/PlaceAtHandSite1to1.ts",
-  "cls": "PlaceAtHandSite1to1"
+  "file": "src/ludemes/game/rules/start/PlaceSites1to1.ts",
+  "cls": "PlaceSites1to1"
  },
  "game.rules.start.Start": {
   "file": "src/ludemes/game/rules/start/Start.ts",
@@ -972,28 +972,28 @@
   "cls": "ForEachPlayer"
  },
  "game.rules.play.moves.nonDecision.operators.logical.Seq": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Seq1to1.ts",
-  "cls": "Seq1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Seq.ts",
+  "cls": "Seq"
  },
  "game.rules.play.moves.nonDecision.operators.logical.And": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/And1to1.ts",
-  "cls": "And1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/And.ts",
+  "cls": "And"
  },
  "game.rules.play.moves.nonDecision.operators.logical.If": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/IfMoves.ts",
   "cls": "IfMoves"
  },
  "game.rules.play.moves.nonDecision.operators.logical.Append": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Append1to1.ts",
-  "cls": "Append1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Append.ts",
+  "cls": "Append"
  },
  "game.rules.play.moves.nonDecision.operators.logical.AllCombinations": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/AllCombinations.ts",
   "cls": "AllCombinations"
  },
  "game.rules.play.moves.nonDecision.operators.logical.Or": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/OrMoves.ts",
-  "cls": "OrMoves"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Or.ts",
+  "cls": "Or"
  },
  "game.rules.play.moves.nonDecision.effect.Trigger": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Trigger.ts",
@@ -1020,16 +1020,16 @@
   "cls": "Surround"
  },
  "game.rules.play.moves.nonDecision.effect.Note": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Note1to1.ts",
-  "cls": "Note1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Note.ts",
+  "cls": "Note"
  },
  "game.rules.play.moves.nonDecision.effect.Roll": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Roll.ts",
   "cls": "Roll"
  },
  "game.rules.play.moves.nonDecision.effect.Attract": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Attract.ts",
-  "cls": "Attract"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Attract1to1.ts",
+  "cls": "Attract1to1"
  },
  "game.rules.play.moves.nonDecision.effect.Hop": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Hop.ts",
@@ -1064,12 +1064,12 @@
   "cls": "Custodial"
  },
  "game.rules.play.moves.nonDecision.effect.Directional": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Directional.ts",
-  "cls": "Directional"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Directional1to1.ts",
+  "cls": "Directional1to1"
  },
  "game.rules.play.moves.nonDecision.effect.Step": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Step1to1.ts",
-  "cls": "Step1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Step.ts",
+  "cls": "Step"
  },
  "game.rules.play.moves.nonDecision.effect.Then": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Then.ts",
@@ -1116,8 +1116,8 @@
   "cls": "MoveAgain1to1"
  },
  "game.rules.play.moves.nonDecision.effect.Slide": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Slide.ts",
-  "cls": "Slide"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Slide1to1.ts",
+  "cls": "Slide1to1"
  },
  "game.rules.play.moves.nonDecision.effect.Random": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Random.ts",
@@ -1152,12 +1152,12 @@
   "cls": "Max"
  },
  "game.rules.play.moves.nonDecision.effect.requirement.Priority": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/requirement/Priority1to1.ts",
-  "cls": "Priority1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/requirement/Priority.ts",
+  "cls": "Priority"
  },
  "game.rules.play.moves.nonDecision.effect.requirement.AvoidStoredState": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/requirement/AvoidStoredState1to1.ts",
-  "cls": "AvoidStoredState1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/requirement/AvoidStoredState.ts",
+  "cls": "AvoidStoredState"
  },
  "game.rules.play.moves.nonDecision.effect.requirement.Satisfy": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/requirement/Satisfy1to1.ts",
@@ -1196,8 +1196,8 @@
   "cls": "Enclose"
  },
  "game.rules.play.moves.nonDecision.effect.FromTo": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/FromTo1to1.ts",
-  "cls": "FromTo1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/FromTo.ts",
+  "cls": "FromTo"
  },
  "game.rules.play.moves.nonDecision.effect.set.Set": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/set/Set.ts",
@@ -1300,12 +1300,12 @@
   "cls": "Play1to1"
  },
  "game.functions.directions.If": {
-  "file": "src/ludemes/game/functions/directions/If1to1.ts",
-  "cls": "If1to1"
+  "file": "src/ludemes/game/functions/directions/If.ts",
+  "cls": "If"
  },
  "game.functions.directions.Union": {
-  "file": "src/ludemes/game/functions/directions/Union1to1.ts",
-  "cls": "Union1to1"
+  "file": "src/ludemes/game/functions/directions/Union.ts",
+  "cls": "Union"
  },
  "game.functions.directions.DirectionsFunction": {
   "file": "src/ludemes/game/functions/directions/DirectionsFunction.ts",
@@ -1320,8 +1320,8 @@
   "cls": "Directions1to1Static"
  },
  "game.functions.dim.DimConstant": {
-  "file": "src/ludemes/game/functions/dim/DimConstant1to1.ts",
-  "cls": "DimConstant1to1"
+  "file": "src/ludemes/game/functions/dim/DimConstant.ts",
+  "cls": "DimConstant"
  },
  "game.functions.dim.math.Div": {
   "file": "src/ludemes/game/functions/dim/math/Div1to1.ts",
@@ -1360,12 +1360,12 @@
   "cls": "BaseDimFunction"
  },
  "game.functions.floats.ToFloat": {
-  "file": "src/ludemes/game/functions/floats1to1/ToFloat1to1.ts",
-  "cls": "ToFloatBool1to1"
+  "file": "src/ludemes/game/functions/floats/ToFloat.ts",
+  "cls": "ToFloat"
  },
  "game.functions.floats.FloatConstant": {
-  "file": "src/ludemes/game/functions/floats1to1/FloatConstant1to1.ts",
-  "cls": "FloatConstant1to1"
+  "file": "src/ludemes/game/functions/floats/FloatConstant.ts",
+  "cls": "FloatConstant"
  },
  "game.functions.floats.BaseFloatFunction": {
   "file": "src/ludemes/game/functions/floats/BaseFloatFunction.ts",
@@ -1736,8 +1736,8 @@
   "cls": "Can"
  },
  "game.functions.booleans.can.CanMove": {
-  "file": "src/ludemes/game/functions/booleans/can1to1/CanMove1to1.ts",
-  "cls": "CanMove1to1"
+  "file": "src/ludemes/game/functions/booleans/can/CanMove.ts",
+  "cls": "CanMove"
  },
  "game.functions.booleans.ToBool": {
   "file": "src/ludemes/game/functions/booleans/ToBool.ts",
@@ -2092,8 +2092,8 @@
   "cls": "Union1to1"
  },
  "game.functions.intArray.sizes.group.SizesGroup": {
-  "file": "src/ludemes/game/functions/intArray/sizes/SizesGroup1to1.ts",
-  "cls": "SizesGroup1to1"
+  "file": "src/ludemes/game/functions/intArray/sizes/group/SizesGroup.ts",
+  "cls": "SizesGroup"
  },
  "game.functions.intArray.sizes.Sizes": {
   "file": "src/ludemes/game/functions/intArray/sizes/Sizes.ts",
@@ -2204,8 +2204,8 @@
   "cls": "SitesHiddenState"
  },
  "game.functions.region.sites.group.SitesGroup": {
-  "file": "src/ludemes/game/functions/region/sites/group/SitesGroup1to1.ts",
-  "cls": "SitesGroup1to1"
+  "file": "src/ludemes/game/functions/region/sites/group/SitesGroup.ts",
+  "cls": "SitesGroup"
  },
  "game.functions.region.sites.Sites": {
   "file": "src/ludemes/game/functions/region/sites/Sites.ts",
@@ -2312,8 +2312,8 @@
   "cls": "SitesLayer"
  },
  "game.functions.region.sites.index.SitesEdge": {
-  "file": "src/ludemes/game/functions/region/sites/index/SitesEdge1to1.ts",
-  "cls": "SitesEdge1to1"
+  "file": "src/ludemes/game/functions/region/sites/index/SitesEdge.ts",
+  "cls": "SitesEdge"
  },
  "game.functions.region.sites.index.SitesColumn": {
   "file": "src/ludemes/game/functions/region/sites/index/SitesColumn.ts",
@@ -2332,7 +2332,7 @@
   "cls": "SitesSupport"
  },
  "game.functions.region.sites.index.SitesEmpty": {
-  "file": "src/ludemes/game/functions/region/sites/SitesEmpty.ts",
+  "file": "src/ludemes/game/functions/region/sites/index/SitesEmpty.ts",
   "cls": "SitesEmpty"
  },
  "game.functions.region.sites.index.SitesRow": {
@@ -2340,8 +2340,8 @@
   "cls": "SitesRow"
  },
  "game.functions.region.sites.coords.SitesCoords": {
-  "file": "src/ludemes/game/functions/region/sites/coords/SitesCoords1to1.ts",
-  "cls": "SitesCoords1to1"
+  "file": "src/ludemes/game/functions/region/sites/coords/SitesCoords.ts",
+  "cls": "SitesCoords"
  },
  "game.functions.region.sites.pattern.SitesPattern": {
   "file": "src/ludemes/game/functions/region/sites/pattern/SitesPattern1to1.ts",
@@ -2368,16 +2368,16 @@
   "cls": "SitesStart"
  },
  "game.functions.region.sites.loop.SitesLoop": {
-  "file": "src/ludemes/game/functions/region/sites/loop/SitesLoop1to1.ts",
-  "cls": "SitesLoop1to1"
+  "file": "src/ludemes/game/functions/region/sites/loop/SitesLoop.ts",
+  "cls": "SitesLoop"
  },
  "game.functions.region.sites.incidents.SitesIncident": {
   "file": "src/ludemes/game/functions/region/sites/incidents/SitesIncident.ts",
   "cls": "SitesIncident"
  },
  "game.functions.region.sites.lineOfSight.SitesLineOfSight": {
-  "file": "src/ludemes/game/functions/region/sites/lineOfSight/SitesLineOfSightFarthest1to1.ts",
-  "cls": "SitesLineOfSightFarthest1to1"
+  "file": "src/ludemes/game/functions/region/sites/lineOfSight/SitesLineOfSight.ts",
+  "cls": "SitesLineOfSight"
  },
  "game.functions.region.sites.player.SitesEquipmentRegion": {
   "file": "src/ludemes/game/functions/region/sites/player/SitesEquipmentRegion.ts",
@@ -2484,8 +2484,8 @@
   "cls": "SizeGroup1to1"
  },
  "game.functions.ints.ToInt": {
-  "file": "src/ludemes/game/functions/ints/ToInt1to1.ts",
-  "cls": "ToInt1to1"
+  "file": "src/ludemes/game/functions/ints/ToInt.ts",
+  "cls": "ToInt"
  },
  "game.functions.ints.last.Last": {
   "file": "src/ludemes/game/functions/ints/last/Last.ts",
@@ -2556,12 +2556,12 @@
   "cls": "Coord"
  },
  "game.functions.ints.board.HandSite": {
-  "file": "src/ludemes/game/functions/ints/state1to1/HandSite.ts",
+  "file": "src/ludemes/game/functions/ints/board/HandSite.ts",
   "cls": "HandSite"
  },
  "game.functions.ints.board.where.WhereLevel": {
-  "file": "src/ludemes/game/functions/ints/board/where/WhereLevel1to1.ts",
-  "cls": "WhereLevel1to1"
+  "file": "src/ludemes/game/functions/ints/board/where/WhereLevel.ts",
+  "cls": "WhereLevel"
  },
  "game.functions.ints.board.where.Where": {
   "file": "src/ludemes/game/functions/ints/board/where/Where.ts",
@@ -2680,12 +2680,12 @@
   "cls": "Max"
  },
  "game.functions.range.math.Exact": {
-  "file": "src/ludemes/game/functions/range/math/Exact1to1.ts",
-  "cls": "Exact1to1"
+  "file": "src/ludemes/game/functions/range/math/Exact.ts",
+  "cls": "Exact"
  },
  "game.functions.range.Range": {
-  "file": "src/ludemes/game/functions/range/Range1to1.ts",
-  "cls": "Range1to1"
+  "file": "src/ludemes/game/functions/range/Range.ts",
+  "cls": "Range"
  },
  "game.equipment.Item": {
   "file": "src/ludemes/game/equipment/Item1to1.ts",
@@ -2696,24 +2696,24 @@
   "cls": "Hints"
  },
  "game.equipment.other.Map": {
-  "file": "src/ludemes/game/equipment/other/Map1to1.ts",
-  "cls": "Map1to1"
+  "file": "src/ludemes/game/equipment/other/Map.ts",
+  "cls": "Map"
  },
  "game.equipment.other.Regions": {
   "file": "src/ludemes/game/equipment/other/Regions.ts",
   "cls": "Regions"
  },
  "game.equipment.other.Dominoes": {
-  "file": "src/ludemes/game/equipment/other/Dominoes1to1.ts",
-  "cls": "Dominoes1to1"
+  "file": "src/ludemes/game/equipment/other/Dominoes.ts",
+  "cls": "Dominoes"
  },
  "game.equipment.component.Piece": {
   "file": "src/ludemes/game/equipment/component/Piece.ts",
   "cls": "Piece"
  },
  "game.equipment.component.Component": {
-  "file": "src/ludemes/game/equipment/component/Component1to1.ts",
-  "cls": "Component1to1"
+  "file": "src/ludemes/game/equipment/component/Component.ts",
+  "cls": "Component"
  },
  "game.equipment.component.Card": {
   "file": "src/ludemes/game/equipment/component/Card.ts",
@@ -2724,8 +2724,8 @@
   "cls": "Domino"
  },
  "game.equipment.component.tile.Path": {
-  "file": "src/ludemes/game/equipment/component/tile/Path1to1.ts",
-  "cls": "Path1to1"
+  "file": "src/ludemes/game/equipment/component/tile/Path.ts",
+  "cls": "Path"
  },
  "game.equipment.component.tile.Tile": {
   "file": "src/ludemes/game/equipment/component/tile/Tile.ts",
@@ -2756,16 +2756,16 @@
   "cls": "SurakartaBoard"
  },
  "game.equipment.container.other.Hand": {
-  "file": "src/ludemes/game/equipment/container/other/Hand1to1.ts",
-  "cls": "Hand1to1"
+  "file": "src/ludemes/game/equipment/container/other/Hand.ts",
+  "cls": "Hand"
  },
  "game.equipment.container.other.Deck": {
   "file": "src/ludemes/game/equipment/container/other/Deck.ts",
   "cls": "Deck"
  },
  "game.equipment.container.other.Dice": {
-  "file": "src/ludemes/game/equipment/container/other/Dice1to1.ts",
-  "cls": "Dice1to1"
+  "file": "src/ludemes/game/equipment/container/other/Dice.ts",
+  "cls": "Dice"
  },
  "game.equipment.container.Container": {
   "file": "src/ludemes/game/equipment/container/Container.ts",
