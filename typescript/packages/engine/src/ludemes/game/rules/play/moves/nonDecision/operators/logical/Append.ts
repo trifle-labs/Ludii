@@ -13,7 +13,6 @@
 
 import type { Context } from "../../../../../../../../context.js";
 import { Move } from "../../../../../../../../move.js";
-import type { MovesFunction } from "../../../../../../../base.js";
 import { NonDecision } from "../../NonDecision.js";
 import type { ThenLike } from "../../../Moves.js";
 
@@ -26,7 +25,7 @@ export class Append extends NonDecision {
   /**
    * The list of moves to append. @java Append.list
    */
-  private readonly list: MovesFunction;
+  private readonly list: NonDecision;
 
   // -------------------------------------------------------------------------
 
@@ -36,10 +35,10 @@ export class Append extends NonDecision {
    * @param then The moves applied after that move is applied.
    */
   public constructor(
-    list: MovesFunction,
-    then: ThenLike | null = null,
+    list: NonDecision,
+    then?: ThenLike | null,
   ) {
-    super(then);
+    super(then ?? null);
     this.list = list;
   }
 

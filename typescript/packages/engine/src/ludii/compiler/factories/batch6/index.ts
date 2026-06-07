@@ -40,6 +40,7 @@ import type { NextPhase } from "../../../../ludemes/game/rules/phase/NextPhase.j
 import type { End } from "../../../../ludemes/game/rules/end/End.js";
 import { Payoff } from "../../../../ludemes/game/util/end/Payoff.js";
 import { Poly } from "../../../../ludemes/game/util/graph/Poly.js";
+import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { Player1to1 } from "../../../../ludemes/game/util/moves/Player1to1.js";
 import { To1to1 } from "../../../../ludemes/game/util/moves/To1to1.js";
@@ -134,21 +135,17 @@ function forEachFactory(b: ArgBundle): MovesFunction {
   switch (kind) {
     case "Direction": {
       const from = findInstance(b, From1to1);
-      const direction = firstDirectionFunction(b) ?? adjacentDirections();
-      const between = b.positional.find(isBetweenLike);
+      const direction = firstDirectionFunction(b);
+      const between = findInstance(b, Between1to1);
       const to = findInstance(b, To1to1);
       const moves = firstMovesAfterKind(b);
       if (!moves && (!to || !isMovesFunction(to.effectFn()))) throw new Error("factory not yet wired: forEach");
-      const range = between?.rangeFn?.() ?? null;
       return new ForEachDirection(
-        from?.locFn() ?? iteratorFrom(),
-        range?.[0] ?? new IntConstant(1),
-        range?.[1] ?? new IntConstant(1),
+        from ?? null,
         direction,
-        to?.condFn() ?? null,
-        between?.condition?.() ?? null,
-        moves ?? (to!.effectFn() as unknown as MovesFunction),
-        from?.siteType() ?? null,
+        between ?? null,
+        to ?? null,
+        moves ?? null,
         thenArg(b),
       );
     }
@@ -204,7 +201,7 @@ function forEachFactory(b: ArgBundle): MovesFunction {
     case "Player": {
       const players = firstOf<IntArrayFunction>(b, isIntArrayFunction);
       const moves = requiredLastMoves(b, "forEach Player moves");
-      return players ? new ForEachPlayer(players, moves, thenArg(b)) : new ForEachPlayer(moves, thenArg(b));
+      return new ForEachPlayer(players ?? null, moves, thenArg(b));
     }
     case "Piece":
       return new ForEachPiece(
@@ -713,10 +710,6 @@ function iteratorTo(): IntFunction {
   return { eval: (ctx) => ctx._evalTo };
 }
 
-function adjacentDirections(): DirectionsFunction {
-  return { eval: () => ["Adjacent"] };
-}
-
 function firstDirectionFunction(b: ArgBundle): DirectionsFunction | null {
   return firstOf<DirectionsFunction>(b, isDirectionsFunction) ?? directionFunction(firstDirectionName(b));
 }
@@ -831,13 +824,6 @@ function isGraphFunction(value: unknown): value is GraphFunction {
 
 function isThenLike(value: unknown): boolean {
   return isObject(value) && typeof value.moves === "function";
-}
-
-function isBetweenLike(value: unknown): value is {
-  rangeFn(): [IntFunction, IntFunction] | null;
-  condition(): BooleanFunction | null;
-} {
-  return isObject(value) && typeof value.rangeFn === "function" && typeof value.condition === "function";
 }
 
 function isPieceLike(value: unknown): value is {

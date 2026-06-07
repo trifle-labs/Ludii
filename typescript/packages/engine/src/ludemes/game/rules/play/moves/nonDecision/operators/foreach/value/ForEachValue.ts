@@ -56,7 +56,7 @@ export class ForEachValue extends Effect {
     valuesOrMin: IntArrayFunction | IntFunction,
     generatorOrMax: MovesFunction | IntFunction,
     thenOrGenerator?: ThenLike | null | MovesFunction,
-    thenArg?: ThenLike | null,
+    thenArg: ThenLike | null = null,
   ) {
     // Distinguish overloads: if thenOrGenerator is a MovesFunction (has eval returning Move[])
     // then we have the (min, max, generator, then?) form.

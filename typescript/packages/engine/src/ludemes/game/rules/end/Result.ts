@@ -15,9 +15,7 @@ export class Result {
   public readonly who: RoleTypeFull;
   public readonly result: ResultTypeFull;
 
-  /**
-   * @java game/rules/end/Result.java — constructor(RoleType who, ResultType result)
-   */
+  /** @java game/rules/end/Result.java — public Result(RoleType who, ResultType result) */
   public constructor(who: RoleTypeFull, result: ResultTypeFull) {
     this.who = who;
     this.result = result;

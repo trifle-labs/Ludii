@@ -500,7 +500,7 @@ export class Game1to1 implements Game {
     }
 
     // Step 3b: Evaluate global end rules.
-    if (!over) {
+    if (!over && this.rules.end !== null) {
       const endResult = this.rules.end.eval(evalCtx);
       if (endResult !== null && endResult.over) {
         over = true;

@@ -386,9 +386,9 @@ function makeRulesFallback(b: ArgBundle): Rules1to1 {
     ...flatten([namedValue(b, "phases")]).filter((v): v is Phase => v instanceof Phase),
   ];
   if (!end) throw new Error("factory rules: missing end");
-  if (phases.length > 0) return new Rules1to1(play ?? phases[0]!.play, end, phases);
+  if (phases.length > 0) return new Rules1to1(null, null, play ?? phases[0]!.play, phases, end);
   if (!play) throw new Error("factory rules: missing play");
-  return new Rules1to1(play, end);
+  return new Rules1to1(null, null, play, end);
 }
 
 function makeSitesFallback(b: ArgBundle): RegionFunction {
@@ -865,7 +865,7 @@ function makeNextPhase(b: ArgBundle): NextPhase {
   const player = findFirst(b, isPlayer);
   const cond = flatten(b.positional).find(isBooleanFunction);
   const phaseName = flatten(b.positional).find((v): v is string => typeof v === "string" && !isRoleTypeName(v));
-  return new NextPhase(player?.index() ?? (role ? roleIntFunction(role) : roleIntFunction("Shared")), cond ?? trueFunction(), phaseName ?? null);
+  return new NextPhase(role ?? null, player ?? null, cond ?? null, phaseName ?? null);
 }
 
 function requireValue(b: ArgBundle, index: number): unknown {

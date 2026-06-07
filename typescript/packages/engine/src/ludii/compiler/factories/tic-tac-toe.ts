@@ -75,7 +75,7 @@ export function createTicTacToeRegistry(): LudemeRegistry {
     const play = findFirst<Play1to1>(b, isPlay);
     const end = findFirst<End>(b, isEnd);
     if (!play || !end) throw new Error("TTT factory rules: missing play or end");
-    return new Rules1to1(play, end);
+    return new Rules1to1(null, null, play, end);
   });
 
   registerAliases(registry, ["play", "play:play"], (b): Play1to1 => {

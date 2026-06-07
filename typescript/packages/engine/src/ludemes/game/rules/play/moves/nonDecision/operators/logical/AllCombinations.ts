@@ -46,9 +46,9 @@ export class AllCombinations extends NonDecision {
   public constructor(
     listA: MovesFunction,
     listB: MovesFunction,
-    then: ThenLike | null = null,
+    then?: ThenLike | null,
   ) {
-    super(then);
+    super(then ?? null);
     this.listA = listA;
     this.listB = listB;
   }

@@ -313,10 +313,10 @@ function rulesFactory(b: ArgBundle): Rules1to1 {
   ];
   if (!end) throw new Error("factory rules: missing end");
   if (phases.length > 0) {
-    return new Rules1to1(play ?? phases[0]!.play, end, phases);
+    return new Rules1to1(null, null, play ?? phases[0]!.play, phases, end);
   }
   if (!play) throw new Error("factory rules: missing play");
-  return new Rules1to1(play, end);
+  return new Rules1to1(null, null, play, end);
 }
 
 function scaleFactory(b: ArgBundle): Scale {

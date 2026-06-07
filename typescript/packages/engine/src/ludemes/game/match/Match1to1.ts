@@ -47,10 +47,15 @@ export class Match1to1 {
 
   /**
    * @java game/match/Match.java — constructor(String name, @Opt Players players, Games games, End end)
+   * @java game/match/Match.java — hidden constructor(String name, Description gameDescription)
+   *
+   * Match has Java constructor arities 4 and 2; the faithful TS constructor
+   * exposes the largest arity in Java positional order for ArgCompiler
+   * new(...positionalArgs) instantiation.
    */
   public constructor(
     name: string,
-    players: GamePlayers1to1 | null | undefined,
+    players: GamePlayers1to1 | null,
     games: Games1to1,
     end: End,
   ) {

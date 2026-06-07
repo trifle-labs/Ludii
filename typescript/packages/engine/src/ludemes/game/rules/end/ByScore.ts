@@ -49,7 +49,7 @@ export class ByScore implements EndRuleFunction {
    * @param misere      If true, lowest score wins (misere variant).
    */
   public constructor(
-    finalScore?: readonly Score[] | null,
+    finalScore?: readonly (Score | Score1to1 | FinalScoreEntry)[] | null,
     misere?: BooleanFunction | null,
   ) {
     this.finalScore = finalScore ?? null;

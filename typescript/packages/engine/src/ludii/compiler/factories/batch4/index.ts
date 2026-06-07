@@ -423,7 +423,7 @@ function matchFactory(b: ArgBundle, _env: { numPlayers: number }): Match1to1 {
   const games = first(b, (v): v is Games1to1 => v instanceof Games1to1);
   const end = first(b, isEnd);
   if (!games || !end) throw new Error("factory not yet wired: match");
-  return new Match1to1(name, players, games, end);
+  return new Match1to1(name, players ?? null, games, end);
 }
 
 function matchScoreFactory(b: ArgBundle): MatchScore {
@@ -593,9 +593,9 @@ function rulesFallbackFactory(b: ArgBundle): Rules1to1 {
   const end = flatten([...b.positional, ...b.named.values()]).find(isEnd) ?? null;
   const phases = flatten([...b.positional, ...b.named.values()]).filter(isPhase);
   if (!end) throw new Error("factory rules: missing end");
-  if (phases.length > 0) return new Rules1to1(play ?? phases[0]!.play, end, phases);
+  if (phases.length > 0) return new Rules1to1(null, null, play ?? phases[0]!.play, phases, end);
   if (!play) throw new Error("factory rules: missing play");
-  return new Rules1to1(play, end);
+  return new Rules1to1(null, null, play, end);
 }
 
 function shiftFallbackFactory(b: ArgBundle): Shift {

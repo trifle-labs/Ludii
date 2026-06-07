@@ -11,6 +11,13 @@
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { BooleanFunction, EvalScratch, IntFunction } from "../../../../../base.js";
+import type { Context } from "../../../../../../context.js";
+import { BooleanConstant } from "../../../../functions/booleans/BooleanConstant.js";
+import { IntConstant } from "../../../../functions/ints/IntConstant.js";
+import { IntArrayFromRegion } from "../../../../../other/IntArrayFromRegion.js";
+import type { SiteType } from "../../../../../other/action/SiteType.js";
+import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
 import type { StartRule } from "../../StartRule.js";
 
 /**
@@ -32,37 +39,86 @@ export class SetHidden1to1 implements StartRule {
    */
   private readonly dataTypes: readonly HiddenData[] | null;
 
-  /** Pre-evaluated site indices to hide. Java: region.eval(context) */
-  private readonly sites: readonly number[];
+  /** Which region. @java SetHidden.region */
+  private readonly region: IntArrayFromRegion;
 
   /** Level within a stack (Java: levelFn, default 0). */
-  private readonly level: number;
+  private readonly levelFn: IntFunction;
 
   /** Whether to hide (true) or reveal (false). Java: valueFn, default true. */
-  private readonly value: boolean;
+  private readonly valueFn: BooleanFunction;
 
-  /** 1-based player id who has the hidden view. Java: whoFn. */
-  private readonly who: number;
+  /** The player to set the hidden information. @java SetHidden.whoFn */
+  private readonly whoFn: IntFunction;
+
+  /** The RoleType if used. @java SetHidden.roleType */
+  private readonly roleType: RoleTypeFull;
+
+  /** Cell/Edge/Vertex. @java SetHidden.type */
+  private readonly type: SiteType | null;
 
   /**
-   * @param dataTypes  facets to hide (null = all)
-   * @param sites      pre-evaluated site indices
-   * @param level      stack level (default 0)
-   * @param value      hide (true) or reveal (false)
-   * @param who        1-based player id
+   * @java SetHidden(HiddenData[], SiteType, IntArrayFromRegion, IntFunction, BooleanFunction, RoleType)
+   *
+   * @param dataTypes  The types of hidden data [Invisible].
+   * @param type       The graph element type [default of the board].
+   * @param region     The region to set the hidden information.
+   * @param level      The level to set the hidden information [0].
+   * @param value      The value to set [True].
+   * @param to         The roleType with these hidden information.
    */
   public constructor(
+    dataTypes: readonly HiddenData[] | null,
+    type: SiteType | null,
+    region: IntArrayFromRegion,
+    level: IntFunction | null,
+    value: BooleanFunction | null,
+    to: RoleTypeFull,
+  );
+
+  public constructor(
+    dataTypes?: readonly HiddenData[] | null,
+    type?: SiteType | null,
+    region?: IntArrayFromRegion,
+    level?: IntFunction | null,
+    value?: BooleanFunction | null,
+    to?: RoleTypeFull,
+  ) {
+    if (region === undefined) {
+      throw new Error("SetHidden(): missing region.");
+    }
+    if (to === undefined) {
+      throw new Error("SetHidden(): missing to RoleType.");
+    }
+
+    this.dataTypes = dataTypes ?? null;
+    this.region = region;
+    this.levelFn = level ?? new IntConstant(0);
+    this.valueFn = value ?? new BooleanConstant(true);
+    this.type = type ?? null;
+    this.whoFn = roleToIntFunction(to);
+    this.roleType = to;
+  }
+
+  /**
+   * Compatibility helper for existing compiler fallbacks that pre-evaluate
+   * start sites before hidden state can be applied through StartRule.
+   */
+  public static fromSites(
     dataTypes: readonly HiddenData[] | null,
     sites: readonly number[],
     level: number,
     value: boolean,
     who: number,
-  ) {
-    this.dataTypes = dataTypes;
-    this.sites = sites;
-    this.level = level;
-    this.value = value;
-    this.who = who;
+  ): SetHidden1to1 {
+    return new SetHidden1to1(
+      dataTypes,
+      null,
+      intArrayFromSites(sites),
+      new IntConstant(level),
+      new BooleanConstant(value),
+      roleTypeFromPlayerId(who),
+    );
   }
 
   /**
@@ -82,9 +138,43 @@ export class SetHidden1to1 implements StartRule {
     // Deferred: State.hiddenForPlayer[][] not accessible via applyToInitialState.
     // Java: ActionSetHidden*(who, type, site, level, value) for each site/facet.
     void this.dataTypes;
-    void this.sites;
-    void this.level;
-    void this.value;
-    void this.who;
+    void this.region;
+    void this.levelFn;
+    void this.valueFn;
+    void this.whoFn;
+    void this.roleType;
+    void this.type;
   }
+}
+
+function intArrayFromSites(sites: readonly number[]): IntArrayFromRegion {
+  const region = new IntArrayFromRegion(null, null);
+  (region as unknown as { precomputedArray: number[] }).precomputedArray = [...sites];
+  return region;
+}
+
+function roleTypeFromPlayerId(pid: number): RoleTypeFull {
+  if (pid >= 1 && pid <= 16) return `P${pid}` as RoleTypeFull;
+  return "Shared";
+}
+
+function roleToIntFunction(role: RoleTypeFull): IntFunction {
+  return {
+    eval: (ctx: Context & EvalScratch): number => {
+      switch (role) {
+        case "Mover":
+          return ctx.state.mover;
+        case "Next":
+          return (ctx.state.mover % ctx.numPlayers()) + 1;
+        case "Prev":
+          return Math.max(1, ctx.state.mover - 1);
+        case "Neutral":
+        case "Shared":
+          return 0;
+        default:
+          if (/^P\d+$/.test(role)) return Number(role.slice(1));
+          return ctx.state.mover;
+      }
+    },
+  };
 }

@@ -506,10 +506,10 @@ function makeStartSet(b: ArgBundle): StartRule {
   }
   const role = roleOrNull(b.positional[0]);
   if (role === null) throw deferred(`set ${stringAt(b, 0) ?? ""}`.trim());
-  const owner = roleToOwner(role);
   const loc = b.positional.find((v, i) => i > 0 && typeof v === "number");
   const locs = firstNumberArray(b);
-  if (typeof loc === "number" || locs) return new SetSite1to1(owner, typeof loc === "number" ? loc : -1, locs ?? null);
+  if (typeof loc === "number") return new SetSite1to1(role, null, new IntConstant(loc), null);
+  if (locs) return new SetSite1to1(role, null, locs.map((site) => new IntConstant(site)), null, null);
   throw deferred("set role sites");
 }
 
@@ -602,7 +602,7 @@ function hiddenPlayerArgs(value: unknown): { fixedPid: number; roleStr: string }
 }
 
 function makeSetHidden(b: ArgBundle): SetHidden1to1 {
-  return new SetHidden1to1(
+  return SetHidden1to1.fromSites(
     hiddenDataArray(b),
     startSetSites(b, false),
     numberOrDefault(named(b, "level"), 0),

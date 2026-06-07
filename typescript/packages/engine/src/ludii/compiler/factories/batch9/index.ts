@@ -333,7 +333,7 @@ function makeStartSet(b: ArgBundle): unknown {
       const level = optionalNumber(b.named.get("level")) ?? 0;
       const value = b.positional.find((item): item is boolean => typeof item === "boolean") ?? true;
       const who = roleOwner(asString(b.named.get("to")));
-      return startSitesRule(b, (sites) => new SetHidden1to1(dataTypes, sites, level, value, who));
+      return startSitesRule(b, (sites) => SetHidden1to1.fromSites(dataTypes, sites, level, value, who));
     }
     case "Amount":
       return new SetAmount1to1(optionalRoleOwner(b.positional[1]), requireLastNumber(b));
@@ -343,12 +343,11 @@ function makeStartSet(b: ArgBundle): unknown {
       return new SetScore1to1(role ?? "Each", new IntConstant(score));
     }
     default: {
-      const owner = roleOwner(kind);
       const site = b.named.has("at") ? asNumber(b.named.get("at")) : -1;
       if (b.named.has("to")) {
-        return startSitesRule(b, (sites) => new SetSite1to1(owner, -1, sites));
+        return startSitesRule(b, (sites) => new SetSite1to1(kind, null, sites.map((loc) => new IntConstant(loc)), null, null));
       }
-      return new SetSite1to1(owner, site, null);
+      return new SetSite1to1(kind, null, site >= 0 ? new IntConstant(site) : null, null);
     }
   }
 }

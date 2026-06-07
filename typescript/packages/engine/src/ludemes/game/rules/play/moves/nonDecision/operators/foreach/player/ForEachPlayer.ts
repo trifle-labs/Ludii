@@ -40,34 +40,28 @@ export class ForEachPlayer implements MovesFunction {
   // -------------------------------------------------------------------------
 
   /**
+   * @param playersFn The list of players.
+   * @param movesFn   The moves.
+   * @param then      The moves applied after that move is applied.
+   * @java ForEachPlayer(IntArrayFunction, Moves, Then)
+   */
+  public constructor(playersFn: IntArrayFunction | null, movesFn: MovesFunction, then?: ThenLike | null);
+
+  /**
    * @param movesFn The moves to generate per player.
    * @param then    The moves applied after that move is applied.
    * @java ForEachPlayer(Moves, Then)
    */
   public constructor(movesFn: MovesFunction, then?: ThenLike | null);
 
-  /**
-   * @param playersFn The list of players.
-   * @param movesFn   The moves.
-   * @param then      The moves applied after that move is applied.
-   * @java ForEachPlayer(IntArrayFunction, Moves, Then)
-   */
-  public constructor(playersFn: IntArrayFunction, movesFn: MovesFunction, then?: ThenLike | null);
-
   public constructor(
-    playersFnOrMovesFn: IntArrayFunction | MovesFunction,
+    playersFnOrMovesFn: IntArrayFunction | MovesFunction | null,
     movesFnOrThen?: MovesFunction | ThenLike | null,
-    thenArg?: ThenLike | null,
+    thenArg: ThenLike | null = null,
   ) {
-    // Determine which overload we have by checking if second arg is a MovesFunction
-    if (
-      movesFnOrThen !== null &&
-      movesFnOrThen !== undefined &&
-      typeof (movesFnOrThen as MovesFunction).eval === "function" &&
-      thenArg !== undefined
-    ) {
-      // Three-arg: (IntArrayFunction, Moves, Then)
-      this.playersFn = playersFnOrMovesFn as IntArrayFunction;
+    if (playersFnOrMovesFn === null) {
+      // Three-arg Java order with no player filter: (null, Moves, Then)
+      this.playersFn = null;
       this.movesFn = movesFnOrThen as MovesFunction;
       this._then = thenArg ?? null;
     } else if (
@@ -75,10 +69,10 @@ export class ForEachPlayer implements MovesFunction {
       movesFnOrThen !== undefined &&
       typeof (movesFnOrThen as MovesFunction).eval === "function"
     ) {
-      // Two-arg: (IntArrayFunction, Moves) — no then
+      // Three-arg: (IntArrayFunction, Moves, Then) or (IntArrayFunction, Moves)
       this.playersFn = playersFnOrMovesFn as IntArrayFunction;
       this.movesFn = movesFnOrThen as MovesFunction;
-      this._then = null;
+      this._then = thenArg ?? null;
     } else {
       // One-arg moves + optional then: (Moves, Then?)
       this.playersFn = null;

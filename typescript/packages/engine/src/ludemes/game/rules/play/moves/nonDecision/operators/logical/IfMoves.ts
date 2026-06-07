@@ -17,6 +17,7 @@
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
+import type { Then } from "../../effect/Then.js";
 
 export class IfMoves implements MovesFunction {
   /** The condition. @java If.cond */
@@ -25,18 +26,27 @@ export class IfMoves implements MovesFunction {
   private readonly thenMoves: MovesFunction;
   /** Optional else branch. @java If.elseList */
   private readonly elseMoves: MovesFunction | null;
+  /** Optional subsequent moves. @java Operator.then */
+  private readonly thenClause: Then | null;
 
   /**
    * @java game/rules/play/moves/nonDecision/operators/logical/If.java — constructor
    */
   public constructor(
     cond: BooleanFunction,
-    thenMoves: MovesFunction,
-    elseMoves: MovesFunction | null = null,
+    list: MovesFunction,
+    elseList?: MovesFunction | null,
+    then?: Then | null,
   ) {
     this.cond = cond;
-    this.thenMoves = thenMoves;
-    this.elseMoves = elseMoves;
+    this.thenMoves = list;
+    this.elseMoves = elseList ?? null;
+    this.thenClause = then ?? null;
+  }
+
+  /** @java Operator.then() */
+  public then(): Then | null {
+    return this.thenClause;
   }
 
   /**

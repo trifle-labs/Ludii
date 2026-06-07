@@ -53,6 +53,7 @@ import { AvoidStoredState } from "../../../../ludemes/game/rules/play/moves/nonD
 import { AddScore1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/state/AddScore1to1.js";
 import { AllCombinations } from "../../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/AllCombinations.js";
 import { Append } from "../../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/Append.js";
+import { NonDecision } from "../../../../ludemes/game/rules/play/moves/nonDecision/NonDecision.js";
 import { Then } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { Player1to1 } from "../../../../ludemes/game/util/moves/Player1to1.js";
@@ -129,7 +130,7 @@ export function registerBatch0(registry: LudemeRegistry): void {
   });
 
   registry.registerLudeme("append:append", (b): Append =>
-    new Append(toMovesFunction(requirePos(b, 0)), optionalThen(b)));
+    new Append(toNonDecision(requirePos(b, 0)), optionalThen(b)));
 
   registry.registerLudeme("apply:apply", (b): Apply => {
     const cond = optionalNamed(b, "if", toBooleanFunction);
@@ -474,6 +475,11 @@ function toRoleName(value: unknown): RoleType | "Each" {
 function toMovesFunction(value: unknown): MovesFunction {
   if (hasEval(value)) return value as MovesFunction;
   throw new Error(`factory: expected MovesFunction-compatible value, got ${String(value)}`);
+}
+
+function toNonDecision(value: unknown): NonDecision {
+  if (value instanceof NonDecision) return value;
+  throw new Error(`factory: expected NonDecision value, got ${String(value)}`);
 }
 
 function firstMovesFunction(b: ArgBundle): MovesFunction | null {

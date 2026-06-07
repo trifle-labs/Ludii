@@ -437,7 +437,7 @@ function makeStartForEach(b: ArgBundle): unknown {
   const startRule = findLast(b, isStartRule);
   if (!startRule) throw new Error("factory forEach: missing start rule");
 
-  if (first === "Player") return new StartForEachPlayer(startRule);
+  if (first === "Player") return new StartForEachPlayer(null, startRule);
   if (first === "Team") return new StartForEachTeam(startRule);
   if (first === "Value") {
     const min = optionalNamedInt(b, "min");

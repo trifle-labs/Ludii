@@ -5,10 +5,15 @@
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { IntFunction, RegionFunction } from "../../../../../base.js";
 import type { StartRule } from "../../StartRule.js";
+import type { SiteType } from "../../../../../../action/site-type.js";
 
 /** Java parity: Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
+
+/** @java game/types/play/RoleType.java — enum value name string */
+export type RoleType = string;
 
 /**
  * @java game/rules/start/set/sites/SetSite.java
@@ -17,28 +22,71 @@ const UNDEFINED = -1;
  * given RoleType owner. Mirrors Java SetSite.eval(Context).
  */
 export class SetSite1to1 implements StartRule {
-  /** 0-based player index who owns the piece (0 = neutral). */
-  private readonly owner: number;
+  /** The role of the owner of the piece to set. */
+  private readonly role: RoleType;
+
+  /** Cell, Edge or Vertex. */
+  private readonly type: SiteType | null;
 
   /** Single site index, or -1 if not set. */
-  private readonly siteId: number;
+  private readonly siteId: IntFunction | null;
 
-  /** Multiple explicit site indices, or null if not used. */
-  private readonly locationIds: readonly number[] | null;
+  /** Single coordinate, or null if not used. */
+  private readonly coord: string | null;
+
+  /** Multiple explicit site functions, or null if not used. */
+  private readonly locationIds: readonly IntFunction[] | null;
+
+  /** Region to fill, or null if not used. */
+  private readonly region: RegionFunction | null;
+
+  /** Multiple coordinates, or null if not used. */
+  private readonly coords: readonly string[] | null;
 
   /**
-   * @param owner      0-based player owner (P1=1, P2=2, Neutral=0)
-   * @param siteId     single site index (-1 if using locationIds)
-   * @param locationIds list of site indices (null if using siteId)
+   * @java SetSite(RoleType role, @Opt SiteType type, @Opt IntFunction loc, @Opt @Name String coord)
    */
   public constructor(
-    owner: number,
-    siteId: number,
-    locationIds: readonly number[] | null,
+    role: RoleType,
+    type?: SiteType | null,
+    loc?: IntFunction | null,
+    coord?: string | null,
+  );
+
+  /**
+   * @java SetSite(RoleType role, @Opt SiteType type, @Opt IntFunction[] locs, @Opt RegionFunction region, @Opt String[] coords)
+   */
+  public constructor(
+    role: RoleType,
+    type?: SiteType | null,
+    locs?: readonly IntFunction[] | null,
+    region?: RegionFunction | null,
+    coords?: readonly string[] | null,
+  );
+
+  public constructor(
+    role: RoleType,
+    type: SiteType | null = null,
+    locOrLocs: IntFunction | readonly IntFunction[] | null = null,
+    regionOrCoord: RegionFunction | string | null = null,
+    coords: readonly string[] | null = null,
   ) {
-    this.owner = owner;
-    this.siteId = siteId;
-    this.locationIds = locationIds;
+    this.role = role;
+    this.type = type;
+
+    if (isIntFunctionArray(locOrLocs)) {
+      this.locationIds = locOrLocs;
+      this.region = regionOrCoord !== null && typeof regionOrCoord !== "string" ? regionOrCoord : null;
+      this.coords = coords;
+      this.coord = null;
+      this.siteId = null;
+    } else {
+      this.siteId = locOrLocs;
+      this.coord = typeof regionOrCoord === "string" ? regionOrCoord : null;
+      this.locationIds = null;
+      this.region = regionOrCoord !== null && typeof regionOrCoord !== "string" ? regionOrCoord : null;
+      this.coords = coords;
+    }
   }
 
   /**
@@ -53,10 +101,11 @@ export class SetSite1to1 implements StartRule {
     whats: number[],
     countAt: number[],
     equipment: Equipment1to1,
-    _numPlayers: number,
+    numPlayers: number,
   ): void {
     // Find the first piece owned by this player (Java: iterates components until component.index() == what)
-    const piece = equipment.pieces.find(p => p.owner === this.owner);
+    const owner = roleOwner(this.role, numPlayers);
+    const piece = equipment.pieces.find(p => p.owner === owner);
     if (piece === undefined) return;
 
     const what = piece.index;
@@ -65,19 +114,39 @@ export class SetSite1to1 implements StartRule {
     const place = (site: number): void => {
       if (site < 0 || site >= n) return;
       // Java: Start.placePieces(...) → ActionAdd → sets who=owner, what=piece
-      cells[site] = this.owner;
+      cells[site] = owner;
       whats[site] = what;
       countAt[site] = 1;
     };
 
-    if (this.locationIds !== null) {
-      // Java: evalFill — iterate locationIds
-      for (const loc of this.locationIds) {
+    if (this.coords !== null) {
+      return;
+    }
+
+    if (this.region !== null) {
+      for (const loc of this.region.eval({} as Parameters<RegionFunction["eval"]>[0])) {
         place(loc);
       }
-    } else if (this.siteId !== UNDEFINED && this.siteId >= 0) {
+    } else if (this.locationIds !== null) {
+      // Java: evalFill — iterate locationIds
+      for (const loc of this.locationIds) {
+        place(loc.eval({} as Parameters<IntFunction["eval"]>[0]));
+      }
+    } else if (this.siteId !== null) {
       // Java: single site path
-      place(this.siteId);
+      place(this.siteId.eval({} as Parameters<IntFunction["eval"]>[0]));
     }
   }
+}
+
+function roleOwner(role: RoleType, numPlayers: number): number {
+  if (/^P\d+$/.test(role)) return Number(role.slice(1));
+  if (role === "Shared" || role === "All") return numPlayers;
+  if (role === "Neutral") return 0;
+  if (/^Team\d+$/.test(role)) return Number(role.slice(4));
+  return UNDEFINED;
+}
+
+function isIntFunctionArray(value: IntFunction | readonly IntFunction[] | null): value is readonly IntFunction[] {
+  return Array.isArray(value);
 }

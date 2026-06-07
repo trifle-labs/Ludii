@@ -221,7 +221,16 @@ export function registerBatch2(registry: LudemeRegistry): void {
   registry.registerLudeme("enclose:enclose", makeEnclose);
   registry.registerLudeme("end:end", (b) => new End(null, flatten(b.positional).filter(isEndRuleFunction)));
   registry.registerLudeme("end.forEach:forEach", (b, env) =>
-    new EndForEach((stringAt(b, 0) ?? "Shared").toLowerCase(), requireNamedBooleanFunction(b, "if"), requireResult(b), env.numPlayers));
+    {
+      void env;
+      const type = stringAt(b, 0);
+      return new EndForEach(
+        type === "Track" ? null : (type?.toLowerCase() ?? null),
+        type === "Track" ? "Track" : null,
+        requireNamedBooleanFunction(b, "if"),
+        requireResult(b),
+      );
+    });
   registry.registerLudeme("end.if:if", (b) => makeEndIf(b));
   registry.registerLudeme("end.score:score", (b) => new Score(requireString(b, 0) as unknown as ConstructorParameters<typeof Score>[0], requireIntFunction(b, 1)));
   registry.registerLudeme("equipment:equipment", makeEquipment);
@@ -490,10 +499,10 @@ function makeRulesFallback(b: ArgBundle): Rules1to1 {
     const completedPhases = play ? phases.map((phase) => phase.play ? phase : phaseWithPlay(phase, play)) : phases;
     const phasePlay = play ?? completedPhases.find((phase) => phase.play)?.play;
     if (!phasePlay) throw new Error("factory rules: missing play");
-    return new Rules1to1(phasePlay, end, completedPhases);
+    return new Rules1to1(null, null, phasePlay, completedPhases, end);
   }
   if (!play) throw new Error("factory rules: missing play");
-  return new Rules1to1(play, end);
+  return new Rules1to1(null, null, play, end);
 }
 
 function makeSitesFallback(b: ArgBundle): RegionFunction {

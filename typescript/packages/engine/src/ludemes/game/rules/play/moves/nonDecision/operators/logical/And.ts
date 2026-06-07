@@ -11,6 +11,7 @@
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
+import type { Then } from "../../effect/Then.js";
 
 /**
  * Minimal interface for a Then (consequence moves following a primary move).
@@ -58,7 +59,7 @@ export class And implements MovesFunction {
   public constructor(
     movesAOrList: MovesFunction | MovesFunction[],
     movesBOrThen?: MovesFunction | ThenLike | null,
-    thenArg?: ThenLike | null,
+    thenArg: Then | ThenLike | null = null,
   ) {
     if (Array.isArray(movesAOrList)) {
       // (Moves[], Then?)
@@ -73,9 +74,7 @@ export class And implements MovesFunction {
       this.list = [movesAOrList, movesBOrThen as MovesFunction];
       this._then = thenArg ?? null;
     } else {
-      // (Moves, Then?)
-      this.list = [movesAOrList];
-      this._then = (movesBOrThen as ThenLike | null | undefined) ?? null;
+      throw new Error("And requires Java constructor arguments (Moves, Moves, Then?) or (Moves[], Then?).");
     }
   }
 

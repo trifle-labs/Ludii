@@ -11,14 +11,14 @@ import type { Context } from "../../../../context.js";
 import type { EndRuleFunction, EndResult } from "../../../base.js";
 
 export class End {
-  private readonly rules: readonly EndRuleFunction[];
+  private readonly rules: EndRuleFunction[];
 
   /**
    * @java game/rules/end/End.java — constructor(@Or EndRule endRule, @Or EndRule[] endRules)
    */
   public constructor(
     endRule: EndRuleFunction | null,
-    endRules: readonly EndRuleFunction[] | null,
+    endRules: EndRuleFunction[] | null,
   ) {
     const numNonNull = (endRule != null ? 1 : 0) + (endRules != null ? 1 : 0);
     if (numNonNull !== 1) {
@@ -26,6 +26,13 @@ export class End {
     }
 
     this.rules = endRule != null ? [endRule] : endRules!;
+  }
+
+  /**
+   * @java game/rules/end/End.java — endRules()
+   */
+  public endRules(): EndRuleFunction[] {
+    return this.rules;
   }
 
   /**

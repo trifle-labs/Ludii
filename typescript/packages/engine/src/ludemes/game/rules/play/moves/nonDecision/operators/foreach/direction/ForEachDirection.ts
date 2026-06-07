@@ -15,6 +15,15 @@ import { Move } from "../../../../../../../../../move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { Effect } from "../../../effect/Effect.js";
 import type { ThenLike } from "../../../../Moves.js";
+import type { From1to1 } from "../../../../../../../util/moves/From1to1.js";
+import type { Between1to1 } from "../../../../../../../util/moves/Between1to1.js";
+import type { To1to1 } from "../../../../../../../util/moves/To1to1.js";
+import {
+  directionsFunction,
+  fromLoc,
+  intConst,
+  type DirectionArg,
+} from "../../../effect/EffectCtorAdapters.js";
 
 /** Java parity: Constants.OFF = -1 */
 const OFF = -1;
@@ -61,36 +70,37 @@ export class ForEachDirection extends Effect {
 
   /**
    * @java ForEachDirection constructor
-   * @param startLocationFn From location function.
-   * @param min             Min path length.
-   * @param limit           Max path length.
-   * @param dirnChoice      Direction function.
-   * @param rule            Rule on to-site (may be null).
-   * @param betweenRule     Rule on between-sites (may be null).
-   * @param movesToApply    Moves to apply.
-   * @param siteType        Cell/Edge/Vertex type (may be null → use default).
-   * @param then            Subsequent moves.
+   * @param from       Description of the ``from'' location [(from)].
+   * @param directions The directions of the move [Adjacent].
+   * @param between    Description of location(s) between ``from'' and ``to''
+   *                   [(between (exact 1))].
+   * @param to         Description of the ``to'' location.
+   * @param moves      Description of the decision moves to apply.
+   * @param then       The moves applied after that move is applied.
    */
   public constructor(
-    startLocationFn: IntFunction,
-    min: IntFunction,
-    limit: IntFunction,
-    dirnChoice: DirectionsFunction,
-    rule: BooleanFunction | null,
-    betweenRule: BooleanFunction | null,
-    movesToApply: MovesFunction,
-    siteType: string | null,
-    then: ThenLike | null = null,
+    from: From1to1 | null,
+    directions: DirectionArg,
+    between: Between1to1 | null,
+    to: To1to1 | null,
+    moves: MovesFunction | null,
+    then: ThenLike | null,
   ) {
     super(then);
-    this.startLocationFn = startLocationFn;
-    this.min = min;
-    this.limit = limit;
-    this.dirnChoice = dirnChoice;
-    this.rule = rule;
-    this.betweenRule = betweenRule;
+    const range = between?.range() ?? null;
+    const movesToApply = to?.effectFn()?.effectMoves() ?? moves;
+    if (movesToApply === null) {
+      throw new Error("ForEachDirection requires either a To effect or moves argument.");
+    }
+
+    this.startLocationFn = fromLoc(from);
+    this.siteType = from?.type() ?? null;
+    this.dirnChoice = directionsFunction(directions);
+    this.limit = range?.maxFn ?? intConst(1);
+    this.min = range?.minFn ?? intConst(1);
+    this.betweenRule = between?.condition() ?? null;
+    this.rule = to?.cond() ?? null;
     this.movesToApply = movesToApply;
-    this.siteType = siteType;
   }
 
   // -------------------------------------------------------------------------

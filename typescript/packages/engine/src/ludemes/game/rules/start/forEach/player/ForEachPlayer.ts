@@ -42,17 +42,17 @@ export class ForEachPlayer {
    * @param startRule The starting rule to apply.
    * @java ForEachPlayer(IntArrayFunction, StartRule)
    */
-  public constructor(players: IntArrayFunction, startRule: JavaStartRule);
+  public constructor(players: IntArrayFunction | null, startRule: JavaStartRule);
   public constructor(
-    startRuleOrPlayers: JavaStartRule | IntArrayFunction,
-    startRule: JavaStartRule | null = null,
+    players: JavaStartRule | IntArrayFunction | null,
+    startRule?: JavaStartRule,
   ) {
-    if (startRule !== null) {
-      this.playersFn = startRuleOrPlayers as IntArrayFunction;
+    if (startRule !== undefined) {
+      this.playersFn = players as IntArrayFunction | null;
       this.startRule = startRule;
     } else {
       this.playersFn = null;
-      this.startRule = startRuleOrPlayers as JavaStartRule;
+      this.startRule = players as JavaStartRule;
     }
   }
 

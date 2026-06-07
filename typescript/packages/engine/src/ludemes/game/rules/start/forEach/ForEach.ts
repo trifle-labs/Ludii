@@ -160,7 +160,7 @@ export class ForEach {
   ): JavaStartRule {
     switch (forEachType) {
       case "Player":
-        return new ForEachPlayer(startingRule);
+        return new ForEachPlayer(null, startingRule);
       default:
         throw new Error("ForEach(): A ForEachPlayerType is not implemented.");
     }

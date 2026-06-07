@@ -20,6 +20,7 @@
 
 import type { Context } from "../../../../context.js";
 import type { BooleanFunction, EndResult, EndRuleFunction } from "../../../base.js";
+import type { TrackType } from "../../types/board/TrackType.js";
 import type { Result } from "./Result.js";
 import { EndRule } from "./EndRule.js";
 
@@ -34,32 +35,36 @@ export type ForEachRoleType =
 export class ForEach extends EndRule implements EndRuleFunction {
   /** Role to iterate. @java ForEach.type */
   private readonly roleType: ForEachRoleType;
+  /** Track type to iterate. @java ForEach.trackType */
+  private readonly trackType: TrackType | null;
   /** Condition evaluated per player. @java ForEach.cond */
   private readonly cond: BooleanFunction;
   /** Result to apply when condition fires. @java ForEach (via BaseEndRule.result) */
   private readonly endResult: Result;
-  /** Number of players. */
-  private readonly numPlayers: number;
 
   /**
    * @java game/rules/end/ForEach.java — constructor(RoleType, TrackType, BooleanFunction, Result)
    *
    * @param roleType    Role type to iterate (lowercase, e.g. "player", "nonmover").
+   * @param trackType   Track type to iterate, mutually exclusive with roleType.
    * @param cond        Condition evaluated for each player.
    * @param result      Result to apply when cond fires.
-   * @param numPlayers  Number of players in the game.
    */
   public constructor(
-    roleType: ForEachRoleType,
+    roleType: ForEachRoleType | null,
+    trackType: TrackType | null,
     cond: BooleanFunction,
     result: Result,
-    numPlayers: number,
   ) {
     super(result);
-    this.roleType = roleType;
+    if (roleType != null && trackType != null) {
+      throw new Error("ForEach(): one of RoleType or trackType has to be null.");
+    }
+
+    this.roleType = (roleType ?? "Shared").toLowerCase();
+    this.trackType = trackType;
     this.cond = cond;
     this.endResult = result;
-    this.numPlayers = numPlayers;
   }
 
   /**
@@ -75,7 +80,9 @@ export class ForEach extends EndRule implements EndRuleFunction {
    * result (faithful to the first-match semantics used by the inline compiler).
    */
   public eval(ctx: Context): EndResult | null {
-    const n = this.numPlayers;
+    if (this.trackType != null) return null;
+
+    const n = ctx.numPlayers();
     const mover = ctx.state.mover;
     const origPlayer = ctx._evalPlayer;
 

@@ -184,27 +184,27 @@ export class PlaceRandom {
   );
 
   public constructor(
-    arg0: RegionFunction | null | string[] | JavaCount[],
-    arg1: string[] | JavaIntFunction[] | null | JavaIntFunction,
-    arg2: JavaIntFunction | null | string | undefined,
-    arg3?: JavaIntFunction | null,
-    arg4?: JavaIntFunction | string | null,
-    arg5?: string | null,
-    arg6?: JavaBooleanConstant | null,
+    region: RegionFunction | null | string[] | JavaCount[],
+    item: string[] | JavaIntFunction[] | null | JavaIntFunction,
+    count: JavaIntFunction | null | string = null,
+    value: JavaIntFunction | null = null,
+    state: JavaIntFunction | null = null,
+    type: string | null = null,
+    randPiecOrder: JavaBooleanConstant | null = null,
   ) {
     // Dispatch based on Java constructor arity and argument shapes.
-    if (isJavaCountArray(arg0, arguments.length, arg1)) {
+    if (isJavaCountArray(region, arguments.length, item)) {
       // Constructor 3: (Count[], IntFunction, SiteType)
-      const items = arg0 as JavaCount[];
-      const where = arg1 as JavaIntFunction;
-      const type = arg2 as string | null | undefined;
+      const items = region as JavaCount[];
+      const where = item as JavaIntFunction;
+      const siteType = count as string | null | undefined;
 
       this.region = PlaceRandom.NULL_REGION;
       this.item = null;
       this.countFn = intConstant(1);
       this.where = where;
       this.stack = true;
-      this.type = type ?? null;
+      this.type = siteType ?? null;
       this.stateFn = intConstant(OFF);
       this.valueFn = intConstant(OFF);
       this.randPiecOrderFn = booleanConstant(false);
@@ -218,48 +218,47 @@ export class PlaceRandom {
           this.counts[i] = it.count();
         }
       }
-    } else if (Array.isArray(arg0) && isJavaIntFunction(arg4)) {
+    } else if (Array.isArray(region) && isJavaIntFunction(state)) {
       // Constructor 2: (String[], IntFunction[], IntFunction, IntFunction, IntFunction, SiteType)
-      const pieces = arg0 as string[];
-      const count = arg1 as JavaIntFunction[] | null;
-      const value = arg2 as JavaIntFunction | null;
-      const state = arg3 as JavaIntFunction | null;
-      const where = arg4 as JavaIntFunction;
-      const type = arg5 as string | null;
+      const pieces = region as string[];
+      const counts = item as JavaIntFunction[] | null;
+      const valueFn = count as JavaIntFunction | null;
+      const stateFn = value;
+      const where = state;
+      const siteType = type;
 
       this.region = PlaceRandom.NULL_REGION;
       this.item = null;
       this.countFn = intConstant(1);
       this.pieces = pieces;
       this.where = where;
-      this.counts = count;
+      this.counts = counts;
       this.stack = true;
-      this.stateFn = state ?? intConstant(OFF);
-      this.valueFn = value ?? intConstant(OFF);
+      this.stateFn = stateFn ?? intConstant(OFF);
+      this.valueFn = valueFn ?? intConstant(OFF);
       this.randPiecOrderFn = booleanConstant(false);
-      this.type = type ?? null;
+      this.type = siteType ?? null;
     } else {
       // Constructor 1: (RegionFunction | null, String[], IntFunction, IntFunction, IntFunction, SiteType, BooleanConstant)
-      const region = arg0 as RegionFunction | null;
-      const item = arg1 as string[];
-      const count = arg2 as JavaIntFunction | null;
-      const value = arg3 as JavaIntFunction | null;
-      const state = arg4 as JavaIntFunction | null;
-      const type = arg5 as string | null;
-      const randPiecOrder = arg6 as JavaBooleanConstant | null;
+      const regionFn = region as RegionFunction | null;
+      const items = item as string[];
+      const countFn = count as JavaIntFunction | null;
+      const valueFn = value;
+      const stateFn = state;
+      const siteType = type;
 
       // Java: this.region = (region == null ? new SitesBoard(type) : region);
-      this.region = region ?? PlaceRandom.NULL_REGION;
-      this.countFn = count ?? intConstant(1);
-      this.item = item;
+      this.region = regionFn ?? PlaceRandom.NULL_REGION;
+      this.countFn = countFn ?? intConstant(1);
+      this.item = items;
       this.where = null;
       this.pieces = null;
       this.counts = null;
       this.stack = false;
-      this.stateFn = state ?? intConstant(OFF);
-      this.valueFn = value ?? intConstant(OFF);
+      this.stateFn = stateFn ?? intConstant(OFF);
+      this.valueFn = valueFn ?? intConstant(OFF);
       this.randPiecOrderFn = randPiecOrder ?? booleanConstant(false);
-      this.type = type ?? null;
+      this.type = siteType ?? null;
     }
   }
 

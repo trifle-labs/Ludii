@@ -36,45 +36,30 @@ export class Or implements MovesFunction {
   // -------------------------------------------------------------------------
 
   /**
-   * For making a move between two sets of moves.
-   *
-   * @param movesA The first move.
-   * @param movesB The second move.
-   * @param then   The moves applied after that move is applied.
-   * @java Or(Moves, Moves, Then)
+   * @java Or(Moves movesA, Moves movesB, @Opt Then then)
+   * @java Or(Moves[] list, @Opt Then then)
    */
-  public constructor(movesA: MovesFunction, movesB: MovesFunction, then?: ThenLike | null);
-
-  /**
-   * For making a move between many sets of moves.
-   *
-   * @param list The list of moves.
-   * @param then The moves applied after that move is applied.
-   * @java Or(Moves[], Then)
-   */
-  public constructor(list: MovesFunction[], then?: ThenLike | null);
-
   public constructor(
-    movesAOrList: MovesFunction | MovesFunction[],
-    movesBOrThen?: MovesFunction | ThenLike | null,
-    thenArg?: ThenLike | null,
+    movesA: MovesFunction | MovesFunction[],
+    movesB?: MovesFunction | ThenLike | null,
+    then?: ThenLike | null,
   ) {
-    if (Array.isArray(movesAOrList)) {
+    if (Array.isArray(movesA)) {
       // (Moves[], Then?)
-      this.list = movesAOrList;
-      this._then = (movesBOrThen as ThenLike | null | undefined) ?? null;
+      if (then !== null && then !== undefined)
+        throw new Error("Or requires Java constructor arguments (Moves, Moves, Then?) or (Moves[], Then?).");
+      this.list = movesA;
+      this._then = (movesB as ThenLike | null | undefined) ?? null;
     } else if (
-      movesBOrThen !== null &&
-      movesBOrThen !== undefined &&
-      typeof (movesBOrThen as MovesFunction).eval === "function"
+      movesB !== null &&
+      movesB !== undefined &&
+      typeof (movesB as MovesFunction).eval === "function"
     ) {
       // (Moves, Moves, Then?)
-      this.list = [movesAOrList, movesBOrThen as MovesFunction];
-      this._then = thenArg ?? null;
+      this.list = [movesA, movesB as MovesFunction];
+      this._then = then ?? null;
     } else {
-      // (Moves, Then?)
-      this.list = [movesAOrList];
-      this._then = (movesBOrThen as ThenLike | null | undefined) ?? null;
+      throw new Error("Or requires Java constructor arguments (Moves, Moves, Then?) or (Moves[], Then?).");
     }
   }
 

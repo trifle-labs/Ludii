@@ -132,6 +132,7 @@ import { NextPhase } from "./ludemes/game/rules/phase/NextPhase.js";
 
 // Start rules
 import type { StartRule } from "./ludemes/game/rules/start/StartRule.js";
+import { Start1to1 } from "./ludemes/game/rules/start/Start.js";
 import { PlaceHandCount1to1 } from "./ludemes/game/rules/start/PlaceHandCount1to1.js";
 import { PlaceSites1to1 } from "./ludemes/game/rules/start/PlaceSites1to1.js";
 import { SetCountStart1to1 } from "./ludemes/game/rules/start/SetCountStart1to1.js";
@@ -6538,7 +6539,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
     const cond = compileBool1to1(condNode, 2); // numPlayers is approximate here
     const thenMoves = compileMoves1to1(thenNode, equipment);
     const elseMoves = elseNode ? compileMoves1to1(elseNode, equipment) : null;
-    const ifResult: MovesFunction = new IfMoves(cond, thenMoves, elseMoves);
+    const ifResult: MovesFunction = new IfMoves(cond, thenMoves, elseMoves, null);
     // (if cond then else (then ...)) — the 4th positional may be a (then ...)
     // consequence that applies to BOTH branches of the if. Attach it via
     // attachThen so it wraps the outer if-result with withThenConsequence.
@@ -9024,36 +9025,20 @@ function compileNextPhase1to1(
   const rawArgs = node.items.slice(1); // skip the head
 
   // Distinguish args:
-  //   Optional first arg = who (RoleType ident like Mover, P1, Shared)
+  //   Optional first arg = role (RoleType ident like Mover, P1, Shared)
   //   Required next arg  = condition (BooleanFunction list)
   //   Optional last arg  = target phase name (string)
   //
-  // @java NextPhase.java: who defaults to Shared (= numPlayers+1)
-  let whoFn: import("./ludemes/base.js").IntFunction;
+  // @java NextPhase.java: role/indexPlayer are @Opt @Or; missing role defaults to Shared.
   let remainingArgs = rawArgs;
-  const SHARED_IDX = numPlayers + 1;
+  let role: RoleType | "Shared" | "All" | "Each" | null = null;
 
   // Check if first non-trivial arg is a RoleType ident (not a list, not a string)
   const firstArg = rawArgs[0];
   const knownRoles = new Set(["mover", "next", "p1", "p2", "p3", "p4", "shared", "all", "each"]);
   if (firstArg && isIdent(firstArg) && knownRoles.has(firstArg.name.toLowerCase())) {
-    const roleName = firstArg.name.toLowerCase();
-    if (roleName === "mover") {
-      whoFn = { eval(ctx: Context): number { return ctx.state.mover; } };
-    } else if (roleName === "next") {
-      whoFn = { eval(ctx: Context): number { return (ctx.state.mover % ctx.game.numPlayers) + 1; } };
-    } else if (roleName === "shared" || roleName === "all" || roleName === "each") {
-      whoFn = { eval(_ctx: Context): number { return SHARED_IDX; } };
-    } else if (roleName.startsWith("p") && !isNaN(parseInt(roleName.slice(1), 10))) {
-      const pid = parseInt(roleName.slice(1), 10);
-      whoFn = { eval(_ctx: Context): number { return pid; } };
-    } else {
-      whoFn = { eval(_ctx: Context): number { return SHARED_IDX; } };
-    }
+    role = canonicalNextPhaseRole(firstArg.name);
     remainingArgs = rawArgs.slice(1);
-  } else {
-    // No explicit who — defaults to Shared
-    whoFn = { eval(_ctx: Context): number { return SHARED_IDX; } };
   }
 
   // Last arg may be the target phase name (string)
@@ -9074,8 +9059,19 @@ function compileNextPhase1to1(
     condFn = compileBool1to1(condNode, numPlayers);
   }
 
-  const np = new NextPhase(whoFn, condFn, targetName);
+  const np = new NextPhase(role, null, condFn, targetName);
   return np;
+}
+
+function canonicalNextPhaseRole(role: string): RoleType | "Shared" | "All" | "Each" {
+  const lower = role.toLowerCase();
+  if (lower === "mover") return "Mover";
+  if (lower === "next") return "Next";
+  if (lower === "shared") return "Shared";
+  if (lower === "all") return "All";
+  if (lower === "each") return "Each";
+  if (/^p\d+$/.test(lower)) return (`P${lower.slice(1)}`) as RoleType;
+  return "Shared";
 }
 
 /**
@@ -9336,7 +9332,10 @@ export function compileNode1to1(gameNode: LudList): Game1to1 {
     }
   }
 
-  const rules = new Rules1to1(play, end, phases);
+  const start = startRules.length > 0 ? new Start1to1(startRules) : null;
+  const rules = phases !== null
+    ? new Rules1to1(null, start, play, phases, end)
+    : new Rules1to1(null, start, play, end);
 
   // Detect if (move Pass) appears in the game tree.
   // @java game/rules/play/moves/nonDecision/effect/Pass.java — gameFlags |= GameType.NotAllPass
