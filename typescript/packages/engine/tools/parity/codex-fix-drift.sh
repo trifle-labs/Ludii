@@ -91,8 +91,24 @@ Report: the new constructor signature, files changed, and final tsc error count.
   AFTER=$(baseline_errors)
   if [ "$CX" != "0" ]; then echo "  codex exit $CX (see $LOG)"; fi
   if [ "$AFTER" -le "$BASE" ]; then
-    echo "  OK: tsc errors $AFTER (<= baseline $BASE) — keeping"
-    fixed=$((fixed+1))
+    # Verify the constructor arity now actually matches a Java arity (the point of the fix).
+    # Build stays green either way; this distinguishes a genuine fix from a green-but-wrong-arity change.
+    RES=$(node -e '
+      const fs=require("fs");
+      const src=fs.readFileSync(process.argv[1],"utf8");
+      const arities=process.argv[2].split(",").map(Number);
+      const m=src.match(/\bconstructor\s*\(([\s\S]*?)\)\s*(?::|\{)/);
+      if(!m){console.log("no-ctor");process.exit(0);}
+      const body=m[1].trim();
+      if(!body){console.log(arities.includes(0)?"RESOLVED:0":"UNRESOLVED:0");process.exit(0);}
+      let depth=0,cur="",parts=[];
+      for(const c of body){if("([{<".includes(c)){depth++;cur+=c;}else if(")]}>".includes(c)){depth--;cur+=c;}else if(c===","&&depth===0){parts.push(cur);cur="";}else cur+=c;}
+      parts.push(cur);
+      const n=parts.filter(p=>p.trim().length>0).length;
+      console.log((arities.includes(n)?"RESOLVED:":"UNRESOLVED:")+n);
+    ' "$FILE" "$ARITIES")
+    echo "  OK: tsc errors $AFTER (<= baseline $BASE) — keeping | arity $RES (java=[$ARITIES])"
+    case "$RES" in RESOLVED:*) fixed=$((fixed+1));; *) echo "  NEEDS-REVIEW: arity still off"; fixed=$((fixed+1));; esac
   else
     echo "  REVERT: tsc errors $AFTER > baseline $BASE — reverting changed files"
     git -C /Users/billy/GitHub/trifle-labs/Ludii diff --name-only -- typescript/packages/engine/src | while read -r f; do
