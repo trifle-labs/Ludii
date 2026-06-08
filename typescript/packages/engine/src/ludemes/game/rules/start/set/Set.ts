@@ -31,3 +31,39 @@ export { SetCost1to1 } from "./sites/SetCost.js";
 export { SetCount1to1 } from "./sites/SetCount.js";
 export { SetPhase1to1 } from "./sites/SetPhase.js";
 export { SetSite1to1 } from "./sites/SetSite.js";
+
+import type { IntFunction, RegionFunction } from "../../../../base.js";
+import type { SiteType } from "../../../../other/action/SiteType.js";
+import type { StartRule } from "../StartRule.js";
+import { SetCountStart1to1 } from "../SetCountStart1to1.js";
+import { SetCost1to1 } from "./sites/SetCost.js";
+import { SetPhase1to1 } from "./sites/SetPhase.js";
+
+/**
+ * Static-factory dispatcher for "(set …)" start rules, mirroring Java's
+ * game.rules.start.set.Set.construct() overloads. ArgCompiler invokes the static
+ * construct* method whose arity matches the bound Java executable.
+ *
+ * @java game/rules/start/set/Set.java — construct() dispatchers
+ */
+export class SetDispatch {
+  /**
+   * @java Set.construct(SetStartSitesType startType, IntFunction value, @Opt SiteType type,
+   *   @Or @Name IntFunction at, @Or @Name RegionFunction to) — routes Count/Cost/Phase.
+   * Java maps `at`->site, `to`->region. 5 required params so .length===5 matches the bind.
+   */
+  public static constructSites(
+    startType: string,
+    value: IntFunction,
+    type: SiteType | null,
+    at: IntFunction | null,
+    to: RegionFunction | null,
+  ): StartRule | null {
+    switch (startType) {
+      case "Count": return new SetCountStart1to1(value, type, at, to);
+      case "Cost": return new SetCost1to1(value, type, at, to);
+      case "Phase": return new SetPhase1to1(value, type, at, to);
+      default: return null;
+    }
+  }
+}

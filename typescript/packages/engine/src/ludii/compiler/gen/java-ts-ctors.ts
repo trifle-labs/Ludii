@@ -1475,8 +1475,10 @@ import { TrajectoriesCore as C1472 } from "../../../eval/graph/trajectory/trajec
 import { Step as C1473 } from "../../../eval/graph/trajectory/step.js";
 import { Radial as C1474 } from "../../../eval/graph/trajectory/radial.js";
 import { VertexEl as C1475 } from "../../../eval/graph/trajectory/graph-element.js";
+import { SetDispatch as C1476 } from "../../../ludemes/game/rules/start/set/Set.js";
 
 export const JAVA_TS_CTORS = new Map();
+JAVA_TS_CTORS.set("game.rules.start.set.Set", C1476);
 JAVA_TS_CTORS.set("other.state.State", C0);
 JAVA_TS_CTORS.set("game.Game", C1);
 JAVA_TS_CTORS.set("other.RankUtils", C2);
