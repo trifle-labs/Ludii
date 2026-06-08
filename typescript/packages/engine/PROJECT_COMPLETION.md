@@ -1,0 +1,46 @@
+# PROJECT COMPLETION PLAN — faithful Java→TS port that PLAYS
+
+## Goal (standing; keep going until done)
+ONE faithful 1:1 Java→TS port of the Ludii engine that **plays** (behavioral parity with
+Java move-for-move), not just compiles. No custom logic — re-port Java so it works like
+Java. The ONLY sanctioned "special case" custom code is the reflection-emulation
+(ArgCompiler + JAVA_TS_CTORS + the captured reflection metadata), because TS lacks Java
+reflection. Similar narrowly-scoped emulations are allowed but must be the exception.
+
+## The core problem (diagnosed)
+Two parallel implementations existed:
+1. **Bespoke path** — `compiler1to1.ts` (~9000-line dispatcher `compileNode1to1`) + 268
+   `*1to1` simplified classes. PLAYS at ~60% parity. This is to be DELETED.
+2. **Faithful path** — ArgCompiler (reflection-driven) + ~993 faithful classes. COMPILES
+   95% but PLAYS 0%, because Java's `Game.create()` preprocessing (board ludeme eval →
+   Topology graph build → `preGenerateDirection`/radials → equipment finalize) was never
+   ported into `Game1to1`; the dispatcher did it procedurally and injected `ctx._radials`.
+
+`Game1to1` is a "1:1 subset" of `game/Game.java`: faithful constructor + `start()` +
+`moves()`, but NO `create()`. Java lifecycle: `new Game(...)` → `create()` → `start()` →
+`moves()`.
+
+## Plan (dependency order)
+1. **[CRITICAL PATH] Port `Game.create()`** into `Game1to1.create()` (Java Game.java:2455).
+   Move the board/topology setup logic out of `compileNode1to1` into `create()`. After this
+   the faithful eval can run. play1to1(ArgCompiler) calls `create()` after constructing.
+2. **Topology wiring**: faithful eval must read topology from the Game (set by create()),
+   not from dispatcher-injected `ctx._radials`. Faithful `Topology.ts` already exists.
+3. **Parity-driven eval validation**: wire play1to1 → ArgCompiler as the ONLY path; run the
+   parity suite; fix faithful `eval` bugs game-by-game (the 109 stubs + divergences) via
+   codex/agent waves. Resolve the eager-vs-lazy arg seam (ArgCompiler passes raw numbers
+   where ludemes expect IntFunction objects).
+4. **Delete the bespoke path**: remove `compiler1to1.ts`, the 268 `*1to1` classes, the
+   LudemeRegistry factories, once the faithful path meets/exceeds 60% then climbs to parity.
+5. **Finish**: behavioral parity ≈ Java across the corpus; one engine; bespoke gone.
+
+## Parallelization
+- Sonnet sub-agents capped until Jun 10 3pm → use **codex** (proven) for parallel waves,
+  Agent/Workflow (opus) when available. Driver patterns in `tools/parity/`.
+- codex invocation: positional prompt + `</dev/null` + `--sandbox workspace-write` (NOT
+  stdin-pipe, NOT deprecated --full-auto).
+
+## State (update as work proceeds)
+- ArgCompiler compile-coverage: 95% (57/60). Constructor drift: 52 (robust parser).
+- Parity: compiler1to1 60%; ArgCompiler 0% (no create()). Baseline to beat: 60%.
+- NEXT: port Game.create() + topology wiring (step 1-2).
