@@ -456,15 +456,19 @@ export class Sites extends BaseRegionFunction {
     switch (rt) {
       case "Occupied": {
         // @java return new SitesOccupied(by, By, container, Container, component, Component, components, top, on);
-        // TS SitesOccupied constructor: (who: IntFunction, role: RoleType | null, component, top, siteType)
-        const whoFn: IntFunction = by !== null
-          ? resolveIntFn(by)
-          : By !== null
-            ? resolveRoleIntFn(By as string)
-            : constIntFn(-1);
-        // The TS SitesOccupied role param is typed as a specific union — use `as unknown`
+        const byFn = by !== null ? resolveIntFn(by) : null;
         const roleVal = (By !== null ? (By as string) : null) as unknown as null;
-        return new SitesOccupied(whoFn, roleVal, component, top ?? true, on);
+        return new SitesOccupied(
+          byFn,
+          roleVal,
+          null,
+          null,
+          component,
+          _Component,
+          _components as unknown as IntFunction[] | null,
+          top,
+          on,
+        );
       }
       default:
         throw new Error(`Sites(): A SitesOccupiedType is not implemented: ${regionType}`);

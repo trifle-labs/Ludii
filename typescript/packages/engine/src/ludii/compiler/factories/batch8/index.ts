@@ -206,7 +206,17 @@ function makeSites(b: ArgBundle): RegionFunction {
     case "Start":
       return new SitesStart(pieceIndexFn(positionalAfterFirstString(b)[0]));
     case "Occupied":
-      return new SitesOccupied(playerOrRoleFn(named(b, "by")), roleOrNull(named(b, "by")) as never, intOrNull(named(b, "component")), boolValue(named(b, "top"), true), siteTypeNamed(b, "on"));
+      return new SitesOccupied(
+        playerOrRoleFn(named(b, "by")),
+        roleOrNull(named(b, "by")) as never,
+        intOrNull(named(b, "by")),
+        stringOrNull(named(b, "by")),
+        intOrNull(named(b, "component")),
+        stringOrNull(named(b, "component")),
+        intFnArray(named(b, "components")) as IntFunction[] | null,
+        boolValue(named(b, "top"), true),
+        siteTypeNamed(b, "on"),
+      );
     case "Incident":
       return new SitesIncident(siteTypeAt(b) ?? "Cell", siteTypeNamed(b, "of") ?? "Cell", requireIntFn(named(b, "at")), intOrNull(named(b, "owner")));
     case "Around":
