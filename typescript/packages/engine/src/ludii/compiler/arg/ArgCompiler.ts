@@ -270,8 +270,12 @@ export class ArgCompiler {
         // `in:`/`at:`) whose params don't align to a grammar clause, so the clause-derived
         // label is absent or misaligned. Grammar label stays primary (no regression).
         const reflName = paramHasName ? (executable.params[slot]!.name ?? null) : null;
-        const nameMatches = (an: string): boolean =>
-          an === paramName || (reflName !== null && an === reflName);
+        // Case-insensitive: .lud labels are lowercase (if:, in:) while keyword-escaped
+        // Java params are capitalized (If, In, Do) — match them regardless of case.
+        const nameMatches = (an: string): boolean => {
+          const a = an.toLowerCase();
+          return a === paramName?.toLowerCase() || (reflName !== null && a === reflName.toLowerCase());
+        };
         // A labeled (@Name) slot must be filled by a NAMED arg matching its label/refl-name.
         if (paramName !== null && (argIn.parameterName === null || !nameMatches(argIn.parameterName))) {
           matched = false;
