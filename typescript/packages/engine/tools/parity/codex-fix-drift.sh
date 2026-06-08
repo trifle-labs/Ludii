@@ -30,6 +30,8 @@ MODEL="${MODEL:-gpt-5.5}"
 EFFORT="${EFFORT:-high}"
 LOGDIR="/tmp/codex-drift-logs"
 mkdir -p "$LOGDIR"
+SKIP="${SKIP:-/tmp/codex-drift-skip.txt}"   # classes attempted-but-unresolved (don't re-grind)
+touch "$SKIP"
 
 baseline_errors() { npx tsc -p tsconfig.json 2>&1 | grep -c "error TS"; }
 
@@ -43,9 +45,12 @@ if [ "$BASE" != "0" ]; then echo "WARNING: build not green at baseline ($BASE er
 
 # Candidate list: clean single-class drifts (constructor-based, not static-construct, file exists,
 # skip *1to1-entangled deep subsystems). JSON lines: jc \t file \t javaArities
-CANDS=$(node -e '
+CANDS=$(SKIP="$SKIP" node -e '
+const fs=require("fs");
 const r=require("./tools/parity/drift-report.json");
+const skip=new Set(fs.readFileSync(process.env.SKIP,"utf8").split("\n").map(s=>s.trim()).filter(Boolean));
 const cand=r.filter(x=>
+  !skip.has(x.jc) &&
   x.javaConstructCount===0 &&            // constructor-based (not a static-construct dispatcher)
   x.tsArity!==null &&
   x.javaArities.some(a=>a>=1) &&         // has a real POSITIONAL ctor to match (skip zero-arg-only)
@@ -111,7 +116,10 @@ Report: the new constructor signature, files changed, and final tsc error count.
       console.log((arities.includes(n)?"RESOLVED:":"UNRESOLVED:")+n);
     ' "$FILE" "$ARITIES")
     echo "  OK: tsc errors $AFTER (<= baseline $BASE) — keeping | arity $RES (java=[$ARITIES])"
-    case "$RES" in RESOLVED:*) fixed=$((fixed+1));; *) echo "  NEEDS-REVIEW: arity still off"; fixed=$((fixed+1));; esac
+    case "$RES" in
+      RESOLVED:*) fixed=$((fixed+1));;
+      *) echo "  NEEDS-REVIEW: arity still off — adding to skip-list"; echo "$JC" >> "$SKIP"; fixed=$((fixed+1));;
+    esac
   else
     echo "  REVERT: tsc errors $AFTER > baseline $BASE — reverting changed files"
     git -C /Users/billy/GitHub/trifle-labs/Ludii diff --name-only -- typescript/packages/engine/src | while read -r f; do
