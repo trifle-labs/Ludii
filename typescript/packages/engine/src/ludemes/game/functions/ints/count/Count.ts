@@ -15,6 +15,190 @@
 
 import { BaseIntFunction } from "../BaseIntFunction.js";
 import type { Context } from "../../../../../context.js";
+import type { JavaIntFunction } from "../IntFunction.js";
+import type { IntFunction, IntArrayFunction, RegionFunction, BooleanFunction } from "../../../../base.js";
+import { BaseBooleanFunction } from "../../booleans/BaseBooleanFunction.js";
+import { CountValue1to1 } from "../../../../game/functions/ints1to1/count/CountValue1to1.js";
+import { CountStack1to1 } from "../../../../game/functions/ints1to1/count/CountStack1to1.js";
+import { CountRows1to1, CountColumns1to1, CountPlayers1to1, CountTurns1to1, CountMovesThisTurn1to1 } from "../../../../game/functions/ints1to1/count/CountSimple1to1.js";
+import { CountCells1to1 } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";
+import { CountPhases } from "./simple/CountPhases.js";
+import { CountTrials } from "./simple/CountTrials.js";
+import { CountMoves as CountMoves1to1 } from "../count1to1/CountMoves.js";
+import { CountEdges1to1 } from "../../../../game/functions/ints1to1/count/CountEdges1to1.js";
+import { CountVertices1to1 } from "../../../../game/functions/ints1to1/count/CountVertices1to1.js";
+import { CountNumber1to1 } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";
+import { CountSiteNeighbours1to1 } from "../../../../game/functions/ints1to1/count/CountSiteNeighbours1to1.js";
+import { CountOff1to1 } from "../../../../game/functions/ints1to1/count/CountOff1to1.js";
+import { CountSites1to1 } from "../../../../game/functions/ints1to1/count/CountSites1to1.js";
+import { CountSitesPlatformBelow } from "./sitesPlatformBelow/CountSitesPlatformBelow.js";
+import { CountPieces1to1 } from "../../../../game/functions/ints1to1/count/CountPieces1to1.js";
+import { CountGroups1to1 } from "../../../../game/functions/ints1to1/count/CountGroups1to1.js";
+import { CountSizeBiggestGroup1to1 } from "../../../../game/functions/ints1to1/count/CountSizeBiggestGroup1to1.js";
+import { CountSizeBiggestLine } from "./sizeBiggestLine/CountSizeBiggestLine.js";
+import { CountLiberties1to1 } from "../../../../game/functions/ints1to1/count/CountLiberties1to1.js";
+import { CountSteps1to1 } from "../../../../game/functions/ints1to1/count/CountSteps1to1.js";
+import { CountStepsOnTrack } from "./stepsOnTrack/CountStepsOnTrack.js";
+
+type SiteType = "Cell" | "Edge" | "Vertex";
+
+const LAST_TO: IntFunction = { eval: (context: Context) => context._evalTo };
+const LAST_FROM: IntFunction = { eval: (context: Context) => context._evalFrom };
+const ZERO_INT: IntFunction = { eval: (_context: Context) => 0 };
+
+class TrueBooleanFunction extends BaseBooleanFunction {
+  public override eval(_context: Context): boolean {
+    return true;
+  }
+}
+
+class BooleanFunctionAdapter extends BaseBooleanFunction {
+  public constructor(private readonly fn: BooleanFunction) {
+    super();
+  }
+
+  public override eval(context: Context): boolean {
+    return this.fn.eval(context);
+  }
+}
+
+function asLeanInt(fn: unknown, fallback: IntFunction = ZERO_INT): IntFunction {
+  return hasEval(fn) ? fn as IntFunction : fallback;
+}
+
+function asJavaInt(fn: unknown, fallback: IntFunction = ZERO_INT): JavaIntFunction {
+  const lean = asLeanInt(fn, fallback);
+  return {
+    eval: (context: Context) => lean.eval(context),
+    exceeds: (context: Context, other: JavaIntFunction) => lean.eval(context) > other.eval(context),
+    isHint: () => false,
+    isHand: () => false,
+    concepts: (_game: unknown) => new Set<number>(),
+    readsEvalContextRecursive: () => new Set<number>(),
+    writesEvalContextRecursive: () => new Set<number>(),
+    missingRequirement: (_game: unknown) => false,
+    willCrash: (_game: unknown) => false,
+    toEnglish: (_game: unknown) => "count argument",
+  };
+}
+
+function asRegion(fn: unknown, fallbackSite: IntFunction = LAST_TO): RegionFunction {
+  if (hasEval(fn)) {
+    return {
+      eval: (context: Context) => {
+        const value = (fn as { eval(context: Context): unknown }).eval(context);
+        if (Array.isArray(value)) return value as number[];
+        return typeof value === "number" && value >= 0 ? [value] : [];
+      },
+    };
+  }
+  return {
+    eval: (context: Context) => {
+      const site = fallbackSite.eval(context);
+      return site >= 0 ? [site] : [];
+    },
+  };
+}
+
+function asIntArray(fn: unknown): IntArrayFunction {
+  return hasEval(fn) ? fn as IntArrayFunction : { eval: (_context: Context) => [] };
+}
+
+function asBool(fn: unknown): BooleanFunction | null {
+  return hasEval(fn) ? fn as BooleanFunction : null;
+}
+
+function asBaseBool(fn: unknown): BaseBooleanFunction {
+  const bool = asBool(fn);
+  return bool === null ? new TrueBooleanFunction() : new BooleanFunctionAdapter(bool);
+}
+
+function hasEval(value: unknown): value is { eval(context: Context): unknown } {
+  return typeof (value as { eval?: unknown } | null)?.eval === "function";
+}
+
+function roleToInt(role: unknown): IntFunction {
+  if (hasEval(role)) return role as IntFunction;
+  switch (role) {
+    case "Mover":
+      return { eval: (context: Context) => context.state.mover };
+    case "Next":
+      return { eval: (context: Context) => (context.state.mover % context.game.numPlayers) + 1 };
+    case "P1":
+      return { eval: (_context: Context) => 1 };
+    case "P2":
+      return { eval: (_context: Context) => 2 };
+    default:
+      return ZERO_INT;
+  }
+}
+
+function roleToJavaInt(role: unknown): JavaIntFunction | null {
+  if (role === null || role === undefined) return null;
+  return asJavaInt(roleToInt(role));
+}
+
+function singleSiteRegion(siteFn: unknown, fallback: IntFunction = LAST_TO): RegionFunction {
+  const intFn = asLeanInt(siteFn, fallback);
+  return {
+    eval: (context: Context) => {
+      const site = intFn.eval(context);
+      return site >= 0 ? [site] : [];
+    },
+  };
+}
+
+function firstSiteFn(regionFn: unknown, fallback: IntFunction = LAST_TO): IntFunction {
+  if (!hasEval(regionFn)) return fallback;
+  return {
+    eval: (context: Context) => {
+      const sites = (regionFn as RegionFunction).eval(context);
+      return sites[0] ?? -1;
+    },
+  };
+}
+
+function regionFrom(inArg: unknown, atArg: unknown, fallback: IntFunction = LAST_TO): RegionFunction {
+  if (inArg !== null && inArg !== undefined) return asRegion(inArg, fallback);
+  if (atArg !== null && atArg !== undefined) return singleSiteRegion(atArg, fallback);
+  return singleSiteRegion(fallback, fallback);
+}
+
+function directionChoice(direction: unknown): { absoluteDirection(): string; name: string } {
+  const name = typeof direction === "string" ? direction : "Adjacent";
+  return {
+    name,
+    absoluteDirection: () => name,
+  };
+}
+
+function countPips(): IntFunction {
+  return {
+    eval: (context: Context) => context.state.diceValues?.reduce((sum, value) => sum + value, 0) ?? 0,
+  };
+}
+
+function countLegalMoves(): IntFunction {
+  return {
+    eval: (context: Context) => {
+      try {
+        return context.game.moves(context)?.length ?? 0;
+      } catch {
+        return 0;
+      }
+    },
+  };
+}
+
+function countActive(): IntFunction {
+  return {
+    eval: (context: Context) => context.game.numPlayers,
+  };
+}
+
+function asJavaReturn(fn: IntFunction | JavaIntFunction): JavaIntFunction {
+  return fn as unknown as JavaIntFunction;
+}
 
 /**
  * Root Count class — should never have eval() called on it directly.
@@ -29,6 +213,201 @@ export class Count extends BaseIntFunction {
    */
   private constructor() {
     super();
+  }
+
+  /**
+   * @java Count.construct(CountValueType, IntFunction, IntArrayFunction)
+   */
+  public static constructValue(countType: unknown, of: unknown, inArg: unknown): JavaIntFunction {
+    switch (countType) {
+      case "Value":
+        return asJavaReturn(new CountValue1to1(asLeanInt(of), asIntArray(inArg)));
+      default:
+        throw new Error("Count(): A CountValueType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountStackType, StackDirection, SiteType, IntFunction, RegionFunction, BooleanFunction, BooleanFunction)
+   */
+  public static constructStack(countType: unknown, _stackDirection: unknown, _type: unknown, at: unknown, to: unknown, _If: unknown, _stop: unknown): JavaIntFunction {
+    const numNonNull = (at !== null && at !== undefined ? 1 : 0) + (to !== null && to !== undefined ? 1 : 0);
+    if (numNonNull !== 1) {
+      throw new Error("Count(): With CountStackType one 'at', 'to' parameters must be non-null.");
+    }
+
+    switch (countType) {
+      case "Stack":
+        return asJavaReturn(new CountStack1to1(at !== null && at !== undefined ? asLeanInt(at) : firstSiteFn(to)));
+      default:
+        throw new Error("Count(): A CountStackType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountSimpleType, SiteType)
+   */
+  public static constructSimple(countType: unknown, _type: unknown): JavaIntFunction {
+    switch (countType) {
+      case "Active":
+        return asJavaReturn(countActive());
+      case "Cells":
+        return asJavaReturn(new CountCells1to1());
+      case "Columns":
+        return asJavaReturn(new CountColumns1to1());
+      case "Edges":
+        return asJavaReturn(new CountEdges1to1());
+      case "Moves":
+        return asJavaReturn(new CountMoves1to1());
+      case "MovesThisTurn":
+        return asJavaReturn(new CountMovesThisTurn1to1());
+      case "Phases":
+        return new CountPhases();
+      case "Players":
+        return asJavaReturn(new CountPlayers1to1());
+      case "Rows":
+        return asJavaReturn(new CountRows1to1());
+      case "Trials":
+        return new CountTrials();
+      case "Turns":
+        return asJavaReturn(new CountTurns1to1());
+      case "Vertices":
+        return asJavaReturn(new CountVertices1to1());
+      case "LegalMoves":
+        return asJavaReturn(countLegalMoves());
+      default:
+        throw new Error("Count(): A CountSimpleType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountSiteType, SiteType, RegionFunction, IntFunction, String, RoleType, IntFunction, IntFunction[])
+   */
+  public static constructSite(countType: unknown, type: unknown, inArg: unknown, at: unknown, name: unknown, who: unknown, what: unknown, whats: unknown): JavaIntFunction {
+    const numNonNull =
+      (inArg !== null && inArg !== undefined ? 1 : 0)
+      + (at !== null && at !== undefined ? 1 : 0)
+      + (name !== null && name !== undefined ? 1 : 0);
+
+    if (numNonNull > 1) {
+      throw new Error("Count(): With CountSiteType zero or one 'in', 'at' or 'name' parameters must be non-null.");
+    }
+
+    if (countType === null || countType === undefined) {
+      return asJavaReturn(new CountNumber1to1(regionFrom(inArg, at)));
+    }
+
+    const siteFn = at !== null && at !== undefined ? asLeanInt(at) : firstSiteFn(inArg, LAST_TO);
+    switch (countType) {
+      case "Adjacent":
+        return asJavaReturn(new CountSiteNeighbours1to1(siteFn, "Adjacent"));
+      case "Diagonal":
+        return asJavaReturn(new CountSiteNeighbours1to1(siteFn, "Diagonal"));
+      case "Neighbours":
+        return asJavaReturn(new CountSiteNeighbours1to1(siteFn, "Adjacent"));
+      case "Off":
+        return asJavaReturn(new CountOff1to1(at !== null && at !== undefined ? asLeanInt(at) : null, inArg !== null && inArg !== undefined ? asRegion(inArg) : null));
+      case "Orthogonal":
+        return asJavaReturn(new CountSiteNeighbours1to1(siteFn, "Orthogonal"));
+      case "Sites":
+        return asJavaReturn(new CountSites1to1(regionFrom(inArg, at)));
+      case "SitesPlatformBelow":
+        return new CountSitesPlatformBelow(
+          type as SiteType | null,
+          at !== null && at !== undefined ? asJavaInt(at) : null,
+          roleToJavaInt(who),
+          what !== null && what !== undefined ? asJavaInt(what) : null,
+          Array.isArray(whats) ? whats.map((fn) => asJavaInt(fn)) : null,
+        );
+      default:
+        throw new Error("Count(): A CountSiteType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountComponentType, SiteType, RoleType, IntFunction, String, RegionFunction, BooleanFunction)
+   */
+  public static constructComponent(countType: unknown, _type: unknown, role: unknown, of: unknown, name: unknown, inArg: unknown, _If: unknown): JavaIntFunction {
+    const numNonNull = (role !== null && role !== undefined ? 1 : 0) + (of !== null && of !== undefined ? 1 : 0);
+    if (numNonNull > 1) {
+      throw new Error("Count(): With CountComponentType zero or one 'role' or 'of' parameters must be non-null.");
+    }
+
+    switch (countType) {
+      case "Pieces": {
+        const isAll = role === null || role === undefined || role === "All";
+        const whoFn = of !== null && of !== undefined ? asLeanInt(of) : roleToInt(role);
+        return asJavaReturn(new CountPieces1to1(whoFn, inArg !== null && inArg !== undefined ? asRegion(inArg) : null, typeof name === "string" ? name : null, isAll));
+      }
+      case "Pips":
+        return asJavaReturn(countPips());
+      default:
+        throw new Error("Count(): A CountComponentType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountGroupsType, SiteType, Direction, RegionFunction, BooleanFunction, IntFunction, BooleanFunction)
+   */
+  public static constructGroups(countType: unknown, _type: unknown, _directions: unknown, _throughAny: unknown, If: unknown, min: unknown, _isVisible: unknown): JavaIntFunction {
+    switch (countType) {
+      case "Groups":
+        return asJavaReturn(new CountGroups1to1(asBool(If), asLeanInt(min, ZERO_INT)));
+      case "SizeBiggestGroup":
+        return asJavaReturn(new CountSizeBiggestGroup1to1(asBool(If)));
+      default:
+        throw new Error("Count(): A CountGroupsType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountLinesType, SiteType, AbsoluteDirection, BooleanFunction)
+   */
+  public static constructLines(countType: unknown, type: unknown, directions: unknown, If: unknown): JavaIntFunction {
+    switch (countType) {
+      case "SizeBiggestLine":
+        return new CountSizeBiggestLine(type as string | null, directionChoice(directions), asBaseBool(If));
+      default:
+        throw new Error("Count(): A CountLineType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountLibertiesType, SiteType, IntFunction, Direction, BooleanFunction)
+   */
+  public static constructLiberties(countType: unknown, _type: unknown, at: unknown, _directions: unknown, If: unknown): JavaIntFunction {
+    switch (countType) {
+      case "Liberties":
+        return asJavaReturn(new CountLiberties1to1(asLeanInt(at, LAST_TO), asBool(If)));
+      default:
+        throw new Error("Count(): A CountLibertiesType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountStepsType, SiteType, RelationType, Step, IntFunction, IntFunction, IntFunction, RegionFunction)
+   */
+  public static constructSteps(countType: unknown, _type: unknown, _relation: unknown, _stepMove: unknown, _newRotation: unknown, site1: unknown, site2: unknown, region2: unknown): JavaIntFunction {
+    switch (countType) {
+      case "Steps":
+        return asJavaReturn(new CountSteps1to1(asLeanInt(site1), region2 !== null && region2 !== undefined ? asRegion(region2) : singleSiteRegion(site2)));
+      default:
+        throw new Error("Count(): A CountStepsType is not implemented.");
+    }
+  }
+
+  /**
+   * @java Count.construct(CountStepsOnTrackType, RoleType, Player, String, IntFunction, IntFunction)
+   */
+  public static constructStepsOnTrack(countType: unknown, role: unknown, player: unknown, name: unknown, site1: unknown, site2: unknown): JavaIntFunction {
+    switch (countType) {
+      case "StepsOnTrack": {
+        const playerFn = player !== null && player !== undefined ? asJavaInt(player) : roleToJavaInt(role);
+        return new CountStepsOnTrack(playerFn, typeof name === "string" ? name : null, asJavaInt(site1, LAST_FROM), asJavaInt(site2, LAST_TO));
+      }
+      default:
+        throw new Error("Count(): A CountStepsOnTrackType is not implemented.");
+    }
   }
 
   /**
