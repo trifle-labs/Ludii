@@ -424,22 +424,23 @@ function makeSlide(b: ArgBundle): Slide {
 
 function makeSow(b: ArgBundle): Sow {
   const start = b.positional.find(isIntLike);
-  return new Sow({
-    startLoc: intOrDefault(start, new LastTo()),
-    countFn: intOrDefault(named(b, "count"), constInt(1)),
-    numPerHoleFn: intOrDefault(named(b, "numperhole"), constInt(1)),
-    captureRule: boolOrDefault(named(b, "if"), true),
-    origin: boolOrDefault(named(b, "origin"), false),
-    trackName: b.positional.find((v): v is string => typeof v === "string" && !isSiteType(v)) ?? null,
-    ownerFn: intOrNull(named(b, "owner")),
-    includeSelf: boolValue(named(b, "includeself"), true),
-    skipFn: boolOrNull(named(b, "skipif")),
-    captureEffect: movesOrNull(named(b, "apply")),
-    sowEffect: movesOrNull(named(b, "soweffect")),
-    backtracking: boolOrNull(named(b, "backtracking")),
-    forward: boolOrNull(named(b, "forward")),
-    then: (b.positional.find(isThen) ?? null) as unknown as ThenLike | null,
-  });
+  return new Sow(
+    null,                                               // type
+    intOrDefault(start, new LastTo()),                  // start
+    intOrDefault(named(b, "count"), constInt(1)),       // count
+    intOrDefault(named(b, "numperhole"), constInt(1)),  // numPerHole
+    b.positional.find((v): v is string => typeof v === "string" && !isSiteType(v)) ?? null, // trackName
+    intOrNull(named(b, "owner")),                       // owner
+    boolOrDefault(named(b, "if"), true),                // If -> captureRule
+    movesOrNull(named(b, "soweffect")),                 // sowEffect
+    movesOrNull(named(b, "apply")),                     // apply -> captureEffect
+    boolValue(named(b, "includeself"), true),           // includeSelf
+    boolOrDefault(named(b, "origin"), false),           // origin
+    boolOrNull(named(b, "skipif")),                     // skipIf
+    boolOrNull(named(b, "backtracking")),               // backtracking
+    boolOrNull(named(b, "forward")),                    // forward
+    (b.positional.find(isThen) ?? null) as unknown as ThenLike | null, // then
+  );
 }
 
 function makeSpiral(b: ArgBundle): Spiral {
