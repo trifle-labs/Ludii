@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-const eng = '/Users/billy/GitHub/trifle-labs/Ludii/typescript/packages/engine';
+// Resolve the engine dir relative to this script (tools/proof/ -> engine) so the
+// tool measures the CURRENT working tree (e.g. a git worktree), not a hardcoded path.
+const eng = new URL('../..', import.meta.url).pathname.replace(/\/$/, '');
 const { ArgCompiler } = await import(`${eng}/dist/src/ludii/compiler/arg/ArgCompiler.js`);
 
 const all = execSync(`find /Users/billy/GitHub/trifle-labs/Ludii/Common/res/lud/board -name '*.lud'`, { encoding: 'utf8' })

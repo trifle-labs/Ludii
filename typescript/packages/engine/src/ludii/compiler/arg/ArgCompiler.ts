@@ -522,7 +522,9 @@ export class ArgCompiler {
     // from the raw reflected Java parameter identifier — so we derive labels from
     // the grammar clause below rather than from p.name. (Using p.name regressed
     // coverage 15%->3%.)
-    const nulls = params.map(() => null as string | null);
+    // Fallback names: reflected Java param name for @Name params (used when no grammar
+    // clause is available to supply a label — e.g. static construct() executables).
+    const nulls = params.map((p) => (p.ann.includes("Name") ? (p.name ?? null) : null));
     const rule = this.grammar.get(meta.label);
     if (!rule) {
       this.paramNameCache.set(key, nulls);
@@ -547,7 +549,13 @@ export class ArgCompiler {
       if (!param.ann.includes("Name")) return null;
       const label = labels[labelIndex] ?? null;
       labelIndex++;
-      return label;
+      // Fall back to the reflected Java parameter name when the grammar clause
+      // yields no label for this @Name slot. This is needed for static construct()
+      // executables (e.g. count's CountSiteType overload), whose params don't align
+      // to a grammar clause, so `in:`/`at:` named args would otherwise never bind.
+      // Targeted (only @Name params lacking a grammar label), so it can't regress
+      // the grammar-label path that the 15%->3% experiment broke.
+      return label ?? (param.name ?? null);
     });
     this.paramNameCache.set(key, names);
     return names;
