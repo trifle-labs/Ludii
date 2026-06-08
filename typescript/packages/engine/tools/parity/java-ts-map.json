@@ -799,6 +799,10 @@
   "file": "src/ludemes/game/rules/start/PlaceHandCount1to1.ts",
   "cls": "PlaceHandCount1to1"
  },
+ "game.rules.start.set.Set": {
+  "file": "src/ludemes/game/rules/start/set/Set.ts",
+  "cls": "SetDispatch"
+ },
  "game.rules.start.set.hidden.SetHidden": {
   "file": "src/ludemes/game/rules/start/set/hidden/SetHidden.ts",
   "cls": "SetHidden1to1"
@@ -832,8 +836,8 @@
   "cls": "SetAmount1to1"
  },
  "game.rules.start.place.item.PlaceItem": {
-  "file": "src/ludemes/game/rules/start/place/item/PlaceItem1to1.ts",
-  "cls": "PlaceItem1to1"
+  "file": "src/ludemes/game/rules/start/place/item/PlaceItem.ts",
+  "cls": "PlaceItem"
  },
  "game.rules.start.place.stack.PlaceMonotonousStack": {
   "file": "src/ludemes/game/rules/start/place/stack/PlaceMonotonousStack.ts",
@@ -980,8 +984,8 @@
   "cls": "And"
  },
  "game.rules.play.moves.nonDecision.operators.logical.If": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/IfMoves.ts",
-  "cls": "IfMoves"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/If1to1.ts",
+  "cls": "If1to1"
  },
  "game.rules.play.moves.nonDecision.operators.logical.Append": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Append.ts",
@@ -992,16 +996,16 @@
   "cls": "AllCombinations"
  },
  "game.rules.play.moves.nonDecision.operators.logical.Or": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Or.ts",
-  "cls": "Or"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Or1to1.ts",
+  "cls": "Or1to1"
  },
  "game.rules.play.moves.nonDecision.effect.Trigger": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Trigger.ts",
   "cls": "Trigger"
  },
  "game.rules.play.moves.nonDecision.effect.Push": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Push1to1.ts",
-  "cls": "Push1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Push.ts",
+  "cls": "Push"
  },
  "game.rules.play.moves.nonDecision.effect.Apply": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Apply.ts",
@@ -1032,8 +1036,8 @@
   "cls": "Roll"
  },
  "game.rules.play.moves.nonDecision.effect.Attract": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Attract1to1.ts",
-  "cls": "Attract1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Attract.ts",
+  "cls": "Attract"
  },
  "game.rules.play.moves.nonDecision.effect.Hop": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/HopFaithful.ts",
@@ -1076,8 +1080,8 @@
   "cls": "CustodialFaithful"
  },
  "game.rules.play.moves.nonDecision.effect.Directional": {
-  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Directional1to1.ts",
-  "cls": "Directional1to1"
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Directional.ts",
+  "cls": "Directional"
  },
  "game.rules.play.moves.nonDecision.effect.Step": {
   "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/StepFaithful.ts",
@@ -1750,6 +1754,10 @@
  "game.functions.booleans.no.moves.NoMoves": {
   "file": "src/ludemes/game/functions/booleans/no1to1/NoMoves.ts",
   "cls": "NoMoves"
+ },
+ "game.functions.booleans.no.No": {
+  "file": "src/ludemes/game/functions/booleans/no/No.ts",
+  "cls": "NoDispatch"
  },
  "game.functions.booleans.all.sites.AllDifferent": {
   "file": "src/ludemes/game/functions/booleans/all1to1/AllDifferent1to1.ts",
