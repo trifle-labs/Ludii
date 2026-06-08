@@ -265,16 +265,24 @@ export class ArgCompiler {
 
         const paramName = paramNames[slot] ?? null;
         const paramHasName = executable.params[slot]!.ann.includes("Name");
-        if (paramName !== null && (argIn.parameterName === null || argIn.parameterName !== paramName)) {
+        // Reflected Java parameter name, offered as an ALTERNATIVE to the grammar label
+        // for @Name params — needed for static construct() executables (e.g. count's
+        // `in:`/`at:`) whose params don't align to a grammar clause, so the clause-derived
+        // label is absent or misaligned. Grammar label stays primary (no regression).
+        const reflName = paramHasName ? (executable.params[slot]!.name ?? null) : null;
+        const nameMatches = (an: string): boolean =>
+          an === paramName || (reflName !== null && an === reflName);
+        // A labeled (@Name) slot must be filled by a NAMED arg matching its label/refl-name.
+        if (paramName !== null && (argIn.parameterName === null || !nameMatches(argIn.parameterName))) {
           matched = false;
           break;
         }
         if (argIn.parameterName !== null) {
-          if (paramName === null) {
+          if (paramName === null && reflName === null) {
             matched = false;
             break;
           }
-          if (argIn.parameterName !== paramName) {
+          if (!nameMatches(argIn.parameterName)) {
             matched = false;
             break;
           }
@@ -518,13 +526,12 @@ export class ArgCompiler {
     if (cached) return cached;
 
     const params = executable.params;
-    // NOTE: .lud named-args use the GRAMMAR LABEL (count:, if:), which can differ
-    // from the raw reflected Java parameter identifier — so we derive labels from
-    // the grammar clause below rather than from p.name. (Using p.name regressed
-    // coverage 15%->3%.)
-    // Fallback names: reflected Java param name for @Name params (used when no grammar
-    // clause is available to supply a label — e.g. static construct() executables).
-    const nulls = params.map((p) => (p.ann.includes("Name") ? (p.name ?? null) : null));
+    // .lud named-args use the GRAMMAR LABEL (count:, if:), which can differ from the raw
+    // reflected Java identifier — derive labels from the grammar clause, NOT p.name.
+    // (Using p.name as the PRIMARY name regressed coverage 15%->3%.) The reflected name
+    // is offered as an ALTERNATIVE match in compileExecutable (needed for static
+    // construct() executables like count's `in:`, which don't align to a grammar clause).
+    const nulls = params.map(() => null as string | null);
     const rule = this.grammar.get(meta.label);
     if (!rule) {
       this.paramNameCache.set(key, nulls);
@@ -549,13 +556,7 @@ export class ArgCompiler {
       if (!param.ann.includes("Name")) return null;
       const label = labels[labelIndex] ?? null;
       labelIndex++;
-      // Fall back to the reflected Java parameter name when the grammar clause
-      // yields no label for this @Name slot. This is needed for static construct()
-      // executables (e.g. count's CountSiteType overload), whose params don't align
-      // to a grammar clause, so `in:`/`at:` named args would otherwise never bind.
-      // Targeted (only @Name params lacking a grammar label), so it can't regress
-      // the grammar-label path that the 15%->3% experiment broke.
-      return label ?? (param.name ?? null);
+      return label;
     });
     this.paramNameCache.set(key, names);
     return names;
