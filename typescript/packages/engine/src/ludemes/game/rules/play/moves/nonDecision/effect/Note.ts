@@ -16,8 +16,18 @@
 import type { Context } from "../../../../../../../context.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionNote } from "../../../../../../../action/action-note.js";
-import type { BooleanFunction, FloatFunction, IntArrayFunction, IntFunction, RegionFunction } from "../../../../../../base.js";
+import type { BooleanFunction, DirectionsFunction, EvalScratch, FloatFunction, IntArrayFunction, IntFunction, RegionFunction } from "../../../../../../base.js";
+import type { GraphFunction } from "../../../../../functions/graph/GraphFunction.js";
+import type { RangeFunction1to1, RangeResult } from "../../../../../functions/range/Range1to1.js";
+import type { Player1to1 } from "../../../../../util/moves/Player1to1.js";
 import { Effect } from "./Effect.js";
+
+type RoleTypeName = string;
+type DirectionName = string;
+type PlayerArg = Player1to1 | { index(): IntFunction };
+type RangeFunctionLike = RangeFunction1to1 | {
+  eval(ctx: Context & EvalScratch): { min(ctx: Context): number; max(ctx: Context): number } | RangeResult;
+};
 
 /**
  * Note effect — sends a message to one or all players.
@@ -32,7 +42,10 @@ export class Note extends Effect {
   private readonly playerMessage: IntFunction | null;
 
   /** @java Note.role — the RoleType string ("All" → all players) */
-  private readonly role: string;
+  private readonly role: RoleTypeName | null;
+
+  /** @java Note.roleMessage — optional role to prefix in message */
+  private readonly roleMessage: RoleTypeName | null;
 
   // Message variants (one must be non-null)
   /** @java Note.message */
@@ -47,43 +60,93 @@ export class Note extends Effect {
   private readonly messageBoolean: BooleanFunction | null;
   /** @java Note.messageRegion */
   private readonly messageRegion: RegionFunction | null;
+  /** @java Note.messageRange */
+  private readonly messageRange: RangeFunctionLike | null;
+  /** @java Note.messageDirection */
+  private readonly messageDirection: DirectionsFunction | null;
+  /** @java Note.messageGraph */
+  private readonly messageGraph: GraphFunction | null;
 
   // -------------------------------------------------------------------------
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Note.java — constructor
    *
-   * @param opts.playerFn        Target player function (eval returns player idx)
-   * @param opts.role            "All" or player role string (default "All")
-   * @param opts.playerMessage   Optional player index to prefix in message
-   * @param opts.message         String message variant
-   * @param opts.messageInt      Int message variant
-   * @param opts.messageIntArray IntArray message variant
-   * @param opts.messageFloat    Float message variant
-   * @param opts.messageBoolean  Boolean message variant
-   * @param opts.messageRegion   Region message variant
+   * Java order:
+   * Note(@Opt @Or @Name IntFunction player,
+   *      @Opt @Or @Name RoleType Player,
+   *      @Or2 String message,
+   *      @Or2 IntFunction messageInt,
+   *      @Or2 IntArrayFunction messageIntArray,
+   *      @Or2 FloatFunction messageFloat,
+   *      @Or2 BooleanFunction messageBoolean,
+   *      @Or2 RegionFunction messageRegion,
+   *      @Or2 RangeFunction messageRange,
+   *      @Or2 Direction messageDirection,
+   *      @Or2 GraphFunction messageGraph,
+   *      @Opt @Or @Name game.util.moves.Player to,
+   *      @Opt @Or @Name RoleType To)
    */
-  public constructor(opts: {
-    playerFn: IntFunction;
-    role?: string;
-    playerMessage?: IntFunction | null;
-    message?: string | null;
-    messageInt?: IntFunction | null;
-    messageIntArray?: IntArrayFunction | null;
-    messageFloat?: FloatFunction | null;
-    messageBoolean?: BooleanFunction | null;
-    messageRegion?: RegionFunction | null;
-  }) {
+  public constructor(
+    player: IntFunction | null,
+    Player: RoleTypeName | null,
+    message: string | null,
+    messageInt: IntFunction | null,
+    messageIntArray: IntArrayFunction | null,
+    messageFloat: FloatFunction | null,
+    messageBoolean: BooleanFunction | null,
+    messageRegion: RegionFunction | null,
+    messageRange: RangeFunctionLike | null,
+    messageDirection: DirectionName | DirectionsFunction | null,
+    messageGraph: GraphFunction | null,
+    to: PlayerArg | null = null,
+    To: RoleTypeName | null = null,
+  ) {
     super(null);
-    this.playerFn = opts.playerFn;
-    this.role = opts.role ?? "All";
-    this.playerMessage = opts.playerMessage ?? null;
-    this.message = opts.message ?? null;
-    this.messageInt = opts.messageInt ?? null;
-    this.messageIntArray = opts.messageIntArray ?? null;
-    this.messageFloat = opts.messageFloat ?? null;
-    this.messageBoolean = opts.messageBoolean ?? null;
-    this.messageRegion = opts.messageRegion ?? null;
+
+    let numNonNull = 0;
+    if (Player !== null) numNonNull += 1;
+    if (player !== null) numNonNull += 1;
+    if (numNonNull > 1) {
+      throw new Error("Note(): Only one 'playerMessage' or 'roleMessage' parameters can be non-null.");
+    }
+
+    numNonNull = 0;
+    if (to !== null) numNonNull += 1;
+    if (To !== null) numNonNull += 1;
+    if (numNonNull > 1) {
+      throw new Error("Note(): Only one 'to' or 'role' parameters can be non-null.");
+    }
+
+    numNonNull = 0;
+    if (message !== null) numNonNull += 1;
+    if (messageInt !== null) numNonNull += 1;
+    if (messageIntArray !== null) numNonNull += 1;
+    if (messageFloat !== null) numNonNull += 1;
+    if (messageBoolean !== null) numNonNull += 1;
+    if (messageRegion !== null) numNonNull += 1;
+    if (messageRange !== null) numNonNull += 1;
+    if (messageDirection !== null) numNonNull += 1;
+    if (messageGraph !== null) numNonNull += 1;
+    if (numNonNull !== 1) {
+      throw new Error(
+        "Note(): One 'message', 'messageInt', 'messageIntArray', messageFloat', 'messageBoolean', 'messageRegion', 'messageRange', 'messageDirection' or 'messageGraph' parameters must be non-null.",
+      );
+    }
+
+    this.playerFn = (to !== null) ? to.index() : (To !== null) ? roleToIntFunction(To) : roleToIntFunction("All");
+    this.role = (to === null && To === null) ? "All" : To;
+    this.message = message;
+    this.messageInt = messageInt;
+    this.messageIntArray = messageIntArray;
+    this.messageFloat = messageFloat;
+    this.messageBoolean = messageBoolean;
+    this.messageRegion = messageRegion;
+    this.messageRange = messageRange;
+    this.messageDirection = directionToFunction(messageDirection);
+    this.messageGraph = messageGraph;
+    this.playerMessage = (Player !== null) ? roleToIntFunction(Player) : player;
+    this.roleMessage = Player;
   }
 
   // -------------------------------------------------------------------------
@@ -111,7 +174,14 @@ export class Note extends Effect {
     } else if (this.messageBoolean !== null) {
       msg = String(this.messageBoolean.eval(ctx));
     } else if (this.messageRegion !== null) {
-      msg = JSON.stringify(this.messageRegion.eval(ctx));
+      msg = formatArray(this.messageRegion.eval(ctx));
+    } else if (this.messageRange !== null) {
+      const range = this.messageRange.eval(ctx as Context & EvalScratch);
+      msg = `[${rangeMin(range, ctx)};${rangeMax(range, ctx)}]`;
+    } else if (this.messageDirection !== null) {
+      msg = formatArray(this.messageDirection.eval(ctx as Context & EvalScratch));
+    } else if (this.messageGraph !== null) {
+      msg = String(evalGraph(this.messageGraph, ctx));
     } else {
       msg = "";
     }
@@ -177,4 +247,42 @@ export class Note extends Effect {
   public override isStatic(): boolean {
     return false;
   }
+}
+
+function directionToFunction(direction: DirectionName | DirectionsFunction | null): DirectionsFunction | null {
+  if (direction === null) return null;
+  if (typeof direction === "string") return { eval: () => [direction] };
+  return direction;
+}
+
+function roleToIntFunction(role: RoleTypeName): IntFunction {
+  return {
+    eval(ctx): number {
+      if (role === "Mover") return ctx.state.mover;
+      if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (role === "Player") return (ctx as Context & EvalScratch)._evalPlayer ?? ctx.state.mover;
+      if (role === "Shared" || role === "Neutral" || role === "All") return 0;
+      const match = /^P(\d+)$/.exec(role);
+      return match ? Number(match[1]) : 0;
+    },
+  };
+}
+
+function formatArray(values: readonly unknown[]): string {
+  return `[${values.join(", ")}]`;
+}
+
+function rangeMin(range: RangeResult | { min(ctx: Context): number }, ctx: Context): number {
+  return typeof range.min === "number" ? range.min : range.min(ctx);
+}
+
+function rangeMax(range: RangeResult | { max(ctx: Context): number }, ctx: Context): number {
+  return typeof range.max === "number" ? range.max : range.max(ctx);
+}
+
+function evalGraph(graph: GraphFunction, ctx: Context): unknown {
+  const defaultSite = (ctx as unknown as { board?: { defaultSite?: string } }).board?.defaultSite ?? "Cell";
+  const evalFn = graph.eval as unknown as ((siteType: string) => unknown) & ((context: Context, siteType: string) => unknown);
+  return evalFn.length >= 2 ? evalFn(ctx, defaultSite) : evalFn(defaultSite);
 }

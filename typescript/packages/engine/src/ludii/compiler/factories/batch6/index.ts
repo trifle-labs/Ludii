@@ -97,18 +97,22 @@ export function registerBatch6(registry: LudemeRegistry): void {
 }
 
 function noteFactory(b: ArgBundle): Note {
-  const playerMessage = intFromRoleOrValue(b.named.get("player"));
+  const playerArg = b.named.get("player");
+  const playerMessage = typeof playerArg === "string" ? null : intFromRoleOrValue(playerArg);
+  const playerRoleMessage = typeof playerArg === "string" ? playerArg : null;
   const to = b.named.get("to");
-  const hasTo = to !== undefined && to !== null;
-  const playerFn = to instanceof Player1to1 ? to.index() : intFromRoleOrValue(to) ?? roleInt("All");
-  const role = typeof to === "string" ? to : hasTo ? "Player" : "All";
+  const toPlayer = to instanceof Player1to1 ? to : null;
+  const toRole = typeof to === "string" ? to : null;
   const message = firstPositional(b);
-  if (typeof message === "string") return new Note({ playerFn, role, playerMessage, message });
-  if (isIntFunction(message)) return new Note({ playerFn, role, playerMessage, messageInt: message });
-  if (isIntArrayFunction(message)) return new Note({ playerFn, role, playerMessage, messageIntArray: message });
-  if (isFloatFunction(message)) return new Note({ playerFn, role, playerMessage, messageFloat: message });
-  if (isBooleanFunction(message)) return new Note({ playerFn, role, playerMessage, messageBoolean: message });
-  if (isRegionFunction(message)) return new Note({ playerFn, role, playerMessage, messageRegion: message });
+  if (typeof message === "string") return new Note(playerMessage, playerRoleMessage, message, null, null, null, null, null, null, null, null, toPlayer, toRole);
+  if (isIntFunction(message)) return new Note(playerMessage, playerRoleMessage, null, message, null, null, null, null, null, null, null, toPlayer, toRole);
+  if (isIntArrayFunction(message)) return new Note(playerMessage, playerRoleMessage, null, null, message, null, null, null, null, null, null, toPlayer, toRole);
+  if (isFloatFunction(message)) return new Note(playerMessage, playerRoleMessage, null, null, null, message, null, null, null, null, null, toPlayer, toRole);
+  if (isBooleanFunction(message)) return new Note(playerMessage, playerRoleMessage, null, null, null, null, message, null, null, null, null, toPlayer, toRole);
+  if (isRegionFunction(message)) return new Note(playerMessage, playerRoleMessage, null, null, null, null, null, message, null, null, null, toPlayer, toRole);
+  if (isRangeLike(message)) return new Note(playerMessage, playerRoleMessage, null, null, null, null, null, null, message, null, null, toPlayer, toRole);
+  if (isDirectionsFunction(message)) return new Note(playerMessage, playerRoleMessage, null, null, null, null, null, null, null, message, null, toPlayer, toRole);
+  if (isGraphFunction(message)) return new Note(playerMessage, playerRoleMessage, null, null, null, null, null, null, null, null, message, toPlayer, toRole);
   throw new Error("factory not yet wired: note");
 }
 
@@ -811,6 +815,10 @@ function isBooleanFunction(value: unknown): value is BooleanFunction {
 
 function isRegionFunction(value: unknown): value is RegionFunction {
   return isObject(value) && typeof value.eval === "function" && (value.constructor.name.includes("Sites") || value.constructor.name.includes("Region"));
+}
+
+function isRangeLike(value: unknown): value is ConstructorParameters<typeof Note>[8] {
+  return isObject(value) && typeof value.eval === "function" && "minFn" in value && "maxFn" in value;
 }
 
 function isDirectionsFunction(value: unknown): value is DirectionsFunction {
