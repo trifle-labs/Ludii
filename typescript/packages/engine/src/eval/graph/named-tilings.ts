@@ -562,8 +562,9 @@ const rot = (theta: number, p: Pt): Pt => {
  * Chess board). Java: quadhex/Quadhex.sixUniformSections — six rotations of a
  * layers×layers quad-meshed triangle.
  */
-export function genQuadhex(layers: number): Graph {
+export function genQuadhex(layers: number, thirds = false): Graph {
   const L = Math.max(1, Math.floor(dim(layers)));
+  if (thirds) return genQuadhexThirds(L);
   const g = new Graph();
   const A: Pt = [0, 0];
   const B: Pt = [0, (L * SQRT3) / 2];
@@ -600,6 +601,82 @@ export function genQuadhex(layers: number): Graph {
   }
   g.makeFaces();
   return g;
+}
+
+function genQuadhexThirds(layers: number): Graph {
+  const L32 = (layers * SQRT3) / 2;
+  const A: Pt = [-layers / 2, -L32];
+  const C: Pt = [-layers, 0];
+  const E: Pt = [0, -L32];
+  const O: Pt = [0, 0];
+  const ratio = layers / (layers + 0.5);
+  const F = lerp(ratio, E, O);
+  const G = lerp(ratio / 2, A, C);
+
+  const section = new Graph();
+  for (let row = 0; row < layers; row += 1) {
+    const r0 = row / layers;
+    const r1 = (row + 1) / layers;
+    const ptAE0 = lerp(r0, A, E);
+    const ptAE1 = lerp(r1, A, E);
+    const ptGF0 = lerp(r0, G, F);
+    const ptGF1 = lerp(r1, G, F);
+
+    for (let col = 0; col < layers; col += 1) {
+      const c0 = col / layers;
+      const c1 = (col + 1) / layers;
+      const ptAG0 = lerp(c0, ptAE0, ptGF0);
+      const ptAG1 = lerp(c1, ptAE0, ptGF0);
+      const ptEF0 = lerp(c0, ptAE1, ptGF1);
+      const ptEF1 = lerp(c1, ptAE1, ptGF1);
+
+      const va = section.addVertex(ptAG0[0], ptAG0[1]);
+      const vb = section.addVertex(ptAG1[0], ptAG1[1]);
+      const vc = section.addVertex(ptEF0[0], ptEF0[1]);
+      const vd = section.addVertex(ptEF1[0], ptEF1[1]);
+      section.addEdge(va, vb);
+      section.addEdge(vc, vd);
+      section.addEdge(va, vc);
+      section.addEdge(vb, vd);
+
+      const vaa = section.addVertex(-ptAG0[0], ptAG0[1]);
+      const vbb = section.addVertex(-ptAG1[0], ptAG1[1]);
+      const vcc = section.addVertex(-ptEF0[0], ptEF0[1]);
+      const vdd = section.addVertex(-ptEF1[0], ptEF1[1]);
+      section.addEdge(vaa, vbb);
+      section.addEdge(vcc, vdd);
+      section.addEdge(vaa, vcc);
+      section.addEdge(vbb, vdd);
+    }
+  }
+
+  const graph = new Graph();
+  const verticesPerSection = section.vertices.length;
+  const theta = (2 * Math.PI) / 3;
+  const save: number[][] = [[], [], []];
+
+  for (let rotn = 0; rotn < 3; rotn += 1) {
+    const offset = rotn * verticesPerSection;
+    for (const vertex of section.vertices) {
+      const [x, y] = rot(rotn * theta, [vertex.x, vertex.y]);
+      graph.addVertex(x, y, 0);
+    }
+    for (const edge of section.edges)
+      graph.addEdge(edge.a + offset, edge.b + offset);
+
+    save[0]![rotn] = offset + 4 * layers;
+    save[1]![rotn] = offset + 4 * layers + 2;
+    save[2]![rotn] = offset + layers * (2 * layers + 3);
+  }
+
+  graph.addEdge(save[2]![0]!, save[2]![1]!);
+  graph.addEdge(save[2]![1]!, save[2]![2]!);
+  graph.addEdge(save[2]![2]!, save[2]![0]!);
+  graph.addEdge(save[1]![0]!, save[0]![1]!);
+  graph.addEdge(save[1]![1]!, save[0]![2]!);
+  graph.addEdge(save[1]![2]!, save[0]![0]!);
+  graph.makeFaces();
+  return graph;
 }
 
 /** Inner-ring step count for a spiral (doubles each of the first layers). */

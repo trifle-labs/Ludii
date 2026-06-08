@@ -26,19 +26,6 @@ type CtxWithEval = Context & EvalScratch;
 
 // ---------------------------------------------------------------------------
 
-/** Constant IntFunction that returns a fixed integer value. */
-class IntConstant implements IntFunction {
-  private readonly value: number;
-  public constructor(value: number) {
-    this.value = value;
-  }
-  public eval(_ctx: CtxWithEval): number {
-    return this.value;
-  }
-}
-
-// ---------------------------------------------------------------------------
-
 /**
  * @java game.functions.booleans.deductionPuzzle.is.regionResult.IsCount
  */
@@ -56,13 +43,13 @@ export class IsCount extends BaseBooleanFunction {
    * @java IsCount(SiteType, RegionFunction, IntFunction, IntFunction)
    */
   public constructor(
-    type: SiteType | null,
-    region: RegionFunction | null,
-    what: IntFunction | null,
-    result: IntFunction,
+    type: SiteType | null | undefined,
+    region: RegionFunction | null | undefined,
+    what: IntFunction | null | undefined,
+    result: IntFunction
   ) {
     super();
-    this.region = region;
+    this.region = region ?? null;
     this.whatFn = what ?? new IntConstant(1);
     this.resultFn = result;
     this.type = type ?? null;
@@ -214,5 +201,18 @@ export class IsCount extends BaseBooleanFunction {
     const regEng = (this.region as unknown as { toEnglish(g: unknown): string } | null)?.toEnglish?.(game) ?? String(this.region);
     const resEng = (this.resultFn as unknown as { toEnglish(g: unknown): string }).toEnglish?.(game) ?? String(this.resultFn);
     return "the number of " + whatEng + "s in " + regEng + " equals " + resEng;
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+/** Constant IntFunction that returns a fixed integer value. */
+class IntConstant implements IntFunction {
+  private readonly value: number;
+  public constructor(value: number) {
+    this.value = value;
+  }
+  public eval(_ctx: CtxWithEval): number {
+    return this.value;
   }
 }

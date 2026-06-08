@@ -5,6 +5,7 @@
 
 import type { GraphFunction } from "../../../GraphFunction.js";
 import { Graph } from "../../../../../../../eval/graph/graph.js";
+import { DimConstant } from "../../../../dim/DimConstant.js";
 import { Basis } from "../Basis.js";
 import { HexagonOnHex } from "./HexagonOnHex.js";
 import { RectangleOnHex } from "./RectangleOnHex.js";
@@ -33,7 +34,7 @@ export function constructHex(
   const st = shape ?? "Hexagon";
   switch (st) {
     case "Hexagon":
-      if (dimB !== undefined) return new CustomOnHex([dimA, dimB]);
+      if (dimB !== undefined) return new CustomOnHex([new DimConstant(dimA), new DimConstant(dimB)]);
       return new HexagonOnHex(dimA);
     case "Triangle":
       return new TriangleOnHex(dimA);
@@ -44,7 +45,7 @@ export function constructHex(
     case "Star":
       return new StarOnHex(dimA);
     case "Limping":
-      return new CustomOnHex([dimA, dimA + 1]);
+      return new CustomOnHex([new DimConstant(dimA), new DimConstant(dimA + 1)]);
     case "Square":
       return new RectangleOnHex(dimA, dimA);
     case "Rectangle":

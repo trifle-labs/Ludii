@@ -35,20 +35,7 @@ export class GamePlayers1to1 {
    * @java game/players/Players.java — constructor(Player[] players)
    */
   public static fromPlayerArray(players: GamePlayer1to1[]): GamePlayers1to1 {
-    const inst = new GamePlayers1to1();
-    // slot 0 is null (already set by constructor)
-    for (let p = 0; p < players.length; p++) {
-      const player = players[p]!;
-      if (player.name() === null) player.setName(`Player ${p + 1}`);
-      player.setIndex(p + 1);
-      player.setDefaultColour();
-      player.setEnemies(players.length);
-      inst._players.push(player);
-    }
-    if (inst._players.length > MAX_PLAYERS + 1) {
-      throw new Error(`Too many players: ${inst._players.length - 1}`);
-    }
-    return inst;
+    return new GamePlayers1to1(players);
   }
 
   /**
@@ -57,17 +44,48 @@ export class GamePlayers1to1 {
    * @java game/players/Players.java — constructor(Integer numPlayers)
    */
   public static fromCount(numPlayers: number): GamePlayers1to1 {
-    if (numPlayers < 0) throw new Error(`Invalid player count: ${numPlayers}`);
-    const players: GamePlayer1to1[] = [];
-    for (let p = 0; p < numPlayers; p++) {
-      players.push(new GamePlayer1to1(null));
-    }
-    return GamePlayers1to1.fromPlayerArray(players);
+    return new GamePlayers1to1(numPlayers);
   }
 
-  private constructor() {
+  /**
+   * @java game/players/Players.java — constructor(Player[] players)
+   * @java game/players/Players.java — constructor(Integer numPlayers)
+   */
+  public constructor(players: GamePlayer1to1[] | number) {
     // slot 0 is null (Java: players.add(null))
     this._players = [null];
+
+    if (typeof players === "number") {
+      const numPlayers = players;
+      for (let p = 0; p < numPlayers; p++) {
+        const player = new GamePlayer1to1(null);
+        if (player.name() === null) player.setName(`Player ${p + 1}`);
+        player.setIndex(p + 1);
+        player.setDefaultColour();
+        player.setEnemies(numPlayers);
+        this._players.push(player);
+      }
+
+      if (this._players.length > MAX_PLAYERS + 1) {
+        throw new Error(`Too many players: ${this._players.length - 1}`);
+      }
+
+      if (numPlayers < 0) throw new Error(`Invalid player count: ${numPlayers}`);
+      return;
+    }
+
+    for (let p = 0; p < players.length; p++) {
+      const player = players[p]!;
+      if (player.name() === null) player.setName(`Player ${p + 1}`);
+      player.setIndex(p + 1);
+      player.setDefaultColour();
+      player.setEnemies(players.length);
+      this._players.push(player);
+    }
+
+    if (this._players.length > MAX_PLAYERS + 1) {
+      throw new Error(`Too many players: ${this._players.length - 1}`);
+    }
   }
 
   /**

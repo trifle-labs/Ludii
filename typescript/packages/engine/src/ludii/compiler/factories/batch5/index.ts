@@ -36,6 +36,7 @@ import { Max as MaxRequirement } from "../../../../ludemes/game/rules/play/moves
 import { MaxCaptures } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxCaptures.js";
 import { MaxMoves } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxMoves.js";
 import { Meta } from "../../../../ludemes/game/rules/meta/Meta.js";
+import type { MetaRule } from "../../../../ludemes/game/rules/meta/MetaRule.js";
 import { No } from "../../../../ludemes/game/rules/meta/no/No.js";
 import { Swap as MetaSwap } from "../../../../ludemes/game/rules/meta/Swap.js";
 import { NoStackOn } from "../../../../ludemes/game/rules/meta/NoStackOn.js";
@@ -140,7 +141,10 @@ export function registerBatch5(registry: LudemeRegistry): void {
     return new Merge(graphFns, optionalBooleanNamed(b, "connect") ?? false);
   });
 
-  registry.registerLudeme("meta:meta", (b): Meta => new Meta(flatten(b.positional) as never[]));
+  registry.registerLudeme("meta:meta", (b): Meta => {
+    const rules = flatten(b.positional) as MetaRule[];
+    return rules.length === 1 ? new Meta(null, rules[0]!) : new Meta(rules, null);
+  });
   registry.registerLudeme("meta.no.no:no", (b) => {
     const kind = requireString(b, 0);
     if (kind === "Suicide") return No.constructSimple("Suicide");

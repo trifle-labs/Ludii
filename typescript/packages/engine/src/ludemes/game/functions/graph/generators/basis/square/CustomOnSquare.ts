@@ -8,6 +8,8 @@
  */
 
 import { Graph } from "../../../../../../../eval/graph/graph.js";
+import type { DimFunction } from "../../../../dim/DimFunction.js";
+import { Polygon } from "../../../../../util/graph/Poly.js";
 import { createGraphFromVertexList, UNIT } from "../../../BaseGraphFunction.js";
 import { Basis } from "../Basis.js";
 import { handleDiagonals } from "./RectangleOnSquare.js";
@@ -16,26 +18,34 @@ import type { DiagonalsType } from "./DiagonalsType.js";
 // @java Square.steps — all four orthogonal directions
 const SQUARE_STEPS = [[1, 0], [0, 1], [-1, 0], [0, -1]] as const;
 
+type PointTuple = readonly [number, number];
+type PointTupleArray = ReadonlyArray<PointTuple>;
+type SideArg = DimFunction | number;
+
 /** @java game/functions/graph/generators/basis/square/CustomOnSquare.java */
 export class CustomOnSquare extends Basis {
   private readonly poly: [number, number][] | null;
   private readonly sides: number[] | null;
   private readonly diagonals: DiagonalsType | null;
 
+  /** @java CustomOnSquare(Polygon polygon, DiagonalsType diagonals) */
+  /** @java CustomOnSquare(DimFunction[] sides, DiagonalsType diagonals) */
   public constructor(
-    polyOrSides: [number, number][] | number[],
-    diagonals: DiagonalsType | null = null,
-    isPoly = false,
+    polyOrSides: Polygon | PointTupleArray | ReadonlyArray<SideArg>,
+    diagonals: DiagonalsType | null,
   ) {
     super();
     this._dim = [];
     this.diagonals = diagonals;
-    if (isPoly) {
-      this.poly = polyOrSides as [number, number][];
+    if (polyOrSides instanceof Polygon) {
+      this.poly = polyOrSides.points().map((pt) => [pt.x, pt.y]);
+      this.sides = null;
+    } else if (isPointTupleArray(polyOrSides)) {
+      this.poly = polyOrSides.map((pt) => [pt[0], pt[1]]);
       this.sides = null;
     } else {
       this.poly = null;
-      this.sides = polyOrSides as number[];
+      this.sides = polyOrSides.map(evalSide);
     }
   }
 
@@ -147,4 +157,13 @@ function inflatePolygon(pts: [number, number][], amount: number): void {
     const p = pts[i]!;
     pts[i] = [p[0] + a[0], p[1] + a[1]];
   }
+}
+
+function isPointTupleArray(value: ReadonlyArray<unknown>): value is PointTupleArray {
+  return value.length > 0 && value.every((point) =>
+    Array.isArray(point) && point.length === 2 && point.every((coord) => typeof coord === "number"));
+}
+
+function evalSide(side: SideArg): number {
+  return typeof side === "number" ? side : side.eval();
 }

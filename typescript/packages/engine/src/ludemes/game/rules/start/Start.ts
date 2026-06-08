@@ -23,14 +23,24 @@ export class Start1to1 {
   public readonly rules: readonly StartRule[];
 
   /**
-   * @param rules  the list of start rules (at least one required, matching Java's @Or constraint)
+   * @param rules The starting rules.
+   * @param rule  The starting rule.
    * @java game/rules/start/Start.java — constructor(@Or StartRule[] rules, @Or StartRule rule)
    */
-  public constructor(rules: readonly StartRule[]) {
-    if (rules.length === 0) {
-      throw new Error("Start1to1: at least one StartRule is required.");
+  public constructor(rules: readonly StartRule[] | null, rule: StartRule | null) {
+    const numNonNull = (rules !== null && rules !== undefined ? 1 : 0) + (rule !== null && rule !== undefined ? 1 : 0);
+
+    if (numNonNull !== 1) {
+      throw new Error("Start1to1: exactly one Or parameter must be non-null.");
     }
-    this.rules = rules;
+
+    if (rules !== null && rules !== undefined) {
+      this.rules = rules;
+    } else if (rule !== null && rule !== undefined) {
+      this.rules = [rule];
+    } else {
+      throw new Error("Start1to1: exactly one Or parameter must be non-null.");
+    }
   }
 
   /**

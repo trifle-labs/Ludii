@@ -5,6 +5,7 @@ import { Xor1to1 } from "../../../../ludemes/game/functions/booleans/math1to1/Xo
 import { FloatConstant } from "../../../../ludemes/game/functions/floats/FloatConstant.js";
 import { ToFloat } from "../../../../ludemes/game/functions/floats/ToFloat.js";
 import { FloatTan1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
+import { DimConstant } from "../../../../ludemes/game/functions/dim/DimConstant.js";
 import { Concentric } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/Concentric.js";
 import type { ConcentricShapeType } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricShapeType.js";
 import { Subdivide } from "../../../../ludemes/game/functions/graph/operators/Subdivide.js";
@@ -89,7 +90,7 @@ import type { SiteType } from "../../../../ludemes/other/action/SiteType.js";
 import type { StepType } from "../../../../ludemes/game/types/board/StepType.js";
 import type { Path } from "../../../../ludemes/game/equipment/component/tile/Path.js";
 import type { Flips } from "../../../../ludemes/game/equipment/component/tile/Tile.js";
-import { Poly } from "../../../../ludemes/game/util/graph/Poly.js";
+import { Poly, Polygon } from "../../../../ludemes/game/util/graph/Poly.js";
 import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { Piece1to1 } from "../../../../ludemes/game/util/moves/Piece1to1.js";
@@ -570,8 +571,8 @@ function makeTrackSite(b: ArgBundle): IntFunction {
 function makeTri(b: ArgBundle): GraphFunction {
   const first = b.positional[0];
   const poly = polyPoints(first);
-  if (poly) return new CustomOnTri(poly, true);
-  if (isNumberArray(first)) return new CustomOnTri(first);
+  if (poly) return new CustomOnTri(new Polygon(poly, 0));
+  if (isNumberArray(first)) return new CustomOnTri(first.map((side) => new DimConstant(side)));
   if (typeof first === "number") return constructTri(null, first, optionalNumber(b.positional[1]) ?? undefined);
   if (typeof first === "string") return constructTri(first as never, requireNumber(b, 1), optionalNumber(b.positional[2]) ?? undefined);
   throw new Error("unsupported tri shape");
@@ -678,13 +679,21 @@ function customTiling(tiling: string, shape: [number, number][] | number[], isPo
     case "T333333_33434":
       return constructTiling(tiling as never, 2);
     case "T3636":
-      return new CustomOn3636(shape, isPoly);
+      return isPoly
+        ? new CustomOn3636(new Polygon(shape as [number, number][], 0))
+        : new CustomOn3636((shape as number[]).map((side) => new DimConstant(side)));
     case "T3464":
-      return new CustomOn3464(shape, isPoly);
+      return isPoly
+        ? new CustomOn3464(new Polygon(shape as [number, number][], 0))
+        : new CustomOn3464((shape as number[]).map((side) => new DimConstant(side)));
     case "T33344":
-      return new CustomOn33344(shape, isPoly);
+      return isPoly
+        ? new CustomOn33344(new Polygon(shape as [number, number][], 0))
+        : new CustomOn33344((shape as number[]).map((side) => new DimConstant(side)));
     case "T488":
-      return new CustomOn488(shape, isPoly);
+      return isPoly
+        ? new CustomOn488(new Polygon(shape as [number, number][], 0))
+        : new CustomOn488((shape as number[]).map((side) => new DimConstant(side)));
     case "T4612":
       return constructTiling(tiling as never, 3);
     case "T31212":

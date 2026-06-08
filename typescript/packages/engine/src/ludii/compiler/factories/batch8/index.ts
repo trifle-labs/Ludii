@@ -463,7 +463,7 @@ function makeSquare(b: ArgBundle): GraphFunction {
   const sides = firstNumberArray(b);
   const poly = b.positional.find(isPolyLike);
   const diagonals = named(b, "diagonals") as DiagonalsType | undefined;
-  if (poly) return new CustomOnSquare(poly, diagonals ?? null, true);
+  if (poly) return new CustomOnSquare(poly, diagonals ?? null);
   if (sides) return new CustomOnSquare(sides, diagonals ?? null);
   const shape = isSquareShape(stringAt(b, 0)) ? stringAt(b, 0) as SquareShapeType : null;
   const dim = b.positional.find((v) => typeof v === "number");
@@ -473,7 +473,7 @@ function makeSquare(b: ArgBundle): GraphFunction {
 function makeStart(b: ArgBundle): Start1to1 {
   const rules = flatten(b.positional).filter(isStartRule);
   if (rules.length === 0) throw new Error("factory start: missing start rule");
-  return new Start1to1(rules as StartRule[]);
+  return new Start1to1(rules as StartRule[], null);
 }
 
 function makeDeal(b: ArgBundle): Deal1to1 {

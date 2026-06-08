@@ -58,5 +58,5 @@ registerBool1to1("no:pieces", (node: LudNode, _env: Compile1to1Env): BooleanFunc
   // positional[0] = "Pieces", positional[1] = optional role
   const roleNode = positional[1];
   const role: RoleType = (roleNode && isIdent(roleNode)) ? (roleNode.name as RoleType) : "Mover";
-  return new NoPieces1to1(role);
+  return new NoPieces1to1(undefined, role);
 });

@@ -6,10 +6,16 @@
  */
 
 import { Graph } from "../../../../../../../../eval/graph/graph.js";
+import type { DimFunction } from "../../../../../dim/DimFunction.js";
+import { Polygon } from "../../../../../../util/graph/Poly.js";
 import { createGraphFromVertexList } from "../../../../BaseGraphFunction.js";
 import { Basis } from "../../Basis.js";
 
 const UNIT = 1;
+
+type PointTuple = readonly [number, number];
+type PointTupleArray = ReadonlyArray<PointTuple>;
+type SideArg = DimFunction | number;
 
 /** @java Tiling488 — v = unit * (1 + 2/sqrt(2)) */
 const V = UNIT * (1 + 2 / Math.sqrt(2));
@@ -104,15 +110,22 @@ export class CustomOn488 extends Basis {
   private readonly _polygon: [number, number][] | null;
   private readonly _sides: number[];
 
-  public constructor(polyOrSides: [number, number][] | number[], isPoly = false) {
+  /** @java CustomOn488(Polygon polygon) */
+  public constructor(polygon: Polygon);
+  /** @java CustomOn488(DimFunction[] sides) */
+  public constructor(sides: ReadonlyArray<DimFunction>);
+  public constructor(polyOrSides: Polygon | PointTupleArray | ReadonlyArray<SideArg>) {
     super();
     this._dim = [];
-    if (isPoly) {
-      this._polygon = polyOrSides as [number, number][];
+    if (polyOrSides instanceof Polygon) {
+      this._polygon = polyOrSides.points().map((pt) => [pt.x, pt.y]);
+      this._sides = [];
+    } else if (isPointTupleArray(polyOrSides)) {
+      this._polygon = polyOrSides.map((pt) => [pt[0], pt[1]]);
       this._sides = [];
     } else {
       this._polygon = null;
-      this._sides = polyOrSides as number[];
+      this._sides = polyOrSides.map(evalSide);
     }
   }
 
@@ -165,4 +178,13 @@ export class CustomOn488 extends Basis {
     result.reorder();
     return result;
   }
+}
+
+function isPointTupleArray(value: ReadonlyArray<unknown>): value is PointTupleArray {
+  return value.length > 0 && value.every((point) =>
+    Array.isArray(point) && point.length === 2 && point.every((coord) => typeof coord === "number"));
+}
+
+function evalSide(side: SideArg): number {
+  return typeof side === "number" ? side : side.eval();
 }

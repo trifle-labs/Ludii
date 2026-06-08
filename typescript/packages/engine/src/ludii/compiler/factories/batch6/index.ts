@@ -471,7 +471,10 @@ function pushFactory(b: ArgBundle): Push {
 }
 
 function quadhexFactory(b: ArgBundle): Quadhex {
-  return new Quadhex(requiredNumber(b.positional[0], "quadhex layers"));
+  return new Quadhex(
+    new DimConstant(requiredNumber(b.positional[0], "quadhex layers")),
+    namedBoolean(b, "thirds"),
+  );
 }
 
 function randomFactory(b: ArgBundle): Random {

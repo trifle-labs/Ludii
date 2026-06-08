@@ -296,7 +296,7 @@ function makeNo(b: ArgBundle): BooleanFunction {
     if (b.named.size > 0 || b.positional.some((v, i) => i > 0 && isRegionFunction(v))) {
       deferred("no Pieces with type/of/name/in arguments");
     }
-    return new NoPieces1to1((stringAt(b, 2) ?? stringAt(b, 1) ?? "All") as BaseRoleType);
+    return new NoPieces1to1(undefined, (stringAt(b, 2) ?? stringAt(b, 1) ?? "All") as BaseRoleType);
   }
   deferred(`no ${kind ?? ""}`.trim());
 }
