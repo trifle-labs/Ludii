@@ -39,5 +39,5 @@ registerBool1to1("is:line", (node: LudNode, _env: Compile1to1Env): BooleanFuncti
   const exact = exactNode !== undefined && isIdent(exactNode) &&
     exactNode.name.toLowerCase() === "true";
 
-  return new IsLine(len, dirnName, exact);
+  return new IsLine(null, len, dirnName, null, null, null, null, null, exact);
 });

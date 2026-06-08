@@ -258,7 +258,7 @@ function makeIsLine(b: ArgBundle): BooleanFunction {
     typeof value === "string" && value !== "Line" && !isSiteType(value) && !isRoleLike(value),
   ) ?? "Adjacent";
   const exact = booleanNamedValue(b, "exact") ?? false;
-  return new IsLine(length, dirn, exact);
+  return new IsLine(null, length, dirn, null, null, null, null, null, exact);
 }
 
 function makeIsRelated(b: ArgBundle): BooleanFunction {

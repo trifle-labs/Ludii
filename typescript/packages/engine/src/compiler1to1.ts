@@ -3151,7 +3151,7 @@ export function compileBool1to1(
         const exactNode = isNamed.get("exact");
         const exact = exactNode !== undefined && isIdent(exactNode) &&
           exactNode.name.toLowerCase() === "true";
-        return new IsLine(len, dirnName, exact);
+        return new IsLine(null, len, dirnName, null, null, null, null, null, exact);
       }
 
       if (kind === "even") {

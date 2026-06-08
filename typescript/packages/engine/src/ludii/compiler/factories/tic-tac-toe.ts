@@ -116,7 +116,7 @@ export function createTicTacToeRegistry(): LudemeRegistry {
     const len = findFirst<number>(b, isNumberValue);
     if (len === undefined) throw new Error("TTT factory is:line: missing line length");
     const dirn = b.positional.find((v) => typeof v === "string" && v !== "Line");
-    return new IsLine(new IntConstant(len), typeof dirn === "string" ? dirn : "Adjacent");
+    return new IsLine(null, new IntConstant(len), typeof dirn === "string" ? dirn : "Adjacent");
   });
 
   return registry;
