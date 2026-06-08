@@ -20,6 +20,8 @@
  * polygon boundary (bounding-box rejection sampling, max 1000 tries each).
  */
 import { Graph } from "../../../../../../../eval/graph/graph.js";
+import type { DimFunction } from "../../../../dim/DimFunction.js";
+import type { Polygon } from "../../../../../util/graph/Poly.js";
 import { Basis } from "../Basis.js";
 
 // ---------------------------------------------------------------------------
@@ -99,6 +101,27 @@ function polyContains(
 
 interface Pt2D { x: number; y: number }
 
+type Point2DLike =
+  | readonly [number, number]
+  | { readonly x: number; readonly y: number }
+  | { getX(): number; getY(): number };
+
+function pointToTuple(pt: Point2DLike): [number, number] {
+  const raw = pt as unknown;
+  if (Array.isArray(raw)) return [Number(raw[0]), Number(raw[1])];
+  if (typeof (pt as { getX?: unknown }).getX === "function") {
+    const awtPoint = pt as { getX(): number; getY(): number };
+    return [awtPoint.getX(), awtPoint.getY()];
+  }
+  const xyPoint = pt as { readonly x: number; readonly y: number };
+  return [xyPoint.x, xyPoint.y];
+}
+
+function polygonToTuples(polygon: Polygon | null): [number, number][] {
+  if (polygon === null) return [];
+  return polygon.points().map(pointToTuple);
+}
+
 /**
  * Insert a new point into the mesh, mirroring Java CustomOnMesh.insertVertex.
  * Returns the vertex id of the newly added vertex.
@@ -174,16 +197,7 @@ function insertVertex(g: Graph, px: number, py: number): number {
 
 /**
  * CustomOnMesh constructor signature mirrors Java:
- *
  *   new CustomOnMesh(DimFunction numVertices, Polygon polygon, List<Point2D> points)
- *
- * In TypeScript we accept two shapes:
- *   1. new CustomOnMesh(points: [number, number][])            — use points directly (numVertices = null)
- *   2. new CustomOnMesh(numVertices: number, polygon: [number, number][])  — random fill
- *
- * The TS stub previously accepted `_polyOrSides: [number, number][] | number[]`
- * which matches the first shape. We extend the constructor to optionally accept
- * numVertices and polygon.
  */
 export class CustomOnMesh extends Basis {
   /** Explicit point list (numVertices == null path in Java). */
@@ -193,26 +207,17 @@ export class CustomOnMesh extends Basis {
   /** Boundary polygon used when numVertices > 0. */
   private readonly polygon: readonly (readonly [number, number])[];
 
-  /**
-   * Overloaded constructor:
-   *   - (points)                     → explicit point set (numVertices = null)
-   *   - (numVertices, polygon)        → random N-vertex mesh inside polygon
-   */
+  /** @java CustomOnMesh(DimFunction numVertices, Polygon polygon, List<Point2D> points) */
   public constructor(
-    pointsOrNumVertices: (readonly [number, number])[] | number,
-    polygon?: (readonly [number, number])[],
+    numVertices: DimFunction | null,
+    polygon: Polygon | null,
+    points: ReadonlyArray<Point2DLike> | null,
   ) {
     super();
     this._dim = [];
-    if (typeof pointsOrNumVertices === "number") {
-      this.numVertices = pointsOrNumVertices;
-      this.polygon     = polygon ?? [];
-      this.points      = [];
-    } else {
-      this.numVertices = 0;
-      this.polygon     = [];
-      this.points      = pointsOrNumVertices;
-    }
+    this.numVertices = numVertices === null ? 0 : numVertices.eval();
+    this.polygon = polygonToTuples(polygon);
+    this.points = (points ?? []).map(pointToTuple);
   }
 
   /**

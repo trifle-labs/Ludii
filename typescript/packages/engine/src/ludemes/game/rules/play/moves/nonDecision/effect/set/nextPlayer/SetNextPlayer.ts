@@ -9,9 +9,11 @@
 
 import type { Context } from "../../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../../move.js";
-import type { IntArrayFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
+import type { IntArrayFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetNextPlayer } from "../../../../../../../../../action/action-set-next-player.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { IntArrayConstant } from "../../../../../../../../game/functions/intArray/IntArrayConstant.js";
+import type { Player1to1 } from "../../../../../../../../game/util/moves/Player1to1.js";
 
 /** @java Constants.OFF = -1 */
 const OFF = -1;
@@ -43,32 +45,36 @@ export class SetNextPlayer implements MovesFunction {
   /**
    * @java SetNextPlayer(Player who, IntArrayFunction nextPlayers, Then then)
    *
-   * @Or: pass either a single IntFunction (who) or an IntArrayFunction (nextPlayers).
-   * If neither is provided, defaults to [1].
+   * @Or: pass either a Player (who) or an IntArrayFunction (nextPlayers).
    *
-   * @param who         Single player index function (mutually exclusive with nextPlayers).
-   * @param nextPlayers Array of player index function (mutually exclusive with who).
+   * @param who         The data of the next player.
+   * @param nextPlayers The indices of the next players.
    * @param thenMoves   Optional subsequent moves.
    */
-  public constructor(opts: {
-    who?: IntFunction | null;
-    nextPlayers?: IntArrayFunction | null;
-    then?: MovesFunction | null;
-  }) {
+  public constructor(
+    who: Player1to1 | null,
+    nextPlayers: IntArrayFunction | null,
+    thenMoves: MovesFunction | null = null,
+  ) {
     // @java SetNextPlayer.java:49-66
     // @Or — only one of who/nextPlayers may be non-null.
-    if (opts.nextPlayers != null) {
-      // @java SetNextPlayer.java:62 — nextPlayerFn = nextPlayers;
-      this.nextPlayerFn = opts.nextPlayers;
-    } else if (opts.who != null) {
-      // @java SetNextPlayer.java:63-65 — new IntArrayConstant(new IntFunction[]{ who.index() })
-      const whoFn = opts.who;
-      this.nextPlayerFn = { eval: (ctx) => [whoFn.eval(ctx)] };
-    } else {
-      // Default: player 1
-      this.nextPlayerFn = { eval: () => [1] };
+    let numNonNull = 0;
+    if (who != null) numNonNull++;
+    if (nextPlayers != null) numNonNull++;
+    if (numNonNull > 1) {
+      throw new Error("Only one Or parameter can be non-null.");
     }
-    this.thenMoves = opts.then ?? null;
+
+    if (nextPlayers != null) {
+      // @java SetNextPlayer.java:62 — nextPlayerFn = nextPlayers;
+      this.nextPlayerFn = nextPlayers;
+    } else if (who != null) {
+      // @java SetNextPlayer.java:63-65 — new IntArrayConstant(new IntFunction[]{ who.index() })
+      this.nextPlayerFn = new IntArrayConstant([who.index()]);
+    } else {
+      throw new Error("SetNextPlayer requires one Or parameter: who or nextPlayers.");
+    }
+    this.thenMoves = thenMoves;
   }
 
   /**

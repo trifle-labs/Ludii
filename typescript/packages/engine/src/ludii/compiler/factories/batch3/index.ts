@@ -231,7 +231,7 @@ export function registerBatch3(registry: LudemeRegistry): void {
   registry.registerLudeme("games:games", (b) => {
     const games = flatten(b.positional).filter((v): v is Subgame1to1 => v instanceof Subgame1to1);
     if (games.length === 0) throw new Error("factory games: missing subgames");
-    return new Games1to1(games);
+    return new Games1to1(null, games);
   });
 
   registry.registerLudeme("graph:graph", graphFactory);

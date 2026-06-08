@@ -15,7 +15,7 @@
 
 import type { Context } from "../../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../../move.js";
-import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
+import type { IntArrayFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetTrumpSuit } from "../../../../../../../../../action/action-set-trump-suit.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
 
@@ -33,7 +33,7 @@ const OFF = -1;
  */
 export class SetTrumpSuit implements MovesFunction {
   /** All possible suits. @java SetTrumpSuit.suitsFn */
-  private readonly suitsFn: IntFunction;
+  private readonly suitsFn: IntArrayFunction;
 
   /** Optional subsequent moves. */
   private readonly thenMoves: MovesFunction | null;
@@ -41,19 +41,21 @@ export class SetTrumpSuit implements MovesFunction {
   /**
    * @java SetTrumpSuit(IntFunction suit, Difference suits, Then then)
    *
-   * @param suitFn    Function yielding a single suit (or an array when an
-   *                  IntArrayFunction is wrapped here). If null, no moves.
+   * @param suitFn    Function yielding a single suit.
+   * @param suitsFn   Difference / IntArrayFunction yielding possible suits.
    * @param thenMoves Optional subsequent moves.
    */
   public constructor(
     suitFn: IntFunction | null,
+    suitsFn: IntArrayFunction | null,
     thenMoves: MovesFunction | null = null,
   ) {
-    // Java parity: if suit != null → IntArrayConstant([suit])
-    //              if suits != null → suits (IntArrayFunction / Difference)
-    // Here we accept a single IntFunction; callers that want an array can
-    // pass an IntFunction whose eval() returns the desired suit value.
-    this.suitsFn = suitFn ?? { eval: () => 0 };
+    const numNonNull = (suitFn !== null ? 1 : 0) + (suitsFn !== null ? 1 : 0);
+    if (numNonNull !== 1) {
+      throw new Error("Only one Or parameter must be non-null.");
+    }
+
+    this.suitsFn = suitsFn ?? { eval: (ctx) => [suitFn!.eval(ctx)] };
     this.thenMoves = thenMoves;
   }
 
@@ -68,11 +70,7 @@ export class SetTrumpSuit implements MovesFunction {
   public eval(ctx: Context): Move[] {
     const mover = ctx.state.mover;
 
-    // Java parity: suitsFn.eval(context) returns int[].
-    // In TS we accept either a single-value IntFunction or an IntArrayFunction.
-    const suitsAny = this.suitsFn as unknown as { eval(ctx: Context): number | number[] };
-    const raw = suitsAny.eval(ctx);
-    const suits: number[] = Array.isArray(raw) ? (raw as number[]) : [raw as number];
+    const suits = this.suitsFn.eval(ctx);
 
     const moves: Move[] = [];
 

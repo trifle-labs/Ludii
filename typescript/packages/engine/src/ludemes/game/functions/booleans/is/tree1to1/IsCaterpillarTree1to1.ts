@@ -23,6 +23,8 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
+import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
+import { Player1to1 } from "../../../../util/moves/Player1to1.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { parseArgs1to1, compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
@@ -35,25 +37,50 @@ function findRoot(parent: number[], pos: number): number {
   return pos;
 }
 
-function makeWhoFn(arg: import("@ludii/typescript-language").LudNode | undefined): IntFunction {
+type WhoArg = Player1to1 | IntFunction | null;
+
+function makeWhoArg(arg: import("@ludii/typescript-language").LudNode | undefined): { who: WhoArg; role: RoleTypeFull | null } {
   if (arg && isIdent(arg)) {
-    const roleName = arg.name.toLowerCase();
-    return {
-      eval: (c: Context & EvalScratch): number => {
-        if (roleName === "mover") return c.state.mover;
-        if (roleName === "next") return (c.state.mover % c.game.numPlayers) + 1;
-        if (roleName === "neutral" || roleName === "shared") return 0;
-        const m = roleName.match(/^p(\d+)$/);
-        if (m) return parseInt(m[1] as string, 10);
-        return c.state.mover;
-      },
-    };
+    return { who: null, role: arg.name as RoleTypeFull };
   }
   if (arg) {
-    try { return compileInt1to1(arg); }
+    try { return { who: new Player1to1(compileInt1to1(arg)), role: null }; }
     catch { /* fall through */ }
   }
-  return { eval: (c: Context & EvalScratch) => c.state.mover };
+  return { who: new Player1to1(null), role: null };
+}
+
+function roleToIntFunction(role: RoleTypeFull): IntFunction {
+  const key = role.toLowerCase();
+  return {
+    eval(ctx: Context & EvalScratch): number {
+      if (key === "neutral") return 0;
+      if (key === "mover") return ctx.state.mover;
+      if (key === "next") return ctx.state.next || ((ctx.state.mover % ctx.game.numPlayers) + 1);
+      if (key === "prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (key === "player") return ctx._evalPlayer ?? ctx.state.mover;
+      if (key === "shared" || key === "all" || key === "each") return ctx.game.numPlayers + 1;
+
+      const playerMatch = /^p(\d+)$/.exec(key);
+      if (playerMatch) return Number(playerMatch[1]);
+
+      const teamMatch = /^team(\d+)$/.exec(key);
+      if (teamMatch) return Number(teamMatch[1]);
+
+      if (key === "teammover") {
+        const stateWithTeams = ctx.state as unknown as { getTeam?: (player: number) => number };
+        return stateWithTeams.getTeam?.(ctx.state.mover) ?? ctx.state.mover;
+      }
+
+      return ctx.state.mover;
+    },
+  };
+}
+
+function whoToIntFunction(who: WhoArg): IntFunction {
+  if (who instanceof Player1to1) return who.index();
+  if (who !== null && typeof who === "object" && "eval" in who && typeof who.eval === "function") return who;
+  return new Player1to1(null).index();
 }
 
 /**
@@ -93,8 +120,11 @@ function dfsMinPathEdge(
 export class IsCaterpillarTree1to1 implements BooleanFunction {
   private readonly whoFn: IntFunction;
 
-  public constructor(whoFn: IntFunction) {
-    this.whoFn = whoFn;
+  /**
+   * @java IsCaterpillarTree(Player who, RoleType role)
+   */
+  public constructor(who: WhoArg, role: RoleTypeFull | null) {
+    this.whoFn = (role !== null) ? roleToIntFunction(role) : whoToIntFunction(who);
   }
 
   /**
@@ -198,5 +228,6 @@ export class IsCaterpillarTree1to1 implements BooleanFunction {
 
 registerBool1to1("is:caterpillartree", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
   const { positional } = parseArgs1to1((node as LudList).items);
-  return new IsCaterpillarTree1to1(makeWhoFn(positional[1]));
+  const { who, role } = makeWhoArg(positional[1]);
+  return new IsCaterpillarTree1to1(who, role);
 });

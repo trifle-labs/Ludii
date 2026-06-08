@@ -257,13 +257,32 @@ function makeIs(b: ArgBundle): BooleanFunction {
       optionalNamed(b, "to", toIntFunction) ?? roleToIntFunction("Mover"),
     );
     case "Repeat": return new IsRepeat1to1((optionalString(b.positional[1]) ?? "Positional") as ConstructorParameters<typeof IsRepeat1to1>[0]);
-    case "Tree": return new IsTree1to1(toIntFunction(b.positional[1] ?? "Mover"));
-    case "RegularGraph": return new IsRegularGraph1to1(
-      toIntFunction(b.positional[1] ?? "Mover"),
-      optionalNamed(b, "k", toIntFunction) ?? new IntConstant(0),
-      optionalNamed(b, "odd", toBooleanFunction) ?? falseFunction(),
-      optionalNamed(b, "even", toBooleanFunction) ?? falseFunction(),
-    );
+    case "Tree": {
+      const whoArg = b.positional[1] ?? "Mover";
+      const player = whoArg instanceof Player1to1
+        ? whoArg
+        : (typeof whoArg === "string" ? null : new Player1to1(toIntFunction(whoArg)));
+      const role = typeof whoArg === "string"
+        ? whoArg as ConstructorParameters<typeof IsTree1to1>[1]
+        : null;
+      return new IsTree1to1(player, role);
+    }
+    case "RegularGraph": {
+      const whoArg = b.positional[1] ?? "Mover";
+      const player = whoArg instanceof Player1to1
+        ? whoArg
+        : (typeof whoArg === "string" ? null : new Player1to1(toIntFunction(whoArg)));
+      const role = typeof whoArg === "string"
+        ? whoArg as ConstructorParameters<typeof IsRegularGraph1to1>[1]
+        : null;
+      return new IsRegularGraph1to1(
+        player,
+        role,
+        optionalNamed(b, "k", toIntFunction) ?? new IntConstant(0),
+        optionalNamed(b, "odd", toBooleanFunction) ?? falseFunction(),
+        optionalNamed(b, "even", toBooleanFunction) ?? falseFunction(),
+      );
+    }
     case "Path": return makePath(b);
     case "Empty": return new IsEmpty1to1(toIntFunction(lastNonSiteTypePos(b) ?? -1));
     case "Occupied": return new IsOccupied1to1(toIntFunction(lastNonSiteTypePos(b) ?? -1));

@@ -20,6 +20,8 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
+import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
+import { Player1to1 } from "../../../../util/moves/Player1to1.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { parseArgs1to1, compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
@@ -34,11 +36,35 @@ function findRoot(parent: number[], pos: number): number {
   return pos;
 }
 
+function roleToIntFunction(role: RoleTypeFull): IntFunction {
+  const key = role.toLowerCase();
+  return {
+    eval(ctx: Context & EvalScratch): number {
+      if (key === "mover") return ctx.state.mover;
+      if (key === "next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (key === "prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (key === "player") return ctx._evalPlayer ?? ctx.state.mover;
+      if (key === "neutral" || key === "shared") return 0;
+
+      const playerMatch = /^p(\d+)$/.exec(key);
+      if (playerMatch) return Number(playerMatch[1]);
+
+      const teamMatch = /^team(\d+)$/.exec(key);
+      if (teamMatch) return Number(teamMatch[1]);
+
+      return ctx.state.mover;
+    },
+  };
+}
+
 export class IsTree1to1 implements BooleanFunction {
   private readonly whoFn: IntFunction;
 
-  public constructor(whoFn: IntFunction) {
-    this.whoFn = whoFn;
+  /**
+   * @java IsTree(@Or Player who, @Or RoleType role)
+   */
+  public constructor(who: Player1to1 | null, role: RoleTypeFull | null) {
+    this.whoFn = role != null ? roleToIntFunction(role) : who!.index();
   }
 
   /**
@@ -82,29 +108,18 @@ export class IsTree1to1 implements BooleanFunction {
 }
 
 registerBool1to1("is:tree", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  // @java IsTree(who/role) — first positional after "Tree" is the role/who
+  // @java IsTree(@Or Player who, @Or RoleType role)
   const { positional } = parseArgs1to1((node as LudList).items);
   // positional[0] = "Tree", positional[1] = role ident or who int expression
   const arg = positional[1];
-  let whoFn: IntFunction;
   if (arg && isIdent(arg)) {
-    // RoleType ident: map to player index
-    const roleName = arg.name.toLowerCase();
-    whoFn = {
-      eval: (c: Context & EvalScratch): number => {
-        if (roleName === "mover") return c.state.mover;
-        if (roleName === "next") return (c.state.mover % c.game.numPlayers) + 1;
-        if (roleName === "neutral" || roleName === "shared") return 0;
-        const m = roleName.match(/^p(\d+)$/);
-        if (m) return parseInt(m[1] as string, 10);
-        return c.state.mover;
-      },
-    };
-  } else if (arg) {
-    try { whoFn = compileInt1to1(arg); }
-    catch { whoFn = { eval: (c: Context & EvalScratch) => c.state.mover }; }
-  } else {
-    whoFn = { eval: (c: Context & EvalScratch) => c.state.mover };
+    return new IsTree1to1(null, arg.name as RoleTypeFull);
   }
-  return new IsTree1to1(whoFn);
+
+  let whoFn: IntFunction = { eval: (c: Context & EvalScratch) => c.state.mover };
+  if (arg) {
+    try { whoFn = compileInt1to1(arg); }
+    catch { /* keep Java Player default mover fallback */ }
+  }
+  return new IsTree1to1(new Player1to1(whoFn), null);
 });

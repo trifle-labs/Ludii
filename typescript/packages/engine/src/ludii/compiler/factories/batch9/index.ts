@@ -5,6 +5,7 @@ import { Xor1to1 } from "../../../../ludemes/game/functions/booleans/math1to1/Xo
 import { FloatConstant } from "../../../../ludemes/game/functions/floats/FloatConstant.js";
 import { ToFloat } from "../../../../ludemes/game/functions/floats/ToFloat.js";
 import { FloatTan1to1 } from "../../../../ludemes/game/functions/floats1to1/math/FloatMath1to1.js";
+import { DimConstant } from "../../../../ludemes/game/functions/dim/DimConstant.js";
 import { Concentric } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/Concentric.js";
 import type { ConcentricShapeType } from "../../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricShapeType.js";
 import { Subdivide } from "../../../../ludemes/game/functions/graph/operators/Subdivide.js";
@@ -26,7 +27,6 @@ import { RegionConstant } from "../../../../ludemes/game/functions/region/Region
 import { BaseRegionFunction } from "../../../../ludemes/game/functions/region/BaseRegionFunction.js";
 import { ToInt } from "../../../../ludemes/game/functions/ints/ToInt.js";
 import type { JavaIntFunction } from "../../../../ludemes/game/functions/ints/IntFunction.js";
-import { Between1to1 as IteratorBetween, From1to1 as IteratorFrom, To1to1 as IteratorTo } from "../../../../ludemes/game/functions/ints1to1/iterator/Iterator1to1.js";
 import { What1to1, Who1to1 } from "../../../../ludemes/game/functions/ints1to1/board/Board1to1.js";
 import { TrackSite } from "../../../../ludemes/game/functions/ints/trackSite/TrackSite.js";
 import { TrackSiteFirstType } from "../../../../ludemes/game/functions/ints/trackSite/TrackSiteFirstType.js";
@@ -49,8 +49,6 @@ import { CountSizeBiggestGroup1to1 } from "../../../../ludemes/game/functions/in
 import { CountNumber1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSimpleExtra1to1.js";
 import { CountSteps1to1 } from "../../../../ludemes/game/functions/ints1to1/count/CountSteps1to1.js";
 import { Score1to1, Var1to1 } from "../../../../ludemes/game/functions/ints1to1/state/State1to1.js";
-import { IsEnemy1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsEnemy1to1.js";
-import { IsFriend1to1 } from "../../../../ludemes/game/functions/booleans/is/player1to1/IsFriend1to1.js";
 import { Tile } from "../../../../ludemes/game/equipment/component/tile/Tile.js";
 import { Regions } from "../../../../ludemes/game/equipment/other/Regions.js";
 import type { Equipment1to1 } from "../../../../ludemes/game/equipment/Equipment1to1.js";
@@ -69,10 +67,10 @@ import { SetCount1to1 } from "../../../../ludemes/game/rules/start/set/sites/Set
 import { SetPhase1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetPhase.js";
 import { SetSite1to1 } from "../../../../ludemes/game/rules/start/set/sites/SetSite.js";
 import { Then } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
-import { Remove } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Remove.js";
 import { Surround } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Surround.js";
 import { Trigger } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Trigger.js";
 import { Vote } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Vote.js";
+import { isRelationType, type RelationType } from "../../../../ludemes/game/types/board/RelationType.js";
 import { While } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/While.js";
 import { Swap, SwapPlayersType, SwapSitesType } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/state/swap/Swap.js";
 import { Take, TakeControlType, TakeSimpleType } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/take/Take.js";
@@ -92,7 +90,7 @@ import type { SiteType } from "../../../../ludemes/other/action/SiteType.js";
 import type { StepType } from "../../../../ludemes/game/types/board/StepType.js";
 import type { Path } from "../../../../ludemes/game/equipment/component/tile/Path.js";
 import type { Flips } from "../../../../ludemes/game/equipment/component/tile/Tile.js";
-import { Poly } from "../../../../ludemes/game/util/graph/Poly.js";
+import { Poly, Polygon } from "../../../../ludemes/game/util/graph/Poly.js";
 import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { Piece1to1 } from "../../../../ludemes/game/util/moves/Piece1to1.js";
@@ -420,19 +418,19 @@ function makeSurakartaBoard(b: ArgBundle): SurakartaBoard {
 function makeSurround(b: ArgBundle): Surround {
   const values = flatten(b.positional);
   const from = values.find((v): v is From1to1 => v instanceof From1to1) ?? null;
+  const relation = values.find((v): v is RelationType => typeof v === "string" && isRelationType(v)) ?? null;
   const between = values.find((v): v is Between1to1 => v instanceof Between1to1) ?? null;
   const to = values.find((v): v is To1to1 => v instanceof To1to1) ?? null;
   const withPiece = values.find((v): v is Piece1to1 => v instanceof Piece1to1) ?? null;
-  return new Surround({
-    startLocationFn: from?.locFn() ?? new IteratorFrom(),
-    dirnChoice: values.find((v): v is string => typeof v === "string") ?? undefined,
-    targetRule: between?.condition() ?? new IsEnemy1to1(new IteratorBetween()),
-    friendRule: to?.condFn() ?? new IsFriend1to1(new IteratorTo()),
-    exception: optionalIntFunction(b.named.get("except")) ?? javaIntConstant(0),
-    withAtLeastPiece: withPiece?.component() ?? null,
-    effect: movesEffect(between?.effectFn()) ?? new Remove({ locationFn: new IteratorBetween() }),
-    then: lastThen(values) as never,
-  });
+  return new Surround(
+    from,
+    relation,
+    between,
+    to,
+    optionalIntFunction(b.named.get("except")),
+    withPiece,
+    lastThen(values),
+  );
 }
 
 function makeSwap(b: ArgBundle): MovesFunction {
@@ -573,8 +571,8 @@ function makeTrackSite(b: ArgBundle): IntFunction {
 function makeTri(b: ArgBundle): GraphFunction {
   const first = b.positional[0];
   const poly = polyPoints(first);
-  if (poly) return new CustomOnTri(poly, true);
-  if (isNumberArray(first)) return new CustomOnTri(first);
+  if (poly) return new CustomOnTri(new Polygon(poly, 0));
+  if (isNumberArray(first)) return new CustomOnTri(first.map((side) => new DimConstant(side)));
   if (typeof first === "number") return constructTri(null, first, optionalNumber(b.positional[1]) ?? undefined);
   if (typeof first === "string") return constructTri(first as never, requireNumber(b, 1), optionalNumber(b.positional[2]) ?? undefined);
   throw new Error("unsupported tri shape");
@@ -622,11 +620,11 @@ function makeValues(b: ArgBundle): ValuesRemembered {
 
 function makeVote(b: ArgBundle): Vote {
   const value = b.positional[0];
-  return new Vote({
-    vote: typeof value === "string" ? value : null,
-    votes: Array.isArray(value) ? value.map(asString) : null,
-    then: optionalMoves(b.positional[1]),
-  });
+  return new Vote(
+    typeof value === "string" ? value : null,
+    Array.isArray(value) ? value.map(asString) : null,
+    optionalMoves(b.positional[1]),
+  );
 }
 
 function makeWas(b: ArgBundle): WasPass {
@@ -681,13 +679,21 @@ function customTiling(tiling: string, shape: [number, number][] | number[], isPo
     case "T333333_33434":
       return constructTiling(tiling as never, 2);
     case "T3636":
-      return new CustomOn3636(shape, isPoly);
+      return isPoly
+        ? new CustomOn3636(new Polygon(shape as [number, number][], 0))
+        : new CustomOn3636((shape as number[]).map((side) => new DimConstant(side)));
     case "T3464":
-      return new CustomOn3464(shape, isPoly);
+      return isPoly
+        ? new CustomOn3464(new Polygon(shape as [number, number][], 0))
+        : new CustomOn3464((shape as number[]).map((side) => new DimConstant(side)));
     case "T33344":
-      return new CustomOn33344(shape, isPoly);
+      return isPoly
+        ? new CustomOn33344(new Polygon(shape as [number, number][], 0))
+        : new CustomOn33344((shape as number[]).map((side) => new DimConstant(side)));
     case "T488":
-      return new CustomOn488(shape, isPoly);
+      return isPoly
+        ? new CustomOn488(new Polygon(shape as [number, number][], 0))
+        : new CustomOn488((shape as number[]).map((side) => new DimConstant(side)));
     case "T4612":
       return constructTiling(tiling as never, 3);
     case "T31212":
@@ -704,12 +710,6 @@ function customTiling(tiling: string, shape: [number, number][] | number[], isPo
 function siteArg(b: ArgBundle): unknown {
   if (b.named.has("at")) return b.named.get("at");
   return b.positional.find((v) => !isSiteTypeString(v));
-}
-
-function movesEffect(value: unknown): MovesFunction | null {
-  if (value === undefined || value === null) return null;
-  if (!isMovesFunction(value)) throw new Error("surround: expected between effect moves");
-  return value;
 }
 
 function lastThen(values: readonly unknown[]): Then | null {

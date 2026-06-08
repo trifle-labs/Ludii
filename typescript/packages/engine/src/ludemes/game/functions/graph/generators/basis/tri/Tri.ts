@@ -5,6 +5,7 @@
 
 import type { GraphFunction } from "../../../GraphFunction.js";
 import { Graph } from "../../../../../../../eval/graph/graph.js";
+import { DimConstant } from "../../../../dim/DimConstant.js";
 import { Basis } from "../Basis.js";
 import { TriangleOnTri } from "./TriangleOnTri.js";
 import { HexagonOnTri } from "./HexagonOnTri.js";
@@ -46,7 +47,7 @@ export function constructTri(
     case "Star":
       return new StarOnTri(dimA);
     case "Limping":
-      return new CustomOnTri([dimA, dimA + 1]);
+      return new CustomOnTri([new DimConstant(dimA), new DimConstant(dimA + 1)]);
     default:
       throw new Error(`Shape ${st} not supported for tri tiling.`);
   }

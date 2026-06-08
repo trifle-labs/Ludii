@@ -23,12 +23,29 @@ export class Games1to1 {
 
   /**
    * @java game/match/Games.java — constructor(@Or Subgame game, @Or Subgame[] games)
-   * Accepts either a single subgame or an array.
+   * Accepts exactly one of a single subgame or an array.
    */
-  public constructor(games: readonly Subgame1to1[]) {
-    if (games.length < 1) {
+  public constructor(
+    game: Subgame1to1 | null,
+    games: readonly Subgame1to1[] | null,
+  ) {
+    let numNonNull = 0;
+    if (game !== null) numNonNull++;
+    if (games !== null) numNonNull++;
+
+    if (numNonNull !== 1) {
+      throw new Error("Exactly one Or parameter must be non-null.");
+    }
+
+    if (game !== null) {
+      this._games = [game];
+      return;
+    }
+
+    if (games === null || games.length < 1) {
       throw new Error("A match needs at least one game.");
     }
+
     this._games = games.slice();
   }
 

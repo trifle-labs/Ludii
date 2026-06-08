@@ -5,6 +5,8 @@
 
 import { Graph } from "../../../../../../eval/graph/graph.js";
 import { BaseGraphFunction } from "../../BaseGraphFunction.js";
+import type { DimFunction } from "../../../dim/DimFunction.js";
+import { Poly } from "../../../../util/graph/Poly.js";
 
 /** A polygon defined by its vertex coordinates. */
 export interface RepeatPolygon {
@@ -25,21 +27,34 @@ export class Repeat extends BaseGraphFunction {
   private readonly polygons: ReadonlyArray<RepeatPolygon>;
 
   /**
-   * @java Repeat(DimFunction rows, DimFunction columns, Float[][] step, Poly poly/polys)
+   * @java Repeat(DimFunction rows, DimFunction columns, Float[][] step, Poly poly, Poly[] polys)
    */
   constructor(
-    rows: number,
-    columns: number,
-    step: readonly [readonly [number, number], readonly [number, number]],
-    polygons: ReadonlyArray<RepeatPolygon>,
+    rows: DimFunction,
+    columns: DimFunction,
+    step: ReadonlyArray<ReadonlyArray<number>>,
+    poly: Poly | null,
+    polys: ReadonlyArray<Poly> | null,
   ) {
     super();
-    this._dim = [rows, columns];
-    this.rows = rows;
-    this.columns = columns;
-    this.stepColumn = step[0];
-    this.stepRow = step[1];
-    this.polygons = polygons;
+    this.rows = rows.eval();
+    this.columns = columns.eval();
+    this._dim = [this.rows, this.columns];
+
+    if (step.length < 2 || (step[0]?.length ?? 0) < 2 || (step[1]?.length ?? 0) < 2) {
+      console.log("** Repeat: Step should contain two pairs of values.");
+      this.stepColumn = [1, 0];
+      this.stepRow = [0, 1];
+    } else {
+      this.stepColumn = [Number(step[0]![0]), Number(step[0]![1])];
+      this.stepRow = [Number(step[1]![0]), Number(step[1]![1])];
+    }
+
+    if (poly !== null) {
+      this.polygons = [toRepeatPolygon(poly)];
+    } else {
+      this.polygons = (polys ?? []).map(toRepeatPolygon);
+    }
   }
 
   /** @java Repeat.eval(Context, SiteType) */
@@ -73,4 +88,10 @@ export class Repeat extends BaseGraphFunction {
 
     return graph;
   }
+}
+
+function toRepeatPolygon(poly: Poly): RepeatPolygon {
+  return {
+    points: poly.polygon().points().map((point) => [point.x, point.y] as const),
+  };
 }

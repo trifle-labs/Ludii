@@ -6,9 +6,15 @@
  */
 
 import { Graph } from "../../../../../../../eval/graph/graph.js";
+import type { DimFunction } from "../../../../dim/DimFunction.js";
+import { Polygon } from "../../../../../util/graph/Poly.js";
 import { createGraphFromVertexList, UNIT } from "../../../BaseGraphFunction.js";
 import { Basis } from "../Basis.js";
 import { hexXY, HEX_REF } from "./HexagonOnHex.js";
+
+type PointTuple = readonly [number, number];
+type PointTupleArray = ReadonlyArray<PointTuple>;
+type SideArg = DimFunction | number;
 
 /** @java CustomOnHex.polygonFromSides — walk the boundary using hex steps */
 function polygonFromSides(sides: readonly number[]): [number, number][] {
@@ -79,15 +85,21 @@ export class CustomOnHex extends Basis {
   private readonly sides: number[] | null;
 
   /** @java CustomOnHex(Polygon polygon) */
-  public constructor(polyOrSides: [number, number][] | number[], isPoly = false) {
+  public constructor(polygon: Polygon);
+  /** @java CustomOnHex(DimFunction[] sides) */
+  public constructor(sides: ReadonlyArray<DimFunction>);
+  public constructor(polyOrSides: Polygon | PointTupleArray | ReadonlyArray<SideArg>) {
     super();
     this._dim = [];
-    if (isPoly) {
-      this.polyPts = polyOrSides as [number, number][];
+    if (polyOrSides instanceof Polygon) {
+      this.polyPts = polyOrSides.points().map((pt) => [pt.x, pt.y]);
+      this.sides = null;
+    } else if (isPointTupleArray(polyOrSides)) {
+      this.polyPts = polyOrSides.map((pt) => [pt[0], pt[1]]);
       this.sides = null;
     } else {
       this.polyPts = null;
-      this.sides = polyOrSides as number[];
+      this.sides = polyOrSides.map(evalSide);
     }
   }
 
@@ -124,4 +136,13 @@ export class CustomOnHex extends Basis {
     graph.reorder();
     return graph;
   }
+}
+
+function isPointTupleArray(value: ReadonlyArray<unknown>): value is PointTupleArray {
+  return value.length > 0 && value.every((point) =>
+    Array.isArray(point) && point.length === 2 && point.every((coord) => typeof coord === "number"));
+}
+
+function evalSide(side: SideArg): number {
+  return typeof side === "number" ? side : side.eval();
 }

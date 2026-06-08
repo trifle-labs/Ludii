@@ -89,7 +89,6 @@ import { Regions } from "../../../../ludemes/game/equipment/other/Regions.js";
 import { ByScore } from "../../../../ludemes/game/rules/end/ByScore.js";
 import { Claim1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Claim1to1.js";
 import { Custodial } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Custodial.js";
-import { Add } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Add.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { To1to1 } from "../../../../ludemes/game/util/moves/To1to1.js";
 
@@ -297,7 +296,7 @@ function makeNo(b: ArgBundle): BooleanFunction {
     if (b.named.size > 0 || b.positional.some((v, i) => i > 0 && isRegionFunction(v))) {
       deferred("no Pieces with type/of/name/in arguments");
     }
-    return new NoPieces1to1((stringAt(b, 2) ?? stringAt(b, 1) ?? "All") as BaseRoleType);
+    return new NoPieces1to1(undefined, (stringAt(b, 2) ?? stringAt(b, 1) ?? "All") as BaseRoleType);
   }
   deferred(`no ${kind ?? ""}`.trim());
 }
@@ -335,9 +334,8 @@ function makeCeltic(b: ArgBundle): GraphFunction {
 
 function makeClaim(b: ArgBundle): MovesFunction {
   const to = b.positional.find(isTo);
-  const region = to?.regionFn();
-  if (!region) deferred("claim");
-  return new Claim1to1(new Add(region));
+  if (!to) deferred("claim");
+  return new Claim1to1(null, to, null);
 }
 
 function makeComponent(b: ArgBundle): Component {

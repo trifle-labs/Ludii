@@ -18,6 +18,8 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetCount } from "../../../../../../../../../action/action-set-count.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import type { SiteType } from "../../../../../../../../../action/site-type.js";
+import type { Then } from "../../Then.js";
 
 export class SetCount1to1 implements MovesFunction {
   /**
@@ -33,13 +35,34 @@ export class SetCount1to1 implements MovesFunction {
   private readonly newCount: IntFunction;
 
   /**
+   * Cell/Edge/Vertex.
+   * @java SetCount.type
+   */
+  private readonly type: SiteType | null;
+
+  /**
+   * Optional subsequent moves.
+   * @java SetCount.then()
+   */
+  private readonly thenClause: Then | null;
+
+  /**
    * @java game/rules/play/moves/nonDecision/effect/set/site/SetCount.java — constructor
+   * @param type              The graph element type [default SiteType of the board]
    * @param locationFunction  The site to modify
    * @param newCount          The new count value
+   * @param then              The moves applied after that move is applied
    */
-  public constructor(locationFunction: IntFunction, newCount: IntFunction) {
+  public constructor(
+    type: SiteType | null,
+    locationFunction: IntFunction,
+    newCount: IntFunction,
+    then?: Then | null,
+  ) {
+    this.type = type;
     this.locationFunction = locationFunction;
     this.newCount = newCount;
+    this.thenClause = then ?? null;
   }
 
   /**

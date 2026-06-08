@@ -1,4 +1,5 @@
 import { BooleanConstant } from "../../../../ludemes/game/functions/booleans/BooleanConstant.js";
+import { DimConstant } from "../../../../ludemes/game/functions/dim/DimConstant.js";
 import { FloatConstant } from "../../../../ludemes/game/functions/floats/FloatConstant.js";
 import { Add as GraphAdd } from "../../../../ludemes/game/functions/graph/operators/Add.js";
 import { Remove as GraphRemove } from "../../../../ludemes/game/functions/graph/operators/Remove.js";
@@ -123,15 +124,16 @@ function graphAddFactory(b: ArgBundle): GraphAdd {
   const cells = b.named.get("cells");
   const edgeArgs = classifyLinePairs(edges);
   const cellArgs = classifyRings(cells);
-  return new GraphAdd({
+  return new GraphAdd(
     graph,
-    vertices: toPoints(b.named.get("vertices")),
-    edgesByCoord: edgeArgs.coord,
-    edgesByIndex: edgeArgs.index,
-    facesByCoord: cellArgs.coord,
-    facesByIndex: cellArgs.index,
-    connect: namedBoolean(b, "connect") ?? false,
-  });
+    toFloatPointFns(toPoints(b.named.get("vertices"))),
+    toFloatShapeFns(edgeArgs.coord),
+    toDimShapeFns(edgeArgs.index),
+    null,
+    toFloatShapeFns(cellArgs.coord),
+    toDimShapeFns(cellArgs.index),
+    namedBoolean(b, "connect") ?? false,
+  );
 }
 
 function forEachFactory(b: ArgBundle): MovesFunction {
@@ -231,19 +233,21 @@ function graphRemoveFactory(b: ArgBundle): GraphRemove {
   const graph = requiredGraph(b.positional[0], "remove graph");
   const poly = findInstance(b, Poly);
   if (poly) {
-    return new GraphRemove(graph, { polygon: polygonPoints(poly) });
+    return new GraphRemove(graph, poly, namedBoolean(b, "trimEdges"));
   }
   const cells = classifyRings(b.named.get("cells"));
   const edges = classifyLinePairs(b.named.get("edges"));
   const vertices = classifyPointsOrIndices(b.named.get("vertices"));
-  return new GraphRemove(graph, {
-    facePositions: cells.coord,
-    faceIndices: cells.index.flat(),
-    edgePositions: edges.coord,
-    edgeIndices: edges.index,
-    vertexPositions: vertices.coord,
-    vertexIndices: vertices.index,
-  });
+  return new GraphRemove(
+    graph,
+    cells.coord,
+    cells.index.flat(),
+    edges.coord,
+    edges.index,
+    vertices.coord,
+    vertices.index,
+    namedBoolean(b, "trimEdges"),
+  );
 }
 
 function graphUnionFactory(b: ArgBundle): GraphUnion {
@@ -471,7 +475,10 @@ function pushFactory(b: ArgBundle): Push {
 }
 
 function quadhexFactory(b: ArgBundle): Quadhex {
-  return new Quadhex(requiredNumber(b.positional[0], "quadhex layers"));
+  return new Quadhex(
+    new DimConstant(requiredNumber(b.positional[0], "quadhex layers")),
+    namedBoolean(b, "thirds"),
+  );
 }
 
 function randomFactory(b: ArgBundle): Random {
@@ -740,6 +747,18 @@ function toPoints(value: unknown): Pt[] {
   return points;
 }
 
+function toFloatPointFns(points: ReadonlyArray<Pt>): FloatConstant[][] {
+  return points.map(([x, y]) => [new FloatConstant(x), new FloatConstant(y)]);
+}
+
+function toFloatShapeFns(shape: ReadonlyArray<ReadonlyArray<Pt>>): FloatConstant[][][] {
+  return shape.map(toFloatPointFns);
+}
+
+function toDimShapeFns(shape: ReadonlyArray<ReadonlyArray<number>>): DimConstant[][] {
+  return shape.map((values) => values.map((value) => new DimConstant(value)));
+}
+
 function classifyLinePairs(value: unknown): {
   coord: ReadonlyArray<readonly [Pt, Pt]>;
   index: ReadonlyArray<readonly [number, number]>;
@@ -767,10 +786,6 @@ function classifyPointsOrIndices(value: unknown): { coord: Pt[]; index: number[]
   if (!Array.isArray(value)) return { coord: [], index: [] };
   if (value.every((v) => typeof v === "number")) return { coord: [], index: value as number[] };
   return { coord: toPoints(value), index: [] };
-}
-
-function polygonPoints(poly: Poly): Pt[] {
-  return poly.polygon().points().map((p) => [p.x, p.y] as const);
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

@@ -19,6 +19,9 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetScore } from "../../../../../../../../../action/action-set-score.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import type { RoleTypeFull } from "../../../../../../../types/play/RoleType.js";
+import type { Player1to1 } from "../../../../../../../util/moves/Player1to1.js";
+import type { Then } from "../../Then.js";
 
 export class SetScore1to1 implements MovesFunction {
   /**
@@ -35,12 +38,20 @@ export class SetScore1to1 implements MovesFunction {
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/set/player/SetScore.java — constructor
-   * @param playerFn  The player index function (1-based)
-   * @param scoreFn   The new score value function
+   * @param player The index of the player.
+   * @param role   The roleType of the player.
+   * @param score  The new score.
+   * @param then   The moves applied after that move is applied.
    */
-  public constructor(playerFn: IntFunction, scoreFn: IntFunction) {
-    this.playerFn = playerFn;
-    this.scoreFn = scoreFn;
+  public constructor(
+    player: Player1to1 | null,
+    role: RoleTypeFull | null,
+    score: IntFunction,
+    then: Then | null = null,
+  ) {
+    void then;
+    this.playerFn = player === null ? roleToIntFunction(role) : player.index();
+    this.scoreFn = score;
   }
 
   /**
@@ -66,4 +77,30 @@ export class SetScore1to1 implements MovesFunction {
       actions: [action],
     })];
   }
+}
+
+function roleToIntFunction(role: RoleTypeFull | null): IntFunction {
+  if (role === null) {
+    throw new Error("SetScore1to1: exactly one of player or role must be non-null.");
+  }
+
+  const owner = staticRoleOwner(role);
+  if (owner !== null) return { eval: () => owner };
+
+  return {
+    eval: (ctx): number => {
+      if (role === "Mover") return ctx.state.mover;
+      if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (role === "Player") return ctx._evalPlayer ?? ctx.state.mover;
+      if (role === "Shared" || role === "All") return ctx.game.numPlayers + 1;
+      return ctx.state.mover;
+    },
+  };
+}
+
+function staticRoleOwner(role: RoleTypeFull): number | null {
+  if (/^P\d+$/.test(role)) return Number(role.slice(1));
+  if (role === "Neutral" || role === "Shared") return 0;
+  return null;
 }

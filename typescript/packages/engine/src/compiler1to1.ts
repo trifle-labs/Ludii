@@ -3853,9 +3853,9 @@ export function compileBool1to1(
         }
         const roleNode = positional[1];
         if (roleNode && isIdent(roleNode)) {
-          return new NoPieces1to1(roleNode.name as RoleType);
+          return new NoPieces1to1(undefined, roleNode.name as RoleType);
         }
-        return new NoPieces1to1("Mover");
+        return new NoPieces1to1(undefined, "Mover");
       }
       // No catch-all: unknown (no X ...) → COMPILE_FAIL for visibility
       throw new Error(`compiler1to1: unknown (no ${kind}) subtype — not yet ported to 1:1`);
@@ -7084,7 +7084,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       let valNode: LudNode | undefined = setPos[1];
       if (setPos[1] && isString(setPos[1])) { name = setPos[1].value; valNode = setPos[2]; }
       const valueFn: IntFunction = valNode ? compileInt1to1(valNode) : new IntConstant(-1);
-      return new SetVar1to1(name, valueFn);
+      return new SetVar1to1(name, valueFn, null);
     }
     // (set Pending [<site>]) → ActionSetPending
     if (sub === "pending") {
@@ -9332,7 +9332,7 @@ export function compileNode1to1(gameNode: LudList): Game1to1 {
     }
   }
 
-  const start = startRules.length > 0 ? new Start1to1(startRules) : null;
+  const start = startRules.length > 0 ? new Start1to1(startRules, null) : null;
   const rules = phases !== null
     ? new Rules1to1(null, start, play, phases, end)
     : new Rules1to1(null, start, play, end);

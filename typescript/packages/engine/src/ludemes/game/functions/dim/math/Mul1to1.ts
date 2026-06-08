@@ -16,13 +16,13 @@ export class DimMul1to1 implements DimFunction1to1 {
   /** List form: product of all elements */
   private readonly list: readonly DimFunction1to1[] | null;
 
-  /** Two-value constructor: (* a b) */
-  constructor(a: DimFunction1to1, b: DimFunction1to1);
-  /** List constructor: (* {list...}) */
-  constructor(list: readonly DimFunction1to1[]);
+  /** @java Mul(DimFunction a, DimFunction b) */
+  public constructor(a: DimFunction1to1, b: DimFunction1to1);
+  /** @java Mul(DimFunction[] list) */
+  public constructor(list: readonly DimFunction1to1[]);
   constructor(
     aOrList: DimFunction1to1 | readonly DimFunction1to1[],
-    b?: DimFunction1to1,
+    b: DimFunction1to1 | null = null,
   ) {
     if (Array.isArray(aOrList)) {
       this.a = null;
