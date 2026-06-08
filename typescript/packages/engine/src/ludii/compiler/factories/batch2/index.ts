@@ -109,6 +109,7 @@ import { IntArrayFromRegion } from "../../../../ludemes/other/IntArrayFromRegion
 import { SetNextPlayer } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/nextPlayer/SetNextPlayer.js";
 import { SetScore1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetScore1to1.js";
 import { SetValuePlayer } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetValuePlayer.js";
+import { Player1to1 } from "../../../../ludemes/game/util/moves/Player1to1.js";
 import { SetPending } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.js";
 import { SetRotation } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/direction/SetRotation.js";
 import { SetCount1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/site/SetCount1to1.js";
@@ -559,7 +560,11 @@ function makeDie(b: ArgBundle): Die {
 
 function makeDimAdd(b: ArgBundle): DimAdd1to1 {
   const list = firstArray(b);
-  if (list) return new DimAdd1to1(list.map(dimValue));
+  if (list) {
+    const values = list.map(dimValue);
+    if (values.length === 2) return new DimAdd1to1(values[0]!, values[1]!);
+    return new DimAdd1to1(values);
+  }
   return new DimAdd1to1(requireDim(b, 0), requireDim(b, 1));
 }
 
@@ -617,21 +622,27 @@ function makeEffectSet(b: ArgBundle): MovesFunction {
   if (kind === "Rotation") return makeSetRotation(b);
   if (kind === "Value" || kind === "Score") return makeSetPlayerOrSite(b, kind);
   if (kind === "Pending") return new SetPending(firstIntFunctionAfter(b, 0), firstRegionFunction(b), thenMoves(b));
-  if (kind === "NextPlayer") return new SetNextPlayer({ who: firstIntFunctionAfter(b, 0), nextPlayers: firstIntArrayFunction(b), then: thenMoves(b) });
+  if (kind === "NextPlayer") {
+    const whoFn = firstIntFunctionAfter(b, 0);
+    return new SetNextPlayer(whoFn != null ? new Player1to1(whoFn) : null, firstIntArrayFunction(b), thenMoves(b));
+  }
   if (kind === "Hidden") return makeSetHidden(b);
-  if (kind === "TrumpSuit") return new SetTrumpSuit((firstIntArrayFunction(b) ?? firstIntFunctionAfter(b, 0)) as IntFunction | null, thenMoves(b));
+  if (kind === "TrumpSuit") {
+    const suits = firstIntArrayFunction(b);
+    return new SetTrumpSuit(suits === null ? firstIntFunctionAfter(b, 0) : null, suits, thenMoves(b));
+  }
   if (kind === "Team") return new SetTeam(requireIntFunction(b, 1), flatten(b.positional).filter(isRoleString), thenMoves(b));
   if (kind === "Count") {
-    if (b.named.has("level") || firstSiteType(b) !== null) deferred("set Count");
-    return new SetCount1to1(requireNamedIntFunction(b, "at"), requireLastIntFunction(b));
+    if (b.named.has("level")) deferred("set Count");
+    return new SetCount1to1(firstSiteType(b), requireNamedIntFunction(b, "at"), requireLastIntFunction(b), optionalThen(b));
   }
   if (kind === "State") {
     if (b.named.has("level") || firstSiteType(b) !== null) deferred("set State");
-    return new SetState1to1(requireNamedIntFunction(b, "at"), requireLastIntFunction(b));
+    return new SetState1to1(null, requireNamedIntFunction(b, "at"), null, requireLastIntFunction(b), optionalThen(b));
   }
   if (kind === "Counter") return new SetCounter(firstIntFunctionAfter(b, 0), thenMoves(b));
   if (kind === "Pot") return new SetPot(firstIntFunctionAfter(b, 0), thenMoves(b));
-  if (kind === "Var") return new SetVar1to1(firstStringAfter(b, 0), firstIntFunctionAfter(b, 0) ?? new IntConstant(-1));
+  if (kind === "Var") return new SetVar1to1(firstStringAfter(b, 0), firstIntFunctionAfter(b, 0) ?? new IntConstant(-1), optionalThen(b));
   deferred(`set ${kind}`);
 }
 
@@ -643,7 +654,9 @@ function makeSetPlayerOrSite(b: ArgBundle, kind: string): MovesFunction {
   const player = firstIntFunctionAfter(b, 0);
   const role = firstRoleAfter(b, 0);
   if (kind === "Value") return new SetValuePlayer(player, role, value, thenMoves(b));
-  return new SetScore1to1(player ?? roleToIntFunction(role ?? "Mover"), value);
+  const scorePlayer = player === null ? null : new Player1to1(player);
+  const scoreRole = player === null ? (role ?? "Mover") as ConstructorParameters<typeof SetScore1to1>[1] : null;
+  return new SetScore1to1(scorePlayer, scoreRole, value, optionalThen(b));
 }
 
 function makeDirectional(b: ArgBundle): Directional {

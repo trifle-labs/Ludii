@@ -54,27 +54,37 @@ export class Vote implements MovesFunction {
    *
    * @param vote      A single vote string.
    * @param votes     An array of vote strings.
-   * @param thenMoves Optional subsequent moves.
+   * @param then      Optional subsequent moves.
    */
-  public constructor(opts: {
-    vote?: string | null;
-    votes?: string[] | null;
-    then?: MovesFunction | null;
-  }) {
+  public constructor(
+    vote: string | null,
+    votes: string[] | null,
+    then?: MovesFunction | null,
+  ) {
     // @java Vote.java:52-74
-    if (opts.votes != null) {
+    let numNonNull = 0;
+    if (vote != null) {
+      numNonNull++;
+    }
+    if (votes != null) {
+      numNonNull++;
+    }
+
+    if (numNonNull > 1) {
+      throw new Error("Only one Or parameter can be non-null.");
+    }
+
+    if (votes != null) {
       // @java Vote.java:64-66 — this.votes = votes;
-      this.votes = opts.votes;
-    } else if (opts.vote != null) {
-      // @java Vote.java:68-71 — this.votes = new String[1]; [0] = vote;
-      this.votes = [opts.vote];
+      this.votes = votes;
     } else {
-      this.votes = [];
+      // @java Vote.java:68-71 — this.votes = new String[1]; [0] = vote;
+      this.votes = [vote as string];
     }
 
     // @java Vote.java:73-74 — voteInts = new int[...]; Arrays.fill(-1)
     this.voteInts = new Array<number>(this.votes.length).fill(UNDEFINED);
-    this.thenMoves = opts.then ?? null;
+    this.thenMoves = then ?? null;
   }
 
   /**

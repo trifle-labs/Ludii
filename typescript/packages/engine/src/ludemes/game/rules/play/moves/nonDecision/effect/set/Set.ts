@@ -17,7 +17,7 @@
 
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
-import type { MovesFunction, IntFunction, BooleanFunction, RegionFunction } from "../../../../../../../base.js";
+import type { MovesFunction, IntArrayFunction, IntFunction, BooleanFunction, RegionFunction } from "../../../../../../../base.js";
 import { IntArrayFromRegion } from "../../../../../../../other/IntArrayFromRegion.js";
 import { SetTeam } from "./team/SetTeam.js";
 import { SetHidden } from "./hidden/SetHidden.js";
@@ -108,9 +108,10 @@ export class Set implements MovesFunction {
   public static constructTrump(
     _setType: SetTrumpType,
     suitFn: IntFunction | null,
+    suitsFn: IntArrayFunction | null = null,
     thenMoves: MovesFunction | null = null,
   ): MovesFunction {
-    return new SetTrumpSuit(suitFn, thenMoves);
+    return new SetTrumpSuit(suitFn, suitsFn, thenMoves);
   }
 
   /**

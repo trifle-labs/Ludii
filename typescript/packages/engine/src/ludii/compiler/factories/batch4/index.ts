@@ -602,7 +602,7 @@ function shiftFallbackFactory(b: ArgBundle): Shift {
   const graph = first(b, isGraphFunction);
   const nums = flatten([...b.positional, ...b.named.values()]).filter((v): v is number => typeof v === "number");
   if (nums.length < 2 || graph === undefined) throw new Error("factory shift: missing dx/dy");
-  return new Shift(nums[0]!, nums[1]!, graph);
+  return new Shift(nums[0]!, nums[1]!, nums[2], graph);
 }
 
 function sitesSideFallbackFactory(b: ArgBundle): RegionFunction {

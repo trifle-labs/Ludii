@@ -8,8 +8,10 @@
  */
 
 import { Graph } from "../../../../../eval/graph/graph.js";
+import type { DimFunction } from "../../dim/DimFunction.js";
 import { BaseGraphFunction } from "../BaseGraphFunction.js";
 import type { GraphFunction } from "../GraphFunction.js";
+import { Poly } from "../../../util/graph/Poly.js";
 
 /** Ray-cast point-in-polygon — @java Polygon.contains. */
 function polyContains(
@@ -86,6 +88,52 @@ function graphWithoutEdges(
 }
 
 type Pt = readonly [number, number];
+type DimArg = DimFunction | number;
+type FacePositions = ReadonlyArray<ReadonlyArray<Pt>>;
+type EdgePositions = ReadonlyArray<readonly [Pt, Pt]>;
+type VertexPositions = ReadonlyArray<Pt>;
+type EdgeIndicesInput = ReadonlyArray<ReadonlyArray<DimArg>>;
+
+type RemoveArgs = {
+  polygon?: ReadonlyArray<Pt> | null;
+  facePositions?: FacePositions;
+  faceIndices?: ReadonlyArray<DimArg>;
+  edgePositions?: EdgePositions;
+  edgeIndices?: EdgeIndicesInput;
+  vertexPositions?: VertexPositions;
+  vertexIndices?: ReadonlyArray<DimArg>;
+  trimEdges?: boolean | null;
+};
+
+function isPoly(value: unknown): value is Poly {
+  return value instanceof Poly;
+}
+
+function isRemoveArgs(value: unknown): value is RemoveArgs {
+  return typeof value === "object" && value !== null && !Array.isArray(value) && !isPoly(value);
+}
+
+function polygonPoints(poly: Poly): Pt[] {
+  return poly.polygon().points().map((p) => [p.x, p.y] as const);
+}
+
+function dimValue(value: DimArg): number {
+  return typeof value === "number" ? value : value.eval();
+}
+
+function dimArray(values: ReadonlyArray<DimArg> | null | undefined): number[] {
+  return values?.map(dimValue) ?? [];
+}
+
+function edgeIndexArray(values: EdgeIndicesInput | null | undefined): Array<readonly [number, number]> {
+  if (values == null) return [];
+  const out: Array<readonly [number, number]> = [];
+  for (const pair of values) {
+    if (pair.length < 2) continue;
+    out.push([dimValue(pair[0]!), dimValue(pair[1]!)] as const);
+  }
+  return out;
+}
 
 /**
  * Remove operator: delete vertices, edges and/or faces.
@@ -100,29 +148,70 @@ export class Remove extends BaseGraphFunction {
   private readonly edgeIndices: ReadonlyArray<readonly [number, number]>;
   private readonly vertexPositions: ReadonlyArray<Pt>;
   private readonly vertexIndices: ReadonlyArray<number>;
+  private readonly trimEdges: boolean;
 
+  /** @java Remove(GraphFunction, Float[][][], DimFunction[], Float[][][], DimFunction[][], Float[][], DimFunction[], Boolean) */
+  public constructor(
+    graphFn: GraphFunction,
+    cells?: FacePositions | null,
+    Cells?: ReadonlyArray<DimArg> | null,
+    edges?: EdgePositions | null,
+    Edges?: EdgeIndicesInput | null,
+    vertices?: VertexPositions | null,
+    Vertices?: ReadonlyArray<DimArg> | null,
+    trimEdges?: boolean | null,
+  );
+  /** @java Remove(GraphFunction, Poly, Boolean) */
+  public constructor(graphFn: GraphFunction, poly: Poly, trimEdges?: boolean | null);
+  /** Compatibility with the previous TS options-object constructor. */
+  public constructor(graphFn: GraphFunction, args?: RemoveArgs);
   constructor(
     graphFn: GraphFunction,
-    args: {
-      polygon?: ReadonlyArray<Pt> | null;
-      facePositions?: ReadonlyArray<ReadonlyArray<Pt>>;
-      faceIndices?: ReadonlyArray<number>;
-      edgePositions?: ReadonlyArray<readonly [Pt, Pt]>;
-      edgeIndices?: ReadonlyArray<readonly [number, number]>;
-      vertexPositions?: ReadonlyArray<Pt>;
-      vertexIndices?: ReadonlyArray<number>;
-    } = {},
+    cellsOrPolyOrArgs: FacePositions | Poly | RemoveArgs | null = null,
+    CellsOrTrimEdges: ReadonlyArray<DimArg> | boolean | null = null,
+    edges: EdgePositions | null = null,
+    Edges: EdgeIndicesInput | null = null,
+    vertices: VertexPositions | null = null,
+    Vertices: ReadonlyArray<DimArg> | null = null,
+    trimEdges: boolean | null = null,
   ) {
     super();
     this._dim = [];
     this.graphFn = graphFn;
-    this.polygon = args.polygon ?? null;
-    this.facePositions = args.facePositions ?? [];
-    this.faceIndices = args.faceIndices ?? [];
-    this.edgePositions = args.edgePositions ?? [];
-    this.edgeIndices = args.edgeIndices ?? [];
-    this.vertexPositions = args.vertexPositions ?? [];
-    this.vertexIndices = args.vertexIndices ?? [];
+
+    if (isPoly(cellsOrPolyOrArgs)) {
+      this.polygon = polygonPoints(cellsOrPolyOrArgs);
+      this.facePositions = [];
+      this.faceIndices = [];
+      this.edgePositions = [];
+      this.edgeIndices = [];
+      this.vertexPositions = [];
+      this.vertexIndices = [];
+      this.trimEdges = typeof CellsOrTrimEdges === "boolean" ? CellsOrTrimEdges : true;
+      return;
+    }
+
+    if (isRemoveArgs(cellsOrPolyOrArgs)) {
+      const args = cellsOrPolyOrArgs;
+      this.polygon = args.polygon ?? null;
+      this.facePositions = args.facePositions ?? [];
+      this.faceIndices = dimArray(args.faceIndices);
+      this.edgePositions = args.edgePositions ?? [];
+      this.edgeIndices = edgeIndexArray(args.edgeIndices);
+      this.vertexPositions = args.vertexPositions ?? [];
+      this.vertexIndices = dimArray(args.vertexIndices);
+      this.trimEdges = args.trimEdges ?? true;
+      return;
+    }
+
+    this.polygon = null;
+    this.facePositions = cellsOrPolyOrArgs ?? [];
+    this.faceIndices = Array.isArray(CellsOrTrimEdges) ? dimArray(CellsOrTrimEdges) : [];
+    this.edgePositions = edges ?? [];
+    this.edgeIndices = edgeIndexArray(Edges);
+    this.vertexPositions = vertices ?? [];
+    this.vertexIndices = dimArray(Vertices);
+    this.trimEdges = trimEdges ?? true;
   }
 
   /** @java Remove.eval(Context, SiteType) */

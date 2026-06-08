@@ -60,7 +60,7 @@ export class FloatAdd1to1 implements FloatFunction {
   public constructor(list: readonly FloatFunction[]);
   public constructor(
     aOrList: FloatFunction | readonly FloatFunction[],
-    b?: FloatFunction,
+    ...rest: [] | [b: FloatFunction]
   ) {
     if (Array.isArray(aOrList)) {
       this.a = null;
@@ -68,7 +68,7 @@ export class FloatAdd1to1 implements FloatFunction {
       this.list = aOrList as readonly FloatFunction[];
     } else {
       this.a = aOrList as FloatFunction;
-      this.b = b!;
+      this.b = rest[0]!;
       this.list = null;
     }
   }

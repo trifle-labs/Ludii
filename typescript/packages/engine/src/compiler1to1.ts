@@ -7084,7 +7084,7 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       let valNode: LudNode | undefined = setPos[1];
       if (setPos[1] && isString(setPos[1])) { name = setPos[1].value; valNode = setPos[2]; }
       const valueFn: IntFunction = valNode ? compileInt1to1(valNode) : new IntConstant(-1);
-      return new SetVar1to1(name, valueFn);
+      return new SetVar1to1(name, valueFn, null);
     }
     // (set Pending [<site>]) → ActionSetPending
     if (sub === "pending") {

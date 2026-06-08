@@ -24,6 +24,9 @@ import { radialsForDirection } from "../../../../../../topology-radials.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+import type { ThenLike } from "../../Moves.js";
+import type { From1to1 } from "../../../../../util/moves/From1to1.js";
+import { LAST_TO } from "./EffectCtorAdapters.js";
 
 export class Attract1to1 implements MovesFunction {
   /**
@@ -40,15 +43,18 @@ export class Attract1to1 implements MovesFunction {
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Attract.java — constructor
-   * @param startLocationFn  Evaluates to the from-site
-   * @param dirnName         Direction to attract along (default "Adjacent")
+   * @param from The data of the from location [(from (last To))].
+   * @param dirn The specific direction [Adjacent].
+   * @param then The moves applied after that move is applied.
    */
   public constructor(
-    startLocationFn: IntFunction,
-    dirnName = "Adjacent",
+    from?: From1to1 | null,
+    dirn?: string | null,
+    then?: ThenLike | null,
   ) {
-    this.startLocationFn = startLocationFn;
-    this.dirnName = dirnName;
+    void then;
+    this.startLocationFn = from?.loc() ?? LAST_TO;
+    this.dirnName = dirn ?? "Adjacent";
   }
 
   /**

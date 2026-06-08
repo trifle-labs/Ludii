@@ -22,11 +22,16 @@ export class Renumber extends BaseGraphFunction {
    * @java Renumber(SiteType siteTypeA, SiteType siteTypeB, SiteType siteTypeC, GraphFunction graph)
    * If no site types are given, renumber all (Vertex+Edge+Cell).
    */
-  constructor(graphFn: GraphFunction, siteTypes?: SiteTypeRenumber[]) {
+  constructor(
+    siteTypeA: SiteTypeRenumber | null | undefined,
+    siteTypeB: SiteTypeRenumber | null | undefined,
+    siteTypeC: SiteTypeRenumber | null | undefined,
+    graph: GraphFunction,
+  ) {
     super();
     this._dim = [];
-    this.graphFn = graphFn;
-    this.siteTypes = siteTypes ?? [];
+    this.graphFn = graph;
+    this.siteTypes = [siteTypeA, siteTypeB, siteTypeC].filter((type): type is SiteTypeRenumber => type != null);
   }
 
   /** @java Renumber.eval(Context, SiteType) */

@@ -5,10 +5,17 @@
 
 import { Graph } from "../../../../../eval/graph/graph.js";
 import { BaseGraphFunction } from "../BaseGraphFunction.js";
+import type { FloatFunction } from "../../../../base.js";
+import type { DimFunction } from "../../dim/DimFunction.js";
 import type { GraphFunction } from "../GraphFunction.js";
 
 /** Coordinate pair. */
 type Pt = readonly [number, number];
+type FloatPointFns = ReadonlyArray<FloatFunction>;
+type FloatPointListFns = ReadonlyArray<FloatPointFns>;
+type FloatShapeFns = ReadonlyArray<FloatPointListFns>;
+type DimPointFns = ReadonlyArray<DimFunction>;
+type DimShapeFns = ReadonlyArray<DimPointFns>;
 
 /**
  * Add operator: append vertices/edges/faces to a graph.
@@ -17,35 +24,50 @@ type Pt = readonly [number, number];
 export class Add extends BaseGraphFunction {
   private readonly graphFn: GraphFunction | null;
   /** Vertex coordinates to add: [[x,y], ...] */
-  private readonly vertices: ReadonlyArray<Pt>;
+  private readonly vertices: FloatPointListFns;
   /** Edge endpoint coordinate pairs to add: [[[ax,ay],[bx,by]], ...] */
-  private readonly edgesByCoord: ReadonlyArray<readonly [Pt, Pt]>;
+  private readonly edgesByCoord: FloatShapeFns;
   /** Edge endpoint vertex indices to add: [[a,b], ...] */
-  private readonly edgesByIndex: ReadonlyArray<readonly [number, number]>;
+  private readonly edgesByIndex: DimShapeFns;
+  /** Curved edge endpoint/tangent functions; accepted for constructor parity. */
+  private readonly edgeCurvedFns: FloatShapeFns;
   /** Face vertex coordinate rings: [[[x,y],...], ...] */
-  private readonly facesByCoord: ReadonlyArray<ReadonlyArray<Pt>>;
+  private readonly facesByCoord: FloatShapeFns;
   /** Face vertex index rings: [[i,j,k,...], ...] */
-  private readonly facesByIndex: ReadonlyArray<ReadonlyArray<number>>;
+  private readonly facesByIndex: DimShapeFns;
   private readonly connect: boolean;
 
-  constructor(args: {
-    graph?: GraphFunction | null;
-    vertices?: ReadonlyArray<Pt>;
-    edgesByCoord?: ReadonlyArray<readonly [Pt, Pt]>;
-    edgesByIndex?: ReadonlyArray<readonly [number, number]>;
-    facesByCoord?: ReadonlyArray<ReadonlyArray<Pt>>;
-    facesByIndex?: ReadonlyArray<ReadonlyArray<number>>;
-    connect?: boolean;
-  }) {
+  /**
+   * @java Add(GraphFunction graph, FloatFunction[][] vertices,
+   *           FloatFunction[][][] edges, DimFunction[][] Edges,
+   *           FloatFunction[][][] edgesCurved, FloatFunction[][][] cells,
+   *           DimFunction[][] Cells, Boolean connect)
+   */
+  constructor(
+    graph?: GraphFunction | null,
+    vertices?: FloatFunction[][] | null,
+    edges?: FloatFunction[][][] | null,
+    Edges?: DimFunction[][] | null,
+    edgesCurved?: FloatFunction[][][] | null,
+    cells?: FloatFunction[][][] | null,
+    Cells?: DimFunction[][] | null,
+    connect?: boolean | null,
+  ) {
     super();
     this._dim = [];
-    this.graphFn = args.graph ?? null;
-    this.vertices = args.vertices ?? [];
-    this.edgesByCoord = args.edgesByCoord ?? [];
-    this.edgesByIndex = args.edgesByIndex ?? [];
-    this.facesByCoord = args.facesByCoord ?? [];
-    this.facesByIndex = args.facesByIndex ?? [];
-    this.connect = args.connect ?? false;
+    if (edges != null && Edges != null)
+      throw new Error("Only one 'edge' parameter can be non-null.");
+    if (cells != null && Cells != null)
+      throw new Error("Only one 'face' parameter can be non-null.");
+
+    this.graphFn = graph ?? null;
+    this.vertices = vertices ?? [];
+    this.edgesByCoord = edges ?? [];
+    this.edgesByIndex = Edges ?? [];
+    this.edgeCurvedFns = edgesCurved ?? [];
+    this.facesByCoord = cells ?? [];
+    this.facesByIndex = Cells ?? [];
+    this.connect = connect ?? false;
   }
 
   /** @java Add.eval(Context, SiteType) */
@@ -54,7 +76,9 @@ export class Add extends BaseGraphFunction {
 
     // Add vertices by coordinate
     const newVerts: number[] = [];
-    for (const [x, y] of this.vertices) {
+    for (const pointFns of this.vertices) {
+      const x = evalFloatFn(pointFns[0]);
+      const y = evalFloatFn(pointFns[1]);
       const existing = graph.findVertex(x, y);
       if (existing < 0) {
         newVerts.push(graph.addVertex(x, y));
@@ -62,7 +86,14 @@ export class Add extends BaseGraphFunction {
     }
 
     // Add edges by coordinate (find or create endpoint vertices)
-    for (const [[ax, ay], [bx, by]] of this.edgesByCoord) {
+    for (const edgeFns of this.edgesByCoord) {
+      const aFns = edgeFns[0];
+      const bFns = edgeFns[1];
+      if (aFns == null || bFns == null) continue;
+      const ax = evalFloatFn(aFns[0]);
+      const ay = evalFloatFn(aFns[1]);
+      const bx = evalFloatFn(bFns[0]);
+      const by = evalFloatFn(bFns[1]);
       let vA = graph.findVertex(ax, ay);
       if (vA < 0) vA = graph.addVertex(ax, ay);
       let vB = graph.findVertex(bx, by);
@@ -71,15 +102,21 @@ export class Add extends BaseGraphFunction {
     }
 
     // Add edges by vertex index
-    for (const [a, b] of this.edgesByIndex) {
+    for (const edgeFns of this.edgesByIndex) {
+      const a = evalDimFn(edgeFns[0]);
+      const b = evalDimFn(edgeFns[1]);
       if (a < graph.vertices.length && b < graph.vertices.length)
         graph.addEdge(a, b);
     }
 
+    void this.edgeCurvedFns;
+
     // Add faces by coordinate (find or create vertices, then edges, then face)
-    for (const ring of this.facesByCoord) {
+    for (const ringFns of this.facesByCoord) {
       const vids: number[] = [];
-      for (const [x, y] of ring) {
+      for (const pointFns of ringFns) {
+        const x = evalFloatFn(pointFns[0]);
+        const y = evalFloatFn(pointFns[1]);
         let vid = graph.findVertex(x, y);
         if (vid < 0) vid = graph.addVertex(x, y);
         vids.push(vid);
@@ -91,9 +128,9 @@ export class Add extends BaseGraphFunction {
     }
 
     // Add faces by vertex index
-    for (const ring of this.facesByIndex) {
-      if (ring.length < 3) continue;
-      const vids = [...ring];
+    for (const ringFns of this.facesByIndex) {
+      if (ringFns.length < 3) continue;
+      const vids = ringFns.map(evalDimFn);
       // Create boundary edges
       for (let n = 0; n < vids.length; n += 1)
         graph.addEdge(vids[n] as number, vids[(n + 1) % vids.length] as number);
@@ -117,4 +154,12 @@ export class Add extends BaseGraphFunction {
 
     return graph;
   }
+}
+
+function evalFloatFn(fn: FloatFunction | undefined): number {
+  return fn == null ? 0 : fn.eval({} as Parameters<FloatFunction["eval"]>[0]);
+}
+
+function evalDimFn(fn: DimFunction | undefined): number {
+  return fn == null ? 0 : fn.eval();
 }

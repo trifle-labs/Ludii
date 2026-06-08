@@ -574,17 +574,16 @@ function makeSet(b: ArgBundle): MovesFunction {
     );
   }
   if (kind === "TrumpSuit") {
-    const suit = flatten(b.positional).find((v) => v !== "Set" && v !== "TrumpSuit" && isIntish(v));
-    return new SetTrumpSuit(asOptionalIntFunction(suit, "set TrumpSuit"), then);
+    const suits = flatten(b.positional).find(isIntArrayFunction) ?? null;
+    const suit = suits === null
+      ? flatten(b.positional).find((v) => v !== "Set" && v !== "TrumpSuit" && isIntish(v))
+      : undefined;
+    return new SetTrumpSuit(asOptionalIntFunction(suit, "set TrumpSuit"), suits, then);
   }
   if (kind === "NextPlayer") {
     const player = findFirst(b, isPlayer);
     const ints = flatten(b.positional).find(isIntArrayFunction);
-    return new SetNextPlayer({
-      who: player?.index() ?? null,
-      nextPlayers: ints ?? null,
-      then,
-    });
+    return new SetNextPlayer(player ?? null, ints ?? null, then);
   }
   if (kind === "Rotation") {
     const to = findFirst(b, isTo);
@@ -616,7 +615,7 @@ function makeSet(b: ArgBundle): MovesFunction {
   if (kind === "Var") {
     const name = flatten(b.positional).find((v): v is string => typeof v === "string" && v !== "Var") ?? null;
     const value = firstIntishAfterKind(b, "Var");
-    return new SetVar1to1(name, asOptionalIntFunction(value, "set Var") ?? new IntConstant(-1));
+    return new SetVar1to1(name, asOptionalIntFunction(value, "set Var") ?? new IntConstant(-1), optionalThen(b));
   }
   if (kind === "Counter") return new SetCounter(asOptionalIntFunction(firstIntishAfterKind(b, "Counter"), "set Counter"), then);
   if (kind === "Pot") return new SetPot(asOptionalIntFunction(firstIntishAfterKind(b, "Pot"), "set Pot"), then);
@@ -624,13 +623,14 @@ function makeSet(b: ArgBundle): MovesFunction {
     const atNamed = namedValue(b, "at");
     const at = requireIntFunction(atNamed ?? firstIntishAfterKind(b, "Count"), "set Count at");
     const value = requireIntFunction(atNamed === undefined ? secondIntishAfterKind(b, "Count") : firstIntishAfterKind(b, "Count"), "set Count value");
-    return new SetCount1to1(at, value);
+    return new SetCount1to1(optionalSiteType(flatten(b.positional).find(isSiteTypeName)), at, value, optionalThen(b));
   }
   if (kind === "State") {
     const atNamed = namedValue(b, "at");
     const at = requireIntFunction(atNamed ?? firstIntishAfterKind(b, "State"), "set State at");
+    const level = asOptionalIntFunction(namedValue(b, "level"), "set State level");
     const value = requireIntFunction(atNamed === undefined ? secondIntishAfterKind(b, "State") : firstIntishAfterKind(b, "State"), "set State value");
-    return new SetState1to1(at, value);
+    return new SetState1to1(optionalSiteType(flatten(b.positional).find(isSiteTypeName)), at, level, value, optionalThen(b));
   }
   throw new Error(`factory not yet wired: move Set ${kind}`);
 }
@@ -653,10 +653,9 @@ function makeSetSiteValue(b: ArgBundle, then: MovesFunction | null): SetValue {
 function makeSetScore(b: ArgBundle): SetScore1to1 {
   const player = findFirst(b, isPlayer);
   const role = firstRoleAfterKind(b, "Score");
-  const playerFn = player?.index() ?? (role ? roleIntFunction(role) : null);
-  const scoreFn = firstIntishAfterKind(b, "Score", playerFn);
-  if (playerFn === null || scoreFn === undefined) throw notWired("move Set Score");
-  return new SetScore1to1(playerFn, asIntFunction(scoreFn, "set Score"));
+  const scoreFn = firstIntishAfterKind(b, "Score");
+  if ((player === undefined && role === null) || scoreFn === undefined) throw notWired("move Set Score");
+  return new SetScore1to1(player ?? null, role as ConstructorParameters<typeof SetScore1to1>[1], asIntFunction(scoreFn, "set Score"), optionalThen(b));
 }
 
 function makeMoveSwap(b: ArgBundle): MovesFunction {
@@ -727,8 +726,8 @@ function makeMessageMove(b: ArgBundle): MovesFunction {
   }
   if (kind === "Vote") {
     return Array.isArray(payload)
-      ? new Vote({ votes: payload.filter(isString), then })
-      : new Vote({ vote: optionalString(payload), then });
+      ? new Vote(null, payload.filter(isString), then)
+      : new Vote(optionalString(payload), null, then);
   }
   throw new Error(`factory not yet wired: move ${kind}`);
 }
@@ -746,8 +745,8 @@ function makeAdd(b: ArgBundle): Add {
 
 function makeClaim(b: ArgBundle): Claim1to1 {
   const to = requireTo(findFirst(b, isTo), "move Claim");
-  const region = to.regionFn() ?? singleSiteRegion(to.locFn() ?? new IteratorTo());
-  return new Claim1to1(new Add(region));
+  const piece = findFirst(b, isPiece) ?? null;
+  return new Claim1to1(piece, to, optionalThen(b));
 }
 
 function makeLeap(b: ArgBundle): Leap {

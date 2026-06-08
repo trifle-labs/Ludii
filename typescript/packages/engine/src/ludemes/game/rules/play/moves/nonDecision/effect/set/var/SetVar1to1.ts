@@ -21,6 +21,11 @@ import type { IntFunction, MovesFunction } from "../../../../../../../../base.js
 import { ActionSetVar } from "../../../../../../../../../action/action-set-var.js";
 import { ActionSetTemp } from "../../../../../../../../../action/action-set-temp.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { IntConstant } from "../../../../../../../functions/ints/IntConstant.js";
+import type { Then } from "../../Then.js";
+
+/** @java Constants.UNDEFINED = -1 */
+const UNDEFINED = -1;
 
 export class SetVar1to1 implements MovesFunction {
   /**
@@ -39,10 +44,12 @@ export class SetVar1to1 implements MovesFunction {
    * @java game/rules/play/moves/nonDecision/effect/set/var/SetVar.java — constructor
    * @param name     Variable name (null = unnamed temp)
    * @param valueFn  The value to store (default: Constants.UNDEFINED = -1)
+   * @param then     The moves applied after that move is applied.
    */
-  public constructor(name: string | null, valueFn: IntFunction) {
-    this.name = name;
-    this.valueFn = valueFn;
+  public constructor(name?: string | null, valueFn?: IntFunction | null, then?: Then | null) {
+    void then;
+    this.name = name ?? null;
+    this.valueFn = valueFn ?? new IntConstant(UNDEFINED);
   }
 
   /**

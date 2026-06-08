@@ -6,6 +6,7 @@
  */
 
 import { Graph } from "../../../../../eval/graph/graph.js";
+import type { SiteType } from "../../../../other/action/SiteType.js";
 import { BaseGraphFunction } from "../BaseGraphFunction.js";
 import type { GraphFunction } from "../GraphFunction.js";
 
@@ -14,13 +15,24 @@ import type { GraphFunction } from "../GraphFunction.js";
  * @java game/functions/graph/operators/Recoordinate.java
  */
 export class Recoordinate extends BaseGraphFunction {
+  private readonly siteTypeA: SiteType | null | undefined;
+  private readonly siteTypeB: SiteType | null | undefined;
+  private readonly siteTypeC: SiteType | null | undefined;
   private readonly graphFn: GraphFunction;
 
-  /** @java Recoordinate(SiteType..., GraphFunction graph) */
-  constructor(graphFn: GraphFunction) {
+  /** @java Recoordinate(@Opt SiteType siteTypeA, @Opt SiteType siteTypeB, @Opt SiteType siteTypeC, GraphFunction graph) */
+  constructor(
+    siteTypeA: SiteType | null | undefined,
+    siteTypeB: SiteType | null | undefined,
+    siteTypeC: SiteType | null | undefined,
+    graph: GraphFunction,
+  ) {
     super();
     this._dim = [];
-    this.graphFn = graphFn;
+    this.siteTypeA = siteTypeA;
+    this.siteTypeB = siteTypeB;
+    this.siteTypeC = siteTypeC;
+    this.graphFn = graph;
   }
 
   /** @java Recoordinate.eval(Context, SiteType) — body entirely commented out in Java; just returns graph */

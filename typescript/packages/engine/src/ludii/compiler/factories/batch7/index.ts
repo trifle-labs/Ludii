@@ -1,5 +1,7 @@
 import { IntConstant } from "../../../../ludemes/game/functions/ints/IntConstant.js";
 import { FloatConstant } from "../../../../ludemes/game/functions/floats/FloatConstant.js";
+import { DimConstant } from "../../../../ludemes/game/functions/dim/DimConstant.js";
+import type { DimFunction } from "../../../../ludemes/game/functions/dim/DimFunction.js";
 import { Range } from "../../../../ludemes/game/functions/range/Range.js";
 import { Max as RangeMax } from "../../../../ludemes/game/functions/range/math/Max.js";
 import { Min as RangeMin } from "../../../../ludemes/game/functions/range/math/Min.js";
@@ -11,7 +13,8 @@ import { Scale } from "../../../../ludemes/game/functions/graph/operators/Scale.
 import { Shift } from "../../../../ludemes/game/functions/graph/operators/Shift.js";
 import { Rectangle } from "../../../../ludemes/game/functions/graph/generators/shape/Rectangle.js";
 import { Regular } from "../../../../ludemes/game/functions/graph/generators/shape/Regular.js";
-import { Repeat, type RepeatPolygon } from "../../../../ludemes/game/functions/graph/generators/shape/Repeat.js";
+import { Repeat } from "../../../../ludemes/game/functions/graph/generators/shape/Repeat.js";
+import { Poly } from "../../../../ludemes/game/util/graph/Poly.js";
 import { ForEachLevel } from "../../../../ludemes/game/functions/region/foreach/level/ForEachLevel.js";
 import { ForEachPlayer } from "../../../../ludemes/game/functions/region/foreach/player/ForEachPlayer.js";
 import { ForEachSite } from "../../../../ludemes/game/functions/region/foreach/sites/ForEachSite.js";
@@ -68,7 +71,15 @@ export function registerBatch7(registry: LudemeRegistry): void {
   registry.registerLudeme("range:range", (b) => new Range(requireIntFn(b, 0), optionalIntFn(b, 1)));
   registry.registerLudeme("range.math.max:max", (b) => new RangeMax(requireIntFn(b, 0)));
   registry.registerLudeme("range.math.min:min", (b) => new RangeMin(requireIntFn(b, 0)));
-  registry.registerLudeme("recoordinate:recoordinate", (b) => new Recoordinate(requireGraph(b)));
+  registry.registerLudeme("recoordinate:recoordinate", (b) => {
+    const siteTypes = siteTypesFrom(b);
+    return new Recoordinate(
+      siteTypes?.[0],
+      siteTypes?.[1],
+      siteTypes?.[2],
+      requireGraph(b),
+    );
+  });
   registry.registerLudeme("rectangle:rectangle", rectangleFactory);
   registry.registerLudeme("region.foreach.forEach:forEach", forEachRegionFactory);
   registry.registerLudeme("region.last.last:last", (b) => {
@@ -84,7 +95,7 @@ export function registerBatch7(registry: LudemeRegistry): void {
   registry.registerLudeme("regionSite:regionSite", regionSiteFactory);
   registry.registerLudeme("regular:regular", regularFactory);
   registry.registerLudeme("remember:remember", rememberFactory);
-  registry.registerLudeme("renumber:renumber", (b) => new Renumber(requireGraph(b), siteTypesFrom(b)));
+  registry.registerLudeme("renumber:renumber", renumberFactory);
   registry.registerLudeme("repeat:repeat", repeatFactory);
   registry.registerLudeme("result:result", (b) => new Result(requireString(b, 0) as RoleType, requireString(b, 1) as ResultType));
   registry.registerLudeme("results:results", resultsFactory);
@@ -140,6 +151,16 @@ function rectangleFactory(b: ArgBundle): GraphFunction {
   const columns = optionalNumber(b, 1);
   const diagonals = optionalNamedString(b, "diagonals");
   return Rectangle.construct(rows, columns, diagonals as Parameters<typeof Rectangle.construct>[2]);
+}
+
+function renumberFactory(b: ArgBundle): Renumber {
+  const siteTypes = siteTypesFrom(b);
+  return new Renumber(
+    siteTypes?.[0],
+    siteTypes?.[1],
+    siteTypes?.[2],
+    requireGraph(b),
+  );
 }
 
 function forEachRegionFactory(b: ArgBundle): RegionFunction {
@@ -267,13 +288,14 @@ function rememberFactory(b: ArgBundle): MovesFunction {
 }
 
 function repeatFactory(b: ArgBundle): Repeat {
-  const rows = requireNumber(b, 0);
-  const columns = requireNumber(b, 1);
+  const rows = toDimFn(b.positional[0]);
+  const columns = toDimFn(b.positional[1]);
   const stepValue = b.named.get("step") ?? b.positional[2];
   const step = toStep(stepValue);
-  const polygons = flatten(b.positional).filter(isRepeatPolygon);
-  if (polygons.length === 0) throw new Error("factory repeat: missing polygon");
-  return new Repeat(rows, columns, step, polygons);
+  const polyStart = b.named.has("step") ? 2 : 3;
+  const polyValues = flatten(b.positional.slice(polyStart)).filter(isPoly);
+  if (polyValues.length === 0) throw new Error("factory repeat: missing polygon");
+  return new Repeat(rows, columns, step, polyValues.length === 1 ? polyValues[0]! : null, polyValues.length === 1 ? null : polyValues);
 }
 
 function resultsFactory(b: ArgBundle): Results1to1 {
@@ -320,10 +342,16 @@ function rulesFactory(b: ArgBundle): Rules1to1 {
 }
 
 function scaleFactory(b: ArgBundle): Scale {
-  const sx = requireNumber(b, 0);
   const graph = requireGraph(b);
-  const numbers = b.positional.filter((v): v is number => typeof v === "number");
-  return new Scale(sx, graph, numbers.length > 1 ? numbers[1] : undefined);
+  const args = flatten(b.positional).filter((v) => !isGraphFunction(v));
+  const sxArg = args[0];
+  if (sxArg === undefined) throw new Error("factory scale: missing scaleX");
+  return new Scale(
+    toFloatFn(sxArg),
+    args[1] === undefined ? null : toFloatFn(args[1]),
+    args[2] === undefined ? null : toFloatFn(args[2]),
+    graph,
+  );
 }
 
 function selectFactory(b: ArgBundle): Select {
@@ -344,8 +372,9 @@ function shiftFactory(b: ArgBundle): Shift {
   const args = b.positional.filter((v) => !isGraphFunction(v));
   const dxArg = b.named.get("dx") ?? args[0];
   const dyArg = b.named.get("dy") ?? args[1];
+  const dzArg = b.named.get("dz") ?? args[2];
   if (dxArg === undefined || dyArg === undefined) throw new Error("factory shift: missing dx/dy");
-  return new Shift(staticFloatValue(dxArg, "dx"), staticFloatValue(dyArg, "dy"), graph);
+  return new Shift(toFloatFn(dxArg), toFloatFn(dyArg), dzArg === undefined ? undefined : toFloatFn(dzArg), graph);
 }
 
 function shootFactory(b: ArgBundle): MovesFunction {
@@ -483,6 +512,12 @@ function toFloatFn(value: unknown): FloatFunction {
   throw new Error("factory: expected float function");
 }
 
+function toDimFn(value: unknown): DimFunction {
+  if (isDimFunction(value)) return value;
+  if (typeof value === "number") return new DimConstant(value);
+  throw new Error("factory: expected dim function");
+}
+
 function toBooleanFn(value: unknown): BooleanFunction {
   if (isBooleanFunction(value)) return value;
   if (typeof value === "boolean") return { eval: () => value };
@@ -524,16 +559,6 @@ function contextRegion(field: "_evalFrom" | "_evalTo"): RegionFunction {
 
 function contextInt(field: "_evalFrom" | "_evalTo"): IntFunction {
   return { eval: (ctx) => ctx[field] };
-}
-
-function staticFloatValue(value: unknown, label: string): number {
-  if (typeof value === "number") return value;
-  if (!isFloatFunction(value)) throw new Error(`factory shift: expected ${label}`);
-  try {
-    return value.eval({} as Parameters<FloatFunction["eval"]>[0]);
-  } catch {
-    throw new Error(`factory shift: expected static ${label}`);
-  }
 }
 
 function siteTypesFrom(b: ArgBundle): ("Cell" | "Vertex" | "Edge")[] | undefined {
@@ -604,6 +629,10 @@ function isIntFunction(value: unknown): value is IntFunction {
   return isObjectWithEval(value) && !(value instanceof FloatConstant);
 }
 
+function isDimFunction(value: unknown): value is DimFunction {
+  return isObjectWithEval(value);
+}
+
 function isFloatFunction(value: unknown): value is FloatFunction {
   return isObjectWithEval(value) || typeof value === "number";
 }
@@ -633,10 +662,8 @@ function isObjectWithEval(value: unknown): value is { eval: (...args: never[]) =
   return value !== null && typeof value === "object" && typeof (value as { eval?: unknown }).eval === "function";
 }
 
-function isRepeatPolygon(value: unknown): value is RepeatPolygon {
-  return value !== null &&
-    typeof value === "object" &&
-    Array.isArray((value as { points?: unknown }).points);
+function isPoly(value: unknown): value is Poly {
+  return value instanceof Poly;
 }
 
 function isPlay(value: unknown): value is Play1to1 {

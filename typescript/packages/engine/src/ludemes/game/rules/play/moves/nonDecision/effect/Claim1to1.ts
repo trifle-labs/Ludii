@@ -15,6 +15,10 @@ import { registerMoves1to1, type Compile1to1Env } from "../../../../../../regist
 import { parseArgs1to1, headOf, compileRegion1to1 } from "../../../../../../../compiler1to1.js";
 import { isList, type LudNode, type LudList } from "@ludii/typescript-language";
 import { Add } from "./Add.js";
+import type { Then } from "./Then.js";
+import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
+import { To1to1 } from "../../../../../util/moves/To1to1.js";
+import { pieceComponent, toRegion } from "./EffectCtorAdapters.js";
 
 /**
  * (claim (to <region>) ...) — place a piece with ownership (simplified as Add).
@@ -23,8 +27,17 @@ import { Add } from "./Add.js";
 export class Claim1to1 implements MovesFunction {
   private readonly inner: MovesFunction;
 
-  public constructor(inner: MovesFunction) {
-    this.inner = inner;
+  public constructor(
+    what: Piece1to1 | null,
+    to: To1to1,
+    then: Then | null = null,
+  ) {
+    void then;
+    const component = what?.components()?.[0] ?? pieceComponent(what);
+    this.inner = new Add(
+      toRegion(to),
+      what === null ? null : { what: component, owner: -1, ...(what.state() ? { state: what.state()! } : {}) },
+    );
   }
 
   public eval(ctx: Context): Move[] { return this.inner.eval(ctx); }
@@ -44,7 +57,7 @@ registerMoves1to1("claim", (node: LudNode, _env: Compile1to1Env): MovesFunction 
     if (regionNode) {
       try {
         const regionFn: RegionFunction = compileRegion1to1(regionNode);
-        return new Claim1to1(new Add(regionFn));
+        return new Claim1to1(null, new To1to1({ region: regionFn }), null);
       } catch { /* fall through */ }
     }
   }
