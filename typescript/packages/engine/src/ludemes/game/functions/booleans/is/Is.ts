@@ -214,16 +214,18 @@ export class Is extends BaseBooleanFunction {
   ): BooleanFunction {
     if (!matchesType(isType, "Hidden")) throw new Error("Is(): An IsHiddenType is not implemented.");
     const whoFn = playerOrRoleInt(to, To);
+    const toPlayer = playerFrom(to);
+    const toRole = To as RoleTypeFull | null;
     const levelFn = level ?? ZERO_INT;
     const realType = siteType(type);
     if (dataType === null || dataType === undefined || dataType === "Invisible" || dataType === "Hidden")
       return new IsHidden1to1(at, whoFn);
-    if (dataType === "What") return new IsHiddenWhat(realType, at, levelFn, whoFn);
-    if (dataType === "Who") return new IsHiddenWho(realType, at, levelFn, whoFn);
-    if (dataType === "Count") return new IsHiddenCount(realType, at, levelFn, whoFn);
-    if (dataType === "State") return new IsHiddenState(realType, at, levelFn, whoFn);
-    if (dataType === "Rotation") return new IsHiddenRotation(realType, at, levelFn, whoFn);
-    if (dataType === "Value") return new IsHiddenValue(realType, at, levelFn, whoFn);
+    if (dataType === "What") return new IsHiddenWhat(realType, at, levelFn, toPlayer, toRole);
+    if (dataType === "Who") return new IsHiddenWho(realType, at, levelFn, toPlayer, toRole);
+    if (dataType === "Count") return new IsHiddenCount(realType, at, levelFn, toPlayer, toRole);
+    if (dataType === "State") return new IsHiddenState(realType, at, levelFn, toPlayer, toRole);
+    if (dataType === "Rotation") return new IsHiddenRotation(realType, at, levelFn, toPlayer, toRole);
+    if (dataType === "Value") return new IsHiddenValue(realType, at, levelFn, toPlayer, toRole);
     throw new Error("Is(): HiddenData is not implemented.");
   }
 
@@ -244,9 +246,9 @@ export class Is extends BaseBooleanFunction {
     froms: RegionFunction | null,
   ): BooleanFunction {
     if (matchesType(isType, "Pattern"))
-      return new IsPattern1to1((walk ?? []) as readonly StepTypeName[], from ?? LAST_TO_INT, whats ?? (what !== null ? [what] : null));
+      return new IsPattern1to1((walk ?? []) as readonly StepTypeName[], siteType(_type), from ?? LAST_TO_INT, what, whats);
     if (matchesType(isType, "PyramidCorners"))
-      return new IsPyramidCorners1to1(from ?? LAST_TO_INT, froms ?? null);
+      return new IsPyramidCorners1to1(siteType(_type) ?? "Cell", from ?? LAST_TO_INT, froms ?? null);
     throw new Error("Is(): An IsPatternType is not implemented.");
   }
 
@@ -277,19 +279,21 @@ export class Is extends BaseBooleanFunction {
 
   /** @java Is.construct(IsPlayerType, IntFunction, RoleType) */
   public static constructPlayer(isType: unknown, index: unknown, role: unknown): BooleanFunction {
-    const who = playerOrRoleInt(index, role);
-    if (matchesType(isType, "Enemy")) return new IsEnemy1to1(who);
-    if (matchesType(isType, "Friend")) return new IsFriend1to1(who);
-    if (matchesType(isType, "Mover")) return new IsMover1to1(who);
-    if (matchesType(isType, "Next")) return new IsNext1to1(who);
-    if (matchesType(isType, "Prev")) return new IsPrev1to1(who);
-    if (matchesType(isType, "Active")) return new IsActive1to1(who);
+    const who = index === null || index === undefined ? null : asIntFunction(index);
+    const roleName = role as RoleTypeFull | null;
+    if (matchesType(isType, "Enemy")) return new IsEnemy1to1(who, roleName);
+    if (matchesType(isType, "Friend")) return new IsFriend1to1(who, roleName);
+    if (matchesType(isType, "Mover")) return new IsMover1to1(who, roleName);
+    if (matchesType(isType, "Next")) return new IsNext1to1(who, roleName);
+    if (matchesType(isType, "Prev")) return new IsPrev1to1(who, roleName);
+    if (matchesType(isType, "Active")) return new IsActive1to1(who, roleName);
     throw new Error("Is(): A IsPlayerType is not implemented.");
   }
 
   /** @java Is.construct(IsTriggeredType, String, IntFunction, RoleType) */
-  public static constructTriggered(isType: unknown, _event: string, index: unknown, role: unknown): BooleanFunction {
-    if (matchesType(isType, "Triggered")) return new IsTriggered1to1(playerOrRoleInt(index, role));
+  public static constructTriggered(isType: unknown, event: string, index: unknown, role: unknown): BooleanFunction {
+    if (matchesType(isType, "Triggered"))
+      return new IsTriggered1to1(event, index === null || index === undefined ? null : asIntFunction(index), role as RoleTypeFull | null);
     throw new Error("Is(): A IsTriggeredType is not implemented.");
   }
 
@@ -358,7 +362,7 @@ export class Is extends BaseBooleanFunction {
     region: RegionFunction | null,
   ): BooleanFunction {
     if (matchesType(isType, "Related"))
-      return new IsRelated1to1(String(relationType), siteA, region ?? regionFromSite(asIntFunction(siteB)));
+      return new IsRelated1to1(String(relationType), siteType(_type), siteA, region ?? regionFromSite(asIntFunction(siteB)));
     throw new Error("Is(): A IsRelationType is not implemented.");
   }
 
@@ -372,7 +376,13 @@ export class Is extends BaseBooleanFunction {
     specificSites: readonly number[] | null,
   ): BooleanFunction {
     if (matchesType(isType, "Target"))
-      return new IsTarget1to1(configuration, specificSites ?? (specificSite !== null ? [specificSite] : null));
+      return new IsTarget1to1(
+        _containerIdFn === null || _containerIdFn === undefined ? null : asIntFunction(_containerIdFn),
+        _containerName === null || _containerName === undefined ? null : String(_containerName),
+        configuration,
+        specificSite,
+        specificSites,
+      );
     throw new Error("Is(): A IsTargetType is not implemented.");
   }
 
@@ -446,7 +456,16 @@ export class Is extends BaseBooleanFunction {
     _path: boolean | null,
   ): BooleanFunction {
     if (matchesType(isType, "Loop"))
-      return new IsLoop1to1(start ?? (regionStart !== null ? { eval: (ctx) => regionStart.eval(ctx)[0] ?? -1 } : LAST_TO_INT), colour ?? roleToIntFunction("Mover"), directions === null || directions === undefined ? "Adjacent" : String(directions));
+      return new IsLoop1to1(
+        siteType(_type),
+        _surround === null || _surround === undefined ? null : String(_surround),
+        _surroundList as readonly RoleTypeFull[] | null,
+        directions === null || directions === undefined ? "Adjacent" : String(directions),
+        colour,
+        start,
+        regionStart,
+        _path,
+      );
     throw new Error("Is(): A IsLoopType is not implemented.");
   }
 
@@ -469,8 +488,8 @@ export class Is extends BaseBooleanFunction {
 
   /** @java Is.construct(IsSiteType, SiteType, IntFunction) */
   public static constructSite(isType: unknown, _type: unknown, at: IntFunction): BooleanFunction {
-    if (matchesType(isType, "Empty")) return new IsEmpty1to1(at);
-    if (matchesType(isType, "Occupied")) return new IsOccupied1to1(at);
+    if (matchesType(isType, "Empty")) return new IsEmpty1to1(siteType(_type), at);
+    if (matchesType(isType, "Occupied")) return new IsOccupied1to1(siteType(_type), at);
     throw new Error("Is(): A IsSiteType is not implemented.");
   }
 
@@ -493,7 +512,7 @@ export class Is extends BaseBooleanFunction {
 
   /** @java Is.construct(IsGroupType, SiteType, RegionFunction, IntFunction) */
   public static constructGroup(isType: unknown, _type: unknown, inArg: RegionFunction, toPlace: IntFunction | null): BooleanFunction {
-    if (matchesType(isType, "Freedom")) return new IsFreedom1to1(inArg, toPlace);
+    if (matchesType(isType, "Freedom")) return new IsFreedom1to1(siteType(_type), inArg, toPlace);
     throw new Error("Is(): A IsGroupType is not implemented.");
   }
 
