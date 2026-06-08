@@ -320,8 +320,9 @@ function leapFactory(b: ArgBundle): Leap {
   if (!to || !to.condFn()) throw new Error("factory not yet wired: leap");
   const startLocationFn = from?.locFn() ?? new IterFrom();
   const walk = new SitesWalk1to1(
+    null,
     startLocationFn,
-    normaliseWalks(firstValue(b, isStepList)),
+    normaliseWalks(firstValue(b, isStepList)) as ConstructorParameters<typeof SitesWalk1to1>[2],
     boolFn(named(b, "rotations"), new BooleanConstant(true)),
   );
   return new Leap({
@@ -559,7 +560,9 @@ function isFallbackFactory(b: ArgBundle): BooleanFunction {
     return new IsEmpty1to1(type, toIntFn(site));
   }
   if (kind === "In") return new IsIn1to1(toIntFn(requireValue(b.positional[1], "is In site")), toRegionFn(requireValue(b.positional[2], "is In region")));
-  if (kind === "Mover") return new IsMover1to1(toIntFn(b.positional[1] ?? { eval: (ctx: Context) => ctx.state.mover }));
+  if (kind === "Mover") return b.positional[1] === undefined || typeof b.positional[1] === "string"
+    ? new IsMover1to1(null, (b.positional[1] ?? "Mover") as ConstructorParameters<typeof IsMover1to1>[1])
+    : new IsMover1to1(toIntFn(b.positional[1]), null);
   if (kind === "Occupied") {
     const type = first(b, isSiteType) ?? null;
     const site = b.positional.slice(1).find((value) => !isSiteType(value)) ?? named(b, "at") ?? { eval: (ctx: Context) => ctx._evalTo };

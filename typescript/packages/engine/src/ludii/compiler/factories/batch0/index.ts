@@ -236,8 +236,15 @@ function makeIs(b: ArgBundle): BooleanFunction {
     case "Pending": return new IsPending1to1();
     case "Full": return new IsFull1to1();
     case "Triggered": return new IsTriggered1to1(triggeredEvent(b), toIntFunction(b.positional[2] ?? "Mover"), null);
-    case "Mover": return new IsMover1to1(toIntFunction(b.positional[1] ?? "Mover"));
-    case "Next": return new IsNext1to1(toIntFunction(b.positional[1] ?? "Next"));
+    case "Mover": return b.positional[1] === undefined || typeof b.positional[1] === "string"
+      ? new IsMover1to1(null, (b.positional[1] ?? "Mover") as ConstructorParameters<typeof IsMover1to1>[1])
+      : new IsMover1to1(toIntFunction(b.positional[1]), null);
+    case "Next": {
+      const who = b.positional[1];
+      return who === undefined || typeof who === "string"
+        ? new IsNext1to1(null, (who ?? "Next") as RoleTypeFull)
+        : new IsNext1to1(toIntFunction(who ?? "Next"), null);
+    }
     case "Prev": return new IsPrev1to1(toIntFunction(b.positional[1] ?? "Mover"), null);
     case "Friend": {
       const who = b.positional[1];

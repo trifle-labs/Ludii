@@ -394,8 +394,18 @@ function makeIsFallback(b: ArgBundle): BooleanFunction {
     if (!region) deferred("is In");
     return new IsIn1to1(firstIntFunctionAfter(b, 0) ?? lastTo(), region);
   }
-  if (kind === "Mover") return new IsMover1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Mover"));
-  if (kind === "Next") return new IsNext1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Next"));
+  if (kind === "Mover") {
+    const who = firstIntFunctionAfter(b, 0);
+    return who
+      ? new IsMover1to1(who, null)
+      : new IsMover1to1(null, (firstRoleAfter(b, 0) ?? "Mover") as ConstructorParameters<typeof IsMover1to1>[1]);
+  }
+  if (kind === "Next") {
+    const who = firstIntFunctionAfter(b, 0);
+    return who
+      ? new IsNext1to1(who, null)
+      : new IsNext1to1(null, (firstRoleAfter(b, 0) ?? "Next") as ConstructorParameters<typeof IsNext1to1>[1]);
+  }
   if (kind === "Prev") return new IsPrev1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Mover"), null);
   if (kind === "Friend") {
     const indexPlayer = firstIntFunctionAfter(b, 0);

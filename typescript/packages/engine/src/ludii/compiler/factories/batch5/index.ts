@@ -336,10 +336,17 @@ function makeIsFallback(b: ArgBundle): BooleanFunction {
     );
   }
   if (kind === "Mover") {
-    return new IsMover1to1(firstPlayerIntAfterKind(b, "Mover") ?? roleIntFunction("Mover"));
+    const who = firstPlayerIntOnlyAfterKind(b, "Mover");
+    return who
+      ? new IsMover1to1(who, null)
+      : new IsMover1to1(null, (firstRoleAfterKind(b, "Mover") ?? "Mover") as ConstructorParameters<typeof IsMover1to1>[1]);
   }
   if (kind === "Next") {
-    return new IsNext1to1(firstPlayerIntAfterKind(b, "Next") ?? new IntConstant(-1));
+    const who = firstPlayerIntOnlyAfterKind(b, "Next");
+    const role = firstRoleAfterKind(b, "Next");
+    return who
+      ? new IsNext1to1(who, null)
+      : new IsNext1to1(role === null ? new IntConstant(-1) : null, role as ConstructorParameters<typeof IsNext1to1>[1]);
   }
   if (kind === "Prev") {
     return new IsPrev1to1(firstPlayerIntAfterKind(b, "Prev") ?? new IntConstant(-1), null);
@@ -762,8 +769,9 @@ function makeLeap(b: ArgBundle): Leap {
   const from = findFirst(b, isFrom);
   const to = requireTo(findFirst(b, isTo), "move Leap");
   const walk = new SitesWalk1to1(
+    null,
     from?.locFn() ?? new IteratorFrom(),
-    normaliseWalks(findRaw(b.positional, isStepList)),
+    normaliseWalks(findRaw(b.positional, isStepList)) as ConstructorParameters<typeof SitesWalk1to1>[2],
     optionalBooleanFunctionValue(namedValue(b, "rotations")) ?? trueFunction(),
   );
   return new Leap({

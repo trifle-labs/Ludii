@@ -23,6 +23,10 @@ import { isIdent, isNumber, isList, isString } from "@ludii/typescript-language"
 import { registerRegion1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { compileInt1to1, compileBool1to1, parseArgs1to1 } from "../../../../../../compiler1to1.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
+import type { SiteType } from "../../../../../other/action/SiteType.js";
+import type { StepType } from "../../../../types/board/StepType.js";
+import { BooleanConstant } from "../../../booleans/BooleanConstant.js";
+import { From1to1 } from "../../../ints1to1/iterator/Iterator1to1.js";
 
 // ---------------------------------------------------------------------------
 // Named walks (Java StepType named constants)
@@ -72,21 +76,24 @@ export function parseWalks(node: LudNode | undefined): readonly (readonly string
 // ---------------------------------------------------------------------------
 
 export class SitesWalk1to1 implements RegionFunction {
+  private readonly type: SiteType | null;
   private readonly fromFn: IntFunction;
-  private readonly walks: readonly (readonly string[])[];
+  private readonly walks: readonly (readonly StepType[])[];
   private readonly rotations: BooleanFunction;
 
   /**
    * @java game/functions/region/sites/walk/SitesWalk.java — constructor
    */
   public constructor(
-    fromFn: IntFunction,
-    walks: readonly (readonly string[])[],
-    rotations: BooleanFunction,
+    type: SiteType | null | undefined,
+    startLocationFn: IntFunction | null | undefined,
+    possibleSteps: readonly (readonly StepType[])[],
+    rotations?: BooleanFunction | null,
   ) {
-    this.fromFn = fromFn;
-    this.walks = walks;
-    this.rotations = rotations;
+    this.type = type ?? null;
+    this.fromFn = startLocationFn ?? new From1to1();
+    this.walks = possibleSteps;
+    this.rotations = rotations ?? new BooleanConstant(true);
   }
 
   /**
@@ -141,7 +148,7 @@ const DIR_DELTA: Record<string, [number, number]> = {
 function squareBoardWalkSites(
   ctx: Context,
   from: number,
-  walks: readonly (readonly string[])[],
+  walks: readonly (readonly StepType[])[],
   allRotations: boolean,
 ): number[] {
   const g = ctx.game as unknown as { equipment: { board: { width: number; height: number } } };
@@ -190,15 +197,21 @@ function squareBoardWalkSites(
 registerRegion1to1("sites:walk", (node: LudNode, env: Compile1to1Env): RegionFunction => {
   const { positional, named } = parseArgs1to1((node as unknown as { items: LudNode[] }).items);
   // positional[0] = "Walk" ident
-  // remaining positionals: optional start-site int, then walk steps
+  // remaining positionals: optional site type, optional start-site int, then walk steps
   // named: rotations:<bool>
 
+  let type: SiteType | null = null;
   let fromFn: IntFunction = { eval: (ctx: Context) => ctx._evalFrom };
   let walksNode: LudNode | undefined;
 
   // Scan positional[1..] for a walk node (curly list or named string)
   for (let i = 1; i < positional.length; i++) {
     const p = positional[i]!;
+    const siteType = siteTypeFromNode(p);
+    if (siteType !== null) {
+      type = siteType;
+      continue;
+    }
     if (isString(p)) {
       // Named walk like "KnightWalk"
       walksNode = p;
@@ -219,5 +232,10 @@ registerRegion1to1("sites:walk", (node: LudNode, env: Compile1to1Env): RegionFun
     ? compileBool1to1(rotationsNode, env.numPlayers)
     : { eval: () => true };
 
-  return new SitesWalk1to1(fromFn, walks, rotations);
+  return new SitesWalk1to1(type, fromFn, walks as readonly (readonly StepType[])[], rotations);
 });
+
+function siteTypeFromNode(node: LudNode): SiteType | null {
+  const value = isIdent(node) ? node.name : isString(node) ? node.value : null;
+  return value === "Cell" || value === "Vertex" || value === "Edge" ? value : null;
+}

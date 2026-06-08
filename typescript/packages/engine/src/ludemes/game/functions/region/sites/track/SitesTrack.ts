@@ -9,6 +9,7 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch, IntFunction } from "../../../../../base.js";
+import { isRoleTypeFull, roleTypeOwner, type RoleTypeFull } from "../../../../types/play/RoleType.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
 
 /** Java parity: Constants.UNDEFINED = -1 */
@@ -30,6 +31,37 @@ interface TrackLike {
 interface ContextTrackLike {
   track(): number;
   tracks(): TrackLike[];
+}
+
+type PlayerArg = IntFunction | { index(): IntFunction };
+type RoleTypeArg = RoleTypeFull | string;
+
+function isIntFunction(value: unknown): value is IntFunction {
+  return value !== null && typeof value === "object" && typeof (value as { eval?: unknown }).eval === "function";
+}
+
+function playerIndex(player: PlayerArg | null | undefined): IntFunction | null {
+  if (player == null) return null;
+  if (isIntFunction(player)) return player;
+  return player.index();
+}
+
+/**
+ * @java game.types.play.RoleType.toIntFunction(RoleType)
+ */
+function roleToIntFunction(role: RoleTypeArg): IntFunction {
+  const owner = isRoleTypeFull(role) ? roleTypeOwner(role) : /^P\d+$/.test(role) ? Number(role.slice(1)) : -1;
+  if (owner >= 0) return { eval: () => owner };
+
+  return {
+    eval(ctx: Context & EvalScratch): number {
+      if (role === "Mover") return ctx.state.mover;
+      if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (role === "Player") return ctx._evalPlayer ?? ctx.state.mover;
+      return owner;
+    },
+  };
 }
 
 /**
@@ -54,23 +86,25 @@ export class SitesTrack extends BaseRegionFunction {
   private precomputedRegion: number[] | null = null;
 
   /**
-   * @param pid   Player index function (or null).
-   * @param name  Track name (empty string for any track).
-   * @param from  Only sites from this site onwards (inclusive), or null.
-   * @param to    Only sites up to and including this site, or null.
+   * @param pid   Index of the player.
+   * @param role  The Role type corresponding to the index.
+   * @param name  The name of the track.
+   * @param from  Only the sites in the track from that site (included).
+   * @param to    Only the sites in the track until to reach that site (included).
    * @java SitesTrack(game.util.moves.Player, RoleType, String, IntFunction, IntFunction)
    */
   public constructor(
-    pid: IntFunction | null,
-    name: string | null,
-    from: IntFunction | null,
-    to: IntFunction | null,
+    pid?: PlayerArg | null,
+    role?: RoleTypeArg | null,
+    name?: string | null,
+    from?: IntFunction | null,
+    to?: IntFunction | null,
   ) {
     super();
-    this.pid = pid;
+    this.pid = role != null ? roleToIntFunction(role) : playerIndex(pid);
     this.name = name ?? "";
-    this.fromFn = from;
-    this.toFn = to;
+    this.fromFn = from ?? null;
+    this.toFn = to ?? null;
   }
 
   /**

@@ -2,8 +2,9 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction } from "../../../../../base.js";
+import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
 import type { LudNode } from "@ludii/typescript-language";
-import { type LudList } from "@ludii/typescript-language";
+import { isIdent, type LudList } from "@ludii/typescript-language";
 import { compileInt1to1, parseArgs1to1 } from "../../../../../../compiler1to1.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 
@@ -16,8 +17,16 @@ export class IsMover1to1 implements BooleanFunction {
   /** @java IsMover.who */
   private readonly who: IntFunction;
 
-  public constructor(who: IntFunction) {
-    this.who = who;
+  /**
+   * @java IsMover(@Or IntFunction who, @Or RoleType role)
+   */
+  public constructor(who: IntFunction | null, role: RoleTypeFull | null) {
+    const numNonNull = (who != null ? 1 : 0) + (role != null ? 1 : 0);
+    if (numNonNull !== 1) {
+      throw new Error("Exactly one Or parameter must be non-null.");
+    }
+
+    this.who = role != null ? roleToIntFunction(role) : who!;
   }
 
   /** @java IsMover.eval(Context): who.eval(context) == context.state().mover() */
@@ -34,6 +43,39 @@ registerBool1to1("is:mover", (node: LudNode, _env: Compile1to1Env): BooleanFunct
     // No argument: (is Mover) — compare ctx.state.mover to itself → always true
     return { eval(_ctx: Context): boolean { return true; } };
   }
+  if (isIdent(whoNode)) {
+    return new IsMover1to1(null, whoNode.name as RoleTypeFull);
+  }
   const who = compileInt1to1(whoNode);
-  return new IsMover1to1(who);
+  return new IsMover1to1(who, null);
 });
+
+/**
+ * @java game.types.play.RoleType.toIntFunction(RoleType)
+ */
+function roleToIntFunction(role: RoleTypeFull): IntFunction {
+  const key = role.toLowerCase();
+  return {
+    eval(ctx: Context): number {
+      if (key === "mover") return ctx.state.mover;
+      if (key === "next") return ctx.state.next;
+      if (key === "prev") return previousMover(ctx);
+      if (key === "player") return ctx._evalPlayer ?? ctx.state.mover;
+      if (key === "neutral") return 0;
+      if (key === "shared" || key === "all" || key === "each") return ctx.game.numPlayers + 1;
+      const player = /^p(\d+)$/.exec(key);
+      if (player) return Number(player[1]);
+      const team = /^team(\d+)$/.exec(key);
+      if (team) return Number(team[1]);
+      return -1;
+    },
+  };
+}
+
+function previousMover(ctx: Context): number {
+  const moves = ctx.trial.moves;
+  if (moves.length === 0) return -1;
+  const inThen = (ctx as unknown as { _thenContextDepth?: number })._thenContextDepth ?? 0;
+  const prevIdx = inThen > 0 ? moves.length - 2 : moves.length - 1;
+  return prevIdx >= 0 ? moves[prevIdx]!.mover : -1;
+}
