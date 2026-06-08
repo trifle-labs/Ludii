@@ -27,12 +27,38 @@ function wrapIntAsRegion(fn: IntFunction): RegionFunction {
 }
 
 export class Results1to1 implements IntArrayFunction {
+  private readonly regionFrom: RegionFunction;
+  private readonly regionTo: RegionFunction;
+  private readonly functionFn: IntFunction;
+
   /** @java game/functions/intArray/math/Results.java — eval(Context) */
   constructor(
-    private readonly regionFrom: RegionFunction,
-    private readonly regionTo: RegionFunction,
-    private readonly functionFn: IntFunction,
-  ) {}
+    from: IntFunction | null,
+    From: RegionFunction | null,
+    to: IntFunction | null,
+    To: RegionFunction | null,
+    functionFn: IntFunction,
+  ) {
+    let numNonNull = 0;
+    if (from !== null) numNonNull++;
+    if (From !== null) numNonNull++;
+
+    if (numNonNull !== 1) {
+      throw new Error("Only one Or parameter must be non-null.");
+    }
+
+    let numNonNull2 = 0;
+    if (to !== null) numNonNull2++;
+    if (To !== null) numNonNull2++;
+
+    if (numNonNull2 !== 1) {
+      throw new Error("Only one Or2 parameter must be non-null.");
+    }
+
+    this.functionFn = functionFn;
+    this.regionFrom = from !== null ? wrapIntAsRegion(from) : From!;
+    this.regionTo = to !== null ? wrapIntAsRegion(to) : To!;
+  }
 
   public eval(ctx: Context & EvalScratch): number[] {
     // @java Results.java:85-106
@@ -60,8 +86,8 @@ registerIntArray1to1("results", (node: LudNode, _env: Compile1to1Env): IntArrayF
   const list = node as LudList;
   const { positional, named } = parseArgs1to1(list.items);
 
-  const fromNode = named.get("from") ?? named.get("From");
-  const toNode = named.get("to") ?? named.get("To");
+  const fromNode = named.get("from");
+  const toNode = named.get("to");
   // last positional = the function body
   const bodyNode = positional[positional.length - 1];
 
@@ -69,28 +95,30 @@ registerIntArray1to1("results", (node: LudNode, _env: Compile1to1Env): IntArrayF
     ? compileInt1to1(bodyNode)
     : { eval: (_ctx: Context) => 0 };
 
-  let fromRegion: RegionFunction;
+  let from: IntFunction | null = null;
+  let From: RegionFunction | null = null;
   if (fromNode) {
     // Try region first, fall back to single int site
     try {
-      fromRegion = compileRegion1to1(fromNode);
+      From = compileRegion1to1(fromNode);
     } catch {
-      fromRegion = wrapIntAsRegion(compileInt1to1(fromNode));
+      from = compileInt1to1(fromNode);
     }
   } else {
-    fromRegion = { eval: (ctx: Context & EvalScratch) => [ctx._evalFrom] };
+    from = { eval: (ctx: Context & EvalScratch) => ctx._evalFrom };
   }
 
-  let toRegion: RegionFunction;
+  let to: IntFunction | null = null;
+  let To: RegionFunction | null = null;
   if (toNode) {
     try {
-      toRegion = compileRegion1to1(toNode);
+      To = compileRegion1to1(toNode);
     } catch {
-      toRegion = wrapIntAsRegion(compileInt1to1(toNode));
+      to = compileInt1to1(toNode);
     }
   } else {
-    toRegion = { eval: (ctx: Context & EvalScratch) => [ctx._evalTo] };
+    to = { eval: (ctx: Context & EvalScratch) => ctx._evalTo };
   }
 
-  return new Results1to1(fromRegion, toRegion, bodyFn);
+  return new Results1to1(from, From, to, To, bodyFn);
 });

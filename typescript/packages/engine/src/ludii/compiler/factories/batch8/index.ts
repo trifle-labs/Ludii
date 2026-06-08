@@ -253,8 +253,15 @@ function makeSites(b: ArgBundle): RegionFunction {
       return new SitesHand(playerOrRoleMaybe(positionalAfterFirstString(b)[0]), roleOrNull(positionalAfterFirstString(b)[0]));
     case "Winning":
       return new SitesWinning(playerOrRoleMaybe(positionalAfterFirstString(b)[0]), requireMoves(positionalAfterFirstString(b)[1]) as unknown as MovesLike);
-    case "Track":
-      return new SitesTrack(playerOrRoleMaybe(positionalAfterFirstString(b)[0]), stringOrNull(positionalAfterFirstString(b)[1]), intOrNull(named(b, "from")), intOrNull(named(b, "to")));
+    case "Track": {
+      const values = positionalAfterFirstString(b);
+      const role = roleOrNull(values[0]);
+      const pid = role === null && values[0] !== undefined && (isIntLike(values[0]) || typeof values[0] === "number")
+        ? playerOrRoleMaybe(values[0])
+        : null;
+      const name = values.find((v): v is string => typeof v === "string" && !isRole(v)) ?? null;
+      return new SitesTrack(pid, role, name, intOrNull(named(b, "from")), intOrNull(named(b, "to")));
+    }
     default:
       return makeAmbiguousSites(b, first);
   }
@@ -269,7 +276,14 @@ function makeAmbiguousSites(b: ArgBundle, first: string): RegionFunction {
     if (strings) return new SitesCoords(first, strings);
     const index = positionalAfterFirstString(b).find(isIntLike);
     const steps = positionalAfterFirstString(b).find(isStringArray);
-    if (steps) return new SitesWalk1to1(intOrDefault(index, new LastTo()), [steps], boolOrDefault(named(b, "rotations"), true));
+    if (steps) {
+      return new SitesWalk1to1(
+        first as ConstructorParameters<typeof SitesWalk1to1>[0],
+        intOrDefault(index, new LastTo()),
+        [steps] as ConstructorParameters<typeof SitesWalk1to1>[2],
+        boolOrDefault(named(b, "rotations"), true),
+      );
+    }
   }
   const coords = firstArrayOfStrings(b);
   if (coords) return new SitesCoords(null, coords);
@@ -326,17 +340,23 @@ function indexSites(type: string, siteType: string | null, index: IntFunction | 
 
 function hiddenSites(b: ArgBundle): RegionFunction {
   const dataType = positionalAfterFirstString(b).find(isHiddenData) ?? null;
-  const who = playerOrRoleFn(named(b, "to"));
+  const toValue = named(b, "to");
+  const toRole = roleOrNull(toValue);
+  const who = playerOrRoleFn(toValue);
   const siteType = siteTypeAt(b);
   switch (dataType) {
     case null:
-      return hiddenAllSites(named(b, "to"));
-    case "What": return new SitesHiddenWhat(siteType, who);
-    case "Who": return new SitesHiddenWho(siteType, who);
+      return hiddenAllSites(toValue);
+    case "What": return new SitesHiddenWhat(
+      siteType,
+      (toRole === null ? toValue : null) as ConstructorParameters<typeof SitesHiddenWhat>[1],
+      toRole,
+    );
+    case "Who": return new SitesHiddenWho(siteType, toRole === null ? who : null, toRole);
     case "Count": return new SitesHiddenCount(siteType, who);
-    case "State": return new SitesHiddenState(siteType, who);
-    case "Rotation": return new SitesHiddenRotation(siteType, who);
-    case "Value": return new SitesHiddenValue(siteType, who);
+    case "State": return new SitesHiddenState(siteType, toRole === null ? who : null, toRole);
+    case "Rotation": return new SitesHiddenRotation(siteType, toRole === null ? who : null, toRole);
+    case "Value": return new SitesHiddenValue(siteType, toRole === null ? who : null, toRole);
   }
 }
 

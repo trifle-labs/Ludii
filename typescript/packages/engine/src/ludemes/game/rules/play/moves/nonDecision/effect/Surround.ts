@@ -81,8 +81,8 @@ export class Surround extends Effect {
     super((then ?? null) as unknown as ThenLike | null);
     this.startLocationFn = from?.loc() ?? new IteratorFrom();
     this.dirnChoice = relation == null ? "Adjacent" : relationToAbsoluteDirection(relation);
-    this.targetRule = between?.condition() ?? new IsEnemy1to1(new IteratorBetween());
-    this.friendRule = to?.cond() ?? new IsFriend1to1(new IteratorTo());
+    this.targetRule = between?.condition() ?? new IsEnemy1to1(new IteratorBetween(), null);
+    this.friendRule = to?.cond() ?? new IsFriend1to1(new IteratorTo(), null);
     this.effect = between?.effect() ?? new Remove({ locationFn: new IteratorBetween() });
     this.exception = except ?? new IntConstant(0);
     this.withAtLeastPiece = withPiece?.component() ?? null;

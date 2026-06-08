@@ -23,12 +23,16 @@
  */
 
 import type { Context } from "../../../../../../context.js";
-import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../base.js";
+import type { BooleanFunction, DirectionsFunction, IntFunction, RegionFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { parseArgs1to1, compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
+
+type SiteTypeName = "Cell" | "Edge" | "Vertex";
+type RoleTypeName = string;
+type DirectionArg = string | DirectionsFunction;
 
 function makeColourFn(arg: import("@ludii/typescript-language").LudNode | undefined): IntFunction {
   if (arg && isIdent(arg)) {
@@ -52,20 +56,51 @@ function makeColourFn(arg: import("@ludii/typescript-language").LudNode | undefi
   return { eval: (c: Context & EvalScratch) => c.state.mover };
 }
 
+function defaultLastToFn(): IntFunction {
+  return { eval: (c: Context & EvalScratch) => c._evalTo };
+}
+
+function defaultMoverFn(): IntFunction {
+  return { eval: (c: Context & EvalScratch) => c.state.mover };
+}
+
 export class IsLoop1to1 implements BooleanFunction {
   private readonly startFn: IntFunction;
   private readonly colourFn: IntFunction;
-  private readonly dirnName: string;
+  private readonly dirnChoice: DirectionArg | null;
 
   /**
-   * @param startFn   Where to start the search (default: LastTo).
-   * @param colourFn  The player whose pieces form the loop (default: Mover).
-   * @param dirnName  The adjacency direction for the loop (default: "Adjacent").
+   * @java IsLoop(@Opt SiteType type,
+   *              @Opt @Or @Name RoleType surround,
+   *              @Opt @Or RoleType[] surroundList,
+   *              @Opt Direction directions,
+   *              @Opt IntFunction colour,
+   *              @Opt @Or2 IntFunction start,
+   *              @Opt @Or2 RegionFunction regionStart,
+   *              @Opt @Name Boolean path)
    */
-  public constructor(startFn: IntFunction, colourFn: IntFunction, dirnName = "Adjacent") {
-    this.startFn = startFn;
-    this.colourFn = colourFn;
-    this.dirnName = dirnName;
+  public constructor(
+    type?: SiteTypeName | null,
+    surround?: RoleTypeName | null,
+    surroundList?: readonly RoleTypeName[] | null,
+    directions?: DirectionArg | null,
+    colour?: IntFunction | null,
+    start?: IntFunction | null,
+    regionStart?: RegionFunction | null,
+    path?: boolean | null,
+  ) {
+    void type;
+    void path;
+    if (surround != null && surroundList != null) {
+      throw new Error("Zero or one Or parameter can be non-null.");
+    }
+    if (start != null && regionStart != null) {
+      throw new Error("Zero or one Or2 parameter can be non-null.");
+    }
+
+    this.startFn = start ?? defaultLastToFn();
+    this.colourFn = colour ?? defaultMoverFn();
+    this.dirnChoice = directions ?? null;
   }
 
   /**
@@ -180,7 +215,7 @@ export class IsLoop1to1 implements BooleanFunction {
         }
 
         // Find next site in the loop from siteLoop using dirnName
-        const candidates = traj.group(siteLoop, this.dirnName);
+        const candidates = traj.group(siteLoop, this.dirnName(ctx));
         let newSite = -1;
         for (const to of candidates) {
           const whatTo = ctx.state.whatAtSite(to);
@@ -211,6 +246,11 @@ export class IsLoop1to1 implements BooleanFunction {
     }
 
     return false;
+  }
+
+  private dirnName(ctx: Context & EvalScratch): string {
+    if (typeof this.dirnChoice === "string") return this.dirnChoice;
+    return this.dirnChoice?.eval(ctx)[0] ?? "Adjacent";
   }
 }
 
@@ -247,5 +287,5 @@ registerBool1to1("is:loop", (node: LudNode, _env: Compile1to1Env): BooleanFuncti
     }
   }
 
-  return new IsLoop1to1(startFn, colourFn, dirnName);
+  return new IsLoop1to1(null, null, null, dirnName, colourFn, startFn, null, null);
 });

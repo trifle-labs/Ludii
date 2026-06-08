@@ -325,31 +325,43 @@ function makeIsFallback(b: ArgBundle): BooleanFunction {
   }
   if (kind === "Empty") {
     return new IsEmpty1to1(
+      optionalSiteType(flatten(b.positional).find(isSiteTypeName)),
       asOptionalIntFunction(firstIntishAfterKind(b, "Empty"), "is Empty") ?? new IteratorTo(),
     );
   }
   if (kind === "Occupied") {
     return new IsOccupied1to1(
+      optionalSiteType(flatten(b.positional).find(isSiteTypeName)),
       asOptionalIntFunction(firstIntishAfterKind(b, "Occupied"), "is Occupied") ?? new IteratorTo(),
     );
   }
   if (kind === "Mover") {
-    return new IsMover1to1(firstPlayerIntAfterKind(b, "Mover") ?? roleIntFunction("Mover"));
+    const who = firstPlayerIntOnlyAfterKind(b, "Mover");
+    return who
+      ? new IsMover1to1(who, null)
+      : new IsMover1to1(null, (firstRoleAfterKind(b, "Mover") ?? "Mover") as ConstructorParameters<typeof IsMover1to1>[1]);
   }
   if (kind === "Next") {
-    return new IsNext1to1(firstPlayerIntAfterKind(b, "Next") ?? new IntConstant(-1));
+    const who = firstPlayerIntOnlyAfterKind(b, "Next");
+    const role = firstRoleAfterKind(b, "Next");
+    return who
+      ? new IsNext1to1(who, null)
+      : new IsNext1to1(role === null ? new IntConstant(-1) : null, role as ConstructorParameters<typeof IsNext1to1>[1]);
   }
   if (kind === "Prev") {
-    return new IsPrev1to1(firstPlayerIntAfterKind(b, "Prev") ?? new IntConstant(-1));
+    return new IsPrev1to1(firstPlayerIntAfterKind(b, "Prev") ?? new IntConstant(-1), null);
   }
   if (kind === "Enemy") {
-    return new IsEnemy1to1(firstPlayerIntAfterKind(b, "Enemy") ?? new IntConstant(-1));
+    return new IsEnemy1to1(firstPlayerIntAfterKind(b, "Enemy") ?? new IntConstant(-1), null);
   }
   if (kind === "Friend" || kind === "Friendly") {
-    return new IsFriend1to1(firstPlayerIntAfterKind(b, kind) ?? new IntConstant(-1));
+    const indexPlayer = firstPlayerIntOnlyAfterKind(b, kind);
+    return indexPlayer
+      ? new IsFriend1to1(indexPlayer, null)
+      : new IsFriend1to1(null, (firstRoleAfterKind(b, kind) ?? "Mover") as ConstructorParameters<typeof IsFriend1to1>[1]);
   }
   if (kind === "Active") {
-    return new IsActive1to1(firstPlayerIntAfterKind(b, "Active") ?? roleIntFunction("Mover"));
+    return new IsActive1to1(firstPlayerIntAfterKind(b, "Active") ?? roleIntFunction("Mover"), null);
   }
   if (kind === "Full") return new IsFull1to1();
   if (kind === "Pending") return new IsPending1to1();
@@ -757,8 +769,9 @@ function makeLeap(b: ArgBundle): Leap {
   const from = findFirst(b, isFrom);
   const to = requireTo(findFirst(b, isTo), "move Leap");
   const walk = new SitesWalk1to1(
+    null,
     from?.locFn() ?? new IteratorFrom(),
-    normaliseWalks(findRaw(b.positional, isStepList)),
+    normaliseWalks(findRaw(b.positional, isStepList)) as ConstructorParameters<typeof SitesWalk1to1>[2],
     optionalBooleanFunctionValue(namedValue(b, "rotations")) ?? trueFunction(),
   );
   return new Leap({
@@ -921,6 +934,15 @@ function firstPlayerIntAfterKind(b: ArgBundle, kind: string): IntFunction | null
     if (value instanceof Player1to1) return value.index();
     if (isIntish(value)) return asIntFunction(value, `is ${kind}`);
     if (typeof value === "string" && isRoleTypeName(value)) return roleIntFunction(value);
+  }
+  return null;
+}
+
+function firstPlayerIntOnlyAfterKind(b: ArgBundle, kind: string): IntFunction | null {
+  for (const value of flatten(b.positional)) {
+    if (value === kind || isSiteTypeName(value)) continue;
+    if (value instanceof Player1to1) return value.index();
+    if (isIntish(value)) return asIntFunction(value, `is ${kind}`);
   }
   return null;
 }

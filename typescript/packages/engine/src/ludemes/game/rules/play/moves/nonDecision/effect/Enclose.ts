@@ -82,7 +82,7 @@ export class Enclose implements MovesFunction {
   ) {
     this.startFn = from?.loc() ?? LAST_TO;
     this.dirnChoice = directions ?? "Adjacent";
-    this.targetRule = between?.condition() ?? new IsEnemy1to1(new Who1to1(BETWEEN));
+    this.targetRule = between?.condition() ?? new IsEnemy1to1(new Who1to1(BETWEEN), null);
     this.numEmptySitesInGroup = numException ?? { eval: () => 0 };
     this.effect = between?.effect() ?? new Remove({
       locationFn: BETWEEN,

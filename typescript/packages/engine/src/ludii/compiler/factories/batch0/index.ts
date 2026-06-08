@@ -67,6 +67,7 @@ import type {
   RoleType,
 } from "../../../../ludemes/base.js";
 import type { SiteType } from "../../../../ludemes/other/action/SiteType.js";
+import type { RoleTypeFull } from "../../../../ludemes/game/types/play/RoleType.js";
 import type { TilingBoardlessType } from "../../../../ludemes/game/types/board/TilingBoardlessType.js";
 import type { ThenLike } from "../../../../ludemes/game/rules/play/moves/Moves.js";
 import type { ArgBundle } from "../../ArgBundle.js";
@@ -234,13 +235,25 @@ function makeIs(b: ArgBundle): BooleanFunction {
     case "Cycle": return new IsCycle1to1();
     case "Pending": return new IsPending1to1();
     case "Full": return new IsFull1to1();
-    case "Triggered": return new IsTriggered1to1(toIntFunction(b.positional[2] ?? "Mover"));
-    case "Mover": return new IsMover1to1(toIntFunction(b.positional[1] ?? "Mover"));
-    case "Next": return new IsNext1to1(toIntFunction(b.positional[1] ?? "Next"));
-    case "Prev": return new IsPrev1to1(toIntFunction(b.positional[1] ?? "Mover"));
-    case "Friend": return new IsFriend1to1(toIntFunction(b.positional[1] ?? "Mover"));
-    case "Enemy": return new IsEnemy1to1(toIntFunction(b.positional[1] ?? "Next"));
-    case "Active": return new IsActive1to1(toIntFunction(b.positional[1] ?? "Mover"));
+    case "Triggered": return new IsTriggered1to1(triggeredEvent(b), toIntFunction(b.positional[2] ?? "Mover"), null);
+    case "Mover": return b.positional[1] === undefined || typeof b.positional[1] === "string"
+      ? new IsMover1to1(null, (b.positional[1] ?? "Mover") as ConstructorParameters<typeof IsMover1to1>[1])
+      : new IsMover1to1(toIntFunction(b.positional[1]), null);
+    case "Next": {
+      const who = b.positional[1];
+      return who === undefined || typeof who === "string"
+        ? new IsNext1to1(null, (who ?? "Next") as RoleTypeFull)
+        : new IsNext1to1(toIntFunction(who ?? "Next"), null);
+    }
+    case "Prev": return new IsPrev1to1(toIntFunction(b.positional[1] ?? "Mover"), null);
+    case "Friend": {
+      const who = b.positional[1];
+      return typeof who === "string"
+        ? new IsFriend1to1(null, who as RoleTypeFull)
+        : new IsFriend1to1(toIntFunction(who ?? "Mover"), null);
+    }
+    case "Enemy": return new IsEnemy1to1(toIntFunction(b.positional[1] ?? "Next"), null);
+    case "Active": return new IsActive1to1(toIntFunction(b.positional[1] ?? "Mover"), null);
     case "AnyDie": return new IsAnyDie1to1(toIntFunction(b.positional[1] ?? new IntConstant(0)));
     case "Even": return new IsEven1to1(toIntFunction(requirePos(b, 1)));
     case "Crossing": return new IsCrossing1to1(toIntFunction(requirePos(b, 1)), toIntFunction(requirePos(b, 2)));
@@ -252,10 +265,23 @@ function makeIs(b: ArgBundle): BooleanFunction {
     case "Right": return makeAngle(b, "right");
     case "Obtuse": return makeAngle(b, "obtuse");
     case "Reflex": return makeAngle(b, "reflex");
-    case "Hidden": return new IsHidden1to1(
-      optionalNamed(b, "at", toIntFunction) ?? new IntConstant(-1),
-      optionalNamed(b, "to", toIntFunction) ?? roleToIntFunction("Mover"),
-    );
+    case "Hidden": {
+      const toValue = b.named.get("to");
+      const to = toValue instanceof Player1to1
+        ? toValue
+        : toValue !== undefined && typeof toValue !== "string"
+          ? new Player1to1(toIntFunction(toValue))
+          : null;
+      const To: RoleTypeFull | null =
+        typeof toValue === "string" ? toValue as RoleTypeFull : toValue === undefined ? "Mover" : null;
+      return new IsHidden1to1(
+        firstSiteType(b, 1),
+        optionalNamed(b, "at", toIntFunction) ?? new IntConstant(-1),
+        optionalNamed(b, "level", toIntFunction),
+        to,
+        To,
+      );
+    }
     case "Repeat": return new IsRepeat1to1((optionalString(b.positional[1]) ?? "Positional") as ConstructorParameters<typeof IsRepeat1to1>[0]);
     case "Tree": {
       const whoArg = b.positional[1] ?? "Mover";
@@ -284,8 +310,8 @@ function makeIs(b: ArgBundle): BooleanFunction {
       );
     }
     case "Path": return makePath(b);
-    case "Empty": return new IsEmpty1to1(toIntFunction(lastNonSiteTypePos(b) ?? -1));
-    case "Occupied": return new IsOccupied1to1(toIntFunction(lastNonSiteTypePos(b) ?? -1));
+    case "Empty": return new IsEmpty1to1(firstSiteType(b, 1), toIntFunction(lastNonSiteTypePos(b) ?? -1));
+    case "Occupied": return new IsOccupied1to1(firstSiteType(b, 1), toIntFunction(lastNonSiteTypePos(b) ?? -1));
     case "In": return new IsIn1to1(
       toIntFunction(b.positional[1] ?? new LastTo1to1()),
       toRegionFunction(requirePos(b, 2)),
@@ -301,6 +327,10 @@ function makeIs(b: ArgBundle): BooleanFunction {
     default:
       throw deferred(`is ${kind}`);
   }
+}
+
+function triggeredEvent(b: ArgBundle): string {
+  return optionalString(b.positional[1]) ?? "";
 }
 
 function makeAngle(b: ArgBundle, predicate: "acute" | "right" | "obtuse" | "reflex"): IsAngle1to1 {
@@ -381,17 +411,17 @@ function makePattern(b: ArgBundle): IsPattern1to1 {
   if (froms !== undefined && (!Array.isArray(froms) || froms.length > 0)) throw deferred("is");
 
   const walk = patternWalk(b.positional.find(isStepArray) ?? []);
+  const type = firstSiteType(b, 1);
   const what = b.named.get("what");
   const whats = b.named.get("whats");
-  const whatsFn = Array.isArray(whats) && whats.length > 0
-    ? whats.map(toIntFunction)
-    : what === undefined
-      ? null
-      : [toIntFunction(what)];
+  const whatFn = what === undefined ? null : toIntFunction(what);
+  const whatsFn = Array.isArray(whats) && whats.length > 0 ? whats.map(toIntFunction) : null;
 
   return new IsPattern1to1(
     walk,
+    type,
     optionalNamed(b, "from", toIntFunction) ?? new LastTo1to1(),
+    whatFn,
     whatsFn,
   );
 }
@@ -411,9 +441,14 @@ function makeLoop(b: ArgBundle): IsLoop1to1 {
     .map(toIntFunction);
 
   return new IsLoop1to1(
-    ints[1] ?? new LastTo1to1(),
+    type,
+    null,
+    null,
+    findDirection(b),
     ints[0] ?? roleToIntFunction("Mover"),
-    findDirection(b) ?? "Adjacent",
+    ints[1] ?? new LastTo1to1(),
+    null,
+    null,
   );
 }
 

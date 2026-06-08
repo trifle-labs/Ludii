@@ -21,6 +21,7 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction, RegionFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
+import type { SiteType } from "../../../../../../action/site-type.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { parseArgs1to1, compileInt1to1, compileRegion1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
@@ -31,12 +32,18 @@ const DOWN_DIRS = ["DNW", "DNE", "DSW", "DSE"] as const;
 const UP_DIRS = ["UNW", "UNE", "USW", "USE"] as const;
 
 export class IsPyramidCorners1to1 implements BooleanFunction {
+  private readonly type: SiteType;
   private readonly fromFn: IntFunction;
   private readonly fromsFn: RegionFunction | null;
 
-  public constructor(fromFn: IntFunction, fromsFn: RegionFunction | null) {
-    this.fromFn = fromFn;
-    this.fromsFn = fromsFn;
+  public constructor(
+    type: SiteType,
+    from: IntFunction | null = null,
+    froms: RegionFunction | null = null,
+  ) {
+    this.type = type;
+    this.fromFn = from ?? { eval: (c: Context & EvalScratch) => c._evalTo };
+    this.fromsFn = froms;
   }
 
   /**
@@ -135,12 +142,15 @@ registerBool1to1("is:pyramidcorners", (node: LudNode, _env: Compile1to1Env): Boo
   // positional[1] = SiteType ident (required in Java)
 
   let idx = 1;
-  // Skip optional SiteType ident
+  let siteType: SiteType = "Cell";
   {
     const p = positional[idx];
     if (p && isIdent(p)) {
-      const n = p.name.toLowerCase();
-      if (n === "cell" || n === "edge" || n === "vertex") idx++;
+      const n = p.name;
+      if (n === "Cell" || n === "Edge" || n === "Vertex") {
+        siteType = n;
+        idx++;
+      }
     }
   }
 
@@ -159,5 +169,5 @@ registerBool1to1("is:pyramidcorners", (node: LudNode, _env: Compile1to1Env): Boo
     try { fromsFn = compileRegion1to1(fromsNode); } catch { /* keep null */ }
   }
 
-  return new IsPyramidCorners1to1(fromFn, fromsFn);
+  return new IsPyramidCorners1to1(siteType, fromFn, fromsFn);
 });

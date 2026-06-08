@@ -102,7 +102,7 @@ export function registerBatch7(registry: LudemeRegistry): void {
   registry.registerLudeme("roll:roll", (b) => new Roll(optionalThen(b)));
   registry.registerLudeme("rotate:rotate", (b) => new Rotate(requireNumber(b, 0), requireGraph(b)));
   registry.registerLudeme("rotation:rotation", rotationFactory);
-  registry.registerLudeme("rotations:rotations", (b) => new Rotations(stringsFrom(flatten(b.positional))));
+  registry.registerLudeme("rotations:rotations", (b) => new Rotations(null, stringsFrom(flatten(b.positional))));
   registry.registerLudeme("row:row", (b) => new Row(
     requireNamedIntFn(b, "of") as ConstructorParameters<typeof Row>[0],
     optionalSiteType(b),
@@ -304,7 +304,9 @@ function resultsFactory(b: ArgBundle): Results1to1 {
   const body = flatten(b.positional).find(isIntFunction);
   if (body === undefined) throw new Error("factory results: missing body int function");
   return new Results1to1(
+    null,
     fromValue !== undefined ? intOrRegion(fromValue) : contextRegion("_evalFrom"),
+    null,
     toValue !== undefined ? intOrRegion(toValue) : contextRegion("_evalTo"),
     body,
   );

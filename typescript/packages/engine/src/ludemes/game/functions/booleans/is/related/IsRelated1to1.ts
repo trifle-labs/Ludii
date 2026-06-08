@@ -33,6 +33,7 @@ import type { IntFunction, RegionFunction, BooleanFunction, EvalScratch } from "
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { SiteType } from "../../../../../../action/site-type.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { parseArgs1to1, compileInt1to1, compileRegion1to1 } from "../../../../../../compiler1to1.js";
 
@@ -53,10 +54,16 @@ export class IsRelated1to1 implements BooleanFunction {
   private readonly siteFn: IntFunction;
   private readonly regionFn: RegionFunction;
 
-  public constructor(relationType: string, siteFn: IntFunction, regionFn: RegionFunction) {
+  public constructor(
+    relationType: string,
+    type: SiteType | null,
+    siteA: IntFunction,
+    regionB: RegionFunction,
+  ) {
     this.relationType = relationType;
-    this.siteFn = siteFn;
-    this.regionFn = regionFn;
+    void type;
+    this.siteFn = siteA;
+    this.regionFn = regionB;
   }
 
   /**
@@ -122,6 +129,7 @@ registerBool1to1("is:related", (node: LudNode, env: Compile1to1Env): BooleanFunc
   const SITE_TYPES = new Set(["cell", "edge", "vertex"]);
 
   let relationType = "Adjacent";
+  let type: SiteType | null = null;
   let siteNode: LudNode | undefined;
   let regionNode: LudNode | undefined;
 
@@ -138,6 +146,7 @@ registerBool1to1("is:related", (node: LudNode, env: Compile1to1Env): BooleanFunc
   {
     const p = positional[idx];
     if (p && isIdent(p) && SITE_TYPES.has(p.name.toLowerCase())) {
+      type = p.name as SiteType;
       idx++;
     }
   }
@@ -155,5 +164,5 @@ registerBool1to1("is:related", (node: LudNode, env: Compile1to1Env): BooleanFunc
     regionFn = { eval: (_c: Context) => [] };
   }
 
-  return new IsRelated1to1(relationType, siteFn, regionFn);
+  return new IsRelated1to1(relationType, type, siteFn, regionFn);
 });

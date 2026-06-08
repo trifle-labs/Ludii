@@ -40,6 +40,7 @@ import { SitesHint } from "./simple/SitesHint.js";
 import { SitesLeft } from "./simple/SitesLeft.js";
 import { SitesRight } from "./simple/SitesRight.js";
 import { SitesTop } from "./simple/SitesTop.js";
+import { SitesTrack } from "./track/SitesTrack.js";
 import { LineOfSightType } from "./LineOfSightType.js";
 
 // ---- Type imports (enum discriminators) ------------------------------------
@@ -703,15 +704,23 @@ export class Sites extends BaseRegionFunction {
         : constIntFn(-1);
     if (dataType === null) {
       // @java return new SitesHidden(type, to, To);
-      return new SitesHiddenWhat(type, whoFn);
+      return new SitesHiddenWhat(
+        type,
+        (toRole == null ? toPlayer : null) as ConstructorParameters<typeof SitesHiddenWhat>[1],
+        toRole == null ? null : toRole as string,
+      );
     }
     switch (dataType) {
-      case "What":     return new SitesHiddenWhat(type, whoFn);
-      case "Who":      return new SitesHiddenWho(type, whoFn);
+      case "What":     return new SitesHiddenWhat(
+        type,
+        (toRole == null ? toPlayer : null) as ConstructorParameters<typeof SitesHiddenWhat>[1],
+        toRole == null ? null : toRole as string,
+      );
+      case "Who":      return new SitesHiddenWho(type, toRole == null ? whoFn : null, toRole == null ? null : toRole as string);
       case "Count":    return new SitesHiddenCount(type, whoFn);
-      case "State":    return new SitesHiddenState(type, whoFn);
-      case "Rotation": return new SitesHiddenRotation(type, whoFn);
-      case "Value":    return new SitesHiddenValue(type, whoFn);
+      case "State":    return new SitesHiddenState(type, toRole == null ? whoFn : null, toRole == null ? null : toRole as string);
+      case "Rotation": return new SitesHiddenRotation(type, toRole == null ? whoFn : null, toRole == null ? null : toRole as string);
+      case "Value":    return new SitesHiddenValue(type, toRole == null ? whoFn : null, toRole == null ? null : toRole as string);
       default:
         throw new Error(`Sites(): A HiddenData is not implemented: ${dataType}`);
     }
@@ -831,17 +840,20 @@ export class Sites extends BaseRegionFunction {
    */
   public static constructTrack(
     _regionType: unknown,
-    _pid: unknown,
-    _role: unknown,
-    _name: string | null,
-    _from: IntFunction | null,
-    _to: IntFunction | null,
+    pid: unknown,
+    role: unknown,
+    name: string | null,
+    from: IntFunction | null,
+    to: IntFunction | null,
   ): RegionFunction {
     // @java return new SitesTrack(pid, role, name, from, to);
-    // SitesTrack not yet ported in non-1to1 path
-    return new (class extends BaseRegionFunction {
-      override eval(_ctx: Context & EvalScratch): number[] { return []; }
-    })();
+    return new SitesTrack(
+      pid as ConstructorParameters<typeof SitesTrack>[0],
+      role as ConstructorParameters<typeof SitesTrack>[1],
+      name,
+      from,
+      to,
+    );
   }
 
   /**

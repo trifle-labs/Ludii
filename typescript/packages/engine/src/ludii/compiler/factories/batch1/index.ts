@@ -245,7 +245,7 @@ function makeIsFreedom(b: ArgBundle): BooleanFunction {
   const region = firstRegionFunction(b);
   if (!region) deferred("is Freedom");
   const toPlace = flatten(b.positional).find((value): value is IntFunction => isIntFunction(value)) ?? null;
-  return new IsFreedom1to1(region, toPlace);
+  return new IsFreedom1to1(firstSiteType(b), region, toPlace);
 }
 
 function makeIsLine(b: ArgBundle): BooleanFunction {
@@ -262,16 +262,17 @@ function makeIsLine(b: ArgBundle): BooleanFunction {
 
 function makeIsRelated(b: ArgBundle): BooleanFunction {
   const relation = stringAt(b, 1) ?? "Adjacent";
+  const type = siteTypeAt(b, 2);
   const site = firstIntFunctionAfter(b, 1);
   const region = firstRegionFunction(b);
   if (!site || !region) deferred("is Related");
-  return new IsRelated1to1(relation, site, region);
+  return new IsRelated1to1(relation, type, site, region);
 }
 
 function makeIsTarget(b: ArgBundle): BooleanFunction {
   const configuration = numberArrayAt(b, 1) ?? numberArrayAt(b, 4);
   if (!configuration) deferred("is Target");
-  return new IsTarget1to1(configuration, numberArrayNamed(b, "at"));
+  return new IsTarget1to1(null, null, configuration, null, numberArrayNamed(b, "at"));
 }
 
 function makeIsWithin(b: ArgBundle): BooleanFunction {
@@ -282,11 +283,15 @@ function makeIsWithin(b: ArgBundle): BooleanFunction {
 }
 
 function makeIsTriggered(b: ArgBundle): BooleanFunction {
-  return new IsTriggered1to1(roleOrIntAt(b, 2) ?? roleOrIntAt(b, 1) ?? roleToIntFunction("Mover"));
+  return new IsTriggered1to1(triggeredEvent(b), roleOrIntAt(b, 2) ?? roleOrIntAt(b, 1) ?? roleToIntFunction("Mover"), null);
 }
 
 function makeBooleanIf(b: ArgBundle): BooleanFunction {
   return new IfBool1to1(requireBooleanFunction(b, 0), requireBooleanFunction(b, 1), boolAt(b, 2));
+}
+
+function triggeredEvent(b: ArgBundle): string {
+  return stringAt(b, 0) === "Triggered" ? stringAt(b, 1) ?? "" : stringAt(b, 0) ?? "";
 }
 
 function makeNo(b: ArgBundle): BooleanFunction {

@@ -6440,7 +6440,12 @@ function compileMoves1to1Impl(node: LudNode, equipment?: Equipment1to1): MovesFu
       // Build SitesWalk1to1 using the parsed fromFn and walks (rotations=true by default)
       // @java Leap.java — Sites.construct(null, startLocationFn, walk, rotations)
       const leapFromFn = fromFnLeap;
-      const sitesWalk = new SitesWalk1to1(leapFromFn, leapWalks, { eval: () => true });
+      const sitesWalk = new SitesWalk1to1(
+        null,
+        leapFromFn,
+        leapWalks as ConstructorParameters<typeof SitesWalk1to1>[2],
+        { eval: () => true },
+      );
 
       const leapGen: MovesFunction = {
         eval(ctx: Context): Move[] {

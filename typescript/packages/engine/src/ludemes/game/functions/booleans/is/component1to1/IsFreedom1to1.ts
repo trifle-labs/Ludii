@@ -22,6 +22,7 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction, RegionFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
+import type { SiteType } from "../../../../../../action/site-type.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { parseArgs1to1, compileInt1to1, compileRegion1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
@@ -32,9 +33,10 @@ export class IsFreedom1to1 implements BooleanFunction {
   private readonly regionFn: RegionFunction;
   private readonly locnFn: IntFunction | null;
 
-  public constructor(regionFn: RegionFunction, locnFn: IntFunction | null) {
-    this.regionFn = regionFn;
-    this.locnFn = locnFn;
+  public constructor(type: SiteType | null | undefined, inFn: RegionFunction, toPlace: IntFunction | null = null) {
+    void type;
+    this.regionFn = inFn;
+    this.locnFn = toPlace ?? null;
   }
 
   /**
@@ -82,12 +84,16 @@ registerBool1to1("is:freedom", (node: LudNode, _env: Compile1to1Env): BooleanFun
   // named: in (region), toPlace
 
   let idx = 1;
+  let type: SiteType | null = null;
   // Skip optional SiteType ident
   {
     const p = positional[idx];
     if (p && isIdent(p)) {
       const n = p.name.toLowerCase();
-      if (n === "cell" || n === "edge" || n === "vertex") idx++;
+      if (n === "cell" || n === "edge" || n === "vertex") {
+        type = n === "cell" ? "Cell" : n === "edge" ? "Edge" : "Vertex";
+        idx++;
+      }
     }
   }
 
@@ -112,5 +118,5 @@ registerBool1to1("is:freedom", (node: LudNode, _env: Compile1to1Env): BooleanFun
     }
   }
 
-  return new IsFreedom1to1(regionFn, locnFn);
+  return new IsFreedom1to1(type, regionFn, locnFn);
 });

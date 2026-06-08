@@ -60,25 +60,40 @@ const DIAGONAL_SQUARE   = [0, 1, 2, 3] as const;
 /** Adjacent expansion for square board: all 4 orthogonal + 4 diagonal */
 const ADJACENT_SQUARE   = [0, 1, 2, 3] as const;
 
+type AbsoluteDirection = string;
+
 /**
  * @java game.functions.intArray.state.Rotations
  */
 export class Rotations extends BaseIntArrayFunction {
   /** @java Rotations — final AbsoluteDirection[] directionsOfRotation */
-  private readonly directionsOfRotation: string[];
+  private readonly directionsOfRotation: AbsoluteDirection[];
 
   /** @java Rotations — private int[] precomputedDirection */
   private precomputedDirection: number[] | null = null;
 
   /**
-   * @java Rotations(AbsoluteDirection|AbsoluteDirection[])
-   * @param directionsOfRotation One or more AbsoluteDirection names.
+   * @java Rotations(AbsoluteDirection directionOfRotation, AbsoluteDirection[] directionsOfRotation)
+   * @param directionOfRotation @Or single AbsoluteDirection.
+   * @param directionsOfRotation @Or array of AbsoluteDirection values.
    */
-  public constructor(directionsOfRotation: string | string[]) {
+  public constructor(
+    directionOfRotation: AbsoluteDirection | null,
+    directionsOfRotation: AbsoluteDirection[] | null,
+  ) {
     super();
-    this.directionsOfRotation = Array.isArray(directionsOfRotation)
+
+    let numNonNull = 0;
+    if (directionOfRotation != null) numNonNull++;
+    if (directionsOfRotation != null) numNonNull++;
+
+    if (numNonNull !== 1) {
+      throw new Error("Only one Or should be non-null.");
+    }
+
+    this.directionsOfRotation = directionsOfRotation != null
       ? directionsOfRotation
-      : [directionsOfRotation];
+      : [directionOfRotation as AbsoluteDirection];
   }
 
   /**
