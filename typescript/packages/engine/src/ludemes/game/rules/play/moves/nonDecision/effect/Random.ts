@@ -34,13 +34,7 @@ export class Random implements MovesFunction {
     probas: FloatFunction[],
     moves: MovesFunction[],
   ): Random {
-    const minLength = Math.min(probas.length, moves.length);
-    return new Random(
-      probas.slice(0, minLength),
-      moves.slice(0, minLength),
-      null,
-      null,
-    );
+    return new Random(probas, moves);
   }
 
   /**
@@ -51,19 +45,31 @@ export class Random implements MovesFunction {
    * @param num   How many moves to return
    */
   public static fromNum(moves: MovesFunction, num: IntFunction): Random {
-    return new Random(null, null, num, moves);
+    return new Random(moves, num);
   }
 
-  private constructor(
-    probaFn: FloatFunction[] | null,
-    movesList: MovesFunction[] | null,
-    num: IntFunction | null,
-    moveLudeme: MovesFunction | null,
+  /**
+   * @java Random(FloatFunction[] probas, Moves[] moves)
+   * @java Random(Moves moves, @Name IntFunction num)
+   */
+  public constructor(
+    probasOrMoves: FloatFunction[] | MovesFunction,
+    movesOrNum: MovesFunction[] | IntFunction,
   ) {
-    this.probaFn = probaFn;
-    this.movesList = movesList;
-    this.num = num;
-    this.moveLudeme = moveLudeme;
+    if (Array.isArray(probasOrMoves)) {
+      const probas = probasOrMoves;
+      const moves = movesOrNum as MovesFunction[];
+      const minLength = Math.min(probas.length, moves.length);
+      this.probaFn = probas.slice(0, minLength);
+      this.movesList = moves.slice(0, minLength);
+      this.moveLudeme = null;
+      this.num = null;
+    } else {
+      this.probaFn = null;
+      this.movesList = null;
+      this.moveLudeme = probasOrMoves;
+      this.num = movesOrNum as IntFunction;
+    }
   }
 
   /**

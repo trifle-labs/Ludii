@@ -61,6 +61,7 @@ import { SetRotation } from "../../../../ludemes/game/rules/play/moves/nonDecisi
 import { SetTrumpSuit } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/suit/SetTrumpSuit.js";
 import { SetTeam } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/team/SetTeam.js";
 import { SetHidden, type HiddenData } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.js";
+import { IntArrayFromRegion } from "../../../../ludemes/other/IntArrayFromRegion.js";
 import { SetPending } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.js";
 import { SetScore1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetScore1to1.js";
 import { SetValuePlayer } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetValuePlayer.js";
@@ -128,7 +129,7 @@ export function registerBatch5(registry: LudemeRegistry): void {
       const moves = requireMoves(findFirst(b, isMovesFunction), `max ${kind}`);
       const withValue = optionalBooleanFunctionNamed(b, "withValue") ?? falseFunction();
       const then = movesFromThen(optionalThenLike(b));
-      return kind === "Moves" ? new MaxMoves(moves, withValue, then) : new MaxCaptures(moves, withValue, then);
+      return kind === "Moves" ? new MaxMoves(withValue, moves, then) : new MaxCaptures(withValue, moves, then);
     }
     throw notWired("max");
   });
@@ -512,17 +513,13 @@ function makeShoot(b: ArgBundle): Shoot {
 function makeSelect(b: ArgBundle): Select {
   const from = requireFrom(findFirst(b, isFrom), "move Select");
   const to = findFirst(b, isTo);
-  const region = from.regionFn() ?? intAsRegion(from.locFn() ?? new IteratorFrom());
-  const regionTo = to ? (to.regionFn() ?? intAsRegion(to.locFn() ?? new IteratorTo())) : null;
-  return new Select({
-    region,
-    condition: from.condFn() ?? trueFunction(),
-    regionTo,
-    conditionTo: to?.condFn() ?? trueFunction(),
-    levelFromFn: from.levelFn(),
-    levelToFn: to?.levelFn() ?? null,
-    then: optionalThen(b) as never,
-  });
+  const role = flatten(b.positional).find((v): v is string => typeof v === "string" && isRoleTypeName(v));
+  return new Select(
+    from,
+    to ?? null,
+    role as ConstructorParameters<typeof Select>[2],
+    optionalThen(b) as ConstructorParameters<typeof Select>[3],
+  );
 }
 
 function makeRemove(b: ArgBundle): Remove {
@@ -568,8 +565,7 @@ function makeSet(b: ArgBundle): MovesFunction {
     return new SetHidden(
       dataTypes,
       optionalSiteType(flatten(b.positional).find(isSiteTypeName)) ?? null,
-      asOptionalIntFunction(at, "set Hidden at"),
-      region ?? null,
+      new IntArrayFromRegion(asOptionalIntFunction(at, "set Hidden at") as never, (region ?? null) as never),
       asOptionalIntFunction(namedValue(b, "level"), "set Hidden level"),
       optionalBooleanFunctionValue(namedValue(b, "value") ?? flatten(b.positional).find(isBooleanFunction)),
       whoFn,
@@ -726,8 +722,8 @@ function makeMessageMove(b: ArgBundle): MovesFunction {
   const then = movesFromThen(optionalThenLike(b));
   if (kind === "Propose") {
     return Array.isArray(payload)
-      ? new Propose({ propositions: payload.filter(isString), then })
-      : new Propose({ proposition: optionalString(payload), then });
+      ? new Propose(null, payload.filter(isString), optionalThen(b))
+      : new Propose(optionalString(payload), null, optionalThen(b));
   }
   if (kind === "Vote") {
     return Array.isArray(payload)

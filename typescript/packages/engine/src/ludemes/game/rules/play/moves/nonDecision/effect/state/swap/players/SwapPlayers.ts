@@ -13,6 +13,8 @@ import { ActionSwap } from "../../../../../../../../../../action/action-swap.js"
 import { ActionSetNextPlayer } from "../../../../../../../../../../action/action-set-next-player.js";
 import { Move as LudiiMove } from "../../../../../../../../../../move.js";
 
+type RoleType = string;
+
 export class SwapPlayers implements MovesFunction {
   /** @java SwapPlayers.player1 */
   private readonly player1: IntFunction;
@@ -26,18 +28,22 @@ export class SwapPlayers implements MovesFunction {
   /**
    * @java game/rules/play/moves/nonDecision/effect/state/swap/players/SwapPlayers.java — constructor
    *
-   * @param player1    Function evaluating the first player index
-   * @param player2    Function evaluating the second player index
-   * @param thenClause Subsequent moves
+   * @param player1    The index of the first player.
+   * @param role1      The role of the first player.
+   * @param player2    The index of the second player.
+   * @param role2      The role of the second player.
+   * @param thenClause Subsequent moves.
    */
   public constructor(
-    player1: IntFunction,
-    player2: IntFunction,
-    thenClause: Then | null = null,
+    player1: IntFunction | null,
+    role1: RoleType | null,
+    player2: IntFunction | null,
+    role2: RoleType | null,
+    thenClause?: Then | null,
   ) {
-    this.player1 = player1;
-    this.player2 = player2;
-    this.thenClause = thenClause;
+    this.player1 = player1 === null ? roleToIntFunction(role1!) : player1;
+    this.player2 = player2 === null ? roleToIntFunction(role2!) : player2;
+    this.thenClause = thenClause ?? null;
   }
 
   /**
@@ -76,4 +82,35 @@ export class SwapPlayers implements MovesFunction {
 
     return [move];
   }
+}
+
+/**
+ * Minimal port of Java's RoleType.toIntFunction.
+ *
+ * @java game.types.play.RoleType.toIntFunction(RoleType)
+ */
+function roleToIntFunction(role: RoleType): IntFunction {
+  return {
+    eval: (ctx: Context): number => {
+      switch (role) {
+        case "Mover":
+          return ctx.state.mover;
+        case "Next": {
+          const n = ctx.state.mover;
+          const numP = ctx.numPlayers();
+          return (n % numP) + 1;
+        }
+        case "P1":
+          return 1;
+        case "P2":
+          return 2;
+        case "P3":
+          return 3;
+        case "P4":
+          return 4;
+        default:
+          return ctx.state.mover;
+      }
+    },
+  };
 }

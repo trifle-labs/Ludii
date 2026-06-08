@@ -25,6 +25,21 @@ import { ActionSelect } from "../../../../../../../action/action-select.js";
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
+import type { From1to1 } from "../../../../../util/moves/From1to1.js";
+import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { RoleTypeFull } from "../../../../../types/play/RoleType.js";
+
+const TRUE_FUNCTION: BooleanFunction = { eval: () => true };
+
+function regionFromLocOrRegion(
+  loc: IntFunction | null,
+  region: RegionFunction | null,
+  fallbackField: "_evalFrom" | "_evalTo"
+): RegionFunction {
+  if (region !== null) return region;
+  if (loc !== null) return { eval: (ctx) => [loc.eval(ctx)] };
+  return { eval: (ctx) => [ctx[fallbackField]] };
+}
 
 /**
  * Select effect — emits ActionSelect for each valid from/to site pair.
@@ -50,27 +65,39 @@ export class Select extends Effect {
   /** @java Select.levelToFn */
   private readonly levelToFn: IntFunction | null;
 
+  /** @java Select.mover */
+  private readonly mover: RoleTypeFull | null;
+
   // -------------------------------------------------------------------------
 
   /**
-   * @java game/rules/play/moves/nonDecision/effect/Select.java — constructor
+   * @java Select(From from, @Opt To to, @Opt RoleType mover, @Opt Then then)
    */
-  public constructor(opts: {
-    region: RegionFunction;
-    condition: BooleanFunction;
-    regionTo?: RegionFunction | null;
-    conditionTo?: BooleanFunction | null;
-    levelFromFn?: IntFunction | null;
-    levelToFn?: IntFunction | null;
-    then?: ThenLike | null;
-  }) {
-    super(opts.then ?? null);
-    this.region = opts.region;
-    this.condition = opts.condition;
-    this.regionTo = opts.regionTo ?? null;
-    this.conditionTo = opts.conditionTo ?? { eval: () => true };
-    this.levelFromFn = opts.levelFromFn ?? null;
-    this.levelToFn = opts.levelToFn ?? null;
+  public constructor(
+    from: From1to1,
+    to?: To1to1 | null,
+    mover?: RoleTypeFull | null,
+    then?: ThenLike | null
+  ) {
+    super(then ?? null);
+
+    this.region = regionFromLocOrRegion(from.loc(), from.region(), "_evalFrom");
+
+    if (to === null || to === undefined) {
+      this.regionTo = null;
+    } else if (to.region() !== null) {
+      this.regionTo = regionFromLocOrRegion(null, to.region(), "_evalTo");
+    } else if (to.loc() !== null) {
+      this.regionTo = regionFromLocOrRegion(to.loc(), null, "_evalTo");
+    } else {
+      this.regionTo = null;
+    }
+
+    this.condition = from.cond() ?? TRUE_FUNCTION;
+    this.conditionTo = to?.cond() ?? TRUE_FUNCTION;
+    this.levelFromFn = from.level();
+    this.levelToFn = to?.level() ?? null;
+    this.mover = mover ?? null;
   }
 
   // -------------------------------------------------------------------------

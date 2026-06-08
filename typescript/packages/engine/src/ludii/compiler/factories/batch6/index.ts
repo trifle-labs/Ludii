@@ -201,7 +201,9 @@ function forEachFactory(b: ArgBundle): MovesFunction {
     case "Player": {
       const players = firstOf<IntArrayFunction>(b, isIntArrayFunction);
       const moves = requiredLastMoves(b, "forEach Player moves");
-      return new ForEachPlayer(players ?? null, moves, thenArg(b));
+      return players === undefined
+        ? new ForEachPlayer(moves, thenArg(b))
+        : new ForEachPlayer(players, moves, thenArg(b));
     }
     case "Piece":
       return new ForEachPiece(
@@ -450,11 +452,11 @@ function promoteFactory(b: ArgBundle): Promote {
 }
 
 function proposeFactory(b: ArgBundle): Propose {
-  return new Propose({
-    proposition: typeof b.positional[0] === "string" ? b.positional[0] : null,
-    propositions: Array.isArray(b.positional[0]) ? b.positional[0].filter((v): v is string => typeof v === "string") : null,
-    then: thenArg(b) as unknown as MovesFunction | null,
-  });
+  return new Propose(
+    typeof b.positional[0] === "string" ? b.positional[0] : null,
+    Array.isArray(b.positional[0]) ? b.positional[0].filter((v): v is string => typeof v === "string") : null,
+    thenArg(b),
+  );
 }
 
 function pushFactory(b: ArgBundle): Push {

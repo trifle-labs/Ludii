@@ -105,6 +105,7 @@ import { Remove } from "../../../../ludemes/game/rules/play/moves/nonDecision/ef
 import { Step } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Step.js";
 import { Then } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
 import { SetHidden } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/hidden/SetHidden.js";
+import { IntArrayFromRegion } from "../../../../ludemes/other/IntArrayFromRegion.js";
 import { SetNextPlayer } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/nextPlayer/SetNextPlayer.js";
 import { SetScore1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetScore1to1.js";
 import { SetValuePlayer } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/player/SetValuePlayer.js";
@@ -118,6 +119,7 @@ import { SetTeam } from "../../../../ludemes/game/rules/play/moves/nonDecision/e
 import { SetVar1to1 } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/var/SetVar1to1.js";
 import { SetCounter } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/value/SetCounter.js";
 import { SetPot } from "../../../../ludemes/game/rules/play/moves/nonDecision/effect/set/value/SetPot.js";
+import { Between1to1 } from "../../../../ludemes/game/util/moves/Between1to1.js";
 import { From1to1 } from "../../../../ludemes/game/util/moves/From1to1.js";
 import { Piece1to1 } from "../../../../ludemes/game/util/moves/Piece1to1.js";
 import { To1to1 } from "../../../../ludemes/game/util/moves/To1to1.js";
@@ -225,7 +227,7 @@ export function registerBatch2(registry: LudemeRegistry): void {
       void env;
       const type = stringAt(b, 0);
       return new EndForEach(
-        type === "Track" ? null : (type?.toLowerCase() ?? null),
+        type === "Track" ? null : (type as ConstructorParameters<typeof EndForEach>[0] ?? null),
         type === "Track" ? "Track" : null,
         requireNamedBooleanFunction(b, "if"),
         requireResult(b),
@@ -685,8 +687,7 @@ function makeSetHidden(b: ArgBundle): SetHidden {
   return new SetHidden(
     data.length > 0 ? data : null,
     firstSiteType(b),
-    firstIntFunctionAfter(b, 0),
-    firstRegionFunction(b),
+    new IntArrayFromRegion(firstIntFunctionAfter(b, 0) as never, firstRegionFunction(b) as never),
     intNamed(b, "level"),
     firstBooleanFunctionAfter(b, 0),
     isIntFunction(toPlayer) ? toPlayer : null,
@@ -713,26 +714,16 @@ function makeStep(b: ArgBundle): Step {
 
 function makeEnclose(b: ArgBundle): Enclose {
   const from = firstOf(b, isFrom);
-  const between = firstBetweenLike(b);
-  const betweenFn = betweenInt();
-  const effect = between?.effect ?? firstMovesFunctionAfter(b, 0) ?? new Remove({
-    locationFn: betweenFn,
-    regionFn: null,
-    countFn: null,
-    levelFn: null,
-    type: firstSiteType(b),
-    when: null,
-    then: null,
-  });
-  return new Enclose({
-    startFn: from?.locFn() ?? lastTo(),
-    dirnName: firstDirectionName(b) ?? "Adjacent",
-    targetRule: between?.cond ?? new IsEnemy1to1(new Who1to1(betweenFn)),
-    numEmptySitesInGroup: intNamed(b, "numexception") ?? new IntConstant(0),
-    effect,
-    type: firstSiteType(b),
-    then: null,
-  });
+  const between = firstOf(b, isBetween);
+  const directions = firstDirectionsFunction(b) ?? firstDirectionName(b);
+  return new Enclose(
+    firstSiteType(b),
+    from,
+    directions,
+    between,
+    intNamed(b, "numexception"),
+    optionalThen(b),
+  );
 }
 
 function makeEndIf(b: ArgBundle): EndIf {
@@ -1263,6 +1254,10 @@ function isFrom(value: unknown): value is From1to1 {
 
 function isTo(value: unknown): value is To1to1 {
   return value instanceof To1to1;
+}
+
+function isBetween(value: unknown): value is Between1to1 {
+  return value instanceof Between1to1;
 }
 
 function isPieceArg(value: unknown): value is Piece1to1 {

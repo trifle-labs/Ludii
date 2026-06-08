@@ -20,12 +20,15 @@
 
 import type { Context } from "../../../../../../../context.js";
 import type { Move } from "../../../../../../../move.js";
-import type { IntFunction, MovesFunction } from "../../../../../../base.js";
+import type { DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { CellFlatRadials } from "../../../../../../topology-radials.js";
 import { radialsForDirection } from "../../../../../../topology-radials.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+import type { ThenLike } from "../../Moves.js";
+import type { From1to1 } from "../../../../../util/moves/From1to1.js";
+import { directionsFunction, type DirectionArg, LAST_TO } from "./EffectCtorAdapters.js";
 
 export class Push1to1 implements MovesFunction {
   /**
@@ -35,22 +38,25 @@ export class Push1to1 implements MovesFunction {
   private readonly startLocationFn: IntFunction;
 
   /**
-   * Direction name (e.g. "E", "N", "Orthogonal").
+   * Direction chosen.
    * @java Push.dirnChoice
    */
-  private readonly dirnName: string;
+  private readonly dirnChoice: DirectionsFunction;
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Push.java — constructor
-   * @param startLocationFn  Evaluates to the from-site (default: lastTo = _evalTo)
-   * @param dirnName         Direction to push along (e.g. "E")
+   * @param from       Description of the from location [(from (last To))].
+   * @param directions The direction to push.
+   * @param then       The moves applied after that move is applied.
    */
   public constructor(
-    startLocationFn: IntFunction,
-    dirnName = "E",
+    from: From1to1 | null,
+    directions: DirectionArg,
+    then: ThenLike | null = null,
   ) {
-    this.startLocationFn = startLocationFn;
-    this.dirnName = dirnName;
+    void then;
+    this.startLocationFn = from?.loc() ?? LAST_TO;
+    this.dirnChoice = directionsFunction(directions);
   }
 
   /**
@@ -77,7 +83,8 @@ export class Push1to1 implements MovesFunction {
 
     // @java Push.java:90 — radials(type, fromV.index(), directions.get(0))
     // We use only the first radial in the chosen direction (the "push" direction).
-    const axes = radialsForDirection(cellRadials, this.dirnName);
+    const dirnName = this.dirnChoice.eval(ctx)[0] ?? "E";
+    const axes = radialsForDirection(cellRadials, dirnName);
     if (axes.length === 0) return [];
 
     // Use first axis, ray direction (not opposite)
@@ -113,8 +120,8 @@ export class Push1to1 implements MovesFunction {
     if (actions.length === 0) return [];
 
     moves.push(new LudiiMove({
-      id: `push:${mover}:${from}:${this.dirnName}`,
-      label: `Push(${from}→${this.dirnName})`,
+      id: `push:${mover}:${from}:${dirnName}`,
+      label: `Push(${from}→${dirnName})`,
       siteIndices: [from],
       mover,
       placedOwner: mover,

@@ -16,6 +16,7 @@ import { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { NonDecision } from "../../NonDecision.js";
 import type { ThenLike } from "../../../Moves.js";
+import type { Then } from "../../effect/Then.js";
 
 
 /**
@@ -38,7 +39,8 @@ export class AllCombinations extends NonDecision {
   // -------------------------------------------------------------------------
 
   /**
-   * @java game/rules/play/moves/nonDecision/operators/logical/AllCombinations.java — constructor(Moves, Moves, Then)
+   * @java game/rules/play/moves/nonDecision/operators/logical/AllCombinations.java
+   * Java constructor parameters: Moves listA, Moves listB, @Opt Then then.
    * @param listA First move list.
    * @param listB Second move list.
    * @param then  The moves applied after that move is applied.
@@ -46,9 +48,9 @@ export class AllCombinations extends NonDecision {
   public constructor(
     listA: MovesFunction,
     listB: MovesFunction,
-    then?: ThenLike | null,
+    then?: Then | ThenLike | null,
   ) {
-    super(then ?? null);
+    super((then ?? null) as ThenLike | null);
     this.listA = listA;
     this.listB = listB;
   }

@@ -66,26 +66,29 @@ export class SetSite1to1 implements StartRule {
 
   public constructor(
     role: RoleType,
-    type: SiteType | null = null,
-    locOrLocs: IntFunction | readonly IntFunction[] | null = null,
-    regionOrCoord: RegionFunction | string | null = null,
-    coords: readonly string[] | null = null,
+    type: SiteType | null | undefined,
+    locOrLocs: IntFunction | readonly IntFunction[] | null | undefined,
+    regionOrCoord: RegionFunction | string | null | undefined,
+    coords: readonly string[] | null | undefined = null,
   ) {
     this.role = role;
-    this.type = type;
+    this.type = type ?? null;
+    const locOrLocsOrNull = locOrLocs ?? null;
+    const regionOrCoordOrNull = regionOrCoord ?? null;
+    const coordsOrNull = coords ?? null;
 
-    if (isIntFunctionArray(locOrLocs)) {
-      this.locationIds = locOrLocs;
-      this.region = regionOrCoord !== null && typeof regionOrCoord !== "string" ? regionOrCoord : null;
-      this.coords = coords;
+    if (isIntFunctionArray(locOrLocsOrNull)) {
+      this.locationIds = locOrLocsOrNull;
+      this.region = regionOrCoordOrNull !== null && typeof regionOrCoordOrNull !== "string" ? regionOrCoordOrNull : null;
+      this.coords = coordsOrNull;
       this.coord = null;
       this.siteId = null;
     } else {
-      this.siteId = locOrLocs;
-      this.coord = typeof regionOrCoord === "string" ? regionOrCoord : null;
+      this.siteId = locOrLocsOrNull;
+      this.coord = typeof regionOrCoordOrNull === "string" ? regionOrCoordOrNull : null;
       this.locationIds = null;
-      this.region = regionOrCoord !== null && typeof regionOrCoord !== "string" ? regionOrCoord : null;
-      this.coords = coords;
+      this.region = regionOrCoordOrNull !== null && typeof regionOrCoordOrNull !== "string" ? regionOrCoordOrNull : null;
+      this.coords = coordsOrNull;
     }
   }
 

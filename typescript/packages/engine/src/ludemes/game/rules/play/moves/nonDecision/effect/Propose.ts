@@ -14,6 +14,7 @@ import type { Move } from "../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../base.js";
 import { ActionPropose } from "../../../../../../../action/action-propose.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+import type { Then } from "./Then.js";
 
 /** @java Constants.OFF = -1 */
 const OFF = -1;
@@ -54,27 +55,39 @@ export class Propose implements MovesFunction {
    *
    * @param proposition  A single proposition string.
    * @param propositions An array of proposition strings.
-   * @param thenMoves    Optional subsequent moves.
+   * @param then         Optional subsequent moves.
    */
-  public constructor(opts: {
-    proposition?: string | null;
-    propositions?: string[] | null;
-    then?: MovesFunction | null;
-  }) {
+  public constructor(
+    proposition: string | null,
+    propositions: string[] | null,
+    then?: Then | null,
+  ) {
     // @java Propose.java:52-74
-    if (opts.propositions != null) {
+    let numNonNull = 0;
+    if (proposition != null) {
+      numNonNull++;
+    }
+    if (propositions != null) {
+      numNonNull++;
+    }
+
+    if (numNonNull > 1) {
+      throw new Error("Only one Or parameter can be non-null.");
+    }
+
+    if (propositions != null) {
       // @java Propose.java:64-66 — this.propositions = propositions;
-      this.propositions = opts.propositions;
-    } else if (opts.proposition != null) {
+      this.propositions = propositions;
+    } else if (proposition != null) {
       // @java Propose.java:68-71 — this.propositions = new String[1]; [0] = proposition;
-      this.propositions = [opts.proposition];
+      this.propositions = [proposition];
     } else {
       this.propositions = [];
     }
 
     // @java Propose.java:73-74 — propositionInts = new int[...]; Arrays.fill(-1)
     this.propositionInts = new Array<number>(this.propositions.length).fill(UNDEFINED);
-    this.thenMoves = opts.then ?? null;
+    this.thenMoves = then?.moves() ?? null;
   }
 
   /**

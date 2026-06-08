@@ -331,16 +331,12 @@ function selectFactory(b: ArgBundle): Select {
   if (from === undefined) throw new Error("factory select: missing from");
   const to = flatten(b.positional).find((v): v is To1to1 => v instanceof To1to1) ?? null;
   const role = flatten(b.positional).find((v) => typeof v === "string" && looksLikeRole(v));
-  if (role !== undefined) throw notWired("select");
-  return new Select({
-    region: from.regionFn() ?? (from.locFn() !== null ? intAsRegion(from.locFn()!) : contextRegion("_evalFrom")),
-    condition: from.condFn() ?? trueFn,
-    regionTo: to?.regionFn() ?? (to?.locFn() ? intAsRegion(to.locFn()!) : null),
-    conditionTo: to?.condFn() ?? null,
-    levelFromFn: from.levelFn(),
-    levelToFn: to?.levelFn() ?? null,
-    then: optionalThen(b) as ConstructorParameters<typeof Select>[0]["then"],
-  });
+  return new Select(
+    from,
+    to,
+    role as ConstructorParameters<typeof Select>[2],
+    optionalThen(b) as ConstructorParameters<typeof Select>[3],
+  );
 }
 
 function shiftFactory(b: ArgBundle): Shift {
@@ -539,8 +535,6 @@ function staticFloatValue(value: unknown, label: string): number {
     throw new Error(`factory shift: expected static ${label}`);
   }
 }
-
-const trueFn: BooleanFunction = { eval: () => true };
 
 function siteTypesFrom(b: ArgBundle): ("Cell" | "Vertex" | "Edge")[] | undefined {
   const siteTypes = flatten(b.positional).filter((v): v is "Cell" | "Vertex" | "Edge" =>

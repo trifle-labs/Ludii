@@ -107,7 +107,7 @@ export function registerBatch0(registry: LudemeRegistry): void {
       if (who.length !== scores.length) throw new Error("factory addScore:addScore: player and score lists must have same length");
       return new AddScoreList(who.map(roleNameFromAddScoreValue), scores.map(toIntFunction));
     }
-    return new AddScore1to1(toRoleName(who), toIntFunction(requirePos(b, 1)));
+    return new AddScore1to1(null, toRoleName(who), toIntFunction(requirePos(b, 1)), null);
   });
 
   registry.registerLudeme("ahead:ahead", (b): Ahead => {
@@ -402,7 +402,7 @@ class AddScoreList implements MovesFunction {
   private readonly delegates: readonly AddScore1to1[];
 
   public constructor(roles: readonly (RoleType | "All" | "Each")[], scores: readonly IntFunction[]) {
-    this.delegates = roles.map((role, index) => new AddScore1to1(role, scores[index] ?? null));
+    this.delegates = roles.map((role, index) => new AddScore1to1(null, role, scores[index] ?? null, null));
   }
 
   public eval(...args: Parameters<MovesFunction["eval"]>): ReturnType<MovesFunction["eval"]> {

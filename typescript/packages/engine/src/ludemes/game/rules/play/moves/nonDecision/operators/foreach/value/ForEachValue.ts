@@ -36,14 +36,6 @@ export class ForEachValue extends Effect {
   // -------------------------------------------------------------------------
 
   /**
-   * @param values    The values.
-   * @param generator The move to apply.
-   * @param then      The moves applied after that move is applied.
-   * @java ForEachValue(IntArrayFunction, Moves, Then)
-   */
-  public constructor(values: IntArrayFunction, generator: MovesFunction, then?: ThenLike | null);
-
-  /**
    * @param min       The minimal value.
    * @param max       The maximal value.
    * @param generator The move to apply.
@@ -52,33 +44,47 @@ export class ForEachValue extends Effect {
    */
   public constructor(min: IntFunction, max: IntFunction, generator: MovesFunction, then?: ThenLike | null);
 
+  /**
+   * @param values    The values.
+   * @param generator The move to apply.
+   * @param then      The moves applied after that move is applied.
+   * @java ForEachValue(IntArrayFunction, Moves, Then)
+   */
+  public constructor(values: IntArrayFunction, generator: MovesFunction, then?: ThenLike | null);
+
+  /**
+   * Largest Java arity in positional order:
+   * (IntFunction min, IntFunction max, Moves generator, @Opt Then then).
+   *
+   * Also accepts the shorter Java constructor:
+   * (IntArrayFunction values, Moves generator, @Opt Then then).
+   */
   public constructor(
-    valuesOrMin: IntArrayFunction | IntFunction,
-    generatorOrMax: MovesFunction | IntFunction,
-    thenOrGenerator?: ThenLike | null | MovesFunction,
-    thenArg: ThenLike | null = null,
+    minOrValues: IntFunction | IntArrayFunction,
+    maxOrGenerator: IntFunction | MovesFunction,
+    generatorOrThen?: MovesFunction | ThenLike | null,
+    then: ThenLike | null = null,
   ) {
-    // Distinguish overloads: if thenOrGenerator is a MovesFunction (has eval returning Move[])
-    // then we have the (min, max, generator, then?) form.
-    // Otherwise we have the (values, generator, then?) form.
+    // If the third Java slot is a Moves generator, this is the range form.
+    // Otherwise it is the values form and the third slot is the optional Then.
     if (
-      thenOrGenerator !== null &&
-      thenOrGenerator !== undefined &&
-      typeof (thenOrGenerator as MovesFunction).eval === "function"
+      generatorOrThen !== null &&
+      generatorOrThen !== undefined &&
+      typeof (generatorOrThen as MovesFunction).eval === "function"
     ) {
       // (IntFunction min, IntFunction max, Moves generator, Then? then)
-      super(thenArg ?? null);
-      this.minFn = valuesOrMin as IntFunction;
-      this.maxFn = generatorOrMax as IntFunction;
+      super(then ?? null);
+      this.minFn = minOrValues as IntFunction;
+      this.maxFn = maxOrGenerator as IntFunction;
       this.valuesFn = null;
-      this.generator = thenOrGenerator as MovesFunction;
+      this.generator = generatorOrThen as MovesFunction;
     } else {
       // (IntArrayFunction values, Moves generator, Then? then)
-      super((thenOrGenerator as ThenLike | null | undefined) ?? null);
+      super((generatorOrThen as ThenLike | null | undefined) ?? null);
       this.minFn = null;
       this.maxFn = null;
-      this.valuesFn = valuesOrMin as IntArrayFunction;
-      this.generator = generatorOrMax as MovesFunction;
+      this.valuesFn = minOrValues as IntArrayFunction;
+      this.generator = maxOrGenerator as MovesFunction;
     }
   }
 

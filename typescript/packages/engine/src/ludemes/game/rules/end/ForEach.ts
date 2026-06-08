@@ -21,20 +21,19 @@
 import type { Context } from "../../../../context.js";
 import type { BooleanFunction, EndResult, EndRuleFunction } from "../../../base.js";
 import type { TrackType } from "../../types/board/TrackType.js";
+import type { RoleTypeFull } from "../../types/play/RoleType.js";
 import type { Result } from "./Result.js";
 import { EndRule } from "./EndRule.js";
 
 /** Role type string used in forEach iteration. */
-export type ForEachRoleType =
-  | "player" | "mover" | "nonmover" | "each" | "shared" | "all"
-  | string;   // P1, P2, … resolved at runtime
+export type ForEachRoleType = RoleTypeFull;
 
 /**
  * @java game/rules/end/ForEach.java — extends BaseEndRule
  */
 export class ForEach extends EndRule implements EndRuleFunction {
   /** Role to iterate. @java ForEach.type */
-  private readonly roleType: ForEachRoleType;
+  private readonly roleType: string;
   /** Track type to iterate. @java ForEach.trackType */
   private readonly trackType: TrackType | null;
   /** Condition evaluated per player. @java ForEach.cond */
@@ -45,25 +44,28 @@ export class ForEach extends EndRule implements EndRuleFunction {
   /**
    * @java game/rules/end/ForEach.java — constructor(RoleType, TrackType, BooleanFunction, Result)
    *
-   * @param roleType    Role type to iterate (lowercase, e.g. "player", "nonmover").
+   * Java signature:
+   *   ForEach(@Opt @Or RoleType type, @Opt @Or TrackType trackType, @Name BooleanFunction If, Result result)
+   *
+   * @param type        Role type to iterate.
    * @param trackType   Track type to iterate, mutually exclusive with roleType.
-   * @param cond        Condition evaluated for each player.
+   * @param If          Condition evaluated for each player.
    * @param result      Result to apply when cond fires.
    */
   public constructor(
-    roleType: ForEachRoleType | null,
+    type: ForEachRoleType | null,
     trackType: TrackType | null,
-    cond: BooleanFunction,
+    If: BooleanFunction,
     result: Result,
   ) {
     super(result);
-    if (roleType != null && trackType != null) {
+    if (type != null && trackType != null) {
       throw new Error("ForEach(): one of RoleType or trackType has to be null.");
     }
 
-    this.roleType = (roleType ?? "Shared").toLowerCase();
+    this.roleType = (type ?? "Shared").toLowerCase();
     this.trackType = trackType;
-    this.cond = cond;
+    this.cond = If;
     this.endResult = result;
   }
 

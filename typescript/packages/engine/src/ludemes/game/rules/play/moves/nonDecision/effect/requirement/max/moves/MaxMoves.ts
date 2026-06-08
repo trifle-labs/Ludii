@@ -41,18 +41,18 @@ export class MaxMoves implements MovesFunction {
   /**
    * @java MaxMoves(BooleanFunction withValue, Moves moves, Then then)
    *
+   * @param withValue   If true, maximise captured-piece value sums.
    * @param moves       Moves to filter.
-   * @param withValueFn If true, maximise captured-piece value sums.
    * @param thenMoves   Optional subsequent moves applied after this.
    */
   public constructor(
+    withValue: BooleanFunction | null | undefined,
     moves: MovesFunction,
-    withValueFn: BooleanFunction = { eval: () => false },
-    thenMoves: MovesFunction | null = null,
+    thenMoves?: MovesFunction | null,
   ) {
     this.moves = moves;
-    this.withValueFn = withValueFn;
-    this.thenMoves = thenMoves;
+    this.withValueFn = withValue ?? { eval: () => false };
+    this.thenMoves = thenMoves ?? null;
   }
 
   /**

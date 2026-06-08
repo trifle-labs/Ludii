@@ -11,7 +11,6 @@
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
-import type { Then } from "../../effect/Then.js";
 
 /**
  * Minimal interface for a Then (consequence moves following a primary move).
@@ -57,22 +56,24 @@ export class And implements MovesFunction {
   public constructor(list: MovesFunction[], then?: ThenLike | null);
 
   public constructor(
-    movesAOrList: MovesFunction | MovesFunction[],
-    movesBOrThen?: MovesFunction | ThenLike | null,
-    thenArg: Then | ThenLike | null = null,
+    movesA: MovesFunction | MovesFunction[],
+    movesB?: MovesFunction | ThenLike | null,
+    then?: ThenLike | null,
   ) {
-    if (Array.isArray(movesAOrList)) {
+    if (Array.isArray(movesA)) {
       // (Moves[], Then?)
-      this.list = movesAOrList;
-      this._then = (movesBOrThen as ThenLike | null | undefined) ?? null;
+      if (then !== null && then !== undefined)
+        throw new Error("And requires Java constructor arguments (Moves, Moves, Then?) or (Moves[], Then?).");
+      this.list = movesA;
+      this._then = (movesB as ThenLike | null | undefined) ?? null;
     } else if (
-      movesBOrThen !== null &&
-      movesBOrThen !== undefined &&
-      typeof (movesBOrThen as MovesFunction).eval === "function"
+      movesB !== null &&
+      movesB !== undefined &&
+      typeof (movesB as MovesFunction).eval === "function"
     ) {
       // (Moves, Moves, Then?)
-      this.list = [movesAOrList, movesBOrThen as MovesFunction];
-      this._then = thenArg ?? null;
+      this.list = [movesA, movesB as MovesFunction];
+      this._then = then ?? null;
     } else {
       throw new Error("And requires Java constructor arguments (Moves, Moves, Then?) or (Moves[], Then?).");
     }

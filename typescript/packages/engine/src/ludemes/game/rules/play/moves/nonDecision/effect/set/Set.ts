@@ -18,6 +18,7 @@
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction, IntFunction, BooleanFunction, RegionFunction } from "../../../../../../../base.js";
+import { IntArrayFromRegion } from "../../../../../../../other/IntArrayFromRegion.js";
 import { SetTeam } from "./team/SetTeam.js";
 import { SetHidden } from "./hidden/SetHidden.js";
 import { SetPot } from "./value/SetPot.js";
@@ -89,7 +90,16 @@ export class Set implements MovesFunction {
     toRole: RoleType | null,
     thenMoves: MovesFunction | null = null,
   ): MovesFunction {
-    return new SetHidden(dataTypes, type, atFn, region, levelFn, valueFn, toPlayer, toRole, thenMoves);
+    return new SetHidden(
+      dataTypes,
+      type,
+      new IntArrayFromRegion(atFn as never, region as never),
+      levelFn,
+      valueFn,
+      toPlayer,
+      toRole,
+      thenMoves,
+    );
   }
 
   /**

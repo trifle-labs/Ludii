@@ -74,23 +74,7 @@ export class SetHidden1to1 implements StartRule {
     level: IntFunction | null,
     value: BooleanFunction | null,
     to: RoleTypeFull,
-  );
-
-  public constructor(
-    dataTypes?: readonly HiddenData[] | null,
-    type?: SiteType | null,
-    region?: IntArrayFromRegion,
-    level?: IntFunction | null,
-    value?: BooleanFunction | null,
-    to?: RoleTypeFull,
   ) {
-    if (region === undefined) {
-      throw new Error("SetHidden(): missing region.");
-    }
-    if (to === undefined) {
-      throw new Error("SetHidden(): missing to RoleType.");
-    }
-
     this.dataTypes = dataTypes ?? null;
     this.region = region;
     this.levelFn = level ?? new IntConstant(0);

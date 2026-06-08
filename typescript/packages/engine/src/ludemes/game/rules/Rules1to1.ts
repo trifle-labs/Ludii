@@ -61,7 +61,7 @@ export class Rules1to1 {
     start: Start1to1 | null | undefined,
     play: Play1to1 | null | undefined,
     phasesOrEnd: readonly Phase[] | End,
-    end: End | null = null,
+    end?: End | null,
   ) {
     this.meta = meta ?? null;
     this.start = start ?? null;
@@ -79,7 +79,7 @@ export class Rules1to1 {
       const firstPlay = play ?? this.phases[0]?.play;
       if (firstPlay == null) throw new Error("Rules1to1: missing play.");
       this.play = firstPlay;
-      this.end = end;
+      this.end = end ?? null;
     } else {
       if (play == null) throw new Error("Rules1to1: missing play.");
       this.play = play;

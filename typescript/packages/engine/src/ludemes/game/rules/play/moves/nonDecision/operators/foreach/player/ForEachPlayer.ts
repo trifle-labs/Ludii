@@ -40,44 +40,35 @@ export class ForEachPlayer implements MovesFunction {
   // -------------------------------------------------------------------------
 
   /**
-   * @param playersFn The list of players.
-   * @param movesFn   The moves.
-   * @param then      The moves applied after that move is applied.
-   * @java ForEachPlayer(IntArrayFunction, Moves, Then)
-   */
-  public constructor(playersFn: IntArrayFunction | null, movesFn: MovesFunction, then?: ThenLike | null);
-
-  /**
-   * @param movesFn The moves to generate per player.
-   * @param then    The moves applied after that move is applied.
+   * @param moves The moves.
+   * @param then  The moves applied after that move is applied.
    * @java ForEachPlayer(Moves, Then)
    */
-  public constructor(movesFn: MovesFunction, then?: ThenLike | null);
+  public constructor(moves: MovesFunction, then?: ThenLike | null);
+
+  /**
+   * @param players The list of players.
+   * @param moves   The moves.
+   * @param then    The moves applied after that move is applied.
+   * @java ForEachPlayer(IntArrayFunction, Moves, Then)
+   */
+  public constructor(players: IntArrayFunction, moves: MovesFunction, then?: ThenLike | null);
 
   public constructor(
-    playersFnOrMovesFn: IntArrayFunction | MovesFunction | null,
-    movesFnOrThen?: MovesFunction | ThenLike | null,
-    thenArg: ThenLike | null = null,
+    playersOrMoves: IntArrayFunction | MovesFunction,
+    movesOrThen?: MovesFunction | ThenLike | null,
+    then: ThenLike | null = null,
   ) {
-    if (playersFnOrMovesFn === null) {
-      // Three-arg Java order with no player filter: (null, Moves, Then)
-      this.playersFn = null;
-      this.movesFn = movesFnOrThen as MovesFunction;
-      this._then = thenArg ?? null;
-    } else if (
-      movesFnOrThen !== null &&
-      movesFnOrThen !== undefined &&
-      typeof (movesFnOrThen as MovesFunction).eval === "function"
-    ) {
-      // Three-arg: (IntArrayFunction, Moves, Then) or (IntArrayFunction, Moves)
-      this.playersFn = playersFnOrMovesFn as IntArrayFunction;
-      this.movesFn = movesFnOrThen as MovesFunction;
-      this._then = thenArg ?? null;
+    if (movesOrThen !== null && movesOrThen !== undefined && typeof (movesOrThen as MovesFunction).eval === "function") {
+      // Java: ForEachPlayer(IntArrayFunction players, Moves moves, @Opt Then then)
+      this.playersFn = playersOrMoves as IntArrayFunction;
+      this.movesFn = movesOrThen as MovesFunction;
+      this._then = then ?? null;
     } else {
-      // One-arg moves + optional then: (Moves, Then?)
+      // Java: ForEachPlayer(Moves moves, @Opt Then then)
       this.playersFn = null;
-      this.movesFn = playersFnOrMovesFn as MovesFunction;
-      this._then = (movesFnOrThen as ThenLike | null | undefined) ?? null;
+      this.movesFn = playersOrMoves as MovesFunction;
+      this._then = (movesOrThen as ThenLike | null | undefined) ?? null;
     }
   }
 

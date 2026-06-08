@@ -92,13 +92,9 @@ export class Swap implements MovesFunction {
       throw new Error("Swap.constructPlayers(): Exactly one player2 or role2 parameter must be non-null.");
     }
 
-    // @java Swap.java:101-106 — RoleType.toIntFunction(role) for null player args
-    const p1fn = player1 ?? roleToIntFunction(role1!);
-    const p2fn = player2 ?? roleToIntFunction(role2!);
-
     switch (takeType) {
       case SwapPlayersType.Players:
-        return new SwapPlayers(p1fn, p2fn, then);
+        return new SwapPlayers(player1, role1, player2, role2, then);
       default:
         break;
     }
@@ -127,39 +123,4 @@ export class Swap implements MovesFunction {
   public canMoveTo(_ctx: Context, _target: number): boolean {
     throw new Error("Swap.canMoveTo(): Should never be called directly.");
   }
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-
-/**
- * Minimal port of Java's RoleType.toIntFunction — maps a role string to
- * an IntFunction that resolves the player index from context at eval time.
- *
- * @java game.types.play.RoleType.toIntFunction(RoleType)
- */
-function roleToIntFunction(role: string): IntFunction {
-  return {
-    eval: (ctx: Context) => {
-      switch (role) {
-        case "Mover":
-          return ctx.state.mover;
-        case "Next": {
-          const n = ctx.state.mover;
-          const numP = ctx.numPlayers();
-          return (n % numP) + 1;
-        }
-        case "P1":
-          return 1;
-        case "P2":
-          return 2;
-        case "P3":
-          return 3;
-        case "P4":
-          return 4;
-        default:
-          return ctx.state.mover;
-      }
-    },
-  };
 }

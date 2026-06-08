@@ -441,8 +441,8 @@ function maxMovesRequirementFallbackFactory(b: ArgBundle): MovesFunction {
   if (!moves) throw new Error("factory not yet wired: max");
   const withValue = boolFn(named(b, "withValue"), new BooleanConstant(false));
   const then = first(b, isThen) as unknown as MovesFunction | undefined;
-  if (kind === "Moves") return new MaxMoves(moves, withValue, then ?? null);
-  if (kind === "Captures") return new MaxCaptures(moves, withValue, then ?? null);
+  if (kind === "Moves") return new MaxMoves(withValue, moves, then ?? null);
+  if (kind === "Captures") return new MaxCaptures(withValue, moves, then ?? null);
   throw new Error(`factory not yet wired: max${kind === null ? "" : ` ${kind}`}`);
 }
 

@@ -42,18 +42,18 @@ export class MaxCaptures implements MovesFunction {
   /**
    * @java MaxCaptures(BooleanFunction withValue, Moves moves, Then then)
    *
-   * @param moves       Moves to filter.
    * @param withValueFn If true, maximise the sum of captured-piece values.
+   * @param moves       Moves to filter.
    * @param thenMoves   Optional subsequent moves applied after this.
    */
   public constructor(
+    withValueFn: BooleanFunction | null | undefined,
     moves: MovesFunction,
-    withValueFn: BooleanFunction = { eval: () => false },
-    thenMoves: MovesFunction | null = null,
+    thenMoves?: MovesFunction | null,
   ) {
     this.moves = moves;
-    this.withValueFn = withValueFn;
-    this.thenMoves = thenMoves;
+    this.withValueFn = withValueFn ?? { eval: () => false };
+    this.thenMoves = thenMoves ?? null;
   }
 
   /**

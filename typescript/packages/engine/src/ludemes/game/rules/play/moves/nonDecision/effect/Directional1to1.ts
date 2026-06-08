@@ -24,11 +24,16 @@
 
 import type { Context } from "../../../../../../../context.js";
 import type { Move } from "../../../../../../../move.js";
-import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
+import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { CellFlatRadials } from "../../../../../../topology-radials.js";
 import { radialsForDirection } from "../../../../../../topology-radials.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+import type { From1to1 } from "../../../../../util/moves/From1to1.js";
+import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { Then } from "./Then.js";
+import { directionsFunction, directionName, LAST_TO } from "./EffectCtorAdapters.js";
+import type { DirectionArg } from "./EffectCtorAdapters.js";
 
 /**
  * Default target rule: site at _evalTo is occupied by an enemy.
@@ -67,20 +72,26 @@ export class Directional1to1 implements MovesFunction {
    */
   private readonly dirnName: string;
 
+  /** @java Directional.dirnChoice */
+  private readonly dirnChoice: DirectionsFunction | null;
+
   /**
    * @java game/rules/play/moves/nonDecision/effect/Directional.java — constructor
-   * @param startLocationFn  Evaluates to the from-site
-   * @param dirnName         Direction name (defaults to "Adjacent")
-   * @param targetRule       Condition on each "to" site (default: isEnemy)
+   * Java signature:
+   *   Directional(@Opt From from, @Opt Direction directions,
+   *               @Opt To to, @Opt Then then)
    */
   public constructor(
-    startLocationFn: IntFunction,
-    dirnName = "Adjacent",
-    targetRule: BooleanFunction = DEFAULT_TARGET_RULE,
+    from?: From1to1 | null,
+    directions?: DirectionArg,
+    to?: To1to1 | null,
+    then?: Then | null,
   ) {
-    this.startLocationFn = startLocationFn;
-    this.dirnName = dirnName;
-    this.targetRule = targetRule;
+    void then;
+    this.startLocationFn = from?.loc() ?? LAST_TO;
+    this.dirnChoice = directions == null ? null : directionsFunction(directions);
+    this.dirnName = directions == null ? "Adjacent" : directionName(typeof directions === "string" ? directions : this.dirnChoice);
+    this.targetRule = to?.cond() ?? DEFAULT_TARGET_RULE;
   }
 
   /**
@@ -109,20 +120,24 @@ export class Directional1to1 implements MovesFunction {
     const origTo = ctx._evalTo;
 
     // @java Directional.java:115-143 — for each direction's radials
-    const axes = radialsForDirection(cellRadials, this.dirnName);
+    const dirnNames = this.dirnChoice?.eval(ctx) ?? [this.dirnName];
 
-    for (const { ray, opposite } of axes) {
-      for (const rayToWalk of [ray, opposite]) {
-        // @java Directional.java:122-134 — walk steps[1..]
-        for (let i = 1; i < rayToWalk.length; i++) {
-          const to = rayToWalk[i]!;
-          // @java Directional.java:123 — isTarget(context, locUnderThreat)
-          ctx._evalTo = to;
-          ctx._evalFrom = from;
-          if (!this.targetRule.eval(ctx)) break; // stop on first non-match
+    for (const dirnName of dirnNames) {
+      const axes = radialsForDirection(cellRadials, dirnName);
 
-          // @java Directional.java:126-131 — apply effect (default: remove to)
-          removeTargets.push(to);
+      for (const { ray, opposite } of axes) {
+        for (const rayToWalk of [ray, opposite]) {
+          // @java Directional.java:122-134 — walk steps[1..]
+          for (let i = 1; i < rayToWalk.length; i++) {
+            const to = rayToWalk[i]!;
+            // @java Directional.java:123 — isTarget(context, locUnderThreat)
+            ctx._evalTo = to;
+            ctx._evalFrom = from;
+            if (!this.targetRule.eval(ctx)) break; // stop on first non-match
+
+            // @java Directional.java:126-131 — apply effect (default: remove to)
+            removeTargets.push(to);
+          }
         }
       }
     }

@@ -13,10 +13,21 @@
  */
 
 import type { Context } from "../../../../../../../context.js";
-import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
+import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
 import type { Then } from "./Then.js";
+import type { SiteType } from "../../../../../../../action/site-type.js";
+import type { From1to1 } from "../../../../../util/moves/From1to1.js";
+import type { Between1to1 } from "../../../../../util/moves/Between1to1.js";
+import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
+import { IsEnemy1to1 } from "../../../../../functions/booleans/is/player1to1/IsEnemy1to1.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+import { Remove } from "./Remove.js";
+
+type DirectionArg = string | DirectionsFunction;
+
+const LAST_TO: IntFunction = { eval: (ctx) => ctx._evalTo };
+const BETWEEN: IntFunction = { eval: (ctx) => ctx._evalBetween };
 
 /** Topology interface needed for adjacency queries */
 interface TopoElement {
@@ -40,8 +51,8 @@ export class Enclose implements MovesFunction {
   /** @java Enclose.startFn */
   private readonly startFn: IntFunction;
 
-  /** @java Enclose.dirnChoice — direction function name */
-  private readonly dirnName: string;
+  /** @java Enclose.dirnChoice */
+  private readonly dirnChoice: DirectionArg;
 
   /** @java Enclose.targetRule — condition on between sites */
   private readonly targetRule: BooleanFunction;
@@ -53,7 +64,7 @@ export class Enclose implements MovesFunction {
   private readonly effect: MovesFunction;
 
   /** @java Enclose.type */
-  private readonly type: string | null;
+  private readonly type: SiteType | null;
 
   /** @java Effect.then */
   private readonly thenClause: Then | null;
@@ -61,22 +72,29 @@ export class Enclose implements MovesFunction {
   /**
    * @java game/rules/play/moves/nonDecision/effect/Enclose.java — constructor
    */
-  public constructor(opts: {
-    startFn: IntFunction;
-    dirnName?: string;
-    targetRule: BooleanFunction;
-    numEmptySitesInGroup?: IntFunction;
-    effect: MovesFunction;
-    type?: string | null;
-    then?: Then | null;
-  }) {
-    this.startFn = opts.startFn;
-    this.dirnName = opts.dirnName ?? "Adjacent";
-    this.targetRule = opts.targetRule;
-    this.numEmptySitesInGroup = opts.numEmptySitesInGroup ?? { eval: () => 0 };
-    this.effect = opts.effect;
-    this.type = opts.type ?? null;
-    this.thenClause = opts.then ?? null;
+  public constructor(
+    type?: SiteType | null,
+    from?: From1to1 | null,
+    directions?: DirectionArg | null,
+    between?: Between1to1 | null,
+    numException?: IntFunction | null,
+    then?: Then | null,
+  ) {
+    this.startFn = from?.loc() ?? LAST_TO;
+    this.dirnChoice = directions ?? "Adjacent";
+    this.targetRule = between?.condition() ?? new IsEnemy1to1(new Who1to1(BETWEEN));
+    this.numEmptySitesInGroup = numException ?? { eval: () => 0 };
+    this.effect = between?.effect() ?? new Remove({
+      locationFn: BETWEEN,
+      regionFn: null,
+      countFn: null,
+      levelFn: null,
+      type: null,
+      when: null,
+      then: null,
+    });
+    this.type = type ?? null;
+    this.thenClause = then ?? null;
   }
 
   /**
@@ -121,14 +139,16 @@ export class Enclose implements MovesFunction {
 
     const aroundTarget: number[] = [];
     const trajectories = topology.trajectories();
-    const steps = trajectories.steps(realType, from, realType, this.dirnName);
-    for (const step of steps) {
-      const between = step.to.id();
-      if (!aroundTarget.includes(between)) {
-        if (isTarget(between)) {
-          aroundTarget.push(between);
-        } else if (numException > 0 && cs.whatAtSite(between) === 0) {
-          aroundTarget.push(between);
+    for (const direction of this.directionNames(ctx)) {
+      const steps = trajectories.steps(realType, from, realType, direction);
+      for (const step of steps) {
+        const between = step.to.id();
+        if (!aroundTarget.includes(between)) {
+          if (isTarget(between)) {
+            aroundTarget.push(between);
+          } else if (numException > 0 && cs.whatAtSite(between) === 0) {
+            aroundTarget.push(between);
+          }
         }
       }
     }
@@ -156,23 +176,25 @@ export class Enclose implements MovesFunction {
       let i = 0;
       while (i < enclosedGroupList.length) {
         const site = enclosedGroupList[i]!;
-        const siteSteps = trajectories.steps(realType, site, realType, this.dirnName);
+        for (const direction of this.directionNames(ctx)) {
+          const siteSteps = trajectories.steps(realType, site, realType, direction);
 
-        for (const step of siteSteps) {
-          const between = step.to.id();
-          if (enclosedGroup[between]) continue;
+          for (const step of siteSteps) {
+            const between = step.to.id();
+            if (enclosedGroup[between]) continue;
 
-          if (isTarget(between)) {
-            enclosedGroup[between] = true;
-            enclosedGroupList.push(between);
-          } else if (cs.whatAtSite(between) === 0) {
-            if (numExceptionToUse > 0) {
+            if (isTarget(between)) {
               enclosedGroup[between] = true;
               enclosedGroupList.push(between);
-              numExceptionToUse--;
-            } else {
-              // Liberty found — group is not enclosed
-              continue aroundTargetLoop;
+            } else if (cs.whatAtSite(between) === 0) {
+              if (numExceptionToUse > 0) {
+                enclosedGroup[between] = true;
+                enclosedGroupList.push(between);
+                numExceptionToUse--;
+              } else {
+                // Liberty found — group is not enclosed
+                continue aroundTargetLoop;
+              }
             }
           }
         }
@@ -183,12 +205,14 @@ export class Enclose implements MovesFunction {
 
       // @java Enclose.java:237-258 — check for liberties in the full group
       for (const siteGroup of enclosedGroupList) {
-        const groupSteps = trajectories.steps(realType, siteGroup, realType, this.dirnName);
-        for (const step of groupSteps) {
-          const to = step.to.id();
-          if (!enclosedGroup[to] && cs.whatAtSite(to) === 0) {
-            // Liberty — this group is not fully enclosed
-            continue aroundTargetLoop;
+        for (const direction of this.directionNames(ctx)) {
+          const groupSteps = trajectories.steps(realType, siteGroup, realType, direction);
+          for (const step of groupSteps) {
+            const to = step.to.id();
+            if (!enclosedGroup[to] && cs.whatAtSite(to) === 0) {
+              // Liberty — this group is not fully enclosed
+              continue aroundTargetLoop;
+            }
           }
         }
       }
@@ -227,5 +251,9 @@ export class Enclose implements MovesFunction {
     }
 
     return allMoves;
+  }
+
+  private directionNames(ctx: Context): string[] {
+    return typeof this.dirnChoice === "string" ? [this.dirnChoice] : this.dirnChoice.eval(ctx);
   }
 }

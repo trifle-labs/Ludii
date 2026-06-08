@@ -36,9 +36,9 @@ export class Append extends NonDecision {
    */
   public constructor(
     list: NonDecision,
-    then?: ThenLike | null,
+    then: ThenLike | null = null,
   ) {
-    super(then ?? null);
+    super(then);
     this.list = list;
   }
 
