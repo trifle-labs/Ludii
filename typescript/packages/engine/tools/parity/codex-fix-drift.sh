@@ -103,17 +103,27 @@ Report: the new constructor signature, files changed, and final tsc error count.
     # Build stays green either way; this distinguishes a genuine fix from a green-but-wrong-arity change.
     RES=$(node -e '
       const fs=require("fs");
-      const src=fs.readFileSync(process.argv[1],"utf8");
+      const raw=fs.readFileSync(process.argv[1],"utf8");
       const arities=process.argv[2].split(",").map(Number);
-      const m=src.match(/\bconstructor\s*\(([\s\S]*?)\)\s*(?::|\{)/);
-      if(!m){console.log("no-ctor");process.exit(0);}
-      const body=m[1].trim();
-      if(!body){console.log(arities.includes(0)?"RESOLVED:0":"UNRESOLVED:0");process.exit(0);}
-      let depth=0,cur="",parts=[];
-      for(const c of body){if("([{<".includes(c)){depth++;cur+=c;}else if(")]}>".includes(c)){depth--;cur+=c;}else if(c===","&&depth===0){parts.push(cur);cur="";}else cur+=c;}
-      parts.push(cur);
-      const n=parts.filter(p=>p.trim().length>0).length;
-      console.log((arities.includes(n)?"RESOLVED:":"UNRESOLVED:")+n);
+      // strip comments + skip overload signatures; match the implementation ctor (`){`)
+      const src=raw.replace(/\/\*[\s\S]*?\*\//g,"").replace(/\/\/[^\n]*/g,"");
+      let idx=0,res="no-ctor";
+      while((idx=src.indexOf("constructor",idx))!==-1){
+        let p=idx+11; while(p<src.length&&/\s/.test(src[p]))p++;
+        if(src[p]!=="("){idx+=11;continue;}
+        let depth=0,end=-1;
+        for(let i=p;i<src.length;i++){const c=src[i];if(c==="(")depth++;else if(c===")"){depth--;if(depth===0){end=i;break;}}}
+        if(end===-1){idx+=11;continue;}
+        let q=end+1; while(q<src.length&&/\s/.test(src[q]))q++;
+        if(src[q]==="{"){
+          const body=src.slice(p+1,end).trim();
+          let n=0;
+          if(body){let d=0,cur="",parts=[];for(const c of body){if("([{<".includes(c)){d++;cur+=c;}else if(")]}>".includes(c)){d--;cur+=c;}else if(c===","&&d===0){parts.push(cur);cur="";}else cur+=c;}parts.push(cur);n=parts.filter(x=>x.trim().length>0).length;}
+          res=(arities.includes(n)?"RESOLVED:":"UNRESOLVED:")+n; break;
+        }
+        idx=end+1;
+      }
+      console.log(res);
     ' "$FILE" "$ARITIES")
     echo "  OK: tsc errors $AFTER (<= baseline $BASE) — keeping | arity $RES (java=[$ARITIES])"
     case "$RES" in

@@ -5,27 +5,34 @@ import { readFileSync, writeFileSync } from 'node:fs';
 const REFL = JSON.parse(readFileSync(new URL('./ludeme-reflection.json', import.meta.url), 'utf8'));
 const MAP = JSON.parse(readFileSync(new URL('./java-ts-map.json', import.meta.url), 'utf8'));
 
-// crude TS constructor arity: count top-level params of the first `constructor(...)`.
+// TS constructor arity of the IMPLEMENTATION constructor. Robust against two traps
+// that previously inflated counts: (1) `constructor(...)` text inside @java provenance
+// JSDoc comments, (2) TS overload SIGNATURES (which end in `;`, not `{`). We strip
+// comments, then balanced-paren scan for the constructor whose `)` is followed by `{`.
 function tsCtorArity(file) {
-  let src; try { src = readFileSync(new URL('../../' + file, import.meta.url), 'utf8'); } catch { return null; }
-  const m = src.match(/\bconstructor\s*\(([\s\S]*?)\)\s*(?::|\{)/);
-  if (!m) return { kind: 'no-ctor' };
-  const body = m[1].trim();
-  if (!body) return { arity: 0, hasConstructStatics: /static\s+construct/.test(src) };
-  // Split into top-level params and count NON-EMPTY ones, so a prettier-style
-  // trailing comma in multi-line constructors isn't counted as a phantom param
-  // (previously every such ctor read as arity+1).
-  const parts = [];
-  let depth = 0, cur = '';
-  for (const c of body) {
-    if ('([{<'.includes(c)) { depth++; cur += c; }
-    else if (')]}>'.includes(c)) { depth--; cur += c; }
-    else if (c === ',' && depth === 0) { parts.push(cur); cur = ''; }
-    else cur += c;
+  let raw; try { raw = readFileSync(new URL('../../' + file, import.meta.url), 'utf8'); } catch { return null; }
+  const hasConstructStatics = /static\s+construct/.test(raw);
+  const src = raw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  let idx = 0;
+  while ((idx = src.indexOf('constructor', idx)) !== -1) {
+    let p = idx + 'constructor'.length;
+    while (p < src.length && /\s/.test(src[p])) p++;
+    if (src[p] !== '(') { idx += 11; continue; }
+    let depth = 0, end = -1;
+    for (let i = p; i < src.length; i++) { const c = src[i]; if (c === '(') depth++; else if (c === ')') { depth--; if (depth === 0) { end = i; break; } } }
+    if (end === -1) { idx += 11; continue; }
+    let q = end + 1; while (q < src.length && /\s/.test(src[q])) q++;
+    if (src[q] === '{') {
+      const body = src.slice(p + 1, end).trim();
+      if (!body) return { arity: 0, hasConstructStatics };
+      const parts = []; let d = 0, cur = '';
+      for (const c of body) { if ('([{<'.includes(c)) { d++; cur += c; } else if (')]}>'.includes(c)) { d--; cur += c; } else if (c === ',' && d === 0) { parts.push(cur); cur = ''; } else cur += c; }
+      parts.push(cur);
+      return { arity: parts.filter((x) => x.trim().length > 0).length, hasConstructStatics };
+    }
+    idx = end + 1;
   }
-  parts.push(cur);
-  const arity = parts.filter((p) => p.trim().length > 0).length;
-  return { arity, hasConstructStatics: /static\s+construct/.test(src) };
+  return { kind: 'no-ctor', hasConstructStatics };
 }
 
 let checked = 0, drift = 0, noTs = 0; const report = [];
