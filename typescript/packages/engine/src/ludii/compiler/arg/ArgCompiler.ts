@@ -351,9 +351,11 @@ export class ArgCompiler {
     if (isNumber(node) || (isIdent(node) && isNumericText(node.name))) {
       const value = isNumber(node) ? node.value : Number(node.name);
       const integer = Number.isInteger(value);
-      if (expectedTypes.some((type) => type.dims === 0 && numericFunctionExpected(type.name, integer))) {
-        return value;
-      }
+      // Faithful: a numeric literal for an IntFunction/FloatFunction/DimFunction param is
+      // wrapped in an IntConstant/FloatConstant/DimConstant (a function object with eval()),
+      // NOT returned as a raw number — Java does this, and ludeme eval calls `.eval(ctx)`.
+      // Fall through to the constant-function instantiation below. (Primitive int/Integer/
+      // float params are still returned as raw numbers, handled in the loop.)
       // Java's ArgTerminal coerces a numeric token to the EXPECTED constant type,
       // so an integer literal also satisfies float/dim function params (FloatConstant)
       // and raw Float/Double/long. Order = most-specific first; isAssignable picks
@@ -446,12 +448,17 @@ export class ArgCompiler {
   }
 
   private instantiate(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
+    // FAITHFUL FIRST: the canonical reflection-driven path (JAVA_TS_CTORS). This is the
+    // one true port. The bespoke LudemeRegistry factories are only a fallback for ludemes
+    // whose faithful mapping is still missing, and are being phased out entirely.
+    const faithful = this.instantiateFaithful(info);
+    if (faithful !== null && faithful !== undefined) return faithful;
+
     const registry = env.registry ?? this.registry;
     const named = new Map<string, unknown>();
     info.paramNames.forEach((name, index) => {
       if (name !== null) named.set(name, info.args[index]);
     });
-
     try {
       const bundle = makeArgBundle({
         clause: info.clause,
@@ -462,11 +469,17 @@ export class ArgCompiler {
         positional: info.args.filter((value) => value !== null && value !== undefined),
         named,
       });
-      return registry.construct(bundle, env);
+      const r = registry.construct(bundle, env);
+      if (r !== null && r !== undefined) return r;
     } catch {
-      // The registry is TS glue only; Java's search continues if object creation fails.
+      // Registry is bespoke glue; faithful is canonical. Fall through.
     }
+    // instantiateFaithful already recorded a specific noteInstFail on its miss.
+    return null;
+  }
 
+  /** The canonical faithful instantiation via JAVA_TS_CTORS. Returns null on any miss. */
+  private instantiateFaithful(info: InstantiationInfo): unknown | null {
     const ctor = JAVA_TS_CTORS.get(info.className) as (new (...args: unknown[]) => unknown) & {
       construct?: (...args: unknown[]) => unknown;
       length: number;
