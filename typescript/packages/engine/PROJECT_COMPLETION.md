@@ -77,3 +77,25 @@ Two parallel implementations existed:
 REALITY: steps 4-5 are the multi-week bulk (hundreds of eval methods validated game-by-game).
 Steps 1-3 are the next coordinated change (the unblocker) — do them together, measure with
 the fast `--filter Tic-Tac-Toe` loop, not the slow strided run.
+
+## Update 2 (this session): faithful-first transition LANDED; topology confirmed wired
+DONE this session (all committed, build green, compile-coverage 95% on the faithful path):
+- ArgCompiler is now FAITHFUL-FIRST: JAVA_TS_CTORS canonical, bespoke registry fallback-only
+  (instantiateFaithful()). The single-port direction is in place.
+- Eager→lazy seam FIXED: numeric literals wrapped as IntConstant/FloatConstant function
+  objects → eliminated WINNER_MISMATCH, TTT OUTCOME_OK 25%→50%.
+- Board-generator static dispatchers (Square/Hex/Concentric) → faithful compile 45%→95%.
+- CONFIRMED: Game1to1.moves()/apply() already attach ctx._radials from equipment.board.radials,
+  so topology IS wired for the faithful path (TTT plays; Step.eval doesn't throw on limit-8).
+
+REMAINING = the eval-validation bulk (multi-week, parity-driven, parallelize via codex/agents):
+- Per-ludeme move-gen eval bugs: e.g. hunt games (Asalto "StepToEmpty") generate 0 moves —
+  faithful Step/Slide/Hop eval direction/from-region logic yields nothing. Fix vs Java eval.
+- A hanging eval (infinite loop) on some game in the strided sample — find + fix (run games
+  in child processes w/ per-game timeout to keep the parity harness measurable).
+- The 109 stub evals + every divergence the parity suite surfaces.
+- Then delete bespoke (compiler1to1 + 268 *1to1 + registry/factories) once faithful ≥ 60%→parity.
+
+LOOP TO RUN (repeat until parity≈Java): `LUDII_ARGCOMPILER=1 node test/parity/replay-trials.mjs
+--filter <dir>` → per failing game read Java eval vs TS eval of the diverging ludeme → fix TS
+eval faithfully → re-measure. Use --filter per-directory (fast) to avoid the slow/hanging full run.
