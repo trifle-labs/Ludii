@@ -387,8 +387,8 @@ function makeCountFallback(b: ArgBundle): IntFunction {
 
 function makeIsFallback(b: ArgBundle): BooleanFunction {
   const kind = requireString(b, 0);
-  if (kind === "Empty") return new IsEmpty1to1(firstIntFunctionAfter(b, 0) ?? lastTo());
-  if (kind === "Occupied") return new IsOccupied1to1(firstIntFunctionAfter(b, 0) ?? lastTo());
+  if (kind === "Empty") return new IsEmpty1to1(firstSiteType(b), firstIntFunctionAfter(b, 0) ?? lastTo());
+  if (kind === "Occupied") return new IsOccupied1to1(firstSiteType(b), firstIntFunctionAfter(b, 0) ?? lastTo());
   if (kind === "In") {
     const region = firstRegionFunction(b);
     if (!region) deferred("is In");
@@ -396,10 +396,15 @@ function makeIsFallback(b: ArgBundle): BooleanFunction {
   }
   if (kind === "Mover") return new IsMover1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Mover"));
   if (kind === "Next") return new IsNext1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Next"));
-  if (kind === "Prev") return new IsPrev1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Mover"));
-  if (kind === "Friend") return new IsFriend1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Mover"));
-  if (kind === "Enemy") return new IsEnemy1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Next"));
-  if (kind === "Active") return new IsActive1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Mover"));
+  if (kind === "Prev") return new IsPrev1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Mover"), null);
+  if (kind === "Friend") {
+    const indexPlayer = firstIntFunctionAfter(b, 0);
+    return indexPlayer
+      ? new IsFriend1to1(indexPlayer, null)
+      : new IsFriend1to1(null, (firstRoleAfter(b, 0) ?? "Mover") as ConstructorParameters<typeof IsFriend1to1>[1]);
+  }
+  if (kind === "Enemy") return new IsEnemy1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Next"), null);
+  if (kind === "Active") return new IsActive1to1(firstIntFunctionAfter(b, 0) ?? roleToIntFunction(firstRoleAfter(b, 0) ?? "Mover"), null);
   if (kind === "Even") return new IsEven1to1(requireIntAfterKind(b, "Even"));
   if (kind === "Odd") return new IsOdd1to1(requireIntAfterKind(b, "Odd"));
   if (kind === "Blocked") return new IsBlocked1to1();
@@ -674,7 +679,7 @@ function makeDirectional(b: ArgBundle): Directional {
   });
   return new Directional({
     startLocationFn: from?.locFn() ?? lastTo(),
-    targetRule: to?.condFn() ?? new IsEnemy1to1(new Who1to1(toFn)),
+    targetRule: to?.condFn() ?? new IsEnemy1to1(new Who1to1(toFn), null),
     effect,
     dirnChoice: firstDirectionsFunction(b) ?? directionFromName(firstDirectionName(b)),
     then: null,

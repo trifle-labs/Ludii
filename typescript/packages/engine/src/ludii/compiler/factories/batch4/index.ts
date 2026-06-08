@@ -553,14 +553,23 @@ function equipmentFallbackFactory(b: ArgBundle, env: { numPlayers: number }): Eq
 function isFallbackFactory(b: ArgBundle): BooleanFunction {
   const kind = typeof b.positional[0] === "string" ? b.positional[0] : null;
   if (kind === "AnyDie") return new IsAnyDie1to1(toIntFn(requireValue(b.positional[1], "is AnyDie value")));
-  if (kind === "Empty") return new IsEmpty1to1(toIntFn(b.positional[1] ?? named(b, "at") ?? { eval: (ctx: Context) => ctx._evalTo }));
+  if (kind === "Empty") {
+    const type = first(b, isSiteType) ?? null;
+    const site = b.positional.slice(1).find((value) => !isSiteType(value)) ?? named(b, "at") ?? { eval: (ctx: Context) => ctx._evalTo };
+    return new IsEmpty1to1(type, toIntFn(site));
+  }
   if (kind === "In") return new IsIn1to1(toIntFn(requireValue(b.positional[1], "is In site")), toRegionFn(requireValue(b.positional[2], "is In region")));
   if (kind === "Mover") return new IsMover1to1(toIntFn(b.positional[1] ?? { eval: (ctx: Context) => ctx.state.mover }));
-  if (kind === "Occupied") return new IsOccupied1to1(toIntFn(b.positional[1] ?? named(b, "at") ?? { eval: (ctx: Context) => ctx._evalTo }));
+  if (kind === "Occupied") {
+    const type = first(b, isSiteType) ?? null;
+    const site = b.positional.slice(1).find((value) => !isSiteType(value)) ?? named(b, "at") ?? { eval: (ctx: Context) => ctx._evalTo };
+    return new IsOccupied1to1(type, toIntFn(site));
+  }
   if (kind === "Pending") return new IsPending1to1();
   if (kind === "Triggered") {
     const player = flatten(b.positional.slice(1)).find((v) => typeof v !== "string");
-    return new IsTriggered1to1(player === undefined ? { eval: (ctx: Context) => ctx.state.mover } : toIntFn(player));
+    const event = flatten(b.positional.slice(1)).find((v): v is string => typeof v === "string") ?? "";
+    return new IsTriggered1to1(event, player === undefined ? { eval: (ctx: Context) => ctx.state.mover } : toIntFn(player), null);
   }
   throw new Error("factory not yet wired: is");
 }

@@ -4,6 +4,9 @@ import type { Context } from "../../../../../../context.js";
 import { BaseBooleanFunction } from "../../BaseBooleanFunction.js";
 import type { IntFunction } from "../../../../../base.js";
 import type { SiteType } from "../../../../../other/action/SiteType.js";
+import { IntConstant } from "../../../ints/IntConstant.js";
+import { roleTypeOwner, type RoleTypeFull } from "../../../../types/play/RoleType.js";
+import type { Player1to1 } from "../../../../util/moves/Player1to1.js";
 
 /**
  * Checks if the rotation on a site is hidden to a player.
@@ -17,7 +20,7 @@ export class IsHiddenRotation extends BaseBooleanFunction {
   /** @java IsHiddenRotation.levelFn */
   private readonly levelFn: IntFunction;
   /** @java IsHiddenRotation.whoFn */
-  private readonly whoFn: IntFunction;
+  private readonly whoFn: IntFunction | null;
   /** @java IsHiddenRotation.type */
   private readonly type: SiteType | null;
   /** @java IsHiddenRotation.precomputedBoolean */
@@ -27,23 +30,29 @@ export class IsHiddenRotation extends BaseBooleanFunction {
    * For checking the hidden information about the rotation at a location for a
    * specific player.
    *
-   * @param type    The graph element type [default of the board].
-   * @param siteFn  The site function.
-   * @param levelFn The level function (defaults to 0).
-   * @param whoFn   The player-index function.
+   * @param type  The graph element type [default of the board].
+   * @param at    The site to set the hidden information.
+   * @param level The level to set the hidden information [0].
+   * @param to    The player with these hidden information.
+   * @param To    The roleType with these hidden information.
    * @java IsHiddenRotation(SiteType, IntFunction, IntFunction, Player, RoleType)
    */
   public constructor(
     type: SiteType | null,
-    siteFn: IntFunction,
-    levelFn: IntFunction,
-    whoFn: IntFunction,
+    at: IntFunction,
+    level: IntFunction | null,
+    to: Player1to1 | null,
+    To: RoleTypeFull | null,
   ) {
     super();
     this.type = type;
-    this.siteFn = siteFn;
-    this.levelFn = levelFn;
-    this.whoFn = whoFn;
+    this.siteFn = at;
+    this.levelFn = level === null ? new IntConstant(0) : level;
+    this.whoFn = to === null && To === null
+      ? null
+      : To !== null
+        ? roleTypeToIntFunction(To)
+        : playerOriginalIndex(to);
   }
 
   /**
@@ -92,7 +101,7 @@ export class IsHiddenRotation extends BaseBooleanFunction {
         ? this.type
         : (gameAny.board?.()?.defaultSite?.() ?? "Cell");
 
-    const who = this.whoFn.eval(context);
+    const who = this.whoFn!.eval(context);
 
     if (cs !== undefined && cs !== null) {
       return cs.isHiddenRotation(who, site, level, realType);
@@ -106,7 +115,68 @@ export class IsHiddenRotation extends BaseBooleanFunction {
   public override isStatic(): boolean {
     const siteStatic = (this.siteFn as unknown as { isStatic?(): boolean }).isStatic?.() === true;
     const levelStatic = (this.levelFn as unknown as { isStatic?(): boolean }).isStatic?.() === true;
-    const whoStatic = (this.whoFn as unknown as { isStatic?(): boolean }).isStatic?.() === true;
+    const whoStatic = (this.whoFn! as unknown as { isStatic?(): boolean }).isStatic?.() === true;
     return siteStatic && levelStatic && whoStatic;
+  }
+}
+
+function playerOriginalIndex(player: Player1to1 | null): IntFunction | null {
+  if (player === null) {
+    return null;
+  }
+
+  const playerLike = player as unknown as {
+    original?: () => IntFunction | null;
+    originalIndex?: () => IntFunction | null;
+  };
+
+  if (typeof playerLike.original === "function") {
+    return playerLike.original();
+  }
+  if (typeof playerLike.originalIndex === "function") {
+    return playerLike.originalIndex();
+  }
+
+  return null;
+}
+
+function roleTypeToIntFunction(role: RoleTypeFull): IntFunction {
+  const owner = roleTypeOwner(role);
+  if (owner > 0) {
+    return new IntConstant(owner);
+  }
+
+  switch (role) {
+    case "Neutral":
+      return new IntConstant(0);
+    case "Shared":
+    case "All":
+    case "Each":
+      return { eval: (context: Context): number => context.numPlayers() + 1 };
+    case "Mover":
+      return { eval: (context: Context): number => context.state.mover };
+    case "Next":
+      return {
+        eval: (context: Context): number => {
+          const next = (context.state as unknown as { next?: number }).next;
+          return next !== undefined && next > 0 ? next : (context.state.mover % context.numPlayers()) + 1;
+        },
+      };
+    case "Prev":
+      return { eval: (context: Context): number => Math.max(1, context.state.mover - 1) };
+    case "Player":
+      return {
+        eval: (context: Context): number =>
+          (context as unknown as { _evalPlayer?: number })._evalPlayer ?? -1,
+      };
+    case "TeamMover":
+      return {
+        eval: (context: Context): number => {
+          const stateWithTeams = context.state as unknown as { getTeam?: (player: number) => number };
+          return stateWithTeams.getTeam?.(context.state.mover) ?? -1;
+        },
+      };
+    default:
+      return new IntConstant(-1);
   }
 }

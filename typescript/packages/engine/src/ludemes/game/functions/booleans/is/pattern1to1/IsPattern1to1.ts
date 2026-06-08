@@ -21,11 +21,13 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../base.js";
+import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { parseArgs1to1, compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent, isList, isNumber } from "@ludii/typescript-language";
+import { LastTo1to1 } from "../../../ints1to1/board/Board1to1.js";
 
 // StepType: F, R, L (mirrors Java StepType enum)
 type StepType = "F" | "R" | "L";
@@ -44,17 +46,21 @@ function parseWalk(walkNode: LudNode): StepType[] {
 
 export class IsPattern1to1 implements BooleanFunction {
   private readonly walk: readonly StepType[];
+  private readonly type: SiteType | null;
   private readonly fromFn: IntFunction;
   private readonly whatsFn: readonly IntFunction[] | null;
 
   public constructor(
     walk: readonly StepType[],
-    fromFn: IntFunction,
-    whatsFn: readonly IntFunction[] | null,
+    type: SiteType | null = null,
+    from: IntFunction | null = null,
+    what: IntFunction | null = null,
+    whats: readonly IntFunction[] | null = null,
   ) {
     this.walk = walk;
-    this.fromFn = fromFn;
-    this.whatsFn = whatsFn;
+    this.type = type;
+    this.fromFn = from ?? new LastTo1to1();
+    this.whatsFn = whats ?? (what !== null ? [what] : null);
   }
 
   /**
@@ -169,6 +175,7 @@ registerBool1to1("is:pattern", (node: LudNode, _env: Compile1to1Env): BooleanFun
   }
 
   // what/whats: named params
+  let whatFn: IntFunction | null = null;
   let whatsFn: IntFunction[] | null = null;
   const whatNode = named.get("what");
   const whatsNode = named.get("whats");
@@ -178,8 +185,8 @@ registerBool1to1("is:pattern", (node: LudNode, _env: Compile1to1Env): BooleanFun
       try { whatsFn.push(compileInt1to1(item)); } catch { /* skip */ }
     }
   } else if (whatNode) {
-    try { whatsFn = [compileInt1to1(whatNode)]; } catch { /* keep null */ }
+    try { whatFn = compileInt1to1(whatNode); } catch { /* keep null */ }
   }
 
-  return new IsPattern1to1(walk, fromFn, whatsFn);
+  return new IsPattern1to1(walk, null, fromFn, whatFn, whatsFn);
 });
