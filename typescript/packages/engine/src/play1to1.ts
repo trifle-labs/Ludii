@@ -30,6 +30,10 @@ import { expandDefines } from "./lud-defines.js";
 import { applyOptions } from "./lud-options.js";
 import { compileNode1to1 } from "./compiler1to1.js";
 import type { Game1to1 } from "./ludemes/Game1to1.js";
+import { ArgCompiler } from "./ludii/compiler/arg/ArgCompiler.js";
+
+/** Lazily-built faithful ArgCompiler (reused across calls; loads reflection once). */
+let argCompiler: ArgCompiler | null = null;
 
 /** Options for `play1to1`. */
 export interface Play1to1Options {
@@ -62,6 +66,18 @@ export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
   const gameNode = findGameNode(ast, opts?.resolveSubgame);
 
   // Step 5: Compile to ludeme object tree.
+  // Faithful path: when LUDII_ARGCOMPILER is set, compile via the reflection-driven
+  // ArgCompiler (game.Game -> Game1to1 through JAVA_TS_CTORS). Falls back to the
+  // compiler1to1 dispatcher on any failure so behaviour never regresses below baseline.
+  if (process.env.LUDII_ARGCOMPILER) {
+    try {
+      argCompiler ??= new ArgCompiler();
+      const game = argCompiler.compile<Game1to1>(gameNode, ["game.Game"]);
+      if (game != null) return game;
+    } catch {
+      /* fall through to the dispatcher */
+    }
+  }
   return compileNode1to1(gameNode);
 }
 

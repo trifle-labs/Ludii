@@ -44,3 +44,36 @@ Two parallel implementations existed:
 - ArgCompiler compile-coverage: 95% (57/60). Constructor drift: 52 (robust parser).
 - Parity: compiler1to1 60%; ArgCompiler 0% (no create()). Baseline to beat: 60%.
 - NEXT: port Game.create() + topology wiring (step 1-2).
+
+## Update (this session): wired + measured + the real blocker found
+- play1to1 → ArgCompiler wired behind `LUDII_ARGCOMPILER` env (committed), fallback to
+  compiler1to1. Build green, ArgCompiler compile-coverage holds 95%.
+- **Behavioral parity baseline (strided, representative): ArgCompiler ~4% plays
+  (3% OUTCOME_OK + 1% REPLAY_OK), 93% MOVE_MISMATCH; compiler1to1 ~60%.** Simple games
+  (Tic-Tac-Toe) play under ArgCompiler; most don't.
+- **THE pervasive behavioral bug = the eager-vs-lazy seam**: ArgCompiler's compileTerminal
+  returns a RAW NUMBER for IntFunction/FloatFunction/DimFunction params; faithful ludeme
+  eval calls `.eval(ctx)` on it → throws → move-gen dies. Java wraps numeric literals in
+  IntConstant/FloatConstant (function objects).
+- **Why it can't be flipped in isolation**: `instantiate()` tries the BESPOKE registry
+  factories FIRST (they require raw numbers), then faithful JAVA_TS_CTORS (wants
+  IntConstant). Wrapping ints as IntConstant regressed compile 95%→45% (registry conflict).
+
+## Exact ordered completion path (the coordinated unit)
+1. Make ArgCompiler **pure-faithful**: `instantiate()` uses ONLY JAVA_TS_CTORS (drop the
+   registry.construct first-path / make it fallback only). Remove dependence on the bespoke
+   LudemeRegistry factories.
+2. **Faithful terminal wrapping**: compileTerminal returns IntConstant/FloatConstant/
+   DimConstant (function objects) for function-typed params (not raw numbers).
+3. Re-measure compile (will dip where faithful mappings are thin) + parity (should jump).
+   Fix faithful JAVA_TS_CTORS gaps the registry was masking.
+4. **Eval validation loop** (parallel via codex/agents): run parity → per failing game,
+   read Java eval vs TS eval of the diverging ludeme → fix TS eval faithfully → re-measure.
+   Climb past 60% to full parity. The 109 stub evals get ported here too.
+5. **Delete the bespoke path**: compiler1to1.ts, 268 *1to1 classes, LudemeRegistry +
+   factories, once faithful parity ≥ dispatcher and climbing.
+6. Done = behavioral parity ≈ Java across corpus; one engine.
+
+REALITY: steps 4-5 are the multi-week bulk (hundreds of eval methods validated game-by-game).
+Steps 1-3 are the next coordinated change (the unblocker) — do them together, measure with
+the fast `--filter Tic-Tac-Toe` loop, not the slow strided run.
