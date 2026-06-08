@@ -90,36 +90,46 @@ export class Sow extends Effect {
   /**
    * @java game/rules/play/moves/nonDecision/effect/Sow.java — constructor
    */
-  public constructor(opts: {
-    startLoc: IntFunction;
-    countFn: IntFunction;
-    numPerHoleFn: IntFunction;
-    captureRule: BooleanFunction;
-    origin: BooleanFunction;
-    trackName?: string | null;
-    ownerFn?: IntFunction | null;
-    includeSelf?: boolean;
-    skipFn?: BooleanFunction | null;
-    captureEffect?: MovesFunction | null;
-    sowEffect?: MovesFunction | null;
-    backtracking?: BooleanFunction | null;
-    forward?: BooleanFunction | null;
-    then?: ThenLike | null;
-  }) {
-    super(opts.then ?? null);
-    this.startLoc = opts.startLoc;
-    this.countFn = opts.countFn;
-    this.numPerHoleFn = opts.numPerHoleFn;
-    this.trackName = opts.trackName ?? null;
-    this.ownerFn = opts.ownerFn ?? null;
-    this.includeSelf = opts.includeSelf ?? true;
-    this.origin = opts.origin;
-    this.skipFn = opts.skipFn ?? null;
-    this.captureRule = opts.captureRule;
-    this.captureEffect = opts.captureEffect ?? null;
-    this.sowEffect = opts.sowEffect ?? null;
-    this.backtracking = opts.backtracking ?? null;
-    this.forward = opts.forward ?? null;
+  /**
+   * @java Sow.java — faithful 15-param constructor (Java order):
+   * (SiteType type, IntFunction start, @Name IntFunction count, @Name IntFunction numPerHole,
+   *  String trackName, @Name IntFunction owner, @Name BooleanFunction If, @Name Moves sowEffect,
+   *  @Name NonDecision apply, @Name Boolean includeSelf, @Name BooleanFunction origin,
+   *  @Name BooleanFunction skipIf, @Or @Name BooleanFunction backtracking,
+   *  @Or @Name BooleanFunction forward, Then then). All @Opt. `type` is unused by the 1:1
+   *  track-based eval; Java `If`->captureRule, `apply`->captureEffect, `skipIf`->skipFn.
+   */
+  public constructor(
+    _type: string | null = null,
+    start: IntFunction | null = null,
+    count: IntFunction | null = null,
+    numPerHole: IntFunction | null = null,
+    trackName: string | null = null,
+    owner: IntFunction | null = null,
+    If: BooleanFunction | null = null,
+    sowEffect: MovesFunction | null = null,
+    apply: MovesFunction | null = null,
+    includeSelf: boolean | null = null,
+    origin: BooleanFunction | null = null,
+    skipIf: BooleanFunction | null = null,
+    backtracking: BooleanFunction | null = null,
+    forward: BooleanFunction | null = null,
+    then: ThenLike | null = null,
+  ) {
+    super(then ?? null);
+    this.startLoc = start!;
+    this.countFn = count!;
+    this.numPerHoleFn = numPerHole!;
+    this.trackName = trackName ?? null;
+    this.ownerFn = owner ?? null;
+    this.includeSelf = includeSelf ?? true;
+    this.origin = origin!;
+    this.skipFn = skipIf ?? null;
+    this.captureRule = If!;
+    this.captureEffect = apply ?? null;
+    this.sowEffect = sowEffect ?? null;
+    this.backtracking = backtracking ?? null;
+    this.forward = forward ?? null;
   }
 
   // -------------------------------------------------------------------------

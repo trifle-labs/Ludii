@@ -8,8 +8,10 @@
  * @java game/equipment/component/Card.java — constructor/suit/rank/trumpValue/trumpRank/value/cardType
  */
 
-import { Item, type RoleType, type GameLike } from "../Item.js";
+import { Item, type RoleType as ItemRoleType, type GameLike } from "../Item.js";
 import type { MovesFunction } from "../../../base.js";
+import { RoleTypeValues, type RoleTypeFull } from "../../types/play/RoleType.js";
+import type { CardTypeName } from "../../types/component/CardType.js";
 
 /** Java Constants.OFF = -1 */
 const OFF = -1;
@@ -24,15 +26,11 @@ const UNDEFINED = -1;
 export type ComponentStyleType =
   | "Piece" | "Card" | "Die" | "Domino" | "Tile" | "LargePiece" | "Hand";
 
-/**
- * Mirrors Java's game.types.component.CardType enum.
- * @java game.types.component.CardType
- */
-export type CardType =
-  | "Joker"
-  | "Ace" | "Two" | "Three" | "Four" | "Five"
-  | "Six" | "Seven" | "Eight" | "Nine" | "Ten"
-  | "Jack" | "Queen" | "King";
+/** @java game.types.component.CardType — enum member name strings. */
+export type CardType = CardTypeName;
+
+/** @java game.types.play.RoleType — enum member name strings. */
+export type RoleType = RoleTypeFull | ItemRoleType;
 
 /**
  * Abstract component base, mirroring Java's Component class (subset of fields
@@ -70,7 +68,7 @@ abstract class Component extends Item {
     maxCount: number | null,
     maxValue: number | null,
   ) {
-    super(label, UNDEFINED, role);
+    super(label, UNDEFINED, role as ItemRoleType);
     this.generator         = generator;
     this.nameWithoutNumber = (label ?? "").replace(/\d+$/, "");
     this.style             = "Piece";
@@ -147,6 +145,7 @@ export class Card extends Component {
    * @param maxCount   Max count (-1 = unused).
    * @param maxValue   Max value (-1 = unused).
    */
+  public constructor(other: Card);
   public constructor(
     label: string,
     role: RoleType,
@@ -156,21 +155,48 @@ export class Card extends Component {
     trumpRank: number | null,
     trumpValue: number | null,
     suit: number | null,
+    generator?: MovesFunction | null,
+    maxState?: number | null,
+    maxCount?: number | null,
+    maxValue?: number | null,
+  );
+  public constructor(
+    labelOrOther: string | Card,
+    role: RoleType | null = null,
+    cardType: CardType | null = null,
+    rank: number | null = null,
+    value: number | null = null,
+    trumpRank: number | null = null,
+    trumpValue: number | null = null,
+    suit: number | null = null,
     generator: MovesFunction | null = null,
     maxState: number | null = null,
     maxCount: number | null = null,
     maxValue: number | null = null,
   ) {
-    super(label, role, generator, maxState, maxCount, maxValue);
+    if (labelOrOther instanceof Card) {
+      const other = labelOrOther;
+      super(other.name(), other.role() as RoleType, other.generator, other.maxState, other.maxCount, other.maxValue);
+      this._trumpValue = other._trumpValue;
+      this._suit       = other._suit;
+      this._trumpRank  = other._trumpRank;
+      this._rank       = other._rank;
+      this._value      = other._value;
+      this._cardType   = other._cardType;
+      this.style       = "Card";
+      return;
+    }
+
+    super(labelOrOther, role as RoleType, generator, maxState, maxCount, maxValue);
 
     // @java Card.java:86–91
     this._trumpValue = (trumpValue === null) ? OFF : trumpValue;
     this._suit       = (suit       === null) ? OFF : suit;
     // @java Card.java:88 — trumpRank guards on trumpValue (not suit) in the Java source
-    this._trumpRank  = (trumpValue === null) ? OFF : (trumpRank !== null ? trumpRank : OFF);
-    this._rank       = (suit       === null) ? OFF : (rank      !== null ? rank      : OFF);
+    this._trumpRank  = (trumpValue === null) ? OFF : trumpRank!;
+    this._rank       = (suit       === null) ? OFF : rank!;
     this._cardType   = cardType;
-    this._value      = value;
+    this._value      = value!;
 
     // @java Card.java:93 — style = ComponentStyleType.Card
     this.style = "Card";
@@ -178,20 +204,7 @@ export class Card extends Component {
 
   /** @java Card.clone() */
   public clone(): Card {
-    return new Card(
-      this.name() ?? "",
-      this.role(),
-      this._cardType,
-      this._rank,
-      this._value,
-      this._trumpRank,
-      this._trumpValue,
-      this._suit,
-      this.generator,
-      this.maxState,
-      this.maxCount,
-      this.maxValue,
-    );
+    return new Card(this);
   }
 
   /** @java Card.isCard() */
@@ -226,11 +239,14 @@ export class Card extends Component {
     const role = this.role();
     if (role !== null) {
       // Derive numeric owner index for validation
-      const ownedRoles: CardType[] = []; // unused; logic below uses role string
       const numericRoles: Record<string, number> = {
         P1: 1, P2: 2, P3: 3, P4: 4, P5: 5, P6: 6, P7: 7, P8: 8, Neutral: 0,
       };
-      const indexOwnerPhase = numericRoles[role as string] ?? -1;
+      const roleName = role as string;
+      const indexOwnerPhase =
+        roleName in RoleTypeValues
+          ? RoleTypeValues[roleName as RoleTypeFull].owner
+          : (numericRoles[roleName] ?? -1);
       if (
         (
           indexOwnerPhase < 1 &&

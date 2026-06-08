@@ -20,7 +20,7 @@
  */
 
 import type { Context } from "../../../../../../context.js";
-import type { BooleanFunction, IntFunction } from "../../../../../base.js";
+import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../base.js";
 import type { CellFlatRadials, FlatRadial } from "../../../../../topology-radials.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
@@ -36,12 +36,37 @@ export class IsLine implements BooleanFunction {
   private readonly exact: boolean;
 
   /**
-   * @java game/functions/booleans/is/line/IsLine.java — constructor
+   * @java game/functions/booleans/is/line/IsLine.java — faithful 16-param constructor:
+   * (SiteType type, IntFunction length, AbsoluteDirection dirn, @Or IntFunction through,
+   *  @Or RegionFunction throughAny, @Or2 RoleType who, @Or2 IntFunction what,
+   *  @Or2 IntFunction[] whats, BooleanFunction exact, BooleanFunction contiguous,
+   *  BooleanFunction If, BooleanFunction byLevel, BooleanFunction top,
+   *  IntFunction throughHowMuch, BooleanFunction isVisible, BooleanFunction useOpposites).
+   * Only `length` is required in Java; the rest are @Opt. The 1:1 eval currently uses
+   * length, dirn and exact; the remaining params are accepted faithfully (stored/ignored).
+   * Enum params (SiteType/AbsoluteDirection/RoleType) are represented by their name strings.
    */
-  public constructor(length: IntFunction, dirnName = "Adjacent", exact = false) {
+  public constructor(
+    _type: string | null,
+    length: IntFunction,
+    dirn: string | null = null,
+    _through: IntFunction | null = null,
+    _throughAny: RegionFunction | null = null,
+    _who: string | null = null,
+    _what: IntFunction | null = null,
+    _whats: readonly IntFunction[] | null = null,
+    exact: BooleanFunction | boolean | null = null,
+    _contiguous: BooleanFunction | null = null,
+    _If: BooleanFunction | null = null,
+    _byLevel: BooleanFunction | null = null,
+    _top: BooleanFunction | null = null,
+    _throughHowMuch: IntFunction | null = null,
+    _isVisible: BooleanFunction | null = null,
+    _useOpposites: BooleanFunction | null = null,
+  ) {
     this.lengthFn = length;
-    this.dirnName = dirnName;
-    this.exact = exact;
+    this.dirnName = dirn ?? "Adjacent";
+    this.exact = typeof exact === "boolean" ? exact : false;
   }
 
   /**

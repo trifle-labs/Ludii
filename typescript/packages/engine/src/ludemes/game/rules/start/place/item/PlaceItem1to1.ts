@@ -24,6 +24,7 @@ import type { IntFunction, RegionFunction } from "../../../../../base.js";
 import type { StartRule } from "../../StartRule.js";
 import type { Context } from "../../../../../../context.js";
 import type { Game1to1 } from "../../../../../Game1to1.js";
+import { IntConstant } from "../../../../functions/ints/IntConstant.js";
 
 /** Java constant: OFF = -1 */
 const OFF = -1;
@@ -56,6 +57,9 @@ export class PlaceItem1to1 implements StartRule {
   /** @java PlaceItem.valueFn — piece value, default OFF */
   private readonly valueFn: IntFunction;
 
+  /** @java PlaceItem.type — Cell, Edge or Vertex */
+  private readonly type: string | null;
+
   // ------ region/fill fields -------------------------------------------------
 
   /** @java PlaceItem.locationIds — multiple locations */
@@ -68,7 +72,7 @@ export class PlaceItem1to1 implements StartRule {
   private readonly coords: readonly string[] | null;
 
   /** @java PlaceItem.countsFn — per-site counts when using region/locs */
-  private readonly countsFn: readonly IntFunction[];
+  private readonly countsFn: readonly IntFunction[] | null;
 
   // ---------------------------------------------------------------------------
 
@@ -80,13 +84,14 @@ export class PlaceItem1to1 implements StartRule {
    */
   public constructor(
     item: string,
-    container: string | null,
-    siteId: IntFunction | null,
-    coord: string | null,
-    countFn: IntFunction,
-    stateFn: IntFunction,
-    rotationFn: IntFunction,
-    valueFn: IntFunction,
+    container?: string | null,
+    type?: string | null,
+    loc?: IntFunction | null,
+    coord?: string | null,
+    count?: IntFunction | null,
+    state?: IntFunction | null,
+    rotation?: IntFunction | null,
+    value?: IntFunction | null,
   );
 
   /**
@@ -98,45 +103,64 @@ export class PlaceItem1to1 implements StartRule {
    */
   public constructor(
     item: string,
-    container: null,
-    siteId: null,
-    coord: null,
-    countFn: IntFunction,
-    stateFn: IntFunction,
-    rotationFn: IntFunction,
-    valueFn: IntFunction,
-    locationIds: readonly IntFunction[] | null,
-    region: RegionFunction | null,
-    coords: readonly string[] | null,
-    countsFn: readonly IntFunction[],
+    type?: string | null,
+    locs?: readonly IntFunction[] | null,
+    region?: RegionFunction | null,
+    coords?: readonly string[] | null,
+    counts?: readonly IntFunction[] | null,
+    state?: IntFunction | null,
+    rotation?: IntFunction | null,
+    value?: IntFunction | null,
   );
 
   public constructor(
     item: string,
-    container: string | null,
-    siteId: IntFunction | null,
-    coord: string | null,
-    countFn: IntFunction,
-    stateFn: IntFunction,
-    rotationFn: IntFunction,
-    valueFn: IntFunction,
-    locationIds: readonly IntFunction[] | null = null,
-    region: RegionFunction | null = null,
-    coords: readonly string[] | null = null,
-    countsFn: readonly IntFunction[] = [],
+    containerOrType: string | null = null,
+    typeOrLocs: string | readonly IntFunction[] | null = null,
+    locOrRegion: IntFunction | RegionFunction | null = null,
+    coordOrCoords: string | readonly string[] | null = null,
+    countOrCounts: IntFunction | readonly IntFunction[] | null = null,
+    state: IntFunction | null = null,
+    rotation: IntFunction | null = null,
+    value: IntFunction | null = null,
   ) {
     this.item = item;
-    this.container = container;
-    this.siteId = siteId;
-    this.coord = coord;
-    this.countFn = countFn;
-    this.stateFn = stateFn;
-    this.rotationFn = rotationFn;
-    this.valueFn = valueFn;
-    this.locationIds = locationIds;
-    this.region = region;
-    this.coords = coords;
-    this.countsFn = countsFn;
+    this.stateFn = state ?? new IntConstant(OFF);
+    this.rotationFn = rotation ?? new IntConstant(OFF);
+    this.valueFn = value ?? new IntConstant(OFF);
+
+    const isFillConstructor =
+      Array.isArray(typeOrLocs) ||
+      Array.isArray(coordOrCoords) ||
+      Array.isArray(countOrCounts) ||
+      (isSiteTypeName(containerOrType) && (typeOrLocs === null || Array.isArray(typeOrLocs)));
+
+    if (isFillConstructor) {
+      const locs = Array.isArray(typeOrLocs) ? typeOrLocs : null;
+      const coords = Array.isArray(coordOrCoords) ? coordOrCoords : null;
+      const counts = Array.isArray(countOrCounts) ? countOrCounts : null;
+
+      this.container = null;
+      this.siteId = null;
+      this.coord = null;
+      this.type = containerOrType;
+      this.locationIds = locs;
+      this.region = locOrRegion as RegionFunction | null;
+      this.coords = coords;
+      this.countFn = counts === null ? new IntConstant(1) : (counts[0] ?? new IntConstant(1));
+      this.countsFn = counts === null ? [] : counts.slice();
+    } else {
+      this.container = containerOrType;
+      this.siteId = locOrRegion as IntFunction | null;
+      this.coord = typeof coordOrCoords === "string" ? coordOrCoords : null;
+      const count = Array.isArray(countOrCounts) ? null : (countOrCounts as IntFunction | null);
+      this.countFn = count ?? new IntConstant(1);
+      this.locationIds = null;
+      this.region = null;
+      this.coords = null;
+      this.countsFn = null;
+      this.type = typeof typeOrLocs === "string" ? typeOrLocs : null;
+    }
   }
 
   /**
@@ -162,7 +186,7 @@ export class PlaceItem1to1 implements StartRule {
       this.locationIds !== null ||
       this.region !== null ||
       this.coords !== null ||
-      (this.countsFn.length > 0)
+      this.countsFn !== null
     ) {
       this.evalFill(cells, whats, countAt, equipment, numPlayers, fakeCtx);
       return;
@@ -275,10 +299,11 @@ export class PlaceItem1to1 implements StartRule {
         const loc = sites[k]!;
         if (loc < 0 || loc >= cells.length) continue;
         // Java: countsFn.length == 0 ? countFn.eval(context) : countsFn[k].eval(context)
+        const countsFn = this.countsFn ?? [];
         const c =
-          this.countsFn.length === 0
+          countsFn.length === 0
             ? count
-            : this.eval(this.countsFn[k] ?? this.countsFn[this.countsFn.length - 1]!, fakeCtx, count);
+            : this.eval(countsFn[k] ?? countsFn[countsFn.length - 1]!, fakeCtx, count);
         cells[loc] = piece.owner;
         whats[loc] = piece.index;
         countAt[loc] = c;
@@ -296,10 +321,11 @@ export class PlaceItem1to1 implements StartRule {
           continue;
         }
         if (loc < 0 || loc >= cells.length) continue;
+        const countsFn = this.countsFn ?? [];
         const c =
-          this.countsFn.length === 0
+          countsFn.length === 0
             ? count
-            : this.eval(this.countsFn[k] ?? this.countsFn[this.countsFn.length - 1]!, fakeCtx, count);
+            : this.eval(countsFn[k] ?? countsFn[countsFn.length - 1]!, fakeCtx, count);
         cells[loc] = piece.owner;
         whats[loc] = piece.index;
         countAt[loc] = c;
@@ -360,6 +386,10 @@ function algebraicToSite(coord: string, boardWidth: number, _boardHeight: number
   if (isNaN(rowNum) || rowNum < 1 || col < 0 || col >= boardWidth) return -1;
   const row = rowNum - 1;
   return row * boardWidth + col;
+}
+
+function isSiteTypeName(value: unknown): value is string {
+  return value === "Cell" || value === "Edge" || value === "Vertex";
 }
 
 /** Minimal fake context for IntFunction/RegionFunction evaluation. */

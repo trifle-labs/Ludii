@@ -22,6 +22,26 @@ type RoleType =
   | "P1" | "P2" | "P3" | "P4" | "P5" | "P6" | "P7" | "P8"
   | "Team1" | "Team2" | "Team3" | "Team4";
 
+function roleToIntFunction(role: RoleType | null): IntFunction {
+  return {
+    eval(ctx: Context & EvalScratch): number {
+      switch (role) {
+        case "Mover": return ctx.state.mover;
+        case "Next": return (ctx.state.mover % ctx.game.numPlayers) + 1;
+        case "P1": return 1;
+        case "P2": return 2;
+        case "P3": return 3;
+        case "P4": return 4;
+        case "P5": return 5;
+        case "P6": return 6;
+        case "P7": return 7;
+        case "P8": return 8;
+        default: return -1;
+      }
+    }
+  };
+}
+
 /**
  * Returns sites occupied by a player (or many players) in a container.
  *
@@ -41,25 +61,33 @@ export class SitesOccupied extends BaseRegionFunction {
   private readonly top: boolean;
 
   /**
-   * @param who      The owner IntFunction (from RoleType or Player index)
-   * @param role     The RoleType (for Enemy/NonMover/All special handling)
-   * @param component Optional component index function to filter by piece type
-   * @param top      True to only look at top of stacks [default true]
-   * @param siteType The graph element type (Cell/Vertex/Edge)
+   * @param who           The owner IntFunction (from Player.index()).
+   * @param role          The RoleType of the owner.
+   * @param by            The named owner IntFunction.
+   * @param byName        The named owner string variant.
+   * @param component     Optional component index function to filter by piece type.
+   * @param componentName The name of the component.
+   * @param components    The component variants accepted by the Java signature.
+   * @param top           True to only look at top of stacks [default true].
+   * @param siteType      The graph element type (Cell/Vertex/Edge).
    * @java SitesOccupied constructor
    */
   public constructor(
-    who: IntFunction,
+    who: IntFunction | null,
     role: RoleType | null,
+    by: IntFunction | null = null,
+    _byName: string | null = null,
     component: IntFunction | null = null,
-    top = true,
+    _componentName: string | null = null,
+    _components: IntFunction[] | null = null,
+    top: boolean | null = null,
     siteType: string | null = null,
   ) {
     super();
-    this.who = who;
+    this.who = by ?? who ?? roleToIntFunction(role);
     this.role = role;
     this.component = component;
-    this.top = top;
+    this.top = top ?? true;
     this.siteType = siteType;
   }
 
@@ -175,20 +203,5 @@ export function makeSitesOccupied(
   top = true,
 ): RegionFunction {
   const role = roleName as RoleType;
-  const who: IntFunction = {
-    eval(ctx: Context & EvalScratch): number {
-      switch (roleName.toLowerCase()) {
-        case "mover": return ctx.state.mover;
-        case "next": return (ctx.state.mover % ctx.game.numPlayers) + 1;
-        case "p1": return 1;
-        case "p2": return 2;
-        case "p3": return 3;
-        case "p4": return 4;
-        case "p5": return 5;
-        case "p6": return 6;
-        default: return -1; // All/Enemy/etc. handled by role
-      }
-    }
-  };
-  return new SitesOccupied(who, role, component, top);
+  return new SitesOccupied(roleToIntFunction(role), role, null, null, component, null, null, top, null);
 }
