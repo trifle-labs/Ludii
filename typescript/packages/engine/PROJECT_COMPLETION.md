@@ -464,6 +464,30 @@ QUICK-WIN DIAGNOSTICS (queued for a small follow-up wave):
   - Mu Torere/Shisima (graph-board Step + conditions): faithful 0 moves at ply 0.
   - Dara: ArgCompiler compile fails entirely (falls back to bespoke Equipment1to1).
 
+## Update 13: Sow-2 landed cleanly + MEASUREMENT HONESTY CORRECTION
+Sow-2 (17th wave): the sow dispatch re-applied incrementally under hard canaries — and/or/not +
+dynamic (sites {...}) as FALLBACK-after-candidates (the preference form caused the original
+regressions), is Pending, (sites Track), set Count/Pending, region-if, move:select, plus
+Move.to/fromAfterSubsequents, mapEntry hydration, counted FromTo, exact (is Mover), end-If ByScore.
+ALL probes + OUTCOME set + bespoke green on the final tree. Galatjang ply 0→1; deep sow-variant
+eval = Sow-3 follow-up.
+
+⚠ MEASUREMENT HONESTY CORRECTION: the parity harness does NOT distinguish the faithful path from
+the silent bespoke fallback (play1to1 catches ArgCompiler throws and falls back). Spot-check found
+J'odu and Nine Men's Morris "OUTCOME_OK" actually run on Equipment1to1 (fallback), and the
+"--filter Fanorona" green was Fanorona Telo (variant), not base Fanorona (which over-generates
+ply 0: faithful 189 vs bespoke 4). CONSEQUENCES:
+ - Prior "full faithful OUTCOME parity" lists conflate faithful wins with fallback wins. VERIFIED
+   faithful-path (probe-game equip=Equipment + harness OUTCOME_OK): Breakthrough, Leap Frog, Gomoku,
+   Amazons, Connect Four, Yavalath, Havannah, Tablut, Brandub, + the small line games. NOT faithful:
+   J'odu, Nine Men's Morris (fallback); base Fanorona (diverges).
+ - The corpus "~27% full replay" mixes paths. NEW measurement: probe-faithful-coverage.mjs — corpus
+   sweep reporting equip=Equipment vs fallback + the fallback-reason histogram (drives wave choice);
+   writes test/parity/faithful-coverage.json for wave-over-wave diffing.
+ - Completion metric (definition item 1) must be read as: faithful-PATH parity (equip=Equipment),
+   measured by the coverage probe x harness, not harness alone. The J'odu/Tablut/Breakthrough
+   canaries remain valid as no-breakage gates, but only equip-verified games count as faithful wins.
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
