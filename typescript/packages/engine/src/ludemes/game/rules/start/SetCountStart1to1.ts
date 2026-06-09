@@ -68,6 +68,8 @@ export class SetCountStart1to1 implements StartRule {
       },
       _evalFrom: -1, _evalTo: -1, _evalValue: 0,
       _radials: equipment.board.radials,
+      track: () => -1,
+      tracks: () => equipment.board.tracks(),
     } as unknown as Context;
   }
 

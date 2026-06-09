@@ -107,9 +107,12 @@ export class FromTo implements MovesFunction {
     for (const from of sitesFrom) {
       if (from <= OFF) continue;
 
-      // @java FromTo.java:186-187 — check what at from
-      const what = ctx.state.whatAtSite(from);
-      if (what <= 0) continue;
+      // @java FromTo.java:186-187 — check source occupancy. Mancala captures
+      // use count:N on seed pits, which have counts but no component `what`.
+      const hasSource = this.countFn !== null
+        ? ctx.state.countAtSite(from) > 0
+        : ctx.state.whatAtSite(from) > 0;
+      if (!hasSource) continue;
 
       ctx._evalFrom = from;
 
@@ -136,7 +139,19 @@ export class FromTo implements MovesFunction {
 
         // Build the primary move action
         const actions: import("../../../../../../../action/index.js").Action[] = [];
-        const moveAction = new ActionMove({ from, to });
+        let moveAction: ActionMove;
+        if (this.countFn !== null) {
+          const savedFrom = ctx._evalFrom;
+          const savedTo = ctx._evalTo;
+          ctx._evalFrom = origFrom;
+          ctx._evalTo = origTo;
+          const count = this.countFn.eval(ctx);
+          ctx._evalFrom = savedFrom;
+          ctx._evalTo = savedTo;
+          moveAction = new ActionMove({ from, to, count, transferCount: true });
+        } else {
+          moveAction = new ActionMove({ from, to });
+        }
         actions.push(moveAction);
 
         // @java FromTo.java:406-414 — capture effect if capture rule passes

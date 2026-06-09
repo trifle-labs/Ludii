@@ -44,15 +44,18 @@ export class SitesBottom extends BaseRegionFunction {
   public override eval(ctx: Context & EvalScratch): number[] {
     // @java SitesBottom — check graph board first
     const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
-    const traj = ctxAny._trajectories;
+    const board = (ctx.game as unknown as Game1to1).equipment.board;
+    const mancalaBottom = twoRowMancalaBottom(board);
+    if (mancalaBottom !== null) return mancalaBottom;
+    const traj = ctxAny._trajectories ?? board.trajectories;
     if (traj) {
-      const sites = sitesWithMinY(traj);
+      const type = this.siteType ?? (board.numSites === traj.numSites ? "Vertex" : "Cell");
+      const sites = sitesWithMinY(traj, type);
       if (sites.length > 0) return sites;
     }
 
     // @java SitesBottom — square board: bottom row = cells 0..W-1
-    const g = ctx.game as unknown as Game1to1;
-    const W = g.equipment.board.width;
+    const W = board.width;
     return Array.from({ length: W }, (_, i) => i);
   }
 
@@ -67,15 +70,25 @@ export class SitesBottom extends BaseRegionFunction {
   }
 }
 
+function twoRowMancalaBottom(board: { numSites: number; tracks?: () => readonly unknown[]; getTracks?: () => readonly unknown[] }): number[] | null {
+  const tracks = typeof board.tracks === "function"
+    ? board.tracks()
+    : (typeof board.getTracks === "function" ? board.getTracks() : []);
+  if (tracks.length === 0 || board.numSites < 4 || board.numSites % 2 !== 0) return null;
+  const holes = (board.numSites - 2) / 2;
+  if (!Number.isInteger(holes) || holes < 1) return null;
+  return Array.from({ length: holes }, (_, index) => index + 1);
+}
+
 /**
  * Returns the site indices with the minimum y coordinate from the trajectories.
  * @java Topology.bottom(SiteType) — sites with minimum centroid y.
  */
-function sitesWithMinY(traj: Trajectories): number[] {
+function sitesWithMinY(traj: Trajectories, type: string): number[] {
   const core = (traj as unknown as {
     core?: { topo?: { elements?(type: string): Array<{ id: number; centroid?(): { x: number; y: number } }> } }
   }).core;
-  const elements = core?.topo?.elements?.("Cell");
+  const elements = core?.topo?.elements?.(type);
   if (!elements || elements.length === 0) return [];
 
   let minY = Infinity;

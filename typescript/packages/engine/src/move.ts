@@ -360,6 +360,27 @@ export class Move {
     return this.toNonDecisionSite ?? this.to();
   }
 
+  public fromAfterSubsequents(): number {
+    // @java Core/src/other/move/Move.java — after-subsequent accessors scan
+    // the realised action list, so a decision wrapped around a consequence can
+    // expose the consequence endpoint to `(last From afterConsequence:True)`.
+    for (let i = this.actions.length - 1; i >= 0; i -= 1) {
+      const from = this.actions[i]!.from();
+      if (from >= 0) return from;
+    }
+    return this.fromNonDecision();
+  }
+
+  public toAfterSubsequents(): number {
+    // Used by mancala `LastHoleSowed`: a `(move Select ... (then (sow ...)))`
+    // has decision to=selected hole, but after-consequence to=final sown hole.
+    for (let i = this.actions.length - 1; i >= 0; i -= 1) {
+      const to = this.actions[i]!.to();
+      if (to >= 0) return to;
+    }
+    return this.toNonDecision();
+  }
+
   public what(): number {
     return this.decisionAction()?.what() ?? this.placedOwner;
   }

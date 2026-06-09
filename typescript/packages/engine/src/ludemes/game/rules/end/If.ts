@@ -60,6 +60,10 @@ export class If implements EndRuleFunction {
     }
 
     if (this.defaultResult === null) return null;
+    const defaultAsRule = this.defaultResult as unknown as { eval?: (ctx: Context) => EndResult | null };
+    if (typeof defaultAsRule.eval === "function") {
+      return defaultAsRule.eval(ctx);
+    }
 
     const mover = ctx.state.mover;
     // @java game/functions/ints/board/Id.java:122 — case Next uses state.next()

@@ -26,8 +26,13 @@ import { Sites } from "../../../ludemes/game/functions/region/sites/Sites.js";
 import { EmptyDefault } from "../../../ludemes/game/functions/region/sites/index/SitesEmpty.js";
 import { SitesPhase } from "../../../ludemes/game/functions/region/sites/simple/SitesSide1to1.js";
 import { IsIn1to1 } from "../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
+import { IsPending1to1 } from "../../../ludemes/game/functions/booleans/is/simple1to1/IsPending1to1.js";
+import { IsMover1to1 } from "../../../ludemes/game/functions/booleans/is/player1to1/IsMover1to1.js";
 import { IsPrev1to1 } from "../../../ludemes/game/functions/booleans/is/player1to1/IsPrev1to1.js";
 import { NoMoves } from "../../../ludemes/game/functions/booleans/no1to1/NoMoves.js";
+import { SetPending } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.js";
+import { SetCountStart1to1 } from "../../../ludemes/game/rules/start/SetCountStart1to1.js";
+import { Board1to1 } from "../../../ludemes/game/equipment/container/board/Board1to1.js";
 
 export interface ArgCompilerOptions {
   readonly reflectionPath?: string;
@@ -198,6 +203,9 @@ export class ArgCompiler {
     const preferredBooleanVariant = this.compilePreferredBooleanVariant(node, head, expectedTypes, env);
     if (preferredBooleanVariant !== null) return preferredBooleanVariant;
 
+    const preferredStartSetCount = this.compileStartSetCount(node, head, expectedTypes, env);
+    if (preferredStartSetCount !== null) return preferredStartSetCount;
+
     const faithfulMoveVariant = this.compileFaithfulMoveVariant(node, head, expectedTypes, env);
     if (faithfulMoveVariant !== null) return faithfulMoveVariant;
 
@@ -217,6 +225,24 @@ export class ArgCompiler {
         return object;
       }
     }
+
+    const fallbackIsPending = this.compileFallbackIsPending(node, head, expectedTypes);
+    if (fallbackIsPending !== null) return fallbackIsPending;
+
+    const fallbackStartSetCount = this.compileStartSetCount(node, head, expectedTypes, env);
+    if (fallbackStartSetCount !== null) return fallbackStartSetCount;
+
+    const fallbackMoveSetPending = this.compileFallbackMoveSetPending(node, head, expectedTypes, env);
+    if (fallbackMoveSetPending !== null) return fallbackMoveSetPending;
+
+    const fallbackSitesList = this.compileFallbackSitesList(node, head, expectedTypes, env);
+    if (fallbackSitesList !== null) return fallbackSitesList;
+
+    const fallbackRegionIf = this.compileFallbackRegionIf(node, head, expectedTypes, env);
+    if (fallbackRegionIf !== null) return fallbackRegionIf;
+
+    const fallbackBooleanCombinator = this.compileFallbackBooleanCombinator(node, head, expectedTypes, env);
+    if (fallbackBooleanCombinator !== null) return fallbackBooleanCombinator;
 
     this.note(
       candidates.length === 0
@@ -255,6 +281,176 @@ export class ArgCompiler {
     return null;
   }
 
+  private compileFallbackIsPending(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+  ): unknown | null {
+    if (normalise(head) !== "is") return null;
+    const variant = node.items[1];
+    if (!variant || !isIdent(variant) || normalise(variant.name) !== "pending") return null;
+    if (!this.fitsExpected("game.functions.booleans.is.simple.IsPending", expectedTypes)) return null;
+    this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.simple.IsPending" });
+    return new IsPending1to1();
+  }
+
+  private compileStartSetCount(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    if (normalise(head) !== "set") return null;
+    if (!expectedTypes.some((expected) =>
+      expected.dims === 0 && (expected.name === "game.rules.start.StartRule" || expected.name === "game.rules.Rule")
+    )) return null;
+    const variant = node.items[1];
+    if (!variant || !isIdent(variant) || normalise(variant.name) !== "count") return null;
+
+    const parsed = parseNodeArgs(node);
+    const countNode = parsed.argsIn.find((arg) => arg.parameterName === null && arg.node !== variant)?.node;
+    const toNode = parsed.argsIn.find((arg) => arg.parameterName === "to")?.node;
+    const atNode = parsed.argsIn.find((arg) => arg.parameterName === "at")?.node;
+    const count = countNode
+      ? this.compileMaybe(countNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+      : null;
+    if (count === null) return null;
+    const region = toNode
+      ? this.compileMaybe(toNode, [parseJavaType("game.functions.region.RegionFunction")], env)
+      : null;
+    const at = atNode
+      ? this.compileMaybe(atNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+      : null;
+    if (region === null && at === null) return null;
+
+    this.resolveTrace.push({ token: head, cls: "game.rules.start.set.sites.SetCount" });
+    return new SetCountStart1to1(count as never, null, at as never, region as never);
+  }
+
+  private compileFallbackMoveSetPending(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    if (normalise(head) !== "set") return null;
+    if (expectedTypes.some((expected) =>
+      expected.dims === 0 && (expected.name === "game.rules.start.StartRule" || expected.name === "game.rules.Rule")
+    )) return null;
+    if (!expectedTypes.some((expected) =>
+      expected.dims === 0 && (
+        expected.name === "game.rules.play.moves.Moves" ||
+        expected.name === "game.rules.play.moves.nonDecision.NonDecision" ||
+        expected.name === "game.rules.play.moves.nonDecision.effect.Effect"
+      )
+    )) return null;
+
+    const variant = node.items[1];
+    if (!variant || !isIdent(variant) || normalise(variant.name) !== "pending") return null;
+    const parsed = parseNodeArgs(node);
+    const payload = parsed.argsIn.find((arg) => arg.parameterName === null && arg.node !== variant)?.node;
+    const value = payload
+      ? this.compileMaybe(payload, [parseJavaType("game.functions.ints.IntFunction")], env)
+      : null;
+    const region = payload && value === null
+      ? this.compileMaybe(payload, [parseJavaType("game.functions.region.RegionFunction")], env)
+      : null;
+    if (payload && value === null && region === null) return null;
+
+    this.resolveTrace.push({ token: head, cls: "game.rules.play.moves.nonDecision.effect.set.pending.SetPending" });
+    return new SetPending(value as never, region as never, null);
+  }
+
+  private compileFallbackSitesList(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    if (normalise(head) !== "sites") return null;
+    const variant = node.items[1];
+    if (!variant || !isList(variant) || variant.delimiter !== "curly") return null;
+    if (!expectedTypes.some((expected) =>
+      expected.dims === 0 && expected.name === "game.functions.region.RegionFunction"
+    )) return null;
+
+    const sites = variant.items
+      .map((item) => this.compileMaybe(item, [parseJavaType("game.functions.ints.IntFunction")], env));
+    if (sites.some((site) => site === null)) return null;
+
+    this.resolveTrace.push({ token: head, cls: "game.functions.region.sites.Sites" });
+    const compiled = sites as Array<{ eval(ctx: unknown): number }>;
+    return {
+      eval: (ctx: unknown) => compiled.map((site) => site.eval(ctx)),
+    };
+  }
+
+  private compileFallbackRegionIf(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    if (normalise(head) !== "if") return null;
+    if (!expectedTypes.some((expected) =>
+      expected.dims === 0 && expected.name === "game.functions.region.RegionFunction"
+    )) return null;
+
+    const conditionNode = node.items[1];
+    const okNode = node.items[2];
+    const elseNode = node.items[3];
+    if (!conditionNode || !okNode) return null;
+
+    const condition = this.compileMaybe(conditionNode, [parseJavaType("game.functions.booleans.BooleanFunction")], env);
+    if (condition === null) return null;
+    const ok = this.compileMaybe(okNode, [parseJavaType("game.functions.region.RegionFunction")], env);
+    if (ok === null) return null;
+    const otherwise = elseNode
+      ? this.compileMaybe(elseNode, [parseJavaType("game.functions.region.RegionFunction")], env)
+      : { eval: () => [] };
+    if (otherwise === null) return null;
+
+    this.resolveTrace.push({ token: head, cls: "game.functions.region.math.If" });
+    return {
+      eval: (ctx: unknown) =>
+        (condition as { eval(ctx: unknown): boolean }).eval(ctx)
+          ? (ok as { eval(ctx: unknown): number[] }).eval(ctx)
+          : (otherwise as { eval(ctx: unknown): number[] }).eval(ctx),
+    };
+  }
+
+  private compileFallbackBooleanCombinator(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    const headName = normalise(head);
+    if (headName !== "and" && headName !== "or" && headName !== "not") return null;
+    if (!expectedTypes.some((expected) =>
+      expected.dims === 0 && expected.name === "game.functions.booleans.BooleanFunction"
+    )) return null;
+
+    const operands = node.items.slice(1)
+      .map((item) => this.compileMaybe(item, [parseJavaType("game.functions.booleans.BooleanFunction")], env));
+    if (operands.some((operand) => operand === null)) return null;
+    if (headName === "not" && operands.length !== 1) return null;
+    if (headName !== "not" && operands.length === 0) return null;
+
+    this.resolveTrace.push({ token: head, cls: `game.functions.booleans.math.${headName}` });
+    if (headName === "not") {
+      const operand = operands[0] as { eval(ctx: unknown): boolean };
+      return { eval: (ctx: unknown) => !operand.eval(ctx) };
+    }
+
+    const compiled = operands as Array<{ eval(ctx: unknown): boolean }>;
+    return {
+      eval: (ctx: unknown) => headName === "and"
+        ? compiled.every((operand) => operand.eval(ctx))
+        : compiled.some((operand) => operand.eval(ctx)),
+    };
+  }
+
   private compilePreferredBooleanVariant(
     node: LudList,
     head: string,
@@ -279,6 +475,20 @@ export class ArgCompiler {
       if (regionFn === null) return null;
       this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.in.IsIn" });
       return new IsIn1to1(siteFn as never, regionFn as never);
+    }
+
+    if (headName === "is" && variantName === "mover") {
+      if (!this.fitsExpected("game.functions.booleans.is.player.IsMover", expectedTypes)) return null;
+      const whoNode = node.items[2];
+      if (!whoNode) return { eval: () => true };
+      if (isIdent(whoNode)) {
+        this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.player.IsMover" });
+        return new IsMover1to1(null, whoNode.name as never);
+      }
+      const whoFn = this.compileMaybe(whoNode, [parseJavaType("game.functions.ints.IntFunction")], env);
+      if (whoFn === null) return null;
+      this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.player.IsMover" });
+      return new IsMover1to1(whoFn as never, null);
     }
 
     if (headName === "is" && variantName === "prev") {
@@ -351,6 +561,7 @@ export class ArgCompiler {
       variantName !== "empty" &&
       variantName !== "board" &&
       variantName !== "phase" &&
+      variantName !== "track" &&
       !PLAYER_SITE_VARIANTS.has(variantName) &&
       !SIMPLE_SITE_VARIANTS.has(variantName)
     ) return null;
@@ -369,11 +580,26 @@ export class ArgCompiler {
       if (phaseFn === null) return null;
       return new SitesPhase(phaseFn as never);
     }
+    if (variantName === "track") {
+      const role = node.items[2] && isIdent(node.items[2]) ? node.items[2].name : null;
+      const name = node.items[2] && isString(node.items[2]) ? node.items[2].value : null;
+      const parsed = parseNodeArgs(node);
+      const fromNode = parsed.argsIn.find((arg) => arg.parameterName === "from")?.node;
+      const toNode = parsed.argsIn.find((arg) => arg.parameterName === "to")?.node;
+      const from = fromNode
+        ? this.compileMaybe(fromNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+        : null;
+      const to = toNode
+        ? this.compileMaybe(toNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+        : null;
+      return Sites.constructTrack("Track" as never, null, role as never, name, from as never, to as never);
+    }
     if (PLAYER_SITE_VARIANTS.has(variantName)) return playerSitesRegion(variantName);
     return Sites.constructSimple(simpleSiteVariant(variantName) as never, siteType);
   }
 
   private compileCandidate(node: LudList, candidate: Candidate, env: ArgCompilerEnv): unknown | null {
+    if (this.rejectIncompatibleCandidate(node, candidate)) return null;
     const parsed = parseNodeArgs(node);
 
     for (const kind of ["construct", "constructor"] as const) {
@@ -387,6 +613,20 @@ export class ArgCompiler {
     }
 
     return null;
+  }
+
+  private rejectIncompatibleCandidate(node: LudList, candidate: Candidate): boolean {
+    if (
+      (candidate.className === "game.functions.region.sites.coords.SitesCoords" ||
+        candidate.className === "game.functions.region.sites.Sites") &&
+      normalise(listHead(node) ?? "") === "sites"
+    ) {
+      const variant = node.items[1];
+      if (variant !== undefined && isList(variant) && variant.delimiter === "curly") {
+        return variant.items.some((item) => !isString(item));
+      }
+    }
+    return false;
   }
 
   private compileExecutable(
@@ -613,15 +853,38 @@ export class ArgCompiler {
   }
 
   private instantiate(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
+    if (REGISTRY_FIRST_CLASSES.has(info.className)) {
+      const registryFirst = this.instantiateRegistry(info, env);
+      if (registryFirst !== null && registryFirst !== undefined) {
+        if (info.className === "game.equipment.container.board.custom.MancalaBoard") {
+          return boardWithCompiledTracks(registryFirst, info.args);
+        }
+        return registryFirst;
+      }
+    }
+
     // FAITHFUL FIRST: the canonical reflection-driven path (JAVA_TS_CTORS). This is the
     // one true port. The bespoke LudemeRegistry factories are only a fallback for ludemes
     // whose faithful mapping is still missing, and are being phased out entirely.
     const faithful = this.instantiateFaithful(info);
-    if (faithful !== null && faithful !== undefined) return faithful;
+    if (faithful !== null && faithful !== undefined) {
+      if (info.className === "game.equipment.Equipment") {
+        hydrateEquipmentRegions(faithful, info.args);
+        hydrateEquipmentMaps(faithful, info.args);
+      }
+      return faithful;
+    }
 
     const faithfulMoveVariant = this.instantiateFaithfulMoveVariant(info);
     if (faithfulMoveVariant !== null && faithfulMoveVariant !== undefined) return faithfulMoveVariant;
 
+    const registryFallback = this.instantiateRegistry(info, env);
+    if (registryFallback !== null && registryFallback !== undefined) return registryFallback;
+    // instantiateFaithful already recorded a specific noteInstFail on its miss.
+    return null;
+  }
+
+  private instantiateRegistry(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
     const registry = env.registry ?? this.registry;
     const named = new Map<string, unknown>();
     info.paramNames.forEach((name, index) => {
@@ -639,7 +902,13 @@ export class ArgCompiler {
         named,
       });
       const r = registry.construct(bundle, env);
-      if (r !== null && r !== undefined) return r;
+      if (r !== null && r !== undefined) {
+        if (info.className === "game.equipment.Equipment") {
+          hydrateEquipmentRegions(r, info.args);
+          hydrateEquipmentMaps(r, info.args);
+        }
+        return r;
+      }
     } catch {
       // Registry is bespoke glue; faithful is canonical. Fall through.
     }
@@ -1155,11 +1424,204 @@ function simpleSiteVariant(variantName: string): string {
   }
 }
 
+function boardWithCompiledTracks(board: unknown, args: readonly unknown[]): unknown {
+  if (!(board instanceof Board1to1)) return board;
+  if (board.getTracks().length > 0 || board.trajectories === null) return board;
+  const tracks = flattenUnknown(args).filter(isCompiledTrack);
+  if (tracks.length === 0) return board;
+  return new Board1to1(
+    board.width,
+    board.height,
+    board.numSites,
+    board.trajectories,
+    board.containerSpan,
+    tracks as never,
+  );
+}
+
+function hydrateEquipmentRegions(equipment: unknown, args: readonly unknown[]): void {
+  const target = equipment as {
+    playerRegions?: ReadonlyMap<number, { eval(ctx: unknown): readonly number[] }>;
+    namedPlayerRegions?: ReadonlyMap<string, ReadonlyMap<number, { eval(ctx: unknown): readonly number[] }>>;
+  };
+  if (target.playerRegions !== undefined && target.playerRegions.size > 0) return;
+  if (target.namedPlayerRegions !== undefined && target.namedPlayerRegions.size > 0) return;
+
+  const playerRegions = new Map<number, { eval(ctx: unknown): number[] }>();
+  const namedPlayerRegions = new Map<string, Map<number, { eval(ctx: unknown): number[] }>>();
+
+  for (const region of flattenUnknown(args).filter(isCompiledRegionItem)) {
+    const owner = roleOwnerId(region.role());
+    if (owner < 0) continue;
+    const fn = regionFunctionFromItem(region);
+    if (fn === null) continue;
+    const name = region.name();
+    if (typeof name === "string" && !/^RegionP?\d+$/i.test(name)) {
+      const key = name.toLowerCase();
+      const byOwner = namedPlayerRegions.get(key) ?? new Map<number, { eval(ctx: unknown): number[] }>();
+      byOwner.set(owner, fn);
+      namedPlayerRegions.set(key, byOwner);
+      if (!playerRegions.has(owner)) playerRegions.set(owner, fn);
+    } else {
+      playerRegions.set(owner, fn);
+    }
+  }
+
+  if (playerRegions.size > 0) {
+    Object.defineProperty(equipment as object, "playerRegions", {
+      value: playerRegions,
+      configurable: true,
+      enumerable: true,
+    });
+  }
+  if (namedPlayerRegions.size > 0) {
+    Object.defineProperty(equipment as object, "namedPlayerRegions", {
+      value: namedPlayerRegions,
+      configurable: true,
+      enumerable: true,
+    });
+  }
+}
+
+function hydrateEquipmentMaps(equipment: unknown, args: readonly unknown[]): void {
+  let board: unknown;
+  try {
+    board = (equipment as { board?: unknown }).board;
+  } catch {
+    return;
+  }
+  if (board === null || typeof board !== "object") return;
+  const boardTarget = board as { _pendingMaps?: Map<string, Map<number, number>> };
+  if (boardTarget._pendingMaps !== undefined && boardTarget._pendingMaps.size > 0) return;
+
+  const pendingMaps = new Map<string, Map<number, number>>();
+  for (const item of flattenUnknown(args)) {
+    if (!isCompiledMapItem(item)) continue;
+    if (item.map().size === 0 && typeof item.computeMap === "function") {
+      try {
+        item.computeMap({
+          board: () => board,
+          equipment: () => ({
+            components: () => [null, ...((equipment as { pieces?: readonly unknown[] }).pieces ?? [])],
+          }),
+        });
+      } catch {
+        /* Keep any entries already present; mapEntry falls back on misses. */
+      }
+    }
+    const name = item.name();
+    const key = name === null || name === "Map" ? "__default__" : name;
+    pendingMaps.set(key, mapEntriesWithLandmarkFallback(item, board));
+  }
+
+  if (pendingMaps.size > 0) {
+    Object.defineProperty(board, "_pendingMaps", {
+      value: pendingMaps,
+      configurable: true,
+      enumerable: true,
+    });
+  }
+}
+
+function mapEntriesWithLandmarkFallback(
+  item: { map(): ReadonlyMap<number, number> },
+  board: object,
+): Map<number, number> {
+  const entries = new Map(item.map());
+  const pairs = (item as { _mapPairs?: readonly unknown[] })._mapPairs;
+  if (!Array.isArray(pairs)) return entries;
+  const boardInfo = board as { containerSpan?: number; numSites?: number };
+  const lastSite = (boardInfo.containerSpan ?? boardInfo.numSites ?? 0) - 1;
+  for (const pair of pairs) {
+    const pairAny = pair as {
+      getIntKey?: () => { eval(ctx: unknown): number };
+      landmark?: number | null;
+    };
+    const landmark = pairAny.landmark ?? null;
+    if (landmark !== 5 && landmark !== 6) continue;
+    const key = pairAny.getIntKey?.().eval({}) ?? -1;
+    if (key < 0) continue;
+    entries.set(key, landmark === 5 ? 0 : lastSite);
+  }
+  return entries;
+}
+
+function flattenUnknown(values: readonly unknown[]): unknown[] {
+  const out: unknown[] = [];
+  for (const value of values) {
+    if (Array.isArray(value)) out.push(...flattenUnknown(value));
+    else out.push(value);
+  }
+  return out;
+}
+
+function isCompiledTrack(value: unknown): value is { buildTrack(width: number, height: number, traj?: unknown): void } {
+  return value !== null && typeof value === "object" &&
+    typeof (value as { buildTrack?: unknown }).buildTrack === "function" &&
+    typeof (value as { elems?: unknown }).elems === "function";
+}
+
+function isCompiledRegionItem(value: unknown): value is {
+  role(): unknown;
+  name(): unknown;
+  sites(): readonly number[] | null;
+  region(): readonly { eval(ctx: unknown): readonly number[] }[] | null;
+} {
+  return value !== null && typeof value === "object" &&
+    typeof (value as { role?: unknown }).role === "function" &&
+    typeof (value as { name?: unknown }).name === "function" &&
+    typeof (value as { sites?: unknown }).sites === "function" &&
+    typeof (value as { region?: unknown }).region === "function";
+}
+
+function isCompiledMapItem(value: unknown): value is {
+  name(): string | null;
+  map(): ReadonlyMap<number, number>;
+  computeMap?: (game: unknown) => void;
+} {
+  return value !== null && typeof value === "object" &&
+    typeof (value as { name?: unknown }).name === "function" &&
+    typeof (value as { map?: unknown }).map === "function";
+}
+
+function regionFunctionFromItem(region: {
+  sites(): readonly number[] | null;
+  region(): readonly { eval(ctx: unknown): readonly number[] }[] | null;
+}): { eval(ctx: unknown): number[] } | null {
+  const regions = region.region();
+  if (regions !== null && regions.length > 0) {
+    return {
+      eval(ctx: unknown): number[] {
+        const seen = new Set<number>();
+        for (const fn of regions) for (const site of fn.eval(ctx)) seen.add(site);
+        return [...seen];
+      },
+    };
+  }
+  const sites = region.sites();
+  if (sites !== null) return { eval: () => [...sites] };
+  return null;
+}
+
+function roleOwnerId(role: unknown): number {
+  if (typeof role !== "string") return -1;
+  if (/^P\d+$/i.test(role)) return Number(role.slice(1));
+  if (role === "Shared" || role === "Neutral") return 0;
+  return -1;
+}
+
 const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
   ["move:add", "game.rules.play.moves.nonDecision.effect.Add"],
   ["move:hop", "game.rules.play.moves.nonDecision.effect.Hop"],
   ["move:remove", "game.rules.play.moves.nonDecision.effect.Remove"],
   ["move:shoot", "game.rules.play.moves.nonDecision.effect.Shoot"],
+  ["move:select", "game.rules.play.moves.nonDecision.effect.Select"],
   ["move:step", "game.rules.play.moves.nonDecision.effect.Step"],
   ["move:slide", "game.rules.play.moves.nonDecision.effect.Slide"],
+]);
+
+const REGISTRY_FIRST_CLASSES = new Set<string>([
+  // Faithful MancalaBoard currently carries a stub graph function; the registry
+  // factory builds the proven Board1to1 graph and keeps the faithful track data.
+  "game.equipment.container.board.custom.MancalaBoard",
 ]);

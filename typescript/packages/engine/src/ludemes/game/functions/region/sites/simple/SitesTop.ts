@@ -10,6 +10,8 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
+import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
 /**
  * Minimal interface for a TopologyElement that exposes index().
@@ -47,6 +49,16 @@ export class SitesTop extends BaseRegionFunction {
     // Java: if (precomputedRegion != null) return precomputedRegion;
     if (this.precomputedRegion !== null)
       return this.precomputedRegion;
+
+    const board = (ctx.game as unknown as Game1to1).equipment.board;
+    const mancalaTop = twoRowMancalaTop(board);
+    if (mancalaTop !== null) return mancalaTop;
+    const traj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? board.trajectories;
+    if (traj) {
+      const type = this.siteType ?? (board.numSites === traj.numSites ? "Vertex" : "Cell");
+      const sites = sitesWithMaxY(traj, type);
+      if (sites.length > 0) return sites;
+    }
 
     // Java: final SiteType realType = (type != null) ? type : context.board().defaultSite();
     const realType: string = this.siteType ??
@@ -87,4 +99,33 @@ export class SitesTop extends BaseRegionFunction {
   public override toString(): string {
     return "Top()";
   }
+}
+
+function twoRowMancalaTop(board: { numSites: number; tracks?: () => readonly unknown[]; getTracks?: () => readonly unknown[] }): number[] | null {
+  const tracks = typeof board.tracks === "function"
+    ? board.tracks()
+    : (typeof board.getTracks === "function" ? board.getTracks() : []);
+  if (tracks.length === 0 || board.numSites < 4 || board.numSites % 2 !== 0) return null;
+  const holes = (board.numSites - 2) / 2;
+  if (!Number.isInteger(holes) || holes < 1) return null;
+  return Array.from({ length: holes }, (_, index) => holes + index + 1);
+}
+
+function sitesWithMaxY(traj: Trajectories, type: string): number[] {
+  const core = (traj as unknown as {
+    core?: { topo?: { elements?(type: string): Array<{ id: number; centroid?(): { x: number; y: number } }> } }
+  }).core;
+  const elements = core?.topo?.elements?.(type);
+  if (!elements || elements.length === 0) return [];
+
+  let maxY = -Infinity;
+  for (const el of elements) {
+    const c = el.centroid?.();
+    if (c && c.y > maxY) maxY = c.y;
+  }
+  const tol = 0.001;
+  return elements
+    .filter((el) => { const c = el.centroid?.(); return c !== undefined && Math.abs(c.y - maxY) < tol; })
+    .map((el) => el.id)
+    .sort((a, b) => a - b);
 }
