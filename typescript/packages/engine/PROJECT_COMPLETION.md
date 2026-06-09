@@ -320,6 +320,32 @@ THE REPEATABLE PATTERN (now proven — this is how the remaining grind goes; dri
 PROVEN WAVES this session: Topology subsystem, create() pass, move-dispatch — each codex-driven,
 reviewed, independently verified, committed.
 
+## Update 9: FULL faithful OUTCOME parity for representative games across ALL move families
+The faithful single engine now plays COMPLETE games move-for-move AND computes the correct winner,
+verified against recorded Java trials (LUDII_ARGCOMPILER=1, parity harness):
+  Breakthrough / Leap Frog / Gomoku / Amazons → 100% OUTCOME_OK (0 MOVE_MISMATCH, 0 WINNER_MISMATCH).
+Covers Step + Slide + Hop + Add + Shoot move families, moveAgain/phase flow, and reach/no-moves end
+conditions. Bespoke never regressed across any wave.
+
+WAVES THIS SESSION (each codex-driven, independently verified, committed; bespoke untouched):
+  create() chain: Board.createTopology, Piece-extends-Component, Equipment.createItems, Topology
+  subsystem, create() pass. Move dispatch: move:step/slide/hop/add/shoot via FAITHFUL_MOVE_VARIANTS +
+  compileFaithfulMoveVariant. End/winner: IsIn region-normalize, (is In)->IsIn / (no Moves)->NoMoves
+  direct binding, (sites Mover|Top|Bottom) preferred dispatch + rectangular-row fallback.
+
+ACCEPTANCE HARNESS (reusable): probe-game.mjs <Game> [plies] (faithful vs bespoke first-moves),
+probe-play.mjs (Breakthrough), probe-slide.mjs (Amazons), probe-compile-guard.mjs (10 games compile),
+probe-topology.mjs; plus `LUDII_ARGCOMPILER=1 replay-trials --filter <Game>` for full OUTCOME parity.
+
+REPEATABLE WAVE LOOP (proven 9×): probe a representative game → identify the move-family/eval/end gap
+→ codex wave with multi-gate acceptance (target probe + all prior regressions + bespoke slice + tsc/
+build) → independently verify every gate → commit. Each wave only ever GROWS parity.
+
+KNOWN NEXT GAPS (from batch measurement): TTT/Hex deeper-ply MOVE_MISMATCH (Java-trial divergence past
+opening); Nine Men's Morris / Oware compile-fallback (ArgCompiler throws → bespoke); Reversi
+ForEachSite.eval; many games untested. Each is a next wave. Eventually: faithful ≥ bespoke across the
+corpus → DELETE bespoke (compiler1to1 + *1to1 + registry make<X>).
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
