@@ -13,6 +13,7 @@ import { BaseLudeme, type IGame } from "../../other/other/BaseLudeme.js";
 import { Item, type ItemType, type RoleType } from "./Item.js";
 import type { SiteType } from "./other/Hints.js";
 import { Board as BoardContainer } from "./container/board/Board.js";
+import { Piece } from "./component/PieceFaithful.js";
 
 // ---------------------------------------------------------------------------
 // Java Constants
@@ -1062,16 +1063,8 @@ export class Equipment extends BaseLudeme {
    * @java new Piece("Disc", RoleType.Neutral, null, null, null, null, null, null)
    */
   private _makeEmptyPiece(): Component {
-    // Use escape hatch — Piece constructor is in Piece.ts which has a simpler signature.
-    return { role: () => "Neutral" as RoleType, name: () => "Disc", setIndex: () => undefined,
-             setName: () => undefined, setRole: () => undefined, setRoleFromPlayerId: () => undefined,
-             owner: () => 0, index: () => 0, type: () => "Component" as ItemType,
-             create: () => undefined, generator: () => null,
-             clone: function() { return this; },
-             getClass: () => ({ toString: () => "class game.equipment.component.Piece" }),
-             componentGeneratorRulesToEnglish: () => "", getNameWithoutNumber: () => "Disc",
-             toEnglish: () => "Disc",
-           } as unknown as Component;
+    // @java new Piece("Disc", RoleType.Neutral, null, null, null, null, null, null)
+    return new Piece("Disc", "Neutral") as unknown as Component;
   }
 
   /**
@@ -1079,15 +1072,8 @@ export class Equipment extends BaseLudeme {
    * @java new Piece(name, role, null, null, null, null, null, null)
    */
   private _makePiece(name: string, role: RoleType): Component {
-    return { role: () => role, name: () => name, setIndex: () => undefined,
-             setName: () => undefined, setRole: () => undefined, setRoleFromPlayerId: () => undefined,
-             owner: () => 0, index: () => 0, type: () => "Component" as ItemType,
-             create: () => undefined, generator: () => null,
-             clone: function() { return this; },
-             getClass: () => ({ toString: () => "class game.equipment.component.Piece" }),
-             componentGeneratorRulesToEnglish: () => "", getNameWithoutNumber: () => name,
-             toEnglish: () => name,
-           } as unknown as Component;
+    // @java new Piece(name, role, null, null, null, null, null, null)
+    return new Piece(name, role) as unknown as Component;
   }
 
   /**

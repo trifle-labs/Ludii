@@ -147,7 +147,7 @@ export class Die extends Component {
   }
 
   /** @java Die.clone() */
-  public clone(): Die {
+  public override clone(): Die {
     const d = new Die(
       this.name() ?? "",
       this.role(),

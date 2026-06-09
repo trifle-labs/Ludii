@@ -178,6 +178,25 @@ export class Component extends Item {
   }
 
   /**
+   * @java Component.clone() — copy this component (used by Equipment.createItems to
+   * clone an `Each` component once per player). A prototype-preserving shallow copy
+   * reproduces Java's copy constructor for the equipment-build use (role/name/index
+   * are then overwritten on the copy by createItems).
+   */
+  public clone(): Component {
+    return Object.assign(Object.create(Object.getPrototypeOf(this) as object), this) as Component;
+  }
+
+  /**
+   * @java Object.getClass() — minimal stand-in. Equipment.createItems reads
+   * getClass().toString() only to derive a default name when name() is null.
+   */
+  public getClass(): { toString(): string } {
+    const cn = this.constructor.name;
+    return { toString: () => `class game.equipment.component.${cn}` };
+  }
+
+  /**
    * @java Component.setDirection(DirectionFacing)
    * Set the direction of the piece.
    */

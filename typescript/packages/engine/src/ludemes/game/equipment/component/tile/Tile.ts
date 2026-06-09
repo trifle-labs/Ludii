@@ -243,7 +243,7 @@ export class Tile extends Component {
   }
 
   /** @java Tile.clone() */
-  public clone(): Tile {
+  public override clone(): Tile {
     // @java Tile.java:156–185 — copy constructor
     const t = new Tile(
       this.name() ?? "",
