@@ -15,10 +15,18 @@ import type { SiteType } from "../../../../other/action/SiteType.js";
 import type { ContainerStyleType } from "../../../../metadata/graphics/util/ContainerStyleType.js";
 import { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import { buildGraphRadials, type CellFlatRadials } from "../../../../topology-radials.js";
+import { Topology } from "../../../../other/topology/Topology.js";
+import { Vertex } from "../../../../other/topology/Vertex.js";
+import { Edge } from "../../../../other/topology/Edge.js";
+import { Cell } from "../../../../other/topology/Cell.js";
 
 /** Minimal Graph shape read by createTopology (faces drive containerSpan). */
 interface GraphLike {
-  faces?: { length: number };
+  vertices?: readonly { id: number; x: number; y: number; z?: number }[];
+  edges?: readonly { id: number; a: number; b: number }[];
+  faces?: readonly { id: number; vertices: readonly number[]; cx: number; cy: number }[];
+  perimeter?: readonly number[];
+  pivots?: ReadonlyMap<number, number>;
 }
 
 /** Minimal GraphFunction interface for Board.graphFunction. */
@@ -77,6 +85,9 @@ export class Board extends Container {
   public containerSpan = 1;
   /** True once createTopology() has run (or lazy build completed). */
   private topologyBuilt = false;
+
+  /** @java Container.topology — faithful graph topology. */
+  protected readonly faithfulTopology: Topology = new Topology();
 
   /** @java Board.edgeRange */
   private edgeRange: Range | null = null;
@@ -221,6 +232,12 @@ export class Board extends Container {
     this.buildTopology();
   }
 
+  /** @java Container.topology() */
+  public topology(): Topology {
+    if (!this.topologyBuilt) this.buildTopology();
+    return this.faithfulTopology;
+  }
+
   /**
    * Build (and memoise) the topology from the graph function. Idempotent.
    * Called by createTopology() and lazily by topology getters, so the faithful
@@ -248,6 +265,9 @@ export class Board extends Container {
     }
     if (traj.numSites === 0) return; // degenerate / boardless — leave defaults
 
+    this.trajectories = traj;
+    this.populateFaithfulTopology(graph);
+
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (let site = 0; site < traj.numSites; site += 1) {
       const x = traj.xOf(site), y = traj.yOf(site);
@@ -258,11 +278,97 @@ export class Board extends Container {
     }
     this.width = Math.max(1, Math.ceil(maxX - minX) + 1);
     this.height = Math.max(1, Math.ceil(maxY - minY) + 1);
-    this.trajectories = traj;
     this.radials = buildGraphRadials(traj);
     this.setNumSites(traj.numSites);
     const numFaces = (graph.faces?.length) ?? traj.numSites;
     this.containerSpan = Math.max(numFaces, traj.numSites);
+  }
+
+  /**
+   * @java Core/src/game/equipment/container/board/Board.java:createTopology
+   */
+  private populateFaithfulTopology(graph: GraphLike): void {
+    const topology = this.faithfulTopology;
+    topology.cells().length = 0;
+    topology.edges().length = 0;
+    topology.vertices().length = 0;
+    topology.setGraph(graph);
+
+    const graphVertices = graph.vertices ?? [];
+    for (let i = 0; i < graphVertices.length; i += 1) {
+      const gv = graphVertices[i]!;
+      const vertex = new Vertex(i, gv.x, gv.y, gv.z ?? 0);
+      vertex.setRow(Math.round(gv.y));
+      vertex.setColumn(Math.round(gv.x));
+      vertex.setLayer(Math.round(gv.z ?? 0));
+      vertex.setLabel(`${i}`);
+      topology.vertices().push(vertex);
+    }
+
+    if (graph.pivots) {
+      for (const [vid, pivotId] of graph.pivots) {
+        const vertex = topology.vertices()[vid];
+        const pivot = topology.vertices()[pivotId];
+        if (vertex && pivot) vertex.setPivot(pivot);
+      }
+    }
+
+    const graphEdges = graph.edges ?? [];
+    for (let i = 0; i < graphEdges.length; i += 1) {
+      const ge = graphEdges[i]!;
+      const vA = topology.vertices()[ge.a];
+      const vB = topology.vertices()[ge.b];
+      if (!vA || !vB) continue;
+      const edge = new Edge(i, vA, vB);
+      edge.setRow(Math.round(edge.centroid3D().y()));
+      edge.setColumn(Math.round(edge.centroid3D().x()));
+      edge.setLayer(Math.round(edge.centroid3D().z()));
+      topology.edges().push(edge);
+      vA.edges().push(edge);
+      vB.edges().push(edge);
+    }
+
+    const edgeByVertices = new Map<string, Edge>();
+    for (const edge of topology.edges()) {
+      const a = edge.vA().index();
+      const b = edge.vB().index();
+      edgeByVertices.set(a < b ? `${a}:${b}` : `${b}:${a}`, edge);
+    }
+
+    const graphFaces = graph.faces ?? [];
+    for (let i = 0; i < graphFaces.length; i += 1) {
+      const face = graphFaces[i]!;
+      const cell = new Cell(face.id, face.cx, face.cy, 0);
+      cell.setRow(Math.round(face.cy));
+      cell.setColumn(Math.round(face.cx));
+      cell.setLayer(0);
+      cell.setLabel(`${face.id}`);
+      topology.cells().push(cell);
+
+      for (const vid of face.vertices) {
+        const vertex = topology.vertices()[vid];
+        if (!vertex) continue;
+        cell.vertices().push(vertex);
+        vertex.cells().push(cell);
+      }
+
+      for (let n = 0; n < face.vertices.length; n += 1) {
+        const a = face.vertices[n]!;
+        const b = face.vertices[(n + 1) % face.vertices.length]!;
+        const edge = edgeByVertices.get(a < b ? `${a}:${b}` : `${b}:${a}`);
+        if (!edge) continue;
+        cell.edges().push(edge);
+        edge.cells().push(cell);
+      }
+    }
+
+    const perimVertices = (graph.perimeter ?? [])
+      .map((vid) => topology.vertices()[vid])
+      .filter((v): v is Vertex => v !== undefined);
+    topology.setPerimeter(perimVertices.length > 0 ? [{ vertices: perimVertices }] : []);
+    topology.setTrajectories(this.trajectories);
+    topology.setNumEdges(regularFaceEdgeCount(graphFaces));
+    this.setNumSites(topology.cells().length);
   }
 
   /**
@@ -282,4 +388,11 @@ export class Board extends Container {
 /** Helper: a range that is always [0..0]. */
 function makeZeroRange(): Range {
   return { min: () => 0, max: () => 0 };
+}
+
+function regularFaceEdgeCount(faces: readonly { vertices: readonly number[] }[]): number {
+  if (faces.length === 0) return UNDEFINED;
+  const count = faces[0]!.vertices.length;
+  for (const face of faces) if (face.vertices.length !== count) return UNDEFINED;
+  return count;
 }

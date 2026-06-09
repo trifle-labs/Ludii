@@ -169,6 +169,36 @@ const RelationType = {
   Orthogonal:  "Orthogonal",
 } as const;
 
+function containerTopology(container: Container): Topology {
+  const c = container as unknown as { topology?: () => Topology };
+  if (typeof c.topology === "function") return c.topology();
+  throw new Error("Container topology is unavailable.");
+}
+
+function containerNumSites(container: Container): number {
+  const c = container as unknown as { numSites?: (() => number) | number; getNumSites?: () => number };
+  if (typeof c.numSites === "function") return c.numSites();
+  if (typeof c.getNumSites === "function") return c.getNumSites();
+  if (typeof c.numSites === "number") return c.numSites;
+  return 0;
+}
+
+function containerDefaultSite(container: Container): SiteType {
+  const c = container as unknown as { defaultSite?: (() => SiteType) | SiteType; getDefaultSite?: () => SiteType };
+  if (typeof c.defaultSite === "function") return c.defaultSite();
+  if (typeof c.getDefaultSite === "function") return c.getDefaultSite();
+  if (typeof c.defaultSite === "string") return c.defaultSite;
+  return "Cell";
+}
+
+function boardTracks(board: Board & { tracks(): Track[]; setOwnedTrack(tracks: Track[][]): void }): Track[] {
+  const b = board as unknown as { tracks?: (() => Track[]) | Track[]; getTracks?: () => readonly Track[] };
+  if (typeof b.tracks === "function") return b.tracks();
+  if (Array.isArray(b.tracks)) return b.tracks;
+  if (typeof b.getTracks === "function") return [...b.getTracks()];
+  return [];
+}
+
 /** @java other.ItemType.isContainer(type) — true if type is a container kind */
 function itemTypeIsContainer(type: ItemType | null): boolean {
   return type === "Board" || type === "Container" || type === "Hand" || type === "Dice";
@@ -700,7 +730,7 @@ export class Equipment extends BaseLudeme {
 
     // @java Equipment.java:573–596 — track setup
     if (g.hasTrack()) {
-      const tracks = g.board().tracks();
+      const tracks = boardTracks(g.board());
       for (let i = 0; i < tracks.length; i++) {
         tracks[i]!.setTrackIdx(i);
       }
@@ -794,10 +824,10 @@ export class Equipment extends BaseLudeme {
       // @java Equipment.java:657–658 — create topology
       cont.createTopology(
         index,
-        (cont.index() === 0) ? UNDEFINED : containers[0]!.topology().numEdges(),
+        (cont.index() === 0) ? UNDEFINED : containerTopology(containers[0]!).numEdges(),
       );
 
-      const topology = cont.topology();
+      const topology = containerTopology(cont);
 
       // @java Equipment.java:662–700 — compute topology data for each SiteType
       for (const type of (["Vertex", "Edge", "Cell"] as SiteType[])) {
@@ -846,25 +876,25 @@ export class Equipment extends BaseLudeme {
       index += (cont.index() === 0)
         ? Math.max(
             topology.cells().length,
-            topology.getGraphElements(cont.defaultSite()).length,
+            topology.getGraphElements(containerDefaultSite(cont)).length,
           )
-        : cont.numSites();
+        : containerNumSites(cont);
       topology.optimiseMemory();
     }
 
     // @java Equipment.java:715–716 — INIT TOTAL SITES
     for (const cont of containers) {
-      this._totalDefaultSites += cont.numSites();
+      this._totalDefaultSites += containerNumSites(cont);
     }
 
     const maxSiteMainBoard = Math.max(
-      containers[0]!.topology().cells().length,
-      containers[0]!.topology().getGraphElements(containers[0]!.defaultSite()).length,
+      containerTopology(containers[0]!).cells().length,
+      containerTopology(containers[0]!).getGraphElements(containerDefaultSite(containers[0]!)).length,
     );
 
     let fakeTotalDefaultSite = maxSiteMainBoard;
     for (let i = 1; i < containers.length; i++) {
-      fakeTotalDefaultSite += containers[i]!.topology().cells().length;
+      fakeTotalDefaultSite += containerTopology(containers[i]!).cells().length;
     }
 
     // @java Equipment.java:727–750 — INIT OFFSET
@@ -878,10 +908,10 @@ export class Equipment extends BaseLudeme {
         }
         accumulatedOffset += maxSiteMainBoard;
       } else {
-        for (let j = 0; j < cont.numSites(); ++j) {
+        for (let j = 0; j < containerNumSites(cont); ++j) {
           this._offset[j + accumulatedOffset] = j;
         }
-        accumulatedOffset += cont.numSites();
+        accumulatedOffset += containerNumSites(cont);
       }
     }
 
@@ -890,7 +920,7 @@ export class Equipment extends BaseLudeme {
     let count = 0;
     for (let i = 0; i < containers.length; i++) {
       this._sitesFrom[i] = count;
-      count += (i === 0) ? maxSiteMainBoard : containers[i]!.numSites();
+      count += (i === 0) ? maxSiteMainBoard : containerNumSites(containers[i]!);
     }
 
     // @java Equipment.java:761–779 — INIT CONTAINER ID
@@ -906,7 +936,7 @@ export class Equipment extends BaseLudeme {
     }
     for (
       let j = this._sitesFrom[this._sitesFrom.length - 1]!;
-      j < this._sitesFrom[this._sitesFrom.length - 1]! + containers[idBoard]!.numSites();
+      j < this._sitesFrom[this._sitesFrom.length - 1]! + containerNumSites(containers[idBoard]!);
       j++
     ) {
       this._containerId[count] = idBoard;

@@ -177,6 +177,8 @@ export class Topology {
 
   /** @java Topology#numEdges() */
   numEdges(): number { return this._numEdges; }
+  /** @java Topology#setNumEdges(int) */
+  setNumEdges(n: number): void { this._numEdges = n; }
 
   /** @java Topology#trajectories() — opaque reference */
   trajectories(): unknown { return this._trajectories; }
@@ -472,8 +474,684 @@ export class Topology {
     return this._connectivities.get(type) ?? [];
   }
 
+  // -------- pre-generation methods -----------------------------------------
+
+  /**
+   * @java Core/src/other/topology/Topology.java:computeRelation
+   */
+  computeRelation(type: SiteType): void {
+    const elements = this.getGraphElements(type);
+    for (const element of elements) {
+      clearArray(element.neighbours());
+      clearArray(element.adjacent());
+      clearArray(element.orthogonal());
+      clearArray(element.diagonal());
+      clearArray(element.off());
+    }
+
+    if (type === "Cell") {
+      for (let i = 0; i < this._cells.length; i += 1) {
+        const a = this._cells[i]!;
+        for (let j = i + 1; j < this._cells.length; j += 1) {
+          const b = this._cells[j]!;
+          const sharedEdges = countShared(a.edges(), b.edges());
+          const sharedVertices = countShared(a.vertices(), b.vertices());
+          if (sharedEdges > 0) {
+            addUnique(a.orthogonal(), b);
+            addUnique(b.orthogonal(), a);
+            addUnique(a.adjacent(), b);
+            addUnique(b.adjacent(), a);
+            addUnique(a.neighbours(), b);
+            addUnique(b.neighbours(), a);
+          } else if (sharedVertices > 0) {
+            addUnique(a.diagonal(), b);
+            addUnique(b.diagonal(), a);
+            addUnique(a.neighbours(), b);
+            addUnique(b.neighbours(), a);
+          }
+        }
+      }
+      return;
+    }
+
+    if (type === "Vertex") {
+      for (const edge of this._edges) {
+        const a = edge.vA();
+        const b = edge.vB();
+        addUnique(a.orthogonal(), b);
+        addUnique(b.orthogonal(), a);
+        addUnique(a.adjacent(), b);
+        addUnique(b.adjacent(), a);
+        addUnique(a.neighbours(), b);
+        addUnique(b.neighbours(), a);
+      }
+      return;
+    }
+
+    for (let i = 0; i < this._edges.length; i += 1) {
+      const a = this._edges[i]!;
+      for (let j = i + 1; j < this._edges.length; j += 1) {
+        const b = this._edges[j]!;
+        if (a.containsVertex(b.vA().index()) || a.containsVertex(b.vB().index())) {
+          addUnique(a.orthogonal(), b);
+          addUnique(b.orthogonal(), a);
+          addUnique(a.adjacent(), b);
+          addUnique(b.adjacent(), a);
+          addUnique(a.neighbours(), b);
+          addUnique(b.neighbours(), a);
+        }
+      }
+    }
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:computeSupportedDirection
+   */
+  computeSupportedDirection(type: SiteType): void {
+    const all = this._supportedDirections.get(type)!;
+    const orthogonal = this._supportedOrthogonalDirections.get(type)!;
+    const diagonal = this._supportedDiagonalDirections.get(type)!;
+    const adjacent = this._supportedAdjacentDirections.get(type)!;
+    const off = this._supportedOffDirections.get(type)!;
+    clearArray(all);
+    clearArray(orthogonal);
+    clearArray(diagonal);
+    clearArray(adjacent);
+    clearArray(off);
+
+    for (const element of this.getGraphElements(type)) {
+      fillDirections(element, element.neighbours(), element.supportedDirections(), all);
+      fillDirections(element, element.orthogonal(), element.supportedOrthogonalDirections(), orthogonal);
+      fillDirections(element, element.diagonal(), element.supportedDiagonalDirections(), diagonal);
+      fillDirections(element, element.adjacent(), element.supportedAdjacentDirections(), adjacent);
+      fillDirections(element, element.off(), element.supportedOffDirections(), off);
+    }
+
+    sortDirections(all);
+    sortDirections(orthogonal);
+    sortDirections(diagonal);
+    sortDirections(adjacent);
+    sortDirections(off);
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:convertPropertiesToList
+   */
+  convertPropertiesToList(type: SiteType, elementIn: unknown): void {
+    const element = elementIn as TopologyElement;
+    const properties = element.properties();
+    const addIf = (bit: number, list: TopologyElement[]): void => {
+      if (properties.get(bit)) addUnique(list, element);
+    };
+
+    addIf(PROP.INNER, this.inner(type));
+    addIf(PROP.OUTER, this.outer(type));
+    addIf(PROP.INTERLAYER, this.interlayer(type));
+    addIf(PROP.PERIMETER, this.perimeter(type));
+    addIf(PROP.CORNER, this.corners(type));
+    addIf(PROP.CORNER_CONCAVE, this.cornersConcave(type));
+    addIf(PROP.CORNER_CONVEX, this.cornersConvex(type));
+    addIf(PROP.MAJOR, this.major(type));
+    addIf(PROP.MINOR, this.minor(type));
+    addIf(PROP.CENTRE, this.centre(type));
+    addIf(PROP.LEFT, this.left(type));
+    addIf(PROP.TOP, this.top(type));
+    addIf(PROP.RIGHT, this.right(type));
+    addIf(PROP.BOTTOM, this.bottom(type));
+    addIf(PROP.AXIAL, this.axial(type));
+    addIf(PROP.SLASH, this.slash(type));
+    addIf(PROP.SLOSH, this.slosh(type));
+    addIf(PROP.VERTICAL, this.vertical(type));
+    addIf(PROP.HORIZONTAL, this.horizontal(type));
+    addIf(PROP.ANGLED, this.angled(type));
+
+    for (let phase = 0; phase <= 5; phase += 1) {
+      if (properties.get(PROP.PHASE_0 + phase)) {
+        addUnique(this.phases(type)[phase]!, element);
+        element.setPhase(phase);
+      }
+    }
+
+    for (const [bit, dir] of PROP_SIDES) {
+      if (properties.get(bit)) addUnique(this.sides(type).get(dir)!, element);
+    }
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:computeRows
+   */
+  computeRows(type: SiteType, threeDimensions: boolean): void {
+    const rows = this.rows(type);
+    clearArray(rows);
+    if (this.shouldComputeFromCentroids(type, threeDimensions)) {
+      const values = uniqueSorted(
+        this.getGraphElements(type)
+          .filter((e) => e.centroid3D().z() === 0)
+          .map((e) => e.centroid3D().y()),
+      );
+      for (let i = 0; i < values.length; i += 1) {
+        rows.push([]);
+        for (const element of this.getGraphElements(type)) {
+          if (Math.abs(element.centroid3D().y() - values[i]!) < 0.001) {
+            rows[i]!.push(element);
+            element.setRow(i);
+          }
+        }
+      }
+    } else {
+      bucketByCoordinate(this.getGraphElements(type), rows, (e) => e.row());
+    }
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:computeColumns
+   */
+  computeColumns(type: SiteType, threeDimensions: boolean): void {
+    const columns = this.columns(type);
+    clearArray(columns);
+    if (this.shouldComputeFromCentroids(type, threeDimensions)) {
+      const values = uniqueSorted(
+        this.getGraphElements(type)
+          .filter((e) => e.centroid3D().z() === 0)
+          .map((e) => e.centroid3D().x()),
+      );
+      for (let i = 0; i < values.length; i += 1) {
+        columns.push([]);
+        for (const element of this.getGraphElements(type)) {
+          if (Math.abs(element.centroid3D().x() - values[i]!) < 0.001) {
+            columns[i]!.push(element);
+            element.setColumn(i);
+          }
+        }
+      }
+    } else {
+      bucketByCoordinate(this.getGraphElements(type), columns, (e) => e.col());
+    }
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:crossReferencePhases
+   */
+  crossReferencePhases(type: SiteType): void {
+    const elements = this.getGraphElements(type);
+    const values = new Array<number>(elements.length);
+    for (let e = 0; e < elements.length; e += 1) values[e] = this.elementPhase(type, e);
+    this._phaseByElementIndex.set(type, values);
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:computeLayers
+   */
+  computeLayers(type: SiteType): void {
+    const layers = this.layers(type);
+    clearArray(layers);
+    if (this.shouldComputeFromCentroids(type, false)) {
+      const values = uniqueSorted(this.getGraphElements(type).map((e) => e.centroid3D().z()));
+      for (let i = 0; i < values.length; i += 1) {
+        layers.push([]);
+        for (const element of this.getGraphElements(type)) {
+          if (element.centroid3D().z() === values[i]) {
+            layers[i]!.push(element);
+            element.setLayer(i);
+          }
+        }
+      }
+    } else {
+      bucketByCoordinate(this.getGraphElements(type), layers, (e) => e.layer());
+    }
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:computeCoordinates
+   */
+  computeCoordinates(type: SiteType): void {
+    if (!this.shouldComputeFromCentroids(type, false)) return;
+    for (const element of this.getGraphElements(type)) {
+      element.setLabel(`${columnLabel(element.col())}${element.row() + 1}`);
+    }
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:preGenerateDistanceTables
+   */
+  preGenerateDistanceTables(type: SiteType): void {
+    this.ensureBasicPrecomputedRegions(type);
+    this.preGenerateDistanceToPrecomputed(type, this._centre, this._distanceToCentre);
+    this.preGenerateDistanceToPrecomputed(type, this._corners, this._distanceToCorners);
+    this.preGenerateDistanceToPrecomputed(type, this._perimeter, this._distanceToSides);
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:preGenerateDistanceToEachElementToEachOther
+   */
+  preGenerateDistanceToEachElementToEachOther(type: SiteType, relation: RelationType): void {
+    if (this._distanceToOtherSite.get(type) !== undefined) return;
+    const elements = this.getGraphElements(type);
+    const distances = elements.map(() => new Array<number>(elements.length).fill(0));
+
+    for (let idElem = 0; idElem < elements.length; idElem += 1) {
+      const queue: number[] = relationNeighbours(elements[idElem]!, relation).map((e) => e.index());
+      const queued = new Set(queue);
+      let currDist = 0;
+      while (queue.length > 0) {
+        currDist += 1;
+        const level = queue.splice(0, queue.length);
+        queued.clear();
+        for (const idNeighbour of level) {
+          if (idNeighbour === idElem || distances[idElem]![idNeighbour]! > 0) continue;
+          distances[idElem]![idNeighbour] = currDist;
+          for (const next of relationNeighbours(elements[idNeighbour]!, relation)) {
+            const nextIndex = next.index();
+            if (!queued.has(nextIndex) && !level.includes(nextIndex)) {
+              queued.add(nextIndex);
+              queue.push(nextIndex);
+            }
+          }
+        }
+      }
+    }
+
+    this._distanceToOtherSite.set(type, distances);
+    for (let idElem = 0; idElem < elements.length; idElem += 1) {
+      const element = elements[idElem]!;
+      clearArray(element.sitesAtDistance());
+      let maxDistance = 0;
+      for (const d of distances[idElem]!) if (maxDistance < d) maxDistance = d;
+      element.sitesAtDistance().push([element]);
+      for (let distance = 1; distance <= maxDistance; distance += 1) {
+        const sitesAtDistance: TopologyElement[] = [];
+        for (let idOther = 0; idOther < elements.length; idOther += 1) {
+          if (distances[idElem]![idOther] === distance) sitesAtDistance.push(elements[idOther]!);
+        }
+        element.sitesAtDistance().push(sitesAtDistance);
+      }
+    }
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:computeDoesCross
+   */
+  computeDoesCross(): void {
+    for (const edge of this._edges) edge.setDoesCrossSet(new Set<number>());
+    for (let i = 0; i < this._edges.length; i += 1) {
+      const edge = this._edges[i]!;
+      const a = edge.vA().centroid();
+      const b = edge.vB().centroid();
+      for (let j = i + 1; j < this._edges.length; j += 1) {
+        const other = this._edges[j]!;
+        const c = other.vA().centroid();
+        const d = other.vB().centroid();
+        if (
+          pointDistance(a, c) < 0.001 ||
+          pointDistance(a, d) < 0.001 ||
+          pointDistance(b, c) < 0.001 ||
+          pointDistance(b, d) < 0.001
+        ) continue;
+        if (segmentsIntersect(a.x, a.y, b.x, b.y, c.x, c.y, d.x, d.y)) {
+          edge.setDoesCross(other.index());
+          other.setDoesCross(edge.index());
+        }
+      }
+    }
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:pregenerateFeaturesData(Game,Container)
+   */
+  pregenerateFeaturesData(game: {
+    board?: () => { defaultSite?: (() => SiteType) | SiteType; getDefaultSite?: () => SiteType };
+  }, container: unknown): void {
+    this.pregenerateFeaturesDataForType(container, "Cell");
+    this.pregenerateFeaturesDataForType(container, "Vertex");
+    const board = game.board?.();
+    const defaultSite = typeof board?.defaultSite === "function"
+      ? board.defaultSite()
+      : typeof board?.getDefaultSite === "function"
+        ? board.getDefaultSite()
+        : board?.defaultSite;
+    if (defaultSite === "Edge") this.pregenerateFeaturesDataForType(container, "Edge");
+  }
+
+  /**
+   * @java Core/src/other/topology/Topology.java:pregenerateFeaturesData(Container,SiteType)
+   */
+  pregenerateFeaturesDataForType(_container: unknown, type: SiteType): void {
+    const connectivities: number[] = [];
+    this._connectivities.set(type, connectivities);
+    for (const element of this.getGraphElements(type)) {
+      const orthos = [...element.orthogonal()].sort(angleComparator(element));
+      element.setSortedOrthos(orthos);
+      if (!connectivities.includes(orthos.length)) connectivities.push(orthos.length);
+    }
+    connectivities.sort((a, b) => a - b);
+  }
+
+  /** @java Topology#elementPhase(SiteType,int) */
+  elementPhase(type: SiteType, index: number): number {
+    const element = this.getGraphElements(type)[index];
+    if (!element) return -1;
+    for (let c = 0; c < MAX_CELL_COLOURS; c += 1) {
+      if (this.phases(type)[c]?.includes(element)) return c;
+    }
+    return -1;
+  }
+
+  /** @java Topology#computeNumEdgeIfRegular() */
+  computeNumEdgeIfRegular(): void {
+    if (this._cells.length === 0) {
+      this._numEdges = UNDEFINED;
+      return;
+    }
+    const count = this._cells[0]!.edges().length;
+    for (const cell of this._cells) {
+      if (cell.edges().length !== count) {
+        this._numEdges = UNDEFINED;
+        return;
+      }
+    }
+    this._numEdges = count;
+  }
+
+  private shouldComputeFromCentroids(type: SiteType, threeDimensions: boolean): boolean {
+    if (threeDimensions) return true;
+    const graph = this._graph as { duplicateCoordinates?: (type: SiteType) => boolean } | null;
+    if (graph === null || typeof graph.duplicateCoordinates !== "function") return true;
+    return graph.duplicateCoordinates(type);
+  }
+
+  private preGenerateDistanceToPrecomputed(
+    type: SiteType,
+    precomputed: Map<SiteType, TopologyElement[]>,
+    distancesMap: Map<SiteType, number[]>,
+  ): void {
+    const elements = this.getGraphElements(type);
+    if (elements.length === 0) return;
+    const distances = new Array<number>(elements.length).fill(-1);
+    let maxDistance = -1;
+    const startingPoint = new Set<number>();
+
+    for (const start of precomputed.get(type) ?? []) {
+      const visited = new Set<number>();
+      distances[start.index()] = 0;
+      visited.add(start.index());
+      startingPoint.add(start.index());
+      let currDist = 0;
+      let curr = [...start.adjacent()];
+      while (curr.length > 0) {
+        currDist += 1;
+        const next: TopologyElement[] = [];
+        for (const neighbour of curr) {
+          const idx = neighbour.index();
+          if (visited.has(idx) || startingPoint.has(idx)) continue;
+          if (distances[idx]! > 0 && distances[idx]! <= currDist) continue;
+          maxDistance = Math.max(maxDistance, currDist);
+          distances[idx] = currDist;
+          visited.add(idx);
+          next.push(...neighbour.adjacent());
+        }
+        curr = next;
+      }
+    }
+
+    const disconnectedDistance = maxDistance + 1;
+    for (let i = 0; i < distances.length; i += 1) {
+      if (distances[i] === -1) distances[i] = disconnectedDistance;
+    }
+    distancesMap.set(type, distances);
+  }
+
+  private ensureBasicPrecomputedRegions(type: SiteType): void {
+    const elements = this.getGraphElements(type);
+    if (elements.length === 0) return;
+
+    const perimeter = this.perimeter(type);
+    if (perimeter.length === 0) {
+      for (const element of elements) {
+        if (element.adjacent().length < maxAdjacent(elements)) addUnique(perimeter, element);
+      }
+    }
+
+    const corners = this.corners(type);
+    if (corners.length === 0 && perimeter.length > 0) {
+      let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+      for (const element of elements) {
+        const c = element.centroid();
+        minX = Math.min(minX, c.x);
+        maxX = Math.max(maxX, c.x);
+        minY = Math.min(minY, c.y);
+        maxY = Math.max(maxY, c.y);
+      }
+      for (const element of perimeter) {
+        const c = element.centroid();
+        if (
+          (Math.abs(c.x - minX) < 0.001 || Math.abs(c.x - maxX) < 0.001) &&
+          (Math.abs(c.y - minY) < 0.001 || Math.abs(c.y - maxY) < 0.001)
+        ) addUnique(corners, element);
+      }
+    }
+
+    const centre = this.centre(type);
+    if (centre.length === 0) {
+      let avgX = 0;
+      let avgY = 0;
+      for (const element of elements) {
+        avgX += element.centroid().x;
+        avgY += element.centroid().y;
+      }
+      avgX /= elements.length;
+      avgY /= elements.length;
+      let best: TopologyElement | null = null;
+      let bestDist = Infinity;
+      for (const element of elements) {
+        const c = element.centroid();
+        const d = (c.x - avgX) * (c.x - avgX) + (c.y - avgY) * (c.y - avgY);
+        if (d < bestDist) {
+          bestDist = d;
+          best = element;
+        }
+      }
+      if (best) centre.push(best);
+    }
+  }
+
   // -------- memory ---------------------------------------------------------
 
   /** @java Topology#optimiseMemory() — no-op in TS */
   optimiseMemory(): void { /* no-op */ }
+}
+
+// @java Core/src/game/util/graph/Properties.java
+const PROP = {
+  INNER: 0,
+  OUTER: 1,
+  PERIMETER: 2,
+  CENTRE: 3,
+  MAJOR: 4,
+  MINOR: 5,
+  INTERLAYER: 7,
+  CORNER: 10,
+  CORNER_CONVEX: 11,
+  CORNER_CONCAVE: 12,
+  PHASE_0: 13,
+  LEFT: 25,
+  RIGHT: 26,
+  TOP: 27,
+  BOTTOM: 28,
+  AXIAL: 30,
+  HORIZONTAL: 31,
+  VERTICAL: 32,
+  ANGLED: 33,
+  SLASH: 34,
+  SLOSH: 35,
+  SIDE_N: 40,
+  SIDE_E: 41,
+  SIDE_S: 42,
+  SIDE_W: 43,
+  SIDE_NE: 44,
+  SIDE_SE: 45,
+  SIDE_SW: 46,
+  SIDE_NW: 47,
+} as const;
+
+const PROP_SIDES: readonly (readonly [number, DirectionFacing])[] = [
+  [PROP.SIDE_E, "E" as DirectionFacing],
+  [PROP.SIDE_W, "W" as DirectionFacing],
+  [PROP.SIDE_N, "N" as DirectionFacing],
+  [PROP.SIDE_S, "S" as DirectionFacing],
+  [PROP.SIDE_NE, "NE" as DirectionFacing],
+  [PROP.SIDE_NW, "NW" as DirectionFacing],
+  [PROP.SIDE_SW, "SW" as DirectionFacing],
+  [PROP.SIDE_SE, "SE" as DirectionFacing],
+];
+
+const DIRECTION_ORDER = [
+  "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+  "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
+];
+
+function clearArray<T>(array: T[]): void {
+  array.length = 0;
+}
+
+function addUnique<T>(array: T[], value: T): void {
+  if (!array.includes(value)) array.push(value);
+}
+
+function countShared<T>(a: readonly T[], b: readonly T[]): number {
+  let count = 0;
+  for (const item of a) if (b.includes(item)) count += 1;
+  return count;
+}
+
+function uniqueSorted(values: readonly number[]): number[] {
+  const out: number[] = [];
+  for (const value of values) {
+    let found = false;
+    for (const existing of out) {
+      if (Math.abs(value - existing) < 0.001) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) out.push(value);
+  }
+  out.sort((a, b) => a - b);
+  return out;
+}
+
+function bucketByCoordinate(
+  elements: readonly TopologyElement[],
+  buckets: TopologyElement[][],
+  coord: (element: TopologyElement) => number,
+): void {
+  for (const element of elements) {
+    const id = coord(element);
+    while (buckets.length <= id) buckets.push([]);
+    buckets[id]!.push(element);
+  }
+}
+
+function columnLabel(col: number): string {
+  let label = "";
+  if (col >= 26) label = String.fromCharCode("A".charCodeAt(0) + Math.floor(col / 26) - 1);
+  return label + String.fromCharCode("A".charCodeAt(0) + (col % 26));
+}
+
+function relationNeighbours(element: TopologyElement, relation: RelationType): TopologyElement[] {
+  switch (relation) {
+    case "Adjacent": return element.adjacent();
+    case "All": return element.neighbours();
+    case "Diagonal": return element.diagonal();
+    case "OffDiagonal": return element.off();
+    case "Orthogonal": return element.orthogonal();
+    default: return [];
+  }
+}
+
+function fillDirections(
+  from: TopologyElement,
+  neighbours: readonly TopologyElement[],
+  elementDirections: DirectionFacing[],
+  topologyDirections: DirectionFacing[],
+): void {
+  clearArray(elementDirections);
+  for (const to of neighbours) {
+    const dir = directionBetween(from, to);
+    if (dir === null) continue;
+    addUnique(elementDirections, dir);
+    addUnique(topologyDirections, dir);
+  }
+}
+
+function directionBetween(from: TopologyElement, to: TopologyElement): DirectionFacing | null {
+  const a = from.centroid();
+  const b = to.centroid();
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  if (Math.abs(dx) < 0.000001 && Math.abs(dy) < 0.000001) return null;
+  const angle = Math.atan2(dy, dx);
+  const sector = ((Math.round((Math.PI / 2 - angle) / (Math.PI / 8)) % 16) + 16) % 16;
+  return DIRECTION_ORDER[sector] as DirectionFacing;
+}
+
+function sortDirections(dirs: DirectionFacing[]): void {
+  dirs.sort((a, b) => DIRECTION_ORDER.indexOf(a) - DIRECTION_ORDER.indexOf(b));
+}
+
+function pointDistance(a: { x: number; y: number }, b: { x: number; y: number }): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function orientation(
+  ax: number, ay: number,
+  bx: number, by: number,
+  cx: number, cy: number,
+): number {
+  const value = (by - ay) * (cx - bx) - (bx - ax) * (cy - by);
+  if (Math.abs(value) < 1e-9) return 0;
+  return value > 0 ? 1 : 2;
+}
+
+function onSegment(
+  ax: number, ay: number,
+  bx: number, by: number,
+  cx: number, cy: number,
+): boolean {
+  return bx <= Math.max(ax, cx) && bx >= Math.min(ax, cx) &&
+    by <= Math.max(ay, cy) && by >= Math.min(ay, cy);
+}
+
+function segmentsIntersect(
+  ax: number, ay: number,
+  bx: number, by: number,
+  cx: number, cy: number,
+  dx: number, dy: number,
+): boolean {
+  const o1 = orientation(ax, ay, bx, by, cx, cy);
+  const o2 = orientation(ax, ay, bx, by, dx, dy);
+  const o3 = orientation(cx, cy, dx, dy, ax, ay);
+  const o4 = orientation(cx, cy, dx, dy, bx, by);
+  if (o1 !== o2 && o3 !== o4) return true;
+  if (o1 === 0 && onSegment(ax, ay, cx, cy, bx, by)) return true;
+  if (o2 === 0 && onSegment(ax, ay, dx, dy, bx, by)) return true;
+  if (o3 === 0 && onSegment(cx, cy, ax, ay, dx, dy)) return true;
+  if (o4 === 0 && onSegment(cx, cy, bx, by, dx, dy)) return true;
+  return false;
+}
+
+function angleComparator(origin: TopologyElement): (a: TopologyElement, b: TopologyElement) => number {
+  const o = origin.centroid();
+  return (a, b) => {
+    const ac = a.centroid();
+    const bc = b.centroid();
+    return Math.atan2(ac.y - o.y, ac.x - o.x) - Math.atan2(bc.y - o.y, bc.x - o.x);
+  };
+}
+
+function maxAdjacent(elements: readonly TopologyElement[]): number {
+  let max = 0;
+  for (const element of elements) max = Math.max(max, element.adjacent().length);
+  return max;
 }
