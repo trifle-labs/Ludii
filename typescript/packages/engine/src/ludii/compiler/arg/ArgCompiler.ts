@@ -1027,7 +1027,7 @@ const PREFERRED_TOKEN_CLASSES = new Map<string, string>([
   ["is", "game.functions.booleans.is.Is"],
   ["no", "game.functions.booleans.no.No"],
 ]);
-const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy", "in", "occupied"]);
+const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy", "in", "line", "occupied"]);
 const PLAYER_SITE_VARIANTS = new Set<string>([
   "mover", "next", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8",
   "p9", "p10", "p11", "p12", "p13", "p14", "p15", "p16",

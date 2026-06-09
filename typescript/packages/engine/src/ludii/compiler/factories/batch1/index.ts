@@ -249,15 +249,49 @@ function makeIsFreedom(b: ArgBundle): BooleanFunction {
 }
 
 function makeIsLine(b: ArgBundle): BooleanFunction {
-  const unsupportedNamed = [...b.named.keys()].filter((key) => key !== "exact");
+  const supportedNamed = new Set([
+    "exact",
+    "contiguous",
+    "if",
+    "bylevel",
+    "top",
+    "through",
+    "throughany",
+    "what",
+    "whats",
+    "throughhowmuch",
+    "useopposites",
+  ]);
+  const unsupportedNamed = [...b.named.keys()].filter((key) => !supportedNamed.has(key));
   if (unsupportedNamed.length > 0) deferred(`is Line with ${unsupportedNamed.join(",")}`);
   const length = firstIntFunctionAfter(b, 0);
   if (!length) deferred("is Line");
   const dirn = b.positional.find((value): value is string =>
-    typeof value === "string" && value !== "Line" && !isSiteType(value) && !isRoleLike(value),
+    typeof value === "string" && isLineDirection(value),
   ) ?? "Adjacent";
-  const exact = booleanNamedValue(b, "exact") ?? false;
-  return new IsLine(null, length, dirn, null, null, null, null, null, exact);
+  const who = b.positional.find((value): value is string =>
+    typeof value === "string" && isRoleLike(value) && value !== "All" && value !== "Each",
+  ) ?? null;
+  const what = intNamed(b, "what");
+  const whats = intFunctionArrayNamed(b, "whats");
+  return new IsLine(
+    firstSiteType(b),
+    length,
+    dirn,
+    intNamed(b, "through"),
+    regionNamed(b, "throughany"),
+    who,
+    what,
+    whats.length > 0 ? whats : null,
+    booleanNamedValue(b, "exact") ?? false,
+    boolNamed(b, "contiguous"),
+    boolNamed(b, "if"),
+    boolNamed(b, "bylevel"),
+    boolNamed(b, "top"),
+    intNamed(b, "throughhowmuch"),
+    null,
+    boolNamed(b, "useopposites"),
+  );
 }
 
 function makeIsRelated(b: ArgBundle): BooleanFunction {
@@ -1126,6 +1160,15 @@ function isCompassDirection(value: unknown): value is string {
     value === "S" || value === "SSW" || value === "SW" || value === "WSW" ||
     value === "W" || value === "WNW" || value === "NW" || value === "NNW"
   );
+}
+
+function isLineDirection(value: unknown): value is string {
+  if (typeof value !== "string" || value.includes(":") || value === "Line" || isSiteType(value) || isRoleLike(value)) {
+    return false;
+  }
+  return value === "Adjacent" || value === "All" || value === "Orthogonal" || value === "Diagonal" ||
+    value === "SameLayer" || isCompassDirection(value) ||
+    value === "DNE" || value === "DNW" || value === "DSE" || value === "DSW";
 }
 
 function isRoleLike(value: string): boolean {
