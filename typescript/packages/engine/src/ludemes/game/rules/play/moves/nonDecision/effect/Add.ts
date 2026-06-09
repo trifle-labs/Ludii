@@ -19,7 +19,16 @@
 import type { Context } from "../../../../../../../context.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { Move } from "../../../../../../../move.js";
-import type { IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
+import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
+import type { Then } from "./Then.js";
+
+interface AddOptions {
+  readonly count?: IntFunction | null;
+  readonly stack?: boolean;
+  readonly then?: Then | null;
+  readonly condition?: BooleanFunction | null;
+  readonly applyEffect?: MovesFunction | null;
+}
 
 export class Add implements MovesFunction {
   /**
@@ -37,6 +46,21 @@ export class Add implements MovesFunction {
    */
   private readonly pieceFn: { what: IntFunction; owner: number; state?: IntFunction } | null;
 
+  /** @java Add.countFn */
+  private readonly countFn: IntFunction | null;
+
+  /** @java Add.stack */
+  private readonly stack: boolean;
+
+  /** @java Effect.then */
+  private readonly thenClause: Then | null;
+
+  /** @java To.cond */
+  private readonly toCondition: BooleanFunction | null;
+
+  /** @java To.effect */
+  private readonly applyEffect: MovesFunction | null;
+
   /**
    * @java game/rules/play/moves/nonDecision/effect/Add.java — constructor
    *
@@ -46,9 +70,15 @@ export class Add implements MovesFunction {
   public constructor(
     toRegion: RegionFunction,
     pieceFn: { what: IntFunction; owner: number; state?: IntFunction } | null = null,
+    options: AddOptions = {},
   ) {
     this.toRegion = toRegion;
     this.pieceFn = pieceFn;
+    this.countFn = options.count ?? null;
+    this.stack = options.stack ?? false;
+    this.thenClause = options.then ?? null;
+    this.toCondition = options.condition ?? null;
+    this.applyEffect = options.applyEffect ?? null;
   }
 
   /**
@@ -65,6 +95,7 @@ export class Add implements MovesFunction {
     const mover = ctx.state.mover;
     const sites = this.toRegion.eval(ctx);
     const moves: Move[] = [];
+    const origTo = ctx._evalTo;
 
     // Resolve what (component index) and owner
     let what: number;
@@ -73,8 +104,13 @@ export class Add implements MovesFunction {
     let stateVal: number | undefined;
     if (this.pieceFn) {
       what = this.pieceFn.what.eval(ctx);
-      // owner = -1 means "use mover" (e.g. (piece (mover)))
-      owner = this.pieceFn.owner < 0 ? mover : this.pieceFn.owner;
+      if (this.pieceFn.owner < 0) {
+        const eqPiece = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number; owner: number }> } })
+          .equipment?.pieces?.find((p) => p.index === what);
+        owner = eqPiece?.owner ?? mover;
+      } else {
+        owner = this.pieceFn.owner;
+      }
       // For neutral pieces (owner=0), move is attributed to the mover
       placedOwner = owner > 0 ? owner : mover;
       // Optional state field: e.g. (piece "Disc0" state:(mover)) sets state=mover
@@ -94,8 +130,23 @@ export class Add implements MovesFunction {
 
     for (const site of sites) {
       if (site < 0) continue;
+      ctx._evalTo = site;
+      if (this.toCondition !== null && !this.toCondition.eval(ctx)) continue;
 
-      const action = new ActionAdd({ to: site, what, owner, ...(stateVal !== undefined ? { state: stateVal } : {}) });
+      const applyActions = this.applyEffect !== null
+        ? this.applyEffect.eval(ctx).flatMap((move) => [...move.actions])
+        : [];
+      const count = this.countFn?.eval(ctx) ?? 1;
+
+      const action = new ActionAdd({
+        to: site,
+        what,
+        owner,
+        count,
+        onStack: this.stack,
+        ...(stateVal !== undefined ? { state: stateVal } : {}),
+      });
+      action.setDecision(true);
 
       moves.push(new Move({
         id: `add:${mover}:${site}`,
@@ -103,8 +154,18 @@ export class Add implements MovesFunction {
         siteIndices: [site],
         mover,
         placedOwner,
-        actions: [action],
+        actions: [...applyActions, action],
+        decisionIndex: applyActions.length,
       }));
+    }
+
+    ctx._evalTo = origTo;
+
+    if (this.thenClause !== null) {
+      const thenMoves = this.thenClause.eval(ctx);
+      const thenActions = thenMoves.flatMap((move) => [...move.actions]);
+      const moveAgain = thenMoves.some((move) => move.moveAgain);
+      return moves.map((move) => move.withConsequence(thenActions, moveAgain));
     }
 
     return moves;

@@ -22,6 +22,8 @@ import { makeArgBundle } from "../ArgBundle.js";
 import { type CompilerEnv, type LudemeRegistry } from "../LudemeRegistry.js";
 import { createFullRegistry } from "../createFullRegistry.js";
 import { JAVA_TS_CTORS } from "../gen/java-ts-ctors.js";
+import { Sites } from "../../../ludemes/game/functions/region/sites/Sites.js";
+import { EmptyDefault } from "../../../ludemes/game/functions/region/sites/index/SitesEmpty.js";
 
 export interface ArgCompilerOptions {
   readonly reflectionPath?: string;
@@ -192,6 +194,9 @@ export class ArgCompiler {
     const faithfulMoveVariant = this.compileFaithfulMoveVariant(node, head, expectedTypes, env);
     if (faithfulMoveVariant !== null) return faithfulMoveVariant;
 
+    const preferredSites = this.compilePreferredSitesVariant(node, head, expectedTypes);
+    if (preferredSites !== null) return preferredSites;
+
     const preferred = this.compilePreferredTokenClass(node, head, expectedTypes, env);
     if (preferred !== null) return preferred;
 
@@ -266,6 +271,26 @@ export class ArgCompiler {
     }
 
     return null;
+  }
+
+  private compilePreferredSitesVariant(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+  ): unknown | null {
+    if (normalise(head) !== "sites") return null;
+    const variant = node.items[1];
+    if (!variant || !isIdent(variant)) return null;
+    const variantName = normalise(variant.name);
+    if (variantName !== "empty" && variantName !== "board") return null;
+
+    const meta = this.reflection.get("game.functions.region.sites.Sites");
+    if (!meta || !expectedTypes.some((expected) => isAssignable(meta, expected.name))) return null;
+
+    const siteType = node.items[2] && isIdent(node.items[2]) ? node.items[2].name : null;
+    this.resolveTrace.push({ token: head, cls: "game.functions.region.sites.Sites" });
+    if (variantName === "empty") return new EmptyDefault(siteType);
+    return Sites.constructSimple("Board" as never, siteType);
   }
 
   private compileCandidate(node: LudList, candidate: Candidate, env: ArgCompilerEnv): unknown | null {
@@ -946,6 +971,7 @@ const PREFERRED_TOKEN_CLASSES = new Map<string, string>([
 const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy"]);
 
 const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
+  ["move:add", "game.rules.play.moves.nonDecision.effect.Add"],
   ["move:step", "game.rules.play.moves.nonDecision.effect.Step"],
   ["move:slide", "game.rules.play.moves.nonDecision.effect.Slide"],
 ]);

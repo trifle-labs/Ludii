@@ -39,7 +39,10 @@ function asBooleanFunction(value: unknown): BooleanFunction | null {
 }
 
 function isBooleanFunction(value: unknown): boolean {
-  return typeof value === "boolean" || value instanceof BaseBooleanFunction;
+  if (typeof value === "boolean" || value instanceof BaseBooleanFunction) return true;
+  if (!hasEval(value) || value instanceof BaseRegionFunction || value instanceof BaseIntArrayFunction) return false;
+  const ctorName = (value as { constructor?: { name?: string } }).constructor?.name ?? "";
+  return /^(All|And|Can|Equals|False|Ge|Gt|IfBool|Is|Le|Lt|No|Not|NotEqual|Or|ToBool|True|Was|Xor)/.test(ctorName);
 }
 
 function isRegionFunction(value: unknown): value is RegionFunction {

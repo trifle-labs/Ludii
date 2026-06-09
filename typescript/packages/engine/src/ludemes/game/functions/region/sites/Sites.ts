@@ -156,7 +156,20 @@ export class Sites extends BaseRegionFunction {
         // @java SitesBoard — all board sites
         return new (class extends BaseRegionFunction {
           override eval(ctx: Context & EvalScratch): number[] {
-            const n = ctx.state.cells.length;
+            const board = (ctx.game as unknown as {
+              equipment?: {
+                board?: {
+                  numSites?: number;
+                  graphFunction?: { _dim?: Array<{ eval?: (ctx: Context & EvalScratch) => number; a?: number }> };
+                };
+              };
+            }).equipment?.board;
+            const storageN = (board?.numSites !== undefined && board.numSites > 0) ? board.numSites : ctx.state.cells.length;
+            const dims = board?.graphFunction?._dim ?? null;
+            const baseN = dims !== null && dims.length > 0
+              ? dims.reduce((acc, dim) => acc * (dim.eval?.(ctx) ?? dim.a ?? 0), 1)
+              : 0;
+            const n = baseN > 0 && baseN < storageN ? baseN : storageN;
             return Array.from({ length: n }, (_, i) => i);
           }
           override isStatic(): boolean { return true; }
