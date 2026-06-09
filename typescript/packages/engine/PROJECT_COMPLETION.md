@@ -299,7 +299,28 @@ THIS AFFECTS ALL MOVE LUDEMES (Step/Slide/Hop/Add/Remove/Shoot/…): each `(move
 simplified registry make<X> adapter instead of the faithful class. Fixing the faithful move-keyword
 dispatch is THE next structural unlock for move-gen correctness across the corpus.
 
-NEXT (move-dispatch, ordered — ideal for a focused codex wave):
+## Update 8 (THIS session): MILESTONE — the faithful engine PLAYS a game move-for-move
+The faithful single engine now plays Breakthrough CORRECTLY end-to-end: probe-play.mjs →
+"22 moves (all forward, none onto own)" = parity with Java (was 110 over-generated).
+DONE this wave (committed, all gates green, bespoke unaffected):
+- ArgCompiler.compileFaithfulMoveVariant: `(move <X> ...)` → faithful move class via a
+  FAITHFUL_MOVE_VARIANTS map (currently {move:step → …effect.Step}), BEFORE the registry make<X>
+  alias. compilePreferredTokenClass: faithful Is for (is Empty)/(is Enemy). Both additive+gated.
+- Step.ts: trajectory-aware direction lookup; ActionMove marked decision.
+
+THE REPEATABLE PATTERN (now proven — this is how the remaining grind goes; drive via codex waves):
+  For each move variant / game class:
+   1. Add `move:<x> → <faithful class>` to FAITHFUL_MOVE_VARIANTS (Slide/Hop/Add/Remove/Shoot/…),
+      ensuring the faithful class has an @Opt-tail-defaulted positional ctor in Java arg order.
+   2. Pick a representative game; write/extend a strict probe (correct move count + legality).
+   3. Run the gates: probe + compile-guard (no faithful-compile regression) + bespoke parity slice.
+   4. Fix the faithful eval bugs the probe surfaces (per-ludeme), commit, repeat.
+  Climb the corpus until faithful ≥ bespoke parity, then DELETE bespoke (compiler1to1 + 268 *1to1 +
+  registry make<X> adapters + Board1to1/Equipment1to1).
+PROVEN WAVES this session: Topology subsystem, create() pass, move-dispatch — each codex-driven,
+reviewed, independently verified, committed.
+
+## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
      faithful instantiation over the registry make<X> alias. (instantiateFaithful currently never
