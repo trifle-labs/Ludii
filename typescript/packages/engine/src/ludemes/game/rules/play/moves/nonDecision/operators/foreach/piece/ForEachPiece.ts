@@ -223,6 +223,10 @@ export class ForEachPiece extends Operator {
         }
       }
 
+      if (positions === null || positions.length === 0) {
+        positions = scanPositions(context, componentId, specificPlayer, allPlayers, realType);
+      }
+
       if (positions === null || positions.length === 0) continue;
 
       // Filter by type if specified
@@ -397,7 +401,8 @@ function buildCompIndices(
         result.push(e);
       } else {
         // Item name matching — use escape hatch for getNameWithoutNumber
-        const name = (comp as unknown as { getNameWithoutNumber?(): string | null }).getNameWithoutNumber?.();
+        const name = (comp as unknown as { getNameWithoutNumber?(): string | null; name?: string }).getNameWithoutNumber?.()
+          ?? (comp as unknown as { name?: string }).name;
         if (name !== null && name !== undefined && items.includes(name)) {
           result.push(e);
         }
@@ -405,4 +410,33 @@ function buildCompIndices(
     }
   }
   return result;
+}
+
+function scanPositions(
+  context: Context,
+  componentId: number,
+  specificPlayer: number,
+  allPlayers: boolean,
+  realType: string,
+): { site(): number; level(): number; siteType(): string }[] {
+  const state = context.state as unknown as {
+    cells: readonly number[];
+    whats?: readonly number[];
+    whatAtSite?(site: number): number;
+  };
+  const out: { site(): number; level(): number; siteType(): string }[] = [];
+  const boardSites = (context.game as unknown as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites
+    ?? state.cells.length;
+  for (let site = 0; site < boardSites; site++) {
+    const owner = state.cells[site] ?? 0;
+    if (!allPlayers && owner !== specificPlayer) continue;
+    const what = state.whatAtSite?.(site) ?? state.whats?.[site] ?? 0;
+    if (what !== componentId) continue;
+    out.push({
+      site: () => site,
+      level: () => 0,
+      siteType: () => realType,
+    });
+  }
+  return out;
 }

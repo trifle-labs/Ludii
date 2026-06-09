@@ -24,7 +24,9 @@ import { createFullRegistry } from "../createFullRegistry.js";
 import { JAVA_TS_CTORS } from "../gen/java-ts-ctors.js";
 import { Sites } from "../../../ludemes/game/functions/region/sites/Sites.js";
 import { EmptyDefault } from "../../../ludemes/game/functions/region/sites/index/SitesEmpty.js";
+import { SitesPhase } from "../../../ludemes/game/functions/region/sites/simple/SitesSide1to1.js";
 import { IsIn1to1 } from "../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
+import { IsPrev1to1 } from "../../../ludemes/game/functions/booleans/is/player1to1/IsPrev1to1.js";
 import { NoMoves } from "../../../ludemes/game/functions/booleans/no1to1/NoMoves.js";
 
 export interface ArgCompilerOptions {
@@ -199,7 +201,7 @@ export class ArgCompiler {
     const faithfulMoveVariant = this.compileFaithfulMoveVariant(node, head, expectedTypes, env);
     if (faithfulMoveVariant !== null) return faithfulMoveVariant;
 
-    const preferredSites = this.compilePreferredSitesVariant(node, head, expectedTypes);
+    const preferredSites = this.compilePreferredSitesVariant(node, head, expectedTypes, env);
     if (preferredSites !== null) return preferredSites;
 
     const preferred = this.compilePreferredTokenClass(node, head, expectedTypes, env);
@@ -279,6 +281,20 @@ export class ArgCompiler {
       return new IsIn1to1(siteFn as never, regionFn as never);
     }
 
+    if (headName === "is" && variantName === "prev") {
+      if (!this.fitsExpected("game.functions.booleans.is.player.IsPrev", expectedTypes)) return null;
+      const whoNode = node.items[2];
+      if (!whoNode) return null;
+      if (isIdent(whoNode)) {
+        this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.player.IsPrev" });
+        return new IsPrev1to1(null, whoNode.name as never);
+      }
+      const whoFn = this.compileMaybe(whoNode, [parseJavaType("game.functions.ints.IntFunction")], env);
+      if (whoFn === null) return null;
+      this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.player.IsPrev" });
+      return new IsPrev1to1(whoFn as never, null);
+    }
+
     if (headName === "no" && variantName === "moves") {
       if (!this.fitsExpected("game.functions.booleans.no.moves.NoMoves", expectedTypes)) return null;
       const roleNode = node.items[2];
@@ -325,6 +341,7 @@ export class ArgCompiler {
     node: LudList,
     head: string,
     expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
   ): unknown | null {
     if (normalise(head) !== "sites") return null;
     const variant = node.items[1];
@@ -333,6 +350,7 @@ export class ArgCompiler {
     if (
       variantName !== "empty" &&
       variantName !== "board" &&
+      variantName !== "phase" &&
       !PLAYER_SITE_VARIANTS.has(variantName) &&
       !SIMPLE_SITE_VARIANTS.has(variantName)
     ) return null;
@@ -343,6 +361,14 @@ export class ArgCompiler {
     const siteType = node.items[2] && isIdent(node.items[2]) ? node.items[2].name : null;
     this.resolveTrace.push({ token: head, cls: "game.functions.region.sites.Sites" });
     if (variantName === "empty") return new EmptyDefault(siteType);
+    if (variantName === "phase") {
+      const phaseNode = node.items[2];
+      const phaseFn = phaseNode
+        ? this.compileMaybe(phaseNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+        : null;
+      if (phaseFn === null) return null;
+      return new SitesPhase(phaseFn as never);
+    }
     if (PLAYER_SITE_VARIANTS.has(variantName)) return playerSitesRegion(variantName);
     return Sites.constructSimple(simpleSiteVariant(variantName) as never, siteType);
   }
@@ -708,6 +734,26 @@ export class ArgCompiler {
       ) {
         return new ctor(null, info.args[0]);
       }
+      if (
+        info.className === "game.rules.Rules" &&
+        info.args.length === 5 &&
+        Array.isArray(info.args[3]) &&
+        info.args[3].length > 0
+      ) {
+        resolveNextPhaseTargets(info.args[3]);
+      }
+      if (
+        info.className === "game.rules.Rules" &&
+        info.args.length === 5 &&
+        info.args[2] === null &&
+        Array.isArray(info.args[3]) &&
+        info.args[3].length > 0
+      ) {
+        const firstPhasePlay = (info.args[3][0] as { play?: unknown } | undefined)?.play;
+        if (firstPhasePlay !== undefined && firstPhasePlay !== null) {
+          return new ctor(info.args[0], info.args[1], firstPhasePlay, info.args[3], info.args[4]);
+        }
+      }
       return new ctor(...info.args);
     } catch (e) {
       this.noteInstFail(`cannot instantiate ${info.className}: constructor threw (${String((e as Error)?.message ?? e).slice(0, 80)})`);
@@ -953,6 +999,23 @@ function constructKeyFor(keyword: string, positional: readonly unknown[]): strin
   return keyword.toLowerCase();
 }
 
+function resolveNextPhaseTargets(phases: readonly unknown[]): void {
+  const nameToIdx = new Map<string, number>();
+  for (let idx = 0; idx < phases.length; idx++) {
+    const name = (phases[idx] as { name?: unknown } | undefined)?.name;
+    if (typeof name === "string") nameToIdx.set(name, idx);
+  }
+  for (const phase of phases) {
+    const nextPhases = (phase as { nextPhases?: readonly unknown[] } | undefined)?.nextPhases ?? [];
+    for (const np of nextPhases) {
+      const next = np as { targetName?: unknown; targetIndex?: number };
+      if (typeof next.targetName !== "string") continue;
+      const idx = nameToIdx.get(next.targetName);
+      if (idx !== undefined) next.targetIndex = idx;
+    }
+  }
+}
+
 function describeNode(node: LudNode): string {
   if (isString(node)) return `"${node.value}"`;
   if (isNumber(node)) return String(node.value);
@@ -1095,6 +1158,7 @@ function simpleSiteVariant(variantName: string): string {
 const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
   ["move:add", "game.rules.play.moves.nonDecision.effect.Add"],
   ["move:hop", "game.rules.play.moves.nonDecision.effect.Hop"],
+  ["move:remove", "game.rules.play.moves.nonDecision.effect.Remove"],
   ["move:shoot", "game.rules.play.moves.nonDecision.effect.Shoot"],
   ["move:step", "game.rules.play.moves.nonDecision.effect.Step"],
   ["move:slide", "game.rules.play.moves.nonDecision.effect.Slide"],

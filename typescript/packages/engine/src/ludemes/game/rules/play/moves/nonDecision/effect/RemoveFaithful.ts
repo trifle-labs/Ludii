@@ -6,13 +6,13 @@ import { Remove } from "./Remove.js";
 
 export class RemoveFaithful extends Remove {
   public constructor(
-    type: string | null,
-    locationFunction: IntFunction | null,
-    regionFunction: RegionFunction | null,
-    level: IntFunction | null,
-    at: string | null,
-    count: IntFunction | null,
-    then: Then | null
+    type: string | null = null,
+    locationFunction: IntFunction | null = null,
+    regionFunction: RegionFunction | null = null,
+    level: IntFunction | null = null,
+    at: string | null = null,
+    count: IntFunction | null = null,
+    then: Then | null = null
   ) {
     super({ type, locationFn: locationFunction, regionFn: regionFunction, levelFn: level, when: at, countFn: count, then });
   }

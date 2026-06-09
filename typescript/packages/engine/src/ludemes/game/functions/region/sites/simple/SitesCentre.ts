@@ -46,7 +46,8 @@ export class SitesCentre extends BaseRegionFunction {
     const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
     const traj = ctxAny._trajectories;
     if (traj) {
-      return graphCentreSites(traj);
+      const sites = graphCentreSites(traj);
+      if (sites.length > 0) return sites;
     }
 
     // @java SitesCentre — square board: find cells nearest to (cx, cy)

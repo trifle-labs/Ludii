@@ -552,21 +552,56 @@ export class Sites extends BaseRegionFunction {
   public static constructAround(
     regionType: SitesAroundType,
     _typeLoc: string | null,
-    _where: IntFunction | null,
-    _regionWhere: RegionFunction | null,
-    _type: unknown,
-    _distance: IntFunction | null,
-    _directions: unknown,
-    _condition: BooleanFunction | null,
-    _includeSelf: BooleanFunction | null,
+    where: IntFunction | null,
+    regionWhere: RegionFunction | null,
+    type: unknown,
+    distance: IntFunction | null,
+    directions: unknown,
+    condition: BooleanFunction | null,
+    includeSelf: BooleanFunction | null,
   ): RegionFunction {
     const rt = regionType as unknown as string;
     switch (rt) {
       case "Around":
         // @java return new SitesAround(typeLoc, where, regionWhere, type, distance, directions, If, includeSelf);
-        // SitesAround not yet ported as non-1to1
         return new (class extends BaseRegionFunction {
-          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+          override eval(ctx: Context & EvalScratch): number[] {
+            const sourceSites = where !== null
+              ? [where.eval(ctx)]
+              : regionWhere !== null
+                ? regionWhere.eval(ctx)
+                : [];
+            const dist = Math.max(1, distance?.eval(ctx) ?? 1);
+            const dirNames = directionNames(directions, ctx);
+            const dynType = typeof type === "string" ? type.toLowerCase() : null;
+            const include = includeSelf?.eval(ctx) ?? false;
+            const seen = new Set<number>();
+            const out: number[] = [];
+
+            const add = (site: number): void => {
+              if (site < 0 || seen.has(site)) return;
+              seen.add(site);
+              out.push(site);
+            };
+
+            for (const s of sourceSites) {
+              if (s < 0) continue;
+              if (include) add(s);
+              for (const n of aroundSites(ctx, s, dist, dirNames)) add(n);
+            }
+
+            const filtered = dynType === null ? out : out.filter((site) => dynamicRegionAccepts(ctx, site, dynType));
+            if (condition === null) return filtered;
+
+            const oldTo = ctx._evalTo;
+            const conditioned: number[] = [];
+            for (const site of filtered) {
+              ctx._evalTo = site;
+              if (condition.eval(ctx)) conditioned.push(site);
+            }
+            ctx._evalTo = oldTo;
+            return conditioned;
+          }
         })();
       default:
         throw new Error(`Sites(): A SitesAroundType is not implemented: ${regionType}`);
@@ -1019,4 +1054,145 @@ function resolveRoleIntFn(role: string): IntFunction {
   if (role === "P3") return constIntFn(3);
   if (role === "P4") return constIntFn(4);
   return constIntFn(-1);
+}
+
+function directionNames(directions: unknown, ctx: Context & EvalScratch): string[] {
+  if (directions === null || directions === undefined) return ["Orthogonal"];
+  if (typeof directions === "string") return [directions];
+  const fn = directions as { eval?: (ctx: Context & EvalScratch) => string[] };
+  if (typeof fn.eval === "function") return fn.eval(ctx);
+  return ["Orthogonal"];
+}
+
+function aroundSites(ctx: Context & EvalScratch, site: number, distance: number, directions: readonly string[]): number[] {
+  const traj = (ctx as unknown as {
+    _trajectories?: {
+      group(site: number, name: string): number[];
+      steps(site: number, name: string): number[];
+      ray(site: number, name: string): number[];
+    } | null;
+  })._trajectories;
+  if (traj) {
+    const out = new Set<number>();
+    for (const dir of directions.length > 0 ? directions : ["Orthogonal"]) {
+      const oneStep = dir === "All" || dir === "Adjacent"
+        ? traj.group(site, "Adjacent")
+        : dir === "Orthogonal" || dir === "Diagonal" || dir === "OffDiagonal"
+          ? traj.group(site, dir)
+          : traj.steps(site, dir);
+      if (distance === 1) {
+        for (const n of oneStep) out.add(n);
+      } else {
+        for (const dirSite of oneStep) {
+          const ray = traj.ray(site, directionBetween(ctx, site, dirSite) ?? dir);
+          const n = ray[distance - 1];
+          if (n !== undefined) out.add(n);
+        }
+      }
+    }
+    return [...out];
+  }
+
+  const board = (ctx.game as unknown as { equipment?: { board?: { width?: number; height?: number } } }).equipment?.board;
+  const width = board?.width ?? 0;
+  const height = board?.height ?? 0;
+  if (width <= 0 || height <= 0) return [];
+
+  const col = site % width;
+  const row = Math.floor(site / width);
+  const out: number[] = [];
+  const seen = new Set<number>();
+  const addDelta = (dc: number, dr: number): void => {
+    const c = col + dc * distance;
+    const r = row + dr * distance;
+    if (c < 0 || c >= width || r < 0 || r >= height) return;
+    const n = r * width + c;
+    if (!seen.has(n)) {
+      seen.add(n);
+      out.push(n);
+    }
+  };
+
+  for (const dir of directions.length > 0 ? directions : ["Orthogonal"]) {
+    for (const [dc, dr] of directionDeltas(dir)) addDelta(dc, dr);
+  }
+  return out;
+}
+
+function directionDeltas(direction: string): Array<[number, number]> {
+  switch (direction.toLowerCase()) {
+    case "all":
+    case "adjacent":
+      return [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];
+    case "orthogonal":
+      return [[-1, 0], [1, 0], [0, -1], [0, 1]];
+    case "diagonal":
+      return [[-1, -1], [1, -1], [-1, 1], [1, 1]];
+    case "n":
+    case "north":
+      return [[0, 1]];
+    case "s":
+    case "south":
+      return [[0, -1]];
+    case "e":
+    case "east":
+      return [[1, 0]];
+    case "w":
+    case "west":
+      return [[-1, 0]];
+    case "ne":
+    case "northeast":
+      return [[1, 1]];
+    case "nw":
+    case "northwest":
+      return [[-1, 1]];
+    case "se":
+    case "southeast":
+      return [[1, -1]];
+    case "sw":
+    case "southwest":
+      return [[-1, -1]];
+    default:
+      return [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]];
+  }
+}
+
+function dynamicRegionAccepts(ctx: Context & EvalScratch, site: number, type: string): boolean {
+  const who = ctx.state.cells[site] ?? 0;
+  const mover = ctx.state.mover;
+  switch (type) {
+    case "own":
+    case "mover":
+      return who === mover;
+    case "notown":
+      return who !== mover;
+    case "enemy":
+      return who !== 0 && who !== mover;
+    case "notenemy":
+      return who === 0 || who === mover;
+    case "empty":
+      return who === 0;
+    case "notempty":
+      return who !== 0;
+    default:
+      if (/^p\d+$/.test(type)) return who === Number(type.slice(1));
+      return true;
+  }
+}
+
+function directionBetween(ctx: Context & EvalScratch, from: number, to: number): string | null {
+  const board = (ctx.game as unknown as { equipment?: { board?: { width?: number } } }).equipment?.board;
+  const width = board?.width ?? 0;
+  if (width <= 0) return null;
+  const dc = Math.sign((to % width) - (from % width));
+  const dr = Math.sign(Math.floor(to / width) - Math.floor(from / width));
+  if (dc === 0 && dr === 1) return "N";
+  if (dc === 0 && dr === -1) return "S";
+  if (dc === 1 && dr === 0) return "E";
+  if (dc === -1 && dr === 0) return "W";
+  if (dc === 1 && dr === 1) return "NE";
+  if (dc === -1 && dr === 1) return "NW";
+  if (dc === 1 && dr === -1) return "SE";
+  if (dc === -1 && dr === -1) return "SW";
+  return null;
 }
