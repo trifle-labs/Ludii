@@ -144,3 +144,69 @@ inspect owned.positions(1) count + per-piece Step output vs Java. Then Hop, the 
 STACK OF FIXES THIS CAMPAIGN (all committed, green): faithful-first instantiate; eager→lazy
 IntConstant wrapping; board-gen dispatchers (compile 95%); Step radials; State.owned; Context API.
 Behavioral parity climbing from ~4%; the per-ludeme/per-game move-gen grind continues.
+
+## Update 5 (THIS session): move-gen completeness drilled to the REAL blocker = create()
+Two committed, verified fixes + a complete evidence-backed root-cause of why faithful games
+don't play. The "tsMoveCount=1" was NOT a Step/forEach bug — it was a degenerate board.
+
+FIX 1 (committed): **faithful Step.eval relative directions + ray-only single-dir.**
+Step.eval walked BOTH ray and opposite of every axis (so "N" wrongly stepped S too), and
+relative dirs {FR FL Forward} hit radialsForDirection's Adjacent fallback (never converted
+to absolute via facing). Ported Step1to1.resolveRelativeDir + isSingleDir into a shared
+stepTargets() helper. Matches the dispatcher, which yields the correct 22 first moves for
+Breakthrough (square 8). Now Step.ts is move-for-move correct — but unverifiable end-to-end
+until create() lands (see below).
+
+FIX 2 (committed): **faithful Board.createTopology builds real topology from the graph fn.**
+Java's Game.create() drives board.createTopology(); the TS faithful Board had a NO-OP
+createTopology (deferred to bespoke Board1to1) → numSites=0. Ported it: graphFn.eval(siteType)
+→ Graph → Trajectories + buildGraphRadials → width/height/numSites/containerSpan (the proven
+makeBoard path; generator eval takes SiteType as FIRST arg; Vertex fallback). Verified in
+isolation: (board (square 8)) → numSites 64, 8x8, 64 radials. tsc+build green.
+
+THE EVIDENCE (probes, LUDII_ARGCOMPILER=1 vs bespoke, on Breakthrough square-8):
+- bespoke path: numSites=64, 32 pieces placed, _playerDirs={1:N,2:S}, **22 moves** (correct).
+- faithful path: board ctor=**Board1to1(1,1)**, numSites=1, 0 placed, playerDirs undefined,
+  startRules=0 → moves()=[Pass]. So forEach-Piece finds nothing on a 1-cell board.
+- (square 8) ALONE → RectangleOnSquare, eval('Cell') → Graph 64 faces / 81 verts (works!).
+- (board (square 8)) ALONE → faithful Board, after createTopology → 64 (FIX 2 works!).
+- (equipment {(board(square 8)) (piece "Pawn" Each) (regions ...)}) → registry
+  **Equipment1to1 + Board1to1(1,1)**: the faithful Equipment (C693) instantiation returns
+  null → instantiate() falls back to the bespoke registry, whose board degenerates to 1x1.
+
+ROOT CAUSE (the create() gap, precisely): the faithful path maps game.Game→Game1to1, but
+Game1to1's constructor expects a FULLY-BUILT equipment (board topology + per-player pieces +
+playerDirs + startRules) — i.e. the product of Java's Game.create(). The dispatcher
+(compileNode1to1) builds all of that procedurally before constructing Game1to1; the
+ArgCompiler never runs create(). Each faithful structural ludeme is only partly wired:
+  1. Board.createTopology — FIXED (Fix 2), but only reached when the faithful Board is used.
+  2. **Equipment (C693) instantiation FAILS → registry Equipment1to1 + Board1to1(1,1).**
+     Equipment's ctor stores items; createItems(game) (per-player piece expansion, container
+     init, region build) only runs at Game.create() time — never invoked on the faithful path.
+  3. Pieces: "Pawn Each" never expands to Pawn1/Pawn2 components with indices (createItems job).
+  4. players → _playerDirs: parsed by the dispatcher; faithful path leaves it undefined.
+  5. start (place ...) → startRules: built by the dispatcher; faithful path has 0.
+  6. Game1to1 caches numSites/width/height at construction (readonly) from equipment.board —
+     so equipment MUST be fully built BEFORE Game1to1 is constructed (no post-hoc create()).
+  PLUS a typing reconciliation: the whole pipeline (Equipment1to1.board, Game1to1, evals) is
+  typed around **Board1to1**'s public surface; the faithful Board extends Container (protected
+  numSites). They must duck-type/converge for the faithful Board to flow through.
+
+NEXT (ordered, the create() port — the multi-week bulk; parallelize via codex):
+  a. Make faithful **Equipment** instantiate + run createItems at compile time: expand
+     per-player pieces (Each→Pn) with component indices, init containers (call
+     board.createTopology), build regions. Reconcile Board1to1 ↔ faithful Board surface so the
+     real board flows into Equipment/Game1to1.
+  b. Port **players → _playerDirs** (compass facing) and **start (place/place-stack) →
+     startRules** into the faithful game assembly, supplied to Game1to1 (portOptions or ctor).
+  c. Invoke a faithful **create()** pass so the built equipment/topology reach Game1to1 BEFORE
+     it caches numSites. Option: ArgCompiler builds equipment fully (create-eager) then Game1to1.
+  d. Re-probe Breakthrough: expect numSites 64, 32 placed, 22 moves — parity with bespoke +
+     Java. Then climb the per-ludeme eval grind (Hop/Slide/Sow/custodial…) past 60% to parity.
+  e. Delete bespoke (compiler1to1 + 268 *1to1 + registry/factories) once faithful ≥ parity.
+
+KEY INSIGHT: the dispatcher's create()-equivalent (compileNode1to1 game-assembly +
+compileEquipment1to1 + compileBoard + buildBoardGraph + playerDirs + startRules) is FAITHFUL
+INFRASTRUCTURE (@java-tagged, real graph machinery), distinct from the simplified *1to1 EVAL
+classes that are the "second port" to delete. Completing create() may reuse/move that
+infrastructure (user authorized "move/modify work that's needed") rather than re-derive it.
