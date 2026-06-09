@@ -13,6 +13,13 @@
 import { Container } from "../Container.js";
 import type { SiteType } from "../../../../other/action/SiteType.js";
 import type { ContainerStyleType } from "../../../../metadata/graphics/util/ContainerStyleType.js";
+import { Trajectories } from "../../../../../eval/graph/trajectories.js";
+import { buildGraphRadials, type CellFlatRadials } from "../../../../topology-radials.js";
+
+/** Minimal Graph shape read by createTopology (faces drive containerSpan). */
+interface GraphLike {
+  faces?: { length: number };
+}
 
 /** Minimal GraphFunction interface for Board.graphFunction. */
 export interface GraphFunction {
@@ -51,6 +58,25 @@ export class Board extends Container {
 
   /** @java Board.graphFunction */
   private readonly graphFunction: GraphFunction;
+
+  // ---- Topology surface (Board1to1-compatible) -----------------------------
+  // Built by createTopology() from the graph function, or lazily on first read.
+  // These mirror Board1to1's public fields so the faithful Board duck-types as
+  // the board the engine (Game1to1, evals) reads: numSites/width/height/radials/
+  // trajectories/containerSpan.
+  // @java game/equipment/container/board/Board.java — createTopology / topology()
+  /** Board bounding-box width. @java Board.topology() */
+  public width = 1;
+  /** Board bounding-box height. @java Board.topology() */
+  public height = 1;
+  /** Precomputed per-cell radials. @java other/topology/Topology.java — radials */
+  public radials: readonly CellFlatRadials[] = [];
+  /** Graph adjacency/direction view. @java other/topology/Topology.java */
+  public trajectories: Trajectories | null = null;
+  /** Container index span = max(numFaces, numPlaySites). @java Equipment.initContainer */
+  public containerSpan = 1;
+  /** True once createTopology() has run (or lazy build completed). */
+  private topologyBuilt = false;
 
   /** @java Board.edgeRange */
   private edgeRange: Range | null = null;
@@ -182,12 +208,71 @@ export class Board extends Container {
 
   /**
    * @java Board.createTopology(int, int) — builds graph and fills topology.
-   * In the TS port this is a no-op at the class level (topology handled by
-   * the 1:1 engine via Board1to1); subclasses may override.
+   *
+   * Faithful port: evaluate the graph function to get the board Graph, then build
+   * the adjacency/direction view (Trajectories) and per-cell radials, and derive
+   * width/height/numSites/containerSpan. This is what Java's Game.create() drives
+   * (board.createTopology → topology population). Mirrors the proven graph-board
+   * build path (Trajectories + buildGraphRadials + bounding-box dims).
+   *
+   * Subclass overrides (SurakartaBoard) call super then extend tracks.
    */
   public createTopology(_beginIndex: number, _numEdges: number): void {
-    // No-op: the 1:1 path uses Board1to1 for actual topology construction.
-    // Subclass overrides (SurakartaBoard) call super then extend tracks.
+    this.buildTopology();
+  }
+
+  /**
+   * Build (and memoise) the topology from the graph function. Idempotent.
+   * Called by createTopology() and lazily by topology getters, so the faithful
+   * Board reports a real site count regardless of whether Game.create() ran.
+   * @java game/equipment/container/board/Board.java — graph eval + topology fill
+   */
+  private buildTopology(): void {
+    if (this.topologyBuilt) return;
+    this.topologyBuilt = true;
+
+    const siteType: SiteType = this.defaultSite ?? "Cell";
+    // @java Board.java — graphFunction.eval(context, siteType). The faithful graph
+    // generators (RectangleOnSquare etc.) take the SiteType as their first arg, the
+    // same way the proven makeBoard path calls graphFn.eval(siteType).
+    const evalGraph = (st: SiteType): GraphLike =>
+      (this.graphFunction.eval as unknown as (s: SiteType) => unknown)(st) as GraphLike;
+    let graph = evalGraph(siteType);
+    this.graph = graph;
+    let traj = new Trajectories(graph as never, siteType as never);
+    // Cell/Edge boards with no faces fall back to Vertex play (e.g. Hex).
+    if (traj.numSites === 0 && (siteType === "Cell" || siteType === "Edge")) {
+      graph = evalGraph("Vertex");
+      this.graph = graph;
+      traj = new Trajectories(graph as never, "Vertex" as never);
+    }
+    if (traj.numSites === 0) return; // degenerate / boardless — leave defaults
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (let site = 0; site < traj.numSites; site += 1) {
+      const x = traj.xOf(site), y = traj.yOf(site);
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    this.width = Math.max(1, Math.ceil(maxX - minX) + 1);
+    this.height = Math.max(1, Math.ceil(maxY - minY) + 1);
+    this.trajectories = traj;
+    this.radials = buildGraphRadials(traj);
+    this.setNumSites(traj.numSites);
+    const numFaces = (graph.faces?.length) ?? traj.numSites;
+    this.containerSpan = Math.max(numFaces, traj.numSites);
+  }
+
+  /**
+   * @java Board.numSites() — site count, building topology lazily if create()
+   * hasn't run yet. Container stores `numSites` (protected); expose it here so
+   * the faithful Board duck-types as Board1to1 for the engine.
+   */
+  public getNumSitesBuilt(): number {
+    if (!this.topologyBuilt) this.buildTopology();
+    return this.getNumSites();
   }
 
   /** @java Board.isBoardless() — always false for a plain Board */
