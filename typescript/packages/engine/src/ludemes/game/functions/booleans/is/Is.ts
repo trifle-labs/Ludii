@@ -6,6 +6,7 @@ import type {
   EvalScratch,
   IntArrayFunction,
   IntFunction,
+  MovesFunction,
   RegionFunction,
 } from "../../../../base.js";
 import { IntConstant } from "../../ints/IntConstant.js";
@@ -32,6 +33,7 @@ import { IsTarget1to1 } from "./is1to1/IsTarget1to1.js";
 import { IsTriggered1to1 } from "./is1to1/IsTriggered1to1.js";
 import { IsPipsMatch } from "./integer/IsPipsMatch.js";
 import { IsSidesMatch } from "./integer/IsSidesMatch.js";
+import { IsThreatened } from "./component/IsThreatened.js";
 import { IsEven1to1 } from "./integer1to1/IsEven1to1.js";
 import { IsFlat1to1 } from "./integer1to1/IsFlat1to1.js";
 import { IsOdd1to1 } from "./integer1to1/IsOdd1to1.js";
@@ -348,6 +350,7 @@ export class Is extends BaseBooleanFunction {
     inArg: RegionFunction | null,
     _specificMoves: unknown,
   ): BooleanFunction {
+    if (matchesType(isType, "Threatened")) return new IsThreatened(what, siteType(type), at, inArg, _specificMoves as MovesFunction | null);
     if (matchesType(isType, "Within")) return new IsWithin(what ?? ZERO_INT, siteType(type), at, inArg);
     throw new Error("Is(): A ported IsComponentType variant is not implemented.");
   }

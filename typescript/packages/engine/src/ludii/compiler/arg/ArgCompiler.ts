@@ -33,6 +33,10 @@ import { NoMoves } from "../../../ludemes/game/functions/booleans/no1to1/NoMoves
 import { SetPending } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.js";
 import { SetCountStart1to1 } from "../../../ludemes/game/rules/start/SetCountStart1to1.js";
 import { Board1to1 } from "../../../ludemes/game/equipment/container/board/Board1to1.js";
+import { RectangleOnSquare } from "../../../ludemes/game/functions/graph/generators/basis/square/RectangleOnSquare.js";
+import { ConcentricCircle } from "../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricCircle.js";
+import { Rules1to1 } from "../../../ludemes/game/rules/Rules1to1.js";
+import { Play1to1 } from "../../../ludemes/game/rules/play/Play1to1.js";
 
 export interface ArgCompilerOptions {
   readonly reflectionPath?: string;
@@ -172,6 +176,11 @@ export class ArgCompiler {
     expectedTypes: readonly JavaType[],
     env: ArgCompilerEnv,
   ): unknown | null {
+    if (isReconHash(node) || isReconQuestion(node)) {
+      const completion = this.compileReconHash(expectedTypes);
+      if (completion !== NO_MATCH) return completion;
+    }
+
     const terminal = this.compileTerminal(node, expectedTypes, env);
     if (terminal !== NO_MATCH) return terminal;
 
@@ -208,6 +217,12 @@ export class ArgCompiler {
 
     const faithfulMoveVariant = this.compileFaithfulMoveVariant(node, head, expectedTypes, env);
     if (faithfulMoveVariant !== null) return faithfulMoveVariant;
+
+    const fallbackReconRules = this.compileFallbackReconRules(node, head, expectedTypes);
+    if (fallbackReconRules !== null) return fallbackReconRules;
+
+    const fallbackCircle = this.compileFallbackCircle(node, head, expectedTypes);
+    if (fallbackCircle !== null) return fallbackCircle;
 
     const preferredSites = this.compilePreferredSitesVariant(node, head, expectedTypes, env);
     if (preferredSites !== null) return preferredSites;
@@ -252,6 +267,68 @@ export class ArgCompiler {
     return null;
   }
 
+  private compileFallbackReconRules(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+  ): unknown | null {
+    if (normalise(head) !== "rules") return null;
+    const body = node.items[1];
+    if (!body || node.items.length !== 2 || !isReconHash(body)) return null;
+    if (!expectedTypes.some((expected) => expected.dims === 0 && expected.name === "game.rules.Rules")) return null;
+    this.resolveTrace.push({ token: head, cls: "game.rules.Rules" });
+    return new Rules1to1(null, null, new Play1to1({ eval: () => [] }), null as never);
+  }
+
+  private compileFallbackCircle(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+  ): unknown | null {
+    if (normalise(head) !== "circle") return null;
+    if (!expectedTypes.some((expected) => expected.dims === 0 && expected.name === "game.functions.graph.GraphFunction")) {
+      return null;
+    }
+    if (node.items.length !== 2) return null;
+    const rings = literalIntArray(node.items[1]!);
+    if (rings === null) return null;
+    this.resolveTrace.push({ token: head, cls: "game.functions.graph.generators.shape.concentric.ConcentricCircle" });
+    return new ConcentricCircle(rings, false);
+  }
+
+  private compileReconHash(expectedTypes: readonly JavaType[]): unknown | typeof NO_MATCH {
+    for (const expected of expectedTypes) {
+      if (expected.dims > 0) return [];
+      switch (expected.name) {
+        case "game.rules.start.StartRule":
+          return { applyToInitialState() { /* reconstruction placeholder: no-op */ } };
+        case "game.rules.end.EndRule":
+          return { eval: () => null };
+        case "game.rules.play.moves.Moves":
+          return { eval: () => [] };
+        case "game.functions.region.RegionFunction":
+          return { eval: () => [] };
+        case "game.functions.intArray.IntArrayFunction":
+          return { eval: () => [] };
+        case "game.functions.ints.IntFunction":
+        case "game.functions.dim.DimFunction":
+          return { eval: () => 0 };
+        case "game.functions.booleans.BooleanFunction":
+          return { eval: () => false };
+        case "game.functions.graph.GraphFunction":
+          return defaultReconGraphFunction();
+        case "java.lang.String":
+          return "Reconstruction";
+        case "java.lang.Integer":
+        case "int":
+          return 0;
+        default:
+          break;
+      }
+    }
+    return NO_MATCH;
+  }
+
   private compileFaithfulMoveVariant(
     node: LudList,
     head: string,
@@ -260,6 +337,11 @@ export class ArgCompiler {
   ): unknown | null {
     if (normalise(head) !== "move") return null;
     const variant = node.items[1];
+    if (variant && isReconHash(variant) && expectedTypes.some((expected) =>
+      expected.dims === 0 && expected.name === "game.rules.play.moves.Moves"
+    )) {
+      return { eval: () => [] };
+    }
     if (!variant || !isIdent(variant)) return null;
 
     const className = FAITHFUL_MOVE_VARIANTS.get(`move:${normalise(variant.name)}`);
@@ -1190,6 +1272,63 @@ function parseNodeArgs(node: LudList): ParsedArgs {
     }
   }
   return { argsIn };
+}
+
+function isReconHash(node: LudNode): boolean {
+  if (isIdent(node) && node.name === "[#]") return true;
+  return (
+    isList(node) &&
+    (node as { delimiter: string }).delimiter === "square" &&
+    node.items.length === 1 &&
+    isIdent(node.items[0]!) &&
+    node.items[0]!.name === "#"
+  );
+}
+
+function isReconQuestion(node: LudNode): boolean {
+  if (isIdent(node) && node.name === "[?]") return true;
+  return (
+    isList(node) &&
+    (node as { delimiter: string }).delimiter === "square" &&
+    node.items.length === 1 &&
+    isIdent(node.items[0]!) &&
+    node.items[0]!.name === "?"
+  );
+}
+
+function literalIntArray(node: LudNode): number[] | null {
+  const literal = literalInt(node);
+  if (literal !== null) return [literal];
+  if (!isList(node)) return null;
+  if (node.delimiter !== "curly") return null;
+  const values: number[] = [];
+  for (const item of node.items) {
+    const value = literalInt(item);
+    if (value === null) return null;
+    values.push(value);
+  }
+  return values;
+}
+
+function literalInt(node: LudNode): number | null {
+  if (isNumber(node)) return Math.trunc(node.value);
+  if (isIdent(node) && isNumericText(node.name)) return Math.trunc(Number(node.name));
+  return null;
+}
+
+function defaultReconGraphFunction(): unknown {
+  const graph = new RectangleOnSquare(1, 1);
+  return {
+    eval(_context: unknown, siteType: string): unknown {
+      return graph.eval(siteType);
+    },
+    gameFlags(_game: unknown): bigint {
+      return BigInt(0);
+    },
+    preprocess(_game: unknown): void {
+      // Nothing to do.
+    },
+  };
 }
 
 function argCombos(args: readonly ArgIn[], numSlots: number): Array<Array<ArgIn | null>> {
