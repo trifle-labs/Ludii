@@ -42,6 +42,11 @@ export class Trigger implements MovesFunction {
     role: string | null,
     thenClause: Then | null = null,
   ) {
+    if (typeof indexPlayer === "string" && role === null) {
+      role = indexPlayer;
+      indexPlayer = null;
+    }
+
     // @java Trigger.java:54-61 — @Or validation
     const numNonNull = (indexPlayer !== null ? 1 : 0) + (role !== null ? 1 : 0);
     if (numNonNull !== 1) {

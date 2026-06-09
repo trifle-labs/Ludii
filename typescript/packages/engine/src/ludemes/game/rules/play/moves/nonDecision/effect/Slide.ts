@@ -159,7 +159,7 @@ export class Slide implements MovesFunction {
           if (min <= toIdx) {
             const move = this.buildMove(ctx, from, to, toIdx, betweenSites, mover, radial);
             if (this.toRule == null || this.toRule.eval(ctx)) {
-              moves.push(move);
+              moves.push(this.withThen(ctx, move));
             }
             break;
           }
@@ -175,7 +175,7 @@ export class Slide implements MovesFunction {
         if (min <= toIdx) {
           const move = this.buildMove(ctx, from, to, toIdx, betweenSites, mover, radial);
           if (this.toRule == null || this.toRule.eval(ctx)) {
-            moves.push(move);
+            moves.push(this.withThen(ctx, move));
           }
         }
 
@@ -187,16 +187,30 @@ export class Slide implements MovesFunction {
     ctx._evalFrom = origFrom;
     ctx._evalBetween = origBetween;
 
-    // @java Slide.java:382 — then clause
-    if (this.thenClause != null) {
+    return moves;
+  }
+
+  /** @java Slide.java — attach then while context.from()/to() name this candidate. */
+  private withThen(ctx: Context, move: LudiiMove): LudiiMove {
+    if (this.thenClause == null) return move;
+
+    const origFrom = ctx._evalFrom;
+    const origTo = ctx._evalTo;
+    const origBetween = ctx._evalBetween;
+    ctx._evalFrom = move.fromNonDecision();
+    ctx._evalTo = move.toNonDecision();
+    try {
       const thenMoves = this.thenClause.eval(ctx);
-      return moves.map(m => m.withConsequence(
+      if (thenMoves.length === 0) return move;
+      return move.withConsequence(
         thenMoves.flatMap(tm => [...tm.actions]),
         thenMoves.some(tm => tm.moveAgain),
-      ));
+      );
+    } finally {
+      ctx._evalFrom = origFrom;
+      ctx._evalTo = origTo;
+      ctx._evalBetween = origBetween;
     }
-
-    return moves;
   }
 
   /** Build one slide move from→to with optional trail and between effects */

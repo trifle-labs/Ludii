@@ -103,6 +103,7 @@ export class Expand extends BaseRegionFunction {
       containers?: () => ContainerLike[];
       board?: () => { defaultSite?: () => string; topology?: () => TopologyLike };
       topology?: () => TopologyLike;
+      _trajectories?: { steps?: (site: number, dir: string) => number[] } | null;
     };
 
     let cid = 0;
@@ -133,7 +134,7 @@ export class Expand extends BaseRegionFunction {
       const containers = ctxAny.containers();
       if (cid >= 0 && cid < containers.length) {
         const c = containers[cid];
-        if (c) topo = c.topology();
+        if (c && typeof c.topology === "function") topo = c.topology();
       }
     }
     if (topo === null && ctxAny.board) {
@@ -151,9 +152,7 @@ export class Expand extends BaseRegionFunction {
     for (let step = 0; step < num; step++) {
       const nextFrontier = new Set<number>();
       for (const site of frontier) {
-        const neighbours: number[] = topo
-          ? topo.neighbours(site, this.siteType)
-          : [];
+        const neighbours: number[] = neighboursOf(topo, ctxAny._trajectories ?? null, site, this.direction);
         for (const nb of neighbours) {
           if (!resultSet.has(nb)) {
             resultSet.add(nb);
@@ -216,4 +215,19 @@ export class Expand extends BaseRegionFunction {
       String((this.numSteps as unknown as { eval?: () => number }).eval?.() ?? 1);
     return `${baseStr} expanded by ${stepsStr} steps`;
   }
+}
+
+function neighboursOf(
+  topo: TopologyLike | null,
+  trajectories: { steps?: (site: number, dir: string) => number[] } | null,
+  site: number,
+  direction: string | null,
+): number[] {
+  if (topo !== null && typeof topo.neighbours === "function") {
+    return topo.neighbours(site, null);
+  }
+  if (trajectories?.steps !== undefined) {
+    return trajectories.steps(site, direction ?? "Adjacent");
+  }
+  return [];
 }

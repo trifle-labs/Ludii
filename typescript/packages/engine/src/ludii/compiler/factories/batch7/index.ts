@@ -232,8 +232,8 @@ function regionDifferenceFactory(b: ArgBundle): RegionFunction {
   const remove = toRegion(b.positional[1]);
   return {
     eval: (ctx) => {
-      const removed = new Set(remove.eval(ctx));
-      return source.eval(ctx).filter((site) => !removed.has(site));
+      const removed = new Set(regionSites(remove, ctx));
+      return regionSites(source, ctx).filter((site) => !removed.has(site));
     },
   };
 }
@@ -243,8 +243,8 @@ function regionIntersectionFactory(b: ArgBundle): RegionFunction {
   const c = toRegion(b.positional[1]);
   return {
     eval: (ctx) => {
-      const keep = new Set(c.eval(ctx));
-      return a.eval(ctx).filter((site) => keep.has(site));
+      const keep = new Set(regionSites(c, ctx));
+      return regionSites(a, ctx).filter((site) => keep.has(site));
     },
   };
 }
@@ -261,7 +261,7 @@ function regionIfFactory(b: ArgBundle): RegionFunction {
 function regionUnionFactory(b: ArgBundle): RegionFunction {
   const regions = flatten(b.positional).map(toRegion);
   return {
-    eval: (ctx) => [...new Set(regions.flatMap((region) => region.eval(ctx)))],
+    eval: (ctx) => [...new Set(regions.flatMap((region) => regionSites(region, ctx)))],
   };
 }
 
@@ -553,6 +553,12 @@ function intOrRegion(value: unknown): RegionFunction {
 
 function intAsRegion(fn: IntFunction): RegionFunction {
   return { eval: (ctx) => [fn.eval(ctx)] };
+}
+
+function regionSites(region: RegionFunction, ctx: Parameters<RegionFunction["eval"]>[0]): number[] {
+  const sites = region.eval(ctx) as unknown;
+  if (Array.isArray(sites)) return sites;
+  return typeof sites === "number" ? [sites] : [];
 }
 
 function contextRegion(field: "_evalFrom" | "_evalTo"): RegionFunction {

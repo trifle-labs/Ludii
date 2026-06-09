@@ -133,29 +133,24 @@ export class Custodial extends Effect {
     // @java Custodial uses graph.trajectories().radials(type, from).distinctInDirection(dirnChoice)
     // which returns ALL directed radials. Step1to1 uses traj.distinctRadialsByName similarly.
     const traj = ctxAny._trajectories ?? null;
-    let axes: readonly { ray: readonly number[]; opposite: readonly number[] }[];
+    let directions: readonly (readonly number[])[];
     if (traj) {
-      const distinct = traj.distinctRadialsByName(from, this.dirnChoice);
-      if (distinct.length > 0) {
-        // Use trajectory axes. Also expand to both directions (ray + opposite)
-        // so shortSandwich/longSandwich can check both forward and backward.
-        axes = distinct.map(r => ({
-          ray: r.ray,
-          opposite: r.opposites[0] ?? [from],
-        }));
+      const directed = traj.radialsByName(from, this.dirnChoice);
+      if (directed.length > 0) {
+        directions = directed;
       } else {
         // Fallback to index-based for specific compass directions not in this board
-        axes = radialsForDirection(cellRadials, this.dirnChoice);
+        directions = flattenAxes(radialsForDirection(cellRadials, this.dirnChoice));
       }
     } else {
-      axes = radialsForDirection(cellRadials, this.dirnChoice);
+      directions = flattenAxes(radialsForDirection(cellRadials, this.dirnChoice));
     }
     const result: Move[] = [];
 
     if (maxPathLength === 1 && minPathLength < 2) {
-      this.shortSandwich(ctx, result, mover, axes);
+      this.shortSandwich(ctx, result, mover, directions);
     } else if (maxPathLength > 1 && minPathLength <= maxPathLength) {
-      this.longSandwich(ctx, result, mover, axes, minPathLength, maxPathLength);
+      this.longSandwich(ctx, result, mover, directions, minPathLength, maxPathLength);
     }
 
     // Add then-consequences (coverage deferred)
@@ -188,19 +183,17 @@ export class Custodial extends Effect {
     ctx: Context,
     result: Move[],
     mover: number,
-    axes: readonly { ray: readonly number[]; opposite: readonly number[] }[],
+    directions: readonly (readonly number[])[],
   ): void {
-    // Check both forward (ray) and backward (opposite) directions for each axis.
-    // Java returns 4 directed radials for Orthogonal (N, S, E, W); TS stores them
-    // as 2 axis pairs each having ray+opposite. We must process both halves.
-    const directions: readonly (readonly number[])[] = axes.flatMap(({ ray, opposite }) => [ray, opposite]);
     for (const dir of directions) {
       if (dir.length < 3) continue;
       const between = dir[1]!;
       if (!this.isTarget(ctx, between)) continue;
-      if (!this.isFriend(ctx, dir[2]!)) continue;
+      const friend = dir[2]!;
+      if (!this.isFriend(ctx, friend)) continue;
 
       (ctx as unknown as { _evalBetween?: number })._evalBetween = between;
+      (ctx as unknown as { _evalTo?: number })._evalTo = friend;
       const effMoves = this.targetEffect.eval(ctx);
       for (const em of effMoves) {
         result.push(new Move({
@@ -225,11 +218,10 @@ export class Custodial extends Effect {
     ctx: Context,
     result: Move[],
     mover: number,
-    axes: readonly { ray: readonly number[]; opposite: readonly number[] }[],
+    directions: readonly (readonly number[])[],
     minPathLength: number,
     maxPathLength: number,
   ): void {
-    const directions: readonly (readonly number[])[] = axes.flatMap(({ ray, opposite }) => [ray, opposite]);
     for (const dir of directions) {
       let foundEnemy = false;
       let posIdx = 1;
@@ -251,6 +243,7 @@ export class Custodial extends Effect {
       for (let i = 1; i < posIdx; i++) {
         const between = dir[i]!;
         (ctx as unknown as { _evalBetween?: number })._evalBetween = between;
+        (ctx as unknown as { _evalTo?: number })._evalTo = friendPos;
         const effMoves = this.targetEffect.eval(ctx);
         for (const em of effMoves) {
           result.push(new Move({
@@ -283,6 +276,12 @@ export class Custodial extends Effect {
   public override isStatic(): boolean {
     return false;
   }
+}
+
+function flattenAxes(
+  axes: readonly { ray: readonly number[]; opposite: readonly number[] }[],
+): readonly (readonly number[])[] {
+  return axes.flatMap(({ ray, opposite }) => [ray, opposite]);
 }
 
 // ---------------------------------------------------------------------------
