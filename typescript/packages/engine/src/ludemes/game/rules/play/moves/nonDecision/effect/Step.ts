@@ -21,6 +21,7 @@
 
 import type { Context } from "../../../../../../../context.js";
 import { radialsForDirection, type CellFlatRadials } from "../../../../../../topology-radials.js";
+import type { Trajectories } from "../../../../../../../eval/graph/trajectories.js";
 import { resolveRelativeDir, isSingleDir } from "./Step1to1.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
@@ -107,6 +108,7 @@ export class Step extends Effect {
     const directions = this.dirnChoice.eval(ctx);
     const mover = ctx.state.mover;
     const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+    const traj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
 
     const out: number[] = [];
     const seen = new Set<number>();
@@ -117,17 +119,31 @@ export class Step extends Effect {
       seen.add(to);
       out.push(to);
     };
+    const GROUP_DIRS = new Set(["adjacent", "orthogonal", "diagonal", "all"]);
+    const axesForDir = (dir: string): readonly { ray: readonly number[]; opposite: readonly number[] }[] => {
+      if (traj) {
+        const distinct = traj.distinctRadialsByName((cellRadials.axes[0]?.ray[0] ?? -1), dir);
+        if (distinct.length > 0) {
+          return distinct.map((radial) => ({
+            ray: radial.ray,
+            opposite: radial.opposites[0] ?? [radial.ray[0] ?? -1],
+          }));
+        }
+        if (!GROUP_DIRS.has(dir.toLowerCase())) return [];
+      }
+      return radialsForDirection(cellRadials, dir);
+    };
 
     for (const dirName of directions) {
       const relative = resolveRelativeDir(dirName, mover, playerDirs);
       if (Array.isArray(relative)) {
         // Forwards/Backwards group → forward ray of each resolved compass heading.
-        for (const d of relative) for (const { ray } of radialsForDirection(cellRadials, d)) pushRay(ray);
+        for (const d of relative) for (const { ray } of axesForDir(d)) pushRay(ray);
         continue;
       }
       const effDir = relative ?? dirName;
       const single = isSingleDir(effDir);
-      for (const { ray, opposite } of radialsForDirection(cellRadials, effDir)) {
+      for (const { ray, opposite } of axesForDir(effDir)) {
         pushRay(ray);
         if (!single) pushRay(opposite);
       }
@@ -193,7 +209,9 @@ export class Step extends Effect {
         const sideMoves = this.sideEffect.eval(ctx);
         for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
       }
-      actions.push(new ActionMove({ from, to }));
+      const moveAction = new ActionMove({ from, to });
+      moveAction.setDecision(true);
+      actions.push(moveAction);
 
       result.push(new Move({
         id: `step:${mover}:${from}:${to}`,
@@ -257,7 +275,9 @@ export class Step extends Effect {
           const sideMoves = this.sideEffect.eval(ctx);
           for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
         }
-        actions.push(new ActionMove({ from, to }));
+        const moveAction = new ActionMove({ from, to });
+        moveAction.setDecision(true);
+        actions.push(moveAction);
 
         result.push(new Move({
           id: `step:region:${mover}:${from}:${to}`,

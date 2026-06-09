@@ -189,6 +189,12 @@ export class ArgCompiler {
       return null;
     }
 
+    const faithfulMoveVariant = this.compileFaithfulMoveVariant(node, head, expectedTypes, env);
+    if (faithfulMoveVariant !== null) return faithfulMoveVariant;
+
+    const preferred = this.compilePreferredTokenClass(node, head, expectedTypes, env);
+    if (preferred !== null) return preferred;
+
     const candidates = (this.byToken.get(normalise(head)) ?? [])
       .filter((candidate) => expectedTypes.some((expected) => isAssignable(candidate.meta, expected.name)));
 
@@ -205,6 +211,60 @@ export class ArgCompiler {
         ? `no reflection candidate for (${head}) as ${formatExpected(expectedTypes)}`
         : `(${head}) matched none of ${candidates.length} reflection candidate(s) for ${formatExpected(expectedTypes)}`,
     );
+    return null;
+  }
+
+  private compileFaithfulMoveVariant(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    if (normalise(head) !== "move") return null;
+    const variant = node.items[1];
+    if (!variant || !isIdent(variant)) return null;
+
+    const className = FAITHFUL_MOVE_VARIANTS.get(`move:${normalise(variant.name)}`);
+    if (!className) return null;
+
+    const meta = this.reflection.get(className);
+    if (!meta || !expectedTypes.some((expected) => isAssignable(meta, expected.name))) return null;
+
+    const synthetic: LudList = {
+      ...node,
+      items: [variant, ...node.items.slice(2)],
+    };
+    const object = this.compileCandidate(synthetic, { className, meta }, env);
+    if (object !== null) {
+      this.resolveTrace.push({ token: head, cls: className });
+      return object;
+    }
+
+    return null;
+  }
+
+  private compilePreferredTokenClass(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    const className = PREFERRED_TOKEN_CLASSES.get(normalise(head));
+    if (!className) return null;
+    if (normalise(head) === "is") {
+      const variant = node.items[1];
+      if (!variant || !isIdent(variant) || !PREFERRED_IS_VARIANTS.has(normalise(variant.name))) return null;
+    }
+
+    const meta = this.reflection.get(className);
+    if (!meta || !expectedTypes.some((expected) => isAssignable(meta, expected.name))) return null;
+
+    const object = this.compileCandidate(node, { className, meta }, env);
+    if (object !== null) {
+      this.resolveTrace.push({ token: head, cls: className });
+      return object;
+    }
+
     return null;
   }
 
@@ -454,17 +514,21 @@ export class ArgCompiler {
     const faithful = this.instantiateFaithful(info);
     if (faithful !== null && faithful !== undefined) return faithful;
 
+    const faithfulMoveVariant = this.instantiateFaithfulMoveVariant(info);
+    if (faithfulMoveVariant !== null && faithfulMoveVariant !== undefined) return faithfulMoveVariant;
+
     const registry = env.registry ?? this.registry;
     const named = new Map<string, unknown>();
     info.paramNames.forEach((name, index) => {
       if (name !== null) named.set(name, info.args[index]);
     });
+    const constructKey = constructKeyFor(info.meta.token, info.args);
     try {
       const bundle = makeArgBundle({
         clause: info.clause,
         clauseIndex: info.execIndex,
         sourceKeyword: info.meta.token,
-        constructKey: constructKeyFor(info.meta.token, info.args),
+        constructKey,
         symbol: info.meta.label,
         positional: info.args.filter((value) => value !== null && value !== undefined),
         named,
@@ -478,8 +542,41 @@ export class ArgCompiler {
     return null;
   }
 
+  private instantiateFaithfulMoveVariant(info: InstantiationInfo): unknown | null {
+    const constructKey = constructKeyFor(info.meta.token, info.args);
+    const className = FAITHFUL_MOVE_VARIANTS.get(constructKey);
+    if (!className) return null;
+
+    const meta = this.reflection.get(className);
+    if (!meta) return null;
+
+    const args = info.args.slice(1);
+    for (let execIndex = 0; execIndex < meta.executables.length; execIndex++) {
+      const executable = meta.executables[execIndex]!;
+      if (executable.kind !== "constructor" || executable.params.length !== args.length) continue;
+
+      const firstArgText = typeof args[0] === "string" ? args[0] : null;
+      const paramNames = this.paramNames(meta, executable, execIndex, firstArgText);
+      const object = this.instantiateFaithful({
+        className,
+        meta,
+        executable,
+        execIndex,
+        args,
+        paramNames,
+        clause: this.clauseFor(meta, executable, execIndex, paramNames, firstArgText),
+      });
+      if (object !== null && object !== undefined) return object;
+    }
+
+    return null;
+  }
+
   /** The canonical faithful instantiation via JAVA_TS_CTORS. Returns null on any miss. */
   private instantiateFaithful(info: InstantiationInfo): unknown | null {
+    const builtin = instantiateBuiltinFaithful(info.className, info.args);
+    if (builtin !== NO_BUILTIN) return builtin;
+
     const ctor = JAVA_TS_CTORS.get(info.className) as (new (...args: unknown[]) => unknown) & {
       construct?: (...args: unknown[]) => unknown;
       length: number;
@@ -524,6 +621,13 @@ export class ArgCompiler {
       if (info.args.length < ctor.length) {
         this.noteInstFail(`cannot instantiate ${info.className}: TS ctor needs >=${ctor.length} args but only ${info.args.length} bound (constructor drift)`);
         return null;
+      }
+      if (
+        info.className === "game.rules.play.moves.nonDecision.effect.Apply" &&
+        info.args.length === 1 &&
+        info.executable.params[0]?.name === "effect"
+      ) {
+        return new ctor(null, info.args[0]);
       }
       return new ctor(...info.args);
     } catch (e) {
@@ -824,3 +928,23 @@ function numericFunctionExpected(expected: string, integer: boolean): boolean {
 }
 
 const NO_MATCH = Symbol("NO_MATCH");
+const NO_BUILTIN = Symbol("NO_BUILTIN");
+
+function instantiateBuiltinFaithful(className: string, args: readonly unknown[]): unknown | typeof NO_BUILTIN {
+  if (args.length !== 0) return NO_BUILTIN;
+  switch (className) {
+    case "game.functions.ints.iterator.To":
+      return { eval: (ctx: { _evalTo: number }) => ctx._evalTo };
+    default:
+      return NO_BUILTIN;
+  }
+}
+
+const PREFERRED_TOKEN_CLASSES = new Map<string, string>([
+  ["is", "game.functions.booleans.is.Is"],
+]);
+const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy"]);
+
+const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
+  ["move:step", "game.rules.play.moves.nonDecision.effect.Step"],
+]);

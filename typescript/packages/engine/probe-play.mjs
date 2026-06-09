@@ -54,10 +54,27 @@ if (placed !== 32) { console.log(`FAIL: expected 32 pieces placed at start, got 
 
 const moves = game.moves(ctx);
 const real = moves.filter((m) => !m.isPass?.());
-if (real.length < 20) {
-  console.log(`FAIL: expected ~22 P1 opening moves, got ${real.length} real moves (${moves.length} total)`);
+
+// CORRECTNESS, not just count. P1 (faces North, pieces on bottom two rows of an 8-wide
+// board) opening: 8 forward steps (row1->row2) + 14 forward-diagonals = 22. Every move must
+// go strictly forward (to-row > from-row) and never land on an own piece.
+const W = 8;
+const mover = st.mover; // 1
+let bad = [];
+for (const m of real) {
+  const f = m.from?.(), t = m.to?.();
+  const fr = Math.floor(f / W), tr = Math.floor(t / W);
+  if (tr <= fr) bad.push(`${f}->${t}(not-forward)`);
+  else if (st.cells[t] === mover) bad.push(`${f}->${t}(onto-own)`);
+}
+if (bad.length) {
+  console.log(`FAIL: ${bad.length}/${real.length} illegal moves (e.g. ${bad.slice(0, 6).join(", ")})`);
+  process.exit(1);
+}
+if (real.length < 20 || real.length > 24) {
+  console.log(`FAIL: expected ~22 P1 opening moves, got ${real.length}`);
   process.exit(1);
 }
 
-console.log(`OK: faithful Breakthrough plays. equip=${equipName}, sites=${numSites}, placed=${placed}, moves=${real.length}`);
+console.log(`OK: faithful Breakthrough plays CORRECTLY. equip=${equipName}, sites=${numSites}, placed=${placed}, moves=${real.length} (all forward, none onto own)`);
 process.exit(0);
