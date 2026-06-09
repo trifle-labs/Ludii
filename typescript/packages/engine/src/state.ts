@@ -238,6 +238,35 @@ export class State {
   /** Static track site→index maps. See {@link StateOptions.trackLocToIndex}. */
   public readonly trackLocToIndex?: TrackLocToIndex;
 
+  /**
+   * On-demand Owned index (piece positions grouped by component), computed by scanning
+   * cells (owner/who) + whats (component index). Mirrors Java other/state/owned/Owned:
+   * `positions(playerId)` returns an array indexed by component id, each entry the list of
+   * Locations that player owns of that component; `mapCompIndex` is identity (we key by the
+   * global component id directly). Faithful in result; computed lazily rather than maintained
+   * incrementally. Needed by ForEachPiece and other piece-iterating ludeme evals.
+   */
+  public get owned(): {
+    positions(pid: number): Array<Array<{ site(): number; level(): number; siteType(): string }>>;
+    mapCompIndex(pid: number, compId: number): number;
+  } {
+    const cells = this.cells;
+    const whats = this.whats;
+    return {
+      positions: (pid: number) => {
+        const byComp: Array<Array<{ site(): number; level(): number; siteType(): string }>> = [];
+        for (let s = 0; s < cells.length; s++) {
+          if (cells[s] === pid) {
+            const comp = whats[s] ?? 0;
+            (byComp[comp] ??= []).push({ site: () => s, level: () => 0, siteType: () => "Cell" });
+          }
+        }
+        return byComp;
+      },
+      mapCompIndex: (_pid: number, compId: number) => compId,
+    };
+  }
+
   public constructor(
     mover: number,
     cells: readonly number[],
