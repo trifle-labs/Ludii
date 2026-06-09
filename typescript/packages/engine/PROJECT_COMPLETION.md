@@ -99,3 +99,28 @@ REMAINING = the eval-validation bulk (multi-week, parity-driven, parallelize via
 LOOP TO RUN (repeat until parity≈Java): `LUDII_ARGCOMPILER=1 node test/parity/replay-trials.mjs
 --filter <dir>` → per failing game read Java eval vs TS eval of the diverging ludeme → fix TS
 eval faithfully → re-measure. Use --filter per-directory (fast) to avoid the slow/hanging full run.
+
+## Update 3: eval-validation loop driven — the gaps are LAYERED (Context/State/eval)
+Drove the loop starting with Step. Fixed two real faithful bugs (committed, green):
+1. **Step.eval** used `cellRadials[dirName]` on a `{axes:[]}` shape (always undefined → 0 moves);
+   now uses `radialsForDirection()` (expands Adjacent→axes), matching Step1to1. (eval+evalRegion)
+2. **State.owned** added — on-demand piece-position index (scan cells/whats → Location[][] by
+   component, mapCompIndex identity), the faithful Owned index ForEachPiece needs.
+
+But move-gen for `forEach Piece` games (most board games) is blocked across MULTIPLE LAYERS,
+each needing a faithful port/wire — this is why behavioral parity is the multi-week bulk:
+- **Context API gap (NEXT holistic blocker)**: faithful evals call Java Context methods that the
+  lean TS `src/context.ts` Context doesn't expose: `components()`, `containerState(cont)`,
+  `topology()`, `board()`, `containers()`. ForEachPiece needs `components()` for moverCompIndices
+  → undefined → 0 moves regardless of owned. Port these onto Context (faithful to Java Context).
+- **State layer**: owned added; other Java State accessors may be needed per ludeme.
+- **Per-ludeme eval**: Step fixed; Hop, Slide, Sow, custodial, etc. each need validation vs Java.
+- **A hanging eval** (infinite loop) on some game — find via child-process-per-game timeout.
+
+NEXT CONCRETE STEP: wire the Context API (components/containerState/topology/board/containers)
+onto the faithful Context — this unblocks ForEachPiece → most board games start generating moves;
+then re-run parity to see the jump + the next per-ludeme divergences. This is porting Java's
+Context, not new code.
+
+CURRENT: faithful-first + eager-fix + board-gens + Step + owned committed; compile 95%; behavioral
+parity still low (Context-API gap blocks forEach-Piece move-gen). Drift grind 52→37 (running).
