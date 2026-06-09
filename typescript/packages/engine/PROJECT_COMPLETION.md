@@ -274,3 +274,40 @@ NEXT (ordered):
      Equipment.createItems with a game stub (numPlayers+board) BEFORE constructing Game1to1.
   d. Re-probe Breakthrough faithful: expect 64 sites, 32 placed, 22 moves — parity with bespoke.
   e. Per-ludeme eval grind → delete bespoke once faithful ≥ parity.
+
+## Update 7 (THIS session): faithful path PLAYS end-to-end; move-gen blocker = move-dispatch
+HUGE milestone: the faithful (ArgCompiler) path now COMPILES Breakthrough to the faithful
+Equipment AND PLAYS it end-to-end (probe-play.mjs: equip=Equipment, sites=64, placed=32).
+The entire create() chain works: faithful Topology subsystem (codex-ported, verified — cells/
+edges/vertices/relations/rows/cols/coords/distances), per-player piece expansion, start
+placement, playerDirs. Committed in steps; bespoke parity NOT regressed (Breakthrough bespoke
+100% OUTCOME_OK; shared Rules1to1/OrBool changes additive).
+
+NEW BLOCKER (move-gen CORRECTNESS) — precisely root-caused: faithful Breakthrough over-generates
+(110 moves vs Java's 22). NOT a Step/Directions/State bug. The cause: the faithful `move`-keyword
+DISPATCH is unwired. `(move Step (directions {FR FL}) (to ...apply remove...))` resolves via the
+bespoke REGISTRY alias `registry.registerLudeme("move:step", makeStep)` (batch5) — instantiateFaithful
+is NEVER called for game.rules.play.moves.nonDecision.effect.Step. The registry `makeStep` is a
+SIMPLIFIED adapter: it takes only `firstDirectionName(b) ?? "Adjacent"` (one name, and it doesn't
+recognise the `(directions {FR FL})` list → defaults to Adjacent = all 8 dirs) and hardcodes
+`sideEffect: null` (drops `(apply (remove (to)))`). So Step runs my correct Step.eval/stepTargets
+(which DOES resolve FR/FL→NE/NW via playerDirs — verified) but receives dirnChoice=Adjacent, hence
+all-8 over-generation. The faithful StepFaithful (correct ctor: from,directions,to,stack,then →
+directionsFunction) is bypassed.
+
+THIS AFFECTS ALL MOVE LUDEMES (Step/Slide/Hop/Add/Remove/Shoot/…): each `(move X ...)` routes to a
+simplified registry make<X> adapter instead of the faithful class. Fixing the faithful move-keyword
+dispatch is THE next structural unlock for move-gen correctness across the corpus.
+
+NEXT (move-dispatch, ordered — ideal for a focused codex wave):
+  1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
+     `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
+     faithful instantiation over the registry make<X> alias. (instantiateFaithful currently never
+     sees the `.effect.Step` className for `(move Step ...)`.)
+  2. Ensure the faithful move classes' positional ctors match Java arg order (StepFaithful already
+     does: from,directions,to,stack,then) and that ArgCompiler binds the directions/`(to ...)`/
+     sideEffect args into them.
+  3. Acceptance: probe-play.mjs shows ~22 Breakthrough moves (not 110), occupancy-filtered, with the
+     capture side-effect; then widen to other direction-based games.
+  4. Then the per-ludeme eval grind continues; delete bespoke (compiler1to1 + *1to1 + registry/
+     make<X> adapters) once faithful ≥ parity.
