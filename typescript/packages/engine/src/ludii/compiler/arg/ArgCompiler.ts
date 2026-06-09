@@ -879,7 +879,19 @@ export class ArgCompiler {
     if (faithfulMoveVariant !== null && faithfulMoveVariant !== undefined) return faithfulMoveVariant;
 
     const registryFallback = this.instantiateRegistry(info, env);
-    if (registryFallback !== null && registryFallback !== undefined) return registryFallback;
+    if (registryFallback !== null && registryFallback !== undefined) {
+      if (
+        info.className === "game.equipment.container.board.custom.MancalaBoard" &&
+        isUnsafeTwoRowMancalaTrack(info.args)
+      ) {
+        Object.defineProperty(registryFallback as object, "_forceFullBespokeFallback", {
+          value: true,
+          configurable: true,
+          enumerable: false,
+        });
+      }
+      return registryFallback;
+    }
     // instantiateFaithful already recorded a specific noteInstFail on its miss.
     return null;
   }
@@ -1621,7 +1633,12 @@ const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
 ]);
 
 const REGISTRY_FIRST_CLASSES = new Set<string>([
-  // Faithful MancalaBoard currently carries a stub graph function; the registry
-  // factory builds the proven Board1to1 graph and keeps the faithful track data.
-  "game.equipment.container.board.custom.MancalaBoard",
 ]);
+
+function isUnsafeTwoRowMancalaTrack(args: readonly unknown[]): boolean {
+  if (args[0] !== 2) return false;
+  const track = args[5];
+  const tracks = args[6];
+  const all = Array.isArray(tracks) ? tracks : (track !== null && track !== undefined ? [track] : []);
+  return all.some((t) => (t as { trackDirection?: string | null }).trackDirection === "1,E,N,W");
+}

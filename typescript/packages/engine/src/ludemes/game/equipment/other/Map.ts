@@ -89,7 +89,7 @@ export class Map extends Item {
   public constructor(
     name: string | null,
     pairsOrKeys: readonly Pair[] | readonly IntFunction[],
-    values?: readonly IntFunction[],
+    values: readonly IntFunction[] | undefined = undefined,
   ) {
     // @java Map.java:60 — super((name == null) ? "Map" : name, Constants.UNDEFINED, RoleType.Neutral)
     super((name === null) ? "Map" : name, UNDEFINED, "Neutral" as RoleType);

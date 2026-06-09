@@ -861,6 +861,9 @@ export function sideRegionsOf(
 
 /** A mancala store board, plus the board-site ids of its two store cells. */
 export interface MancalaGraphSpec extends GraphBoardSpec {
+  /** The faithful Mancala graph built from `MancalaBoard.makeMancala*Rows`. */
+  readonly graph: Graph;
+
   /**
    * Board-site ids of the two store vertices, [left, right]. With the faithful
    * Union ordering these are 0 and 2N+1 (Java cells 0 and `2·cols·rows+1`),
@@ -958,6 +961,7 @@ export function buildMancalaGraph(
   const traj = new Trajectories(graph, "Vertex");
   if (traj.numSites === 0) return undefined;
   return {
+    graph,
     traj,
     width: cols,
     height: rows,

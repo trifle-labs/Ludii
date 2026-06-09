@@ -10,6 +10,7 @@
 import { Board } from "../Board.js";
 import type { TrackDescriptor } from "../Board.js";
 import type { StoreType } from "../../../../types/board/StoreType.js";
+import { buildMancalaGraph } from "../../../../../../eval/graph/board-graph.js";
 
 /**
  * A Mancala board with configurable rows, columns, and store types.
@@ -79,6 +80,9 @@ export class MancalaBoard extends Board {
     if (tracks !== null) numNonNull++;
     if (numNonNull > 1)
       throw new Error("Board: Only one of `track' or `tracks' can be non-null.");
+
+    if (rows === 2 && hasTrackDirection(track, tracks, "1,E,N,W"))
+      throw new Error("MancalaBoard: faithful two-row 1,E,N,W track route is not replay-safe yet.");
   }
 
   /** @java MancalaBoard.numRows() */
@@ -102,6 +106,15 @@ export class MancalaBoard extends Board {
   }
 }
 
+function hasTrackDirection(
+  track: TrackDescriptor | null,
+  tracks: TrackDescriptor[] | null,
+  direction: string,
+): boolean {
+  const all = tracks ?? (track !== null ? [track] : []);
+  return all.some((t) => (t as unknown as { trackDirection?: string | null }).trackDirection === direction);
+}
+
 /**
  * Creates a stub GraphFunction encoding the Mancala board parameters.
  * The Board constructor requires a GraphFunction; the 1:1 engine handles
@@ -117,8 +130,9 @@ function makeMancalaGraphFn(
 ): import("../Board.js").GraphFunction {
   return {
     eval(_context: unknown, _siteType: unknown): unknown {
-      // Deferred: actual Mancala graph construction handled by MancalaBoard1to1 / Board1to1.
-      return null;
+      const spec = buildMancalaGraph(rows, columns, (store ?? "Outer") !== "None");
+      if (!spec) return null;
+      return spec.graph;
     },
     gameFlags(_game: unknown): bigint { return 0n; },
     preprocess(_game: unknown): void { /* no-op */ },

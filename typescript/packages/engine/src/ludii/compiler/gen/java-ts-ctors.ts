@@ -1,4 +1,5 @@
 // AUTO-GENERATED. Java class name -> TS constructor.
+import { MapEntry as FaithfulMapEntry } from "../../../ludemes/game/functions/ints/board/MapEntry.js";
 import { State as C0 } from "../../../state.js";
 import { Game1to1 as C1 } from "../../../ludemes/Game1to1.js";
 import { RankUtils as C2 } from "../../../ludemes/other/RankUtils.js";
@@ -1479,6 +1480,7 @@ import { SetDispatch as C1476 } from "../../../ludemes/game/rules/start/set/Set.
 import { NoDispatch as C1477 } from "../../../ludemes/game/functions/booleans/no/No.js";
 
 export const JAVA_TS_CTORS = new Map();
+JAVA_TS_CTORS.set("game.functions.ints.board.MapEntry", FaithfulMapEntry);
 JAVA_TS_CTORS.set("game.rules.start.set.Set", C1476);
 JAVA_TS_CTORS.set("game.functions.booleans.no.No", C1477);
 JAVA_TS_CTORS.set("other.state.State", C0);
