@@ -21,6 +21,7 @@
 
 import type { Context } from "../../../../../../../context.js";
 import { radialsForDirection, type CellFlatRadials } from "../../../../../../topology-radials.js";
+import { resolveRelativeDir, isSingleDir } from "./Step1to1.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
@@ -88,6 +89,55 @@ export class Step extends Effect {
   // -------------------------------------------------------------------------
 
   /**
+   * Resolve this Step's directions to the set of one-step destination sites from
+   * `cellRadials`, deduplicated.
+   *
+   * @java game/rules/play/moves/nonDecision/effect/Step.java — dirnChoice.convertToAbsolute(context)
+   *
+   * Mirrors the working Step1to1 logic:
+   *  - A RELATIVE direction (Forward/Forwards/Backward/FR/FL/…) is converted to
+   *    absolute compass heading(s) via the mover's facing (game._playerDirs).
+   *  - "Forwards"/"Backwards" resolve to a GROUP of single compass headings — step
+   *    the forward ray of each (ray[1] only).
+   *  - A SINGLE heading (N/E/… or a relative that resolves to one) steps ray[1] only.
+   *  - A GROUP direction (Adjacent/Orthogonal/Diagonal/All) steps both halves of
+   *    each axis (ray[1] and opposite[1]).
+   */
+  private stepTargets(ctx: Context, cellRadials: CellFlatRadials): number[] {
+    const directions = this.dirnChoice.eval(ctx);
+    const mover = ctx.state.mover;
+    const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+
+    const out: number[] = [];
+    const seen = new Set<number>();
+    const pushRay = (ray: readonly number[]): void => {
+      if (ray.length < 2) return;
+      const to = ray[1]!;
+      if (seen.has(to)) return;
+      seen.add(to);
+      out.push(to);
+    };
+
+    for (const dirName of directions) {
+      const relative = resolveRelativeDir(dirName, mover, playerDirs);
+      if (Array.isArray(relative)) {
+        // Forwards/Backwards group → forward ray of each resolved compass heading.
+        for (const d of relative) for (const { ray } of radialsForDirection(cellRadials, d)) pushRay(ray);
+        continue;
+      }
+      const effDir = relative ?? dirName;
+      const single = isSingleDir(effDir);
+      for (const { ray, opposite } of radialsForDirection(cellRadials, effDir)) {
+        pushRay(ray);
+        if (!single) pushRay(opposite);
+      }
+    }
+    return out;
+  }
+
+  // -------------------------------------------------------------------------
+
+  /**
    * @java game/rules/play/moves/nonDecision/effect/Step.java — eval(Context)
    *
    * Java lines 143-245:
@@ -123,45 +173,36 @@ export class Step extends Effect {
       return [];
     }
 
-    const directions = this.dirnChoice.eval(ctx);
     const cellRadials = radials[from];
     if (!cellRadials) return [];
 
     const result: Move[] = [];
-    const seen = new Set<number>();
 
-    for (const dirName of directions) {
-      const dirsForCell = radialsForDirection(cellRadials, dirName);
-      for (const { ray, opposite } of dirsForCell) {
-        // Step to ray[1] (one step in this direction)
-        for (const stepArr of [ray, opposite]) {
-          if (stepArr.length < 2) continue;
-          const to = stepArr[1]!;
-          if (seen.has(to)) continue;
+    // @java Step.java:200 — dirnChoice.convertToAbsolute(context) then Radials lookup.
+    // stepTargets resolves relative directions (FR/FL/Forward via mover facing) and
+    // walks one step per direction (ray-only for a single heading; both halves of each
+    // axis for a group direction like Adjacent/Orthogonal/Diagonal).
+    for (const to of this.stepTargets(ctx, cellRadials)) {
+      (ctx as unknown as { _evalTo?: number })._evalTo = to;
+      if (!this.rule.eval(ctx)) continue;
 
-          (ctx as unknown as { _evalTo?: number })._evalTo = to;
-          if (!this.rule.eval(ctx)) continue;
-          seen.add(to);
+      const actions: Action[] = [];
 
-          const actions: Action[] = [];
-
-          // @java Step.java:230 — chainRuleWithAction(sideEffect, ...)
-          if (this.sideEffect !== null) {
-            const sideMoves = this.sideEffect.eval(ctx);
-            for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
-          }
-          actions.push(new ActionMove({ from, to }));
-
-          result.push(new Move({
-            id: `step:${mover}:${from}:${to}`,
-            label: `Step(${from}→${to})`,
-            siteIndices: [from, to],
-            mover,
-            placedOwner: mover,
-            actions,
-          }));
-        }
+      // @java Step.java:230 — chainRuleWithAction(sideEffect, ...)
+      if (this.sideEffect !== null) {
+        const sideMoves = this.sideEffect.eval(ctx);
+        for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
       }
+      actions.push(new ActionMove({ from, to }));
+
+      result.push(new Move({
+        id: `step:${mover}:${from}:${to}`,
+        label: `Step(${from}→${to})`,
+        siteIndices: [from, to],
+        mover,
+        placedOwner: mover,
+        actions,
+      }));
     }
 
     (ctx as unknown as { _evalTo?: number })._evalTo = origTo;
@@ -207,38 +248,25 @@ export class Step extends Effect {
 
       if (this.fromCondition !== null && !this.fromCondition.eval(ctx)) continue;
 
-      const directions = this.dirnChoice.eval(ctx);
-      const seen = new Set<number>();
+      for (const to of this.stepTargets(ctx, cellRadials)) {
+        (ctx as unknown as { _evalTo?: number })._evalTo = to;
+        if (!this.rule.eval(ctx)) continue;
 
-      for (const dirName of directions) {
-        const dirsForCell = radialsForDirection(cellRadials, dirName);
-        for (const { ray, opposite } of dirsForCell) {
-          for (const stepArr of [ray, opposite]) {
-            if (stepArr.length < 2) continue;
-            const to = stepArr[1]!;
-            if (seen.has(to)) continue;
-
-            (ctx as unknown as { _evalTo?: number })._evalTo = to;
-            if (!this.rule.eval(ctx)) continue;
-            seen.add(to);
-
-            const actions: Action[] = [];
-            if (this.sideEffect !== null) {
-              const sideMoves = this.sideEffect.eval(ctx);
-              for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
-            }
-            actions.push(new ActionMove({ from, to }));
-
-            result.push(new Move({
-              id: `step:region:${mover}:${from}:${to}`,
-              label: `Step(${from}→${to})`,
-              siteIndices: [from, to],
-              mover,
-              placedOwner: mover,
-              actions,
-            }));
-          }
+        const actions: Action[] = [];
+        if (this.sideEffect !== null) {
+          const sideMoves = this.sideEffect.eval(ctx);
+          for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
         }
+        actions.push(new ActionMove({ from, to }));
+
+        result.push(new Move({
+          id: `step:region:${mover}:${from}:${to}`,
+          label: `Step(${from}→${to})`,
+          siteIndices: [from, to],
+          mover,
+          placedOwner: mover,
+          actions,
+        }));
       }
     }
 

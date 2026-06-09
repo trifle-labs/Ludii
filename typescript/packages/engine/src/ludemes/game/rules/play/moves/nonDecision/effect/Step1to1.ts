@@ -129,7 +129,7 @@ export function resolveRelativeDir(
 }
 
 /** True when the direction names a SINGLE compass heading (one ray), not a group. */
-function isSingleDir(dirName: string): boolean {
+export function isSingleDir(dirName: string): boolean {
   switch (dirName.toUpperCase()) {
     case "N": case "S": case "E": case "W":
     case "NE": case "NW": case "SE": case "SW":
