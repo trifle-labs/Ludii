@@ -2,6 +2,10 @@ import type { Context } from "../../../../../../../context.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import { IntConstant } from "../../../../../functions/ints/IntConstant.js";
 import { LastTo } from "../../../../../functions/ints/last/LastTo.js";
+import { AndBool } from "../../../../../functions/booleans/math1to1/AndBool.js";
+import { OrBool } from "../../../../../functions/booleans/math1to1/OrBool.js";
+import { IsFriend1to1 } from "../../../../../functions/booleans/is/player1to1/IsFriend1to1.js";
+import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
 import type { From1to1 } from "../../../../../util/moves/From1to1.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
 import type { To1to1 } from "../../../../../util/moves/To1to1.js";
@@ -66,6 +70,10 @@ export function toCond(to: To1to1 | null, fallback: BooleanFunction = TRUE_FN): 
   return to?.condFn() ?? fallback;
 }
 
+export function normaliseFriendAtPlaceholder(rule: BooleanFunction): BooleanFunction {
+  return rewriteFriendPlaceholder(rule, new IsFriend1to1(new Who1to1(TO_ITER), null));
+}
+
 export function toEffect(to: To1to1 | null): MovesFunction | null {
   return to?.effectFn() ?? null;
 }
@@ -119,4 +127,19 @@ export function pieceComponents(piece: Piece1to1 | null): IntFunction[] | null {
 function ownerSuffix(name: string): number | null {
   const match = name.match(/\d+$/);
   return match ? Number(match[0]) : null;
+}
+
+function rewriteFriendPlaceholder(rule: BooleanFunction, friendRule: BooleanFunction): BooleanFunction {
+  // ArgCompiler currently mis-resolves the built-in "IsFriendAt" define as
+  // unconstrained IsSolved in some generated `to` clauses; Java expects Friend.
+  if (rule.constructor?.name === "IsSolved") return friendRule;
+
+  const maybeList = (rule as unknown as { list?: readonly BooleanFunction[] }).list;
+  if (Array.isArray(maybeList)) {
+    const rewritten = maybeList.map((child) => rewriteFriendPlaceholder(child, friendRule));
+    if (rule.constructor?.name === "OrBool") return new OrBool(rewritten);
+    if (rule.constructor?.name === "AndBool") return new AndBool(rewritten);
+  }
+
+  return rule;
 }

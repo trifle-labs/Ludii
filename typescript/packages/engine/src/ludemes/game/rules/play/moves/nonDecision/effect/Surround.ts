@@ -36,6 +36,7 @@ import type { Between1to1 } from "../../../../../util/moves/Between1to1.js";
 import type { To1to1 } from "../../../../../util/moves/To1to1.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
 import { Remove } from "./Remove.js";
+import { normaliseFriendAtPlaceholder } from "./EffectCtorAdapters.js";
 
 /**
  * Surround effect — applies an effect to surrounded pieces.
@@ -82,7 +83,7 @@ export class Surround extends Effect {
     this.startLocationFn = from?.loc() ?? new IteratorFrom();
     this.dirnChoice = relation == null ? "Adjacent" : relationToAbsoluteDirection(relation);
     this.targetRule = between?.condition() ?? new IsEnemy1to1(new IteratorBetween(), null);
-    this.friendRule = to?.cond() ?? new IsFriend1to1(new IteratorTo(), null);
+    this.friendRule = normaliseFriendAtPlaceholder(to?.cond() ?? new IsFriend1to1(new IteratorTo(), null));
     this.effect = between?.effect() ?? new Remove({ locationFn: new IteratorBetween() });
     this.exception = except ?? new IntConstant(0);
     this.withAtLeastPiece = withPiece?.component() ?? null;

@@ -11,7 +11,7 @@ import { IsEnemy1to1 } from "../../../../../functions/booleans/is/player1to1/IsE
 import { IsFriend1to1 } from "../../../../../functions/booleans/is/player1to1/IsFriend1to1.js";
 import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
 import { Remove } from "./Remove.js";
-import { BETWEEN_ITER, betweenCond, betweenEffect, betweenRange, directionName, fromLoc, intConst, LAST_TO, toCond, TO_ITER } from "./EffectCtorAdapters.js";
+import { BETWEEN_ITER, betweenCond, betweenEffect, betweenRange, directionName, fromLoc, intConst, LAST_TO, normaliseFriendAtPlaceholder, toCond, TO_ITER } from "./EffectCtorAdapters.js";
 
 export class CustodialFaithful extends Custodial {
   public constructor(
@@ -29,7 +29,7 @@ export class CustodialFaithful extends Custodial {
       minimum: range?.minFn ?? intConst(0),
       limit: range?.maxFn ?? intConst(1000),
       targetRule: betweenCond(between, new IsEnemy1to1(new Who1to1(BETWEEN_ITER), null)),
-      friendRule: toCond(to, new IsFriend1to1(new Who1to1(TO_ITER), null)),
+      friendRule: normaliseFriendAtPlaceholder(toCond(to, new IsFriend1to1(new Who1to1(TO_ITER), null))),
       targetEffect: betweenEffect(between) ?? new Remove({ locationFn: BETWEEN_ITER }),
       then,
     });
