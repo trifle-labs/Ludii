@@ -407,6 +407,31 @@ REMAINING (per-game mechanics, declining ROI): Hnefatafl deep; Go (ko/superko+gr
 (flip+ForEachSite); Konane (initial removals); Pente (custodial pair); 3D boards; Oware/mancala (sow +
 vote/cycle end). Then broad corpus sweep -> dominant buckets -> DELETE bespoke once faithful>=bespoke.
 
+## Update 12: corpus measurement (~27% full faithful replay) + Konane phases + Context accessors
+- Konane wave landed (15th): move:remove dispatch + faithful phases/nextPhase + opening regions —
+  Konane plays its 3-phase opening == bespoke; deeper hop-continuation remains (bespoke itself
+  mismatches Konane at ply 9).
+- Context: Java-named accessors to()/from()/between()/site()/value()/player() (ForEachSite etc.).
+- Fresh-shell harness re-verified Tablut + Brandub OUTCOME_OK 2/2 (closes Update 11's caveat).
+
+CORPUS MEASUREMENT (strided random sample, 60 games, LUDII_ARGCOMPILER=1):
+  13 OUTCOME_OK + 3 REPLAY_OK (~27% full replay) · 5 WINNER_MISMATCH · 38 MOVE_MISMATCH · 1 START_FAIL
+  · 0 COMPILE_FAIL. Highlights: Chess replays 26 plies (REPLAY_OK_NO_OUTCOME); Breakthru 176 plies,
+  J'odu (sow!) 202 plies, Twelve Men's Morris 120, Nerenchi Keliya 137 all OUTCOME_OK — the faithful
+  engine generalizes well beyond the curated set.
+DOMINANT REMAINING CLUSTER: **Sow/mancala** (board/sow/* ≈ 100 games; most MOVE_MISMATCH at ply 0-4)
+  → Sow wave running (Select+sow+tracks; targets Galatjang/Ti/Fergen Gobale/Koro; J'odu stays green).
+
+QUICK-WIN DIAGNOSTICS (queued for a small follow-up wave):
+  - AllPassed.eval calls context.game() — TS Context has .game property; fix callers (cannot add a
+    game() method over the property). Blocks Reversi end-eval.
+  - Reversi move-gen still 0 (custodial-flip detection (sites Flips?) next).
+  - SitesTrack.eval: ctxAny.track not a function (Tant Fant end) — track API on Context.
+  - Surakarta: SlideFaithful.slideByTrack requires preComputedTracks on Context (track machinery).
+  - Pente: emits 2 duplicate opening moves (171->171 twice) vs bespoke 1 — dedup/decision flag.
+  - Mu Torere/Shisima (graph-board Step + conditions): faithful 0 moves at ply 0.
+  - Dara: ArgCompiler compile fails entirely (falls back to bespoke Equipment1to1).
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
