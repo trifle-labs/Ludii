@@ -185,17 +185,18 @@ export class PlaceItem {
     coords?: string[] | null,
     counts?: JavaIntFunction[] | null,
   ) {
+    const coordList = Array.isArray(coord) ? coord as unknown as string[] : null;
     this.item = item ?? null;
     this.container = container ?? null;
-    this.coord = coord ?? null;
+    this.coord = coordList === null ? coord ?? null : null;
     this.type = type ?? null;
 
-    if (locs !== undefined || region !== undefined || coords !== undefined || counts !== undefined) {
+    if (coordList !== null || locs !== undefined || region !== undefined || coords !== undefined || counts !== undefined) {
       // Fill-region constructor — mirrors Java's second constructor
       this.siteId = null;
       this.locationIds = locs ?? null;
       this.region = region ?? null;
-      this.coords = coords ?? null;
+      this.coords = coords ?? coordList ?? null;
 
       // Java: countFn = (counts == null) ? new IntConstant(1) : counts[0];
       this.countFn = (counts == null || counts.length === 0) ? intConstant(1) : (counts[0] ?? intConstant(1));

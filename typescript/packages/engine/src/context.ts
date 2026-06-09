@@ -106,15 +106,22 @@ export class Context {
   }
 
   /** @java Context.board(). */
-  public board(): { defaultSite(): string; numSites(): number } {
-    const b = (this.game as { equipment?: { board?: { numSites?: number; defaultSite?: string } } }).equipment?.board;
-    return { defaultSite: () => b?.defaultSite ?? "Cell", numSites: () => b?.numSites ?? this.state.cells.length };
+  public board(): {
+    defaultSite(): string;
+    numSites(): number;
+    topology(): unknown;
+  } {
+    const b = this.boardObject();
+    return {
+      defaultSite: () => boardDefaultSite(b),
+      numSites: () => boardNumSites(b, this.state.cells.length),
+      topology: () => boardTopology(b, this.state.cells.length),
+    };
   }
 
-  /** @java Context.topology() — minimal; evals fall back to cells.length when absent. */
-  public topology(): { getGraphElements(type: string): { size(): number } } {
-    const n = (this.game as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? this.state.cells.length;
-    return { getGraphElements: () => ({ size: () => n }) };
+  /** @java Context.topology(). */
+  public topology(): unknown {
+    return this.board().topology();
   }
 
   /** @java Context.containers(). */
@@ -144,6 +151,16 @@ export class Context {
     this.state = state;
     this.trial = trial;
     this.rng = rng ?? new SeededRng(0x9e3779b1);
+  }
+
+  private boardObject(): unknown {
+    const gameAny = this.game as unknown as {
+      board?: (() => unknown) | unknown;
+      equipment?: { board?: unknown };
+    };
+    if (typeof gameAny.board === "function") return gameAny.board();
+    if (gameAny.board !== undefined) return gameAny.board;
+    return gameAny.equipment?.board ?? null;
   }
 
   public withState(state: State): Context {
@@ -204,4 +221,36 @@ export class Context {
   public score(pid: number): number {
     return this.state.score(pid);
   }
+}
+
+function boardDefaultSite(board: unknown): string {
+  const b = board as {
+    defaultSite?: (() => string) | string;
+    getDefaultSite?: () => string;
+  } | null;
+  if (b === null) return "Cell";
+  if (typeof b.defaultSite === "function") return b.defaultSite();
+  if (typeof b.getDefaultSite === "function") return b.getDefaultSite();
+  if (typeof b.defaultSite === "string") return b.defaultSite;
+  return "Cell";
+}
+
+function boardNumSites(board: unknown, fallback: number): number {
+  const b = board as {
+    numSites?: (() => number) | number;
+    getNumSites?: () => number;
+    getNumSitesBuilt?: () => number;
+  } | null;
+  if (b === null) return fallback;
+  if (typeof b.numSites === "function") return b.numSites();
+  if (typeof b.getNumSitesBuilt === "function") return b.getNumSitesBuilt();
+  if (typeof b.getNumSites === "function") return b.getNumSites();
+  if (typeof b.numSites === "number") return b.numSites;
+  return fallback;
+}
+
+function boardTopology(board: unknown, fallbackSites: number): unknown {
+  const b = board as { topology?: () => unknown } | null;
+  if (b !== null && typeof b.topology === "function") return b.topology();
+  return { getGraphElements: () => ({ size: () => fallbackSites, length: fallbackSites }) };
 }

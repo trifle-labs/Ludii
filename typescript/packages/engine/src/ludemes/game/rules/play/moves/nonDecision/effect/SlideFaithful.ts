@@ -21,13 +21,13 @@ import type { DirectionArg } from "./EffectCtorAdapters.js";
 
 export class SlideFaithful extends Slide {
   public constructor(
-    from: From1to1 | null,
-    track: string | null,
-    directions: DirectionArg,
-    between: Between1to1 | null,
-    to: To1to1 | null,
-    stack: boolean | null,
-    then: Then | null
+    from: From1to1 | null = null,
+    track: string | null = null,
+    directions: DirectionArg = null,
+    between: Between1to1 | null = null,
+    to: To1to1 | null = null,
+    stack: boolean | null = null,
+    then: Then | null = null
   ) {
     const range = betweenRange(between);
     super({

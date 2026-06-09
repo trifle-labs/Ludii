@@ -25,7 +25,8 @@ interface Radial {
 }
 
 interface Trajectory {
-  radials(type: string | null, from: number, dir: string): Radial[];
+  radials?(type: string | null, from: number, dir: string): Radial[];
+  radialsByName?(from: number, dir: string): number[][];
 }
 
 interface Topology {
@@ -135,15 +136,15 @@ export class Slide implements MovesFunction {
     const moves: LudiiMove[] = [];
 
     // Requires topology on context
-    const ctxAny = ctx as unknown as { topology?: Topology; _siteType?: string };
-    const topology = ctxAny.topology;
+    const ctxAny = ctx as unknown as { topology?: (() => Topology) | Topology; board?: () => { defaultSite(): string } };
+    const topology = typeof ctxAny.topology === "function" ? ctxAny.topology() : ctxAny.topology;
     if (!topology) {
       throw new Error("not yet wired: Slide requires topology on Context");
     }
 
-    const realType = ctxAny._siteType ?? "Cell";
+    const realType = ctxAny.board?.().defaultSite?.() ?? "Cell";
     const trajectories = topology.trajectories();
-    const radialsList = trajectories.radials(realType, from, this.dirnName);
+    const radialsList = slideRadials(trajectories, realType, from, this.dirnName);
 
     for (const radial of radialsList) {
       const betweenSites: number[] = [];
@@ -211,6 +212,7 @@ export class Slide implements MovesFunction {
     const actions: import("../../../../../../../action/index.js").Action[] = [
       new ActionMove({ from, to }),
     ];
+    actions[0]!.setDecision(true);
 
     // @java Slide.java:270-278 — trail piece (let)
     if (this.letFn != null) {
@@ -261,4 +263,13 @@ export class Slide implements MovesFunction {
   public getStartLocationFn(): IntFunction { return this.startLocationFn; }
   /** @java Slide.goRule */
   public getGoRule(): BooleanFunction { return this.goRule; }
+}
+
+function slideRadials(trajectories: Trajectory, realType: string, from: number, dir: string): Radial[] {
+  const javaRadials = trajectories.radials?.(realType, from, dir);
+  if (javaRadials !== undefined) return javaRadials;
+  const paths = trajectories.radialsByName?.(from, dir) ?? [];
+  return paths.map((path) => ({
+    steps: path.map((site) => ({ id: () => site })),
+  }));
 }

@@ -188,11 +188,11 @@ export class Topology {
   // -------- element lists --------------------------------------------------
 
   /** @java Topology#cells() */
-  cells():    Cell[]   { return this._cells; }
+  cells():    Cell[]   { return withJavaListMethods(this._cells); }
   /** @java Topology#edges() */
-  edges():    Edge[]   { return this._edges; }
+  edges():    Edge[]   { return withJavaListMethods(this._edges); }
   /** @java Topology#vertices() */
-  vertices(): Vertex[] { return this._vertices; }
+  vertices(): Vertex[] { return withJavaListMethods(this._vertices); }
 
   // -------- topology lists -------------------------------------------------
 
@@ -357,10 +357,37 @@ export class Topology {
   /** @java Topology#getGraphElements(SiteType) */
   getGraphElements(type: SiteType): TopologyElement[] {
     switch (type) {
-      case "Vertex": return this._vertices;
-      case "Edge":   return this._edges;
-      case "Cell":   return this._cells;
+      case "Vertex": return withJavaListMethods(this._vertices);
+      case "Edge":   return withJavaListMethods(this._edges);
+      case "Cell":   return withJavaListMethods(this._cells);
     }
+  }
+
+  /**
+   * Java compatibility for SiteFinder-style coordinate lookup.
+   * @java SiteFinder.find(board, coord, type) via Context.board().topology()
+   */
+  getElement(coord: string, type: SiteType | null = null): TopologyElement | null {
+    const realType = type ?? "Cell";
+    const elements = this.getGraphElements(realType);
+    for (const element of elements) {
+      if (element.label() === coord) return element;
+    }
+
+    const parsed = parseAlgebraicCoord(coord);
+    if (parsed === null) return null;
+    const targetX = parsed.col + (realType === "Cell" ? 0.5 : 0);
+    const targetY = parsed.row + (realType === "Cell" ? 0.5 : 0);
+    for (const element of elements) {
+      const centroid = element.centroid3D();
+      if (
+        Math.abs(centroid.x() - targetX) < 0.25 &&
+        Math.abs(centroid.y() - targetY) < 0.25
+      ) {
+        return element;
+      }
+    }
+    return null;
   }
 
   /** @java Topology#numSites(SiteType) */
@@ -1055,6 +1082,32 @@ function columnLabel(col: number): string {
   let label = "";
   if (col >= 26) label = String.fromCharCode("A".charCodeAt(0) + Math.floor(col / 26) - 1);
   return label + String.fromCharCode("A".charCodeAt(0) + (col % 26));
+}
+
+function parseAlgebraicCoord(coord: string): { col: number; row: number } | null {
+  const match = coord.match(/^([A-Za-z]+)(\d+)$/);
+  if (!match || match[1]!.length !== 1) return null;
+  const col = match[1]!.toUpperCase().charCodeAt(0) - 65;
+  const row = Number.parseInt(match[2]!, 10) - 1;
+  if (!Number.isFinite(row) || col < 0 || row < 0) return null;
+  return { col, row };
+}
+
+function withJavaListMethods<T>(list: T[]): T[] {
+  const target = list as T[] & { size?: () => number; get?: (index: number) => T | undefined };
+  if (typeof target.size !== "function") {
+    Object.defineProperty(target, "size", {
+      value: () => target.length,
+      enumerable: false,
+    });
+  }
+  if (typeof target.get !== "function") {
+    Object.defineProperty(target, "get", {
+      value: (index: number) => target[index],
+      enumerable: false,
+    });
+  }
+  return list;
 }
 
 function relationNeighbours(element: TopologyElement, relation: RelationType): TopologyElement[] {
