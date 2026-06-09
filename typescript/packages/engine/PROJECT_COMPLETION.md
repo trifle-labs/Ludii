@@ -7,6 +7,38 @@ Java. The ONLY sanctioned "special case" custom code is the reflection-emulation
 (ArgCompiler + JAVA_TS_CTORS + the captured reflection metadata), because TS lacks Java
 reflection. Similar narrowly-scoped emulations are allowed but must be the exception.
 
+## DEFINITION OF COMPLETE (all four required)
+1. **Behavioral parity**: faithful path ≥ bespoke baseline across the corpus, verified against
+   recorded Java trials (move-for-move + winner via the parity harness).
+2. **Bespoke deleted**: compiler1to1.ts, the ~270 *1to1 classes, LudemeRegistry + batch factories,
+   Board1to1/Equipment1to1 — gone. One engine.
+3. **FIDELITY-HARDENING PASS** (user-mandated; upstream-maintainability is part of done):
+   the port must be structurally 1:1, not just behaviorally, so an upstream Java change maps
+   to an obvious TS edit at every layer. Concretely (debt measured 2026-06-09):
+   a. **De-contaminate**: 0 faithful files importing from bespoke `*1to1` modules (currently 69 —
+      e.g. Step.ts imports resolveRelativeDir from Step1to1.ts; move shared helpers into the
+      faithful tree at their Java-mirrored locations).
+   b. **Substrate migration**: faithful eval bodies read the JAVA API shapes — Context.to()/from()/
+      between(), topology().trajectories()/radials, ContainerState — not the TS-port substrate
+      (ctx._radials/_evalTo/_trajectories; currently 63 faithful files on the TS substrate vs 34 on
+      Java-named API). The _eval*/CellFlatRadials plumbing may survive as the INTERNAL implementation
+      behind the Java-named accessors, but ludeme eval code must read like the Java source.
+   c. **One State**: converge on the faithful other/state/State.ts surface (Java's State/ContainerState
+      family) as the API ludemes see; the 50KB TS state.ts becomes the implementation behind it (or is
+      folded in at Java-mirrored paths).
+   d. **Dispatch minimization**: hand-curated ArgCompiler routing (FAITHFUL_MOVE_VARIANTS + 7
+      preferred-token hooks) shrinks to the sanctioned reflection-emulation; each surviving entry
+      documented with WHY generic resolution fails for it (or the generic resolver fixed).
+   e. **Mirror completeness**: every ported Java class lives at its mirrored path with @java tags
+      (close the gaps, e.g. 31/35 effect/ classes mirrored); *Faithful ctor adapters carry the Java
+      ctor signature verbatim in declaration order.
+4. **Verification stays green**: the probe suite + parity harness pass throughout; bespoke-removal and
+   hardening steps are each verified the same way as parity waves (no behavioral regression).
+
+The upstream-update playbook this buys: .lud changes = data-only; new/changed ludeme = regenerate
+reflection+grammar capture + edit the one mirrored file; core-runtime change = edit the mirrored
+runtime class whose internals now read like Java.
+
 ## The core problem (diagnosed)
 Two parallel implementations existed:
 1. **Bespoke path** — `compiler1to1.ts` (~9000-line dispatcher `compileNode1to1`) + 268
