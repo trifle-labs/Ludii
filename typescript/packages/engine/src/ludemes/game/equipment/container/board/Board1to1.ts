@@ -16,6 +16,7 @@ import {
   type CellFlatRadials,
 } from "../../../../topology-radials.js";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
+import type { Track } from "./Track.js";
 
 export class Board1to1 {
   /** Number of play sites on the board (vertices for vertex-play boards). @java Board.numSites() */
@@ -43,6 +44,10 @@ export class Board1to1 {
    * @java other/topology/Topology.java
    */
   public readonly trajectories: Trajectories | null;
+  /** @java Container.tracks */
+  private readonly trackList: Track[];
+  /** @java Container.ownedTracks */
+  private ownedTrackList: Track[][] = [];
 
   /**
    * @java game/equipment/container/board/Board.java — create()/build()
@@ -57,16 +62,18 @@ export class Board1to1 {
    * @param numSites Actual play-site count
    * @param traj Trajectories object for adjacency/radial queries
    */
-  public constructor(width: number, height: number, numSites: number, traj: Trajectories, numFaces?: number);
+  public constructor(width: number, height: number, numSites: number, traj: Trajectories, numFaces?: number, tracks?: readonly Track[]);
   public constructor(
     width: number,
     height: number,
     numSitesOrUndefined?: number,
     traj?: Trajectories,
     numFaces?: number,
+    tracks: readonly Track[] = [],
   ) {
     this.width = width;
     this.height = height;
+    this.trackList = [...tracks];
     if (traj !== undefined && numSitesOrUndefined !== undefined) {
       // Graph-based path: use pre-built Trajectories.
       this.numSites = numSitesOrUndefined;
@@ -83,5 +90,28 @@ export class Board1to1 {
       this.radials = buildFlatRadials(width, height);
       this.containerSpan = this.numSites;
     }
+    for (const track of this.trackList) track.buildTrack(this.width, this.height, this.trajectories);
   }
+
+  /** @java Container.tracks() */
+  public tracks(): Track[] { return this.trackList; }
+
+  /** @java Container.tracks() adapter used by faithful Equipment. */
+  public getTracks(): readonly Track[] { return this.trackList; }
+
+  /** @java Container.ownedTracks(int) */
+  public ownedTracks(owner: number): Track[] {
+    return this.ownedTrackList[owner] ?? [];
+  }
+
+  /** @java Container.setOwnedTrack(Track[][]) */
+  public setOwnedTrack(ownedTracks: Track[][]): void {
+    this.ownedTrackList = ownedTracks;
+  }
+
+  /** @java Container.defaultSite() */
+  public defaultSite(): string { return "Cell"; }
+
+  /** @java Container.numSites() */
+  public numSitesFn(): number { return this.numSites; }
 }

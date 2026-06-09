@@ -24,9 +24,9 @@
  * eval() generates a single compound move representing the full sow sequence.
  */
 
-import type { Context } from "../../../../../../../context.js";
+import { Context } from "../../../../../../../context.js";
 import { Move } from "../../../../../../../move.js";
-import { ActionMove } from "../../../../../../../action/action-move.js";
+import { ActionAddCount } from "../../../../../../../action/action-add-count.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
@@ -49,6 +49,41 @@ interface Track {
   elems(): TrackElem[];
 }
 
+function boardTracks(ctx: Context): Track[] {
+  const ctxAny = ctx as unknown as { _tracks?: Track[] };
+  if (Array.isArray(ctxAny._tracks)) return ctxAny._tracks;
+  const gameAny = ctx.game as unknown as {
+    board?: () => { tracks?: () => Track[]; getTracks?: () => readonly Track[] };
+    equipment?: { board?: { tracks?: () => Track[]; getTracks?: () => readonly Track[] } };
+  };
+  const board = gameAny.board?.() ?? gameAny.equipment?.board;
+  if (typeof board?.tracks === "function") return board.tracks();
+  if (typeof board?.getTracks === "function") return [...board.getTracks()];
+  return [];
+}
+
+function tempContext(ctx: Context, state = ctx.state, from = ctx._evalFrom, to = ctx._evalTo): Context {
+  const next = new Context(ctx.game, state, ctx.trial, ctx.rng);
+  const src = ctx as unknown as { _radials?: unknown; _trajectories?: unknown; _tracks?: Track[] };
+  const dst = next as unknown as { _radials?: unknown; _trajectories?: unknown; _tracks?: Track[] };
+  next._evalFrom = from;
+  next._evalTo = to;
+  next._evalValue = ctx._evalValue;
+  next._evalSite = ctx._evalSite;
+  next._evalBetween = ctx._evalBetween;
+  next._evalPlayer = ctx._evalPlayer;
+  dst._radials = src._radials;
+  dst._trajectories = src._trajectories;
+  dst._tracks = src._tracks;
+  return next;
+}
+
+function applyActions(ctx: Context, actions: readonly Action[]) {
+  let state = ctx.state;
+  for (const action of actions) state = action.apply(state, ctx.rng);
+  return state;
+}
+
 /**
  * Sow effect — mancala-style sowing along a track.
  *
@@ -56,11 +91,11 @@ interface Track {
  */
 export class Sow extends Effect {
   /** @java Sow.startLoc */
-  private readonly startLoc: IntFunction;
+  private readonly startLoc: IntFunction | null;
   /** @java Sow.countFn */
-  private readonly countFn: IntFunction;
+  private readonly countFn: IntFunction | null;
   /** @java Sow.numPerHoleFn */
-  private readonly numPerHoleFn: IntFunction;
+  private readonly numPerHoleFn: IntFunction | null;
   /** @java Sow.trackName */
   private readonly trackName: string | null;
   /** @java Sow.ownerFn */
@@ -68,11 +103,11 @@ export class Sow extends Effect {
   /** @java Sow.includeSelf */
   private readonly includeSelf: boolean;
   /** @java Sow.origin */
-  private readonly origin: BooleanFunction;
+  private readonly origin: BooleanFunction | null;
   /** @java Sow.skipFn */
   private readonly skipFn: BooleanFunction | null;
   /** @java Sow.captureRule */
-  private readonly captureRule: BooleanFunction;
+  private readonly captureRule: BooleanFunction | null;
   /** @java Sow.captureEffect */
   private readonly captureEffect: MovesFunction | null;
   /** @java Sow.sowEffect */
@@ -117,15 +152,15 @@ export class Sow extends Effect {
     then: ThenLike | null = null,
   ) {
     super(then ?? null);
-    this.startLoc = start!;
-    this.countFn = count!;
-    this.numPerHoleFn = numPerHole!;
+    this.startLoc = start ?? null;
+    this.countFn = count ?? null;
+    this.numPerHoleFn = numPerHole ?? null;
     this.trackName = trackName ?? null;
     this.ownerFn = owner ?? null;
     this.includeSelf = includeSelf ?? true;
-    this.origin = origin!;
+    this.origin = origin ?? null;
     this.skipFn = skipIf ?? null;
-    this.captureRule = If!;
+    this.captureRule = If ?? null;
     this.captureEffect = apply ?? null;
     this.sowEffect = sowEffect ?? null;
     this.backtracking = backtracking ?? null;
@@ -144,14 +179,14 @@ export class Sow extends Effect {
    *   4. Apply capture rule and effect if conditions are met.
    */
   public override eval(ctx: Context): Move[] {
-    const start = this.startLoc.eval(ctx);
-    const count = this.countFn.eval(ctx);
-
-    // Access tracks from context
-    const ctxAny = ctx as unknown as {
-      _tracks?: Track[];
-      state?: { mover?: number };
-    };
+    const start = this.startLoc?.eval(ctx)
+      ?? (ctx as unknown as { _evalTo?: number })._evalTo
+      ?? (ctx as unknown as { _evalFrom?: number })._evalFrom
+      ?? -1;
+    if (start < 0) return [];
+    const count = this.countFn?.eval(ctx) ?? ctx.state.countAtSite(start);
+    if (count <= 0) return [];
+    const numPerHoleDefault = () => this.numPerHoleFn?.eval(ctx) ?? 1;
 
     const mover = ctx.state.mover;
 
@@ -161,7 +196,7 @@ export class Sow extends Effect {
 
     const tracks = this.preComputedTracks.length > 0
       ? this.preComputedTracks
-      : (ctxAny._tracks ?? []);
+      : boardTracks(ctx);
 
     for (const t of tracks) {
       if (this.trackName === null ||
@@ -175,16 +210,10 @@ export class Sow extends Effect {
     if (track === null) return [];
 
     const elems = track.elems();
-    const move = new Move({
-      id: `sow:${mover}:${start}`,
-      label: `Sow(start=${start})`,
-      siteIndices: [start],
-      mover,
-      placedOwner: mover,
-      actions: [] as Action[],
-    });
+    const actions: Action[] = [];
 
     let numSeedSowed = 0;
+    let lastTo = start;
 
     // @java Sow.java:194-197 — find index i in track for start
     let i = 0;
@@ -194,20 +223,21 @@ export class Sow extends Effect {
 
     // @java Sow.java:200-222 — apply origin effect if configured
     (ctx as unknown as { _evalFrom?: number })._evalFrom = start;
-    if (this.origin.eval(ctx)) {
+    if (this.origin?.eval(ctx) ?? false) {
       if (this.sowEffect !== null) {
         const effect = this.sowEffect.eval(ctx);
         for (const moveEffect of effect) {
           for (const actionEffect of moveEffect.actions) {
-            (move.actions as Action[]).push(actionEffect);
+            actions.push(actionEffect);
           }
         }
       }
       let numDone = 0;
-      const numPerHole = this.numPerHoleFn.eval(ctx);
+      const numPerHole = numPerHoleDefault();
       while (numDone !== numPerHole) {
         if (numSeedSowed < count) {
-          (move.actions as Action[]).push(new ActionMove({ from: start, to: start }));
+          actions.push(new ActionAddCount(start, 1, mover));
+          lastTo = start;
         }
         numDone++;
         numSeedSowed++;
@@ -222,7 +252,7 @@ export class Sow extends Effect {
 
       for (let index = 0; index < count; index++) {
         (ctx as unknown as { _evalValue?: number })._evalValue = count - index;
-        if (i >= elems.length) return [move];
+        if (i >= elems.length) break;
 
         let to = elems[i]!.next;
         (ctx as unknown as { _evalTo?: number })._evalTo = to;
@@ -245,21 +275,22 @@ export class Sow extends Effect {
         }
 
         // @java Sow.java:257-283 — per-hole sow
-        let numPerHole = this.numPerHoleFn.eval(ctx);
+        let numPerHole = numPerHoleDefault();
         let numDone = 0;
 
         if (this.sowEffect !== null) {
           const effect = this.sowEffect.eval(ctx);
           for (const moveEffect of effect) {
             for (const actionEffect of moveEffect.actions) {
-              (move.actions as Action[]).push(actionEffect);
+              actions.push(actionEffect);
             }
           }
         }
 
         while (numDone !== numPerHole) {
           if (numSeedSowed < count) {
-            (move.actions as Action[]).push(new ActionMove({ from: start, to }));
+            actions.push(new ActionAddCount(to, 1, mover));
+            lastTo = to;
           }
           numDone++;
           numSeedSowed++;
@@ -271,48 +302,77 @@ export class Sow extends Effect {
     }
 
     // @java Sow.java:291 — add the move
-    const result: Move[] = [move];
+    const finalActions: Action[] = [new ActionAddCount(start, -count, mover), ...actions];
+    let moveAgain = false;
+    (ctx as unknown as { _evalTo?: number })._evalTo = lastTo;
+    let rollingState = applyActions(ctx, finalActions);
+    let evalCtx = tempContext(ctx, rollingState, start, lastTo);
 
     // @java Sow.java:293-351 — apply capture rule after sowing
-    if (this.captureRule !== null && this.captureEffect !== null) {
-      for (const sowMove of result) {
-        // In Java: apply the sowMove to a TempContext and check captureRule
-        // Here we use ctx directly (approximation — no TempContext available)
-        let numCapture = 0;
-        while (this.captureRule.eval(ctx)) {
-          (ctx as unknown as { _evalFrom?: number })._evalFrom = start;
-          const capturingMoves = this.captureEffect.eval(ctx);
-          for (const m of capturingMoves) {
-            for (const a of m.actions) {
-              (sowMove.actions as Action[]).push(a);
-            }
-          }
-          if (this.backtracking === null && this.forward === null) break;
-          if (this.backtracking !== null) {
-            if (!this.backtracking.eval(ctx)) break;
-            const prevTo = elems[i]?.prev ?? -1;
-            if (prevTo < 0) break;
-            i = elems[i]!.prevIndex;
-            (ctx as unknown as { _evalTo?: number })._evalTo = prevTo;
-            if (!this.backtracking.eval(ctx)) break;
-            if (prevTo === start) break;
-          }
-          if (this.forward !== null) {
-            if (!this.forward.eval(ctx)) break;
-            if (!track.islooped() && (elems[i]?.next ?? -1) < 0) break;
-            const nextTo = elems[i]?.next ?? -1;
-            if (nextTo < 0) break;
-            i = elems[i]!.nextIndex;
-            (ctx as unknown as { _evalTo?: number })._evalTo = nextTo;
-            if (!this.forward.eval(ctx)) break;
-          }
-          numCapture++;
-          if (numCapture >= elems.length) break;
+    if (this.captureEffect !== null) {
+      let numCapture = 0;
+      while (this.captureRule === null || this.captureRule.eval(evalCtx)) {
+        evalCtx._evalFrom = start;
+        evalCtx._evalTo = lastTo;
+        const capturingMoves = this.captureEffect.eval(evalCtx);
+        for (const m of capturingMoves) {
+          for (const a of m.actions) finalActions.push(a);
+          rollingState = m.applyTo(rollingState, ctx.rng);
+          if (m.moveAgain) moveAgain = true;
         }
+        if (this.backtracking === null && this.forward === null) break;
+        if (this.backtracking !== null) {
+          evalCtx = tempContext(ctx, rollingState, start, lastTo);
+          if (!this.backtracking.eval(evalCtx)) break;
+          const prevTo = elems[i]?.prev ?? -1;
+          if (prevTo < 0) break;
+          i = elems[i]!.prevIndex;
+          lastTo = prevTo;
+          evalCtx = tempContext(ctx, rollingState, start, lastTo);
+          if (!this.backtracking.eval(evalCtx)) break;
+          if (prevTo === start) break;
+        }
+        if (this.forward !== null) {
+          evalCtx = tempContext(ctx, rollingState, start, lastTo);
+          if (!this.forward.eval(evalCtx)) break;
+          if (!track.islooped() && (elems[i]?.next ?? -1) < 0) break;
+          const nextTo = elems[i]?.next ?? -1;
+          if (nextTo < 0) break;
+          i = elems[i]!.nextIndex;
+          lastTo = nextTo;
+          evalCtx = tempContext(ctx, rollingState, start, lastTo);
+          if (!this.forward.eval(evalCtx)) break;
+        }
+        evalCtx = tempContext(ctx, rollingState, start, lastTo);
+        numCapture++;
+        if (numCapture >= elems.length) break;
       }
     }
 
-    return result;
+    const then = this.then();
+    if (then !== null) {
+      evalCtx = tempContext(ctx, rollingState, start, lastTo);
+      const thenMoves = then.moves().eval(evalCtx) as unknown as Move[];
+      for (const m of thenMoves) {
+        for (const a of m.actions) finalActions.push(a);
+        rollingState = m.applyTo(rollingState, ctx.rng);
+        if (m.moveAgain) moveAgain = true;
+      }
+    }
+
+    return [new Move({
+      id: `sow:${mover}:${start}`,
+      label: `Sow(start=${start})`,
+      siteIndices: [start, lastTo],
+      mover,
+      placedOwner: mover,
+      actions: finalActions,
+      moveAgain,
+      fromSite: start,
+      toSite: lastTo,
+      fromNonDecisionSite: start,
+      toNonDecisionSite: lastTo,
+    })];
   }
 
   // -------------------------------------------------------------------------

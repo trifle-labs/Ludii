@@ -22,6 +22,7 @@
 import type { Context } from "../../../../../../../context.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionSelect } from "../../../../../../../action/action-select.js";
+import type { Action } from "../../../../../../../action/index.js";
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
@@ -68,6 +69,8 @@ export class Select extends Effect {
   /** @java Select.mover */
   private readonly mover: RoleTypeFull | null;
 
+  private readonly thenRef: ThenLike | null;
+
   // -------------------------------------------------------------------------
 
   /**
@@ -80,6 +83,7 @@ export class Select extends Effect {
     then?: ThenLike | null
   ) {
     super(then ?? null);
+    this.thenRef = then ?? null;
 
     this.region = regionFromLocOrRegion(from.loc(), from.region(), "_evalFrom");
 
@@ -131,14 +135,14 @@ export class Select extends Effect {
 
       if (this.regionTo === null) {
         // @java Select.java:159-168 — single-site select
-        result.push(new Move({
+        result.push(this.withThen(ctx, new Move({
           id: `select:${mover}:${site}:${site}`,
           label: `Select(${site})`,
           siteIndices: [site],
           mover,
           placedOwner: mover,
           actions: [new ActionSelect(site, site)],
-        }));
+        })));
       } else {
         // @java Select.java:172-215 — from + to select
         const sitesTo = this.regionTo.eval(ctx);
@@ -147,14 +151,14 @@ export class Select extends Effect {
           (ctx as unknown as { _evalTo?: number })._evalTo = siteTo;
           if (!this.conditionTo.eval(ctx)) continue;
 
-          result.push(new Move({
+          result.push(this.withThen(ctx, new Move({
             id: `select:${mover}:${site}:${siteTo}`,
             label: `Select(${site}→${siteTo})`,
             siteIndices: [site, siteTo],
             mover,
             placedOwner: mover,
             actions: [new ActionSelect(site, siteTo)],
-          }));
+          })));
         }
       }
     }
@@ -164,6 +168,17 @@ export class Select extends Effect {
     (ctx as unknown as { _evalFrom?: number })._evalFrom = origFrom;
 
     return result;
+  }
+
+  private withThen(ctx: Context, move: Move): Move {
+    if (this.thenRef === null) return move;
+    const thenMoves = this.thenRef.moves().eval(ctx) as unknown as Move[];
+    const thenActions: Action[] = [];
+    for (const thenMove of thenMoves) {
+      for (const action of thenMove.actions) thenActions.push(action);
+    }
+    if (thenActions.length === 0 && !thenMoves.some((m) => m.moveAgain)) return move;
+    return move.withConsequence(thenActions, thenMoves.some((m) => m.moveAgain));
   }
 
   // -------------------------------------------------------------------------

@@ -275,7 +275,44 @@ function boardNumSites(board: unknown, fallback: number): number {
 }
 
 function boardTopology(board: unknown, fallbackSites: number): unknown {
-  const b = board as { topology?: () => unknown } | null;
+  const b = board as {
+    topology?: () => unknown;
+    width?: number;
+    height?: number;
+    numSites?: (() => number) | number;
+  } | null;
   if (b !== null && typeof b.topology === "function") return b.topology();
-  return { getGraphElements: () => ({ size: () => fallbackSites, length: fallbackSites }) };
+  const width = typeof b?.width === "number" && b.width > 0 ? b.width : fallbackSites;
+  const height = typeof b?.height === "number" && b.height > 0 ? b.height : 1;
+  const siteCount = boardNumSites(board, fallbackSites);
+  const twoRowMancala = height === 2 && siteCount === width * height + 2;
+  const element = (site: number) => ({ index: () => site });
+  const row = (r: number) => {
+    if (r < 0 || r >= height) return [];
+    if (twoRowMancala) {
+      const start = r === 0 ? 1 : width + 1;
+      return Array.from({ length: width }, (_, i) => start + i)
+        .filter((site) => site >= 0 && site < siteCount)
+        .map(element);
+    }
+    const start = r * width;
+    return Array.from({ length: width }, (_, i) => start + i)
+      .filter((site) => site >= 0 && site < siteCount)
+      .map(element);
+  };
+  const column = (c: number) => {
+    if (c < 0 || c >= width) return [];
+    return Array.from({ length: height }, (_, r) => r * width + c)
+      .filter((site) => site >= 0 && site < siteCount)
+      .map(element);
+  };
+  return {
+    getGraphElements: () => ({ size: () => siteCount, length: siteCount }),
+    top: () => row(height - 1),
+    bottom: () => row(0),
+    left: () => column(0),
+    right: () => column(width - 1),
+    rows: () => Array.from({ length: height }, (_, r) => row(r)),
+    columns: () => Array.from({ length: width }, (_, c) => column(c)),
+  };
 }

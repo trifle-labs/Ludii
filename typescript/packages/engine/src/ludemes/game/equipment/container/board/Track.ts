@@ -237,6 +237,69 @@ export class Track {
     }
     // trackDirection path requires topology; deferred in TS port.
   }
+
+  public buildTrack(width: number, height: number, traj?: { numSites: number; step(site: number, dir: string): number } | null): void {
+    if (this._track !== null) {
+      this.buildFromIntArray(this._track);
+      return;
+    }
+    if (this.trackDirection === null) return;
+    const sites = parseTrackDirection(this.trackDirection, width, height, traj);
+    if (sites.length > 0) this.buildFromIntArray(sites);
+  }
+}
+
+function parseTrackDirection(
+  spec: string,
+  width: number,
+  height: number,
+  traj?: { numSites: number; step(site: number, dir: string): number } | null,
+): number[] {
+  const toks = spec.split(",").map((t) => t.trim()).filter(Boolean);
+  if (toks.length === 0 || width <= 0 || height <= 0) return [];
+  const start = Number.parseInt(toks[0]!, 10);
+  if (!Number.isInteger(start) || start < 0) return [];
+  const boardSize = width * height;
+  const stepOf = (site: number, dir: string): number => {
+    if (traj && site >= 0 && site < traj.numSites) return traj.step(site, dir.toUpperCase());
+    if (site >= boardSize) return -1;
+    const col = site % width;
+    const row = Math.floor(site / width);
+    switch (dir.toUpperCase()) {
+      case "E": return col + 1 < width ? site + 1 : -1;
+      case "W": return col - 1 >= 0 ? site - 1 : -1;
+      case "N": return row + 1 < height ? site + width : -1;
+      case "S": return row - 1 >= 0 ? site - width : -1;
+      default: return -1;
+    }
+  };
+  const out: number[] = [start];
+  let cur = start;
+  for (let i = 1; i < toks.length; i += 1) {
+    const tok = toks[i]!;
+    if (tok.toLowerCase() === "end") {
+      out.push(END);
+      break;
+    }
+    const asInt = Number.parseInt(tok, 10);
+    if (!Number.isNaN(asInt) && String(asInt) === tok) {
+      if (!out.includes(asInt)) out.push(asInt);
+      cur = asInt;
+      continue;
+    }
+    const match = tok.match(/^([A-Za-z]+)(\d+)?$/);
+    const dir = match?.[1] ?? tok;
+    const limit = match?.[2] ? Number.parseInt(match[2], 10) : Infinity;
+    let steps = 0;
+    let next = stepOf(cur, dir);
+    while (next >= 0 && steps < limit && !out.includes(next)) {
+      out.push(next);
+      cur = next;
+      steps += 1;
+      next = stepOf(cur, dir);
+    }
+  }
+  return out;
 }
 
 /** Minimal role-owner lookup for Track constructor. */

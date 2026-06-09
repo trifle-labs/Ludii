@@ -15,6 +15,7 @@ import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
 import { BooleanConstant } from "../../../../functions/booleans/BooleanConstant.js";
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../base.js";
 import type { StartRule } from "../../StartRule.js";
+import type { Context } from "../../../../../../context.js";
 
 /**
  * @java game/rules/start/set/remember/SetRememberValue.java
@@ -74,14 +75,31 @@ export class SetRememberValue1to1 implements StartRule {
     _cells: number[],
     _whats: number[],
     _countAt: number[],
-    _equipment: Equipment1to1,
+    equipment: Equipment1to1,
     _numPlayers: number,
+    _stateAt?: number[],
+    _valueAt?: number[],
+    context?: Context,
   ): void {
-    // Deferred: State.remembered map not accessible via applyToInitialState interface.
-    // Java: ActionRememberValue(name, valueToRemember).apply(context) for each value.
-    void this.name;
-    void this.value;
-    void this.regionValue;
-    void this.uniqueFn;
+    const values: number[] = [];
+    if (this.value !== null) {
+      if (context === undefined) return;
+      values.push(this.value.eval(context));
+    } else if (this.regionValue !== null) {
+      if (context === undefined) return;
+      values.push(...this.regionValue.eval(context));
+    }
+    if (values.length === 0) return;
+
+    const eq = equipment as unknown as { _initialRemembered?: Map<string, number[]> };
+    eq._initialRemembered ??= new Map();
+    const key = this.name ?? "";
+    const bucket = eq._initialRemembered.get(key) ?? [];
+    const unique = context !== undefined ? this.uniqueFn.eval(context) : false;
+    for (const value of values) {
+      if (unique && bucket.includes(value)) continue;
+      bucket.push(value);
+    }
+    eq._initialRemembered.set(key, bucket);
   }
 }

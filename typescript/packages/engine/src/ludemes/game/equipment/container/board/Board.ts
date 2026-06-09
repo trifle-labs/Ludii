@@ -282,6 +282,10 @@ export class Board extends Container {
     this.setNumSites(traj.numSites);
     const numFaces = (graph.faces?.length) ?? traj.numSites;
     this.containerSpan = Math.max(numFaces, traj.numSites);
+    for (const track of this.tracks) {
+      (track as unknown as { buildTrack?: (w: number, h: number, t: Trajectories | null) => void })
+        .buildTrack?.(this.width, this.height, this.trajectories);
+    }
   }
 
   /**

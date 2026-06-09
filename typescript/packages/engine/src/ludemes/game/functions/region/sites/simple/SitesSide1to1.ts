@@ -35,6 +35,9 @@ export class SitesBottom implements RegionFunction {
     }
     // Rectangular path: row 0 sites are indices 0..W-1.
     const W = board.width;
+    if (board.height === 2 && board.numSites === W * board.height + 2) {
+      return Array.from({ length: W }, (_, i) => i + 1);
+    }
     return Array.from({ length: W }, (_, i) => i);
   }
 }
@@ -63,6 +66,9 @@ export class SitesTop implements RegionFunction {
     // Rectangular path: top row starts at (H-1)*W.
     const W = board.width;
     const H = board.height;
+    if (H === 2 && board.numSites === W * H + 2) {
+      return Array.from({ length: W }, (_, i) => W + 1 + i);
+    }
     const rowStart = (H - 1) * W;
     return Array.from({ length: W }, (_, i) => rowStart + i);
   }

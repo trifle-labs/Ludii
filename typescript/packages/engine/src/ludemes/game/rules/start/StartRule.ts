@@ -8,6 +8,7 @@
  */
 
 import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
+import type { Context } from "../../../../context.js";
 
 /**
  * A start-placement rule that modifies the initial state arrays.
@@ -35,5 +36,6 @@ export interface StartRule {
     numPlayers: number,
     stateAt?: number[],
     valueAt?: number[],
+    context?: Context,
   ): void;
 }
