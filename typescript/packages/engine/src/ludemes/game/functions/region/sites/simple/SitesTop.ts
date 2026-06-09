@@ -62,7 +62,8 @@ export class SitesTop extends BaseRegionFunction {
 
     if (topology) {
       const elements = topology.top(realType);
-      return elements.map((e) => e.index());
+      const sites = elements.map((e) => e.index());
+      if (sites.length > 0) return sites;
     }
 
     // Fallback: square board — top row = (H-1)*W ... H*W-1

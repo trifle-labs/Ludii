@@ -46,7 +46,8 @@ export class SitesBottom extends BaseRegionFunction {
     const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
     const traj = ctxAny._trajectories;
     if (traj) {
-      return sitesWithMinY(traj);
+      const sites = sitesWithMinY(traj);
+      if (sites.length > 0) return sites;
     }
 
     // @java SitesBottom — square board: bottom row = cells 0..W-1

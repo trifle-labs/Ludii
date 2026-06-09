@@ -24,6 +24,8 @@ import { createFullRegistry } from "../createFullRegistry.js";
 import { JAVA_TS_CTORS } from "../gen/java-ts-ctors.js";
 import { Sites } from "../../../ludemes/game/functions/region/sites/Sites.js";
 import { EmptyDefault } from "../../../ludemes/game/functions/region/sites/index/SitesEmpty.js";
+import { IsIn1to1 } from "../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
+import { NoMoves } from "../../../ludemes/game/functions/booleans/no1to1/NoMoves.js";
 
 export interface ArgCompilerOptions {
   readonly reflectionPath?: string;
@@ -191,6 +193,9 @@ export class ArgCompiler {
       return null;
     }
 
+    const preferredBooleanVariant = this.compilePreferredBooleanVariant(node, head, expectedTypes, env);
+    if (preferredBooleanVariant !== null) return preferredBooleanVariant;
+
     const faithfulMoveVariant = this.compileFaithfulMoveVariant(node, head, expectedTypes, env);
     if (faithfulMoveVariant !== null) return faithfulMoveVariant;
 
@@ -248,6 +253,49 @@ export class ArgCompiler {
     return null;
   }
 
+  private compilePreferredBooleanVariant(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    const headName = normalise(head);
+    if (headName !== "is" && headName !== "no") return null;
+
+    const variant = node.items[1];
+    if (!variant || !isIdent(variant)) return null;
+    const variantName = normalise(variant.name);
+
+    if (headName === "is" && variantName === "in") {
+      if (!this.fitsExpected("game.functions.booleans.is.in.IsIn", expectedTypes)) return null;
+      const siteNode = node.items[2];
+      const regionNode = node.items[3];
+      if (!siteNode || !regionNode) return null;
+      const siteFn = this.compileMaybe(siteNode, [parseJavaType("game.functions.ints.IntFunction")], env);
+      if (siteFn === null) return null;
+      const regionFn = this.compileMaybe(regionNode, [parseJavaType("game.functions.region.RegionFunction")], env);
+      if (regionFn === null) return null;
+      this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.in.IsIn" });
+      return new IsIn1to1(siteFn as never, regionFn as never);
+    }
+
+    if (headName === "no" && variantName === "moves") {
+      if (!this.fitsExpected("game.functions.booleans.no.moves.NoMoves", expectedTypes)) return null;
+      const roleNode = node.items[2];
+      const role = roleNode && isIdent(roleNode) ? roleNode.name : "Mover";
+      this.resolveTrace.push({ token: head, cls: "game.functions.booleans.no.moves.NoMoves" });
+      return new NoMoves(role as never);
+    }
+
+    return null;
+  }
+
+  private fitsExpected(className: string, expectedTypes: readonly JavaType[]): boolean {
+    const meta = this.reflection.get(className);
+    if (!meta) return false;
+    return expectedTypes.some((expected) => expected.dims === 0 && isAssignable(meta, expected.name));
+  }
+
   private compilePreferredTokenClass(
     node: LudList,
     head: string,
@@ -282,7 +330,12 @@ export class ArgCompiler {
     const variant = node.items[1];
     if (!variant || !isIdent(variant)) return null;
     const variantName = normalise(variant.name);
-    if (variantName !== "empty" && variantName !== "board") return null;
+    if (
+      variantName !== "empty" &&
+      variantName !== "board" &&
+      !PLAYER_SITE_VARIANTS.has(variantName) &&
+      !SIMPLE_SITE_VARIANTS.has(variantName)
+    ) return null;
 
     const meta = this.reflection.get("game.functions.region.sites.Sites");
     if (!meta || !expectedTypes.some((expected) => isAssignable(meta, expected.name))) return null;
@@ -290,7 +343,8 @@ export class ArgCompiler {
     const siteType = node.items[2] && isIdent(node.items[2]) ? node.items[2].name : null;
     this.resolveTrace.push({ token: head, cls: "game.functions.region.sites.Sites" });
     if (variantName === "empty") return new EmptyDefault(siteType);
-    return Sites.constructSimple("Board" as never, siteType);
+    if (PLAYER_SITE_VARIANTS.has(variantName)) return playerSitesRegion(variantName);
+    return Sites.constructSimple(simpleSiteVariant(variantName) as never, siteType);
   }
 
   private compileCandidate(node: LudList, candidate: Candidate, env: ArgCompilerEnv): unknown | null {
@@ -971,8 +1025,69 @@ function instantiateBuiltinFaithful(className: string, args: readonly unknown[])
 
 const PREFERRED_TOKEN_CLASSES = new Map<string, string>([
   ["is", "game.functions.booleans.is.Is"],
+  ["no", "game.functions.booleans.no.No"],
 ]);
-const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy", "occupied"]);
+const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy", "in", "occupied"]);
+const PLAYER_SITE_VARIANTS = new Set<string>([
+  "mover", "next", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8",
+  "p9", "p10", "p11", "p12", "p13", "p14", "p15", "p16",
+]);
+const SIMPLE_SITE_VARIANTS = new Set<string>([
+  "board", "bottom", "corners", "left", "right", "top",
+]);
+
+function playerSitesRegion(variantName: string): { eval(ctx: unknown): number[] } {
+  return {
+    eval(ctx: unknown): number[] {
+      const c = ctx as {
+        state: { mover: number; next?: number; cells: readonly number[] };
+        game: {
+          numPlayers: number;
+          equipment?: {
+            board?: { numSites?: number };
+            playerRegions?: ReadonlyMap<number, { eval(ctx: unknown): readonly number[] }>;
+          };
+        };
+      };
+      const pid = resolveSitesPlayer(variantName, c);
+      if (pid < 1) return [];
+      const region = c.game.equipment?.playerRegions?.get(pid);
+      if (region) return [...region.eval(ctx)];
+
+      const cells = c.state.cells;
+      const boardN = c.game.equipment?.board?.numSites ?? cells.length;
+      const sites: number[] = [];
+      for (let site = 0; site < boardN; site++) {
+        if (cells[site] === pid) sites.push(site);
+      }
+      return sites;
+    },
+  };
+}
+
+function resolveSitesPlayer(
+  variantName: string,
+  ctx: { state: { mover: number; next?: number }; game: { numPlayers: number } },
+): number {
+  if (variantName === "mover") return ctx.state.mover;
+  if (variantName === "next") {
+    const stateNext = ctx.state.next ?? 0;
+    return stateNext > 0 ? stateNext : (ctx.state.mover % ctx.game.numPlayers) + 1;
+  }
+  if (/^p\d+$/.test(variantName)) return Number(variantName.slice(1));
+  return -1;
+}
+
+function simpleSiteVariant(variantName: string): string {
+  switch (variantName) {
+    case "bottom": return "Bottom";
+    case "corners": return "Corners";
+    case "left": return "Left";
+    case "right": return "Right";
+    case "top": return "Top";
+    default: return "Board";
+  }
+}
 
 const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
   ["move:add", "game.rules.play.moves.nonDecision.effect.Add"],
