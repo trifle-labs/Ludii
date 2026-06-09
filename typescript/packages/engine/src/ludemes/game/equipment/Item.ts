@@ -31,11 +31,22 @@ export type ItemType =
  */
 export type RoleType =
   | "P1" | "P2" | "P3" | "P4" | "P5" | "P6" | "P7" | "P8"
+  | "P9" | "P10" | "P11" | "P12" | "P13" | "P14" | "P15" | "P16"
   | "Neutral"
   | "Shared"
   | "All"
   | "Enemy"
-  | "Team";
+  | "Team"
+  // @java game.types.play.RoleType — player-set / relative roles (owner() = NOBODY = 0,
+  // resolved per-context; Each is the workhorse for per-player piece definitions).
+  | "Each"
+  | "Mover"
+  | "Next"
+  | "Prev"
+  | "NonMover"
+  | "Friend"
+  | "Ally"
+  | "TeamMover";
 
 /**
  * Returns the numeric owner ID for a given RoleType.
@@ -45,6 +56,7 @@ export type RoleType =
 export function roleOwner(role: RoleType): number {
   switch (role) {
     case "Neutral": return 0;
+    case "Each":    return 0; // @java RoleType.Each.owner() = Constants.NOBODY (0)
     case "P1":      return 1;
     case "P2":      return 2;
     case "P3":      return 3;

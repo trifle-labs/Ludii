@@ -12,6 +12,7 @@
 import { BaseLudeme, type IGame } from "../../other/other/BaseLudeme.js";
 import { Item, type ItemType, type RoleType } from "./Item.js";
 import type { SiteType } from "./other/Hints.js";
+import { Board as BoardContainer } from "./container/board/Board.js";
 
 // ---------------------------------------------------------------------------
 // Java Constants
@@ -296,10 +297,12 @@ export class Equipment extends BaseLudeme {
   public constructor(items: Item[]) {
     super();
 
-    // @java Equipment.java:111–119 — check that at least one board is defined
+    // @java Equipment.java:111–119 — check that at least one board is defined.
+    // Java uses `item instanceof Board` (a Board's ItemType is Container); the
+    // earlier type()==="Board" check never matched since no item carries that type.
     let hasABoard = false;
     for (const item of items) {
-      if (item.type() === "Board") {
+      if (item instanceof BoardContainer) {
         hasABoard = true;
         break;
       }

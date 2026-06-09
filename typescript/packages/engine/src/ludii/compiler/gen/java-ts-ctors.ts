@@ -676,7 +676,7 @@ import { Hints as C673 } from "../../../ludemes/game/equipment/other/Hints.js";
 import { Map as C674 } from "../../../ludemes/game/equipment/other/Map.js";
 import { Regions as C675 } from "../../../ludemes/game/equipment/other/Regions.js";
 import { Dominoes as C676 } from "../../../ludemes/game/equipment/other/Dominoes.js";
-import { Piece as C677 } from "../../../ludemes/game/equipment/component/Piece.js";
+import { Piece as C677 } from "../../../ludemes/game/equipment/component/PieceFaithful.js";
 import { Component as C678 } from "../../../ludemes/game/equipment/component/Component.js";
 import { Card as C679 } from "../../../ludemes/game/equipment/component/Card.js";
 import { Domino as C680 } from "../../../ludemes/game/equipment/component/tile/Domino.js";
