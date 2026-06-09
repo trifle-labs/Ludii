@@ -85,6 +85,31 @@ export class Context {
   /** Java parity: Context.setValue(int). */
   public setEvalValue(v: number): void { this._evalValue = v; }
 
+  // Java-named accessors — faithful ludeme evals call ctx.to()/from()/between()/site()
+  // exactly as Java Context exposes them. Same scratch fields as the getEval* pairs.
+  /** @java Context.to(). */
+  public to(): number { return this._evalTo; }
+  /** @java Context.setTo(int). */
+  public setTo(v: number): void { this._evalTo = v; }
+  /** @java Context.from(). */
+  public from(): number { return this._evalFrom; }
+  /** @java Context.setFrom(int). */
+  public setFrom(v: number): void { this._evalFrom = v; }
+  /** @java Context.between(). */
+  public between(): number { return this._evalBetween; }
+  /** @java Context.setBetween(int). */
+  public setBetween(v: number): void { this._evalBetween = v; }
+  /** @java Context.site(). */
+  public site(): number { return this._evalSite; }
+  /** @java Context.setSite(int). */
+  public setSite(v: number): void { this._evalSite = v; }
+  /** @java Context.value(). */
+  public value(): number { return this._evalValue; }
+  /** @java Context.player(). */
+  public player(): number { return this._evalPlayer ?? 0; }
+  /** @java Context.setPlayer(int). */
+  public setPlayer(v: number): void { this._evalPlayer = v; }
+
   // ---- Java Context API (faithful ludeme evals delegate here) -------------
   // Mirror Java's Context accessors, delegating to the Game's equipment/board/
   // state. Typed loosely because callers (e.g. ForEachPiece) read runtime shapes.
