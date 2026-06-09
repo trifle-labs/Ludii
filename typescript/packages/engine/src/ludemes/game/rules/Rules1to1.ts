@@ -61,7 +61,7 @@ export class Rules1to1 {
     start: Start1to1 | null | undefined,
     play: Play1to1 | null | undefined,
     phasesOrEnd: readonly Phase[] | End,
-    end?: End | null,
+    end: End | null = null,
   ) {
     this.meta = meta ?? null;
     this.start = start ?? null;

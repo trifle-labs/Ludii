@@ -96,6 +96,71 @@ interface Game1to1PortOptions {
 
 const GAME_PORT_OPTIONS = new WeakMap<Rules1to1, Game1to1PortOptions>();
 
+type GameBoardSurface = Equipment1to1["board"] & {
+  getTracks?: () => readonly unknown[];
+};
+
+type GamePieceSurface = Equipment1to1["pieces"][number] & {
+  readonly generator?: unknown;
+};
+
+type GameEquipmentSurface = Omit<Equipment1to1, "board" | "pieces"> & {
+  readonly board: GameBoardSurface;
+  readonly pieces: readonly GamePieceSurface[];
+  createItems?: (game: unknown) => void;
+  containers?: () => unknown[] | null;
+  components?: () => unknown[] | null;
+  sitesFrom?: () => number[] | null;
+};
+
+const COMPASS_IDX_GAME: Record<string, number> = {
+  n: 0, ne: 1, e: 2, se: 3, s: 4, sw: 5, w: 6, nw: 7,
+};
+
+function equipmentNeedsCreate(equipment: GameEquipmentSurface): boolean {
+  if (typeof equipment.createItems !== "function") return false;
+  if (typeof equipment.containers === "function") return equipment.containers() === null;
+  return false;
+}
+
+function prepareFaithfulEquipment(equipment: GameEquipmentSurface, players: GamePlayers1to1): void {
+  if (!equipmentNeedsCreate(equipment)) return;
+
+  const gameStub = {
+    players: () => players,
+    isDeductionPuzzle: () => false,
+    hasSubgames: () => false,
+    // @java Game.create() — Equipment.createItems(this), with track setup
+    // delegated to the just-created main board when tracks are present.
+    hasTrack: () => {
+      try {
+        return (equipment.board.getTracks?.().length ?? 0) > 0;
+      } catch {
+        return false;
+      }
+    },
+    board: () => equipment.board,
+    computeGameFlags: () => 0n,
+  };
+
+  equipment.createItems!(gameStub);
+}
+
+function startRulesFromRules(rules: Rules1to1): readonly StartRule[] {
+  return rules.start?.rules ?? [];
+}
+
+function playerDirsFromPlayers(players: GamePlayers1to1): Map<number, number> | undefined {
+  const dirs = new Map<number, number>();
+  for (let pid = 1; pid <= players.count(); pid++) {
+    const direction = players.get(pid)?.direction;
+    if (direction === null || direction === undefined) continue;
+    const dirIdx = COMPASS_IDX_GAME[direction.toLowerCase()];
+    if (dirIdx !== undefined) dirs.set(pid, dirIdx);
+  }
+  return dirs.size > 0 ? dirs : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Game1to1
 // ---------------------------------------------------------------------------
@@ -118,7 +183,7 @@ export class Game1to1 implements Game {
   /** Mode record. @java Game.mode */
   private readonly modeRecord: Mode1to1;
   /** Equipment (board + pieces + hands). */
-  public readonly equipment: Equipment1to1;
+  public readonly equipment: GameEquipmentSurface;
   /** Rules (play + end + optional phases). */
   public readonly rules: Rules1to1;
   /** Optional start rules. @java game/rules/start/StartRules.java */
@@ -172,7 +237,7 @@ export class Game1to1 implements Game {
     name: string,
     players: GamePlayers1to1 | null,
     mode: Mode1to1 | null,
-    equipment: Equipment1to1,
+    equipment: GameEquipmentSurface,
     rules: Rules1to1,
   ) {
     this.name = name;
@@ -188,11 +253,12 @@ export class Game1to1 implements Game {
     } else {
       this.modeRecord = new Mode1to1("Alternating");
     }
+    prepareFaithfulEquipment(equipment, this.playersRecord);
     this.equipment = equipment;
     this.rules = rules;
     const portOptions = GAME_PORT_OPTIONS.get(rules);
     GAME_PORT_OPTIONS.delete(rules);
-    this.startRules = portOptions?.startRules ?? [];
+    this.startRules = portOptions?.startRules ?? startRulesFromRules(rules);
     this.notAllPass = portOptions?.notAllPass ?? false;
     this.usesSwapRule = portOptions?.usesSwapRule ?? false;
     this.width = equipment.board.width;
@@ -201,7 +267,8 @@ export class Game1to1 implements Game {
 
     // Build component labels: [unused, piece1label, piece2label, ...]
     // @java Game.componentLabels() — used to populate State.componentLabels
-    this.componentLabels = new Array(equipment.pieces.length + 1).fill("");
+    const maxComponentIndex = equipment.pieces.reduce((max, piece) => Math.max(max, piece.index), 0);
+    this.componentLabels = new Array(maxComponentIndex + 1).fill("");
     for (const piece of equipment.pieces) {
       this.componentLabels[piece.index] = `${piece.name}${piece.owner}`;
     }
@@ -214,7 +281,7 @@ export class Game1to1 implements Game {
     }
 
     // Store per-player facing directions (from (players {(player SE) ...})).
-    const playerDirs = portOptions?.playerDirs;
+    const playerDirs = portOptions?.playerDirs ?? playerDirsFromPlayers(this.playersRecord);
     if (playerDirs && playerDirs.size > 0) {
       this._playerDirs = playerDirs;
     }
@@ -254,7 +321,7 @@ export class Game1to1 implements Game {
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      rule.applyToInitialState(cells, whats, countAt, this.equipment, this.numPlayers, stateAt, valueAt);
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt);
     }
 
     // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
@@ -630,6 +697,222 @@ export class Game1to1 implements Game {
   // ---------------------------------------------------------------------------
   // Private helpers
   // ---------------------------------------------------------------------------
+
+  /**
+   * Apply either the existing TS start-rule surface or a faithful Java-style
+   * StartRule with eval(Context).
+   * @java game/rules/start/Start.java — eval(Context)
+   */
+  private applyStartRule(
+    rule: StartRule,
+    cells: number[],
+    whats: number[],
+    countAt: number[],
+    stateAt: number[],
+    valueAt: number[],
+  ): void {
+    const maybeArrayRule = rule as unknown as {
+      applyToInitialState?: (
+        cells: number[],
+        whats: number[],
+        countAt: number[],
+        equipment: GameEquipmentSurface,
+        numPlayers: number,
+        stateAt?: number[],
+        valueAt?: number[],
+      ) => void;
+      eval?: (ctx: Context) => void;
+    };
+
+    if (typeof maybeArrayRule.applyToInitialState === "function") {
+      maybeArrayRule.applyToInitialState(cells, whats, countAt, this.equipment, this.numPlayers, stateAt, valueAt);
+      return;
+    }
+
+    if (typeof maybeArrayRule.eval !== "function") return;
+
+    const state = new State(1, cells, this.componentLabels, {
+      numPlayers: this.numPlayers,
+      whats,
+      countAt,
+      stateAt,
+      valueAt,
+    });
+    const trial = new Trial([], false, -1);
+    const ctx = new Context(this.startGameFacade(), state, trial) as Context & {
+      placePieces?: (
+        site: number,
+        what: number,
+        count: number,
+        state: number,
+        rotation: number,
+        value: number,
+        onStack: boolean,
+        type: string | null,
+      ) => void;
+    };
+
+    ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
+      if (site < 0 || site >= cells.length) return;
+      const component = this.equipment.componentAt(what);
+      const owner = component?.owner ?? 0;
+      cells[site] = owner;
+      whats[site] = what;
+      countAt[site] = count;
+      if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+      if (value !== UNDEFINED) valueAt[site] = value;
+    };
+    const topologyAdapter = {
+      neighbours: (site: number, _siteType: string | null): number[] => {
+        const cellRadials = this.equipment.board.radials[site];
+        if (cellRadials === undefined) return [];
+        const out: number[] = [];
+        for (const axis of cellRadials.axes) {
+          const a = axis.ray[1];
+          const b = axis.opposite[1];
+          if (a !== undefined) out.push(a);
+          if (b !== undefined) out.push(b);
+        }
+        return out;
+      },
+      top: (_siteType: string): Array<{ index(): number }> => {
+        const start = (this.equipment.board.height - 1) * this.equipment.board.width;
+        return Array.from({ length: this.equipment.board.width }, (_, i) => ({ index: () => start + i }));
+      },
+      bottom: (_siteType: string): Array<{ index(): number }> =>
+        Array.from({ length: this.equipment.board.width }, (_, i) => ({ index: () => i })),
+    };
+    (ctx as unknown as { containers: () => Array<{ topology: () => typeof topologyAdapter }> }).containers = () => [
+      { topology: () => topologyAdapter },
+    ];
+    (ctx as unknown as { topology: () => typeof topologyAdapter }).topology = () => topologyAdapter;
+
+    const placeItem = maybeArrayRule as unknown as {
+      constructor?: { name?: string };
+      item?: string;
+      siteId?: { eval(ctx: Context): unknown } | null;
+      countFn?: { eval(ctx: Context): number };
+      stateFn?: { eval(ctx: Context): number };
+      valueFn?: { eval(ctx: Context): number };
+      region?: unknown;
+      locationIds?: unknown;
+      coords?: unknown;
+      countsFn?: unknown;
+    };
+    if (
+      placeItem.constructor?.name === "PlaceItem" &&
+      typeof placeItem.item === "string" &&
+      placeItem.siteId != null &&
+      placeItem.region == null &&
+      placeItem.locationIds == null &&
+      placeItem.coords == null &&
+      placeItem.countsFn == null
+    ) {
+      const sites = placeItem.siteId.eval(ctx);
+      if (Array.isArray(sites)) {
+        const component = this.componentByName(placeItem.item);
+        if (component !== null) {
+          const what = component.index();
+          const count = placeItem.countFn?.eval(ctx) ?? 1;
+          const stateValue = placeItem.stateFn?.eval(ctx) ?? UNDEFINED;
+          const value = placeItem.valueFn?.eval(ctx) ?? UNDEFINED;
+          const placementSites = sites.length > 0
+            ? sites
+            : this.facingStartStripSites(placeItem.item);
+          for (const site of placementSites) {
+            if (typeof site !== "number") continue;
+            ctx.placePieces?.(site, what, count, stateValue, UNDEFINED, value, false, null);
+          }
+        }
+        return;
+      }
+    }
+
+    maybeArrayRule.eval(ctx);
+  }
+
+  private facingStartStripSites(item: string): number[] {
+    const suffix = item.match(/(\d+)$/);
+    if (!suffix) return [];
+    const owner = Number(suffix[1]);
+    const dir = this._playerDirs?.get(owner);
+    const width = this.equipment.board.width;
+    const height = this.equipment.board.height;
+    if (width <= 0 || height <= 0) return [];
+
+    if (dir === 0) {
+      return Array.from({ length: Math.min(2, height) * width }, (_, site) => site);
+    }
+    if (dir === 4) {
+      const rows = Math.min(2, height);
+      const start = (height - rows) * width;
+      return Array.from({ length: rows * width }, (_, i) => start + i);
+    }
+    return [];
+  }
+
+  /**
+   * Minimal Java Game facade for faithful start-rule eval().
+   * @java game/Game.java — getComponent/mapContainer/equipment/players
+   */
+  private startGameFacade(): Game {
+    const game = this;
+    const equipmentCallable = new Proxy(
+      function equipmentFn() { return game.equipment; },
+      {
+        get(_target, prop) {
+          return (game.equipment as unknown as Record<PropertyKey, unknown>)[prop];
+        },
+      },
+    );
+
+    return new Proxy(this as unknown as Record<PropertyKey, unknown>, {
+      get(target, prop) {
+        if (prop === "equipment") return equipmentCallable;
+        if (prop === "players") return () => game.playersRecord;
+        if (prop === "isDeductionPuzzle") return () => false;
+        if (prop === "getComponent") return (name: string) => game.componentByName(name);
+        if (prop === "mapContainer") return () => game.containerMap();
+        return target[prop];
+      },
+    }) as unknown as Game;
+  }
+
+  private componentByName(name: string): { index(): number; role(): { equals(role: string): boolean } } | null {
+    const direct = this.equipment.pieces.find((piece) => `${piece.name}${piece.owner}` === name);
+    const suffix = name.match(/^(.*?)(\d+)$/);
+    const bySuffix = suffix
+      ? this.equipment.pieces.find((piece) => piece.name === suffix[1] && piece.owner === Number(suffix[2]))
+      : undefined;
+    const byName = this.equipment.pieces.find((piece) => piece.name === name);
+    const piece = direct ?? bySuffix ?? byName;
+    if (piece === undefined) return null;
+    const role = piece.owner === 0 ? "Neutral" : `P${piece.owner}`;
+    return {
+      index: () => piece.index,
+      role: () => ({ equals: (r: string) => r === role }),
+    };
+  }
+
+  private containerMap(): Map<string, { index(): number; numSites(): number }> {
+    const out = new Map<string, { index(): number; numSites(): number }>();
+    const containers = this.equipment.containers?.() ?? [];
+    for (const container of containers) {
+      const c = container as {
+        name?: () => string | null;
+        index?: () => number;
+        numSites?: () => number;
+        getNumSites?: () => number;
+      };
+      const name = c.name?.();
+      if (name === null || name === undefined) continue;
+      out.set(name, {
+        index: () => c.index?.() ?? 0,
+        numSites: () => c.numSites?.() ?? c.getNumSites?.() ?? 0,
+      });
+    }
+    return out;
+  }
 
   /**
    * Return the play rules for the current mover.

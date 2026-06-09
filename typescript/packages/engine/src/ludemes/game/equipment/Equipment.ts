@@ -80,6 +80,25 @@ interface Component extends Item {
   owner(): number;
 }
 
+/** Surface consumed by Game1to1; mirrors Equipment1to1's piece shape. */
+interface GamePieceSurface {
+  readonly name: string;
+  readonly owner: number;
+  readonly index: number;
+  readonly generator: unknown;
+}
+
+/** Surface consumed by Game1to1; mirrors Board1to1's public board shape. */
+interface GameBoardSurface {
+  readonly width: number;
+  readonly height: number;
+  readonly numSites: number;
+  readonly radials: unknown;
+  readonly trajectories: unknown;
+  readonly containerSpan: number;
+  getTracks?: () => readonly Track[];
+}
+
 /** @java game.equipment.container.other.Dice */
 interface Dice extends Container {
   numLocs(): number;
@@ -114,6 +133,7 @@ interface Deck extends Container {
 interface Regions extends Item {
   region(): RegionFunctionLike[] | null;
   sites(): unknown;
+  eval(ctx: unknown): number[];
   create(game: GameInterface): void;
   toEnglish(game: IGame): string;
 }
@@ -708,6 +728,11 @@ export class Equipment extends BaseLudeme {
     this._regions    = regionsWIP;
     this._maps       = mapsWIP;
 
+    // @java Equipment.java — component indices match their components[] slot.
+    for (let i = 0; i < this._components.length; i++) {
+      this._components[i]!.setIndex(i);
+    }
+
     // @java Equipment.java:546
     this.initContainerAndParameters(game);
 
@@ -982,6 +1007,100 @@ export class Equipment extends BaseLudeme {
 
   /** @java Equipment.components() */
   public components(): Component[] | null { return this._components; }
+
+  /**
+   * Main board container surface consumed by Game1to1.
+   * @java Equipment.board()
+   */
+  public get board(): GameBoardSurface {
+    const board = this._containers?.[0];
+    if (board === undefined || board === null) {
+      throw new Error("Equipment.board: createItems(game) must run before board access.");
+    }
+    return board as unknown as GameBoardSurface;
+  }
+
+  /**
+   * Real components, excluding Java's empty slot 0, adapted to the field-style
+   * shape used by the existing Game1to1 surface.
+   * @java Equipment.components()
+   */
+  public get pieces(): readonly GamePieceSurface[] {
+    const components = this._components;
+    if (components === null) return [];
+    const pieces: GamePieceSurface[] = [];
+    for (let i = 1; i < components.length; i++) {
+      const component = components[i]!;
+      const index = component.index();
+      pieces.push(Object.freeze({
+        name: component.name() ?? "",
+        owner: component.owner(),
+        index: index > 0 ? index : i,
+        generator: component.generator(),
+      }));
+    }
+    return Object.freeze(pieces);
+  }
+
+  /**
+   * Total number of indexed sites including non-board containers.
+   * @java Equipment.sitesFrom() / Equipment.initContainerAndParameters(Game)
+   */
+  public get totalSites(): number {
+    return this._offset?.length ?? this._totalDefaultSites;
+  }
+
+  /** Dice specs surface consumed by Game1to1. Full dice containers remain Java-style. */
+  public get diceSpecs(): readonly { readonly faces: readonly number[] }[] {
+    return [];
+  }
+
+  /** Dice site base surface consumed by dice-aware evals; -1 means no dice. */
+  public get diceSiteBase(): number {
+    return -1;
+  }
+
+  /** Hand surface consumed by hand-aware evals; faithful hands are still Java-style containers. */
+  public get hands(): readonly { readonly owner: number; readonly size: number }[] {
+    return [];
+  }
+
+  /** Hand-site lookup surface consumed by hand-aware evals. */
+  public get handSiteOf(): ReadonlyMap<number, number> {
+    return new Map();
+  }
+
+  /** Player-owned equipment regions surface consumed by SitesEquipmentRegion. */
+  public get playerRegions(): ReadonlyMap<number, { eval(ctx: unknown): number[] }> {
+    const out = new Map<number, { eval(ctx: unknown): number[] }>();
+    for (const region of this._regions ?? []) {
+      const owner = region.owner();
+      if (owner >= 0) {
+        out.set(owner, { eval: (ctx: unknown) => region.eval(ctx as never) });
+      }
+    }
+    return out;
+  }
+
+  /** Named player regions surface consumed by named `(sites <role> "Name")` lookups. */
+  public get namedPlayerRegions(): ReadonlyMap<string, ReadonlyMap<number, { eval(ctx: unknown): number[] }>> {
+    return new Map();
+  }
+
+  /** @java game/equipment/container/other/Hand.java — hand site lookup */
+  public handSiteFor(_owner: number, _offset = 0): number {
+    return -1;
+  }
+
+  /** Get piece by 1-based component index. */
+  public componentAt(index: number): GamePieceSurface | undefined {
+    return this.pieces.find((piece) => piece.index === index);
+  }
+
+  /** Get all pieces owned by a given player. */
+  public piecesOwnedBy(owner: number): GamePieceSurface[] {
+    return this.pieces.filter((piece) => piece.owner === owner);
+  }
 
   /** @java Equipment.clearComponents() — keeps null at index 0 */
   public clearComponents(): void {
