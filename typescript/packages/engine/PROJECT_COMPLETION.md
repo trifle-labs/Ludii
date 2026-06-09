@@ -346,6 +346,38 @@ opening); Nine Men's Morris / Oware compile-fallback (ArgCompiler throws → bes
 ForEachSite.eval; many games untested. Each is a next wave. Eventually: faithful ≥ bespoke across the
 corpus → DELETE bespoke (compiler1to1 + *1to1 + registry make<X>).
 
+## Update 10: broad faithful OUTCOME parity — ~14 games full, Tafl/Halma cluster started
+FULL faithful OUTCOME_OK (move-for-move + correct winner vs recorded Java trials, LUDII_ARGCOMPILER=1):
+  Breakthrough, Leap Frog, Gomoku, Amazons, Nine Men's Morris, Fanorona, Connect Four, Yavalath,
+  Havannah, Nine Holes, Achi, Picaria, Squava, Tic-Tac-Four (~14), spanning placement / line /
+  race-reach / jump-capture / territory / two-phase / morris, and Step·Slide·Hop·Add·Shoot move
+  families + moveAgain/phase + reach·no-moves·is-Line·morris end conditions.
+NOW STARTING (start() cleared, generate opening moves; per-game mechanics next): Tablut (custodial
+  captures fire, plays to ~ply 27-34), Hnefatafl, Brandub (over-captures ply 5 — king/edge condition),
+  Halma, Chinese Checkers.
+
+WAVE LEDGER (this session, all codex-driven + independently verified + committed; bespoke never
+regressed): Board.createTopology · Piece-extends-Component · Equipment.createItems · Topology
+subsystem · create() pass · move:step · move:slide · move:add · move:hop · move:shoot+moveAgain ·
+IsIn-normalize+end-winner(reach/no-moves) · is-Line(byLevel/through) · START_FAIL cluster
+(Topology.centre + SitesCoords) · custodial capture (Tafl, partial).
+
+REMAINING (per-game mechanics — declining ROI per wave, increasing complexity):
+  - Brandub/Tafl king & edge capture conditions (finish custodial).
+  - Go (ko/superko + group capture), Reversi (flip + ForEachSite), Konane (initial removals),
+    Pente (custodial pair capture), 3D boards (3D Tic-Tac-Toe), Oware/mancala (sow + voting/cycle end).
+  - Then: broad corpus sweep, fix the dominant remaining buckets, and once faithful >= bespoke across
+    the corpus, DELETE the bespoke path (compiler1to1 + 268 *1to1 + registry make<X> + Board1to1/
+    Equipment1to1). Note: the registry factories (batch*) are the ArgCompiler FALLBACK and are being
+    superseded ludeme-by-ludeme as faithful classes get wired via FAITHFUL_MOVE_VARIANTS / preferred
+    dispatch; they go away with the bespoke path.
+
+PROVEN LOOP (repeat): wide `LUDII_ARGCOMPILER=1 replay-trials --filter <Game>` sweep -> pick the
+cheapest high-value cluster (shared mechanic / shared error) -> codex wave with multi-gate acceptance
+(target probe + ALL prior regression probes + the OUTCOME_OK set + bespoke slice + tsc/build) ->
+independently verify every gate -> commit. Each wave only GROWS parity; STOP-if-risky guardrail keeps
+partial results honest and net-positive.
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
