@@ -232,3 +232,45 @@ FINER DIAGNOSIS of step (a) — exactly why faithful Equipment returns null (pro
 This is a coordinated multi-file change (Piece→Item, Equipment.createItems wiring, players/
 start→portOptions, create() ordering, Board1to1↔Board surface) — the multi-week bulk. Parallelize
 the mechanical class-porting via codex; keep the 95% compile baseline green at each step.
+
+## Update 6 (THIS session): full faithful Equipment port LANDED through createItems;
+## remaining blocker = the faithful Topology subsystem (user chose the purest 1:1 path)
+User decision: "Full faithful Equipment port" (purest 1:1, accept regression risk). Executed
+in safe, committed, green steps — all DORMANT until the create() pass is wired (bespoke uses
+Equipment1to1), so zero regression to the 60%/95% baselines (verified: 0 compile/start fails).
+
+DONE + COMMITTED this session:
+- Faithful **Piece extends Component** (PieceFaithful.ts), Java ctor (name, role[Each], dirn,
+  flips, generator, maxState/Count/Value); JAVA_TS_CTORS game.equipment.component.Piece → it.
+  Bespoke equipment Piece (component/Piece.ts) untouched.
+- **RoleType**: added missing Java roles (Each, Mover, Next, Prev, NonMover, Friend, Ally,
+  TeamMover, P9–P16); Each.owner()=NOBODY(0). (Each was absent → pieces couldn't carry role.)
+- **Equipment** ctor: `item instanceof Board` (Java Equipment.java:114), not the never-matching
+  type()==="Board". Full (equipment {...}) now compiles to the FAITHFUL Equipment.
+- **Component.clone()** (prototype copy) + getClass() stand-in; Die/Tile clone() → override.
+- **Equipment.createItems** _makeEmptyPiece/_makePiece now build real `new Piece(...)`.
+  VERIFIED: createItems(gameStub) expands (piece "Pawn" Each) → real components
+  [Disc#0(empty), Pawn/P1, Pawn/P2] (Java size()-1 index), Board container + 2 regions.
+
+THE REMAINING BLOCKER (the deepest, largest piece): createItems →
+**initContainerAndParameters** drives the full faithful **Topology** subsystem, but
+other/topology/Topology.ts is a PARTIAL STUB. Present: getGraphElements, cells, numEdges,
+optimiseMemory. MISSING (~12): computeRelation, computeSupportedDirection,
+convertPropertiesToList, computeRows, computeColumns, crossReferencePhases, computeLayers,
+computeCoordinates, preGenerateDistanceTables, preGenerateDistanceToEachElementToEachOther,
+computeDoesCross, pregenerateFeaturesData. These are Java Topology.java + GraphElement
+relation/distance machinery — thousands of lines. Board.createTopology must ALSO build a real
+faithful Topology object (cells/edges/vertices from the Graph) and Board.topology() return it
+(currently Board builds only Board1to1-style radials/Trajectories, which the eval engine reads
+via ctx._radials — that part is done & verified at 64 sites).
+
+NEXT (ordered):
+  a. Port the ~12 missing faithful Topology methods (Java other/topology/Topology.java) +
+     a Graph→Topology builder so Board.createTopology populates cells/edges/vertices/relations.
+     Parallelize via codex (methods interdepend — port + verify in dependency order).
+  b. Board.topology() returns the faithful Topology; keep the Board1to1-style radials for the
+     eval engine (ctx._radials) until evals migrate to reading topology().trajectories().
+  c. Faithful create() pass (Task #13): players→_playerDirs, start→startRules, run
+     Equipment.createItems with a game stub (numPlayers+board) BEFORE constructing Game1to1.
+  d. Re-probe Breakthrough faithful: expect 64 sites, 32 placed, 22 moves — parity with bespoke.
+  e. Per-ludeme eval grind → delete bespoke once faithful ≥ parity.
