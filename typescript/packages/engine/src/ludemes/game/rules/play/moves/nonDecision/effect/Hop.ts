@@ -24,10 +24,13 @@
  */
 
 import type { Context } from "../../../../../../../context.js";
+import { radialsForDirection, type CellFlatRadials } from "../../../../../../topology-radials.js";
+import type { Trajectories } from "../../../../../../../eval/graph/trajectories.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
+import { resolveRelativeDir, isSingleDir } from "./Step1to1.js";
 import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
 
@@ -116,6 +119,84 @@ export class Hop extends Effect {
   // -------------------------------------------------------------------------
 
   /**
+   * Resolve this Hop's direction choice to full rays from `from`.
+   *
+   * This mirrors Step's direction/radial path: relative directions are converted
+   * through the mover's facing, single compass directions use one ray only, and
+   * group directions walk both halves of each distinct axis.
+   */
+  private hopRays(ctx: Context, from: number, cellRadials: CellFlatRadials): readonly (readonly number[])[] {
+    const directions = this.dirnChoice.eval(ctx);
+    const mover = ctx.state.mover;
+    const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+    const traj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
+
+    const GROUP_DIRS = new Set(["adjacent", "orthogonal", "diagonal", "all"]);
+    const axesForDir = (dir: string): readonly { ray: readonly number[]; opposite: readonly number[] }[] => {
+      if (traj) {
+        const distinct = traj.distinctRadialsByName(from, dir);
+        if (distinct.length > 0) {
+          return distinct.map((radial) => ({
+            ray: radial.ray,
+            opposite: radial.opposites[0] ?? [from],
+          }));
+        }
+        if (!GROUP_DIRS.has(dir.toLowerCase())) return [];
+      }
+      return radialsForDirection(cellRadials, dir);
+    };
+
+    const out: (readonly number[])[] = [];
+    const seen = new Set<string>();
+    const pushRay = (ray: readonly number[]): void => {
+      if (ray.length < 2) return;
+      const key = ray.join(",");
+      if (seen.has(key)) return;
+      seen.add(key);
+      out.push(ray);
+    };
+
+    for (const dirName of directions) {
+      const relative = resolveRelativeDir(dirName, mover, playerDirs);
+      if (Array.isArray(relative)) {
+        for (const dir of relative) {
+          for (const { ray } of axesForDir(dir)) pushRay(ray);
+        }
+        continue;
+      }
+
+      const effDir = relative ?? dirName;
+      const single = isSingleDir(effDir);
+      for (const { ray, opposite } of axesForDir(effDir)) {
+        pushRay(ray);
+        if (!single) pushRay(opposite);
+      }
+    }
+
+    return out;
+  }
+
+  private buildMove(
+    kind: string,
+    from: number,
+    to: number,
+    mover: number,
+    actions: Action[],
+  ): Move {
+    const moveAction = new ActionMove({ from, to });
+    moveAction.setDecision(true);
+    actions.push(moveAction);
+    return new Move({
+      id: `hop:${kind}:${mover}:${from}:${to}`,
+      label: kind === "stop" ? `Hop(${from}→${to},stop)` : `Hop(${from}→${to})`,
+      siteIndices: [from, to],
+      mover,
+      placedOwner: mover,
+      actions,
+    });
+  }
+
+  /**
    * @java game/rules/play/moves/nonDecision/effect/Hop.java — eval(Context)
    *
    * Java lines 151-372:
@@ -130,7 +211,7 @@ export class Hop extends Effect {
     if (from < 0) return [];
 
     const ctxAny = ctx as unknown as {
-      _radials?: Array<Record<string, Array<{ ray: number[]; opposite: number[] }>>>;
+      _radials?: CellFlatRadials[];
     };
     const radials = ctxAny._radials;
     if (!radials) {
@@ -161,18 +242,21 @@ export class Hop extends Effect {
       return [];
     }
 
-    const directions = this.dirnChoice.eval(ctx);
     const cellRadials = radials[from];
-    if (!cellRadials) return [];
+    if (!cellRadials) {
+      (ctx as unknown as { _evalTo?: number })._evalTo = origTo;
+      (ctx as unknown as { _evalFrom?: number })._evalFrom = origFrom;
+      (ctx as unknown as { _evalBetween?: number })._evalBetween = origBetween;
+      return [];
+    }
+    const rays = this.hopRays(ctx, from, cellRadials);
 
     const result: Move[] = [];
     const seen = new Set<string>();
 
     // @java Hop.java:180-228 — Step if minLengthHurdle == 0
     if (minLengthHurdle === 0) {
-      for (const dirName of directions) {
-        const dirsForCell = cellRadials[dirName] ?? [];
-        for (const { ray } of dirsForCell) {
+      for (const ray of rays) {
           if (ray.length < 2) continue;
           const to = ray[1]!;
           (ctx as unknown as { _evalTo?: number })._evalTo = to;
@@ -185,25 +269,14 @@ export class Hop extends Effect {
               const sideActions = this.sideEffect.eval(ctx);
               for (const sm of sideActions) for (const a of sm.actions) actions.push(a);
             }
-            actions.push(new ActionMove({ from, to }));
-            result.push(new Move({
-              id: `hop:step:${mover}:${from}:${to}`,
-              label: `Hop(${from}→${to})`,
-              siteIndices: [from, to],
-              mover,
-              placedOwner: mover,
-              actions,
-            }));
+            result.push(this.buildMove("step", from, to, mover, actions));
           }
-        }
       }
     }
 
     // @java Hop.java:232-363 — Hop over hurdle if maxLengthHurdle > 0
     if (maxLengthHurdle > 0) {
-      for (const dirName of directions) {
-        const dirsForCell = cellRadials[dirName] ?? [];
-        for (const { ray } of dirsForCell) {
+      for (const ray of rays) {
           for (let toIdx = 1; toIdx < ray.length; toIdx++) {
             const between = ray[toIdx]!;
             (ctx as unknown as { _evalBetween?: number })._evalBetween = between;
@@ -246,15 +319,7 @@ export class Hop extends Effect {
                           const stopMoves = this.stopEffect.eval(ctx);
                           for (const sm of stopMoves) for (const a of sm.actions) actions.push(a);
                         }
-                        actions.push(new ActionMove({ from, to: afterHurdleTo }));
-                        result.push(new Move({
-                          id: `hop:stop:${mover}:${from}:${afterHurdleTo}`,
-                          label: `Hop(${from}→${afterHurdleTo},stop)`,
-                          siteIndices: [from, afterHurdleTo],
-                          mover,
-                          placedOwner: mover,
-                          actions,
-                        }));
+                        result.push(this.buildMove("stop", from, afterHurdleTo, mover, actions));
                       }
                     }
                     break;
@@ -281,15 +346,7 @@ export class Hop extends Effect {
                       for (const sm of stopMoves) for (const a of sm.actions) actions.push(a);
                     }
 
-                    actions.push(new ActionMove({ from, to: afterHurdleTo }));
-                    result.push(new Move({
-                      id: `hop:${mover}:${from}:${afterHurdleTo}`,
-                      label: `Hop(${from}→${afterHurdleTo})`,
-                      siteIndices: [from, afterHurdleTo],
-                      mover,
-                      placedOwner: mover,
-                      actions,
-                    }));
+                    result.push(this.buildMove("jump", from, afterHurdleTo, mover, actions));
                   }
 
                   // @java: check distance limit
@@ -303,7 +360,6 @@ export class Hop extends Effect {
             (ctx as unknown as { _evalTo?: number })._evalTo = between;
             if (toIdx > maxDistanceFromHurdle || !this.goRule.eval(ctx)) break;
           }
-        }
       }
     }
 

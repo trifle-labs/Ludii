@@ -958,8 +958,12 @@ const NO_BUILTIN = Symbol("NO_BUILTIN");
 function instantiateBuiltinFaithful(className: string, args: readonly unknown[]): unknown | typeof NO_BUILTIN {
   if (args.length !== 0) return NO_BUILTIN;
   switch (className) {
+    case "game.functions.ints.iterator.From":
+      return { eval: (ctx: { _evalFrom: number }) => ctx._evalFrom };
     case "game.functions.ints.iterator.To":
       return { eval: (ctx: { _evalTo: number }) => ctx._evalTo };
+    case "game.functions.ints.iterator.Between":
+      return { eval: (ctx: { _evalBetween: number }) => ctx._evalBetween };
     default:
       return NO_BUILTIN;
   }
@@ -968,10 +972,11 @@ function instantiateBuiltinFaithful(className: string, args: readonly unknown[])
 const PREFERRED_TOKEN_CLASSES = new Map<string, string>([
   ["is", "game.functions.booleans.is.Is"],
 ]);
-const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy"]);
+const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy", "occupied"]);
 
 const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
   ["move:add", "game.rules.play.moves.nonDecision.effect.Add"],
+  ["move:hop", "game.rules.play.moves.nonDecision.effect.Hop"],
   ["move:step", "game.rules.play.moves.nonDecision.effect.Step"],
   ["move:slide", "game.rules.play.moves.nonDecision.effect.Slide"],
 ]);

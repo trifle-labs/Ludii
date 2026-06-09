@@ -21,12 +21,12 @@ import type { DirectionArg } from "./EffectCtorAdapters.js";
 
 export class HopFaithful extends Hop {
   public constructor(
-    from: From1to1 | null,
-    directions: DirectionArg,
-    between: Between1to1 | null,
-    to: To1to1,
-    stack: boolean | null,
-    then: ThenLike | null
+    from: From1to1 | null = null,
+    directions: DirectionArg = null,
+    between: Between1to1 | null = null,
+    to: To1to1 | null = null,
+    stack: boolean | null = null,
+    then: ThenLike | null = null
   ) {
     const range = betweenRange(between);
     super({
