@@ -46,9 +46,12 @@ export class Or1to1 extends Operator1to1 {
    * @java game/rules/play/moves/nonDecision/operators/logical/Or.java — constructor(Moves[], Then)
    * @param list Array of sub-move-generators whose moves are unioned.
    */
-  public constructor(list: readonly MovesFunction[]) {
+  public constructor(
+    list: readonly MovesFunction[] | MovesFunction,
+    movesB: MovesFunction | null = null,
+  ) {
     super();
-    this.list = list;
+    this.list = Array.isArray(list) ? list : (movesB === null ? [list] : [list, movesB]);
   }
 
   /**

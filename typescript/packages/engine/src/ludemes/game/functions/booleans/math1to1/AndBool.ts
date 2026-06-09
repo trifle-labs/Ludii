@@ -14,8 +14,11 @@ import type { BooleanFunction } from "../../../../base.js";
 export class AndBool implements BooleanFunction {
   private readonly list: readonly BooleanFunction[];
 
-  public constructor(list: readonly BooleanFunction[]) {
-    this.list = list;
+  public constructor(
+    list: readonly BooleanFunction[] | BooleanFunction,
+    b: BooleanFunction | null = null,
+  ) {
+    this.list = Array.isArray(list) ? list : (b === null ? [list] : [list, b]);
   }
 
   /**

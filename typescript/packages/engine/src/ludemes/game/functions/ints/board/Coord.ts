@@ -90,13 +90,17 @@ export class Coord extends BaseIntFunction {
       // Fallback: parse algebraic label (e.g. "A1" → col=0, row=0)
       const topology = (context as unknown as {
         topology?: () => {
-          getGraphElements(type: string): Array<{ index(): number; label?(): string; col(): number; row(): number }>;
+          getElement?: (coord: string, type: string | null) => { index(): number } | null;
+          getGraphElements?: (type: string) => Array<{ index(): number; label?(): string; col(): number; row(): number }>;
           findByCoord?: (coord: string, type: string) => { index(): number } | null;
         };
+        board?: () => { defaultSite?: () => string };
       }).topology?.();
 
       if (topology) {
-        const realType = this.type ?? "Cell";
+        const realType = this.type ?? (context as unknown as { board?: () => { defaultSite?: () => string } }).board?.().defaultSite?.() ?? "Cell";
+        const direct = topology.getElement?.(this.coord, this.type ?? null) ?? null;
+        if (direct !== null) return direct.index();
         // Try topology.findByCoord if available
         if (typeof topology.findByCoord === "function") {
           const el = topology.findByCoord(this.coord, realType);
@@ -104,11 +108,13 @@ export class Coord extends BaseIntFunction {
           return OFF;
         }
         // Fall back: scan elements for matching label
-        const elements = topology.getGraphElements(realType);
-        const lowerCoord = this.coord.toLowerCase();
-        for (const el of elements) {
-          if (typeof el.label === "function" && el.label().toLowerCase() === lowerCoord)
-            return el.index();
+        if (typeof topology.getGraphElements === "function") {
+          const elements = topology.getGraphElements(realType);
+          const lowerCoord = this.coord.toLowerCase();
+          for (const el of elements) {
+            if (typeof el.label === "function" && el.label().toLowerCase() === lowerCoord)
+              return el.index();
+          }
         }
       }
 
@@ -123,12 +129,13 @@ export class Coord extends BaseIntFunction {
 
       const topology = (context as unknown as {
         topology?: () => {
-          getGraphElements(type: string): Array<{ index(): number; row(): number; col(): number }>;
+          getGraphElements?: (type: string) => Array<{ index(): number; row(): number; col(): number }>;
         };
+        board?: () => { defaultSite?: () => string };
       }).topology?.();
 
-      if (topology) {
-        const realType = this.type ?? "Cell";
+      if (topology && typeof topology.getGraphElements === "function") {
+        const realType = this.type ?? (context as unknown as { board?: () => { defaultSite?: () => string } }).board?.().defaultSite?.() ?? "Cell";
         const elements = topology.getGraphElements(realType);
         for (const element of elements) {
           if (element.row() === row && element.col() === column)

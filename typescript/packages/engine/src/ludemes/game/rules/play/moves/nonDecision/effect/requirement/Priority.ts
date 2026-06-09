@@ -26,9 +26,20 @@ export class Priority implements MovesFunction {
    * @param list       Array of move-generating ludemes in priority order
    * @param thenClause Subsequent moves
    */
-  public constructor(list: MovesFunction[], thenClause: Then | null = null) {
-    this.list = list;
-    this.thenClause = thenClause;
+  public constructor(
+    list: MovesFunction[] | MovesFunction,
+    list2OrThen: MovesFunction | Then | null = null,
+    thenClause: Then | null = null,
+  ) {
+    if (Array.isArray(list)) {
+      this.list = list;
+      this.thenClause = (list2OrThen as Then | null) ?? null;
+    } else {
+      this.list = list2OrThen !== null && typeof (list2OrThen as MovesFunction).eval === "function"
+        ? [list, list2OrThen as MovesFunction]
+        : [list];
+      this.thenClause = thenClause;
+    }
   }
 
   /**

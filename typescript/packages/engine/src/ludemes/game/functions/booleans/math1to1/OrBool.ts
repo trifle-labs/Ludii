@@ -20,7 +20,7 @@ export class OrBool implements BooleanFunction {
   /** @java Or(BooleanFunction[]) */
   public constructor(list: readonly BooleanFunction[]);
   public constructor(aOrList: BooleanFunction | readonly BooleanFunction[], b: BooleanFunction | null = null) {
-    this.list = Array.isArray(aOrList) ? aOrList : [aOrList, b!];
+    this.list = Array.isArray(aOrList) ? aOrList : (b === null ? [aOrList] : [aOrList, b]);
   }
 
   /**

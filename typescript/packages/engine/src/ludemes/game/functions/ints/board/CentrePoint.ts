@@ -41,7 +41,7 @@ export class CentrePoint extends BaseIntFunction {
   /**
    * @java CentrePoint.eval(Context)
    *
-   * Returns the centre site index. Falls back to floor(numSites/2) when the
+   * Returns the centre site index. Falls back to floor(numSites/2) only when the
    * Java topology's `centre()` list is not available via the TS Context.
    */
   public override eval(context: Context): number {
@@ -49,15 +49,17 @@ export class CentrePoint extends BaseIntFunction {
       return this.precomputedInteger;
 
     // Java: context.topology().centre(realType).get(0).index()
-    const topology = (context as unknown as {
+    const contextAny = context as unknown as {
       topology?: () => {
-        centre(type: string): Array<{ index(): number }>;
+        centre?: (type: string) => Array<{ index(): number }>;
       };
-    }).topology?.();
+      board?: () => { defaultSite?: () => string; numSites?: () => number };
+    };
+    const topology = contextAny.topology?.();
 
-    if (topology) {
+    if (topology && typeof topology.centre === "function") {
       // Java: realType = (type != null) ? type : context.game().board().defaultSite()
-      const realType = this.type ?? "Cell";
+      const realType = this.type ?? contextAny.board?.().defaultSite?.() ?? "Cell";
       const centreList = topology.centre(realType);
       if (centreList && centreList.length > 0) {
         return centreList[0]!.index();
@@ -65,7 +67,10 @@ export class CentrePoint extends BaseIntFunction {
     }
 
     // Fallback: floor(numSites / 2) — correct for symmetric boards
-    const numSites = (context.game as unknown as { numSites?: number }).numSites ?? 0;
+    const numSites =
+      contextAny.board?.().numSites?.()
+      ?? (context.game as unknown as { numSites?: number }).numSites
+      ?? 0;
     return Math.floor(numSites / 2);
   }
 

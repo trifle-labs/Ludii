@@ -33,8 +33,11 @@ import { type LudList, type LudNode } from "@ludii/typescript-language";
 export class Priority1to1 implements MovesFunction {
   private readonly list: readonly MovesFunction[];
 
-  public constructor(list: readonly MovesFunction[]) {
-    this.list = list;
+  public constructor(
+    list: readonly MovesFunction[] | MovesFunction,
+    list2: MovesFunction | null = null,
+  ) {
+    this.list = Array.isArray(list) ? list : (list2 === null ? [list] : [list, list2]);
   }
 
   public eval(ctx: Context): Move[] {

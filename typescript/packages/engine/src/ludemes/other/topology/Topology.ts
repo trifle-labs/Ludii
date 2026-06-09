@@ -223,7 +223,10 @@ export class Topology {
   /** @java Topology#right(SiteType) */
   right(type: SiteType):          TopologyElement[] { return this._right.get(type)!; }
   /** @java Topology#centre(SiteType) */
-  centre(type: SiteType):         TopologyElement[] { return this._centre.get(type)!; }
+  centre(type: SiteType):         TopologyElement[] {
+    this.ensureCentre(type);
+    return withJavaListMethods(this._centre.get(type)!);
+  }
   /** @java Topology#axial(SiteType) */
   axial(type: SiteType):          TopologyElement[] { return this._axials.get(type)!; }
   /** @java Topology#horizontal(SiteType) */
@@ -957,27 +960,44 @@ export class Topology {
       }
     }
 
-    const centre = this.centre(type);
-    if (centre.length === 0) {
-      let avgX = 0;
-      let avgY = 0;
-      for (const element of elements) {
-        avgX += element.centroid().x;
-        avgY += element.centroid().y;
-      }
-      avgX /= elements.length;
-      avgY /= elements.length;
-      let best: TopologyElement | null = null;
-      let bestDist = Infinity;
-      for (const element of elements) {
-        const c = element.centroid();
-        const d = (c.x - avgX) * (c.x - avgX) + (c.y - avgY) * (c.y - avgY);
-        if (d < bestDist) {
-          bestDist = d;
-          best = element;
-        }
-      }
-      if (best) centre.push(best);
+    this.ensureCentre(type);
+  }
+
+  /**
+   * Lazily computes Java's centre list: graph elements closest to the board
+   * centroid. Odd rectangular cell boards therefore return the single middle
+   * cell, while even/symmetric boards can return multiple equally central sites.
+   * @java Topology#centre(SiteType)
+   */
+  private ensureCentre(type: SiteType): void {
+    const centre = this._centre.get(type);
+    if (centre === undefined || centre.length > 0) return;
+
+    const elements = this.getGraphElements(type);
+    if (elements.length === 0) return;
+
+    let avgX = 0;
+    let avgY = 0;
+    for (const element of elements) {
+      const c = element.centroid();
+      avgX += c.x;
+      avgY += c.y;
+    }
+    avgX /= elements.length;
+    avgY /= elements.length;
+
+    let bestDist = Infinity;
+    for (const element of elements) {
+      const c = element.centroid();
+      const d = (c.x - avgX) * (c.x - avgX) + (c.y - avgY) * (c.y - avgY);
+      if (d < bestDist) bestDist = d;
+    }
+
+    const tolerance = 1.0e-6;
+    for (const element of elements) {
+      const c = element.centroid();
+      const d = (c.x - avgX) * (c.x - avgX) + (c.y - avgY) * (c.y - avgY);
+      if (Math.abs(d - bestDist) <= tolerance) centre.push(element);
     }
   }
 

@@ -24,20 +24,41 @@ import { isList } from "@ludii/typescript-language";
 import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
 import { parseArgs1to1, compileInt1to1, compileBool1to1 } from "../../../../../compiler1to1.js";
 
+function isIntFunction(value: unknown): value is IntFunction {
+  return value !== null && typeof value === "object" && typeof (value as { eval?: unknown }).eval === "function";
+}
+
 // ---------------------------------------------------------------------------
 // Add  (alias "+")
 // ---------------------------------------------------------------------------
 export class Add1to1 implements IntFunction {
-  private readonly fns: readonly IntFunction[];
+  private readonly fns: readonly IntFunction[] | null;
+  private readonly arrayFn: { eval(ctx: Context): readonly number[] } | null;
 
-  public constructor(fns: readonly IntFunction[]) {
-    this.fns = fns;
+  public constructor(
+    fns: readonly IntFunction[] | IntFunction | null,
+    bOrArray: IntFunction | { eval(ctx: Context): readonly number[] } | null = null,
+  ) {
+    if (Array.isArray(fns)) {
+      this.fns = fns as readonly IntFunction[];
+      this.arrayFn = null;
+    } else if (fns !== null) {
+      this.fns = bOrArray !== null && isIntFunction(bOrArray) ? [fns as IntFunction, bOrArray] : [fns as IntFunction];
+      this.arrayFn = null;
+    } else {
+      this.fns = null;
+      this.arrayFn = bOrArray as { eval(ctx: Context): readonly number[] } | null;
+    }
   }
 
   /** @java game/functions/ints/math/Add.java — eval: sum of all IntArrayFunction values */
   public eval(ctx: Context): number {
     let sum = 0;
-    for (const f of this.fns) sum += f.eval(ctx);
+    if (this.fns !== null) {
+      for (const f of this.fns) sum += f.eval(ctx);
+    } else {
+      for (const value of this.arrayFn?.eval(ctx) ?? []) sum += value;
+    }
     return sum;
   }
 }
@@ -64,16 +85,33 @@ export class Sub1to1 implements IntFunction {
 // Mul  (alias "*")
 // ---------------------------------------------------------------------------
 export class Mul1to1 implements IntFunction {
-  private readonly fns: readonly IntFunction[];
+  private readonly fns: readonly IntFunction[] | null;
+  private readonly arrayFn: { eval(ctx: Context): readonly number[] } | null;
 
-  public constructor(fns: readonly IntFunction[]) {
-    this.fns = fns;
+  public constructor(
+    fns: readonly IntFunction[] | IntFunction | null,
+    bOrArray: IntFunction | { eval(ctx: Context): readonly number[] } | null = null,
+  ) {
+    if (Array.isArray(fns)) {
+      this.fns = fns as readonly IntFunction[];
+      this.arrayFn = null;
+    } else if (fns !== null) {
+      this.fns = bOrArray !== null && isIntFunction(bOrArray) ? [fns as IntFunction, bOrArray] : [fns as IntFunction];
+      this.arrayFn = null;
+    } else {
+      this.fns = null;
+      this.arrayFn = bOrArray as { eval(ctx: Context): readonly number[] } | null;
+    }
   }
 
   /** @java game/functions/ints/math/Mul.java — eval: product */
   public eval(ctx: Context): number {
     let prod = 1;
-    for (const f of this.fns) prod *= f.eval(ctx);
+    if (this.fns !== null) {
+      for (const f of this.fns) prod *= f.eval(ctx);
+    } else {
+      for (const value of this.arrayFn?.eval(ctx) ?? []) prod *= value;
+    }
     return prod;
   }
 }
