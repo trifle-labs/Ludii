@@ -49,6 +49,9 @@ import "./game/functions/booleans/is/simple1to1/IsBlocked1to1.js";
 // is: in
 import "./game/functions/booleans/is/in1to1/IsIn1to1.js";
 
+// is: component
+import "./game/functions/booleans/is/component/IsWithin.js";
+
 // is: line (already a class — register it)
 import "./game/functions/booleans/is/line1to1/IsLine1to1.js";
 

@@ -38,6 +38,7 @@ import { SitesConcaveCorners } from "./simple/SitesConcaveCorners.js";
 import { SitesConvexCorners } from "./simple/SitesConvexCorners.js";
 import { SitesHint } from "./simple/SitesHint.js";
 import { SitesLeft } from "./simple/SitesLeft.js";
+import { SitesOuter } from "./simple/SitesOuter.js";
 import { SitesRight } from "./simple/SitesRight.js";
 import { SitesTop } from "./simple/SitesTop.js";
 import { SitesTrack } from "./track/SitesTrack.js";
@@ -214,7 +215,7 @@ export class Sites extends BaseRegionFunction {
       case "Minor":
         return makeTopologyFn("minor", elementType);
       case "Outer":
-        return makeTopologyFn("outer", elementType);
+        return new SitesOuter(elementType);
       case "Right":
         return new SitesRight(elementType);
       case "ToClear":

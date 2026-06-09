@@ -9,8 +9,11 @@
 
 import type { Context } from "../../../../../../context.js";
 import { BaseBooleanFunction } from "../../BaseBooleanFunction.js";
-import type { IntFunction, RegionFunction } from "../../../../../base.js";
+import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../base.js";
 import { LastTo } from "../../../ints/last/LastTo.js";
+import type { LudNode, LudList } from "@ludii/typescript-language";
+import { compileInt1to1, compileRegion1to1, parseArgs1to1 } from "../../../../../../compiler1to1.js";
+import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 
 /**
  * Tests if a specific piece is on the designed region.
@@ -81,38 +84,26 @@ export class IsWithin extends BaseBooleanFunction {
    */
   public override eval(context: Context): boolean {
     const pid = this.pieceId.eval(context);
-    // Java: final int owner = context.components()[pid].owner();
-    const components = (context as unknown as { components?: () => { owner?: () => number }[] }).components;
-    let owner: number = 0;
-    if (typeof components === "function") {
-      const comps = components.call(context);
-      if (comps && pid >= 0 && pid < comps.length) {
-        const comp = comps[pid];
-        if (comp && typeof comp.owner === "function") {
-          owner = comp.owner();
-        }
-      }
+    if (pid <= 0) return false;
+
+    const sites = new Set(toSiteArray(this.region.eval(context) as unknown));
+    if (sites.size === 0) return false;
+
+    // Java uses the Owned index for the component id. The TS state keeps the
+    // same component id in `whats`, so scanning flat sites is equivalent for
+    // board cells and avoids depending on a Java-shaped Owned adapter.
+    const whats = context.state.whats;
+    for (let site = 0; site < whats.length; site++) {
+      if (whats[site] === pid && sites.has(site)) return true;
     }
 
-    const sites: number[] = this.region.eval(context);
-
-    // Java: final TIntArrayList owned = context.state().owned().sites(owner, pid);
-    const state = context.state as unknown as {
-      owned?: () => { sites?: (owner: number, pid: number) => number[] };
-    };
-    let ownedSites: number[] = [];
-    if (typeof state.owned === "function") {
-      const owned = state.owned();
-      if (owned && typeof owned.sites === "function") {
-        ownedSites = owned.sites(owner, pid) ?? [];
-      }
-    }
-
-    // Java: for (int i = 0; i < owned.size(); i++) { if (sites.contains(location)) return true; }
-    for (let i = 0; i < ownedSites.length; i++) {
-      const location = ownedSites[i]!;
-      if (sites.includes(location)) {
-        return true;
+    // Stack games store per-level component ids separately.
+    const whatStacks = context.state.whatStacks;
+    for (let site = 0; site < whatStacks.length; site++) {
+      if (!sites.has(site)) continue;
+      const levels = whatStacks[site] ?? [];
+      for (const what of levels) {
+        if (what === pid) return true;
       }
     }
 
@@ -198,3 +189,29 @@ export class IsWithin extends BaseBooleanFunction {
     return pieceEn + " is in " + regionEn;
   }
 }
+
+function toSiteArray(raw: unknown): readonly number[] {
+  if (Array.isArray(raw)) return raw as number[];
+  if (raw && typeof raw === "object") {
+    const r = raw as { sites?: unknown; array?: unknown };
+    if (typeof r.sites === "function") return (r.sites as () => number[])();
+    if (Array.isArray(r.sites)) return r.sites as number[];
+    if (Array.isArray(r.array)) return r.array as number[];
+    if (typeof (raw as Iterable<number>)[Symbol.iterator] === "function") return [...(raw as Iterable<number>)];
+  }
+  return [];
+}
+
+registerBool1to1("is:within", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
+  const { positional, named } = parseArgs1to1((node as LudList).items);
+  // (is Within <pieceId> in:<region>) is the common PieceTypeReachWin expansion.
+  const pieceNode = positional[1];
+  if (!pieceNode) return { eval(_ctx: Context): boolean { return false; } };
+
+  const regionNode = named.get("in") ?? positional[2];
+  const locnNode = named.get("at");
+  const pieceId = compileInt1to1(pieceNode);
+  const region = regionNode ? compileRegion1to1(regionNode) : null;
+  const locn = locnNode ? compileInt1to1(locnNode) : null;
+  return new IsWithin(pieceId, null, locn, region);
+});
