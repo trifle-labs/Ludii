@@ -85,6 +85,60 @@ export class Context {
   /** Java parity: Context.setValue(int). */
   public setEvalValue(v: number): void { this._evalValue = v; }
 
+  // ---- Java Context API (faithful ludeme evals delegate here) -------------
+  // Mirror Java's Context accessors, delegating to the Game's equipment/board/
+  // state. Typed loosely because callers (e.g. ForEachPiece) read runtime shapes.
+  /** @java other/context/Context.java — components(): 1-based component array (index 0 placeholder). */
+  public components(): Array<Record<string, any>> {
+    const eq = (this.game as { equipment?: { pieces?: readonly (Record<string, any> & { owner: number; index: number; generator: { eval(c: Context): unknown[] } | null })[] } }).equipment;
+    const out: Array<Record<string, any>> = [
+      { owner: 0, index: 0, generator: null, generate: () => ({ moves: () => [] }) },
+    ];
+    for (const p of eq?.pieces ?? []) {
+      const gen = p.generator;
+      // Pass through the real component (so component-specific accessors like
+      // getFlips()/roll() survive) and add the generate() adapter ForEachPiece uses.
+      out[p.index] = Object.assign(Object.create(Object.getPrototypeOf(p) as object), p, {
+        generate: (ctx: Context) => ({ moves: () => (gen ? gen.eval(ctx) : []) }),
+      });
+    }
+    return out;
+  }
+
+  /** @java Context.board(). */
+  public board(): { defaultSite(): string; numSites(): number } {
+    const b = (this.game as { equipment?: { board?: { numSites?: number; defaultSite?: string } } }).equipment?.board;
+    return { defaultSite: () => b?.defaultSite ?? "Cell", numSites: () => b?.numSites ?? this.state.cells.length };
+  }
+
+  /** @java Context.topology() — minimal; evals fall back to cells.length when absent. */
+  public topology(): { getGraphElements(type: string): { size(): number } } {
+    const n = (this.game as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? this.state.cells.length;
+    return { getGraphElements: () => ({ size: () => n }) };
+  }
+
+  /** @java Context.containers(). */
+  public containers(): Array<{ numSites(): number }> {
+    const n = (this.game as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? this.state.cells.length;
+    return [{ numSites: () => n }];
+  }
+
+  /** @java Context.containerState(cont) — per-site accessors delegating to State arrays. */
+  public containerState(_cont: number): Record<string, any> {
+    const st = this.state as unknown as {
+      cells: readonly number[]; whats?: readonly number[]; stateAt?: readonly number[];
+      rotationAt?: readonly number[]; valueAt?: readonly number[]; stacks?: readonly (readonly number[])[];
+    };
+    return {
+      sizeStack: (site: number) => st.stacks?.[site]?.length ?? ((st.cells[site] ?? 0) ? 1 : 0),
+      what: (site: number) => st.whats?.[site] ?? 0,
+      who: (site: number) => st.cells[site] ?? 0,
+      state: (site: number) => st.stateAt?.[site] ?? 0,
+      rotation: (site: number) => st.rotationAt?.[site] ?? 0,
+      value: (site: number) => st.valueAt?.[site] ?? 0,
+    };
+  }
+
   public constructor(game: Game, state: State, trial: Trial, rng?: SeededRng) {
     this.game = game;
     this.state = state;
