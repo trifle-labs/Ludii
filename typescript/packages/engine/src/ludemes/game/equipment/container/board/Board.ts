@@ -86,9 +86,6 @@ export class Board extends Container {
   /** True once createTopology() has run (or lazy build completed). */
   private topologyBuilt = false;
 
-  /** @java Container.topology — faithful graph topology. */
-  protected readonly faithfulTopology: Topology = new Topology();
-
   /** @java Board.edgeRange */
   private edgeRange: Range | null = null;
 
@@ -233,7 +230,7 @@ export class Board extends Container {
   }
 
   /** @java Container.topology() */
-  public topology(): Topology {
+  public override topology(): Topology {
     if (!this.topologyBuilt) this.buildTopology();
     return this.faithfulTopology;
   }
@@ -381,6 +378,12 @@ export class Board extends Container {
    * the faithful Board duck-types as Board1to1 for the engine.
    */
   public getNumSitesBuilt(): number {
+    if (!this.topologyBuilt) this.buildTopology();
+    return this.getNumSites();
+  }
+
+  /** @java Board.numSites() */
+  public override numSites(): number {
     if (!this.topologyBuilt) this.buildTopology();
     return this.getNumSites();
   }

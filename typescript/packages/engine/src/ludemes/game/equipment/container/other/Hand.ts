@@ -25,7 +25,7 @@ const MAX_PLAYERS = 16;
  */
 export class Hand extends Container {
   /** @java Hand.numLocs — number of locations in this container */
-  protected numLocs: number;
+  protected _numLocs: number;
 
   /**
    * @java game/equipment/container/other/Hand.java constructor
@@ -51,7 +51,7 @@ export class Hand extends Container {
     }
 
     // @java Hand.java:76
-    this.numLocs = (size === null) ? 1 : size;
+    this._numLocs = (size === null) ? 1 : size;
 
     // @java Hand.java:78
     this.style = "Hand";
@@ -61,15 +61,16 @@ export class Hand extends Container {
 
   /**
    * @java Hand.createTopology(int, int)
-   * In the TS port topology construction is handled by the 1:1 engine (Hand1to1).
-   * This is a no-op implementation to satisfy the abstract base.
    */
-  public createTopology(_beginIndex: number, _numEdges: number): void {
-    // Topology construction is handled by Hand1to1 in the 1:1 path.
+  public createTopology(beginIndex: number, numEdges: number): void {
+    this.createHandTopology(beginIndex, this._numLocs, numEdges);
   }
 
   /** @java Hand.numLocs() */
-  public getNumLocs(): number { return this.numLocs; }
+  public numLocs(): number { return this._numLocs; }
+
+  /** TS compatibility accessor for existing callers. @java Hand.numLocs() */
+  public getNumLocs(): number { return this.numLocs(); }
 
   /** @java Hand.isHand() */
   public override isHand(): boolean { return true; }
@@ -77,8 +78,8 @@ export class Hand extends Container {
   /** @java Hand.clone() */
   public clone(): Hand {
     // @java Hand.java:153–154 — return new Hand(this)
-    const cloned = new Hand(this.role() as RoleType, this.numLocs);
-    cloned.numLocs = this.numLocs;
+    const cloned = new Hand(this.role() as RoleType, this._numLocs);
+    cloned._numLocs = this._numLocs;
     return cloned;
   }
 

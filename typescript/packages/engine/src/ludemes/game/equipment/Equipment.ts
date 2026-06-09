@@ -219,6 +219,11 @@ function boardTracks(board: Board & { tracks(): Track[]; setOwnedTrack(tracks: T
   return [];
 }
 
+function handSurfaceOwner(owner: number, role: RoleType | undefined): number {
+  if (role === "Shared" || role === "Neutral") return 0;
+  return owner;
+}
+
 /** @java other.ItemType.isContainer(type) — true if type is a container kind */
 function itemTypeIsContainer(type: ItemType | null): boolean {
   return type === "Board" || type === "Container" || type === "Hand" || type === "Dice";
@@ -1017,7 +1022,13 @@ export class Equipment extends BaseLudeme {
     if (board === undefined || board === null) {
       throw new Error("Equipment.board: createItems(game) must run before board access.");
     }
-    return board as unknown as GameBoardSurface;
+    return new Proxy(board as unknown as Record<PropertyKey, unknown>, {
+      get(target, prop, receiver) {
+        if (prop === "numSites") return containerNumSites(board);
+        const value = Reflect.get(target, prop, receiver);
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    }) as unknown as GameBoardSurface;
   }
 
   /**
@@ -1052,22 +1063,69 @@ export class Equipment extends BaseLudeme {
 
   /** Dice specs surface consumed by Game1to1. Full dice containers remain Java-style. */
   public get diceSpecs(): readonly { readonly faces: readonly number[] }[] {
-    return [];
+    const out: Array<{ readonly faces: readonly number[] }> = [];
+    for (const container of this._containers ?? []) {
+      if (!container.isDice()) continue;
+      const dice = container as unknown as Dice;
+      for (const faces of dice.getFaces()) {
+        out.push(Object.freeze({ faces: Object.freeze(faces.map((face) => Number(face))) }));
+      }
+    }
+    return Object.freeze(out);
   }
 
   /** Dice site base surface consumed by dice-aware evals; -1 means no dice. */
   public get diceSiteBase(): number {
+    const sitesFrom = this._sitesFrom;
+    if (sitesFrom === null) return -1;
+    for (const container of this._containers ?? []) {
+      if (container.isDice()) return sitesFrom[container.index()] ?? -1;
+    }
     return -1;
   }
 
   /** Hand surface consumed by hand-aware evals; faithful hands are still Java-style containers. */
   public get hands(): readonly { readonly owner: number; readonly size: number }[] {
-    return [];
+    const out: Array<{ readonly owner: number; readonly size: number }> = [];
+    for (const container of this._containers ?? []) {
+      const c = container as unknown as {
+        isHand?: () => boolean;
+        isDice?: () => boolean;
+        owner?: () => number;
+        role?: () => RoleType;
+        numSites?: () => number;
+        getNumSites?: () => number;
+      };
+      if (c.isHand?.() !== true || c.isDice?.() === true) continue;
+      out.push(Object.freeze({
+        owner: handSurfaceOwner(c.owner?.() ?? UNDEFINED, c.role?.()),
+        size: c.numSites?.() ?? c.getNumSites?.() ?? 0,
+      }));
+    }
+    return Object.freeze(out);
   }
 
   /** Hand-site lookup surface consumed by hand-aware evals. */
   public get handSiteOf(): ReadonlyMap<number, number> {
-    return new Map();
+    const out = new Map<number, number>();
+    const sitesFrom = this._sitesFrom;
+    if (sitesFrom === null) return out;
+    for (const container of this._containers ?? []) {
+      const c = container as unknown as {
+        isHand?: () => boolean;
+        isDice?: () => boolean;
+        owner?: () => number;
+        role?: () => RoleType;
+        index?: () => number;
+      };
+      if (c.isHand?.() !== true || c.isDice?.() === true) continue;
+      const site = sitesFrom[c.index?.() ?? UNDEFINED];
+      if (site === undefined) continue;
+      const owner = c.owner?.() ?? UNDEFINED;
+      if (owner !== UNDEFINED) out.set(owner, site);
+      out.set(handSurfaceOwner(owner, c.role?.()), site);
+    }
+    return out;
   }
 
   /** Player-owned equipment regions surface consumed by SitesEquipmentRegion. */
@@ -1088,8 +1146,10 @@ export class Equipment extends BaseLudeme {
   }
 
   /** @java game/equipment/container/other/Hand.java — hand site lookup */
-  public handSiteFor(_owner: number, _offset = 0): number {
-    return -1;
+  public handSiteFor(owner: number, offset = 0): number {
+    const base = this.handSiteOf.get(owner);
+    if (base === undefined) return -1;
+    return base + offset;
   }
 
   /** Get piece by 1-based component index. */

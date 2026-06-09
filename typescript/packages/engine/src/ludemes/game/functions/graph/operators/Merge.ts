@@ -16,11 +16,17 @@ export class Merge extends BaseGraphFunction {
   private readonly connect: boolean;
 
   /** @java Merge(GraphFunction graphA, GraphFunction graphB, Boolean connect) */
-  constructor(graphFns: GraphFunction[], connect = false) {
+  constructor(
+    graphFnsOrA: GraphFunction[] | GraphFunction,
+    graphBOrConnect: GraphFunction | boolean | null = null,
+    connectOrExtra: boolean | GraphFunction | null = null,
+    ...extra: Array<GraphFunction | boolean | null>
+  ) {
     super();
     this._dim = [];
-    this.graphFns = graphFns;
-    this.connect = connect;
+    const normalised = normaliseGraphArgs(graphFnsOrA, graphBOrConnect, connectOrExtra, ...extra);
+    this.graphFns = normalised.graphFns;
+    this.connect = normalised.connect;
   }
 
   /** @java Merge.eval(Context, SiteType) */
@@ -69,4 +75,18 @@ export function merge(
   connect = false,
 ): Merge {
   return new Merge([graphA, graphB], connect);
+}
+
+function normaliseGraphArgs(
+  first: GraphFunction[] | GraphFunction,
+  ...rest: Array<GraphFunction | boolean | null>
+): { graphFns: GraphFunction[]; connect: boolean } {
+  const graphFns: GraphFunction[] = Array.isArray(first) ? [...first] : [first];
+  let connect = false;
+  for (const arg of rest) {
+    if (arg === null) continue;
+    if (typeof arg === "boolean") connect = arg;
+    else graphFns.push(arg);
+  }
+  return { graphFns, connect };
 }

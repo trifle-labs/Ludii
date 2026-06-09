@@ -165,6 +165,7 @@ export class Context {
       sizeStack: (site: number) => st.stacks?.[site]?.length ?? ((st.cells[site] ?? 0) ? 1 : 0),
       what: (site: number) => st.whats?.[site] ?? 0,
       who: (site: number) => st.cells[site] ?? 0,
+      isEmpty: (site: number) => (st.cells[site] ?? 0) === 0,
       state: (site: number) => st.stateAt?.[site] ?? 0,
       rotation: (site: number) => st.rotationAt?.[site] ?? 0,
       value: (site: number) => st.valueAt?.[site] ?? 0,

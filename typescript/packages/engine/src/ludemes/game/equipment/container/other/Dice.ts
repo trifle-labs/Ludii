@@ -41,7 +41,7 @@ export class Dice extends Container {
   private readonly biased: number[] | null;
 
   /** @java Dice.numLocs — number of dice in this container */
-  protected readonly numLocs: number;
+  protected readonly _numLocs: number;
 
   /**
    * @java game/equipment/container/other/Dice.java constructor
@@ -93,7 +93,7 @@ export class Dice extends Container {
     }
 
     // @java Dice.java:122
-    this.numLocs = num;
+    this._numLocs = num;
 
     // @java Dice.java:124
     this.style = "Hand";
@@ -122,12 +122,12 @@ export class Dice extends Container {
       this.faces = facesByDie.map(row => [...row]);
     } else if (facesArg !== null) {
       // @java Dice.java:143–147 — same faces for all dice
-      this.faces = Array.from({ length: this.numLocs }, () => [...facesArg]);
+      this.faces = Array.from({ length: this._numLocs }, () => [...facesArg]);
     } else {
       // @java Dice.java:149–155 — sequential faces
       const startVal = this.start!;
       const row = Array.from({ length: this.numFaces }, (_, j) => startVal + j);
-      this.faces = Array.from({ length: this.numLocs }, () => [...row]);
+      this.faces = Array.from({ length: this._numLocs }, () => [...row]);
     }
 
     this.biased = biased ? [...biased] : null;
@@ -138,15 +138,16 @@ export class Dice extends Container {
 
   /**
    * @java Dice.createTopology(int, int)
-   * In the TS port topology construction is handled by the 1:1 engine (Dice1to1).
-   * This is a no-op implementation to satisfy the abstract base.
    */
-  public createTopology(_beginIndex: number, _numEdges: number): void {
-    // Topology construction is handled by Dice1to1 in the 1:1 path.
+  public createTopology(beginIndex: number, numEdges: number): void {
+    this.createHandTopology(beginIndex, this._numLocs, numEdges);
   }
 
   /** @java Dice.numLocs() */
-  public getNumLocs(): number { return this.numLocs; }
+  public numLocs(): number { return this._numLocs; }
+
+  /** TS compatibility accessor for existing callers. @java Dice.numLocs() */
+  public getNumLocs(): number { return this.numLocs(); }
 
   /** @java Dice.getBiased() */
   public getBiased(): number[] | null { return this.biased; }
@@ -174,7 +175,7 @@ export class Dice extends Container {
       this.faces.map(row => [...row]),
       null,
       this.role() as RoleType,
-      this.numLocs,
+      this._numLocs,
       this.biased ? [...this.biased] : null,
     );
   }

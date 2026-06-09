@@ -20,10 +20,14 @@ export class Intersect extends BaseGraphFunction {
   private readonly graphFns: GraphFunction[];
 
   /** @java Intersect(GraphFunction graphA, GraphFunction graphB) */
-  constructor(graphFns: GraphFunction[]) {
+  constructor(
+    graphFnsOrA: GraphFunction[] | GraphFunction,
+    graphBOrExtra: GraphFunction | null = null,
+    ...extra: Array<GraphFunction | null>
+  ) {
     super();
     this._dim = [];
-    this.graphFns = graphFns;
+    this.graphFns = normaliseGraphArgs(graphFnsOrA, graphBOrExtra, ...extra);
   }
 
   /** @java Intersect.eval(Context, SiteType) */
@@ -102,4 +106,15 @@ export class Intersect extends BaseGraphFunction {
 
     return out;
   }
+}
+
+function normaliseGraphArgs(
+  first: GraphFunction[] | GraphFunction,
+  ...rest: Array<GraphFunction | null>
+): GraphFunction[] {
+  const graphFns: GraphFunction[] = Array.isArray(first) ? [...first] : [first];
+  for (const arg of rest) {
+    if (arg !== null) graphFns.push(arg);
+  }
+  return graphFns;
 }

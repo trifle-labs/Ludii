@@ -10,6 +10,8 @@
 import { Item, type RoleType } from "../Item.js";
 import type { ContainerStyleType } from "../../../metadata/graphics/util/ContainerStyleType.js";
 import type { SiteType } from "../../../other/action/SiteType.js";
+import { Topology } from "../../../other/topology/Topology.js";
+import { Cell } from "../../../other/topology/Cell.js";
 
 /** Minimal Track interface used by Container. */
 export interface TrackLike {
@@ -25,7 +27,10 @@ export interface TrackLike {
  */
 export abstract class Container extends Item {
   /** @java Container.numSites */
-  protected numSites: number = 0;
+  protected _numSites: number = 0;
+
+  /** @java Container.topology */
+  protected readonly faithfulTopology: Topology = new Topology();
 
   /** @java Container.tracks */
   protected tracks: TrackLike[] = [];
@@ -52,16 +57,46 @@ export abstract class Container extends Item {
    */
   public abstract createTopology(beginIndex: number, numEdges: number): void;
 
+  /** @java Container.topology() */
+  public topology(): Topology { return this.faithfulTopology; }
+
   /** @java Container.defaultSite() */
   public getDefaultSite(): SiteType { return this.defaultSite; }
 
   /** @java Container.numSites() */
-  public getNumSites(): number {
-    return this.numSites;
-  }
+  public numSites(): number { return this._numSites; }
+
+  /** TS compatibility accessor for existing callers. @java Container.numSites() */
+  public getNumSites(): number { return this._numSites; }
 
   /** @java Container.setNumSites(int) */
-  public setNumSites(n: number): void { this.numSites = n; }
+  public setNumSites(n: number): void { this._numSites = n; }
+
+  /**
+   * @java Hand.createTopology(int, int), Dice.createTopology(int, int)
+   *
+   * Hand-like containers are represented by a simple list of isolated cells.
+   */
+  protected createHandTopology(beginIndex: number, numLocs: number, numEdges: number): void {
+    const topology = this.faithfulTopology;
+    topology.cells().length = 0;
+    topology.edges().length = 0;
+    topology.vertices().length = 0;
+    topology.setGraph(null);
+    topology.setTrajectories(null);
+    topology.setNumEdges(numEdges);
+
+    for (let i = 0; i < numLocs; i += 1) {
+      const cell = new Cell(beginIndex + i, i, 0, 0);
+      cell.setRow(0);
+      cell.setColumn(i);
+      cell.setLayer(0);
+      cell.setLabel(String(beginIndex + i));
+      topology.cells().push(cell);
+    }
+
+    this.setNumSites(numLocs);
+  }
 
   /** @java Container.isHand() */
   public isHand(): boolean { return false; }
