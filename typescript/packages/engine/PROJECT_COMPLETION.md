@@ -378,6 +378,35 @@ cheapest high-value cluster (shared mechanic / shared error) -> codex wave with 
 independently verify every gate -> commit. Each wave only GROWS parity; STOP-if-risky guardrail keeps
 partial results honest and net-positive.
 
+## Update 11: Tafl cluster substantially done (~16 games full parity); harness OOM caveat
+Added full faithful OUTCOME_OK: Tablut, Brandub (Tafl king win/capture: surround->trigger->is
+Triggered->result + PieceTypeReachWin + Fortresses/Centre/Outer regions + faithful IsWithin). Tafl
+move-gen + custodial capture are 0 MOVE_MISMATCH deep. Remaining Tafl: Hnefatafl still MOVE_MISMATCH
+at ply ~75 (deeper variant).
+
+CONFIRMED full faithful OUTCOME_OK (~16): Breakthrough, Leap Frog, Gomoku, Amazons, Nine Men's Morris,
+Fanorona, Connect Four, Yavalath, Havannah, Nine Holes, Achi, Picaria, Squava, Tic-Tac-Four, Tablut,
+Brandub.
+
+WAVES (14 this session, all codex-driven + independently verified + committed; bespoke never regressed):
+Board.createTopology · Piece-extends-Component · Equipment.createItems · Topology subsystem · create()
+pass · move:step · move:slide · move:add · move:hop · move:shoot+moveAgain · IsIn-normalize+end-winner ·
+is-Line(byLevel/through) · START_FAIL cluster(Topology.centre+SitesCoords) · custodial capture ·
+custodial conditions · Tafl king win.
+
+⚠ VERIFICATION CAVEAT (environment, not code): after a long multi-wave session the parity harness
+(replay-trials.mjs) became OOM-flaky locally (node exit 137 on deep games like Tablut on repeated
+runs) — system has ample RAM; it's per-process heap growth across the lud-corpus walk + deep replays.
+The child-process probes (probe-game/probe-play/probe-slide/compile-guard/topology) stay reliable and
+are the dependable move-gen regression gate. For RIGOROUS full-game OUTCOME verification of new
+winner/end-condition waves, run in a FRESH shell (or add --max-old-space-size and run one game per
+process). Future waves whose acceptance is OUTCOME parity SHOULD be verified with a working harness
+before commit.
+
+REMAINING (per-game mechanics, declining ROI): Hnefatafl deep; Go (ko/superko+group capture); Reversi
+(flip+ForEachSite); Konane (initial removals); Pente (custodial pair); 3D boards; Oware/mancala (sow +
+vote/cycle end). Then broad corpus sweep -> dominant buckets -> DELETE bespoke once faithful>=bespoke.
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
