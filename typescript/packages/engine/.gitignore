@@ -1,1 +1,4 @@
 dist-sweep/
+
+# codex wave artifacts
+.codex-*

@@ -8,12 +8,16 @@ import { directionsFunction, fromCond, fromLevel, fromLoc, fromRegion, toApplyEf
 import type { DirectionArg } from "./EffectCtorAdapters.js";
 
 export class StepFaithful extends Step {
+  // @Opt-tail defaults: the Java Step ctor has from/directions/stack/then as @Opt; giving
+  // them (and `to`) defaults makes Function.length report 0 required params, so the
+  // ArgCompiler arity gate (args.length < ctor.length) admits the faithful instantiation
+  // instead of falling back to the bespoke registry's makeStep (which dropped directions).
   public constructor(
-    from: From1to1 | null,
-    directions: DirectionArg,
-    to: To1to1,
-    stack: boolean | null,
-    then: ThenLike | null
+    from: From1to1 | null = null,
+    directions: DirectionArg = null,
+    to: To1to1 | null = null,
+    stack: boolean | null = null,
+    then: ThenLike | null = null
   ) {
     super({
       startLocationFn: fromLoc(from),
