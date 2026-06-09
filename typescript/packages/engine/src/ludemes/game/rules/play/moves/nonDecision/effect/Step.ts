@@ -20,6 +20,7 @@
  */
 
 import type { Context } from "../../../../../../../context.js";
+import { radialsForDirection, type CellFlatRadials } from "../../../../../../topology-radials.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
@@ -101,7 +102,7 @@ export class Step extends Effect {
     if (from < 0) return [];
 
     const ctxAny = ctx as unknown as {
-      _radials?: Array<Record<string, Array<{ ray: number[]; opposite: number[] }>>>;
+      _radials?: CellFlatRadials[];
     };
     const radials = ctxAny._radials;
     if (!radials) {
@@ -130,7 +131,7 @@ export class Step extends Effect {
     const seen = new Set<number>();
 
     for (const dirName of directions) {
-      const dirsForCell = cellRadials[dirName] ?? [];
+      const dirsForCell = radialsForDirection(cellRadials, dirName);
       for (const { ray, opposite } of dirsForCell) {
         // Step to ray[1] (one step in this direction)
         for (const stepArr of [ray, opposite]) {
@@ -181,7 +182,7 @@ export class Step extends Effect {
     if (froms.length === 0) return [];
 
     const ctxAny = ctx as unknown as {
-      _radials?: Array<Record<string, Array<{ ray: number[]; opposite: number[] }>>>;
+      _radials?: CellFlatRadials[];
     };
     const radials = ctxAny._radials;
     if (!radials) {
@@ -210,7 +211,7 @@ export class Step extends Effect {
       const seen = new Set<number>();
 
       for (const dirName of directions) {
-        const dirsForCell = cellRadials[dirName] ?? [];
+        const dirsForCell = radialsForDirection(cellRadials, dirName);
         for (const { ray, opposite } of dirsForCell) {
           for (const stepArr of [ray, opposite]) {
             if (stepArr.length < 2) continue;
