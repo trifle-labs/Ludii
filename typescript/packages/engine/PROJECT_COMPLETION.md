@@ -124,3 +124,23 @@ Context, not new code.
 
 CURRENT: faithful-first + eager-fix + board-gens + Step + owned committed; compile 95%; behavioral
 parity still low (Context-API gap blocks forEach-Piece move-gen). Drift grind 52→37 (running).
+
+## Update 4: Context API ported (committed, green) — forEach-Piece now iterates
+Ported Java's Context accessors onto the faithful Context: components() (adapts
+equipment.pieces: passes through the real component + a generate() adapter wrapping the
+piece's MovesFunction generator), containerState() (per-site accessors delegating to State
+arrays: what/who/state/rotation/value/sizeStack), board()/topology()/containers() (from
+equipment.board). tsc green; compile-coverage 95% held; Flip/Roll compile again.
+
+RESULT: ForEachPiece now iterates pieces + generates moves (Breakthrough tsMoveCount 0→1,
+was 0). The Context-layer blocker is cleared.
+
+NEXT LAYER — per-piece move-gen completeness: move count is too LOW (1 vs the many a pawn
+row should yield). Candidates: (a) start placement not setting cells/whats for all pieces
+(owned then finds too few), (b) ForEachPiece iterating one piece not all, (c) Step
+generating too few directions per piece. Diagnose on Breakthrough (simple forEach-Piece+Step):
+inspect owned.positions(1) count + per-piece Step output vs Java. Then Hop, the hang, etc.
+
+STACK OF FIXES THIS CAMPAIGN (all committed, green): faithful-first instantiate; eager→lazy
+IntConstant wrapping; board-gen dispatchers (compile 95%); Step radials; State.owned; Context API.
+Behavioral parity climbing from ~4%; the per-ludeme/per-game move-gen grind continues.
