@@ -24,10 +24,12 @@ const g=engine.play1to1(rs(${JSON.stringify(GAME)}),{resolveSubgame:rs});
 let ctx=g.start();
 const sets=[];
 for (let i=0;i<${PLIES};i++){
-  const mv=g.moves(ctx).filter(m=>!m.isPass?.());
+  if (ctx.trial?.over || ctx.over) break;            // stop at game-over (not a divergence)
+  const all=g.moves(ctx);
+  const mv=all.filter(m=>!m.isPass?.());
   sets.push(mv.map(m=>m.from?.()+'->'+m.to?.()).sort());
-  if(mv.length===0) break;
-  ctx=g.apply(ctx, mv[0]).state ? g.apply(ctx, mv[0]) : g.apply(ctx, mv[0]);
+  if(all.length===0) break;
+  ctx=g.apply(ctx, all[0]);                            // apply first legal move (incl. pass) to advance
 }
 process.stdout.write(JSON.stringify({equip:g?.equipment?.constructor?.name, sets}));
 `;
