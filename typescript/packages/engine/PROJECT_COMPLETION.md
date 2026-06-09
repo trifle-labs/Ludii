@@ -210,3 +210,25 @@ compileEquipment1to1 + compileBoard + buildBoardGraph + playerDirs + startRules)
 INFRASTRUCTURE (@java-tagged, real graph machinery), distinct from the simplified *1to1 EVAL
 classes that are the "second port" to delete. Completing create() may reuse/move that
 infrastructure (user authorized "move/modify work that's needed") rather than re-derive it.
+
+FINER DIAGNOSIS of step (a) — exactly why faithful Equipment returns null (probed):
+- Individual items DO compile faithfully: (board (square 8))→Board, (piece "Pawn" Each)→Piece,
+  (regions P1 (sites Top))→Regions.
+- `new Equipment([board,piece,regions])` throws **"item.type is not a function"**, because:
+  • faithful **Piece does NOT extend Item** (`class Piece {`) so it has no .type() — Container
+    (Board) and Regions both `extends Item` and do. FIX: make Piece extend the Component/Item
+    chain (Java: Component extends Item) so it carries name/index/owner/type/create.
+  • Board's _type is never set to "Board" (Item._type defaults null); Equipment's ctor loops
+    `item.type()==="Board"`. FIX: set item types (Java sets them in create()/by class), or
+    change the board check to a structural/instanceof test.
+- After the ctor, **createItems(game)** is what does per-player piece expansion + container init
+  (calls board.createTopology) + region build — and it needs a Game. That's the chicken-and-egg:
+  Equipment.createItems(game) needs the Game; Game1to1's ctor needs the built equipment. Java
+  resolves it because Game holds the ludeme tree and create() populates in place; the TS
+  Game1to1 takes pre-built equipment. RESOLUTION OPTIONS: (i) build equipment eagerly in the
+  ArgCompiler game-compile (call createItems with a minimal game stub exposing numPlayers +
+  board) BEFORE constructing Game1to1; or (ii) reuse the dispatcher's compileEquipment1to1 for
+  the faithful path's equipment while ArgCompiler builds the rules-eval tree.
+This is a coordinated multi-file change (Piece→Item, Equipment.createItems wiring, players/
+start→portOptions, create() ordering, Board1to1↔Board surface) — the multi-week bulk. Parallelize
+the mechanical class-porting via codex; keep the 95% compile baseline green at each step.
