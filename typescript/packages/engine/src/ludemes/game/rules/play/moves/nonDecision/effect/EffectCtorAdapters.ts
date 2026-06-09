@@ -1,6 +1,7 @@
 import type { Context } from "../../../../../../../context.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import { IntConstant } from "../../../../../functions/ints/IntConstant.js";
+import { LastTo } from "../../../../../functions/ints/last/LastTo.js";
 import type { From1to1 } from "../../../../../util/moves/From1to1.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
 import type { To1to1 } from "../../../../../util/moves/To1to1.js";
@@ -13,7 +14,7 @@ export const FALSE_FN: BooleanFunction = { eval: () => false };
 export const FROM_ITER: IntFunction = { eval: (ctx: Context) => ctx._evalFrom };
 export const TO_ITER: IntFunction = { eval: (ctx: Context) => ctx._evalTo };
 export const BETWEEN_ITER: IntFunction = { eval: (ctx: Context) => ctx._evalBetween };
-export const LAST_TO: IntFunction = { eval: (ctx: Context) => ctx._evalTo };
+export const LAST_TO: IntFunction = new LastTo();
 export const ADJACENT_DIRS: DirectionsFunction = { eval: () => ["Adjacent"] };
 
 export function intConst(value: number): IntFunction {
@@ -90,9 +91,32 @@ export function betweenEffect(between: Between1to1 | null): MovesFunction | null
 }
 
 export function pieceComponent(piece: Piece1to1 | null): IntFunction {
-  return piece?.component() ?? { eval: (ctx: Context) => ctx.state.mover };
+  const component = piece?.component() ?? null;
+  if (component !== null) return component;
+
+  const name = piece?.nameComponent() ?? null;
+  if (name !== null) {
+    const owner = ownerSuffix(name);
+    const baseName = name.replace(/\d+$/, "").toLowerCase();
+    return {
+      eval: (ctx: Context) => {
+        const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ name: string; owner: number; index: number }> } })
+          .equipment?.pieces ?? [];
+        const exact = pieces.find((p) => `${p.name}${p.owner}`.toLowerCase() === name.toLowerCase());
+        const byBase = pieces.find((p) => p.name.toLowerCase() === baseName && (owner === null || p.owner === owner));
+        return exact?.index ?? byBase?.index ?? (owner ?? ctx.state.mover);
+      },
+    };
+  }
+
+  return { eval: (ctx: Context) => ctx.state.mover };
 }
 
 export function pieceComponents(piece: Piece1to1 | null): IntFunction[] | null {
   return piece?.components() ?? null;
+}
+
+function ownerSuffix(name: string): number | null {
+  const match = name.match(/\d+$/);
+  return match ? Number(match[0]) : null;
 }

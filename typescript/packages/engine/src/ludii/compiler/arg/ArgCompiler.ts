@@ -977,6 +977,7 @@ const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy", "occupied"]);
 const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
   ["move:add", "game.rules.play.moves.nonDecision.effect.Add"],
   ["move:hop", "game.rules.play.moves.nonDecision.effect.Hop"],
+  ["move:shoot", "game.rules.play.moves.nonDecision.effect.Shoot"],
   ["move:step", "game.rules.play.moves.nonDecision.effect.Step"],
   ["move:slide", "game.rules.play.moves.nonDecision.effect.Slide"],
 ]);

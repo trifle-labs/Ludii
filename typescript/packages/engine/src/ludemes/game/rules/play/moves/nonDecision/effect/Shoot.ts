@@ -23,7 +23,8 @@ interface Radial {
 }
 
 interface Trajectory {
-  radials(type: string | null, from: number, dir: string): Radial[];
+  radials?(type: string | null, from: number, dir: string): Radial[];
+  radialsByName?(from: number, dir: string): number[][];
 }
 
 interface Topology {
@@ -103,17 +104,18 @@ export class Shoot implements MovesFunction {
     const moves: LudiiMove[] = [];
 
     // Requires topology on context
-    const ctxAny = ctx as unknown as { topology?: Topology; _siteType?: string };
-    const topology = ctxAny.topology;
+    const ctxAny = ctx as unknown as { topology?: (() => Topology) | Topology; board?: () => { defaultSite(): string }; _siteType?: string };
+    const topology = typeof ctxAny.topology === "function" ? ctxAny.topology() : ctxAny.topology;
     if (!topology) {
       throw new Error("not yet wired: Shoot requires topology on Context");
     }
 
-    const realType = this.type ?? ctxAny._siteType ?? "Cell";
+    const realType = this.type ?? ctxAny.board?.().defaultSite?.() ?? ctxAny._siteType ?? "Cell";
     const trajectories = topology.trajectories();
+    const pieceOwner = componentOwner(ctx, pieceType);
 
     // @java Shoot.java:143-145 — iterate directions
-    const radialsList = trajectories.radials(realType, from, this.dirnName);
+    const radialsList = shootRadials(trajectories, realType, from, this.dirnName, boardWidth(ctx));
 
     for (const radial of radialsList) {
       const betweenSites: number[] = [];
@@ -130,14 +132,16 @@ export class Shoot implements MovesFunction {
         ctx._evalBetween = to;
 
         // @java Shoot.java:155-162 — ActionAdd for the shot piece at `to`
-        const actionAdd = new ActionAdd({ to, what: pieceType, owner: mover });
+        const actionAdd = new ActionAdd({ to, what: pieceType, owner: pieceOwner });
         const move = new LudiiMove({
           id: `shoot:${mover}:${from}:${to}`,
           label: `Shoot(${from}→${to})`,
-          siteIndices: [to],
+          siteIndices: [from, to],
           mover,
           placedOwner: mover,
           actions: [actionAdd],
+          fromSite: from,
+          toSite: to,
           fromNonDecisionSite: to,
           toNonDecisionSite: to,
         });
@@ -155,7 +159,7 @@ export class Shoot implements MovesFunction {
       const thenMoves = this.thenClause.eval(ctx);
       return moves.map(m => m.withConsequence(
         thenMoves.flatMap(tm => [...tm.actions]),
-        false,
+        thenMoves.some(tm => tm.moveAgain),
       ));
     }
 
@@ -164,4 +168,41 @@ export class Shoot implements MovesFunction {
 
   /** @java Shoot.goRule() */
   public getGoRule(): BooleanFunction { return this.goRule; }
+}
+
+function shootRadials(trajectories: Trajectory, realType: string, from: number, dir: string, width: number): Radial[] {
+  const javaRadials = trajectories.radials?.(realType, from, dir);
+  if (javaRadials !== undefined) return orderDirectedRadials(javaRadials, from, width);
+  const paths = trajectories.radialsByName?.(from, dir) ?? [];
+  return orderDirectedRadials(paths.map((path) => ({
+    steps: path.map((site) => ({ id: () => site })),
+  })), from, width);
+}
+
+function componentOwner(ctx: Context, what: number): number {
+  const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number; owner: number }> } })
+    .equipment?.pieces ?? [];
+  return pieces.find((piece) => piece.index === what)?.owner ?? ctx.state.mover;
+}
+
+function orderDirectedRadials(radials: Radial[], from: number, width: number): Radial[] {
+  return [...radials].sort((a, b) => radialOrder(a, from, width) - radialOrder(b, from, width));
+}
+
+function radialOrder(radial: Radial, from: number, width: number): number {
+  const to = radial.steps[1]?.id();
+  if (to === undefined) return Number.MAX_SAFE_INTEGER;
+  const delta = to - from;
+  return deltaOrder(delta, width);
+}
+
+function deltaOrder(delta: number, width: number): number {
+  const priorities = [1, -1, width, -width, width + 1, -width - 1, width - 1, -width + 1];
+  const idx = priorities.indexOf(delta);
+  return idx < 0 ? 1000 + Math.abs(delta) : idx;
+}
+
+function boardWidth(ctx: Context): number {
+  const game = ctx.game as unknown as { width?: number; equipment?: { board?: { width?: number; columns?: number } } };
+  return Math.max(1, game.width ?? game.equipment?.board?.width ?? game.equipment?.board?.columns ?? Math.round(Math.sqrt(ctx.state.cells.length)));
 }

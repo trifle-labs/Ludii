@@ -9,13 +9,16 @@ import { Shoot } from "./Shoot.js";
 import { betweenCond, directionName, LAST_TO, pieceComponent, toCond } from "./EffectCtorAdapters.js";
 
 export class ShootFaithful extends Shoot {
+  // Java order: Shoot(what, @Opt from, @Opt dirn, @Opt between, @Opt to, @Opt then).
+  // Defaults on the optional tail keep Function.length at 1, matching Java's
+  // single required `what` argument for the ArgCompiler arity gate.
   public constructor(
     what: Piece1to1,
-    from: From1to1 | null,
-    dirn: string | null,
-    between: Between1to1 | null,
-    to: To1to1 | null,
-    then: Then | null
+    from: From1to1 | null = null,
+    dirn: string | null = null,
+    between: Between1to1 | null = null,
+    to: To1to1 | null = null,
+    then: Then | null = null
   ) {
     super({
       startLocationFn: from?.locFn() ?? LAST_TO,
