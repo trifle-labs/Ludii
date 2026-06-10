@@ -169,8 +169,20 @@ function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, M
   const rawMaps = typeof equipment.maps === "function" ? equipment.maps() : null;
   if (!Array.isArray(rawMaps) || rawMaps.length === 0) return undefined;
 
-  const board = equipment.board as unknown as { containerSpan?: number; numSites?: number };
+  const board = equipment.board as unknown as {
+    containerSpan?: number; numSites?: number; width?: number; height?: number;
+    topology?: unknown; topologyAdapter?: unknown;
+  };
   const lastSite = (board.containerSpan ?? board.numSites ?? 0) - 1;
+  // Map pairs may be (coord "A1")-style functions needing the board (Sittuyin/Tai
+  // Shogi); Java computes maps with a real Context (@java Map.computeMap). Provide
+  // an equipment-derived eval context instead of {}.
+  const topo = board.topology ?? board.topologyAdapter ?? null;
+  const evalCtx = {
+    game: { width: board.width ?? 0, height: board.height ?? 0, equipment },
+    board: () => equipment.board,
+    topology: () => topo,
+  };
   const result = new Map<string, Map<number, number>>();
 
   for (const item of rawMaps) {
@@ -187,9 +199,10 @@ function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, M
         getIntValue?: () => { eval(ctx: unknown): number };
         landmark?: number | null;
       };
-      const key = pairObj.getIntKey?.().eval({}) ?? -1;
+      let key = -1; let value = -1;
+      try { key = pairObj.getIntKey?.().eval(evalCtx) ?? -1; } catch { key = -1; }
       if (key < 0) continue;
-      let value = pairObj.getIntValue?.().eval({}) ?? -1;
+      try { value = pairObj.getIntValue?.().eval(evalCtx) ?? -1; } catch { value = -1; }
       if ((value < 0 || value === undefined) && pairObj.landmark !== null && pairObj.landmark !== undefined) {
         // @java LandmarkType.FirstSite / LastSite in Map.computeMap()
         if (pairObj.landmark === 5) value = 0;
