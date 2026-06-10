@@ -574,6 +574,19 @@ LESSON (recurring class): construct dispatchers written pre-lazy-wrapping that t
 plain numbers silently mis-build when handed function objects — grep for `static construct(` with
 `number` params as a hardening sweep candidate.
 
+## Update 22: El Perro root causes closed (bridge topology + Hop then) — ply 1 -> 110
+Two more foundational fixes:
+1. **Start-rule bridge no longer shadows Context.topology()/containers()** when the board has a
+   faithful topology — the unconditional synthetic adapter collapsed region math inside start
+   placements (El Perro's 12-goat region -> 10). Adapter now installs only for boards without
+   faithful topology. (This was the "frozen region" mystery: not frozen — the adapter ctx.)
+2. **Hop post-state then wired** — Hop was the one high-traffic effect applying NO then at all;
+   hop-chain continuations ((then (if (can Move (hop ...)) (moveAgain)))) now fire per Java.
+RESULTS: El Perro ply 1 -> 25 (placement) -> 110 (chains); Konane ply 4 -> 7 (bespoke's own limit
+is 9); Leap Frog stays clean; full canary sweep green at each commit.
+FAITHFUL-BEHIND LIST now: El Perro residual (ply 110 of 346), Pentalath (graph-intersect empty
+board), Gekitai (push mechanic). Everything else failing is beyond-bespoke.
+
 ## Update 21: fidelity-hardening pass STARTED (item 3a first increment)
 - resolveRelativeDir/isSingleDir + COMPASS tables moved to game/util/directions/
   RelativeDirection.ts (their @java home); faithful Step.ts/Hop.ts repointed; the bespoke step
