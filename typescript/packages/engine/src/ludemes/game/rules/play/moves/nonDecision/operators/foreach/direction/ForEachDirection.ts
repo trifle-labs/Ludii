@@ -11,6 +11,7 @@
  */
 
 import type { Context } from "../../../../../../../../../context.js";
+import { resolveRelativeDir } from "../../../../../../../util/directions/RelativeDirection.js";
 import { Move } from "../../../../../../../../../move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { Effect } from "../../../effect/Effect.js";
@@ -219,9 +220,21 @@ export class ForEachDirection extends Effect {
         }
       }
 
-      // @java final List<AbsoluteDirection> directions = dirnChoice.convertToAbsolute(...)
-      // In TS, dirnChoice.eval returns string[] direction names
-      const directions = this.dirnChoice.eval(context);
+      // @java final List<AbsoluteDirection> directions = dirnChoice
+      //   .convertToAbsolute(realType, fromV, component, newDirection, null, ctx)
+      // — RELATIVE tokens (FR/FL/Forward…) resolve against newDirection, the
+      // heading of the step that led here (Janggi's Ma: orthogonal step, then
+      // {FR FL} of:All relative to that step's direction).
+      const rawDirections = this.dirnChoice.eval(context);
+      const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+      const mover = context.state.mover;
+      const playerDirs = (context.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+      const facing = newDirection !== null && newDirection in COMPASS8 ? COMPASS8[newDirection] : undefined;
+      const directions = rawDirections.flatMap((d) => {
+        const rel = resolveRelativeDir(d, mover, playerDirs, facing);
+        if (Array.isArray(rel)) return rel;
+        return [rel ?? d];
+      });
 
       for (const direction of directions) {
         // @java final List<Radial> radials = graph.trajectories().radials(type, fromV.index(), direction);
