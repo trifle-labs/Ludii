@@ -984,3 +984,16 @@ into the FROZEN Move.then array → TypeError as soon as a forEach-Piece carried
 then (which the registry path had masked). applyPostStateThen recipe applied; one
 trial fully OUTCOME_OK (85 plies), residual = ply-49 divergence in the second trial
 (deep multi-capture/max-captures tie-break — next diagnostic). 18-game canary green.
+
+## Update 42 — Int. Draughts ply-49 residual fully diagnosed (EndOfTurn chain aggregation)
+
+At ply 47 the recorded Java move is the WHOLE 3-hop king-making chain in one move:
+`Remove,Remove,Remove,Move(24>6),Promote` — at:EndOfTurn captures aggregate into the
+final hop's record. The TS matched move bakes only `Remove,Move`:
+(a) the two earlier hops' deferred captures live in sitesToRemove but the recorded
+    single-move alignment differs from TS's moveAgain chain, and
+(b) the (then ("PromoteIfReach" (sites Next) "DoubleCounter")) does not bake a
+    Promote action in the post-state (promote generation inside applyPostStateThen —
+    likely the promote ludeme or (sites Next) in postCtx).
+Board drifts (site 6 keeps what=2 Counter instead of DoubleCounter) → no king moves
+at ply 49. Exact repro in the trace recipe; trial 1 of 2 already fully OUTCOME_OK.
