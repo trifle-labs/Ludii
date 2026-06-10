@@ -127,6 +127,10 @@ registerInt1to1("count:pieces", (node: LudNode, env: Compile1to1Env): IntFunctio
     whoFn = { eval: (ctx: Context) => ctx.state.mover };
   } else if (roleName === "mover") {
     whoFn = { eval: (ctx: Context) => ctx.state.mover };
+  } else if (roleName === "player") {
+    // @java RoleType.Player — the player iterated by (forEach Player ...): context.player().
+    // Used by end rules like (end (forEach Player if:(<= (count Pieces Player) 2) ...)).
+    whoFn = { eval: (ctx: Context) => (ctx as Context & { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover };
   } else if (roleName === "next") {
     whoFn = { eval: (ctx: Context) => (ctx.state.mover % ctx.game.numPlayers) + 1 };
   } else if (roleName === "prev") {

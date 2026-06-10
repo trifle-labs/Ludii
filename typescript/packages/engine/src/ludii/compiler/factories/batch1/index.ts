@@ -1132,6 +1132,8 @@ function roleToOwner(role: string): number {
 function roleToIntFunction(role: string): IntFunction {
   if (role === "Shared" || role === "Neutral") return new IntConstant(0);
   if (role === "Mover") return { eval: (ctx) => ctx.state.mover };
+  // @java RoleType.Player — the player iterated by (forEach Player ...): context.player().
+  if (role === "Player") return { eval: (ctx) => (ctx as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover };
   if (role === "Next") return { eval: (ctx) => (ctx.state.mover % ctx.game.numPlayers) + 1 };
   if (role === "Prev") {
     return {

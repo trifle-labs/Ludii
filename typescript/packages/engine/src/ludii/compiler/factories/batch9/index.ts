@@ -994,6 +994,8 @@ function roleIntFunction(role: string): JavaIntFunction {
     ...javaIntConstant(0),
     eval: (ctx) => {
       if (role === "Mover") return ctx.state.mover;
+      // @java RoleType.Player — the player iterated by (forEach Player ...): context.player().
+      if (role === "Player") return (ctx as unknown as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover;
       if (role === "Next") return (ctx.state.mover % ctx.numPlayers()) + 1;
       if (role === "Prev") return ((ctx.state.mover - 2 + ctx.numPlayers()) % ctx.numPlayers()) + 1;
       return 0;
