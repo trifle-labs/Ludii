@@ -6,6 +6,7 @@
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
 import type { IntFunction, RegionFunction } from "../../../../../base.js";
+import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
 import type { SiteType } from "../../../../../../action/site-type.js";
 
@@ -99,16 +100,17 @@ export class SetSite implements StartRule {
    * Mirrors Java: SetSite.eval finds the matching component and calls
    * Start.placePieces(context, site, what, 1, UNDEFINED, UNDEFINED, UNDEFINED, false, type).
    */
-  public applyToInitialState(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
-    equipment: Equipment1to1,
-    numPlayers: number,
-  ): void {
+  public eval(ctx: Context): void {
+    const arrays = (ctx as unknown as {
+      _startArrays?: { cells: number[]; whats: number[]; countAt: number[] };
+    })._startArrays;
+    if (!arrays) return;
+    const { cells, whats, countAt } = arrays;
+    const game = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
+
     // Find the first piece owned by this player (Java: iterates components until component.index() == what)
-    const owner = roleOwner(this.role, numPlayers);
-    const piece = equipment.pieces.find(p => p.owner === owner);
+    const owner = roleOwner(this.role, game.numPlayers);
+    const piece = game.equipment.pieces.find(p => p.owner === owner);
     if (piece === undefined) return;
 
     const what = piece.index;
@@ -127,20 +129,17 @@ export class SetSite implements StartRule {
     }
 
     if (this.region !== null) {
-      for (const loc of this.region.eval({} as Parameters<RegionFunction["eval"]>[0])) {
-        place(loc);
-      }
+      for (const loc of this.region.eval(ctx)) place(loc);
     } else if (this.locationIds !== null) {
       // Java: evalFill — iterate locationIds
-      for (const loc of this.locationIds) {
-        place(loc.eval({} as Parameters<IntFunction["eval"]>[0]));
-      }
+      for (const loc of this.locationIds) place(loc.eval(ctx));
     } else if (this.siteId !== null) {
       // Java: single site path
-      place(this.siteId.eval({} as Parameters<IntFunction["eval"]>[0]));
+      place(this.siteId.eval(ctx));
     }
   }
 }
+
 
 function roleOwner(role: RoleType, numPlayers: number): number {
   if (/^P\d+$/.test(role)) return Number(role.slice(1));

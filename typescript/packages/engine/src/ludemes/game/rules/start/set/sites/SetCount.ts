@@ -5,6 +5,7 @@
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
 
 /**
@@ -39,13 +40,13 @@ export class SetCount implements StartRule {
    *
    * In TS: pick the last registered piece as `what`, set countAt[site].
    */
-  public applyToInitialState(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
-    equipment: Equipment1to1,
-    _numPlayers: number,
-  ): void {
+  public eval(ctx: Context): void {
+    const arrays = (ctx as unknown as {
+      _startArrays?: { cells: number[]; whats: number[]; countAt: number[] };
+    })._startArrays;
+    if (!arrays) return;
+    const { cells, whats, countAt } = arrays;
+    const equipment = (ctx.game as unknown as { equipment: Equipment1to1 }).equipment;
     // Java: uses context.components()[length-1].index() as `what`
     const pieces = equipment.pieces;
     if (pieces.length === 0) return;
