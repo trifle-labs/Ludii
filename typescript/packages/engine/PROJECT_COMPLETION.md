@@ -935,3 +935,18 @@ Next/Prev/Counter + floats Sub/Div. TWO new recipe traps documented:
 Remaining 10: Where 192 (3 construct overloads), Is-residue 66, Forget 59, Graph 41,
 Players 8, requirement.Max 6, Phase 3, Was 3, Equipment 3, Satisfy 2. One more wave
 to zero, then the deletion (instantiateRegistry + batch factories + compiler1to1).
+
+## Update 39 — Burn-down at 99.1%: 9 classes / 191 wins remain
+
+This wave: Where (4 static-construct overloads, 192 wins), moves And/Or + Values
+(723), Next/Prev/Counter + floats Sub/Div (with the 0-default-override-slot lesson:
+engine state.next/prev default 0 = "natural order"; Kalah regression caught one
+commit late — RULE: measure-then-commit, never the same block), Coord/Score/Pips/
+RegionSite. Two recipe traps added to the ledger (TS ?: Function.length; override
+slots).
+
+Remaining 9 (191 wins): Is-variant residue 66, Forget 59, util.graph.Graph 41
+(custom graph boards), Players 8, requirement.Max 6, Phase 3, Was 3, Equipment 3,
+Satisfy 2. After zero: delete instantiateRegistry/instantiateRegistryInner +
+REGISTRY_FIRST + LudemeRegistry + batch0-9 factories + compiler1to1.ts +
+play1to1's fallback line, then unwind transition re-exports (*1to1 names).

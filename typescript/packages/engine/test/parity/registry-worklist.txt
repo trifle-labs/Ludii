@@ -1,4 +1,3 @@
- 192 game.functions.ints.board.where.Where
   66 game.functions.booleans.is.Is
   59 game.rules.play.moves.nonDecision.effect.state.forget.Forget
   41 game.util.graph.Graph
