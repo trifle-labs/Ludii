@@ -139,7 +139,36 @@ export class Context {
         generate: (ctx: Context) => ({ moves: () => (gen ? gen.eval(ctx) : []) }),
       });
     }
+    // @java Equipment components include the Die components (one per die).
+    // Their what-ids sit after the pieces; state.what(diceSiteBase+i) points
+    // here so Roll's components()[what].roll(context) resolves (@java Die.roll:
+    // context.rng().nextInt(numFaces)).
+    const dice = (this.game as { equipment?: { diceSpecs?: readonly { faces: readonly number[] }[] } }).equipment?.diceSpecs ?? [];
+    const base = out.length + ((eq?.pieces?.length ?? 0) === 0 ? 0 : 0);
+    void base;
+    const firstDieId = (eq?.pieces?.length ?? 0) + 1;
+    dice.forEach((spec, i) => {
+      const faces = spec.faces;
+      out[firstDieId + i] = {
+        owner: 0, index: firstDieId + i, generator: null,
+        isDie: () => true,
+        getNumFaces: () => faces.length,
+        getFaces: () => [...faces],
+        roll: (ctx: Context) => {
+          const rng = (ctx as { rng?: { nextInt?: (n: number) => number } }).rng;
+          const k = rng && typeof rng.nextInt === "function" ? rng.nextInt(faces.length) : 0;
+          return faces[k] ?? 0;
+        },
+        generate: () => ({ moves: () => [] }),
+      };
+    });
     return out;
+  }
+
+  /** @java Context.sitesFrom() — delegates to the game's container bases. */
+  public sitesFrom(): number[] {
+    const g = this.game as { sitesFrom?: () => number[] };
+    return typeof g.sitesFrom === "function" ? g.sitesFrom() : [0];
   }
 
   /** @java Context.board(). */
@@ -147,12 +176,27 @@ export class Context {
     defaultSite(): string;
     numSites(): number;
     topology(): unknown;
+    ownedTracks(owner: number): unknown[];
+    tracks(): unknown[];
   } {
     const b = this.boardObject();
     return {
       defaultSite: () => boardDefaultSite(b),
       numSites: () => boardNumSites(b, this.state.cells.length),
       topology: () => boardTopology(b, this.state.cells.length),
+      // @java Board.ownedTracks(owner) / Topology tracks — race-game track lookups.
+      ownedTracks: (owner: number) => {
+        const bb = b as { ownedTracks?: ((o: number) => unknown[]) | Record<number, unknown[]> };
+        if (typeof bb.ownedTracks === "function") return bb.ownedTracks(owner);
+        if (bb.ownedTracks && typeof bb.ownedTracks === "object") return (bb.ownedTracks as Record<number, unknown[]>)[owner] ?? [];
+        return [];
+      },
+      tracks: () => {
+        const bb = b as { tracks?: (() => unknown[]) | readonly unknown[] };
+        if (typeof bb.tracks === "function") return bb.tracks();
+        if (Array.isArray(bb.tracks)) return [...bb.tracks];
+        return [];
+      },
     };
   }
 
@@ -161,10 +205,31 @@ export class Context {
     return this.board().topology();
   }
 
-  /** @java Context.containers(). */
-  public containers(): Array<{ numSites(): number }> {
-    const n = (this.game as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? this.state.cells.length;
-    return [{ numSites: () => n }];
+  /** @java Context.containers() — board + hands + dice, the Java container list
+   * (consistent with sitesFrom(): index i here owns base sitesFrom()[i]). */
+  public containers(): Array<{ numSites(): number; isHand(): boolean; isDice(): boolean; owner(): number; index(): number }> {
+    const eq = (this.game as {
+      equipment?: {
+        board?: { numSites?: number };
+        hands?: readonly { owner: number; size: number }[];
+        diceSpecs?: readonly { faces: readonly number[] }[];
+      };
+    }).equipment;
+    const n = eq?.board?.numSites ?? this.state.cells.length;
+    const out: Array<{ numSites(): number; isHand(): boolean; isDice(): boolean; owner(): number; index(): number }> = [
+      { numSites: () => n, isHand: () => false, isDice: () => false, owner: () => 0, index: () => 0 },
+    ];
+    let idx = 1;
+    for (const hand of eq?.hands ?? []) {
+      const i = idx++;
+      out.push({ numSites: () => hand.size, isHand: () => true, isDice: () => false, owner: () => hand.owner, index: () => i });
+    }
+    if ((eq?.diceSpecs?.length ?? 0) > 0) {
+      const i = idx++;
+      const locs = eq!.diceSpecs!.length;
+      out.push({ numSites: () => locs, isHand: () => true, isDice: () => true, owner: () => 0, index: () => i });
+    }
+    return out;
   }
 
   /** @java Context.containerState(cont) — per-site accessors delegating to State arrays. */

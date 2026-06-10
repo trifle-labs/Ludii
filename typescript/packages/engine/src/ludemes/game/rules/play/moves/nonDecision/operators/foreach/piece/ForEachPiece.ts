@@ -112,7 +112,10 @@ export class ForEachPiece extends Operator {
     this.containerId = container;
     this.topValueSet = top;
     // @java topFn = (top == null) ? new BooleanConstant(false) : top;
-    this.topFn = top ?? { eval: () => false };
+    // (raw-boolean trap: compileTerminal hands BooleanFunction slots raw booleans)
+    this.topFn = typeof (top as unknown) === "boolean"
+      ? { eval: () => top as unknown as boolean }
+      : (top ?? { eval: () => false });
     this.type = on;
     this.role = role;
     this._then = then;

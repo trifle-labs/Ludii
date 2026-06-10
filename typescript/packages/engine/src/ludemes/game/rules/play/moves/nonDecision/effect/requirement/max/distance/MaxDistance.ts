@@ -70,7 +70,7 @@ export class MaxDistance implements MovesFunction {
    */
   public eval(ctx: Context): Move[] {
     const ctxAny = ctx as unknown as {
-      tracks?: Track[];
+      tracks?: Track[] | (() => Track[]);
       recursiveCalled?: boolean;
     };
 
@@ -79,7 +79,7 @@ export class MaxDistance implements MovesFunction {
     const mover = ctx.state.mover;
 
     if (ctxAny.tracks) {
-      for (const t of ctxAny.tracks) {
+      for (const t of (typeof ctxAny.tracks === "function" ? ctxAny.tracks() : ctxAny.tracks)) {
         const who = this.owner != null ? this.resolveOwner(ctx, this.owner) : UNDEFINED;
         if (this.trackName == null ||
             (who === UNDEFINED && t.name() === this.trackName) ||

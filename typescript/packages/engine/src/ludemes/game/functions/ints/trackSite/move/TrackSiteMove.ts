@@ -147,9 +147,35 @@ export class TrackSiteMove extends BaseIntFunction {
     let track: Track | null = null;
 
     const ctxAny = context as unknown as CtxWithTracks;
+    // Shim: the engine context exposes `game` as a PROPERTY and tracks as an
+    // ARRAY; this port was written against Java's method shapes. Bridge both.
+    const gameObj = (typeof (ctxAny as { game?: unknown }).game === "function"
+      ? (ctxAny as unknown as { game: () => unknown }).game()
+      : (ctxAny as unknown as { game: unknown }).game) as {
+        board(): { tracks(): unknown };
+        hasInternalLoopInTrack?: () => boolean;
+        equipment?: { board?: { tracks?: (() => unknown[]) | readonly unknown[] } };
+      };
+    const rawTracks = ((): unknown[] => {
+      const bt = gameObj.equipment?.board?.tracks;
+      if (typeof bt === "function") return bt();
+      if (Array.isArray(bt)) return [...bt];
+      try {
+        const t = gameObj.board().tracks() as { size?: () => number; get?: (i: number) => unknown } | unknown[];
+        if (Array.isArray(t)) return t;
+        if (t && typeof (t as { size?: unknown }).size === "function") {
+          const out: unknown[] = [];
+          const tl = t as { size: () => number; get: (i: number) => unknown };
+          for (let i = 0; i < tl.size(); i++) out.push(tl.get(i));
+          return out;
+        }
+      } catch { /* no board tracks */ }
+      return [];
+    })();
+    const listify = (arr: unknown[]) => ({ size: () => arr.length, get: (i: number) => arr[i] as Track });
 
     if (this.name !== null) {
-      const boardTracks = ctxAny.game().board().tracks();
+      const boardTracks = listify(rawTracks);
       const size = boardTracks.size();
       for (let ti = 0; ti < size; ti++) {
         const t = boardTracks.get(ti);
@@ -162,7 +188,7 @@ export class TrackSiteMove extends BaseIntFunction {
 
     if (track === null && this.name !== null) {
       // The track was not precomputed because it is not owned by a player.
-      const boardTracks = ctxAny.game().board().tracks();
+      const boardTracks = listify(rawTracks);
       const size = boardTracks.size();
       for (let ti = 0; ti < size; ti++) {
         const t = boardTracks.get(ti);
@@ -194,7 +220,7 @@ export class TrackSiteMove extends BaseIntFunction {
     } else {
       const currentLoc = this.currentLocation.eval(context);
 
-      if (!track.islooped() && ctxAny.game().hasInternalLoopInTrack()) {
+      if (!track.islooped() && (gameObj.hasInternalLoopInTrack?.() ?? false)) {
         if (currentLoc < 0)
           return OFF;
 

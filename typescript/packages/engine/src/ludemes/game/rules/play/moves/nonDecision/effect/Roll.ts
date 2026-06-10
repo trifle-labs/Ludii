@@ -104,8 +104,11 @@ export class Roll implements MovesFunction {
           allEqual = false;
         }
 
-        // @java Roll.java:68 — actions.add(new ActionUpdateDice(loc, newValue))
-        actions.push(new ActionUpdateDice(loc, newValue));
+        // @java Roll.java:68 — actions.add(new ActionUpdateDice(loc, newValue)).
+        // Java's action takes the GLOBAL container site and sets
+        // currentDice[..] = faces[newState]; the engine action's DICE-VALUE
+        // mode takes (dieIndex, faceIndex, resolvedValue) — convert here.
+        actions.push(new ActionUpdateDice(loc - startLoc, newValue, newValue));
       }
     }
 

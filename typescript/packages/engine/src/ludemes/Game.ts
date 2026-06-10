@@ -368,6 +368,38 @@ export class Game implements Game {
   }
 
   /**
+   * @java Game.handDice() — the list of Dice containers.
+   * Our equipment model keeps per-die specs (diceSpecs) + a base site
+   * (diceSiteBase); Java's typical (dice d:N num:M) is ONE container with M
+   * locs. Container index = 1 + number of hands (board=0, hands, dice).
+   */
+  public handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number }> {
+    const specs = this.equipment.diceSpecs;
+    if (specs.length === 0) return [];
+    const idx = 1 + this.equipment.hands.length;
+    const numFaces = specs[0]?.faces.length ?? 6;
+    return [{ index: () => idx, getNumFaces: () => numFaces, numLocs: () => specs.length }];
+  }
+
+  /** @java Game.getHandDice(int) */
+  public getHandDice(i: number): { index(): number; getNumFaces(): number; numLocs(): number } {
+    return this.handDice()[i]!;
+  }
+
+  /**
+   * @java Equipment.sitesFrom() — base site index per container:
+   * [0 (board), hand bases..., dice base].
+   */
+  public sitesFrom(): number[] {
+    const out: number[] = [0];
+    for (const hand of this.equipment.hands) {
+      out.push(this.equipment.handSiteFor(hand.owner, 0));
+    }
+    if (this.equipment.diceSpecs.length > 0) out.push(this.equipment.diceSiteBase);
+    return out;
+  }
+
+  /**
    * @java Game.players()
    */
   public players(): GamePlayers {
@@ -405,6 +437,16 @@ export class Game implements Game {
     // side-channels fold into these; rules write via the ContainerState facade).
     const startRemembered = new Map<string, number[]>();
     const startHidden = new Map<string, boolean>();
+
+    // Place the die components at the dice container sites (@java Equipment
+    // create: each Die occupies its container loc; Roll reads what(loc) there).
+    if (this.equipment.diceSpecs.length > 0) {
+      const firstDieId = this.equipment.pieces.length + 1;
+      for (let i = 0; i < this.equipment.diceSpecs.length; i++) {
+        const loc = this.equipment.diceSiteBase + i;
+        if (loc < whats.length) whats[loc] = firstDieId + i;
+      }
+    }
 
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement

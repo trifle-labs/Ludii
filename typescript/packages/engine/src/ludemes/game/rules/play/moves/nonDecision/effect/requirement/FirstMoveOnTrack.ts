@@ -69,7 +69,7 @@ export class FirstMoveOnTrack implements MovesFunction {
    */
   public eval(ctx: Context): Move[] {
     const ctxAny = ctx as unknown as {
-      tracks?: Track[];
+      tracks?: Track[] | (() => Track[]);
       _evalSite?: number;
     };
 
@@ -78,7 +78,9 @@ export class FirstMoveOnTrack implements MovesFunction {
 
     if (ctxAny.tracks) {
       const who = this.owner != null ? this.resolveOwner(ctx) : UNDEFINED;
-      for (const t of ctxAny.tracks) {
+      // @java Context.tracks() — a method on the context, not a property.
+      const trackList = typeof ctxAny.tracks === "function" ? ctxAny.tracks() : ctxAny.tracks;
+      for (const t of trackList) {
         if (this.trackName == null ||
             (who === UNDEFINED && t.name() === this.trackName) ||
             (who !== UNDEFINED && t.owner() === who && t.name().includes(this.trackName!))) {
