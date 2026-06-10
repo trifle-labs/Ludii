@@ -93,21 +93,22 @@ function twoRowMancalaBottom(board: {
  * Returns the site indices with the minimum y coordinate from the trajectories.
  * @java Topology.bottom(SiteType) — sites with minimum centroid y.
  */
-function sitesWithMinY(traj: Trajectories, type: string): number[] {
-  const core = (traj as unknown as {
-    core?: { topo?: { elements?(type: string): Array<{ id: number; centroid?(): { x: number; y: number } }> } }
-  }).core;
-  const elements = core?.topo?.elements?.(type);
-  if (!elements || elements.length === 0) return [];
-
-  let minY = Infinity;
-  for (const el of elements) {
-    const c = el.centroid?.();
-    if (c && c.y < minY) minY = c.y;
+function sitesWithMinY(traj: Trajectories, _type: string): number[] {
+  // @java Topology.bottom(SiteType) — sites with minimum centroid y.
+  // Use the Trajectories play-site API (yOf over [0, numSites)) — the duck-typed
+  // core.topo.elements(type) path is EMPTY on vertex-play graph boards (e.g. the
+  // Alquerque hunt family: merge(square+wedge)), which fell through to the
+  // rectangular bridge adapter and produced out-of-range sites (Adugo dogs on the
+  // wedge). Same proven recipe as SitesLeft/SitesRight (xOf).
+  const n = traj.numSites;
+  if (n === 0) return [];
+  let best = traj.yOf(0);
+  for (let s = 1; s < n; s++) {
+    const y = traj.yOf(s);
+    if (y < best) best = y;
   }
   const tol = 0.001;
-  return elements
-    .filter((el) => { const c = el.centroid?.(); return c !== undefined && Math.abs(c.y - minY) < tol; })
-    .map((el) => el.id)
-    .sort((a, b) => a - b);
+  const sites: number[] = [];
+  for (let s = 0; s < n; s++) if (Math.abs(traj.yOf(s) - best) < tol) sites.push(s);
+  return sites;
 }
