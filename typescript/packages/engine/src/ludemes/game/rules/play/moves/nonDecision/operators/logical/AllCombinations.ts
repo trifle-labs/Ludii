@@ -86,6 +86,8 @@ export class AllCombinations extends NonDecision {
           mover: m1.mover,
           placedOwner: m1.placedOwner,
           actions: [...m1.actions, ...m2.actions],
+          deferredThens: [...m1.deferredThens, ...m2.deferredThens],
+          moveAgain: m1.moveAgain || m2.moveAgain,
         });
         result.push(combined);
       }

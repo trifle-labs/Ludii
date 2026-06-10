@@ -62,8 +62,8 @@ export class SetVar implements MovesFunction {
     let action: import("../../../../../../../../../action/index.js").Action;
     if (this.name === null) {
       // @java SetVar.java:66-69 — name == null: ActionSetTemp(value)
-      // Java ActionSetTemp writes state.temp() — in 1:1 TS: temp slot 0
-      action = new ActionSetTemp(0, value);
+      // Java ActionSetTemp writes the single global state.temp().
+      action = new ActionSetTemp(value);
     } else {
       // @java SetVar.java:73-75 — ActionSetVar(name, value)
       action = new ActionSetVar(this.name, value);

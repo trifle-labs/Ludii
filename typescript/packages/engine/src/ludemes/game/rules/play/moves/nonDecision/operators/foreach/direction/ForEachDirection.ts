@@ -249,6 +249,8 @@ export class ForEachDirection extends Effect {
                     mover: m.mover,
                     placedOwner: m.placedOwner,
                     actions: m.actions,
+                    deferredThens: m.deferredThens,
+                    moveAgain: m.moveAgain,
                     fromSite: m.fromSite,
                     toSite: m.toSite,
                   }));
@@ -335,6 +337,8 @@ export class ForEachDirection extends Effect {
                   mover: m.mover > 0 ? m.mover : mover,
                   placedOwner: m.placedOwner > 0 ? m.placedOwner : mover,
                   actions: m.actions,
+                  deferredThens: m.deferredThens,
+                  moveAgain: m.moveAgain,
                   fromSite: m.fromSite,
                   toSite: m.toSite,
                 }));

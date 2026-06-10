@@ -232,6 +232,8 @@ export class Enclose implements MovesFunction {
               mover,
               placedOwner: mover,
               actions: [...m.actions],
+              deferredThens: m.deferredThens,
+              moveAgain: m.moveAgain,
             });
           }
           return m;

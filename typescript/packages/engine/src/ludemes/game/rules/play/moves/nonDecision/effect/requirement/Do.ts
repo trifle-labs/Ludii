@@ -77,6 +77,10 @@ export class Do implements MovesFunction {
    *     3. Keep only passing moves.
    */
   public eval(ctx: Context): Move[] {
+    if (process.env.TRACE_DICE) {
+      const st = ctx.state as unknown as { diceValues?: readonly number[] };
+      console.error(`[Do.eval] dice=${JSON.stringify(st.diceValues)} stack=${new Error().stack?.split("\n")[2]?.trim().slice(0, 90)}`);
+    }
     let result: Move[] = [];
 
     // --- Case A: next is provided -----------------------------------------
@@ -108,6 +112,9 @@ export class Do implements MovesFunction {
           placedOwner: nm.placedOwner,
           actions: prependedActions,
           then: nm.then as LudiiMove[],
+          // @java the inner move's then() list rides along — Do only merges
+          // the prior's actions in front; consequences evaluate at apply time.
+          deferredThens: nm.deferredThens,
           moveAgain: nm.moveAgain,
           // Prepending the prior's actions shifts the decision action, so pin
           // the decision from/to explicitly (@java the recorded compound move

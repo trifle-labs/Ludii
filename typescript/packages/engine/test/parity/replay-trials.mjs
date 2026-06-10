@@ -779,6 +779,7 @@ function replayTrial(trialPath) {
       };
     }
 
+    globalThis.__PLY = plyIndex;
     const dbgEnv = process.env.DEBUG_PLY;
     const dbgMatch = dbgEnv !== undefined && (() => {
       if (dbgEnv.includes('-')) {

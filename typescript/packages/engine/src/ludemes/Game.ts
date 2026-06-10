@@ -43,6 +43,7 @@ import { ActionPass } from "../action/action-pass.js";
 import { ActionSwapPlayers } from "../action/action-swap-players.js";
 import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
 import { ActionRemove } from "../action/action-remove.js";
+import type { Action } from "../action/index.js";
 import { State } from "../state.js";
 import { Trial } from "../trial.js";
 
@@ -650,13 +651,27 @@ export class Game implements Game {
     // in the current move may re-add to it.
     let newState = move.applyTo(context.state.withPendingClear(), context.rng);
 
+    // Step 1a: Evaluate deferred (then …) consequences against the post-move
+    // state and fold their actions + moveAgain into the applied move.
+    // @java Core/src/other/move/Move.java:apply — actions apply first, then
+    // each entry of then() is evaluated in the post-move context and its
+    // moves applied (recursively). The trial records the realised move with
+    // the consequence actions appended (cf. recorded trials: the moveAgain
+    // SetNextPlayer is the LAST action of the move).
+    let appliedMove = move;
+    if (move.deferredThens.length > 0) {
+      const folded = this.applyDeferredThens(context, newState, move);
+      newState = folded.state;
+      appliedMove = folded.move;
+    }
+
     // Step 1b: Flush deferred (at:EndOfTurn) captures when the turn ENDS.
     // Java parity: Move.apply() lines 544-591 — when !containsReplayAction (turn ends),
     // applies ActionRemove for each site in sitesToRemove, then calls reInitCapturedPiece().
     // @java Core/src/other/move/Move.java lines 544-591
     {
-      const setNextActEarly = move.actions.find(a => a.actionType() === "SetNextPlayer");
-      const turningOver = !move.moveAgain && !(setNextActEarly !== undefined && setNextActEarly.who() === mover);
+      const setNextActEarly = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
+      const turningOver = !appliedMove.moveAgain && !(setNextActEarly !== undefined && setNextActEarly.who() === mover);
       if (turningOver && newState.sitesToRemove.length > 0) {
         // Remove all deferred capture sites.
         for (const site of newState.sitesToRemove) {
@@ -672,12 +687,12 @@ export class Game implements Game {
 
     // Step 2: Build eval context with the move recorded.
     // Set _evalTo so IsLine's (through: LastTo) resolves to the placed site.
-    const evalTrial = context.trial.withMove(move, false, -1);
+    const evalTrial = context.trial.withMove(appliedMove, false, -1);
     const evalCtx = new Context(this, newState, evalTrial, context.rng) as Context1to1;
     evalCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;
     evalCtx._trajectories = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
-    evalCtx._evalTo = move.to();
-    evalCtx._evalFrom = move.from();
+    evalCtx._evalTo = appliedMove.to();
+    evalCtx._evalFrom = appliedMove.from();
     evalCtx._evalValue = 0;
 
     // Step 3a: Evaluate per-phase end rule.
@@ -735,8 +750,8 @@ export class Game implements Game {
       }
     }
 
-    const setNextAct = move.actions.find(a => a.actionType() === "SetNextPlayer");
-    const willContinueTurn = move.moveAgain || (setNextAct !== undefined && setNextAct.who() === mover);
+    const setNextAct = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
+    const willContinueTurn = appliedMove.moveAgain || (setNextAct !== undefined && setNextAct.who() === mover);
 
     // Step 5: Phase transitions (only when game is still active).
     // @java game/Game.java:3117–3141
@@ -789,11 +804,11 @@ export class Game implements Game {
     if (!over) {
       // Find the ActionSetNextPlayer in the current move's actions, if any.
       // @java Game.java:3195 — the "next" override from ActionSetNextPlayer
-      const setNextAction = move.actions.find(a => a.actionType() === "SetNextPlayer");
+      const setNextAction = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
       const dynamicNextOverride: number = setNextAction ? setNextAction.who() : 0;
 
       let nextMover: number;
-      if (move.moveAgain) {
+      if (appliedMove.moveAgain) {
         // Static (then (moveAgain)) flag: keep the same player.
         // The ActionSetNextPlayer(mover) we added also sets next=mover (same).
         nextMover = newState.mover;
@@ -827,7 +842,7 @@ export class Game implements Game {
 
     // Step 8: Record move in trial.
     const finalWinner = over ? winner : -1;
-    let trial = context.trial.withMove(move, over, finalWinner);
+    let trial = context.trial.withMove(appliedMove, over, finalWinner);
     if (ranking !== undefined) trial = trial.withRanking(ranking);
     trial = trial.saveState(advanced);
 
@@ -838,6 +853,67 @@ export class Game implements Game {
     newCtx._evalFrom = -1;
     newCtx._evalValue = 0;
     return newCtx;
+  }
+
+  /**
+   * Evaluate a move's deferred `(then …)` clauses against the post-move state.
+   * @java Core/src/other/move/Move.java:apply — after the move's actions
+   * apply, each Moves in then() is evaluated in the post-move context (the
+   * move already on the trial) and every generated move is applied in order,
+   * recursing into ITS then() list. The consequence actions are appended to
+   * the realised move (recorded trials show e.g. the moveAgain SetNextPlayer
+   * as the move's last action) and are never decision actions.
+   */
+  private applyDeferredThens(
+    context: Context,
+    postState: State,
+    move: Move,
+  ): { state: State; move: Move } {
+    let state = postState;
+    const extraActions: Action[] = [];
+    let again = move.moveAgain;
+
+    const evalThens = (
+      m: Move,
+      thens: readonly { eval(ctx: unknown): Move[] }[],
+      depth: number,
+    ): void => {
+      // Backstop against a consequence regenerating itself forever.
+      if (depth > 16) return;
+      for (const gen of thens) {
+        const postTrial = context.trial.withMove(move, false, -1);
+        const postCtx = new Context(this, state, postTrial, context.rng) as Context1to1;
+        postCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;
+        postCtx._trajectories = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
+        (postCtx as unknown as { _thenContextDepth?: number })._thenContextDepth = depth + 1;
+        postCtx._evalFrom = m.from();
+        postCtx._evalTo = m.to();
+        postCtx._evalValue = 0;
+
+        let thenMoves: Move[];
+        try {
+          thenMoves = gen.eval(postCtx);
+        } catch (e) {
+          // Java never throws here; a throw means a port gap in the
+          // consequence subtree. Surface under LUDII_DEBUG_THEN.
+          if (process.env["LUDII_DEBUG_THEN"]) console.error("[then threw]", (e as Error).stack?.split("\n").slice(0, 4).join(" | "));
+          continue;
+        }
+        for (const tm of thenMoves) {
+          // @java Move.then() consequences are NOT decision actions — the
+          // decision stays the primary move's own action.
+          for (const a of tm.actions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+          state = tm.applyTo(state, context.rng);
+          extraActions.push(...tm.actions);
+          if (tm.moveAgain) again = true;
+          if (tm.deferredThens.length > 0) evalThens(tm, tm.deferredThens, depth + 1);
+        }
+      }
+    };
+    evalThens(move, move.deferredThens, 0);
+
+    if (extraActions.length === 0 && again === move.moveAgain) return { state, move };
+    return { state, move: move.withConsequence(extraActions, again) };
   }
 
   /** @java game/Game.java — over(context). Returns context.over. */

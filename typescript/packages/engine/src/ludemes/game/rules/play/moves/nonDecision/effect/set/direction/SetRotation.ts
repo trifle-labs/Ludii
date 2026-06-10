@@ -169,6 +169,8 @@ export class SetRotation implements MovesFunction {
           placedOwner: m.placedOwner,
           actions: m.actions,
           then: thenList,
+          deferredThens: m.deferredThens,
+          moveAgain: m.moveAgain,
           fromNonDecisionSite: m.fromNonDecisionSite,
           toNonDecisionSite: m.toNonDecisionSite,
         }));

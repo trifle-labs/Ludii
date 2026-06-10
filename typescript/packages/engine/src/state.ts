@@ -68,8 +68,15 @@ export interface StateOptions {
   readonly countAt?: readonly number[];
   /** 1-based player phase indices (Java: State.phases[pid]). */
   readonly phases?: readonly number[];
-  /** Per-player temporary value (Java: State.temp[pid]). */
-  readonly temps?: readonly number[];
+  /**
+   * Global temporary value (Java: State.tempValue, default Constants.UNDEFINED).
+   * @java Core/src/other/state/State.java:83 — `private int tempValue = Constants.UNDEFINED;`
+   * Java's temp is a SINGLE value shared across players (State.temp() takes no
+   * player); ForEachDie's doubles-replay chain depends on one player's arm
+   * being visible to the other (Backgammon rec 131 arms temp=6 for P2, rec 132
+   * disarms it during P1's turn).
+   */
+  readonly tempValue?: number;
   /** Per-player amount (Java: State.amount[pid]). */
   readonly amounts?: readonly number[];
   /** Game-level counter (Java: State.counter). */
@@ -210,7 +217,8 @@ export class State {
   public readonly rotationAt: readonly number[];
   public readonly countAt: readonly number[];
   public readonly phases: readonly number[];
-  public readonly temps: readonly number[];
+  /** @java State.tempValue — single global temp, default UNDEFINED (-1). */
+  public readonly tempValue: number;
   public readonly amounts: readonly number[];
   public readonly counter: number;
   public readonly pot: number;
@@ -315,7 +323,8 @@ export class State {
         : this.cells.map((c) => (c === 0 ? 0 : 1)),
     );
     this.phases = Object.freeze(fillSlot(options.phases, numPlayers + 1, 0));
-    this.temps = Object.freeze(fillSlot(options.temps, numPlayers + 1, 0));
+    // @java State.java:83 — tempValue starts at Constants.UNDEFINED (-1).
+    this.tempValue = options.tempValue ?? -1;
     this.amounts = Object.freeze(fillSlot(options.amounts, numPlayers + 1, 0));
     // Java parity (State.java:80): the automatic game counter starts at
     // Constants.UNDEFINED (-1), not 0. It is incremented once per applied
@@ -908,8 +917,9 @@ export class State {
   public phase(pid: number): number {
     return this.phases[pid] ?? 0;
   }
-  public temp(pid: number): number {
-    return this.temps[pid] ?? 0;
+  /** @java State.temp() — global, no player dimension. */
+  public temp(): number {
+    return this.tempValue;
   }
   public amount(pid: number): number {
     return this.amounts[pid] ?? 0;
@@ -921,11 +931,9 @@ export class State {
     next[pid] = value;
     return this.with({ phases: next });
   }
-  public withTemp(pid: number, value: number): State {
-    this.requirePid(pid);
-    const next = [...this.temps];
-    next[pid] = value;
-    return this.with({ temps: next });
+  /** @java State.setTemp(tempValue) — global, no player dimension. */
+  public withTemp(value: number): State {
+    return this.with({ tempValue: value });
   }
   public withAmount(pid: number, value: number): State {
     this.requirePid(pid);
@@ -1098,7 +1106,7 @@ export class State {
         rotationAt: patch.rotationAt ?? this.rotationAt,
         countAt: patch.countAt ?? this.countAt,
         phases: patch.phases ?? this.phases,
-        temps: patch.temps ?? this.temps,
+        tempValue: patch.tempValue ?? this.tempValue,
         amounts: patch.amounts ?? this.amounts,
         counter: patch.counter ?? this.counter,
         pot: patch.pot ?? this.pot,

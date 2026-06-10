@@ -83,10 +83,11 @@ describe("state-channel actions", () => {
     assert.equal(after.phase(1), 2);
   });
 
-  it("ActionSetTemp / Amount writes per-player channels", () => {
-    let s = new ActionSetTemp(1, 9).apply(emptyState(9));
+  it("ActionSetTemp writes the global temp; Amount stays per-player", () => {
+    // @java State.tempValue — single global slot, default Constants.UNDEFINED
+    let s = new ActionSetTemp(9).apply(emptyState(9));
     s = new ActionSetAmount(1, 7).apply(s);
-    assert.equal(s.temp(1), 9);
+    assert.equal(s.temp(), 9);
     assert.equal(s.amount(1), 7);
   });
 

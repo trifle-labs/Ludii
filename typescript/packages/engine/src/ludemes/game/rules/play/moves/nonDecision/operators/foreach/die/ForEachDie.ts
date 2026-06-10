@@ -135,14 +135,13 @@ export class ForEachDie extends NonDecision {
           ? [ [...(engineState.diceValues ?? [])] ]
           : [...(engineState.diceValues ?? [])]) as { (): number[][] | null; (idx: number): number[] },
         temp: () => {
-          // @java State.temp() — the engine keeps per-player temps (temp(pid)).
+          // @java State.temp() — a single GLOBAL value (State.java:83),
+          // default Constants.UNDEFINED; the engine State mirrors this.
           const t = engineState.temp as unknown;
           const v = typeof t === "function"
-            ? (t as (pid: number) => number).call(context.state, mover)
+            ? (t as () => number).call(context.state)
             : ((t as number | undefined) ?? UNDEFINED);
-          // @java Constants.UNDEFINED = -1; the engine temp defaults 0 and a
-          // legit armed temp is a pip 1..6 — map the unarmed default.
-          return v === 0 || v === undefined ? UNDEFINED : v;
+          return v ?? UNDEFINED;
         },
       };
       if (javaState === null) return returnMoves;
@@ -181,7 +180,7 @@ export class ForEachDie extends NonDecision {
 
       // @java final int origDieValue = context.pipCount();
       if (process.env.TRACE_DICE) {
-        console.error(`[forEachDie] mover=${mover} dice=${JSON.stringify(dieValues)} replayDouble=${replayDouble} temp=${javaState.temp()}`);
+        console.error(`[forEachDie] ply=${(globalThis as Record<string, unknown>).__PLY} mover=${mover} dice=${JSON.stringify(dieValues)} replayDouble=${replayDouble} temp=${javaState.temp()}`);
       }
       const origDieValue = getPip();
 
@@ -201,11 +200,11 @@ export class ForEachDie extends NonDecision {
             const newActions: Action[] = [...m.actions, action];
             // @java replayDouble double-logic
             if (replayDouble && temp === UNDEFINED) {
-              // @java new ActionSetTemp(pipCount) — use mover as player key
-              newActions.push(new ActionSetTemp(mover, pipCount));
+              // @java new ActionSetTemp(pipCount) — global temp, no player
+              newActions.push(new ActionSetTemp(pipCount));
             } else if (replayDouble) {
               // @java new ActionSetTemp(Constants.UNDEFINED)
-              newActions.push(new ActionSetTemp(mover, UNDEFINED));
+              newActions.push(new ActionSetTemp(UNDEFINED));
             } else if (temp !== UNDEFINED) {
               // @java ActionUpdateDice for each die in handDice
               for (const dice of gameFns.handDice()) {
@@ -215,6 +214,7 @@ export class ForEachDie extends NonDecision {
                     // @java ActionUpdateDice(loc, temp-1): global site + face
                     // INDEX, currentDice = faces[temp-1] = the pip `temp`.
                     // Engine dice-value mode: (dieIndex, faceIndex, value).
+                    if (process.env.TRACE_DICE) console.error(`[rearm] ply=${(globalThis as Record<string, unknown>).__PLY} temp=${temp} dice=${JSON.stringify((context.state as unknown as { diceValues?: readonly number[] }).diceValues)} stack=${new Error().stack?.split("\n")[3]?.trim().slice(0,80)}`);
                     newActions.push(new ActionUpdateDice(loc - siteFrom, temp - 1, temp));
                   }
                 }
@@ -229,6 +229,11 @@ export class ForEachDie extends NonDecision {
               actions: newActions,
               fromSite: m.fromSite,
               toSite: m.toSite,
+              // @java the inner moves keep their then() list — ForEachDie only
+              // appends actions; the consequence evaluates at apply time.
+              deferredThens: m.deferredThens,
+              moveAgain: m.moveAgain,
+              decisionIndex: m.decisionIndex,
             }));
           }
         }
@@ -269,6 +274,9 @@ export class ForEachDie extends NonDecision {
             mover: m.mover,
             placedOwner: m.placedOwner,
             actions: [...m.actions, useDieAction],
+            deferredThens: m.deferredThens,
+            moveAgain: m.moveAgain,
+            decisionIndex: m.decisionIndex,
             fromSite: m.fromSite,
             toSite: m.toSite,
           }));
@@ -312,6 +320,9 @@ export class ForEachDie extends NonDecision {
               mover: m.mover,
               placedOwner: m.placedOwner,
               actions: [...m.actions, actionDie1, actionDie2],
+              deferredThens: m.deferredThens,
+              moveAgain: m.moveAgain,
+              decisionIndex: m.decisionIndex,
               fromSite: m.fromSite,
               toSite: m.toSite,
             }));
@@ -339,6 +350,9 @@ export class ForEachDie extends NonDecision {
               mover: m.mover,
               placedOwner: m.placedOwner,
               actions: [...m.actions, actionDie1, actionDie2, actionDie3],
+              deferredThens: m.deferredThens,
+              moveAgain: m.moveAgain,
+              decisionIndex: m.decisionIndex,
               fromSite: m.fromSite,
               toSite: m.toSite,
             }));
@@ -365,6 +379,9 @@ export class ForEachDie extends NonDecision {
                   mover: m.mover,
                   placedOwner: m.placedOwner,
                   actions: [...m.actions, actionDie1, actionDie2],
+                  deferredThens: m.deferredThens,
+                  moveAgain: m.moveAgain,
+                  decisionIndex: m.decisionIndex,
                   fromSite: m.fromSite,
                   toSite: m.toSite,
                 }));

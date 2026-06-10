@@ -25,8 +25,8 @@ export class Var extends BaseIntFunction {
    * (getValue returns Constants.OFF (-1) when absent).
    */
   public override eval(context: Context): number {
-    const st = context.state as unknown as { temp(slot: number): number; getVar(key: string): number };
-    if (this.name === null) return st.temp(0);
+    const st = context.state as unknown as { temp(): number; getVar(key: string): number };
+    if (this.name === null) return st.temp();
     return st.getVar(this.name);
   }
 

@@ -19,6 +19,21 @@ import { ConceptSet } from "./concept.js";
 import type { SeededRng } from "./rng.js";
 import type { State } from "./state.js";
 
+/**
+ * A deferred `(then …)` consequence carried on a move and evaluated at APPLY
+ * time against the post-move context.
+ * @java Core/src/other/move/Move.java — `private final List<Moves> then` and
+ *       Move.apply(): actions apply first, then each entry of then() is
+ *       evaluated in the post-move context and its moves applied. Baking the
+ *       consequence at generation time diverges whenever an outer wrapper
+ *       appends actions afterwards (ForEachDie appends ActionUseDie AFTER the
+ *       inner ForEachSite's then was attached — `(not (all DiceUsed))` must
+ *       see the die consumed).
+ */
+export interface DeferredThen {
+  eval(ctx: unknown): Move[];
+}
+
 export interface MoveInit {
   readonly id: string;
   readonly label: string;
@@ -29,6 +44,8 @@ export interface MoveInit {
   readonly actions?: readonly Action[];
   /** Java parity: subsequent moves to play after this one (the `then` field). */
   readonly then?: readonly Move[];
+  /** Java parity: `(then …)` clauses evaluated at apply time. @java Move.then() */
+  readonly deferredThens?: readonly DeferredThen[];
   /**
    * Turn-model flag: when set, the mover keeps the turn after this move
    * instead of passing to the next player. This is the MVE realisation of
@@ -73,6 +90,8 @@ export class Move {
   public readonly actions: readonly Action[];
   // biome-ignore lint/suspicious/noThenProperty: Java-parity field name from `other.move.Move.then`.
   public readonly then: readonly Move[];
+  /** @java Move.then() — consequence clauses, evaluated post-apply. */
+  public readonly deferredThens: readonly DeferredThen[];
   public readonly moveAgain: boolean;
   /** Index of the decision action; see {@link MoveInit.decisionIndex}. */
   public readonly decisionIndex: number;
@@ -105,6 +124,7 @@ export class Move {
     this.actions = Object.freeze(init.actions ? [...init.actions] : []);
     // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
     this.then = Object.freeze(init.then ? [...init.then] : []);
+    this.deferredThens = Object.freeze(init.deferredThens ? [...init.deferredThens] : []);
     this.moveAgain = init.moveAgain ?? false;
     this.decisionIndex = init.decisionIndex ?? 0;
     this.fromSite = init.fromSite;
@@ -238,9 +258,37 @@ export class Move {
       actions: [...this.actions, ...extraActions],
       // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
       then: this.then,
+      deferredThens: this.deferredThens,
       moveAgain: moveAgain || this.moveAgain,
       // `(then …)` actions are appended after the move's own, so the decision
       // baseline is unchanged.
+      decisionIndex: this.decisionIndex,
+      fromSite: this.fromSite,
+      toSite: this.toSite,
+      fromNonDecisionSite: this.fromNonDecisionSite,
+      toNonDecisionSite: this.toNonDecisionSite,
+    });
+  }
+
+  /**
+   * Return a copy of this move with a `(then …)` clause attached for
+   * apply-time evaluation.
+   * @java Core/src/other/move/Move.java — `move.then().add(consequence)`;
+   *       every Moves wrapper with a then adds it to its generated moves and
+   *       Move.apply evaluates the list after the actions.
+   */
+  public withDeferredThen(gen: DeferredThen): Move {
+    return new Move({
+      id: this.id,
+      label: this.label,
+      siteIndices: this.siteIndices,
+      mover: this.mover,
+      placedOwner: this.placedOwner,
+      actions: this.actions,
+      // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
+      then: this.then,
+      deferredThens: [...this.deferredThens, gen],
+      moveAgain: this.moveAgain,
       decisionIndex: this.decisionIndex,
       fromSite: this.fromSite,
       toSite: this.toSite,
@@ -266,6 +314,7 @@ export class Move {
       actions: [...extraActions, ...this.actions],
       // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
       then: this.then,
+      deferredThens: this.deferredThens,
       moveAgain: this.moveAgain,
       // Prologue actions are prepended, so the decision action shifts right by
       // their count — keeping `from()/to()` reading off the real move action,
