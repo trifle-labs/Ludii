@@ -1791,3 +1791,8 @@ ForEachDie eval) + detailed harness action dumps:
 - ForEachDirection: relative dirs resolve against newDirection (@java convertToAbsolute — Janggi Ma forks); raw-boolean wrap on rule/betweenRule (Shogi threw at ply 0, now generates).
 - PERF CLASS identified: Shogi moves() takes minutes (2350 moves/ply over-generation), Loop Xiangqi similar (1161) — generation performance/visibility item; family sweeps hang on these. Investigate over-generation root (likely a rule passing everywhere making steppers slide) before perf tuning.
 - Janggi residual ply 31 (rec 69→86 Ma fork missing situationally); Minishogi over-generates 92 at ply 0 (drops?); Hasami Shogi reaches ply 311; Kyoto Shogi ply 1 n=2.
+
+## Update 84 (2026-06-11) — Shogi drops + decision-flag purity
+- SitesOccupied honors container:"Hand" + components:{names} (@java SitesOccupied; the compile intercept now parses the named args; the class resolves the mover's hand range via equipment.hands + game.sitesFrom). Shogi's drop clause had scanned the BOARD: 2350 moves/ply, minutes per moves() — BOTH the over-generation and the family-sweep hang were this one bug. Shogi ply-0 = exactly the 30-move opening in 77ms.
+- Side-effect actions are never decisions (@java chainRuleWithAction decision=false) — cleared at every collection site in Step/Hop/Leap/Slide/FromTo. Shogi captures (Add-to-hand + Move) had reported from()=the hand site and never matched. Shogi now replays to ply 73 / past-budget.
+- Shogi residual ply 73 (rec 66→76); trial 2 needs >60s budget (long game). Check Loop Xiangqi against the same drops fix next.
