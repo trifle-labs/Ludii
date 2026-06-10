@@ -87,9 +87,22 @@ export class Promote implements MovesFunction {
       const id = this.toWhat.eval(ctx);
       if (id < 1) return [];
       whats.push(id);
+    } else if (this.itemNames !== null) {
+      // @java Promote.java:154-177 — look up by itemNames against the component table:
+      // with an owner role, match name-CONTAINS + owner; else exact game.getComponent(name).
+      const pieces = (ctx.game as unknown as {
+        equipment?: { pieces?: readonly { name: string; owner: number; index: number }[] };
+      }).equipment?.pieces ?? [];
+      // @java owner == null → getComponent(name); else owner.eval-owned name-contains match.
+      const ownerId = this.owner !== null ? this.owner.eval(ctx) : ctx.state.mover;
+      for (const nm of this.itemNames) {
+        const byOwner = pieces.find((p) => p.name.includes(nm) && p.owner === ownerId);
+        const exact = byOwner ?? pieces.find((p) => p.name === nm) ?? pieces.find((p) => `${p.name}${p.owner}` === nm);
+        if (exact) whats.push(exact.index);
+      }
+      if (whats.length === 0) return [];
     } else {
-      // @java Promote.java:154-177 — look up by itemNames
-      throw new Error("not yet wired: Promote with itemNames requires component registry");
+      return [];
     }
 
     const moves: LudiiMove[] = [];
