@@ -63,7 +63,7 @@ import { SetRotation } from "../nonDecision/effect/set/direction/SetRotation.js"
 import { SetTrumpSuit } from "../nonDecision/effect/set/suit/SetTrumpSuit.js";
 import { SwapPlayers } from "../nonDecision/effect/state/swap/players/SwapPlayers.js";
 import { SwapPieces } from "../nonDecision/effect/state/swap/sites/SwapPieces.js";
-import { Decision1to1 } from "./Decision1to1.js";
+import { Decision } from "./Decision.js";
 
 /**
  * @java game/rules/play/moves/decision/Move.java
@@ -74,7 +74,7 @@ import { Decision1to1 } from "./Decision1to1.js";
  * This class is NOT registered — the inline compileMoves1to1Impl handles
  * all (move ...) patterns directly.
  */
-export class Move extends Decision1to1 {
+export class Move extends Decision {
   /**
    * The compiled sub-move generator (the delegated effect ludeme).
    * @java Move.java — the resolved ludeme (Add, Step, Hop, Slide, etc.)
@@ -422,7 +422,7 @@ export class Move extends Decision1to1 {
   ): MovesFunction {
     switch (moveType) {
       case "Bet":
-        return new BetDecision1to1(who, role, range, then);
+        return new BetDecision(who, role, range, then);
       default:
         throw new Error(`LudiiMove(): MoveBetType '${moveType}' is not implemented.`);
     }
@@ -459,7 +459,7 @@ export class Move extends Decision1to1 {
   }
 }
 
-class BetDecision1to1 implements MovesFunction {
+class BetDecision implements MovesFunction {
   private readonly playerFn: IntFunction;
   private readonly range: RangeFunction;
   private readonly thenMoves: MovesFunction | null;
