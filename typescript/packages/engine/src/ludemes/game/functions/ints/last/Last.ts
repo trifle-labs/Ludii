@@ -12,6 +12,10 @@
  *          the construct() factory.
  */
 
+import { LastFrom } from "./LastFrom.js";
+import { LastTo } from "./LastTo.js";
+import { LastLevelFrom } from "./LastLevelFrom.js";
+import { LastLevelTo } from "./LastLevelTo.js";
 import { BaseIntFunction } from "../BaseIntFunction.js";
 import type { Context } from "../../../../../context.js";
 
@@ -28,6 +32,27 @@ export class Last extends BaseIntFunction {
    */
   private constructor() {
     super();
+  }
+
+  /**
+   * @java Last.construct(LastType lastType, @Opt @Name BooleanFunction afterConsequence)
+   * Static factory dispatching to the concrete subtype (was missing — every (last …)
+   * fell through to the bespoke registry factory).
+   */
+  public static construct(lastType: string, afterConsequence: unknown = null): BaseIntFunction {
+    // compileTerminal hands BooleanFunction slots raw booleans (True/False literals);
+    // wrap to the function shape LastTo/LastFrom eval (the registry's boolFnOrNull did this).
+    const raw = typeof afterConsequence === "boolean"
+      ? { eval: () => afterConsequence }
+      : afterConsequence;
+    const after = (raw ?? undefined) as ConstructorParameters<typeof LastTo>[0];
+    switch (lastType) {
+      case "From": return new LastFrom(after);
+      case "LevelFrom": return new LastLevelFrom(after);
+      case "To": return new LastTo(after);
+      case "LevelTo": return new LastLevelTo(after);
+      default: throw new Error(`Last(): A LastType is not implemented: ${lastType}`);
+    }
   }
 
   /**
