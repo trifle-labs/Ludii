@@ -645,6 +645,7 @@ export class ArgCompiler {
       variantName !== "phase" &&
       variantName !== "track" &&
       variantName !== "hand" &&
+      variantName !== "occupied" &&
       !PLAYER_SITE_VARIANTS.has(variantName) &&
       !SIMPLE_SITE_VARIANTS.has(variantName)
     ) return null;
@@ -676,6 +677,25 @@ export class ArgCompiler {
         ? this.compileMaybe(toNode, [parseJavaType("game.functions.ints.IntFunction")], env)
         : null;
       return Sites.constructTrack("Track" as never, null, role as never, name, from as never, to as never);
+    }
+    if (variantName === "occupied") {
+      // @java Sites.construct(SitesOccupiedType, ...) -> SitesOccupied. The generic
+      // candidate path mis-resolved (sites Occupied by:Mover) to SitesTrack (empty),
+      // breaking late-game rules like Nine Men's Morris flying.
+      const parsed = parseNodeArgs(node);
+      const byNode = parsed.argsIn.find((arg) => arg.parameterName === "by")?.node;
+      const byRole = byNode && isIdent(byNode) ? byNode.name : null;
+      const byFn = byNode && !byRole
+        ? this.compileMaybe(byNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+        : null;
+      if (byNode && byRole === null && byFn === null) return null;
+      return Sites.constructOccupied(
+        "Occupied" as never,
+        byFn as never,
+        byRole as never,
+        null, null, null, null, null, null,
+        (node.items[2] && isIdent(node.items[2]) && ["Cell","Vertex","Edge"].includes(node.items[2].name) ? node.items[2].name : null) as never,
+      );
     }
     if (variantName === "hand") {
       // @java Sites.construct(SitesPlayerType.Hand, ...) -> SitesHand. The role/player
