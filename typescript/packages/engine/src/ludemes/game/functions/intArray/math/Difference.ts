@@ -1,5 +1,5 @@
 /**
- * Difference1to1.ts
+ * Difference.ts
  * @java game/functions/intArray/math/Difference.java
  *
  * (difference <source> <subtraction-array-or-int>) — elements in source not in subtraction.
@@ -37,7 +37,7 @@ function isIntArrayNode(node: LudNode): boolean {
   return h !== undefined && INT_ARRAY_HEADS.has(h);
 }
 
-export class Difference1to1 implements IntArrayFunction {
+export class Difference implements IntArrayFunction {
   /** @java game/functions/intArray/math/Difference.java — eval(Context) */
   constructor(
     private readonly source: IntArrayFunction,

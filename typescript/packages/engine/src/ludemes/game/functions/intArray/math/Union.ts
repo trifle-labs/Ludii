@@ -1,5 +1,5 @@
 /**
- * Union1to1.ts
+ * Union.ts
  * @java game/functions/intArray/math/Union.java
  *
  * (union <a1> <a2>) or (union {<a1> <a2> ...}) — merge arrays (no duplicate values).
@@ -10,7 +10,7 @@ import type { IntArrayFunction } from "../../../../base.js";
 import { isList } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 
-export class Union1to1 implements IntArrayFunction {
+export class Union implements IntArrayFunction {
   /** @java game/functions/intArray/math/Union.java — eval(Context) */
   constructor(private readonly arrays: IntArrayFunction[]) {}
 

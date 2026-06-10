@@ -514,11 +514,11 @@ import { BaseIntArrayFunction as C514 } from "../../../ludemes/game/functions/in
 import { ValuesRemembered as C515 } from "../../../ludemes/game/functions/intArray/values/ValuesRemembered.js";
 import { Values as C516 } from "../../../ludemes/game/functions/intArray/values/ValuesFn.js";
 import { Rotations as C517 } from "../../../ludemes/game/functions/intArray/state/Rotations.js";
-import { If1to1 as C518 } from "../../../ludemes/game/functions/intArray/math/If1to1.js";
+import { If as C518 } from "../../../ludemes/game/functions/intArray/math/If.js";
 import { Results as C519 } from "../../../ludemes/game/functions/intArray/math/Results.js";
 import { Intersection as C520 } from "../../../ludemes/game/functions/intArray/math/Intersection.js";
-import { Difference1to1 as C521 } from "../../../ludemes/game/functions/intArray/math/Difference1to1.js";
-import { Union1to1 as C522 } from "../../../ludemes/game/functions/intArray/math/Union1to1.js";
+import { Difference as C521 } from "../../../ludemes/game/functions/intArray/math/Difference.js";
+import { Union as C522 } from "../../../ludemes/game/functions/intArray/math/Union.js";
 import { SizesGroup as C523 } from "../../../ludemes/game/functions/intArray/sizes/group/SizesGroup.js";
 import { Sizes as C524 } from "../../../ludemes/game/functions/intArray/sizes/Sizes.js";
 import { FloatAdd as C525 } from "../../../ludemes/game/functions/floats1to1/math/FloatMath.js";
