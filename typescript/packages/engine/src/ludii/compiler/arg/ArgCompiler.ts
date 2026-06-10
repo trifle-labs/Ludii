@@ -200,6 +200,12 @@ export class ArgCompiler {
 
     const head = listHead(node);
     if (!head) {
+      // @java a parenthesized GROUP `((a) (b))` satisfies an ARRAY-typed parameter
+      // exactly like a `{...}` list (Unfair's `(and ((= …) (is Line …)))`).
+      if (node.items.length > 1 && expectedTypes.some((type) => type.dims > 0)) {
+        const asArray = this.compileArray(node, expectedTypes, env);
+        if (asArray !== null) return asArray;
+      }
       this.note(`headless list did not match ${formatExpected(expectedTypes)}`);
       return null;
     }

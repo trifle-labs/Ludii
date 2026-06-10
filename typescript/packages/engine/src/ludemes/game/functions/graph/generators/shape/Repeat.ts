@@ -92,6 +92,11 @@ export class Repeat extends BaseGraphFunction {
 
 function toRepeatPolygon(poly: Poly): RepeatPolygon {
   return {
-    points: poly.polygon().points().map((point) => [point.x, point.y] as const),
+    // The compiler may hand a Poly ludeme (.polygon().points()) or a bare Polygon
+    // (.points()) — normalize like Hole/Keep/Clip.
+    points: (typeof (poly as { polygon?: unknown }).polygon === "function"
+      ? (poly as { polygon(): { points(): ReadonlyArray<{ x: number; y: number }> } }).polygon().points()
+      : (poly as unknown as { points(): ReadonlyArray<{ x: number; y: number }> }).points()
+    ).map((point) => [point.x, point.y] as const),
   };
 }

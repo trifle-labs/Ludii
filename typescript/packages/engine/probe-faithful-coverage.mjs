@@ -16,11 +16,17 @@ const { getBuiltinDefines } = await import("./dist/src/builtin-defines.js");
 const { expandRanges, expandSiteRanges } = await import("./dist/src/lud-ranges.js");
 const { expandDefines } = await import("./dist/src/lud-defines.js");
 const { applyOptions } = await import("./dist/src/lud-options.js");
+const { play1to1 } = await import("./dist/src/play1to1.js");
+// Subgame resolver for (match ...) files — same surface play1to1 gets in production.
+const byName = new Map();
+
 
 const root = "/Users/billy/GitHub/trifle-labs/Ludii/Common/res/lud";
 const files = [];
 (function walk(d) { for (const e of readdirSync(d)) { const p = join(d, e); const s = statSync(p); if (s.isDirectory()) walk(p); else if (e.endsWith(".lud")) files.push(p); } })(root);
 files.sort();
+for (const f of files) byName.set(f.split("/").pop().toLowerCase().replace(/\.lud$/, ""), f);
+const resolveSubgame = (name) => { const m = byName.get(name.toLowerCase()); return m ? readFileSync(m, "utf8") : null; };
 
 const ac = new ArgCompiler();
 let faithful = 0, fallback = 0, total = 0;
@@ -35,8 +41,9 @@ for (let i = 0; i < files.length && total < LIMIT; i += STRIDE) {
   if (/test\/Huge Board\.lud$/.test(f)) { perGame.push({ game: relative(root, f), status: "SKIPPED", reason: "synthetic stress fixture (hangs graph gen)" }); continue; }
   let status, reason = "";
   try {
-    const ast = expandDefines(applyOptions(lang.parseLud(expandSiteRanges(expandRanges(readFileSync(f, "utf8"))))), [...getBuiltinDefines()]);
-    const g = ac.compile(ast, ["game.Game"]);
+    // Compile through the REAL engine entry (play1to1: range pre-pass, options,
+    // defines, findGameNode incl. (match ...) subgame resolution, ArgCompiler).
+    const g = play1to1(readFileSync(f, "utf8"), { resolveSubgame });
     const equip = g?.equipment?.constructor?.name ?? "?";
     if (equip === "Equipment") { status = "FAITHFUL"; faithful++; }
     else { status = "FALLBACK_EQUIP"; reason = `equip=${equip}`; fallback++; }

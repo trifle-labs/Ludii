@@ -1,6 +1,6 @@
 {
- "faithful": 1888,
- "fallback": 311,
+ "faithful": 1916,
+ "fallback": 283,
  "total": 2200,
  "perGame": [
   {
@@ -520,8 +520,8 @@
   },
   {
    "game": "board/race/escape/Grand Trictrac.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.Game"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Had.lud",
@@ -545,8 +545,8 @@
   },
   {
    "game": "board/race/escape/Julbahar.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.Game"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Kawade Kelia.lud",
@@ -615,8 +615,8 @@
   },
   {
    "game": "board/race/escape/Mahbouseh.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.Game"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Medio Emperador.lud",
@@ -625,8 +625,8 @@
   },
   {
    "game": "board/race/escape/Mughrabieh.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.Game"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Myles.lud",
@@ -635,8 +635,8 @@
   },
   {
    "game": "board/race/escape/Nama.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Player: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Nard.lud",
@@ -775,8 +775,8 @@
   },
   {
    "game": "board/race/escape/Tavli.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.Game"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Tawula.lud",
@@ -980,8 +980,8 @@
   },
   {
    "game": "board/race/reach/Chong (Sakhalin).lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.math.Abs: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/reach/Chonpa.lud",
@@ -1215,8 +1215,8 @@
   },
   {
    "game": "board/race/reach/Tamman.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.booleans.is.Is: no static construct(5) overload (Java co"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/reach/Tasholiwe.lud",
@@ -1235,8 +1235,8 @@
   },
   {
    "game": "board/race/reach/There and Back.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.floats.math.Mul: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/reach/Tourne-Case.lud",
@@ -1515,8 +1515,8 @@
   },
   {
    "game": "board/sow/four_rows/Ngulungu.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.booleans.is.Is: no static construct(5) overload (Java co"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/four_rows/Njombwa (One Counter).lud",
@@ -2010,8 +2010,8 @@
   },
   {
    "game": "board/sow/two_rows/Khutka Boia.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.math.Abs: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/two_rows/Kiuthi.lud",
@@ -2265,8 +2265,8 @@
   },
   {
    "game": "board/sow/two_rows/Um el Banat.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.booleans.is.Is: no static construct(5) overload (Java co"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/two_rows/Um el Tuweisat.lud",
@@ -2675,8 +2675,8 @@
   },
   {
    "game": "board/space/connection/Bide.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Player: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/connection/Bipartisan Y.lud",
@@ -3031,7 +3031,7 @@
   {
    "game": "board/space/group/Vigilance.lud",
    "status": "THROW",
-   "reason": "cannot instantiate game.functions.floats.math.Mul: no TS constructor mapped"
+   "reason": "terminal P#1 did not match game.types.play.RoleType"
   },
   {
    "game": "board/space/group/Yoin.lud",
@@ -3770,8 +3770,8 @@
   },
   {
    "game": "board/space/pattern/Archworm.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.floats.math.Mul: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/pattern/Azteka.lud",
@@ -3985,8 +3985,8 @@
   },
   {
    "game": "board/space/territory/Rolit.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Player: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/territory/Spargo.lud",
@@ -4010,8 +4010,8 @@
   },
   {
    "game": "board/space/territory/Stargazers.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.floats.math.Mul: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/territory/SupplierSabotage.lud",
@@ -4670,8 +4670,8 @@
   },
   {
    "game": "board/war/leaping/orthogonal/Laram Wali.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.floats.math.Mul: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/leaping/orthogonal/Leap Frog.lud",
@@ -5450,8 +5450,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/all/Bul.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.Game"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/all/Catapult.lud",
@@ -5740,8 +5740,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/target/Rithmomachia.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.math.Abs: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/target/Shogun.lud",
@@ -5775,8 +5775,8 @@
   },
   {
    "game": "experimental/Adhesion.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.floats.math.Mul: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "experimental/Affinage.lud",
@@ -5910,8 +5910,8 @@
   },
   {
    "game": "experimental/Hops-a-Daisy Generalized.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Player: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "experimental/Hordes Realm.lud",
@@ -5950,8 +5950,8 @@
   },
   {
    "game": "experimental/Parry.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Player: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "experimental/Polypods.lud",
@@ -5975,8 +5975,8 @@
   },
   {
    "game": "experimental/SnipSnip.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Player: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "experimental/Sprout-R-Out.lud",
@@ -6030,8 +6030,8 @@
   },
   {
    "game": "experimental/Windflowers.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Player: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "experimental/Wrigglers Squared.lud",
@@ -6135,8 +6135,8 @@
   },
   {
    "game": "math/So Long Sucker.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Player: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "math/graph/CoDi.lud",
@@ -6335,8 +6335,8 @@
   },
   {
    "game": "puzzle/planning/Buttons And Lights.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.math.Abs: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "puzzle/planning/Chase.lud",
@@ -8120,13 +8120,13 @@
   },
   {
    "game": "test/eric/Test Match.lud",
-   "status": "FALLBACK_EQUIP",
-   "reason": "equip=?"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/eric/Test Match2.lud",
-   "status": "FALLBACK_EQUIP",
-   "reason": "equip=?"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/eric/Test4.lud",
