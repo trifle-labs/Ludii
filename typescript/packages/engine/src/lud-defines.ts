@@ -84,11 +84,16 @@ function collectDefines(node: LudNode, into: Map<string, DefineEntry>): void {
       if (!nameNode || !isString(nameNode)) continue;
       const bodyTerms = item.items.slice(2);
       let body: LudNode;
-      if (bodyTerms.length === 0) continue;
       const first = bodyTerms[0];
       if (bodyTerms.length === 1 && first) {
         body = first;
       } else {
+        // Zero OR many body terms: a synthetic curly wrapper whose items are
+        // SPLICED at the call site. Java expands defines textually, so an
+        // EMPTY define — `(define "TriCorners")`, HexTrike's no-op corner
+        // setup — must make its call `("TriCorners")` vanish entirely
+        // (@java Expander.java expandDefine: replaces the call with the
+        // empty body string).
         body = {
           kind: "list",
           delimiter: "curly",
@@ -96,7 +101,7 @@ function collectDefines(node: LudNode, into: Map<string, DefineEntry>): void {
           range: item.range,
         };
       }
-      into.set(nameNode.value, { name: nameNode.value, body, synthetic: bodyTerms.length > 1 });
+      into.set(nameNode.value, { name: nameNode.value, body, synthetic: bodyTerms.length !== 1 });
     } else {
       // Defines can be nested anywhere in the (post-option) tree, not just at
       // the file top level or inside a curly block. Java's `Expander` extracts
