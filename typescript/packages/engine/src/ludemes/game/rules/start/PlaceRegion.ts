@@ -44,11 +44,8 @@ export class PlaceRegion implements StartRule {
 
   /** @java game/rules/start/place/item/PlaceItem.java — eval(Context) (region overload) */
   public eval(ctx: Context): void {
-    const arrays = (ctx as unknown as {
-      _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
-    })._startArrays;
-    if (!arrays) return;
-    const { cells, whats, countAt, stateAt, valueAt } = arrays;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
+    if (!cs) return;
     const equipment = (ctx.game as unknown as { equipment: Equipment1to1 }).equipment;
 
     // Parse player number from the piece id suffix.
@@ -71,12 +68,8 @@ export class PlaceRegion implements StartRule {
     }
 
     for (const site of sites) {
-      if (site < 0 || site >= cells.length) continue;
-      cells[site] = owner;
-      whats[site] = piece.index;
-      countAt[site] = this.count;
-      if (this.stateValue >= 0) stateAt[site] = this.stateValue;
-      if (this.valueValue >= 0) valueAt[site] = this.valueValue;
+      // @java ActionAdd.apply() -> ContainerState.setSite(...)
+      cs.setSite(site, owner, piece.index, this.count, this.stateValue >= 0 ? this.stateValue : -1, this.valueValue >= 0 ? this.valueValue : -1);
     }
   }
 }

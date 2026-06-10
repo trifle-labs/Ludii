@@ -49,15 +49,15 @@ export class SetAmount implements StartRule {
    * Java: ActionSetAmount(playerId, amount).apply(context) per target player.
    */
   public eval(ctx: Context): void {
-    const arrays = (ctx as unknown as { _startArrays?: { amounts?: number[] } })._startArrays;
-    const amounts = arrays?.amounts;
-    if (!amounts) return;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
+    if (!cs) return;
     const numPlayers = (ctx.game as unknown as { numPlayers: number }).numPlayers;
     if (this.playerId !== null) {
-      if (this.playerId >= 0 && this.playerId < amounts.length) amounts[this.playerId] = this.amount;
+      // @java ActionSetAmount(pid, amount).apply(context) -> State.setAmount
+      cs.setAmount(this.playerId, this.amount);
       return;
     }
     // Each/All role: same amount to every player.
-    for (let pid = 1; pid <= numPlayers; pid++) amounts[pid] = this.amount;
+    for (let pid = 1; pid <= numPlayers; pid++) cs.setAmount(pid, this.amount);
   }
 }

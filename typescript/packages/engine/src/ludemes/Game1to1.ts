@@ -810,6 +810,29 @@ export class Game1to1 implements Game {
     // convergence lands, migrated rules write these arrays directly — the same
     // arrays Game1to1.start() builds the initial State from.
     (ctx as unknown as { _startArrays?: unknown })._startArrays = { cells, whats, countAt, stateAt, valueAt, scores, amounts };
+    // @java other/state/container/ContainerState.java — the MUTATION facade for
+    // start rules (STATE CONVERGENCE chunk 3). Java start rules apply actions that
+    // call ContainerState.setSite(...); converted rules speak this API instead of
+    // touching parallel arrays. UNDEFINED (-1) leaves a slot unchanged, as Java does.
+    (ctx as unknown as { _startState?: unknown })._startState = {
+      /** @java ContainerState.setSite(state, site, who, what, count, state, rotation, value) */
+      setSite: (site: number, who: number, what: number, count: number, stateVal: number, value: number): void => {
+        if (site < 0 || site >= cells.length) return;
+        if (who !== UNDEFINED) cells[site] = who;
+        if (what !== UNDEFINED) whats[site] = what;
+        if (count !== UNDEFINED) countAt[site] = count;
+        if (stateVal !== UNDEFINED) stateAt[site] = stateVal;
+        if (value !== UNDEFINED) valueAt[site] = value;
+      },
+      /** @java State.setScore(player, score) */
+      setScore: (pid: number, score: number): void => {
+        if (scores && pid >= 0 && pid < scores.length) scores[pid] = score;
+      },
+      /** @java State.setAmount(player, amount) */
+      setAmount: (pid: number, amount: number): void => {
+        if (amounts && pid >= 0 && pid < amounts.length) amounts[pid] = amount;
+      },
+    };
     ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
       if (site < 0 || site >= cells.length) return;
       const component = this.equipment.componentAt(what);

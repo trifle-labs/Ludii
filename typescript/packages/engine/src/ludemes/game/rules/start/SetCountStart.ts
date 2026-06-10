@@ -29,13 +29,13 @@ export class SetCountStart implements StartRule {
    * @java game/rules/start/set/sites/SetCount.java — eval(Context)
    *
    * Java: ActionSetCount(type, site, what, count).apply(context) per site.
-   * Until State convergence, mutates the start arrays the bridge context
-   * carries (Game1to1.applyStartRule attaches them as ctx._startArrays).
+   * Writes through the bridge ContainerState mutation facade (ctx._startState).
    */
   public eval(ctx: Context): void {
-    const arrays = (ctx as unknown as { _startArrays?: { countAt: number[] } })._startArrays;
-    if (!arrays) return;
-    const { countAt } = arrays;
+    const cs = (ctx as unknown as {
+      _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void };
+    })._startState;
+    if (!cs) return;
     const sites = this.evalSites(ctx);
     const count = this.countFn.eval(ctx);
     // NOTE: do NOT set whats[site] for mancala (count-based) seeding.
@@ -43,8 +43,8 @@ export class SetCountStart implements StartRule {
     // @java ContainerState.isEmpty(site) for mancala returns count(site)==0
     void this.type;
     for (const site of sites) {
-      if (site < 0 || site >= countAt.length) continue;
-      countAt[site] = count;
+      // @java ActionSetCount -> ContainerState.setSite(site, UNDEF, UNDEF, count, ...)
+      cs.setSite(site, -1, -1, count, -1, -1);
     }
   }
 

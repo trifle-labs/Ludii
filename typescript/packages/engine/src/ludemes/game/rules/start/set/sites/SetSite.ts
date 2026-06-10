@@ -101,11 +101,8 @@ export class SetSite implements StartRule {
    * Start.placePieces(context, site, what, 1, UNDEFINED, UNDEFINED, UNDEFINED, false, type).
    */
   public eval(ctx: Context): void {
-    const arrays = (ctx as unknown as {
-      _startArrays?: { cells: number[]; whats: number[]; countAt: number[] };
-    })._startArrays;
-    if (!arrays) return;
-    const { cells, whats, countAt } = arrays;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
+    if (!cs) return;
     const game = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
 
     // Find the first piece owned by this player (Java: iterates components until component.index() == what)
@@ -114,14 +111,10 @@ export class SetSite implements StartRule {
     if (piece === undefined) return;
 
     const what = piece.index;
-    const n = cells.length;
 
     const place = (site: number): void => {
-      if (site < 0 || site >= n) return;
-      // Java: Start.placePieces(...) → ActionAdd → sets who=owner, what=piece
-      cells[site] = owner;
-      whats[site] = what;
-      countAt[site] = 1;
+      // Java: Start.placePieces(...) -> ActionAdd -> ContainerState.setSite(...)
+      cs.setSite(site, owner, what, 1, -1, -1);
     };
 
     if (this.coords !== null) {

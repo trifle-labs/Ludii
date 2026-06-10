@@ -68,19 +68,19 @@ export class SetScore implements StartRule {
    * Java: ActionSetScore(playerId, score, FALSE).apply(context) for each player.
    */
   public eval(ctx: Context): void {
-    const arrays = (ctx as unknown as { _startArrays?: { scores?: number[] } })._startArrays;
-    const scores = arrays?.scores;
-    if (!scores) return;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
+    if (!cs) return;
     const numPlayers = (ctx.game as unknown as { numPlayers: number }).numPlayers;
     if (this.initSameScoreToEachPlayer) {
       const score = this.scores[0]?.eval(ctx) ?? 0;
-      for (let pid = 1; pid <= numPlayers; pid++) scores[pid] = score;
+      // @java ActionSetScore(pid, score).apply(context) -> State.setScore
+      for (let pid = 1; pid <= numPlayers; pid++) cs.setScore(pid, score);
       return;
     }
     for (let i = 0; i < this.players.length; i++) {
       const pid = this.players[i]!.eval(ctx);
       const score = this.scores[i]?.eval(ctx) ?? 0;
-      if (pid >= 0 && pid < scores.length) scores[pid] = score;
+      cs.setScore(pid, score);
     }
   }
 }

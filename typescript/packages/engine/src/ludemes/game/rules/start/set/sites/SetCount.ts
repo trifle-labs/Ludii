@@ -41,25 +41,18 @@ export class SetCount implements StartRule {
    * In TS: pick the last registered piece as `what`, set countAt[site].
    */
   public eval(ctx: Context): void {
-    const arrays = (ctx as unknown as {
-      _startArrays?: { cells: number[]; whats: number[]; countAt: number[] };
-    })._startArrays;
-    if (!arrays) return;
-    const { cells, whats, countAt } = arrays;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
+    if (!cs) return;
     const equipment = (ctx.game as unknown as { equipment: Equipment1to1 }).equipment;
     // Java: uses context.components()[length-1].index() as `what`
     const pieces = equipment.pieces;
     if (pieces.length === 0) return;
     const lastPiece = pieces[pieces.length - 1]!;
     const what = lastPiece.index;
-    const n = cells.length;
 
     for (const site of this.sites) {
-      if (site < 0 || site >= n) continue;
-      // Java: ActionSetCount sets who + what + count at the site
-      cells[site] = lastPiece.owner;
-      whats[site] = what;
-      countAt[site] = this.count;
+      // Java: ActionSetCount sets who + what + count -> ContainerState.setSite(...)
+      cs.setSite(site, lastPiece.owner, what, this.count, -1, -1);
     }
   }
 }
