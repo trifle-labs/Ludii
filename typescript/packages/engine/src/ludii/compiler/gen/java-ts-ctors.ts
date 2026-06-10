@@ -1509,6 +1509,7 @@ import { Prev as CPrevState } from "../../../ludemes/game/functions/ints/state/P
 import { Counter as CCounterState } from "../../../ludemes/game/functions/ints/state/CounterFn.js";
 import { Sub as CSubFloat } from "../../../ludemes/game/functions/floats/math/SubFloat.js";
 import { Div as CDivFloat } from "../../../ludemes/game/functions/floats/math/DivFloat.js";
+import { Forget as CForgetEffect } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/forget/Forget.js";
 
 export const JAVA_TS_CTORS = new Map();
 JAVA_TS_CTORS.set("game.functions.ints.board.MapEntry", FaithfulMapEntry);
@@ -3022,3 +3023,4 @@ JAVA_TS_CTORS.set("game.functions.ints.state.Prev", CPrevState);
 JAVA_TS_CTORS.set("game.functions.ints.state.Counter", CCounterState);
 JAVA_TS_CTORS.set("game.functions.floats.math.Sub", CSubFloat);
 JAVA_TS_CTORS.set("game.functions.floats.math.Div", CDivFloat);
+JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.forget.Forget", CForgetEffect);
