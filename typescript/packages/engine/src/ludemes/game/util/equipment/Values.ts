@@ -15,10 +15,10 @@ export type UtilSiteType = "Vertex" | "Edge" | "Cell";
  */
 export class Values {
   /** The graph element type. @java Values.type */
-  public readonly type: UtilSiteType;
+  private readonly _type: UtilSiteType;
 
   /** The range of valid values. @java Values.range */
-  public readonly range: RangeFunction1to1;
+  private readonly _range: RangeFunction1to1;
 
   /**
    * @java Values(SiteType type, Range range)
@@ -27,7 +27,13 @@ export class Values {
    * @param range The range of valid values.
    */
   public constructor(type: UtilSiteType, range: RangeFunction1to1) {
-    this.type = type;
-    this.range = range;
+    this._type = type;
+    this._range = range;
   }
+
+  /** @java Values.type() */
+  public type(): UtilSiteType { return this._type; }
+
+  /** @java Values.range() */
+  public range(): RangeFunction1to1 { return this._range; }
 }

@@ -1482,6 +1482,8 @@ import { Min as CMinInt } from "../../../ludemes/game/functions/ints/math/Min.js
 import { Max as CMaxInt } from "../../../ludemes/game/functions/ints/math/Max.js";
 import { Mul as CMulInt } from "../../../ludemes/game/functions/ints/math/Mul.js";
 import { Amount as CAmountInt } from "../../../ludemes/game/functions/ints/state/Amount.js";
+import { Hint as CHintInt } from "../../../ludemes/game/functions/ints/iterator/Hint.js";
+import { EdgeIterator as CEdgeInt } from "../../../ludemes/game/functions/ints/iterator/EdgeIterator.js";
 import { TopLevel as CTopLevel } from "../../../ludemes/game/functions/ints/stacking/TopLevel.js";
 import { Intersection as CIntersectionRegion } from "../../../ludemes/game/functions/region/math/Intersection.js";
 
@@ -1919,6 +1921,7 @@ JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.is.Is", C426);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.is.regionResult.IsCount", C427);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.is.regionResult.IsSum", C428);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.all.AllDifferent", C429);
+JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.all.All", C430);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.all.All", C430);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.ForAll", C431);
 JAVA_TS_CTORS.set("game.functions.booleans.BooleanConstant", C432);
@@ -2969,5 +2972,7 @@ JAVA_TS_CTORS.set("game.functions.ints.math.Min", CMinInt);
 JAVA_TS_CTORS.set("game.functions.ints.math.Max", CMaxInt);
 JAVA_TS_CTORS.set("game.functions.ints.math.Mul", CMulInt);
 JAVA_TS_CTORS.set("game.functions.ints.state.Amount", CAmountInt);
+JAVA_TS_CTORS.set("game.functions.ints.iterator.Hint", CHintInt);
+JAVA_TS_CTORS.set("game.functions.ints.iterator.Edge", CEdgeInt);
 JAVA_TS_CTORS.set("game.functions.ints.stacking.TopLevel", CTopLevel);
 JAVA_TS_CTORS.set("game.functions.region.math.Intersection", CIntersectionRegion);

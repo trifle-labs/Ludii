@@ -1,6 +1,6 @@
 {
- "faithful": 183,
- "fallback": 37,
+ "faithful": 189,
+ "fallback": 31,
  "total": 220,
  "perGame": [
   {
@@ -540,8 +540,8 @@
   },
   {
    "game": "board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi.lud",
-   "status": "THROW",
-   "reason": "array (?) did not match game.functions.booleans.BooleanFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/all/Annuvin.lud",
@@ -575,8 +575,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/target/Kriegsspiel.lud",
-   "status": "THROW",
-   "reason": "array (?) did not match game.rules.play.moves.Moves"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/stalemate/Clobber.lud",
@@ -625,18 +625,18 @@
   },
   {
    "game": "math/hand/Morra.lud",
-   "status": "THROW",
-   "reason": "array (?) did not match game.rules.start.StartRule"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "puzzle/deduction/Killer Sudoku.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Hint: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "puzzle/deduction/Sudoku.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.booleans.deductionPuzzle.all.All: no static construct(5)"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "puzzle/planning/Insanity.lud",
@@ -645,8 +645,8 @@
   },
   {
    "game": "puzzle/planning/Morpion Solitaire.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.iterator.Edge: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "puzzle/planning/Tchoukaillon.lud",

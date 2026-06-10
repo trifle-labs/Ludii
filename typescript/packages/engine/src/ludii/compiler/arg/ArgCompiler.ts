@@ -1176,16 +1176,25 @@ export class ArgCompiler {
         // class. Try the static methods named `construct*` with a matching arity,
         // returning the first that yields a non-null result.
         const ctorObj = ctor as unknown as Record<string, unknown>;
-        const exact = ctorObj["construct"];
-        const fns: Array<(...a: unknown[]) => unknown> = [];
-        if (typeof exact === "function" && (exact as { length: number }).length === info.args.length)
-          fns.push(exact as (...a: unknown[]) => unknown);
+        // JS Function.length counts only params before the first default, so a
+        // faithfully-ported static construct with an @Opt/default tail (e.g.
+        // All.construct(allType, type=null, region=null, except=null, excepts=null)
+        // has length 1) must match when its REQUIRED params are satisfiable:
+        // fn.length <= args.length. Exact-arity candidates are tried first.
+        const exactFns: Array<(...a: unknown[]) => unknown> = [];
+        const relaxedFns: Array<(...a: unknown[]) => unknown> = [];
+        const consider = (fn: unknown): void => {
+          if (typeof fn !== "function") return;
+          const len = (fn as { length: number }).length;
+          if (len === info.args.length) exactFns.push(fn as (...a: unknown[]) => unknown);
+          else if (len < info.args.length) relaxedFns.push(fn as (...a: unknown[]) => unknown);
+        };
+        consider(ctorObj["construct"]);
         for (const name of Object.getOwnPropertyNames(ctorObj)) {
           if (name === "construct" || !name.startsWith("construct")) continue;
-          const fn = ctorObj[name];
-          if (typeof fn === "function" && (fn as { length: number }).length === info.args.length)
-            fns.push(fn as (...a: unknown[]) => unknown);
+          consider(ctorObj[name]);
         }
+        const fns = [...exactFns, ...relaxedFns];
         for (const fn of fns) {
           try {
             const result = fn.apply(ctor, [...info.args]);
