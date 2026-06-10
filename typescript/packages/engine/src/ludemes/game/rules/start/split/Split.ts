@@ -15,7 +15,7 @@
  * Full implementation requires the card/deck subsystem to be ported.
  */
 
-import type { Equipment1to1 } from "../../../equipment/Equipment1to1.js";
+import type { Context } from "../../../../../context.js";
 import type { StartRule } from "../StartRule.js";
 import type { SplitType } from "./SplitType.js";
 
@@ -48,15 +48,9 @@ export class Split implements StartRule {
    *   context.sitesFrom(), BaseContainerStateStacking.sizeStackCell() are all
    *   unavailable via applyToInitialState.
    */
-  public applyToInitialState(
-    _cells: number[],
-    _whats: number[],
-    _countAt: number[],
-    _equipment: Equipment1to1,
-    _numPlayers: number,
-  ): void {
-    // Deferred: card/deck subsystem not accessible via applyToInitialState.
-    // Java: ActionMove(Cell, indexSiteDeck, 0, Cell, handIndex[hand], ...) for each card.
+  public eval(_ctx: Context): void {
+    // Deferred until the card/deck subsystem is ported: Java Split.eval deals
+    // the deck round-robin to player hands via ActionMove.
     void this.splitType;
   }
 }

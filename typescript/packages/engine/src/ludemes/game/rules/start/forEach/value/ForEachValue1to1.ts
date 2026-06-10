@@ -12,7 +12,6 @@ import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
 import type { IntFunction } from "../../../../../base.js";
 import type { StartRule } from "../../StartRule.js";
 import type { Context } from "../../../../../../context.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
 
 /**
  * @java game/rules/start/forEach/value/ForEachValue.java
@@ -46,53 +45,42 @@ export class ForEachValue1to1 implements StartRule {
    * For each step, sets _evalValue on a fake context (Java: context.setValue(to))
    * and invokes the inner start rule.
    */
-  public applyToInitialState(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
-    equipment: Equipment1to1,
-    numPlayers: number,
-  ): void {
-    const fakeCtx = makeFakeCtx(cells, equipment, numPlayers);
-
-    // Java: final int min = minFn.eval(context); final int max = maxFn.eval(context);
+  /**
+   * @java ForEachValue.eval(Context)
+   *
+   * Java: min/max evaluated on the context, then for each `to` in [min..max]:
+   *   context.setValue(to); startRule.eval(context);
+   * and finally context.setValue(savedValue).
+   */
+  public eval(ctx: Context): void {
     let min: number;
     let max: number;
     try {
-      min = this.minFn.eval(fakeCtx);
-      max = this.maxFn.eval(fakeCtx);
+      min = this.minFn.eval(ctx);
+      max = this.maxFn.eval(ctx);
     } catch {
       return;
     }
 
-    // Java: for (int to = min; to <= max; to++) { context.setValue(to); startRule.eval(context); }
+    const scratch = ctx as Context & { _evalValue?: number };
+    const saved = scratch._evalValue;
     for (let to = min; to <= max; to++) {
-      fakeCtx._evalValue = to;
-      this.startRule.applyToInitialState?.(cells, whats, countAt, equipment, numPlayers, undefined, undefined, fakeCtx);
+      // @java context.setValue(to)
+      scratch._evalValue = to;
+      if (typeof this.startRule.eval === "function") {
+        this.startRule.eval(ctx);
+      } else {
+        // TRANSITION: array-shaped child (PlaceItem1to1) — feed it the bridge arrays.
+        const a = (ctx as unknown as {
+          _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
+        })._startArrays;
+        const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
+        if (a) this.startRule.applyToInitialState?.(a.cells, a.whats, a.countAt, g.equipment, g.numPlayers, a.stateAt, a.valueAt, ctx);
+      }
     }
-    // Java: context.setValue(savedValue); (restored — fake ctx is discarded)
+    // @java context.setValue(savedValue)
+    scratch._evalValue = saved as number;
   }
 }
 
-/** Minimal fake context for IntFunction evaluation. */
-function makeFakeCtx(
-  cells: number[],
-  equipment: Equipment1to1,
-  numPlayers: number,
-): Context {
-  const fakeGame = { numPlayers, equipment } as unknown as Game1to1;
-  return {
-    game: fakeGame,
-    state: {
-      mover: 1,
-      cells,
-      isEmptySite: (i: number) => !cells[i],
-    },
-    _evalFrom: -1,
-    _evalTo: -1,
-    _evalValue: 0,
-    _evalSite: -1,
-    _evalPlayer: 1,
-    _radials: equipment.board.radials,
-  } as unknown as Context;
-}
+
