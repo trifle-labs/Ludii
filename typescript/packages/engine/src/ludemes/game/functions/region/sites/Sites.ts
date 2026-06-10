@@ -31,6 +31,7 @@ import { SitesHiddenWhat } from "./hidden/SitesHiddenWhat.js";
 import { SitesHiddenWho } from "./hidden/SitesHiddenWho.js";
 import { SitesIncident } from "./incidents/SitesIncident.js";
 import { SitesLineOfSight } from "./lineOfSight/SitesLineOfSight.js";
+import { cornerSitesTyped } from "./simple/corner-sites.js";
 import { SitesOccupied } from "./occupied/SitesOccupied.js";
 import { SitesEquipmentRegion } from "./player/SitesEquipmentRegion.js";
 import { SitesHand } from "./player/SitesHand.js";
@@ -855,12 +856,14 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct(SitesLineOfSightType, ...) → SitesLineOfSight
    */
   public static constructLineOfSight(
-    _regionType: unknown,
+    regionType: unknown,
     typeLoS: LineOfSightType | null,
     typeLoc: string | null,
     at: IntFunction | null,
     directions: unknown,
   ): RegionFunction {
+    // @java overload resolution — the LineOfSight discriminant selects this clause
+    if ((regionType as string) !== "LineOfSight") return null as unknown as RegionFunction;
     // @java return new SitesLineOfSight(typeLoS, typeLoc, at, directions);
     // TS SitesLineOfSight constructor: (typeLoS, typeLoc, loc: IntFunction, directionName: string)
     const dirName = typeof directions === "string"
@@ -876,10 +879,12 @@ export class Sites extends BaseRegionFunction {
    * @example (sites Random)
    */
   public static constructRandom(
-    _regionType: unknown,
+    regionType: unknown,
     region: RegionFunction | null,
     num: IntFunction | null,
   ): RegionFunction {
+    // @java overload resolution — the Random discriminant selects this clause
+    if ((regionType as string) !== "Random") return null as unknown as RegionFunction;
     // @java return new SitesRandom(region, num);
     // TS SitesRandom constructor: (region: RegionFunction, numSitesFn: IntFunction)
     const regionFn: RegionFunction = region !== null ? region : new (class extends BaseRegionFunction {
@@ -913,13 +918,15 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct(SitesTrackType, ...) → SitesTrack
    */
   public static constructTrack(
-    _regionType: unknown,
+    regionType: unknown,
     pid: unknown,
     role: unknown,
     name: string | null,
     from: IntFunction | null,
     to: IntFunction | null,
   ): RegionFunction {
+    // @java overload resolution — the Track discriminant selects this clause
+    if ((regionType as string) !== "Track") return null as unknown as RegionFunction;
     // @java return new SitesTrack(pid, role, name, from, to);
     return new SitesTrack(
       pid as ConstructorParameters<typeof SitesTrack>[0],
@@ -935,7 +942,7 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct(SitesLoopType, ...) → SitesLoop
    */
   public static constructLoop(
-    _regionType: unknown,
+    regionType: unknown,
     _inside: BooleanFunction | null,
     _type: string | null,
     _surround: unknown,
@@ -945,6 +952,8 @@ export class Sites extends BaseRegionFunction {
     _start: IntFunction | null,
     _regionStart: RegionFunction | null,
   ): RegionFunction {
+    // @java overload resolution — the Loop discriminant selects this clause
+    if ((regionType as string) !== "Loop") return null as unknown as RegionFunction;
     // @java return new SitesLoop(inside, type, surround, surroundList, directions, colour, start, regionStart);
     // SitesLoop is stubbed
     return new (class extends BaseRegionFunction {
@@ -957,13 +966,15 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct(SitesPatternType, ...) → SitesPattern
    */
   public static constructPattern(
-    _regionType: unknown,
+    regionType: unknown,
     _walk: unknown,
     _type: string | null,
     _from: IntFunction | null,
     _what: IntFunction | null,
     _whats: IntFunction[] | null,
   ): RegionFunction {
+    // @java overload resolution — the Pattern discriminant selects this clause
+    if ((regionType as string) !== "Pattern") return null as unknown as RegionFunction;
     // @java return new SitesPattern(walk, type, from, what, whats);
     return new (class extends BaseRegionFunction {
       override eval(_ctx: Context & EvalScratch): number[] { return []; }
@@ -975,10 +986,12 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct(SitesLargePieceType, SiteType, IntFunction) → SitesLargePiece
    */
   public static constructLargePiece(
-    _regionType: unknown,
+    regionType: unknown,
     _type: string | null,
     _at: IntFunction,
   ): RegionFunction {
+    // @java overload resolution — the LargePiece discriminant selects this clause
+    if ((regionType as string) !== "LargePiece") return null as unknown as RegionFunction;
     // @java return new SitesLargePiece(type, at);
     return new (class extends BaseRegionFunction {
       override eval(_ctx: Context & EvalScratch): number[] { return []; }
@@ -1004,15 +1017,27 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct(SitesSideType, SiteType, Player, RoleType, CompassDirection) → SitesSide
    */
   public static constructSide(
-    _regionType: unknown,
+    regionType: unknown,
     _elementType: string | null,
     _player: unknown,
     _role: unknown,
-    _direction: unknown,
+    direction: unknown,
   ): RegionFunction {
+    // @java overload resolution — the Side discriminant selects this clause
+    if ((regionType as string) !== "Side") return null as unknown as RegionFunction;
     // @java return new SitesSide(elementType, player, role, direction);
+    // SitesSide.eval reads topology.sides(type).get(direction) — the side
+    // buckets computed by MeasureGraph.measureSides: the perimeter is split
+    // into runs between corners, each run classified by the discrete
+    // direction (16 buckets) of its centroid from the board centroid.
+    const dirName = typeof direction === "string"
+      ? direction
+      : (direction as { uniqueName?: () => string } | null)?.uniqueName?.() ?? null;
     return new (class extends BaseRegionFunction {
-      override eval(_ctx: Context & EvalScratch): number[] { return []; }
+      override eval(ctx: Context & EvalScratch): number[] {
+        if (dirName === null) return [];
+        return boardSides(ctx, dirName.toUpperCase());
+      }
     })();
   }
 
@@ -1034,6 +1059,100 @@ export class Sites extends BaseRegionFunction {
 }
 
 // ---- Helpers ----------------------------------------------------------------
+
+/**
+ * The sites on the named board side.
+ * @java Core/src/game/util/graph/MeasureGraph.java — measureSides/findSides/
+ * sideFromRun: walk the perimeter cyclically; each run between consecutive
+ * corners is one side; classify it by discreteDirection(centroid, runAvg, 16)
+ * (E=0, N=4, W=8, S=12; 1-3 NE, 5-7 NW, 9-11 SW, 13-15 SE); every element of
+ * the run (corners included — a corner belongs to BOTH adjacent sides) gets
+ * the property. Side membership is computed on the play-site graph.
+ */
+function boardSides(ctx: Context, dirName: string): number[] {
+  const traj = (ctx as unknown as { _trajectories?: {
+    perimeterSites?: () => readonly number[];
+    cornerSites?: () => readonly number[];
+    xOf(site: number): number;
+    yOf(site: number): number;
+  } | null })._trajectories
+    ?? ((ctx.game as unknown as { equipment?: { board?: { trajectories?: unknown } } }).equipment?.board?.trajectories as {
+      perimeterSites?: () => readonly number[];
+      cornerSites?: () => readonly number[];
+      xOf(site: number): number;
+      yOf(site: number): number;
+    } | null | undefined);
+  if (!traj || typeof traj.perimeterSites !== "function" || typeof traj.cornerSites !== "function") {
+    // Rectangle fallback: N=top row, S=bottom row, E=right col, W=left col.
+    const board = (ctx.game as unknown as { equipment?: { board?: { width: number; height: number } } }).equipment?.board;
+    if (!board) return [];
+    const { width: W, height: H } = board;
+    const out: number[] = [];
+    for (let s = 0; s < W * H; s++) {
+      const col = s % W;
+      const row = Math.floor(s / W);
+      if ((dirName === "N" && row === H - 1) || (dirName === "S" && row === 0)
+        || (dirName === "E" && col === W - 1) || (dirName === "W" && col === 0)) out.push(s);
+    }
+    return out;
+  }
+
+  const perim = [...traj.perimeterSites()];
+  if (perim.length === 0) return [];
+  // Corner sites in play-site ids: the curvature-scored corner detection
+  // (@java MeasureGraph.cornersFromPerimeter) ported in corner-sites.ts;
+  // works for Vertex AND Cell play. traj.cornerSites() covers vertex play.
+  let cornerList: readonly number[] | undefined = typeof traj.cornerSites === "function" ? traj.cornerSites() : undefined;
+  if (!cornerList || cornerList.length === 0) {
+    cornerList = cornerSitesTyped(ctx, traj as never, "convex");
+  }
+  const corners = new Set(cornerList ?? []);
+  // Board centroid over ALL perimeter sites (Java uses the graph centroid).
+  let cx = 0; let cy = 0;
+  for (const s of perim) { cx += traj.xOf(s); cy += traj.yOf(s); }
+  cx /= perim.length; cy /= perim.length;
+  // Cyclic perimeter order by angle around the centroid (Java's Perimeter
+  // list is already boundary-ordered; ours may not be).
+  perim.sort((a, b) =>
+    Math.atan2(traj.yOf(a) - cy, traj.xOf(a) - cx) - Math.atan2(traj.yOf(b) - cy, traj.xOf(b) - cx));
+
+  // @java MeasureGraph.discreteDirection(angle, 16)
+  const discrete = (angle: number): number => {
+    const arc = (2 * Math.PI) / 16;
+    const off = arc / 2;
+    let a = angle;
+    while (a < 0) a += 2 * Math.PI;
+    while (a > 2 * Math.PI) a -= 2 * Math.PI;
+    return (Math.floor((a + off) / arc) + 16) % 16;
+  };
+  const sideOf = (dirn: number): string =>
+    dirn === 0 ? "E" : dirn === 4 ? "N" : dirn === 8 ? "W" : dirn === 12 ? "S"
+      : dirn < 4 ? "NE" : dirn < 8 ? "NW" : dirn < 12 ? "SW" : "SE";
+
+  const num = perim.length;
+  const out = new Set<number>();
+  const cornerIdxs: number[] = [];
+  for (let i = 0; i < num; i++) if (corners.has(perim[i]!)) cornerIdxs.push(i);
+  if (cornerIdxs.length === 0) return [];
+  for (const from of cornerIdxs) {
+    // @java findSides — run extends to the NEXT corner (inclusive both ends)
+    let to = from;
+    do { to = (to + 1) % num; } while (!corners.has(perim[to]!) && to !== from);
+    const runLength = (to - from + num) % num;
+    let avgX = traj.xOf(perim[from]!);
+    let avgY = traj.yOf(perim[from]!);
+    for (let r = 0; r < runLength; r++) {
+      const s = perim[(from + 1 + r) % num]!;
+      avgX += traj.xOf(s); avgY += traj.yOf(s);
+    }
+    avgX /= runLength + 1; avgY /= runLength + 1;
+    const dirn = discrete(Math.atan2(avgY - cy, avgX - cx));
+    if (sideOf(dirn) !== dirName) continue;
+    for (let r = 0; r <= runLength; r++) out.add(perim[(from + r) % num]!);
+  }
+  return [...out];
+}
+
 
 /**
  * Checks if a string looks like a board coordinate (e.g. "A1", "E5", "Z12").

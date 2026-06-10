@@ -43,6 +43,35 @@ function playerConnectionRegions(ctx: Context, pid: number): number[][] {
       namedPlayerRegions?: ReadonlyMap<string, ReadonlyMap<number, RegionFunction>>;
     };
   }).equipment;
+  // @java IsConnected.java:181-198 -- for every equipment Regions owned by the
+  // player, EACH RegionFunction inside region() is a SEPARATE target set the
+  // group must touch (Hex: (regions P1 {(sites Side NE) (sites Side SW)}) =>
+  // two targets, both sides). Collapsing them to one union made connection
+  // either trivial or undetectable.
+  const eqWithRaw = equipment as unknown as {
+    regions?: () => Array<{
+      owner?: () => number;
+      region?: () => readonly RegionFunction[] | null;
+      sites?: () => readonly number[] | null;
+    }> | null;
+  } | undefined;
+  const raw = typeof eqWithRaw?.regions === "function" ? eqWithRaw.regions() : null;
+  if (raw && raw.length > 0) {
+    const out: number[][] = [];
+    for (const item of raw) {
+      const owner = typeof item.owner === "function" ? item.owner() : -1;
+      if (owner !== pid) continue;
+      const parts = typeof item.region === "function" ? item.region() : null;
+      if (parts && parts.length > 0) {
+        for (const fn of parts) out.push(fn.eval(ctx as never));
+      } else {
+        const sites = typeof item.sites === "function" ? item.sites() : null;
+        if (sites && sites.length > 0) out.push([...sites]);
+      }
+    }
+    if (out.length > 0) return out;
+  }
+
   const region = equipment?.playerRegions?.get(pid);
   if (region) return [region.eval(ctx as never)];
   const out: number[][] = [];
