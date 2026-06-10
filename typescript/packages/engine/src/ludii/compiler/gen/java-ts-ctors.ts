@@ -189,7 +189,7 @@ import { NextPhase as C185 } from "../../../ludemes/game/rules/phase/NextPhase.j
 import { Phase as C186 } from "../../../ludemes/game/rules/phase/Phase.js";
 import { Rules as C187 } from "../../../ludemes/game/rules/Rules.js";
 import { Split as C188 } from "../../../ludemes/game/rules/start/split/Split.js";
-import { ForEachValue1to1 as C189 } from "../../../ludemes/game/rules/start/forEach/value/ForEachValue1to1.js";
+import { ForEachValue as C189 } from "../../../ludemes/game/rules/start/forEach/value/ForEachValue.js";
 import { ForEach as C190 } from "../../../ludemes/game/rules/start/forEach/ForEach.js";
 import { ForEachTeam as C191 } from "../../../ludemes/game/rules/start/forEach/team/ForEachTeam.js";
 import { ForEachSite as C192 } from "../../../ludemes/game/rules/start/forEach/site/ForEachSite.js";
