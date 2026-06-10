@@ -818,3 +818,16 @@ container = large hidden hex field) — same documented subsystem class as stack
   import the faithful home. Values.ts done this way; build+canaries green.
 
 The 73-file batch parallelizes cleanly over the recipe (codex wave, Jun 13).
+
+## Update 31a — StartRule de-contamination analysis (wave design input)
+
+The `Equipment1to1` type-only imports in rules/start/* are NOT light re-homings:
+the TS StartRule interface is itself an adaptation
+(`applyToInitialState(cells, whats, countAt, equipment, …)` mutating raw arrays)
+where Java's contract is `StartRule.eval(Context)` (@java game/rules/start/
+StartRule.java). The faithful fix is the SIGNATURE MIGRATION to eval(Context) —
+one interface + ~dozens of implementations + the Game1to1.start() call site, all
+in one coordinated change. This is a single coherent codex-wave task (fresh
+context per file, mechanical after the interface flips), not an incremental edit:
+flipping the interface alone breaks every implementation simultaneously.
+Same applies to the equipment barrel + match-players-mode barrel imports.
