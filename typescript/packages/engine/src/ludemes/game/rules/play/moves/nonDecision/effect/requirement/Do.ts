@@ -109,8 +109,12 @@ export class Do implements MovesFunction {
           actions: prependedActions,
           then: nm.then as LudiiMove[],
           moveAgain: nm.moveAgain,
-          fromSite: nm.fromSite,
-          toSite: nm.toSite,
+          // Prepending the prior's actions shifts the decision action, so pin
+          // the decision from/to explicitly (@java the recorded compound move
+          // keeps the MOVEMENT's from/to: "Move=[Move:mover=1,from=0,to=17,
+          // actions=[SetStateAndUpdateDice..., Move:from=0,to=17,...]]").
+          fromSite: nm.fromSite ?? nm.from(),
+          toSite: nm.toSite ?? nm.to(),
         });
         result.push(merged);
       }

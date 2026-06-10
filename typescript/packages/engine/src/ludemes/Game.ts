@@ -440,11 +440,15 @@ export class Game implements Game {
 
     // Place the die components at the dice container sites (@java Equipment
     // create: each Die occupies its container loc; Roll reads what(loc) there).
+    // The Die components are REAL pieces (the recorded trials place what=1,2 at
+    // the dice sites) — use their actual component ids.
     if (this.equipment.diceSpecs.length > 0) {
-      const firstDieId = this.equipment.pieces.length + 1;
+      const dieIds = this.equipment.pieces
+        .filter((p) => /^Die\d*$/.test(p.name) || (p as unknown as { isDie?: () => boolean }).isDie?.() === true)
+        .map((p) => p.index);
       for (let i = 0; i < this.equipment.diceSpecs.length; i++) {
         const loc = this.equipment.diceSiteBase + i;
-        if (loc < whats.length) whats[loc] = firstDieId + i;
+        if (loc < whats.length && dieIds[i] !== undefined) whats[loc] = dieIds[i]!;
       }
     }
 

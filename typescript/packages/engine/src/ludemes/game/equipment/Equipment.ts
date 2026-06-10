@@ -1051,12 +1051,17 @@ export class Equipment extends BaseLudeme {
         : typeof dirnObj === "string" ? dirnObj
         : typeof dirnObj.uniqueName === "function" ? dirnObj.uniqueName()
         : undefined;
+      // Die components: carry the face values so the dice surface can roll
+      // (@java Die.getFaces; the surface object otherwise drops die accessors).
+      const facesFn = (component as unknown as { getFaces?: () => number[] }).getFaces;
+      const faces = typeof facesFn === "function" ? facesFn.call(component) : undefined;
       pieces.push(Object.freeze({
         name: component.name() ?? "",
         owner: component.owner(),
         index: index > 0 ? index : i,
         generator: component.generator(),
         dirn,
+        faces: faces && faces.length > 0 ? Object.freeze([...faces]) : undefined,
       }));
     }
     return Object.freeze(pieces);

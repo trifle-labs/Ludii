@@ -139,29 +139,31 @@ export class Context {
         generate: (ctx: Context) => ({ moves: () => (gen ? gen.eval(ctx) : []) }),
       });
     }
-    // @java Equipment components include the Die components (one per die).
-    // Their what-ids sit after the pieces; state.what(diceSiteBase+i) points
-    // here so Roll's components()[what].roll(context) resolves (@java Die.roll:
-    // context.rng().nextInt(numFaces)).
-    const dice = (this.game as { equipment?: { diceSpecs?: readonly { faces: readonly number[] }[] } }).equipment?.diceSpecs ?? [];
-    const base = out.length + ((eq?.pieces?.length ?? 0) === 0 ? 0 : 0);
-    void base;
-    const firstDieId = (eq?.pieces?.length ?? 0) + 1;
-    dice.forEach((spec, i) => {
-      const faces = spec.faces;
-      out[firstDieId + i] = {
-        owner: 0, index: firstDieId + i, generator: null,
-        isDie: () => true,
-        getNumFaces: () => faces.length,
-        getFaces: () => [...faces],
-        roll: (ctx: Context) => {
+    // The Die components are real pieces; adapt their roll signature for Roll's
+    // Java-shaped call (@java Die.roll(context) -> rng.nextInt(numFaces); the
+    // faithful TS Die.roll takes a nextInt FUNCTION; Roll stores the resolved
+    // face VALUE in the engine dice model).
+    let dieOrdinal = 0;
+    for (const p of (eq?.pieces ?? []) as ReadonlyArray<{ index: number; name?: string; faces?: readonly number[] }>) {
+      const real = out[p.index] as { roll?: unknown; getFaces?: unknown } | undefined;
+      // Faces from the component, else from the dice container spec by ordinal
+      // (@java Dice creates its Die components; setFaces may run later).
+      let faces = p.faces;
+      const isDieName = typeof p.name === "string" && /^Die\d*$/.test(p.name);
+      if ((!faces || faces.length === 0) && isDieName) {
+        const spec = (eq as { diceSpecs?: readonly { faces: readonly number[] }[] } | undefined)?.diceSpecs?.[dieOrdinal];
+        if (spec) faces = spec.faces;
+      }
+      if (isDieName) dieOrdinal++;
+      if (real && faces && faces.length > 0) {
+        (real as { getFaces: () => number[] }).getFaces = () => [...faces];
+        (real as { roll: (ctx: Context) => number }).roll = (ctx: Context) => {
           const rng = (ctx as { rng?: { nextInt?: (n: number) => number } }).rng;
           const k = rng && typeof rng.nextInt === "function" ? rng.nextInt(faces.length) : 0;
           return faces[k] ?? 0;
-        },
-        generate: () => ({ moves: () => [] }),
-      };
-    });
+        };
+      }
+    }
     return out;
   }
 
