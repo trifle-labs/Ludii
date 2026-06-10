@@ -1511,6 +1511,11 @@ import { Sub as CSubFloat } from "../../../ludemes/game/functions/floats/math/Su
 import { Div as CDivFloat } from "../../../ludemes/game/functions/floats/math/DivFloat.js";
 import { Forget as CForgetEffect } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/forget/Forget.js";
 import { GraphLudeme as CGraphUtil } from "../../../ludemes/game/util/graph/GraphLudeme.js";
+import { Players as CPlayersArr } from "../../../ludemes/game/functions/intArray/players/PlayersFn.js";
+import { Was as CWasBool } from "../../../ludemes/game/functions/booleans/was/Was.js";
+import { Phase as CPhaseBoard } from "../../../ludemes/game/functions/ints/board/PhaseFn.js";
+import { Max as CMaxReq } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/Max.js";
+import { Satisfy1to1 as CSatisfyEff } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/Satisfy1to1.js";
 
 export const JAVA_TS_CTORS = new Map();
 JAVA_TS_CTORS.set("game.functions.ints.board.MapEntry", FaithfulMapEntry);
@@ -3026,3 +3031,8 @@ JAVA_TS_CTORS.set("game.functions.floats.math.Sub", CSubFloat);
 JAVA_TS_CTORS.set("game.functions.floats.math.Div", CDivFloat);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.forget.Forget", CForgetEffect);
 JAVA_TS_CTORS.set("game.util.graph.Graph", CGraphUtil);
+JAVA_TS_CTORS.set("game.functions.intArray.players.Players", CPlayersArr);
+JAVA_TS_CTORS.set("game.functions.booleans.was.Was", CWasBool);
+JAVA_TS_CTORS.set("game.functions.ints.board.Phase", CPhaseBoard);
+JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.max.Max", CMaxReq);
+JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.Satisfy", CSatisfyEff);
