@@ -1354,3 +1354,40 @@ projection. Fails were Throngs, Wumpus World, Mutant Y^3 — and the audit ran B
 
 Effective live coverage: 1290/1292 = 99.85%. Remaining compile gaps: Throngs
 (mid-binder, needs dedicated trace), Mutant Y^3 layer 2 (experimental/).
+
+## Update 62 (2026-06-10) — ALL EXOTIC SINGLES CLEARED + State convergence measured design
+
+Singles 2 → 0 (each a faithful root-cause fix, battery-gated):
+- **Throngs**: two gaps. (1) `(rulesets ...)` blocks are now STRIPPED pre-compile
+  (@java Expander.realiseRulesets — rulesets are stored for the UI, the game compiles
+  with option priorities; the selector strings had been leaking into the tree as
+  string-headed lists). (2) Java's unfilled-param removal (`<DELETE_ME>`,
+  Expander.java:952) leaves empty `()` residue in text — Throngs' `(#2)` with #2
+  unfilled; compileArray now skips empty groups exactly as Java's compiler tolerates them.
+- **Mutant Y^3**: range bounds may be option placeholders (`{0..<Board:aTri>}`) —
+  Java substitutes options TEXTUALLY before expanding ranges; our lexer mangles
+  `..<` beyond recovery. play1to1's text pre-pass now resolves single-token
+  placeholder bounds before range expansion (complex values unchanged on the AST path).
+
+With Wumpus World (lowercased-enum) earlier today: **every known compile gap in the
+real-game corpus is closed**. Certification audit v9 running.
+
+STATE CONVERGENCE — measured seams (the design input):
+- 67 files import state.js; the ctx.state access surface is ~15 properties:
+  mover(309) cells(58) whatAtSite(51) isHidden(15) isEmptySite(12) next(9) whats(8)
+  whatAtSiteLevel(8) valuePlayer(6) stackSize(4) diceValues(4) countAtSite(4)
+  stacks(3) whoAtSiteLevel(2) scores(2).
+- _startArrays consumers: 12 files (all converted StartRules + Game1to1).
+- side-channels: equipment._initialRemembered/_initialHidden (2 producers + start()).
+
+CHUNK PLAN (same migrate-then-delete shape as the StartRule migration):
+1. Add @java ContainerState accessors to State — who(site,type?)/what/count/
+   stateAt/value/isEmpty mapping onto the existing arrays (pure addition, no risk).
+2. Migrate raw-array readers (state.cells[s] → state.who(s); 22 files / 34 sites),
+   battery per batch. whatAtSite/countAtSite are already accessor-shaped — rename
+   to the Java names (what/count) in the same sweep.
+3. Replace _startArrays writes with State-mutation calls on the bridge state
+   (the bridge state already IS a State; needs mutable-during-start or builder).
+4. Fold _initialRemembered/_initialHidden side-channels into the bridge.
+5. Rename the engine files/classes to the Java homes (other/state/State.ts hosts
+   the State1to1 registration — resolve with the Game1to1/Equipment1to1 core renames).
