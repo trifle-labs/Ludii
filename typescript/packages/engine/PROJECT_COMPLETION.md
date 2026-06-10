@@ -584,9 +584,13 @@ item 1 (faithful >= bespoke) is CLOSE: the verified faithful-behind list is smal
 ALSO LANDED: Koro full replay (RoleType.Player in the sites dispatch: PLAYER_SITE_VARIANTS +
 resolveSitesPlayer reads ctx._evalPlayer); SitesLeft/Right rewritten on the real Trajectories API;
 PlaceItem region-in-loc-slot fill; start-bridge ctx carries trajectories/radials.
-KNOWN-DIAGNOSED (next): El Perro start region collapses on the bridge facade only (the union's
-intersection operand evals empty on the start facade ctx, fine on the play ctx — one diagnostic from
-done); Pentalath ply-0; Gekitai ply-10. Then beyond-bespoke stretch (var/value subsystem for
+KNOWN-DIAGNOSED (next; ALL THREE faithful-behind games fully diagnosed):
+ - El Perro: in-game union region frozen to [0-9] — the registry-bundle operand arrives PRE-EVALUATED
+   (toRegion(isNumberArray)->RegionConstant captures a compile-time []); find where static regions are
+   pre-evaluated when ArgBundles are built. (Factories themselves verified lazy.)
+ - Pentalath: graph (intersect {...}) board builds 0 sites ("siteIndex 0 out of range [0,0)") — the
+   graph-intersect-of-shapes operator yields an empty graph.
+ - Gekitai: push mechanic diverges board state by ply 10 (to=15 occupied on TS, empty in Java). Then beyond-bespoke stretch (var/value subsystem for
 Ti/Fergen, stacking for Sam K'i, dice-state races) and bespoke deletion + hardening.
 
 ## Update 19: Pong Hau K'i full parity (getElement site-type fallback) — manual stretch tally
