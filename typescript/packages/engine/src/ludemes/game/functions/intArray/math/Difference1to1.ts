@@ -9,7 +9,13 @@ import type { Context } from "../../../../../context.js";
 import type { IntArrayFunction, IntFunction } from "../../../../base.js";
 import { isList } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
-import { headOf } from "../../../../../compiler1to1.js";
+import { listHead } from "@ludii/typescript-language";
+
+/** Lower-cased head of a list node (inlined from the deleted bespoke shim). */
+function headOf(node: import("@ludii/typescript-language").LudNode): string | undefined {
+  if (!isList(node)) return undefined;
+  return listHead(node)?.toLowerCase();
+}
 
 /** The set of heads that are IntArray-typed (not int-typed). */
 const INT_ARRAY_HEADS = new Set([

@@ -28,7 +28,6 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import { type Compile1to1Env } from "../../../../../registry1to1.js";
 import { isIdent } from "@ludii/typescript-language";
 
 type AnglePredicate = "acute" | "obtuse" | "reflex" | "right";

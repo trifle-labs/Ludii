@@ -26,31 +26,9 @@ import type { Context } from "../../../../../context.js";
 import type { FloatFunction } from "../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import { isList } from "@ludii/typescript-language";
-import { registerFloat1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileFloat1to1 } from "../../../../../compiler1to1.js";
 
 // ---------------------------------------------------------------------------
 // Helper — collect FloatFunction[] from positional args (handles curly-list)
-// ---------------------------------------------------------------------------
-function collectFloatFns(node: LudNode, _env: Compile1to1Env): FloatFunction[] {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const fns: FloatFunction[] = [];
-  for (const p of positional) {
-    if (isList(p) && (p as LudList).delimiter === "curly") {
-      for (const child of (p as LudList).items) {
-        try { fns.push(compileFloat1to1(child)); } catch { /* skip */ }
-      }
-    } else {
-      try { fns.push(compileFloat1to1(p)); } catch { /* skip */ }
-    }
-  }
-  return fns;
-}
-
-// ---------------------------------------------------------------------------
-// Add  (alias "+")
-// @java game/functions/floats/math/Add.java
-// ---------------------------------------------------------------------------
 export class FloatAdd1to1 implements FloatFunction {
   private readonly a: FloatFunction | null;
   private readonly b: FloatFunction | null;
@@ -404,56 +382,10 @@ export class FloatMax1to1 implements FloatFunction {
 // Registration
 // ---------------------------------------------------------------------------
 
-// Add  (+ / add)
-function registerFloatAdd() {
-  const factory = (node: LudNode, env: Compile1to1Env): FloatFunction => {
-    const fns = collectFloatFns(node, env);
-    if (fns.length === 2) return new FloatAdd1to1(fns[0]!, fns[1]!);
-    return new FloatAdd1to1(fns);
-  };
-}
-registerFloatAdd();
 
-// Sub  (- / sub)
-function registerFloatSub() {
-  const factory = (node: LudNode, env: Compile1to1Env): FloatFunction => {
-    const fns = collectFloatFns(node, env);
-    if (fns.length === 0) return { eval: (_ctx: Context) => 0 };
-    if (fns.length === 1) { const f = fns[0]!; return { eval: (ctx: Context) => -f.eval(ctx) }; }
-    return new FloatSub1to1(fns[0]!, fns[1]!);
-  };
-}
-registerFloatSub();
 
-// Mul  (* / mul)
-function registerFloatMul() {
-  const factory = (node: LudNode, env: Compile1to1Env): FloatFunction => {
-    const fns = collectFloatFns(node, env);
-    if (fns.length === 2) return new FloatMul1to1(fns[0]!, fns[1]!);
-    return new FloatMul1to1(fns);
-  };
-}
-registerFloatMul();
 
-// Div  (/ / div)
-function registerFloatDiv() {
-  const factory = (node: LudNode, env: Compile1to1Env): FloatFunction => {
-    const fns = collectFloatFns(node, env);
-    if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
-    return new FloatDiv1to1(fns[0]!, fns[1]!);
-  };
-}
-registerFloatDiv();
 
-// Pow  (^ / pow)
-function registerFloatPow() {
-  const factory = (node: LudNode, env: Compile1to1Env): FloatFunction => {
-    const fns = collectFloatFns(node, env);
-    if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
-    return new FloatPow1to1(fns[0]!, fns[1]!);
-  };
-}
-registerFloatPow();
 
 // Sqrt
 // Abs
@@ -463,24 +395,4 @@ registerFloatPow();
 // Exp
 // Log (natural)
 // Log10
-// Min
-function registerFloatMin() {
-  const factory = (node: LudNode, env: Compile1to1Env): FloatFunction => {
-    const fns = collectFloatFns(node, env);
-    if (fns.length === 0) return { eval: (_ctx: Context) => 0 };
-    if (fns.length === 2) return new FloatMin1to1(fns[0]!, fns[1]!);
-    return new FloatMin1to1(fns);
-  };
-}
-registerFloatMin();
 
-// Max
-function registerFloatMax() {
-  const factory = (node: LudNode, env: Compile1to1Env): FloatFunction => {
-    const fns = collectFloatFns(node, env);
-    if (fns.length === 0) return { eval: (_ctx: Context) => 0 };
-    if (fns.length === 2) return new FloatMax1to1(fns[0]!, fns[1]!);
-    return new FloatMax1to1(fns);
-  };
-}
-registerFloatMax();

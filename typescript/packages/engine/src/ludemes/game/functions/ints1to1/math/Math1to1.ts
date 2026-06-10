@@ -21,8 +21,6 @@ import type { BooleanFunction, IntFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import { isList } from "@ludii/typescript-language";
-import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1 } from "../../../../../compiler1to1.js";
 
 function isIntFunction(value: unknown): value is IntFunction {
   return value !== null && typeof value === "object" && typeof (value as { eval?: unknown }).eval === "function";
@@ -257,74 +255,4 @@ export class IfInt1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function collectFns(node: LudNode, env: Compile1to1Env): IntFunction[] {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const fns: IntFunction[] = [];
-  for (const p of positional) {
-    if (isList(p) && (p as LudList).delimiter === "curly") {
-      for (const child of (p as LudList).items) {
-        try { fns.push(compileInt1to1(child)); } catch { /* skip */ }
-      }
-    } else {
-      try { fns.push(compileInt1to1(p)); } catch { /* skip */ }
-    }
-  }
-  return fns;
-}
-
-// ---------------------------------------------------------------------------
-// Registration
-// ---------------------------------------------------------------------------
-
-// "+" and "add"
-function registerAdd() {
-  const factory = (node: LudNode, env: Compile1to1Env): IntFunction => {
-    return new Add1to1(collectFns(node, env));
-  };
-}
-registerAdd();
-
-// "-" and "sub"
-function registerSub() {
-  const factory = (node: LudNode, env: Compile1to1Env): IntFunction => {
-    const fns = collectFns(node, env);
-    if (fns.length === 0) return { eval: (_ctx: Context) => 0 };
-    if (fns.length === 1) {
-      // (- x) = negate
-      const f = fns[0]!;
-      return { eval: (ctx: Context) => -f.eval(ctx) };
-    }
-    return new Sub1to1(fns[0]!, fns[1]!);
-  };
-}
-registerSub();
-
-// "*" and "mul"
-function registerMul() {
-  const factory = (node: LudNode, env: Compile1to1Env): IntFunction => {
-    return new Mul1to1(collectFns(node, env));
-  };
-}
-registerMul();
-
-// "/" and "div"
-function registerDiv() {
-  const factory = (node: LudNode, env: Compile1to1Env): IntFunction => {
-    const fns = collectFns(node, env);
-    if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
-    return new Div1to1(fns[0]!, fns[1]!);
-  };
-}
-registerDiv();
-
-// "%" and "mod"
-function registerMod() {
-  const factory = (node: LudNode, env: Compile1to1Env): IntFunction => {
-    const fns = collectFns(node, env);
-    if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
-    return new Mod1to1(fns[0]!, fns[1]!);
-  };
-}
-registerMod();
 

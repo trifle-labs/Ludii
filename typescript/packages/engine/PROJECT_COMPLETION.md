@@ -1108,3 +1108,23 @@ Each follows the standard repro→fix→canary recipe; none block item-3 structu
   parseArgs1to1/headOf only, then registry1to1.ts deletes.
 - Remaining item-3 after the 17: *1to1 substrate re-homing (naming/locations),
   StartRule eval(Context) migration, State convergence, + the 9 exotic singles.
+
+## Update 50 — THE BESPOKE LAYER IS PHYSICALLY EXTINCT
+
+The de-contamination tail completed in one push:
+- 9 orphaned compile*-helpers deleted (makeWhoArg ×4, makeColourFn, compileAngle,
+  compileDistanceRange, makeFactory, makeWhoFn).
+- 4 fully-orphaned classes deleted: And1to1, Or1to1, Priority1to1,
+  AvoidStoredState1to1 (zero references — superseded by the faithful classes).
+- The last indented register shells excised (makeHiddenSubtype, Math/FloatMath
+  registerAdd/-Sub/… + collectFns/collectFloatFns).
+- headOf inlined into its single consumer.
+- **src/compiler1to1.ts and src/ludemes/registry1to1.ts DELETED. Zero consumers.**
+
+The engine's source tree now contains NO bespoke dispatcher, NO registration layer,
+NO shim. The only 1to1-suffixed artifacts left are SUBSTRATE CLASSES (faithful
+implementations that carry transitional names/locations — the re-homing rename).
+tsc clean; 24-game battery all OUTCOME_OK 2/2; probe-play/compile-guard green.
+
+Item-3 remaining: substrate re-homing (rename/move, no behavior), StartRule
+eval(Context) migration, State convergence, + the 9 exotic compile singles.

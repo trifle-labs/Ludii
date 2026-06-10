@@ -21,7 +21,6 @@ import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
-import { type Compile1to1Env } from "../../../../registry1to1.js";
 
 type DirGroup = "Adjacent" | "Orthogonal" | "Diagonal";
 

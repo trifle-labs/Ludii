@@ -5,7 +5,6 @@ import type { BooleanFunction, IntFunction } from "../../../../../base.js";
 import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, type LudList } from "@ludii/typescript-language";
-import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { IntConstant } from "../../../ints/IntConstant.js";
 import { roleTypeOwner, type RoleTypeFull } from "../../../../types/play/RoleType.js";
 import { Player1to1 } from "../../../../util/moves/Player1to1.js";
