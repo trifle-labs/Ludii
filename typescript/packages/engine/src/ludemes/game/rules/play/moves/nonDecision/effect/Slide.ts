@@ -99,14 +99,19 @@ export class Slide implements MovesFunction {
     stack?: boolean;
     then?: Then | null;
   }) {
+    // compileTerminal hands BooleanFunction slots raw booleans for the lud
+    // literals True/False (full-chess castling defines use `(to if:True ...)`)
+    // — wrap them. @java BooleanConstant
+    const wrapB = <T extends BooleanFunction | null | undefined>(b: T | boolean): T =>
+      (typeof (b as unknown) === "boolean" ? ({ eval: () => b as unknown as boolean } as unknown as T) : (b as T));
     this.startLocationFn = opts.startLocationFn;
     this.levelFromFn = opts.levelFromFn ?? null;
-    this.fromCondition = opts.fromCondition ?? null;
+    this.fromCondition = wrapB(opts.fromCondition ?? null);
     this.limit = opts.limit ?? { eval: () => MAX_DISTANCE };
     this.minFn = opts.minFn ?? { eval: () => UNDEFINED_CONST };
-    this.goRule = opts.goRule;
-    this.stopRule = opts.stopRule ?? null;
-    this.toRule = opts.toRule ?? null;
+    this.goRule = wrapB(opts.goRule);
+    this.stopRule = wrapB(opts.stopRule ?? null);
+    this.toRule = wrapB(opts.toRule ?? null);
     this.letFn = opts.letFn ?? null;
     this.betweenEffect = opts.betweenEffect ?? null;
     this.sideEffect = opts.sideEffect ?? null;

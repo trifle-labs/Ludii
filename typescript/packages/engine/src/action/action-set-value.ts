@@ -21,14 +21,16 @@ export class ActionSetValue extends BaseAction {
 
   public constructor(options: ActionSetValueOptions) {
     super();
-    if (!Number.isInteger(options.to) || options.to < 0) {
-      throw new RangeError("ActionSetValue.to must be non-negative.");
-    }
-    this.toIndex = options.to;
+    // @java ActionSetValue.java — Java actions never validate in the
+    // constructor; an OFF site (-1, e.g. Alice Chess generating
+    // (set Value at:(last To) ...) before any move exists) simply
+    // applies as a no-op.
+    this.toIndex = Number.isInteger(options.to) ? options.to : -1;
     this.valueValue = options.value;
   }
 
   public override apply(state: State): State {
+    if (this.toIndex < 0) return state;
     return state.withValueAt(this.toIndex, this.valueValue);
   }
 

@@ -191,7 +191,11 @@ export class WhereSite extends BaseIntFunction {
       }
 
       // Java: TIntArrayList sites = context.state().owned().sites(playerId, what)
-      const ownedSites = ctx.state?.()?.owned?.()?.sites(playerId, what);
+      // The ENGINE context exposes state as a PROPERTY (not a method) — guard
+      // the duck-type call or `ctx.state?.()` throws (Atomic Chess WhereSite).
+      const ownedSites = typeof (ctx as { state?: unknown }).state === "function"
+        ? ctx.state?.()?.owned?.()?.sites(playerId, what)
+        : undefined;
       if (ownedSites) {
         const isStacking = game.isStacking?.() ?? false;
         if (isStacking && cs) {

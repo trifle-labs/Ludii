@@ -72,6 +72,15 @@ export class ValuePiece extends BaseIntFunction {
     const location = this.loc.eval(context);
     if (location === OFF) return NOBODY;
 
+    // Engine path: the working State keeps the piece-value channel in
+    // valueAt[site] (Java ContainerState.value(site, type)). The Java-shaped
+    // context methods below are absent on the engine Context.
+    if (typeof (context as unknown as { containerId?: unknown }).containerId !== "function") {
+      const st = context.state as unknown as { valueAt?: readonly number[]; value?: (s: number) => number };
+      if (typeof st.value === "function") return st.value(location);
+      return st.valueAt?.[location] ?? UNDEFINED;
+    }
+
     const containerIds = (context as unknown as { containerId(): number[] }).containerId();
     const containerId: number = containerIds[location] ?? 0;
 
