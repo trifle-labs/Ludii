@@ -29,6 +29,8 @@ export class SurakartaBoard extends Board {
   /** @java SurakartaBoard.startAtRow */
   private readonly startAtRow: number;
 
+  private tracksCreated = false;
+
   /**
    * @java game/equipment/container/board/custom/SurakartaBoard.java constructor
    *
@@ -56,6 +58,25 @@ export class SurakartaBoard extends Board {
 
   /** @java SurakartaBoard.startAtRow (getter) */
   public getStartAtRow(): number { return this.startAtRow; }
+
+  /** @java SurakartaBoard.createTopology(int, int) */
+  public override createTopology(beginIndex: number, numEdges: number): void {
+    super.createTopology(beginIndex, numEdges);
+    if (this.tracksCreated) return;
+
+    const dim0 = Math.max(0, this.height - 1);
+    const dim1 = Math.max(0, this.width - 1);
+    if (this.numLoops === UNDEFINED) {
+      this.numLoops = Math.trunc((Math.min(dim0, dim1) - 1) / 2);
+    }
+    const totalLoops = Math.max(0, this.numLoops);
+    this.createTracksSquare(dim0, dim1, totalLoops);
+    for (const track of this.tracks) {
+      (track as unknown as { buildTrack?: (w: number, h: number, t: unknown) => void })
+        .buildTrack?.(this.width, this.height, this.trajectories);
+    }
+    this.tracksCreated = true;
+  }
 
   /**
    * Build Surakarta tracks for a square grid.

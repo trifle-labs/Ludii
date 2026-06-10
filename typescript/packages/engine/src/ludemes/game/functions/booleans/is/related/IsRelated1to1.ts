@@ -74,7 +74,7 @@ export class IsRelated1to1 implements BooleanFunction {
   public eval(ctx: Context & EvalScratch): boolean {
     // @java for each st in sites: cellB.adjacent/diagonal/etc().contains(cellA)
     const location = this.siteFn.eval(ctx);
-    const sites = this.regionFn.eval(ctx);
+    const sites = normaliseSites(this.regionFn.eval(ctx));
     if (location < 0 || sites.length === 0) return false;
 
     const dirName = relationToDir(this.relationType);
@@ -90,6 +90,12 @@ export class IsRelated1to1 implements BooleanFunction {
         if (st < 0 || st >= traj.numSites) continue;
         const neighbours = traj.group(st, dirName);
         if (neighbours.includes(location)) return true;
+        if (
+          this.relationType.toLowerCase() === "adjacent" &&
+          relatedAcrossCurrentTo(traj, location, st, ctx._evalTo)
+        ) {
+          return true;
+        }
       }
       return false;
     }
@@ -115,6 +121,32 @@ export class IsRelated1to1 implements BooleanFunction {
     }
     return false;
   }
+}
+
+function normaliseSites(value: unknown): number[] {
+  if (Array.isArray(value)) return value.filter((site): site is number => typeof site === "number");
+  if (typeof value === "number") return [value];
+  const region = value as { sites?: (() => unknown) | unknown } | null;
+  if (region !== null && typeof region === "object") {
+    const sites = typeof region.sites === "function" ? region.sites() : region.sites;
+    if (Array.isArray(sites)) return sites.filter((site): site is number => typeof site === "number");
+  }
+  return [];
+}
+
+function relatedAcrossCurrentTo(
+  traj: Trajectories,
+  from: number,
+  target: number,
+  via: number,
+): boolean {
+  if (via < 0 || from < 0 || target < 0) return false;
+  const radials = traj.distinctRadialsByName(from, "Adjacent");
+  for (const radial of radials) {
+    const ray = radial.ray;
+    if (ray[0] === from && ray[1] === via && ray.includes(target)) return true;
+  }
+  return false;
 }
 
 registerBool1to1("is:related", (node: LudNode, env: Compile1to1Env): BooleanFunction => {

@@ -50,6 +50,12 @@ export class Context {
    */
   public _evalBetween: number = -1;
   /**
+   * Java parity: Context.track() / setTrack(int).
+   * Used by track-iteration end rules and (sites Track ...). Default
+   * Constants.UNDEFINED (-1).
+   */
+  public _evalTrack: number = -1;
+  /**
    * Java parity: Context.player() / setPlayer(int).
    * Set by (forEach Player/NonMover/Mover ...) end rules to pass the current
    * iterated player index to predicates like (is Blocked Player).
@@ -99,6 +105,10 @@ export class Context {
   public between(): number { return this._evalBetween; }
   /** @java Context.setBetween(int). */
   public setBetween(v: number): void { this._evalBetween = v; }
+  /** @java Context.track(). */
+  public track(): number { return this._evalTrack; }
+  /** @java Context.setTrack(int). */
+  public setTrack(v: number): void { this._evalTrack = v; }
   /** @java Context.site(). */
   public site(): number { return this._evalSite; }
   /** @java Context.setSite(int). */
@@ -192,15 +202,27 @@ export class Context {
   }
 
   public withState(state: State): Context {
-    return new Context(this.game, state, this.trial, this.rng);
+    return this.copyEvalScratchTo(new Context(this.game, state, this.trial, this.rng));
   }
 
   public withTrial(trial: Trial): Context {
-    return new Context(this.game, this.state, trial, this.rng);
+    return this.copyEvalScratchTo(new Context(this.game, this.state, trial, this.rng));
   }
 
   public withRng(rng: SeededRng): Context {
-    return new Context(this.game, this.state, this.trial, rng);
+    return this.copyEvalScratchTo(new Context(this.game, this.state, this.trial, rng));
+  }
+
+  private copyEvalScratchTo(ctx: Context): Context {
+    ctx._evalTo = this._evalTo;
+    ctx._evalFrom = this._evalFrom;
+    ctx._evalValue = this._evalValue;
+    ctx._evalSite = this._evalSite;
+    ctx._evalBetween = this._evalBetween;
+    ctx._evalTrack = this._evalTrack;
+    ctx._evalPlayer = this._evalPlayer;
+    ctx._evalRegion = this._evalRegion;
+    return ctx;
   }
 
   /** Java parity: `Context.rng()`. */
@@ -243,6 +265,39 @@ export class Context {
   /** Java parity: `Context.numPlayers()`. */
   public numPlayers(): number {
     return this.game.numPlayers;
+  }
+
+  /** @java Context.tracks(). */
+  public tracks(): unknown[] {
+    const board = this.boardObject() as {
+      tracks?: (() => unknown[]) | readonly unknown[];
+      getTracks?: () => unknown[];
+    } | null;
+    if (board === null) return [];
+    if (typeof board.tracks === "function") return board.tracks();
+    if (Array.isArray(board.tracks)) return [...board.tracks];
+    if (typeof board.getTracks === "function") return board.getTracks();
+    return [];
+  }
+
+  /** Java parity: preprocessed track list used by track-based slide/sow. */
+  public get preComputedTracks(): unknown[] {
+    return this.tracks();
+  }
+
+  /**
+   * @java Context.allPass().
+   * Returns true if the last N moves, where N is the number of players, are
+   * passes.
+   */
+  public allPass(): boolean {
+    const n = this.game.numPlayers;
+    const moves = this.trial.moves;
+    if (moves.length < n) return false;
+    for (let i = moves.length - 1; i >= moves.length - n; i--) {
+      if (!moves[i]?.isPass()) return false;
+    }
+    return true;
   }
 
   /** Java parity: `Context.score(pid)`. */

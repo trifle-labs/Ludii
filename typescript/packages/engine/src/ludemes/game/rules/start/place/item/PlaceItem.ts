@@ -186,15 +186,16 @@ export class PlaceItem {
     counts?: JavaIntFunction[] | null,
   ) {
     const coordList = Array.isArray(coord) ? coord as unknown as string[] : null;
+    const typeAsLocs = Array.isArray(type) ? type as unknown as JavaIntFunction[] : null;
     this.item = item ?? null;
     this.container = container ?? null;
     this.coord = coordList === null ? coord ?? null : null;
-    this.type = type ?? null;
+    this.type = typeAsLocs === null ? type ?? null : null;
 
-    if (coordList !== null || locs !== undefined || region !== undefined || coords !== undefined || counts !== undefined) {
+    if (typeAsLocs !== null || coordList !== null || locs !== undefined || region !== undefined || coords !== undefined || counts !== undefined) {
       // Fill-region constructor — mirrors Java's second constructor
       this.siteId = null;
-      this.locationIds = locs ?? null;
+      this.locationIds = locs ?? typeAsLocs;
       this.region = region ?? null;
       this.coords = coords ?? coordList ?? null;
 

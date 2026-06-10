@@ -651,10 +651,14 @@ class AllPassed extends BaseBooleanFunction {
    */
   public override eval(context: Context): boolean {
     // Java: if (context.trial().moveNumber() < context.game().players().count()) return false;
-    const trial = context.trial as unknown as { moveNumber?: () => number };
-    const moveNumber = typeof trial.moveNumber === "function" ? trial.moveNumber() : 0;
-    const playerCount = (context as unknown as { game?: () => { players?: () => { count?: () => number } } })
-      .game?.()?.players?.()?.count?.() ?? context.game.numPlayers;
+    const trial = context.trial as unknown as { moveNumber?: () => number; moves?: readonly unknown[] };
+    const moveNumber = typeof trial.moveNumber === "function" ? trial.moveNumber() : (trial.moves?.length ?? 0);
+    const ctxAny = context as unknown as {
+      getGame?: () => { players?: () => { count?: () => number }; numPlayers?: number };
+      game?: { players?: () => { count?: () => number }; numPlayers?: number };
+    };
+    const game = ctxAny.getGame?.() ?? ctxAny.game;
+    const playerCount = game?.players?.()?.count?.() ?? game?.numPlayers ?? context.game.numPlayers;
     if (moveNumber < playerCount) return false;
     // Java: return context.allPass();
     const ctx = context as unknown as { allPass?: () => boolean };

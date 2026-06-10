@@ -34,6 +34,18 @@ interface Topology {
   getGraphElements(type: string): { length: number };
 }
 
+interface TrackElem {
+  site: number;
+  next: number;
+  nextIndex: number;
+  bump: number;
+}
+
+interface TrackLike {
+  name?(): string;
+  elems(): TrackElem[] | null;
+}
+
 export class Slide implements MovesFunction {
   /** @java Slide.startLocationFn */
   private readonly startLocationFn: IntFunction;
@@ -270,7 +282,94 @@ export class Slide implements MovesFunction {
    * Track-based slide. Requires preComputedTracks on context.
    */
   private slideByTrack(ctx: Context): LudiiMove[] {
-    throw new Error("not yet wired: Slide.slideByTrack requires preComputedTracks on Context");
+    const tracks = trackList(ctx, this.trackName);
+    if (tracks.length === 0) return [];
+
+    const from = this.startLocationFn.eval(ctx);
+    if (from === OFF || from < 0) return [];
+
+    const origFrom = ctx._evalFrom;
+    const origTo = ctx._evalTo;
+    const origBetween = ctx._evalBetween;
+    ctx._evalFrom = from;
+
+    try {
+      if (this.fromCondition != null && !this.fromCondition.eval(ctx)) return [];
+
+      const min = this.minFn.eval(ctx);
+      const maxPathLength = this.limit.eval(ctx);
+      const mover = ctx.state.mover;
+      const moves: LudiiMove[] = [];
+
+      for (const track of tracks) {
+        const elems = track.elems() ?? [];
+        for (let i = 0; i < elems.length; i++) {
+          if (elems[i]?.site !== from) continue;
+
+          let index = i;
+          let nbBump = elems[index]?.bump ?? 0;
+          let nbElem = 1;
+
+          while (
+            (elems[index]?.next ?? OFF) !== OFF &&
+            nbElem < elems.length &&
+            nbElem <= maxPathLength
+          ) {
+            const to = elems[index]!.next;
+            ctx._evalTo = to;
+
+            if (nbBump > 0 || this.trackName !== "AllTracks") {
+              if (this.stopRule != null && this.stopRule.eval(ctx)) {
+                if (min <= nbElem) {
+                  const move = this.trackMove(ctx, from, to, mover);
+                  moves.push(this.withThen(ctx, move));
+                }
+                break;
+              }
+
+              if (min <= nbElem && (this.toRule == null || this.toRule.eval(ctx))) {
+                const move = this.trackMove(ctx, from, to, mover);
+                moves.push(this.withThen(ctx, move));
+              }
+            }
+
+            nbElem++;
+            ctx._evalBetween = to;
+            if (!this.goRule.eval(ctx)) break;
+
+            index = elems[index]!.nextIndex;
+            if (index < 0 || index >= elems.length) break;
+            nbBump += elems[index]?.bump ?? 0;
+          }
+        }
+      }
+
+      return moves;
+    } finally {
+      ctx._evalTo = origTo;
+      ctx._evalFrom = origFrom;
+      ctx._evalBetween = origBetween;
+    }
+  }
+
+  private trackMove(ctx: Context, from: number, to: number, mover: number): LudiiMove {
+    const actions: import("../../../../../../../action/index.js").Action[] = [
+      new ActionMove({ from, to }),
+    ];
+    actions[0]!.setDecision(true);
+    if (this.sideEffect != null) {
+      actions.push(...this.sideEffect.eval(ctx).flatMap(m => [...m.actions]));
+    }
+    return new LudiiMove({
+      id: `slide-track:${mover}:${from}:${to}`,
+      label: `Slide(${from}→${to})`,
+      siteIndices: [from, to],
+      mover,
+      placedOwner: mover,
+      actions,
+      fromNonDecisionSite: from,
+      toNonDecisionSite: to,
+    });
   }
 
   /** @java Slide.startLocationFn */
@@ -308,4 +407,26 @@ function deltaOrder(delta: number, width: number): number {
 function boardWidth(ctx: Context): number {
   const game = ctx.game as unknown as { width?: number; equipment?: { board?: { width?: number; columns?: number } } };
   return Math.max(1, game.width ?? game.equipment?.board?.width ?? game.equipment?.board?.columns ?? Math.round(Math.sqrt(ctx.state.cells.length)));
+}
+
+function trackList(ctx: Context, trackName: string | null): TrackLike[] {
+  const ctxAny = ctx as unknown as {
+    preComputedTracks?: TrackLike[];
+    tracks?: () => TrackLike[];
+    game?: { equipment?: { board?: unknown } };
+  };
+  const direct = Array.isArray(ctxAny.preComputedTracks) ? ctxAny.preComputedTracks : [];
+  const fromCtx = typeof ctxAny.tracks === "function" ? ctxAny.tracks() : [];
+  const board = ctxAny.game?.equipment?.board as {
+    tracks?: TrackLike[] | (() => TrackLike[]);
+    getTracks?: () => readonly TrackLike[];
+  } | undefined;
+  const boardTracks =
+    typeof board?.tracks === "function" ? board.tracks() :
+    Array.isArray(board?.tracks) ? board.tracks :
+    typeof board?.getTracks === "function" ? [...board.getTracks()] :
+    [];
+  const tracks = direct.length > 0 ? direct : fromCtx.length > 0 ? fromCtx : boardTracks;
+  if (trackName === null || trackName === "AllTracks") return tracks;
+  return tracks.filter((track) => track.name?.() === trackName);
 }
