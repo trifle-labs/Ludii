@@ -1,3 +1,4 @@
+import { SitesEquipmentRegion } from "../../../ludemes/game/functions/region/sites/player/SitesEquipmentRegion.js";
 import {
   isIdent,
   isList,
@@ -729,7 +730,18 @@ export class ArgCompiler {
       const roleArg = node.items[2] && isIdent(node.items[2]) ? node.items[2].name : null;
       return Sites.constructPlayer("Hand" as never, null, null, roleArg, null, null);
     }
-    if (PLAYER_SITE_VARIANTS.has(variantName)) return playerSitesRegion(variantName);
+    if (PLAYER_SITE_VARIANTS.has(variantName)) {
+      // @java (sites <RoleType> <String>) → SitesEquipmentRegion: a NAME after
+      // the role selects the matching named regions (Janggi's
+      // (sites Mover "PalaceOrtho")). The unnamed shortcut ignored the string
+      // and returned the owner's first region (the full palace).
+      const nameArg = node.items[2] && isString(node.items[2]) ? (node.items[2] as { value: string }).value : null;
+      if (nameArg !== null) {
+        const roleTok = node.items[1] && isIdent(node.items[1]) ? (node.items[1] as { name: string }).name : "Mover";
+        return new SitesEquipmentRegion(roleIntFunction(roleTok), nameArg);
+      }
+      return playerSitesRegion(variantName);
+    }
     return Sites.constructSimple(simpleSiteVariant(variantName) as never, siteType);
   }
 
@@ -1630,6 +1642,19 @@ const APPLICATION_CONSTANTS = new Map<string, number>([
 const SIMPLE_SITE_VARIANTS = new Set<string>([
   "board", "bottom", "center", "centre", "corners", "left", "outer", "perimeter", "right", "top",
 ]);
+
+function roleIntFunction(role: string): { eval(ctx: unknown): number } {
+  return {
+    eval(ctx: unknown): number {
+      const c = ctx as { state: { mover: number }; game: { numPlayers: number } };
+      if (role === "Mover") return c.state.mover;
+      if (role === "Next") return (c.state.mover % c.game.numPlayers) + 1;
+      if (role === "Prev") return ((c.state.mover - 2 + c.game.numPlayers) % c.game.numPlayers) + 1;
+      const m = /^P(\d+)$/.exec(role);
+      return m ? Number(m[1]) : 0;
+    },
+  };
+}
 
 function playerSitesRegion(variantName: string): { eval(ctx: unknown): number[] } {
   return {
