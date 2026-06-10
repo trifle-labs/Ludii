@@ -208,7 +208,7 @@ import { SetPhase as C204 } from "../../../ludemes/game/rules/start/set/sites/Se
 import { SetRememberValue as C205 } from "../../../ludemes/game/rules/start/set/remember/SetRememberValue.js";
 import { SetScore as C206 } from "../../../ludemes/game/rules/start/set/player/SetScore.js";
 import { SetAmount as C207 } from "../../../ludemes/game/rules/start/set/player/SetAmount.js";
-import { PlaceItem1to1 as C208 } from "../../../ludemes/game/rules/start/place/item/PlaceItem1to1.js";
+import { PlaceItem as C208 } from "../../../ludemes/game/rules/start/place/item/PlaceItem.js";
 import { PlaceMonotonousStack as C209 } from "../../../ludemes/game/rules/start/place/stack/PlaceMonotonousStack.js";
 import { PlaceCustomStack as C210 } from "../../../ludemes/game/rules/start/place/stack/PlaceCustomStack.js";
 import { PlaceRandom as C211 } from "../../../ludemes/game/rules/start/place/random/PlaceRandom.js";
