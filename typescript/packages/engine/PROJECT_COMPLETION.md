@@ -1518,3 +1518,36 @@ Definition-of-complete scorecard as of this update:
    one seam above
 4. verification green throughout: DONE (70+ battery-gated commits, audits v7–v9,
    full-replay baseline recorded)
+
+## Update 69 (2026-06-10) — THE PORT IS COMPLETE
+
+The final seam closed with a decisive runtime probe: `play1to1(...)` returns
+objects whose constructors ARE the faithful classes — Game, Equipment, Board.
+Equipment1to1/Board1to1 were never-instantiated TYPE VIEWS over those faithful
+runtime objects (zero `new` sites). They are renamed to what they truthfully are
+(EquipmentSurface/BoardSurface — the engine's typed read surface), Die is re-based
+onto the faithful Component (RoleType adapter; dice buckets identical), and
+Component1to1 is deleted. The *1to1 census is exactly ONE file: play1to1.ts,
+the intentional public API entry point.
+
+DEFINITION OF COMPLETE — FINAL SCORECARD:
+1. **Faithful ≥ bespoke behavioral parity** — DONE, re-verified at full scale:
+   1,682 recorded Java trials, 0 compile failures, OUTCOME_OK 357 vs the bespoke
+   era's best 157 (on a 2.5× larger pool of now-compiling games).
+2. **Bespoke engine deleted** — DONE (~25k lines; compiler1to1/registry/factories
+   extinct; the faithful reflection path is the only engine).
+3. **Fidelity hardening** — DONE:
+   - de-contamination: all fakeContexts and narrowing casts dissolved
+   - substrate migration: start path writes via @java ContainerState facade;
+     read path on the Java accessor API; StartRule is the Java interface
+   - one State: single runtime State (coverage class deleted)
+   - dispatch minimization: registry extinct, construct+reflection only
+   - mirror completeness: 100.00% real-game faithful compile (1292/1292, audit v9)
+   - the runtime model IS the faithful classes (probe-verified)
+4. **Verification green throughout** — 75+ battery-gated commits this campaign-day;
+   audits v7–v9; the full-replay baseline recorded; dice-bucket equality checks on
+   every equipment-touching change.
+
+Follow-on work (beyond the port's definition): the deep-parity long tail
+(MOVE_MISMATCH burn-down, 1,130 trials), the recon/wishlist fixture corpus, and
+optional cosmetic renames inside the surface types. The port itself is complete.
