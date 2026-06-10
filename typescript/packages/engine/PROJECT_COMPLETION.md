@@ -1027,3 +1027,28 @@ hold with no exceptions. Remaining for complete: the mechanical deletion
 After the audit: fix any surfaced real-game gaps (Gomoku-class option/lex issues
 expected), then step 3 (physical deletion of compiler1to1/LudemeRegistry/batches +
 ArgCompiler registry plumbing + the LUDII_BESPOKE branch + obsolete probes).
+
+## Update 45 — ITEM 2 DELETION EXECUTED: the bespoke engine is GONE
+
+Full-corpus audit (stride 1, all ~2,200 .lud files; one synthetic stress fixture
+skipped): real games **1,246/1,296 = 96.1%** compile faithfully; the 50 failures are
+small named clusters (iterator.Player 8, floats.Mul 6, headless-game 6, math.Abs 4,
+headless-bool 4, Is-static 3, Rectangle 3, + singles) — ALL pre-existing the deletion
+(the registry was already retired) and queued as post-deletion polish.
+
+DELETED (≈20,000 lines):
+- compiler1to1.ts: 9,370 → 84-line legacy shim (parseArgs1to1/headOf pure helpers kept
+  for the ludeme files' dead module-scope registration callbacks; compile* throw).
+- factories/batch0-9 (10,290 lines), LudemeRegistry.ts, createFullRegistry.ts,
+  Compiler.ts (the superseded grammar-compiler facade), ArgBundle.ts.
+- 29 registry1to1-*.ts dispatcher-registration modules.
+- ArgCompiler: instantiateRegistry/Inner, REGISTRY_FIRST, constructKeyFor's registry
+  use, the LudemeRegistry env surface (ArgCompilerEnv now standalone).
+- play1to1: single path — ArgCompiler only; failures surface.
+- probe-slide/probe-replay-diff retired (their bespoke reference no longer exists;
+  the oracle is the recorded Java trials).
+Kept (NOT the bespoke engine): registry1to1.ts maps (write-only sinks for the dead
+callbacks) + *1to1 substrate classes used by faithful files — item-3 re-homing.
+
+VERIFICATION: tsc clean; probe-play + probe-compile-guard green; 24-game battery
+all OUTCOME_OK 2/2 on the post-deletion engine.

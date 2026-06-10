@@ -19,9 +19,6 @@ import {
   type GrammarClause,
   type GrammarModel,
 } from "../../Language/src/grammar/ebnf-grammar-loader.js";
-import { makeArgBundle } from "../ArgBundle.js";
-import { type CompilerEnv, type LudemeRegistry } from "../LudemeRegistry.js";
-import { createFullRegistry } from "../createFullRegistry.js";
 import { JAVA_TS_CTORS } from "../gen/java-ts-ctors.js";
 import { Sites } from "../../../ludemes/game/functions/region/sites/Sites.js";
 import { EmptyDefault } from "../../../ludemes/game/functions/region/sites/index/SitesEmpty.js";
@@ -43,11 +40,10 @@ export interface ArgCompilerOptions {
   readonly reflectionPath?: string;
   readonly grammarPath?: string;
   readonly grammar?: GrammarModel;
-  readonly registry?: LudemeRegistry;
 }
 
-export interface ArgCompilerEnv extends CompilerEnv {
-  readonly registry?: LudemeRegistry;
+export interface ArgCompilerEnv {
+  numPlayers: number;
 }
 
 interface ReflectionParam {
@@ -110,7 +106,6 @@ export class ArgCompiler {
   private readonly _enumConstantsByAssignable = new Map<string, Set<string>>();
   private readonly headPath: string[] = [];
   private readonly grammar: GrammarModel;
-  private readonly registry: LudemeRegistry;
   private readonly byToken = new Map<string, Candidate[]>();
   private readonly paramNameCache = new Map<string, readonly (string | null)[]>();
 
@@ -119,7 +114,6 @@ export class ArgCompiler {
   public constructor(opts: ArgCompilerOptions = {}) {
     this.reflection = loadReflection(opts.reflectionPath);
     this.grammar = opts.grammar ?? loadGrammar(opts.grammarPath);
-    this.registry = opts.registry ?? createFullRegistry();
 
     for (const [className, meta] of this.reflection) {
       const key = normalise(meta.token);
@@ -136,7 +130,6 @@ export class ArgCompiler {
   ): T {
     const compileEnv: ArgCompilerEnv = {
       numPlayers: env.numPlayers ?? 2,
-      ...(env.registry ? { registry: env.registry } : {}),
     };
     this.lastDivergence = null;
     this.deepest = null;
@@ -1061,20 +1054,9 @@ export class ArgCompiler {
     }, env);
   }
 
-  private instantiate(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
-    if (REGISTRY_FIRST_CLASSES.has(info.className)) {
-      const registryFirst = this.instantiateRegistry(info, env);
-      if (registryFirst !== null && registryFirst !== undefined) {
-        if (info.className === "game.equipment.container.board.custom.MancalaBoard") {
-          return boardWithCompiledTracks(registryFirst, info.args);
-        }
-        return registryFirst;
-      }
-    }
-
-    // FAITHFUL FIRST: the canonical reflection-driven path (JAVA_TS_CTORS). This is the
-    // one true port. The bespoke LudemeRegistry factories are only a fallback for ludemes
-    // whose faithful mapping is still missing, and are being phased out entirely.
+  private instantiate(info: InstantiationInfo, _env: ArgCompilerEnv): unknown | null {
+    // ITEM-2 DELETION (step 3): the reflection-driven JAVA_TS_CTORS path is the
+    // ONLY instantiation path — the bespoke LudemeRegistry/batch factories are gone.
     const faithful = this.instantiateFaithful(info);
     if (faithful !== null && faithful !== undefined) {
       if (info.className === "game.equipment.Equipment") {
@@ -1086,56 +1068,6 @@ export class ArgCompiler {
 
     const faithfulMoveVariant = this.instantiateFaithfulMoveVariant(info);
     if (faithfulMoveVariant !== null && faithfulMoveVariant !== undefined) return faithfulMoveVariant;
-
-    const registryFallback = this.instantiateRegistry(info, env);
-    if (registryFallback !== null && registryFallback !== undefined) return registryFallback;
-    // instantiateFaithful already recorded a specific noteInstFail on its miss.
-    return null;
-  }
-
-  private instantiateRegistry(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
-    // ITEM-2 DELETION (step 1): the bespoke registry fallback is RETIRED. The
-    // burn-down drove its real-game dependencies to zero (PROJECT_COMPLETION
-    // Updates 34-40); the only remaining hits were 3 reconstruction/pending
-    // placeholder files. instantiateRegistryInner and the batch factories are
-    // deleted with compiler1to1 in step 3.
-    if (process.env["LUDII_LEGACY_REGISTRY"]) {
-      const result = this.instantiateRegistryInner(info, env);
-      if (result !== null && result !== undefined && process.env["LUDII_TRACE_REGISTRY"])
-        console.error("[registry]", info.className, "|", this.lastDivergence?.slice(0, 90) ?? "");
-      return result;
-    }
-    return null;
-  }
-
-  private instantiateRegistryInner(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
-    const registry = env.registry ?? this.registry;
-    const named = new Map<string, unknown>();
-    info.paramNames.forEach((name, index) => {
-      if (name !== null) named.set(name, info.args[index]);
-    });
-    const constructKey = constructKeyFor(info.meta.token, info.args);
-    try {
-      const bundle = makeArgBundle({
-        clause: info.clause,
-        clauseIndex: info.execIndex,
-        sourceKeyword: info.meta.token,
-        constructKey,
-        symbol: info.meta.label,
-        positional: info.args.filter((value) => value !== null && value !== undefined),
-        named,
-      });
-      const r = registry.construct(bundle, env);
-      if (r !== null && r !== undefined) {
-        if (info.className === "game.equipment.Equipment") {
-          hydrateEquipmentRegions(r, info.args);
-          hydrateEquipmentMaps(r, info.args);
-        }
-        return r;
-      }
-    } catch {
-      // Registry is bespoke glue; faithful is canonical. Fall through.
-    }
     // instantiateFaithful already recorded a specific noteInstFail on its miss.
     return null;
   }
@@ -1548,17 +1480,6 @@ function findGameNode(root: LudNode): LudNode {
   return root;
 }
 
-function constructKeyFor(keyword: string, positional: readonly unknown[]): string {
-  const first = positional.find((value) => value !== null && value !== undefined);
-  if (typeof first === "string") {
-    const head = keyword.toLowerCase();
-    if (head === "move" || head === "sites" || head === "is") {
-      return `${head}:${first.toLowerCase()}`;
-    }
-  }
-  return keyword.toLowerCase();
-}
-
 function resolveNextPhaseTargets(phases: readonly unknown[]): void {
   const nameToIdx = new Map<string, number>();
   for (let idx = 0; idx < phases.length; idx++) {
@@ -1733,21 +1654,6 @@ function simpleSiteVariant(variantName: string): string {
   }
 }
 
-function boardWithCompiledTracks(board: unknown, args: readonly unknown[]): unknown {
-  if (!(board instanceof Board1to1)) return board;
-  if (board.getTracks().length > 0 || board.trajectories === null) return board;
-  const tracks = flattenUnknown(args).filter(isCompiledTrack);
-  if (tracks.length === 0) return board;
-  return new Board1to1(
-    board.width,
-    board.height,
-    board.numSites,
-    board.trajectories,
-    board.containerSpan,
-    tracks as never,
-  );
-}
-
 function hydrateEquipmentRegions(equipment: unknown, args: readonly unknown[]): void {
   const target = equipment as {
     playerRegions?: ReadonlyMap<number, { eval(ctx: unknown): readonly number[] }>;
@@ -1919,6 +1825,17 @@ function roleOwnerId(role: unknown): number {
   return -1;
 }
 
+function constructKeyFor(keyword: string, positional: readonly unknown[]): string {
+  const first = positional.find((value) => value !== null && value !== undefined);
+  if (typeof first === "string") {
+    const head = keyword.toLowerCase();
+    if (head === "move" || head === "sites" || head === "is") {
+      return `${head}:${first.toLowerCase()}`;
+    }
+  }
+  return keyword.toLowerCase();
+}
+
 const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
   ["move:add", "game.rules.play.moves.nonDecision.effect.Add"],
   ["move:hop", "game.rules.play.moves.nonDecision.effect.Hop"],
@@ -1929,5 +1846,3 @@ const FAITHFUL_MOVE_VARIANTS = new Map<string, string>([
   ["move:slide", "game.rules.play.moves.nonDecision.effect.Slide"],
 ]);
 
-const REGISTRY_FIRST_CLASSES = new Set<string>([
-]);

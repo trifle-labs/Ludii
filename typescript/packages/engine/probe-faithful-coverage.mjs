@@ -30,6 +30,9 @@ const perGame = [];
 for (let i = 0; i < files.length && total < LIMIT; i += STRIDE) {
   const f = files[i];
   total++;
+  if (process.env.PROGRESS) console.error(`[${total}] ${relative(root, f)}`);
+  // Pathological synthetic fixtures that hang graph generation (not games).
+  if (/test\/Huge Board\.lud$/.test(f)) { perGame.push({ game: relative(root, f), status: "SKIPPED", reason: "synthetic stress fixture (hangs graph gen)" }); continue; }
   let status, reason = "";
   try {
     const ast = expandDefines(applyOptions(lang.parseLud(expandSiteRanges(expandRanges(readFileSync(f, "utf8"))))), [...getBuiltinDefines()]);

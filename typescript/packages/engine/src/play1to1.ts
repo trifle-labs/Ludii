@@ -29,7 +29,6 @@ import { getBuiltinDefines } from "./builtin-defines.js";
 import { expandDefines } from "./lud-defines.js";
 import { applyOptions } from "./lud-options.js";
 import { expandRanges, expandSiteRanges } from "./lud-ranges.js";
-import { compileNode1to1 } from "./compiler1to1.js";
 import type { Game1to1 } from "./ludemes/Game1to1.js";
 import { ArgCompiler } from "./ludii/compiler/arg/ArgCompiler.js";
 
@@ -75,17 +74,12 @@ export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
   // LUDII_BESPOKE=1 selects the legacy bespoke dispatcher (the parity harness's
   // reference mode); it and the silent fallback die with the bespoke deletion.
   // LUDII_ARGCOMPILER stays honored for explicit-faithful callers.
-  if (!process.env.LUDII_BESPOKE) {
-    // ITEM-2 DELETION (step 2): no silent bespoke fallback — a faithful compile
-    // failure SURFACES (the burn-down drove real-game failures to zero; remaining
-    // throws are recon/test placeholders). LUDII_BESPOKE=1 keeps the explicit
-    // reference dispatcher alive only until step 3 deletes compiler1to1.
-    argCompiler ??= new ArgCompiler();
-    const game = argCompiler.compile<Game1to1>(gameNode, ["game.Game"]);
-    if (game == null) throw new Error("play1to1: faithful compile returned null");
-    return game;
-  }
-  return compileNode1to1(gameNode);
+  // ITEM-2 DELETION (step 3): the faithful ArgCompiler IS the engine. The bespoke
+  // dispatcher (compiler1to1) is deleted; compile failures surface.
+  argCompiler ??= new ArgCompiler();
+  const game = argCompiler.compile<Game1to1>(gameNode, ["game.Game"]);
+  if (game == null) throw new Error("play1to1: faithful compile returned null");
+  return game;
 }
 
 /**
