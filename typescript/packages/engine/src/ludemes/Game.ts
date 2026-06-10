@@ -341,6 +341,30 @@ export class Game implements Game {
     if (playerDirs && playerDirs.size > 0) {
       this._playerDirs = playerDirs;
     }
+
+    // Facing tables for relative-direction resolution ("set by the game
+    // compiler" per eval-context.ts; the bespoke compiler used to do this).
+    // @java Component.getDirn() (componentFacing, indexed by what id) and
+    // (player <Dir>) declarations (playerFacing, 1-based). A piece's own facing
+    // overrides its owner's; Dodgem's Cars face E/N with no player facings.
+    {
+      const boardAny = this.equipment.board as unknown as {
+        componentFacing?: (string | undefined)[];
+        playerFacing?: (string | undefined)[];
+      };
+      const compFacing: (string | undefined)[] = [];
+      for (const p of this.equipment.pieces) {
+        const dirn = (p as unknown as { dirn?: string }).dirn;
+        if (dirn !== undefined) compFacing[p.index] = dirn;
+      }
+      if (compFacing.some((v) => v !== undefined)) boardAny.componentFacing = compFacing;
+      const pf: (string | undefined)[] = [];
+      for (let pid = 1; pid <= this.numPlayers; pid++) {
+        const direction = this.playersRecord.get(pid)?.direction;
+        if (direction !== null && direction !== undefined) pf[pid] = direction;
+      }
+      if (pf.some((v) => v !== undefined)) boardAny.playerFacing = pf;
+    }
   }
 
   /**

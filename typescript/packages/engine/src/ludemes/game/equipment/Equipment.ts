@@ -1043,11 +1043,20 @@ export class Equipment extends BaseLudeme {
     for (let i = 1; i < components.length; i++) {
       const component = components[i]!;
       const index = component.index();
+      // @java Component.getDirn() — the piece's declared facing (Dodgem's
+      // (piece "Car" P1 E ...)); relative directions (Forward/Leftward/...)
+      // rotate about it. Carried as the compass token.
+      const dirnObj = (component as unknown as { getDirn?: () => { uniqueName?: () => string } | null }).getDirn?.() ?? null;
+      const dirn = dirnObj === null ? undefined
+        : typeof dirnObj === "string" ? dirnObj
+        : typeof dirnObj.uniqueName === "function" ? dirnObj.uniqueName()
+        : undefined;
       pieces.push(Object.freeze({
         name: component.name() ?? "",
         owner: component.owner(),
         index: index > 0 ? index : i,
         generator: component.generator(),
+        dirn,
       }));
     }
     return Object.freeze(pieces);
