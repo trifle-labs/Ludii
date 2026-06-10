@@ -1,7 +1,7 @@
 // @java Core/src/game/functions/booleans/all/sites/AllDifferent.java
 
-import type { Context } from "../../../../../context.js";
-import type { BooleanFunction, RegionFunction } from "../../../../base.js";
+import type { Context } from "../../../../../../context.js";
+import type { BooleanFunction, RegionFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { type LudList } from "@ludii/typescript-language";
 
@@ -12,7 +12,7 @@ import { type LudList } from "@ludii/typescript-language";
  * to false immediately.
  * @java game/functions/booleans/all/sites/AllDifferent.java
  */
-export class AllDifferent1to1 implements BooleanFunction {
+export class AllDifferent implements BooleanFunction {
   /** @java AllDifferent.region */
   private readonly regionFn: RegionFunction;
   /** @java AllDifferent.condition */

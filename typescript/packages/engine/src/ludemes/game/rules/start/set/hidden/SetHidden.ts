@@ -32,7 +32,7 @@ export type HiddenData = "What" | "Who" | "State" | "Count" | "Rotation" | "Valu
  * Sets hidden-information flags at given sites for a specified player/role.
  * applyToInitialState is a no-op because State.hiddenForPlayer is not accessible.
  */
-export class SetHidden1to1 implements StartRule {
+export class SetHidden implements StartRule {
   /**
    * Which HiddenData facets to hide. null → all (Invisible).
    * @java dataTypes field
@@ -94,8 +94,8 @@ export class SetHidden1to1 implements StartRule {
     level: number,
     value: boolean,
     who: number,
-  ): SetHidden1to1 {
-    return new SetHidden1to1(
+  ): SetHidden {
+    return new SetHidden(
       dataTypes,
       null,
       intArrayFromSites(sites),

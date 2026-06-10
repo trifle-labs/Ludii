@@ -35,7 +35,7 @@ import { IsTriggered } from "./is1to1/IsTriggered.js";
 import { IsPipsMatch } from "./integer/IsPipsMatch.js";
 import { IsSidesMatch } from "./integer/IsSidesMatch.js";
 import { IsThreatened } from "./component/IsThreatened.js";
-import { IsEven1to1 } from "./integer1to1/IsEven1to1.js";
+import { IsEven } from "./integer/IsEven.js";
 import { IsFlat } from "./integer1to1/IsFlat.js";
 import { IsOdd } from "./integer1to1/IsOdd.js";
 import { IsVisited } from "./integer1to1/IsVisited.js";
@@ -332,7 +332,7 @@ export class Is extends BaseBooleanFunction {
   /** @java Is.construct(IsIntegerType, IntFunction) */
   public static constructInteger(isType: unknown, value: IntFunction | null): BooleanFunction {
     const fn = value ?? LAST_TO_INT;
-    if (matchesType(isType, "Even")) return new IsEven1to1(fn);
+    if (matchesType(isType, "Even")) return new IsEven(fn);
     if (matchesType(isType, "Odd")) return new IsOdd(fn);
     if (matchesType(isType, "Flat")) return new IsFlat();
     if (matchesType(isType, "PipsMatch")) return new IsPipsMatch(value);

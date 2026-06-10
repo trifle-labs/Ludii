@@ -22,10 +22,10 @@ export { SetStartGraphType } from "./SetStartGraphType.js";
 export { SetRememberValueType } from "./SetRememberValueType.js";
 
 // Concrete sub-rules (re-export for convenience)
-export { SetHidden1to1 } from "./hidden/SetHidden.js";
+export { SetHidden } from "./hidden/SetHidden.js";
 export { SetAmount } from "./player/SetAmount.js";
 export { SetScore } from "./player/SetScore.js";
-export { SetTeam1to1 } from "./players/SetTeam.js";
+export { SetTeam } from "./players/SetTeam.js";
 export { SetRememberValue } from "./remember/SetRememberValue.js";
 export { SetCost } from "./sites/SetCost.js";
 export { SetCount } from "./sites/SetCount.js";
@@ -38,10 +38,10 @@ import type { SiteType } from "../../../../other/action/SiteType.js";
 import type { RoleTypeFull } from "../../../types/play/RoleType.js";
 import type { StartRule } from "../StartRule.js";
 import { SetCountStart } from "../SetCountStart.js";
-import { SetHidden1to1, type HiddenData } from "./hidden/SetHidden.js";
+import { SetHidden, type HiddenData } from "./hidden/SetHidden.js";
 import { SetAmount } from "./player/SetAmount.js";
 import { SetScore } from "./player/SetScore.js";
-import { SetTeam1to1 } from "./players/SetTeam.js";
+import { SetTeam } from "./players/SetTeam.js";
 import { SetRememberValue } from "./remember/SetRememberValue.js";
 import { SetCost } from "./sites/SetCost.js";
 import { SetPhase } from "./sites/SetPhase.js";
@@ -92,7 +92,7 @@ export class SetDispatch {
   ): StartRule | null {
     switch (setType) {
       case "Hidden":
-        return new SetHidden1to1(
+        return new SetHidden(
           dataTypes ?? (dataType !== null ? [dataType] : null),
           type,
           new IntArrayFromRegion(at as never, region as never),
@@ -177,7 +177,7 @@ export class SetDispatch {
     roles: readonly string[],
   ): StartRule | null {
     switch (startType) {
-      case "Team": return new SetTeam1to1(evalIntFunction(index), roles.map(role => roleToPlayerId(role) ?? -1));
+      case "Team": return new SetTeam(evalIntFunction(index), roles.map(role => roleToPlayerId(role) ?? -1));
       default: return null;
     }
   }

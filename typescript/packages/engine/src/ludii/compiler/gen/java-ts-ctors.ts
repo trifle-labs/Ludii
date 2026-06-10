@@ -200,8 +200,8 @@ import { Deal as C196 } from "../../../ludemes/game/rules/start/Deal.js";
 import { PlaceSites as C197 } from "../../../ludemes/game/rules/start/PlaceSites.js";
 import { Start as C198 } from "../../../ludemes/game/rules/start/Start.js";
 import { PlaceHandCount as C199 } from "../../../ludemes/game/rules/start/PlaceHandCount.js";
-import { SetHidden1to1 as C200 } from "../../../ludemes/game/rules/start/set/hidden/SetHidden.js";
-import { SetTeam1to1 as C201 } from "../../../ludemes/game/rules/start/set/players/SetTeam.js";
+import { SetHidden as C200 } from "../../../ludemes/game/rules/start/set/hidden/SetHidden.js";
+import { SetTeam as C201 } from "../../../ludemes/game/rules/start/set/players/SetTeam.js";
 import { SetCost as C202 } from "../../../ludemes/game/rules/start/set/sites/SetCost.js";
 import { SetSite as C203 } from "../../../ludemes/game/rules/start/set/sites/SetSite.js";
 import { SetPhase as C204 } from "../../../ludemes/game/rules/start/set/sites/SetPhase.js";
@@ -435,7 +435,7 @@ import { CanMove as C434 } from "../../../ludemes/game/functions/booleans/can/Ca
 import { ToBool as C435 } from "../../../ludemes/game/functions/booleans/ToBool.js";
 import { NoPieces as C436 } from "../../../ludemes/game/functions/booleans/no1to1/NoPieces.js";
 import { NoMoves as C437 } from "../../../ludemes/game/functions/booleans/no1to1/NoMoves.js";
-import { AllDifferent1to1 as C438 } from "../../../ludemes/game/functions/booleans/all1to1/AllDifferent1to1.js";
+import { AllDifferent as C438 } from "../../../ludemes/game/functions/booleans/all/sites/AllDifferent.js";
 import { AllDiceEqual as C439 } from "../../../ludemes/game/functions/booleans/all1to1/AllDiceEqual.js";
 import { AllSites as C440 } from "../../../ludemes/game/functions/booleans/all1to1/AllSites.js";
 import { AllDiceUsed as C441 } from "../../../ludemes/game/functions/booleans/all1to1/AllDiceUsed.js";
@@ -444,7 +444,7 @@ import { AllPassed as C443 } from "../../../ludemes/game/functions/booleans/all1
 import { IsVisited as C444 } from "../../../ludemes/game/functions/booleans/is/integer1to1/IsVisited.js";
 import { IsFlat as C445 } from "../../../ludemes/game/functions/booleans/is/integer1to1/IsFlat.js";
 import { IsOdd as C446 } from "../../../ludemes/game/functions/booleans/is/integer1to1/IsOdd.js";
-import { IsEven as C447 } from "../../../ludemes/game/functions/booleans/math1to1/IsEven.js";
+import { IsEven as C447 } from "../../../ludemes/game/functions/booleans/is/integer/IsEven.js";
 import { IsAngle as C448 } from "../../../ludemes/game/functions/booleans/is/angle1to1/IsAngle.js";
 import { IsPyramidCorners as C449 } from "../../../ludemes/game/functions/booleans/is/pyramidCorners1to1/IsPyramidCorners.js";
 import { IsHiddenWho as C450 } from "../../../ludemes/game/functions/booleans/is/Hidden/IsHiddenWho.js";

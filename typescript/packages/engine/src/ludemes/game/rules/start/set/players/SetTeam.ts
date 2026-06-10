@@ -19,7 +19,7 @@ import type { StartRule } from "../../StartRule.js";
  * Creates a team with the given id and adds the specified players to it.
  * applyToInitialState is a no-op because team membership is not in the interface.
  */
-export class SetTeam1to1 implements StartRule {
+export class SetTeam implements StartRule {
   /** The 1-based team index. Java: teamIdFn evaluated. */
   private readonly teamId: number;
 
