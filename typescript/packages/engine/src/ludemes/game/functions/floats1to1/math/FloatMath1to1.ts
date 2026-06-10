@@ -411,8 +411,6 @@ function registerFloatAdd() {
     if (fns.length === 2) return new FloatAdd1to1(fns[0]!, fns[1]!);
     return new FloatAdd1to1(fns);
   };
-  registerFloat1to1("+", factory);
-  registerFloat1to1("add", factory);
 }
 registerFloatAdd();
 
@@ -424,8 +422,6 @@ function registerFloatSub() {
     if (fns.length === 1) { const f = fns[0]!; return { eval: (ctx: Context) => -f.eval(ctx) }; }
     return new FloatSub1to1(fns[0]!, fns[1]!);
   };
-  registerFloat1to1("-", factory);
-  registerFloat1to1("sub", factory);
 }
 registerFloatSub();
 
@@ -436,8 +432,6 @@ function registerFloatMul() {
     if (fns.length === 2) return new FloatMul1to1(fns[0]!, fns[1]!);
     return new FloatMul1to1(fns);
   };
-  registerFloat1to1("*", factory);
-  registerFloat1to1("mul", factory);
 }
 registerFloatMul();
 
@@ -448,8 +442,6 @@ function registerFloatDiv() {
     if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
     return new FloatDiv1to1(fns[0]!, fns[1]!);
   };
-  registerFloat1to1("/", factory);
-  registerFloat1to1("div", factory);
 }
 registerFloatDiv();
 
@@ -460,8 +452,6 @@ function registerFloatPow() {
     if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
     return new FloatPow1to1(fns[0]!, fns[1]!);
   };
-  registerFloat1to1("^", factory);
-  registerFloat1to1("pow", factory);
 }
 registerFloatPow();
 
@@ -481,7 +471,6 @@ function registerFloatMin() {
     if (fns.length === 2) return new FloatMin1to1(fns[0]!, fns[1]!);
     return new FloatMin1to1(fns);
   };
-  registerFloat1to1("min", factory);
 }
 registerFloatMin();
 
@@ -493,6 +482,5 @@ function registerFloatMax() {
     if (fns.length === 2) return new FloatMax1to1(fns[0]!, fns[1]!);
     return new FloatMax1to1(fns);
   };
-  registerFloat1to1("max", factory);
 }
 registerFloatMax();

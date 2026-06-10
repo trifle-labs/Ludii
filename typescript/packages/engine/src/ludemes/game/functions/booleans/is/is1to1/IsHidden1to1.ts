@@ -5,7 +5,6 @@ import type { BooleanFunction, IntFunction } from "../../../../../base.js";
 import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, type LudList } from "@ludii/typescript-language";
-import { compileInt1to1, parseArgs1to1 } from "../../../../../../compiler1to1.js";
 import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import { IntConstant } from "../../../ints/IntConstant.js";
 import { roleTypeOwner, type RoleTypeFull } from "../../../../types/play/RoleType.js";
@@ -92,42 +91,7 @@ function resolvePlayerFn(positional: LudNode[]): IntFunction {
 // Variant keys for the hidden sub-types: all check the same isHidden(who, site) on the TS side
 // because TS State only exposes one hidden array (per player per site, no sub-fields).
 // Java tracks hidden sub-fields (count, rotation, state, value, what, who) but TS collapses them.
-// Registering the sub-keys so they don't silently fail.
 
-function makeHiddenSubtype(key: string): void {
-  registerBool1to1(key, (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-    const { named } = parseArgs1to1((node as LudList).items);
-    const atNode = named.get("at");
-    const toNode = named.get("to");
-    const siteFn = atNode ? compileInt1to1(atNode) : { eval(ctx: Context): number { return ctx._evalTo; } };
-    let whoFn: IntFunction;
-    if (toNode) {
-      if (isIdent(toNode)) {
-        const name = toNode.name.toLowerCase();
-        if (name === "mover") whoFn = { eval(ctx: Context): number { return ctx.state.mover; } };
-        else if (name === "next") whoFn = { eval(ctx: Context): number { return (ctx.state.mover % ctx.game.numPlayers) + 1; } };
-        else if (name.startsWith("p") && !isNaN(parseInt(name.slice(1), 10))) {
-          const pid = parseInt(name.slice(1), 10);
-          whoFn = { eval(_ctx: Context): number { return pid; } };
-        } else {
-          whoFn = compileInt1to1(toNode);
-        }
-      } else {
-        whoFn = compileInt1to1(toNode);
-      }
-    } else {
-      whoFn = { eval(ctx: Context): number { return ctx.state.mover; } };
-    }
-    return new IsHidden1to1(null, siteFn, null, new Player1to1(whoFn), null);
-  });
-}
-
-makeHiddenSubtype("is:hiddencount");
-makeHiddenSubtype("is:hiddenrotation");
-makeHiddenSubtype("is:hiddenstate");
-makeHiddenSubtype("is:hiddenvalue");
-makeHiddenSubtype("is:hiddenwhat");
-makeHiddenSubtype("is:hiddenwho");
 
 function isIntFunction(value: unknown): value is IntFunction {
   return typeof (value as { eval?: unknown } | null)?.eval === "function";

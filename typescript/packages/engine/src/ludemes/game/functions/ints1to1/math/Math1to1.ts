@@ -282,8 +282,6 @@ function registerAdd() {
   const factory = (node: LudNode, env: Compile1to1Env): IntFunction => {
     return new Add1to1(collectFns(node, env));
   };
-  registerInt1to1("+", factory);
-  registerInt1to1("add", factory);
 }
 registerAdd();
 
@@ -299,8 +297,6 @@ function registerSub() {
     }
     return new Sub1to1(fns[0]!, fns[1]!);
   };
-  registerInt1to1("-", factory);
-  registerInt1to1("sub", factory);
 }
 registerSub();
 
@@ -309,8 +305,6 @@ function registerMul() {
   const factory = (node: LudNode, env: Compile1to1Env): IntFunction => {
     return new Mul1to1(collectFns(node, env));
   };
-  registerInt1to1("*", factory);
-  registerInt1to1("mul", factory);
 }
 registerMul();
 
@@ -321,8 +315,6 @@ function registerDiv() {
     if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
     return new Div1to1(fns[0]!, fns[1]!);
   };
-  registerInt1to1("/", factory);
-  registerInt1to1("div", factory);
 }
 registerDiv();
 
@@ -333,8 +325,6 @@ function registerMod() {
     if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
     return new Mod1to1(fns[0]!, fns[1]!);
   };
-  registerInt1to1("%", factory);
-  registerInt1to1("mod", factory);
 }
 registerMod();
 
