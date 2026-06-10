@@ -1,5 +1,5 @@
 /**
- * Array1to1.ts
+ * Array.ts
  * @java game/functions/intArray/array/Array.java
  *
  * (array <region>) converts a RegionFunction to an int[].
@@ -11,7 +11,7 @@ import type { IntArrayFunction, RegionFunction, IntFunction } from "../../../../
 import { isList } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 
-export class Array1to1 implements IntArrayFunction {
+export class Array implements IntArrayFunction {
   private readonly region: RegionFunction | null;
   private readonly ints: IntFunction[] | null;
 
@@ -21,7 +21,7 @@ export class Array1to1 implements IntArrayFunction {
    * accepts either and dispatches on the runtime shape (arity 1, matching Java).
    */
   constructor(arg: RegionFunction | readonly IntFunction[]) {
-    if (Array.isArray(arg)) {
+    if (globalThis.Array.isArray(arg)) {
       this.region = null;
       this.ints = arg as IntFunction[];
     } else {
@@ -35,7 +35,7 @@ export class Array1to1 implements IntArrayFunction {
     if (this.region !== null) {
       return this.region.eval(ctx);
     } else {
-      const arr: number[] = new Array(this.ints!.length);
+      const arr: number[] = new globalThis.Array<number>(this.ints!.length);
       for (let i = 0; i < arr.length; i++) {
         arr[i] = this.ints![i]!.eval(ctx);
       }

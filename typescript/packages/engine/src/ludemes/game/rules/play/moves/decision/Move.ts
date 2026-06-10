@@ -1,9 +1,9 @@
 /**
- * Move1to1.ts
+ * Move.ts
  *
  * @java game/rules/play/moves/decision/Move.java
  *
- * The polymorphic decision-move dispatcher. In Java, Move.construct() is a
+ * The polymorphic decision-move dispatcher. In Java, LudiiMove.construct() is a
  * static factory with many overloads that delegates to the appropriate effect
  * ludeme (Add, Hop, Step, Slide, FromTo, Remove, Select, etc.) based on the
  * move type marker (MoveStepType, MoveHopType, MoveSiteType, etc.).
@@ -15,7 +15,7 @@
  * any keys (which would clobber the working inline logic).
  *
  * Java:
- *   public final class Move extends Decision
+ *   public final class LudiiMove extends Decision
  *   public static Moves construct(...) { ... }  // many overloads
  *   public Moves eval(Context context) { ... }   // delegates to sub-ludeme
  *
@@ -24,7 +24,6 @@
 
 import type { Context } from "../../../../../../context.js";
 import { Move as LudiiMove } from "../../../../../../move.js";
-import type { Move } from "../../../../../../move.js";
 import { ActionBet } from "../../../../../../action/action-bet.js";
 import type { SiteType } from "../../../../../../action/site-type.js";
 import type {
@@ -75,24 +74,24 @@ import { Decision1to1 } from "./Decision1to1.js";
  * This class is NOT registered — the inline compileMoves1to1Impl handles
  * all (move ...) patterns directly.
  */
-export class Move1to1 extends Decision1to1 {
+export class Move extends Decision1to1 {
   /**
    * The compiled sub-move generator (the delegated effect ludeme).
    * @java Move.java — the resolved ludeme (Add, Step, Hop, Slide, etc.)
    */
-  private readonly delegate: { eval(ctx: Context): Move[] };
+  private readonly delegate: { eval(ctx: Context): LudiiMove[] };
 
   /**
    * @java game/rules/play/moves/decision/Move.java — constructor
    * @param delegate The compiled effect ludeme to delegate eval() to.
    */
-  public constructor(delegate: { eval(ctx: Context): Move[] }) {
+  public constructor(delegate: { eval(ctx: Context): LudiiMove[] }) {
     super();
     this.delegate = delegate;
   }
 
   /**
-   * @java Move.construct(MoveSwapType, SwapPlayersType, IntFunction, RoleType, IntFunction, RoleType, Then)
+   * @java LudiiMove.construct(MoveSwapType, SwapPlayersType, IntFunction, RoleType, IntFunction, RoleType, Then)
    */
   public static constructSwapPlayers(
     moveType: string,
@@ -108,12 +107,12 @@ export class Move1to1 extends Decision1to1 {
       case "Swap":
         return new SwapPlayers(player1, role1, player2, role2, then);
       default:
-        throw new Error(`Move(): MoveSwapType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveSwapType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveSwapType, SwapSitesType, IntFunction, IntFunction, Then)
+   * @java LudiiMove.construct(MoveSwapType, SwapSitesType, IntFunction, IntFunction, Then)
    */
   public static constructSwapPieces(
     moveType: string,
@@ -127,12 +126,12 @@ export class Move1to1 extends Decision1to1 {
       case "Swap":
         return new SwapPieces(locA ?? { eval: (ctx) => ctx._evalFrom }, locB ?? { eval: (ctx) => ctx._evalTo }, then);
       default:
-        throw new Error(`Move(): MoveSwapType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveSwapType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveRemoveType, SiteType, IntFunction, RegionFunction, IntFunction, WhenType, IntFunction, Then)
+   * @java LudiiMove.construct(MoveRemoveType, SiteType, IntFunction, RegionFunction, IntFunction, WhenType, IntFunction, Then)
    */
   public static constructRemove(
     moveType: string,
@@ -148,12 +147,12 @@ export class Move1to1 extends Decision1to1 {
       case "Remove":
         return new RemoveFaithful(type, locationFunction, regionFunction, level, at, count, then);
       default:
-        throw new Error(`Move(): MoveRemoveType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveRemoveType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveSetType, SetTrumpType, IntFunction, Difference, Then)
+   * @java LudiiMove.construct(MoveSetType, SetTrumpType, IntFunction, Difference, Then)
    */
   public static constructSetTrump(
     moveType: string,
@@ -167,12 +166,12 @@ export class Move1to1 extends Decision1to1 {
       case "TrumpSuit":
         return new SetTrumpSuit(suit, suits, then);
       default:
-        throw new Error(`Move(): SetTrumpType '${setType}' is not implemented.`);
+        throw new Error(`LudiiMove(): SetTrumpType '${setType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveSetType, SetNextPlayerType, Player, IntArrayFunction, Then)
+   * @java LudiiMove.construct(MoveSetType, SetNextPlayerType, Player, IntArrayFunction, Then)
    */
   public static constructSetNextPlayer(
     moveType: string,
@@ -186,12 +185,12 @@ export class Move1to1 extends Decision1to1 {
       case "NextPlayer":
         return new SetNextPlayer(who, nextPlayers, then);
       default:
-        throw new Error(`Move(): SetNextPlayerType '${setType}' is not implemented.`);
+        throw new Error(`LudiiMove(): SetNextPlayerType '${setType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveSetType, SetRotationType, To, IntFunction[], IntFunction, BooleanFunction, BooleanFunction, Then)
+   * @java LudiiMove.construct(MoveSetType, SetRotationType, To, IntFunction[], IntFunction, BooleanFunction, BooleanFunction, Then)
    */
   public static constructSetRotation(
     moveType: string,
@@ -217,12 +216,12 @@ export class Move1to1 extends Decision1to1 {
         );
       }
       default:
-        throw new Error(`Move(): SetRotationType '${setType}' is not implemented.`);
+        throw new Error(`LudiiMove(): SetRotationType '${setType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveStepType, From, Direction, To, Boolean, Then)
+   * @java LudiiMove.construct(MoveStepType, From, Direction, To, Boolean, Then)
    */
   public static constructStep(
     moveType: string,
@@ -236,12 +235,12 @@ export class Move1to1 extends Decision1to1 {
       case "Step":
         return new StepFaithful(from, directions, to, stack, then as unknown as ThenLike | null);
       default:
-        throw new Error(`Move(): MoveStepType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveStepType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveSlideType, From, String, Direction, Between, To, Boolean, Then)
+   * @java LudiiMove.construct(MoveSlideType, From, String, Direction, Between, To, Boolean, Then)
    */
   public static constructSlide(
     moveType: string,
@@ -257,12 +256,12 @@ export class Move1to1 extends Decision1to1 {
       case "Slide":
         return new SlideFaithful(from, track, directions, between, to, stack, then);
       default:
-        throw new Error(`Move(): MoveSlideType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveSlideType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveShootType, Piece, From, AbsoluteDirection, Between, To, Then)
+   * @java LudiiMove.construct(MoveShootType, Piece, From, AbsoluteDirection, Between, To, Then)
    */
   public static constructShoot(
     moveType: string,
@@ -277,12 +276,12 @@ export class Move1to1 extends Decision1to1 {
       case "Shoot":
         return new ShootFaithful(what, from, dirn, between, to, then);
       default:
-        throw new Error(`Move(): MoveShootType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveShootType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveSelectType, From, To, RoleType, Then)
+   * @java LudiiMove.construct(MoveSelectType, From, To, RoleType, Then)
    */
   public static constructSelect(
     moveType: string,
@@ -295,12 +294,12 @@ export class Move1to1 extends Decision1to1 {
       case "Select":
         return new Select(from, to, mover, then as unknown as ThenLike | null);
       default:
-        throw new Error(`Move(): MoveSelectType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveSelectType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveMessageType, String, String[], Then)
+   * @java LudiiMove.construct(MoveMessageType, String, String[], Then)
    */
   public static constructMessage(
     moveType: string,
@@ -314,12 +313,12 @@ export class Move1to1 extends Decision1to1 {
       case "Vote":
         return new Vote(message, messages, then);
       default:
-        throw new Error(`Move(): MoveMessageType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveMessageType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MovePromoteType, SiteType, IntFunction, Piece, Player, RoleType, Then)
+   * @java LudiiMove.construct(MovePromoteType, SiteType, IntFunction, Piece, Player, RoleType, Then)
    */
   public static constructPromote(
     moveType: string,
@@ -334,12 +333,12 @@ export class Move1to1 extends Decision1to1 {
       case "Promote":
         return new PromoteFaithful(type, locationFn, what, who, role, then);
       default:
-        throw new Error(`Move(): MovePromoteType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MovePromoteType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveSimpleType, Then)
+   * @java LudiiMove.construct(MoveSimpleType, Then)
    */
   public static constructSimple(
     moveType: string,
@@ -352,12 +351,12 @@ export class Move1to1 extends Decision1to1 {
       case "PlayCard":
         return new PlayCard(then);
       default:
-        throw new Error(`Move(): MoveSimpleType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveSimpleType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveLeapType, From, StepType[][], BooleanFunction, BooleanFunction, To, Then)
+   * @java LudiiMove.construct(MoveLeapType, From, StepType[][], BooleanFunction, BooleanFunction, To, Then)
    */
   public static constructLeap(
     moveType: string,
@@ -372,12 +371,12 @@ export class Move1to1 extends Decision1to1 {
       case "Leap":
         return new LeapFaithful(from, walk, forward, rotations, to, then);
       default:
-        throw new Error(`Move(): MoveLeapType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveLeapType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveHopType, From, Direction, Between, To, Boolean, Then)
+   * @java LudiiMove.construct(MoveHopType, From, Direction, Between, To, Boolean, Then)
    */
   public static constructHop(
     moveType: string,
@@ -392,12 +391,12 @@ export class Move1to1 extends Decision1to1 {
       case "Hop":
         return new HopFaithful(from, directions, between, to, stack, then as unknown as ThenLike | null);
       default:
-        throw new Error(`Move(): MoveHopType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveHopType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(From, To, IntFunction, BooleanFunction, Boolean, RoleType, Then)
+   * @java LudiiMove.construct(From, To, IntFunction, BooleanFunction, Boolean, RoleType, Then)
    */
   public static constructFromTo(
     from: From,
@@ -412,7 +411,7 @@ export class Move1to1 extends Decision1to1 {
   }
 
   /**
-   * @java Move.construct(MoveBetType, Player, RoleType, RangeFunction, Then)
+   * @java LudiiMove.construct(MoveBetType, Player, RoleType, RangeFunction, Then)
    */
   public static constructBet(
     moveType: string,
@@ -425,12 +424,12 @@ export class Move1to1 extends Decision1to1 {
       case "Bet":
         return new BetDecision1to1(who, role, range, then);
       default:
-        throw new Error(`Move(): MoveBetType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveBetType '${moveType}' is not implemented.`);
     }
   }
 
   /**
-   * @java Move.construct(MoveSiteType, Piece, To, IntFunction, Boolean, Then)
+   * @java LudiiMove.construct(MoveSiteType, Piece, To, IntFunction, Boolean, Then)
    */
   public static constructSite(
     moveType: string,
@@ -446,7 +445,7 @@ export class Move1to1 extends Decision1to1 {
       case "Claim":
         return new Claim(what, to, then);
       default:
-        throw new Error(`Move(): MoveSiteType '${moveType}' is not implemented.`);
+        throw new Error(`LudiiMove(): MoveSiteType '${moveType}' is not implemented.`);
     }
   }
 
@@ -455,7 +454,7 @@ export class Move1to1 extends Decision1to1 {
    *
    * Delegates to the resolved effect ludeme.
    */
-  public override eval(ctx: Context): Move[] {
+  public override eval(ctx: Context): LudiiMove[] {
     return this.delegate.eval(ctx);
   }
 }
@@ -473,7 +472,7 @@ class BetDecision1to1 implements MovesFunction {
   ) {
     const numNonNull = (who !== null ? 1 : 0) + (role !== null ? 1 : 0);
     if (numNonNull !== 1) {
-      throw new Error("Move(): With MoveBetType exactly one who or role parameter must be non-null.");
+      throw new Error("LudiiMove(): With MoveBetType exactly one who or role parameter must be non-null.");
     }
 
     this.playerFn = role !== null ? roleToIntFunction(role) : who!.index();
@@ -481,13 +480,13 @@ class BetDecision1to1 implements MovesFunction {
     this.thenMoves = then;
   }
 
-  public eval(ctx: Context): Move[] {
+  public eval(ctx: Context): LudiiMove[] {
     const player = this.playerFn.eval(ctx);
     const min = this.range.minFn.eval(ctx);
     const max = this.range.maxFn.eval(ctx);
     const mover = betMover(ctx, player);
     const thenList = this.thenMoves?.eval(ctx) ?? [];
-    const moves: Move[] = [];
+    const moves: LudiiMove[] = [];
 
     for (let amount = min; amount <= max; amount++) {
       moves.push(new LudiiMove({

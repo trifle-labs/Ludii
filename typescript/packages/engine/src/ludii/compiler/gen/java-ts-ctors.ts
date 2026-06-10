@@ -320,7 +320,7 @@ import { PlayCard as C318 } from "../../../ludemes/game/rules/play/moves/nonDeci
 import { NonDecision as C319 } from "../../../ludemes/game/rules/play/moves/nonDecision/NonDecision.js";
 import { Operator as C320 } from "../../../ludemes/game/rules/play/moves/nonDecision/operator/Operator.js";
 import { Decision as C321 } from "../../../ludemes/game/rules/play/moves/decision/Decision.js";
-import { Move1to1 as C322 } from "../../../ludemes/game/rules/play/moves/decision/Move1to1.js";
+import { Move as C322 } from "../../../ludemes/game/rules/play/moves/decision/Move.js";
 import { Moves as C323 } from "../../../ludemes/game/rules/play/moves/Moves.js";
 import { Play as C324 } from "../../../ludemes/game/rules/play/Play.js";
 import { If as C325 } from "../../../ludemes/game/functions/directions/If.js";
@@ -507,7 +507,7 @@ import { WasPass as C506 } from "../../../ludemes/game/functions/booleans/was/Wa
 import { BaseBooleanFunction as C507 } from "../../../ludemes/game/functions/booleans/BaseBooleanFunction.js";
 import { Team as C508 } from "../../../ludemes/game/functions/intArray/iteraror/Team.js";
 import { IntArrayConstant as C509 } from "../../../ludemes/game/functions/intArray/IntArrayConstant.js";
-import { Array1to1 as C510 } from "../../../ludemes/game/functions/intArray/array/Array1to1.js";
+import { Array as C510 } from "../../../ludemes/game/functions/intArray/array/Array.js";
 import { PlayersMany as C511 } from "../../../ludemes/game/functions/intArray/players/many/PlayersMany.js";
 import { PlayersTeam as C513 } from "../../../ludemes/game/functions/intArray/players/team/PlayersTeam.js";
 import { BaseIntArrayFunction as C514 } from "../../../ludemes/game/functions/intArray/BaseIntArrayFunction.js";
