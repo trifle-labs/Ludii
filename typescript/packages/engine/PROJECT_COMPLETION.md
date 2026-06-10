@@ -1211,3 +1211,24 @@ Remaining (the genuinely-coupled core): 10 classes / 18 files —
 - StartRule-migration pairs: ForEachValue1to1, PlaceItem1to1 (both live: construct path uses faithful, reflection path uses 1to1; ctor shapes differ — merge belongs to the StartRule eval(Context) migration)
 - Multi-class ints hosts at proper ints/ paths now, file names still 1to1: Math1to1.ts, Board1to1.ts, State1to1.ts, Iterator1to1.ts, CountSimpleExtra1to1.ts
 - play1to1.ts (public API, stays)
+
+## Update 56 (2026-06-10) — merge set REDUCED TO THE TWO MIGRATIONS
+
+Continued burn-down (7 more battery-gated commits): ints multi-class hosts dissolved
+(Add/Mover/From/To/Between/CountCells/CountNumber to per-class @java files; hollow
+Board1to1/Misc + dead Pow/IfInt dropped), intArray Array + decision Move promoted
+(globalThis.Array escape; LudiiMove import alias — Java itself has the same simple-name
+coexistence via packages), util/moves Piece + Player promoted, decision Move re-based
+onto faithful Decision extends Moves (Decision1to1 deleted).
+
+Audit v7 (full 2,200-lud corpus): REAL GAMES 1283/1292 = 99.30% — the 9 fails are the
+exact known exotic singles (Update 48). Zero regressions across 20 merge commits.
+
+*1to1 file census: 8 — and every one belongs to a planned migration:
+- State convergence: Game1to1.ts, Equipment1to1.ts, Item1to1.ts, Component1to1.ts,
+  container/board/Board1to1.ts (+ other/state/State.ts hosting State1to1)
+- StartRule eval(Context): ForEachValue1to1.ts, PlaceItem1to1.ts (live construct/reflection pairs)
+- play1to1.ts: public API, intentionally named
+
+The "67-file merge set" line item of the definition of complete is DONE as an
+independent work stream; what remains of it is subsumed by the two migrations.
