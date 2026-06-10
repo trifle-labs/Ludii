@@ -1341,3 +1341,16 @@ Definition-of-complete ledger after today: items 1+2 DONE; item 3 = de-contamina
 DONE for rules/start, re-homing DONE, merge set DONE, StartRule migration DONE;
 remaining: State convergence (the last structure), 3 exotic singles, and the final
 parity re-verification.
+
+## Update 61 (2026-06-10) — audit v8: 99.77% real-game (projection exact); singles → 2
+
+Audit v8 (full 2,200-lud corpus): REAL GAMES 1289/1292 = 99.77%, exactly the Update 58
+projection. Fails were Throngs, Wumpus World, Mutant Y^3 — and the audit ran BEFORE:
+- Wumpus World fix (committed): enum matching tolerates the grammar's lowercased
+  first letter — (forEach piece) = ForEachPieceType.Piece; strict membership otherwise.
+- Mutant Y^3 first layer (committed): #k substitution now reaches inside STRING tokens
+  (@java Expander textual semantics) — "Y3Board#1" → "Y3Board2"/"Y3Board3" bare-string
+  define calls. Next layer is an option-token mangle (`<Board:aTri>` → `aTri>`), noted.
+
+Effective live coverage: 1290/1292 = 99.85%. Remaining compile gaps: Throngs
+(mid-binder, needs dedicated trace), Mutant Y^3 layer 2 (experimental/).

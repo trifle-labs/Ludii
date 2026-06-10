@@ -1,6 +1,6 @@
 {
- "faithful": 1936,
- "fallback": 263,
+ "faithful": 1947,
+ "fallback": 252,
  "total": 2200,
  "perGame": [
   {
@@ -745,8 +745,8 @@
   },
   {
    "game": "board/race/escape/Senet.lud",
-   "status": "THROW",
-   "reason": "terminal Each did not match game.rules.play.moves.Moves"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Seys Dos y As.lud",
@@ -2940,8 +2940,8 @@
   },
   {
    "game": "board/space/group/Make Muster.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.basis.square.Square: no static construc"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/group/Manalath.lud",
@@ -3880,8 +3880,8 @@
   },
   {
    "game": "board/space/territory/HexTrike.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (meta) as game.rules.start.Start"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/territory/Infuse.lud",
@@ -5095,8 +5095,8 @@
   },
   {
    "game": "board/war/replacement/checkmate/chess/Kriegspiel (Chess).lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (from:) as game.rules.play.moves.decision.MoveSetType"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/checkmate/chess/Level Chess.lud",
@@ -5750,8 +5750,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/target/Vanguard.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (while:) as game.rules.play.moves.Moves"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/stalemate/Clobber.lud",
@@ -5770,8 +5770,8 @@
   },
   {
    "game": "dominoes/Block.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.Game: constructor threw (component.generator is not a function)"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "experimental/Adhesion.lud",
@@ -7905,8 +7905,8 @@
   },
   {
    "game": "test/Poly Test.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.basis.square.Square: no static construc"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/Recursive Stack Overflow.lud",
@@ -9105,13 +9105,13 @@
   },
   {
    "game": "test/graph/tiling/Graph Test - Square (Custom A).lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.basis.square.Square: no static construc"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/graph/tiling/Graph Test - Square (Custom B).lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.basis.square.Square: no static construc"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/graph/tiling/Graph Test - Square (Custom Sides).lud",
@@ -10410,13 +10410,13 @@
   },
   {
    "game": "wip/exhibition/Senet Exhibition English.lud",
-   "status": "THROW",
-   "reason": "terminal Each did not match game.rules.play.moves.Moves"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "wip/exhibition/Senet Exhibition Swedish.lud",
-   "status": "THROW",
-   "reason": "terminal Each did not match game.rules.play.moves.Moves"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "wip/exhibition/Shatranj Exhibition English.lud",
