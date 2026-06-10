@@ -295,8 +295,31 @@ function isDeletedArg(replacement: readonly LudNode[] | undefined): boolean {
  * sequence of tokens so a keyword-arg pair (`cells:` + value) can be spliced
  * back in as two tokens from a single `#k`.
  */
+/** @java Expander: textual substitution replaces `#k` ANYWHERE in a token —
+ * including glued inside idents (Vigilance's `(handSite P#1 0)` → `P2`). When the
+ * arg is a single number/ident, splice its text into the ident's name. */
+function spliceGluedParams(node: LudNode, args: readonly (readonly LudNode[])[]): LudNode {
+  if (!isIdent(node) || !/#\d+/.test(node.name) || /^#\d+$/.test(node.name)) return node;
+  let name = node.name;
+  let changed = false;
+  name = name.replace(/#(\d+)/g, (whole, d: string) => {
+    const arg = args[Number.parseInt(d, 10) - 1]?.[0];
+    if (!arg) return whole;
+    const text = isIdent(arg) ? arg.name
+      : (arg as { kind?: string }).kind === "number" ? String((arg as { value: number }).value)
+      : isString(arg) ? arg.value : null;
+    if (text === null) return whole;
+    changed = true;
+    return text;
+  });
+  if (!changed) return node;
+  return { kind: "ident", name, range: node.range };
+}
+
 function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNode {
   if (isIdent(node)) {
+    node = spliceGluedParams(node, args) as typeof node;
+    if (!isIdent(node)) return node;
     const match = /^#(\d+)$/.exec(node.name);
     if (match) {
       const idx = Number.parseInt(match[1] ?? "0", 10) - 1;
@@ -317,7 +340,9 @@ function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNo
   if (!isList(node)) return node;
   let changed = false;
   const out: LudNode[] = [];
-  for (const item of node.items) {
+  for (const rawItem of node.items) {
+    const item = isIdent(rawItem) ? spliceGluedParams(rawItem, args) : rawItem;
+    if (item !== rawItem) changed = true;
     if (isIdent(item)) {
       const m = /^#(\d+)$/.exec(item.name);
       if (m) {
