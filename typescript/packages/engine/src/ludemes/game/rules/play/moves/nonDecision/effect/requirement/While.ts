@@ -16,6 +16,7 @@
  */
 
 import { Context } from "../../../../../../../../context.js";
+import { applyMoveWithThens } from "../Then.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
 
@@ -81,7 +82,8 @@ export class While implements MovesFunction {
       for (const m of generated) {
         // Apply the move to the live copy of the context so the condition
         // can detect when to stop.
-        const nextState = m.applyTo(liveCtx.state);
+        // @java Move.apply — simulated application includes then() consequences
+        const nextState = applyMoveWithThens(liveCtx, m);
         liveCtx = new Context(ctx.game, nextState, ctx.trial, ctx.rng);
         result.push(m);
       }

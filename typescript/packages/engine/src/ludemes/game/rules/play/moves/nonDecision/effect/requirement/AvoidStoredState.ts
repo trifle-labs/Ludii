@@ -14,6 +14,7 @@
  */
 
 import { Context } from "../../../../../../../../context.js";
+import { applyMoveWithThens } from "../Then.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 
@@ -65,7 +66,8 @@ export class AvoidStoredState implements MovesFunction {
     const storedStateHash = stateAny.storedState;
 
     for (const m of movesToEval) {
-      const newState = m.applyTo(ctx.state);
+      // @java Move.apply — simulated application includes then() consequences
+      const newState = applyMoveWithThens(ctx, m);
       // Java parity: newContext.state().stateHash() != stateToCompare
       const newStateAny = newState as unknown as { stateHash?: bigint | number };
       const newHash = newStateAny.stateHash;

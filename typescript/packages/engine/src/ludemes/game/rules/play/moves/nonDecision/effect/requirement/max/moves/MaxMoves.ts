@@ -15,6 +15,7 @@
  */
 
 import { Context } from "../../../../../../../../../../context.js";
+import { applyMoveWithThens } from "../../../Then.js";
 import type { Move } from "../../../../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../../../base.js";
 
@@ -72,7 +73,8 @@ export class MaxMoves implements MovesFunction {
 
     for (let i = 0; i < movesToEval.length; i++) {
       const m = movesToEval[i]!;
-      const newState = m.applyTo(ctx.state);
+      // @java Move.apply — simulated application includes then() consequences
+      const newState = applyMoveWithThens(ctx, m);
       const newCtx = new Context(ctx.game, newState, ctx.trial, ctx.rng);
       evalledMoves.push(m);
 
@@ -129,7 +131,8 @@ export class MaxMoves implements MovesFunction {
 
     for (let i = 0; i < legalMoves.length; i++) {
       const nm = legalMoves[i]!;
-      const newState = nm.applyTo(ctx.state);
+      // @java Move.apply — simulated application includes then() consequences
+      const newState = applyMoveWithThens(ctx, nm);
       const newCtx = new Context(ctx.game, newState, ctx.trial, ctx.rng);
 
       if (!withValue) {

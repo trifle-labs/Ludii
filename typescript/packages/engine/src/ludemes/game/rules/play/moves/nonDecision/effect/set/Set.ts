@@ -82,7 +82,9 @@ export class Set implements MovesFunction {
     team: IntFunction,
     roles: RoleType[],
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
+    // @java overload resolution — the SetTeamType discriminant selects this clause
+    if ((_setType as string) !== SetTeamType.Team) return null;
     return new SetTeam(team, roles, thenMoves);
   }
 
@@ -101,7 +103,9 @@ export class Set implements MovesFunction {
     toPlayer: Player | IntFunction | null,
     toRole: RoleType | null,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
+    // @java overload resolution — the SetHiddenType discriminant selects this clause
+    if ((_setType as string) !== SetHiddenType.Hidden) return null;
     const selectedDataTypes = dataTypes ?? (dataType != null ? [dataType] : null);
     return new SetHidden(
       selectedDataTypes,
@@ -123,7 +127,9 @@ export class Set implements MovesFunction {
     suitFn: IntFunction | null,
     suitsFn: IntArrayFunction | null,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
+    // @java overload resolution — the SetTrumpType discriminant selects this clause
+    if ((_setType as string) !== SetTrumpType.TrumpSuit) return null;
     return new SetTrumpSuit(suitFn, suitsFn, thenMoves);
   }
 
@@ -135,7 +141,9 @@ export class Set implements MovesFunction {
     who: Player | null,
     nextPlayers: IntArrayFunction | null,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
+    // @java overload resolution — the SetNextPlayerType discriminant selects this clause
+    if ((_setType as string) !== SetNextPlayerType.NextPlayer) return null;
     return new SetNextPlayer(who, nextPlayers, thenMoves);
   }
 
@@ -150,7 +158,9 @@ export class Set implements MovesFunction {
     previous: BooleanFunction | null,
     next: BooleanFunction | null,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
+    // @java overload resolution — the SetRotationType discriminant selects this clause
+    if ((_setType as string) !== SetRotationType.Rotation) return null;
     const directionFns = directions ?? (direction != null ? [direction] : null);
     return new SetRotation(
       to?.locFn() ?? { eval: (ctx) => ctx._evalTo },
@@ -171,14 +181,15 @@ export class Set implements MovesFunction {
     role: RoleType | null,
     valueFn: IntFunction,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
     switch (setType) {
       case SetPlayerType.Value:
         return new SetValuePlayer(Set.playerIndexFn(player), role, valueFn, thenMoves);
       case SetPlayerType.Score:
         return new SetScore(Set.playerHolder(player), role as never, valueFn, thenMoves as never);
       default:
-        throw new Error(`Set(): A SetPlayerType is not implemented: ${setType}`);
+        // @java overload resolution — not a SetPlayerType discriminant: not this clause
+        return null;
     }
   }
 
@@ -190,7 +201,12 @@ export class Set implements MovesFunction {
     valueFn: IntFunction | null,
     region: RegionFunction | null,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
+    // @java overload resolution — the SetPendingType discriminant selects this clause.
+    // Without the gate, (set Var "Double" (count Pips)) instantiated SetPending
+    // (constructPending precedes constructVar in arity dispatch) and Dubblets'
+    // doubles counter never wrote the named var.
+    if ((_setType as string) !== SetPendingType.Pending) return null;
     return new SetPending(valueFn, region, thenMoves);
   }
 
@@ -202,7 +218,9 @@ export class Set implements MovesFunction {
     name: string | null,
     newValue: IntFunction | null,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
+    // @java overload resolution — the SetVarType discriminant selects this clause
+    if ((_setType as string) !== SetVarType.Var) return null;
     return new SetVar(name, newValue, thenMoves as never);
   }
 
@@ -213,14 +231,15 @@ export class Set implements MovesFunction {
     setType: SetValueType,
     newValue: IntFunction | null,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
     switch (setType) {
       case SetValueType.Pot:
         return new SetPot(newValue, thenMoves);
       case SetValueType.Counter:
         return new SetCounter(newValue, thenMoves);
       default:
-        throw new Error(`Set(): A SetValueType is not implemented: ${setType}`);
+        // @java overload resolution — not a SetValueType discriminant: not this clause
+        return null;
     }
   }
 
@@ -234,7 +253,7 @@ export class Set implements MovesFunction {
     levelFn: IntFunction | null,
     valueFn: IntFunction,
     thenMoves: MovesFunction | null,
-  ): MovesFunction {
+  ): MovesFunction | null {
     switch (setType) {
       case SetSiteType.Count:
         return new SetCount(type as never, atFn, valueFn, thenMoves as never);
@@ -243,7 +262,8 @@ export class Set implements MovesFunction {
       case SetSiteType.Value:
         return new SetValue(type as never, atFn, levelFn, valueFn, thenMoves);
       default:
-        throw new Error(`Set(): A SetSiteType is not implemented: ${setType}`);
+        // @java overload resolution — not a SetSiteType discriminant: not this clause
+        return null;
     }
   }
 

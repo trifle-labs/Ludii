@@ -689,9 +689,12 @@ class AllDiceEqual extends BaseBooleanFunction {
    * Returns true if all dice are equal.
    */
   public override eval(context: Context): boolean {
-    // Java: return context.state().isDiceAllEqual();
-    const state = context.state as unknown as { isDiceAllEqual?: () => boolean };
-    return typeof state.isDiceAllEqual === "function" ? state.isDiceAllEqual() : false;
+    // @java AllDiceEqual.java — return context.state().isDiceAllEqual();
+    // The engine State carries the flag as the `diceAllEqual` property,
+    // written by ActionSetDiceAllEqual (recorded as SetDiceAllEqual).
+    const state = context.state as unknown as { isDiceAllEqual?: () => boolean; diceAllEqual?: boolean };
+    if (typeof state.isDiceAllEqual === "function") return state.isDiceAllEqual();
+    return state.diceAllEqual ?? false;
   }
 
   public override isStatic(): boolean { return false; }

@@ -90,3 +90,82 @@ export function applyPostStateThen(
   if (gen == null || typeof (gen as { eval?: unknown }).eval !== "function") return m;
   return m.withDeferredThen(gen as { eval(ctx: unknown): Move[] });
 }
+
+/** State shape needed by the deferred-then evaluator (structural, engine State). */
+type ThenState = Parameters<Move["applyTo"]>[0];
+
+/**
+ * Evaluate a move's deferred `(then …)` clauses against its post-action state.
+ * @java Core/src/other/move/Move.java:apply — after the move's actions apply,
+ * each Moves in then() is evaluated in the post-move context (the move already
+ * on the trial) and every generated move is applied in order, recursing into
+ * ITS then() list. Shared by Game.apply (the real apply) and by every
+ * generation-time SIMULATION that applies a candidate move (Do ifAfterwards,
+ * While, MaxMoves, …) — Java's Move.apply runs then() in TempContexts too,
+ * so a `(do (move Select … (then (sow …))) ifAfterwards:…)` condition must
+ * see the sown board, not just the bare Select.
+ */
+export function evalDeferredThens(
+  ctx: Context,
+  postState: ThenState,
+  move: Move,
+): { state: ThenState; extraActions: import("../../../../../../../action/index.js").Action[]; moveAgain: boolean } {
+  let state = postState;
+  const extraActions: import("../../../../../../../action/index.js").Action[] = [];
+  let again = move.moveAgain;
+
+  const evalThens = (
+    m: Move,
+    thens: readonly { eval(c: unknown): Move[] }[],
+    depth: number,
+  ): void => {
+    // Backstop against a consequence regenerating itself forever.
+    if (depth > 16) return;
+    for (const gen of thens) {
+      const postTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(move, false, -1) ?? ctx.trial;
+      const postCtx = new (ctx.constructor as new (...a: unknown[]) => Context)(ctx.game, state, postTrial, ctx.rng);
+      const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
+      const aug = postCtx as Context & { _radials?: unknown; _trajectories?: unknown; _thenContextDepth?: number };
+      aug._radials = src._radials;
+      aug._trajectories = src._trajectories;
+      aug._thenContextDepth = depth + 1;
+      postCtx._evalFrom = m.from();
+      postCtx._evalTo = m.to();
+      postCtx._evalValue = 0;
+
+      let thenMoves: Move[];
+      try {
+        thenMoves = gen.eval(postCtx);
+      } catch (e) {
+        // Java never throws here; a throw means a port gap in the
+        // consequence subtree. Surface under LUDII_DEBUG_THEN.
+        if (process.env["LUDII_DEBUG_THEN"]) console.error("[then threw]", (e as Error).stack?.split("\n").slice(0, 4).join(" | "));
+        continue;
+      }
+      for (const tm of thenMoves) {
+        // @java Move.then() consequences are NOT decision actions — the
+        // decision stays the primary move's own action.
+        for (const a of tm.actions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+        state = tm.applyTo(state, ctx.rng);
+        extraActions.push(...tm.actions);
+        if (tm.moveAgain) again = true;
+        if (tm.deferredThens.length > 0) evalThens(tm, tm.deferredThens, depth + 1);
+      }
+    }
+  };
+  evalThens(move, move.deferredThens, 0);
+  return { state, extraActions, moveAgain: again };
+}
+
+/**
+ * Apply a move INCLUDING its deferred `(then …)` consequences — the
+ * simulation-side equivalent of Java `move.apply(tempContext, false)`.
+ * Use this instead of bare `m.applyTo(state)` wherever a candidate move is
+ * applied during generation to inspect the resulting position.
+ * @java Core/src/other/move/Move.java:apply
+ */
+export function applyMoveWithThens(ctx: Context, m: Move, base?: ThenState): ThenState {
+  const postState = m.applyTo(base ?? ctx.state, ctx.rng);
+  if (m.deferredThens.length === 0) return postState;
+  return evalDeferredThens(ctx, postState, m).state;
+}

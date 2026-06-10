@@ -44,6 +44,7 @@ import { ActionSwapPlayers } from "../action/action-swap-players.js";
 import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
 import { ActionRemove } from "../action/action-remove.js";
 import type { Action } from "../action/index.js";
+import { evalDeferredThens } from "./game/rules/play/moves/nonDecision/effect/Then.js";
 import { State } from "../state.js";
 import { Trial } from "../trial.js";
 
@@ -316,7 +317,13 @@ export class Game implements Game {
     const portOptions = GAME_PORT_OPTIONS.get(rules);
     GAME_PORT_OPTIONS.delete(rules);
     this.startRules = portOptions?.startRules ?? startRulesFromRules(rules);
-    this.notAllPass = portOptions?.notAllPass ?? false;
+    // @java Game.java:1397-1398 — `if (hasHandDice()) flags |= GameType.NotAllPass;`
+    // Dice games never end by implicit all-pass draw (Dubblets records two
+    // consecutive passes mid-game and plays on). The portOptions flag carries
+    // the other Java sources (Pass.java:79, (passEnd NoEnd), PlayCard,
+    // SetTrumpSuit, AllPassed).
+    const hasHandDice = equipment.pieces.some(p => /^Die\d*$/.test(p.name));
+    this.notAllPass = (portOptions?.notAllPass ?? false) || hasHandDice;
     this.usesSwapRule = portOptions?.usesSwapRule ?? false;
     this.width = equipment.board.width;
     this.height = equipment.board.height;
@@ -869,51 +876,14 @@ export class Game implements Game {
     postState: State,
     move: Move,
   ): { state: State; move: Move } {
-    let state = postState;
-    const extraActions: Action[] = [];
-    let again = move.moveAgain;
-
-    const evalThens = (
-      m: Move,
-      thens: readonly { eval(ctx: unknown): Move[] }[],
-      depth: number,
-    ): void => {
-      // Backstop against a consequence regenerating itself forever.
-      if (depth > 16) return;
-      for (const gen of thens) {
-        const postTrial = context.trial.withMove(move, false, -1);
-        const postCtx = new Context(this, state, postTrial, context.rng) as Context1to1;
-        postCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;
-        postCtx._trajectories = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
-        (postCtx as unknown as { _thenContextDepth?: number })._thenContextDepth = depth + 1;
-        postCtx._evalFrom = m.from();
-        postCtx._evalTo = m.to();
-        postCtx._evalValue = 0;
-
-        let thenMoves: Move[];
-        try {
-          thenMoves = gen.eval(postCtx);
-        } catch (e) {
-          // Java never throws here; a throw means a port gap in the
-          // consequence subtree. Surface under LUDII_DEBUG_THEN.
-          if (process.env["LUDII_DEBUG_THEN"]) console.error("[then threw]", (e as Error).stack?.split("\n").slice(0, 4).join(" | "));
-          continue;
-        }
-        for (const tm of thenMoves) {
-          // @java Move.then() consequences are NOT decision actions — the
-          // decision stays the primary move's own action.
-          for (const a of tm.actions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
-          state = tm.applyTo(state, context.rng);
-          extraActions.push(...tm.actions);
-          if (tm.moveAgain) again = true;
-          if (tm.deferredThens.length > 0) evalThens(tm, tm.deferredThens, depth + 1);
-        }
-      }
-    };
-    evalThens(move, move.deferredThens, 0);
-
-    if (extraActions.length === 0 && again === move.moveAgain) return { state, move };
-    return { state, move: move.withConsequence(extraActions, again) };
+    // Make sure the topology scratch is visible to the consequence subtree
+    // even when the incoming context predates it.
+    const src = context as Context1to1;
+    src._radials = src._radials ?? this.equipment.board.radials;
+    src._trajectories = src._trajectories ?? this.equipment.board.trajectories;
+    const { state, extraActions, moveAgain } = evalDeferredThens(context, postState, move);
+    if (extraActions.length === 0 && moveAgain === move.moveAgain) return { state, move };
+    return { state, move: move.withConsequence(extraActions as Action[], moveAgain) };
   }
 
   /** @java game/Game.java — over(context). Returns context.over. */

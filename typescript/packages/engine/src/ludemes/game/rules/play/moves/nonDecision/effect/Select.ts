@@ -22,7 +22,7 @@
 import type { Context } from "../../../../../../../context.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionSelect } from "../../../../../../../action/action-select.js";
-import type { Action } from "../../../../../../../action/index.js";
+import { applyPostStateThen } from "./Then.js";
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
@@ -199,13 +199,11 @@ export class Select extends Effect {
 
   private withThen(ctx: Context, move: Move): Move {
     if (this.thenRef === null) return move;
-    const thenMoves = this.thenRef.moves().eval(ctx) as unknown as Move[];
-    const thenActions: Action[] = [];
-    for (const thenMove of thenMoves) {
-      for (const action of thenMove.actions) thenActions.push(action);
-    }
-    if (thenActions.length === 0 && !thenMoves.some((m) => m.moveAgain)) return move;
-    return move.withConsequence(thenActions, thenMoves.some((m) => m.moveAgain));
+    // @java other/move/Move.java — then() clauses are carried on the move and
+    // evaluated at APPLY time, after ALL actions (Dubblets: ForEachDie appends
+    // ActionUseDie after this Select's then was attached; the consequence
+    // ("ReplayNotAllDiceUsed") must see the die consumed).
+    return applyPostStateThen(this.thenRef, ctx, move);
   }
 
   // -------------------------------------------------------------------------

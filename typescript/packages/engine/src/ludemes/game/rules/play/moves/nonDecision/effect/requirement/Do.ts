@@ -18,7 +18,7 @@ import { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import { Move as LudiiMove } from "../../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
-import { applyPostStateThen } from "../Then.js";
+import { applyPostStateThen, applyMoveWithThens } from "../Then.js";
 
 /**
  * @java game/rules/play/moves/nonDecision/effect/requirement/Do.java
@@ -173,7 +173,8 @@ export class Do implements MovesFunction {
     let state = ctx.state;
     const preMoves = this.prior.eval(ctx);
     for (const m of preMoves) {
-      state = m.applyTo(state);
+      // @java Move.apply — prior moves apply with their then() consequences
+      state = applyMoveWithThens(ctx, m, state);
     }
     return state;
   }
@@ -187,7 +188,9 @@ export class Do implements MovesFunction {
     // @java Do.eval — ifAfterwards is evaluated in the POST-MOVE context with the move
     // recorded on the trial (so (last To)/(last From) name THIS move) and with the
     // board topology visible (radials/trajectories), mirroring Game.applyInternal.
-    const newState = m.applyTo(ctx.state, ctx.rng);
+    // @java Move.apply runs then() consequences in TempContexts too — the
+    // ifAfterwards condition must see e.g. the deferred (sow …) board (J'odu).
+    const newState = applyMoveWithThens(ctx, m);
     const newTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(m, false, -1) ?? ctx.trial;
     const newCtx = new Context(ctx.game, newState, newTrial, ctx.rng);
     const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
