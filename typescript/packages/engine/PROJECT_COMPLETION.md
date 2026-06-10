@@ -1565,3 +1565,29 @@ The definition of complete now includes, beyond the structural port:
 - Standing constraint reaffirmed: NO bespoke logic — every fix is a 1:1 port
   with @java provenance.
 Infrastructure: add a dice game to the canary battery; replay harness heap.
+
+## Update 71 (2026-06-10) — full-parity campaign opened: the hunt family
+
+First burn-down wave (5 root-cause fixes, all battery-gated, all @java-provenanced):
+1. SitesTop/SitesBottom on the Trajectories yOf play-site API — the duck-typed
+   elements(type) path is EMPTY on vertex-play graph boards, falling through to the
+   rectangular adapter with OUT-OF-RANGE sites (Adugo's dogs placed on the wedge).
+   SitesLeft had already pioneered the recipe (xOf); Top/Bottom now match.
+2. SitesCoords passes the resolved default site type to getElement (@java
+   SiteFinder.find) — Coyote's "A3" centroid-matched a FACE.
+3. Merge graphs make faces unconditionally (@java Graph.assemble, Graph.java:1846) —
+   container span = max(faces, playSites) (@java Equipment maxSiteMainBoard,
+   Equipment.java:718) now matches Java hand offsets (Fox&Geese fox at 40, not 33).
+4. Topology.getElement resolves a null type to the BOARD's default site
+   (@java SiteFinder.find) — new defaultSiteType field set at topology build;
+   without it the new faces re-broke Adugo (C5 -> cell 18).
+5. Equals/NotEqual gain the @Or RoleType roleB clause (@java Equals.java:62-78) —
+   P2-as-role silently dropped to a null operand (Asalto's end rule threw at ply 1).
+   This fix reaches every game comparing ints to roles.
+   (+ Do case-A derived contexts keep the topology scratch — TempContext semantics.)
+
+Hunt family (152 trials): OUTCOME_OK 55 (36.2%), MOVE_MISMATCH 77, NO_OUTCOME 15,
+START_FAIL 4, WINNER_MISMATCH 1, COMPILE_FAIL 0. Adugo/Baghchal/Coyote and friends
+flipped from 0 to green; Asalto/El Zorro/Fox&Geese at 1/2 (second trials diverge
+deeper). The loop continues: next divergences are in the same family's deeper
+plies (huff rules / multi-hop sequences) and then the next families by volume.
