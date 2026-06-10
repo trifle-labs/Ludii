@@ -16,6 +16,21 @@ import { Move as LudiiMove } from "../../../../../../../../../move.js";
 /** Java parity: Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
 
+function sitesArray(value: unknown): number[] {
+  if (Array.isArray(value)) return value.filter((site): site is number => Number.isInteger(site));
+  if (value !== null && typeof value === "object") {
+    const sites = (value as { sites?: () => unknown }).sites;
+    if (typeof sites === "function") {
+      const listed = sites.call(value);
+      return Array.isArray(listed) ? listed.filter((site): site is number => Number.isInteger(site)) : [];
+    }
+    if (typeof (value as Iterable<unknown>)[Symbol.iterator] === "function") {
+      return Array.from(value as Iterable<unknown>).filter((site): site is number => Number.isInteger(site));
+    }
+  }
+  return Number.isInteger(value) ? [value as number] : [];
+}
+
 /**
  * SetPending — sets the "pending" value in the game state.
  *
@@ -81,7 +96,7 @@ export class SetPending implements MovesFunction {
     }
 
     // @java SetPending.java:78-95 — region != null branch
-    const sites = this.region.eval(ctx);
+    const sites = sitesArray(this.region.eval(ctx));
 
     if (sites.length === 0) {
       return [];

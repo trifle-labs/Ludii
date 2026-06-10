@@ -105,6 +105,8 @@ export class Context {
   public setSite(v: number): void { this._evalSite = v; }
   /** @java Context.value(). */
   public value(): number { return this._evalValue; }
+  /** @java Context.setValue(int). */
+  public setValue(v: number): void { this._evalValue = v; }
   /** @java Context.player(). */
   public player(): number { return this._evalPlayer ?? 0; }
   /** @java Context.setPlayer(int). */

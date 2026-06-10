@@ -70,11 +70,20 @@ export class SitesBottom extends BaseRegionFunction {
   }
 }
 
-function twoRowMancalaBottom(board: { numSites: number; tracks?: () => readonly unknown[]; getTracks?: () => readonly unknown[] }): number[] | null {
+function twoRowMancalaBottom(board: {
+  numSites: number;
+  tracks?: () => readonly unknown[];
+  getTracks?: () => readonly unknown[];
+  getStoreType?: () => string;
+}): number[] | null {
   const tracks = typeof board.tracks === "function"
     ? board.tracks()
     : (typeof board.getTracks === "function" ? board.getTracks() : []);
   if (tracks.length === 0 || board.numSites < 4 || board.numSites % 2 !== 0) return null;
+  if (board.getStoreType?.() === "None") {
+    const holes = board.numSites / 2;
+    return Array.from({ length: holes }, (_, index) => index);
+  }
   const holes = (board.numSites - 2) / 2;
   if (!Number.isInteger(holes) || holes < 1) return null;
   return Array.from({ length: holes }, (_, index) => index + 1);

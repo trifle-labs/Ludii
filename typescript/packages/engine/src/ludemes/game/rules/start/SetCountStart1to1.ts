@@ -69,7 +69,16 @@ export class SetCountStart1to1 implements StartRule {
       _evalFrom: -1, _evalTo: -1, _evalValue: 0,
       _radials: equipment.board.radials,
       track: () => -1,
-      tracks: () => equipment.board.tracks(),
+        tracks: () => {
+          const board = equipment.board as unknown as {
+            tracks?: (() => unknown[]) | unknown[];
+            getTracks?: () => readonly unknown[];
+          };
+          if (typeof board.tracks === "function") return board.tracks();
+          if (Array.isArray(board.tracks)) return board.tracks;
+          if (typeof board.getTracks === "function") return [...board.getTracks()];
+          return [];
+        },
     } as unknown as Context;
   }
 

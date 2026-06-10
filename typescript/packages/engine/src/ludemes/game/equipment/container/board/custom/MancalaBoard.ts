@@ -81,8 +81,6 @@ export class MancalaBoard extends Board {
     if (numNonNull > 1)
       throw new Error("Board: Only one of `track' or `tracks' can be non-null.");
 
-    if (rows === 2 && hasTrackDirection(track, tracks, "1,E,N,W"))
-      throw new Error("MancalaBoard: faithful two-row 1,E,N,W track route is not replay-safe yet.");
   }
 
   /** @java MancalaBoard.numRows() */
@@ -104,15 +102,6 @@ export class MancalaBoard extends Board {
       s += " with " + this.numStore + " " + this.storeType.toLowerCase() + " stores";
     return s;
   }
-}
-
-function hasTrackDirection(
-  track: TrackDescriptor | null,
-  tracks: TrackDescriptor[] | null,
-  direction: string,
-): boolean {
-  const all = tracks ?? (track !== null ? [track] : []);
-  return all.some((t) => (t as unknown as { trackDirection?: string | null }).trackDirection === direction);
 }
 
 /**

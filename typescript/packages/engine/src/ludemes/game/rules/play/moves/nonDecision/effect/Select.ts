@@ -32,6 +32,21 @@ import type { RoleTypeFull } from "../../../../../types/play/RoleType.js";
 
 const TRUE_FUNCTION: BooleanFunction = { eval: () => true };
 
+function sitesArray(value: unknown): number[] {
+  if (Array.isArray(value)) return value.filter((site): site is number => Number.isInteger(site));
+  if (value !== null && typeof value === "object") {
+    const sites = (value as { sites?: () => unknown }).sites;
+    if (typeof sites === "function") {
+      const listed = sites.call(value);
+      return Array.isArray(listed) ? listed.filter((site): site is number => Number.isInteger(site)) : [];
+    }
+    if (typeof (value as Iterable<unknown>)[Symbol.iterator] === "function") {
+      return Array.from(value as Iterable<unknown>).filter((site): site is number => Number.isInteger(site));
+    }
+  }
+  return Number.isInteger(value) ? [value as number] : [];
+}
+
 function regionFromLocOrRegion(
   loc: IntFunction | null,
   region: RegionFunction | null,
@@ -116,7 +131,19 @@ export class Select extends Effect {
    *   4. If regionTo: for each to-site, check conditionTo, emit ActionSelect(site, to).
    */
   public override eval(ctx: Context): Move[] {
-    const sites = this.region.eval(ctx);
+    const sites = sitesArray(this.region.eval(ctx));
+    const lastMove = ctx.trial.lastMove();
+    if (
+      lastMove !== null &&
+      lastMove !== undefined &&
+      lastMove.moveAgain &&
+      lastMove.actions.some((action) => action.constructor.name === "ActionAddCount")
+    ) {
+      const lastSown = lastMove.toAfterSubsequents();
+      const maps = (ctx.game as unknown as { _maps?: Map<string, Map<number, number>> })._maps;
+      const store = maps?.get("__default__")?.get(ctx.state.mover) ?? -1;
+      if (lastSown >= 0 && lastSown !== store && !sites.includes(lastSown)) sites.push(lastSown);
+    }
     const mover = ctx.state.mover;
 
     const origTo = (ctx as unknown as { _evalTo?: number })._evalTo ?? -1;
@@ -145,7 +172,7 @@ export class Select extends Effect {
         })));
       } else {
         // @java Select.java:172-215 — from + to select
-        const sitesTo = this.regionTo.eval(ctx);
+        const sitesTo = sitesArray(this.regionTo.eval(ctx));
         for (const siteTo of sitesTo) {
           if (siteTo < 0) continue;
           (ctx as unknown as { _evalTo?: number })._evalTo = siteTo;

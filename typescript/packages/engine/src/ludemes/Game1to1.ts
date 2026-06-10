@@ -110,6 +110,7 @@ type GameEquipmentSurface = Omit<Equipment1to1, "board" | "pieces"> & {
   createItems?: (game: unknown) => void;
   containers?: () => unknown[] | null;
   components?: () => unknown[] | null;
+  maps?: () => unknown[] | null;
   sitesFrom?: () => number[] | null;
 };
 
@@ -159,6 +160,48 @@ function playerDirsFromPlayers(players: GamePlayers1to1): Map<number, number> | 
     if (dirIdx !== undefined) dirs.set(pid, dirIdx);
   }
   return dirs.size > 0 ? dirs : undefined;
+}
+
+function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, Map<number, number>> | undefined {
+  const pending = (equipment.board as unknown as { _pendingMaps?: Map<string, Map<number, number>> })._pendingMaps;
+  if (pending && pending.size > 0) return pending;
+
+  const rawMaps = typeof equipment.maps === "function" ? equipment.maps() : null;
+  if (!Array.isArray(rawMaps) || rawMaps.length === 0) return undefined;
+
+  const board = equipment.board as unknown as { containerSpan?: number; numSites?: number };
+  const lastSite = (board.containerSpan ?? board.numSites ?? 0) - 1;
+  const result = new Map<string, Map<number, number>>();
+
+  for (const item of rawMaps) {
+    if (item === null || typeof item !== "object") continue;
+    const mapItem = item as {
+      name?: () => string | null;
+      map?: () => ReadonlyMap<number, number>;
+      _mapPairs?: readonly unknown[];
+    };
+    const entries = new Map<number, number>(mapItem.map?.() ?? []);
+    for (const pair of mapItem._mapPairs ?? []) {
+      const pairObj = pair as {
+        getIntKey?: () => { eval(ctx: unknown): number };
+        getIntValue?: () => { eval(ctx: unknown): number };
+        landmark?: number | null;
+      };
+      const key = pairObj.getIntKey?.().eval({}) ?? -1;
+      if (key < 0) continue;
+      let value = pairObj.getIntValue?.().eval({}) ?? -1;
+      if ((value < 0 || value === undefined) && pairObj.landmark !== null && pairObj.landmark !== undefined) {
+        // @java LandmarkType.FirstSite / LastSite in Map.computeMap()
+        if (pairObj.landmark === 5) value = 0;
+        else if (pairObj.landmark === 6) value = lastSite;
+      }
+      if (value >= 0) entries.set(key, value);
+    }
+    const name = mapItem.name?.() ?? null;
+    result.set(name === null || name === "Map" ? "__default__" : name, entries);
+  }
+
+  return result.size > 0 ? result : undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -275,9 +318,9 @@ export class Game1to1 implements Game {
 
     // Extract static map table from equipment (compiled from (map ...) equipment items).
     // @java game/equipment/other/Map.java — Equipment.maps() lookup table
-    const pendingMaps = (equipment.board as unknown as { _pendingMaps?: Map<string, Map<number, number>> })._pendingMaps;
-    if (pendingMaps && pendingMaps.size > 0) {
-      this._maps = pendingMaps;
+    const staticMaps = staticMapsFromEquipment(equipment);
+    if (staticMaps && staticMaps.size > 0) {
+      this._maps = staticMaps;
     }
 
     // Store per-player facing directions (from (players {(player SE) ...})).

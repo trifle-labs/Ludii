@@ -73,18 +73,12 @@ export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
     try {
       argCompiler ??= new ArgCompiler();
       const game = argCompiler.compile<Game1to1>(gameNode, ["game.Game"]);
-      if (mustUseBespokeFallback(game)) return compileNode1to1(gameNode);
       if (game != null) return game;
     } catch {
       /* fall through to the dispatcher */
     }
   }
   return compileNode1to1(gameNode);
-}
-
-function mustUseBespokeFallback(game: Game1to1 | null | undefined): boolean {
-  const board = (game as unknown as { equipment?: { board?: unknown } } | null)?.equipment?.board;
-  return Boolean((board as { _forceFullBespokeFallback?: boolean } | null)?._forceFullBespokeFallback);
 }
 
 /**
