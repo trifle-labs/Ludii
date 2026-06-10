@@ -245,7 +245,7 @@ import { ForEachLevel as C241 } from "../../../ludemes/game/rules/play/moves/non
 import { ForEachPlayer as C242 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/foreach/player/ForEachPlayer.js";
 import { Seq as C243 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/Seq.js";
 import { And as C244 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/And.js";
-import { IfMoves as C245 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/IfMoves.js";
+import { If as C245 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/If.js";
 import { Append as C246 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/Append.js";
 import { AllCombinations as C247 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/AllCombinations.js";
 import { Or as C248 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/Or.js";
