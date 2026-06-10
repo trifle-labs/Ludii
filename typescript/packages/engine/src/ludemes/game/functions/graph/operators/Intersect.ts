@@ -104,6 +104,11 @@ export class Intersect extends BaseGraphFunction {
       if (a !== undefined && b !== undefined) out.addEdge(a, b);
     }
 
+    // @java Intersect.eval — the intersected graph's faces (cells) must be rebuilt
+    // from the surviving planar embedding; without this, cell-play boards built via
+    // (intersect ...) had 0 cells (e.g. Pentalath's HalfHexHex).
+    out.makeFaces();
+
     return out;
   }
 }
