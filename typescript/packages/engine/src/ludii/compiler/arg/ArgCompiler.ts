@@ -108,6 +108,7 @@ class ArgCompileMiss extends Error {
 export class ArgCompiler {
   private readonly reflection: ReadonlyMap<string, ReflectionClass>;
   private readonly _enumConstantsByAssignable = new Map<string, Set<string>>();
+  private readonly headPath: string[] = [];
   private readonly grammar: GrammarModel;
   private readonly registry: LudemeRegistry;
   private readonly byToken = new Map<string, Candidate[]>();
@@ -160,9 +161,12 @@ export class ArgCompiler {
     env: ArgCompilerEnv,
   ): unknown | null {
     this.depth++;
+    const pathHead = isList(node) ? (listHead(node) ?? "?") : null;
+    if (pathHead !== null) this.headPath.push(pathHead);
     const snap = this.deepest;
     const snapInst = this.deepestInst;
     const r = this.compileMaybeInner(node, expectedTypes, env);
+    if (pathHead !== null) this.headPath.pop();
     this.depth--;
     // Discard misses recorded while compiling a subtree that ultimately
     // succeeded (benign probes), so `deepest` reflects only the failed subtree.
@@ -923,8 +927,10 @@ export class ArgCompiler {
       return NO_MATCH;
     }
 
-    if (isNumber(node) || (isIdent(node) && isNumericText(node.name))) {
-      const value = isNumber(node) ? node.value : Number(node.name);
+    if (isNumber(node) || (isIdent(node) && (isNumericText(node.name) || APPLICATION_CONSTANTS.has(node.name)))) {
+      const value = isNumber(node)
+        ? node.value
+        : (APPLICATION_CONSTANTS.get(node.name) ?? Number(node.name));
       const integer = Number.isInteger(value);
       // Faithful: a numeric literal for an IntFunction/FloatFunction/DimFunction param is
       // wrapped in an IntConstant/FloatConstant/DimConstant (a function object with eval()),
@@ -1229,6 +1235,7 @@ export class ArgCompiler {
       return new ctor(...info.args);
     } catch (e) {
       this.noteInstFail(`cannot instantiate ${info.className}: constructor threw (${String((e as Error)?.message ?? e).slice(0, 80)})`);
+      if (process.env["LUDII_DEBUG_INST"]) console.error("[inst threw]", (e as Error)?.stack?.split("\n").slice(0, 4).join(" | "));
       return null;
     }
   }
@@ -1312,7 +1319,7 @@ export class ArgCompiler {
     };
   }
 
-  private deepest: { depth: number; msg: string } | null = null;
+  private deepest: { depth: number; msg: string; path?: string } | null = null;
   /**
    * Instantiation-drift failures: the args bound to a Java constructor fine, but
    * the mapped TS class could not be built (e.g. its ported constructor arity
@@ -1336,7 +1343,7 @@ export class ArgCompiler {
     // Deepest-by-recursion-depth wins, so the recorded divergence is the true
     // (deepest) bind failure rather than a shallow/benign sibling probe.
     if (this.deepest === null || this.depth >= this.deepest.depth)
-      this.deepest = { depth: this.depth, msg: message };
+      this.deepest = { depth: this.depth, msg: message, path: this.headPath.join(">") };
     this.lastDivergence = message;
   }
 }
@@ -1624,6 +1631,18 @@ const PLAYER_SITE_VARIANTS = new Set<string>([
   "mover", "next", "player", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8",
   "p9", "p10", "p11", "p12", "p13", "p14", "p15", "p16",
 ]);
+/**
+ * @java Language/src/grammar/Grammar.java:114 ApplicationConstants — named int
+ * constants the Java compiler resolves to IntConstant(value) in ArgTerminal
+ * (e.g. `(= (trackSite …) End)` in IsEndTrack.def). Values from Common/src/main/Constants.java.
+ */
+const APPLICATION_CONSTANTS = new Map<string, number>([
+  ["Off", -1],
+  ["End", -2],
+  ["Undefined", -1],
+  ["Infinity", 1000000000],
+]);
+
 const SIMPLE_SITE_VARIANTS = new Set<string>([
   "board", "bottom", "center", "centre", "corners", "left", "outer", "perimeter", "right", "top",
 ]);

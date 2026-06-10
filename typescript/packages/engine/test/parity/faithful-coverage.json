@@ -1,6 +1,6 @@
 {
- "faithful": 156,
- "fallback": 64,
+ "faithful": 179,
+ "fallback": 41,
  "total": 220,
  "perGame": [
   {
@@ -45,43 +45,43 @@
   },
   {
    "game": "board/race/escape/58 Holes.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Cab e Quinal.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Frangieh.lud",
-   "status": "THROW",
-   "reason": "terminal 6 did not match game.util.equipment.TrackStep"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Ketch-Dolt.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Ludus Anglicorum.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Pachesi.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Piprjall.lud",
-   "status": "THROW",
-   "reason": "terminal 25 did not match game.util.equipment.TrackStep"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Sokkattan.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/escape/Tsun K'i.lud",
@@ -90,8 +90,8 @@
   },
   {
    "game": "board/race/fill/Camelot.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.Game: constructor threw (poly is not iterable)"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/fill/Shanzak Kammar.lud",
@@ -110,8 +110,8 @@
   },
   {
    "game": "board/race/reach/Kawasukuts.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (value) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/reach/Paradis.lud",
@@ -130,8 +130,8 @@
   },
   {
    "game": "board/race/reach/Zohn Ahl.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/four_rows/Bao Kiswahili (DR Congo).lud",
@@ -155,8 +155,8 @@
   },
   {
    "game": "board/sow/four_rows/Nchuwa.lud",
-   "status": "THROW",
-   "reason": "terminal Value did not match game.rules.play.moves.nonDecision.effect.set.SetNextPlayerTyp"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/four_rows/Pereauni.lud",
@@ -175,8 +175,8 @@
   },
   {
    "game": "board/sow/two_rows/Ako Okwe.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (value) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/two_rows/Bechi.lud",
@@ -400,8 +400,8 @@
   },
   {
    "game": "board/space/territory/Pyrga.lud",
-   "status": "THROW",
-   "reason": "terminal Infinity did not match game.functions.ints.IntFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/territory/Sprite.lud",
@@ -536,7 +536,7 @@
   {
    "game": "board/war/replacement/checkmate/shogi/Tai Shogi.lud",
    "status": "THROW",
-   "reason": "no reflection candidate for (where) as game.functions.region.RegionFunction"
+   "reason": "cannot instantiate game.Game: constructor threw (Cannot read properties of undefined (read"
   },
   {
    "game": "board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi.lud",
@@ -545,8 +545,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/all/Annuvin.lud",
-   "status": "THROW",
-   "reason": "terminal Undefined did not match game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/all/Catapult.lud",
@@ -555,8 +555,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/all/Four-Player Chaturanga (al-Biruni).lud",
-   "status": "THROW",
-   "reason": "terminal Off did not match game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/all/MensaSpiel.lud",
@@ -565,8 +565,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/all/Sig (Tidikelt).lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (min) as game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/all/Tank Tactics.lud",
@@ -660,8 +660,8 @@
   },
   {
    "game": "reconstruction/done/board/race/escape/Pasakakrida (Type 2).lud",
-   "status": "THROW",
-   "reason": "terminal 12 did not match game.util.equipment.TrackStep"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "reconstruction/done/board/sow/two_rows/Manddiare.lud",
@@ -730,8 +730,8 @@
   },
   {
    "game": "reconstruction/pending/board/race/escape/Tavli (Zenon).lud",
-   "status": "THROW",
-   "reason": "terminal 6 did not match game.util.equipment.TrackStep"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "reconstruction/pending/board/race/other/Chungani.lud",
@@ -745,8 +745,8 @@
   },
   {
    "game": "reconstruction/pending/board/race/reach/Barjiss.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.Game: constructor threw (poly is not iterable)"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "reconstruction/pending/board/race/reach/Totolospi (Cross-Shaped).lud",
@@ -785,8 +785,8 @@
   },
   {
    "game": "subgame/race/escape/MahbousehSubgame.lud",
-   "status": "THROW",
-   "reason": "terminal 12 did not match game.util.equipment.TrackStep"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/Disc Colour Test.lud",
@@ -850,8 +850,8 @@
   },
   {
    "game": "test/graph/operator/Graph Test - Hole (Poly in Square).lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.Game: constructor threw (poly is not iterable)"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/graph/operator/Graph Test - Merge Tilings.lud",
@@ -1075,8 +1075,8 @@
   },
   {
    "game": "wip/reconstruction/board/race/reach/Bajii.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.Game: constructor threw (poly is not iterable)"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "wip/reconstruction/board/sow/three_rows/Gabata (Three Players).lud",

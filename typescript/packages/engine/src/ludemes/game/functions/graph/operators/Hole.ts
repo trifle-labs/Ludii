@@ -53,11 +53,21 @@ export class Hole extends BaseGraphFunction {
   private readonly polygon: ReadonlyArray<Pt>;
 
   /** @java Hole(GraphFunction graphFn, Poly poly) */
-  constructor(graphFn: GraphFunction, polygon: ReadonlyArray<Pt>) {
+  constructor(graphFn: GraphFunction, polygon: ReadonlyArray<Pt> | unknown) {
     super();
     this._dim = [];
     this.graphFn = graphFn;
-    this.polygon = polygon;
+    // The compiler passes the Java-signature Poly ludeme; older callers pass raw
+    // point-pair arrays. Normalize to pairs (@java Hole.java: poly.polygon().points()).
+    const polyObj = polygon as unknown as {
+      polygon?: () => { points(): ReadonlyArray<{ x: number; y: number }> };
+      points?: () => ReadonlyArray<{ x: number; y: number }>;
+    };
+    this.polygon = typeof polyObj?.polygon === "function"
+      ? polyObj.polygon().points().map((pt) => [pt.x, pt.y] as const)
+      : typeof polyObj?.points === "function"
+        ? polyObj.points().map((pt) => [pt.x, pt.y] as const)
+        : (polygon as ReadonlyArray<Pt>);
   }
 
   /** @java Hole.eval(Context, SiteType) */
