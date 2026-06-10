@@ -1067,3 +1067,19 @@ P#1 token, Move-as-trackSiteType, (=)-as-String, square-basis ctor, component
 throw) — each a one-shot by the established repro→fix→canary recipe. Item-3
 structural work (callback removal, *1to1 re-homing, StartRule eval(Context),
 State convergence) follows.
+
+## Update 47 — Polish round 2: three Java-parser-semantics ports
+
+- **Class-name aliases**: aliased ludemes (Pow "^", Le "<=") are also addressable by
+  class-derived name ((pow …), (le …)) — byToken indexes both. Omega/Throngs-class.
+- **Glued define params**: `#k` inside idents splices textually (Vigilance's
+  `P#1` → `P2`) — @java Expander textual substitution.
+- **protectedSubstring**: strings after game/match/instance are NOT define-expanded
+  (@java Expander.protectedSubstring) — games named after their own defines
+  (Sahkku, Tab).
+- **Group splice**: headless round groups supply MULTIPLE positional args
+  (O An Quan's `(!= (("LeftMostEmpty") (to)))`).
+Each verified by 16-24-game battery. ~10 exotic singles remain (Senet Each-as-Moves,
+Make Muster square-basis ctor, HexTrike meta-as-start, Kriegspiel from:-decision,
+Vanguard while:, Block component ctor, Mutant Y^3 named-board string, Wumpus World
+piece-as-Moves, Mehen Move-as-TrackSiteType, Throngs residue).
