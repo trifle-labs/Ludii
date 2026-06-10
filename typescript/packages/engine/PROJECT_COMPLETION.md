@@ -1179,3 +1179,18 @@ Engineered sweep v2 (deny-list, src-root exclusion, atomic class+path maps):
 The remaining 88 are LIVE substrate with name collisions against faithful classes
 (the merge-analysis set: deny-list names like Game1to1/State1to1/Array1to1 +
 genuine duplicate pairs needing case-by-case consolidation).
+
+## Update 54 — Re-homing campaign: 235 → 67 *1to1 files; coverage verified intact
+
+Four chunks landed (157 class renames + 100 file moves; 47 orphan deletions;
+21 file-only renames). Audit v6: 99.31% real-game coverage UNCHANGED through the
+entire sweep; every chunk battery-gated. The remaining 67 files split:
+- 4 deny-list-named cores (Game1to1, State substrate, Array1to1, …): these are
+  the engine's load-bearing spine — renaming them is bound up with State
+  convergence (the Java game.Game / other.state.State mirrors are the targets).
+- ~56 LIVE duplicate pairs (faithful X + substrate X1to1 both referenced):
+  case-by-case merges — which is registered, which delegates, fold and delete.
+- Parse-shape hosts (From1to1/To1to1/Between1to1): compiled-arg carrier classes
+  consumed by effect ctors — fold into the faithful From/To/Between util classes.
+This is the precise remaining surface of item 3 alongside the StartRule
+eval(Context) migration, State convergence, and the 9 exotic compile singles.
