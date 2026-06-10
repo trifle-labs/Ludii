@@ -10,6 +10,8 @@
  *          directly (Java throws UnsupportedOperationException).
  */
 
+import { MaxMoves } from "./moves/MaxMoves.js";
+import { MaxCaptures } from "./moves/MaxCaptures.js";
 import type { Context } from "../../../../../../../../../context.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../../base.js";
 import type { Move } from "../../../../../../../../../move.js";
@@ -74,15 +76,23 @@ export class Max implements MovesFunction {
     }
 
     // @java Max.java:44-63 — MaxMovesType cases
-    switch (maxType) {
-      case "Captures":
-        // Delegate to MaxCaptures — not implemented as separate class in TS yet
-        throw new Error("not yet wired: Max(Captures) requires MaxCaptures implementation");
-      case "Moves":
-        // Delegate to MaxMoves — not implemented as separate class in TS yet
-        throw new Error("not yet wired: Max(Moves) requires MaxMoves implementation");
-      default:
-        throw new Error(`Max(): Unknown MaxMovesType: ${String(maxType)}`);
+    {
+      const [withValue, moves, then] = args as [BooleanFunction | null, MovesFunction, Then | null];
+      const wv = (typeof withValue === "boolean"
+        ? { eval: () => withValue }
+        : withValue ?? { eval: () => false }) as BooleanFunction;
+      // MaxMoves/MaxCaptures take the THEN as a MovesFunction (the Then wrapper's moves()).
+      const thenMoves = then && typeof (then as { moves?: unknown }).moves === "function"
+        ? (then as { moves(): MovesFunction }).moves()
+        : (then as MovesFunction | null);
+      switch (maxType) {
+        case "Captures":
+          return new MaxCaptures(wv, moves, thenMoves);
+        case "Moves":
+          return new MaxMoves(wv, moves, thenMoves);
+        default:
+          throw new Error(`Max(): Unknown MaxMovesType: ${String(maxType)}`);
+      }
     }
   }
 
