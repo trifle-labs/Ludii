@@ -5,7 +5,7 @@
  * Holds: name, owner, 1-based component index, optional move generator, and
  * component-type helpers mirroring Java's isCard/isDie/isDomino/isTile guards.
  *
- * Note: this intentionally does NOT extend Item1to1 — in the 1:1 data-path the
+ * Note: this intentionally does NOT extend the faithful Item base — in the 1:1 data-path the
  * Component is used standalone (Equipment1to1 already wraps Piece which has an
  * analogous interface). This class extends Piece-like fields for Card/Die/Domino.
  *

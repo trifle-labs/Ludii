@@ -668,7 +668,7 @@ import { Min as C668 } from "../../../ludemes/game/functions/range/math/Min.js";
 import { Max as C669 } from "../../../ludemes/game/functions/range/math/Max.js";
 import { Exact as C670 } from "../../../ludemes/game/functions/range/math/Exact.js";
 import { Range as C671 } from "../../../ludemes/game/functions/range/Range.js";
-import { Item1to1 as C672 } from "../../../ludemes/game/equipment/Item1to1.js";
+import { Item as C672 } from "../../../ludemes/game/equipment/Item.js";
 import { Hints as C673 } from "../../../ludemes/game/equipment/other/Hints.js";
 import { Map as C674 } from "../../../ludemes/game/equipment/other/Map.js";
 import { Regions as C675 } from "../../../ludemes/game/equipment/other/Regions.js";
