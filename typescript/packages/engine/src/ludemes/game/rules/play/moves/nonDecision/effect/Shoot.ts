@@ -12,7 +12,7 @@
 import type { Context } from "../../../../../../../context.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
-import type { Then } from "./Then.js";
+import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 
@@ -156,11 +156,8 @@ export class Shoot implements MovesFunction {
 
     // @java Shoot.java:174 — then clause
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return moves.map(m => m.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        thenMoves.some(tm => tm.moveAgain),
-      ));
+      // @java Then.java — consequence evaluated in the POST-MOVE context (per move).
+      return moves.map(m => applyPostStateThen(this.thenClause, ctx, m));
     }
 
     return moves;

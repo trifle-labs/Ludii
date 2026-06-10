@@ -11,7 +11,7 @@
 import type { Context } from "../../../../../../../context.js";
 import type { IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
-import type { Then } from "./Then.js";
+import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 
@@ -119,11 +119,8 @@ export class Remove implements MovesFunction {
 
     // @java Remove.java:154-155 — then clause
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return moves.map(m => m.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      ));
+      // @java Then.java — consequence evaluated in the POST-MOVE context (per move).
+      return moves.map(m => applyPostStateThen(this.thenClause, ctx, m));
     }
 
     return moves;
