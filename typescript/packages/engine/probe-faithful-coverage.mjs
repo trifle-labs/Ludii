@@ -13,6 +13,7 @@ const LIMIT = parseInt(process.argv[3] ?? "100000", 10);
 const lang = await import("@ludii/typescript-language");
 const { ArgCompiler } = await import("./dist/src/ludii/compiler/arg/ArgCompiler.js");
 const { getBuiltinDefines } = await import("./dist/src/builtin-defines.js");
+const { expandRanges, expandSiteRanges } = await import("./dist/src/lud-ranges.js");
 const { expandDefines } = await import("./dist/src/lud-defines.js");
 const { applyOptions } = await import("./dist/src/lud-options.js");
 
@@ -31,7 +32,7 @@ for (let i = 0; i < files.length && total < LIMIT; i += STRIDE) {
   total++;
   let status, reason = "";
   try {
-    const ast = expandDefines(applyOptions(lang.parseLud(readFileSync(f, "utf8"))), [...getBuiltinDefines()]);
+    const ast = expandDefines(applyOptions(lang.parseLud(expandSiteRanges(expandRanges(readFileSync(f, "utf8"))))), [...getBuiltinDefines()]);
     const g = ac.compile(ast, ["game.Game"]);
     const equip = g?.equipment?.constructor?.name ?? "?";
     if (equip === "Equipment") { status = "FAITHFUL"; faithful++; }

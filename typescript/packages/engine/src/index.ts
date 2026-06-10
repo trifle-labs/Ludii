@@ -167,6 +167,7 @@ export {
   triRectangleMask,
 } from "./eval/index.js";
 export { collectTopLevelDefines, expandDefines } from "./lud-defines.js";
+export { expandRanges, expandSiteRanges } from "./lud-ranges.js";
 export { applyOptions, collectDefaultOptions } from "./lud-options.js";
 export { Move, type MoveInit } from "./move.js";
 export { SeededRng } from "./rng.js";

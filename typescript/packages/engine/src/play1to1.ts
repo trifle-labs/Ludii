@@ -28,6 +28,7 @@ import {
 import { getBuiltinDefines } from "./builtin-defines.js";
 import { expandDefines } from "./lud-defines.js";
 import { applyOptions } from "./lud-options.js";
+import { expandRanges, expandSiteRanges } from "./lud-ranges.js";
 import { compileNode1to1 } from "./compiler1to1.js";
 import type { Game1to1 } from "./ludemes/Game1to1.js";
 import { ArgCompiler } from "./ludii/compiler/arg/ArgCompiler.js";
@@ -57,8 +58,11 @@ export interface Play1to1Options {
  * @returns A `Game1to1` instance ready for start/moves/apply
  */
 export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
+  // Step 0: Java text pre-pass — expand `m..n` number ranges and `"A1".."C3"` site
+  // ranges before lexing (@java Expander.expand; the lexer would otherwise produce a
+  // single `18..21` ident that can never bind a parameter).
   // Step 1–3: Parse, apply options, expand defines.
-  const parsed = parseLud(source);
+  const parsed = parseLud(expandSiteRanges(expandRanges(source)));
   const resolved = applyOptions(parsed);
   const ast = expandDefines(resolved, [...getBuiltinDefines()]);
 
