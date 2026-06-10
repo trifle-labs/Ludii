@@ -8,7 +8,6 @@
  * read (value) via ctx._evalValue are documented as a deferred limitation.
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
 import type { IntFunction } from "../../../../../base.js";
 import type { StartRule } from "../../StartRule.js";
 import type { Context } from "../../../../../../context.js";
@@ -67,16 +66,7 @@ export class ForEachValue1to1 implements StartRule {
     for (let to = min; to <= max; to++) {
       // @java context.setValue(to)
       scratch._evalValue = to;
-      if (typeof this.startRule.eval === "function") {
-        this.startRule.eval(ctx);
-      } else {
-        // TRANSITION: array-shaped child (PlaceItem1to1) — feed it the bridge arrays.
-        const a = (ctx as unknown as {
-          _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
-        })._startArrays;
-        const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
-        if (a) this.startRule.applyToInitialState?.(a.cells, a.whats, a.countAt, g.equipment, g.numPlayers, a.stateAt, a.valueAt, ctx);
-      }
+      this.startRule.eval(ctx);
     }
     // @java context.setValue(savedValue)
     scratch._evalValue = saved as number;

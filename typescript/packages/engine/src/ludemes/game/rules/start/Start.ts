@@ -52,15 +52,10 @@ export class Start {
    *
    * @java game/rules/start/Start.java — eval(Context): for (StartRule rule : rules) rule.eval(context)
    */
-  public eval(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
-    equipment: import("../../equipment/Equipment1to1.js").Equipment1to1,
-    numPlayers: number,
-  ): void {
+  public eval(context: import("../../../../context.js").Context): void {
+    // @java Start.eval(Context): for (StartRule rule : rules) rule.eval(context)
     for (const rule of this.rules) {
-      rule.applyToInitialState?.(cells, whats, countAt, equipment, numPlayers);
+      rule.eval(context);
     }
   }
 }

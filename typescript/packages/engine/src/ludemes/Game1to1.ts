@@ -777,25 +777,8 @@ export class Game1to1 implements Game {
     scores?: number[],
     amounts?: number[],
   ): void {
-    const maybeArrayRule = rule as unknown as {
-      applyToInitialState?: (
-        cells: number[],
-        whats: number[],
-        countAt: number[],
-        equipment: GameEquipmentSurface,
-        numPlayers: number,
-        stateAt?: number[],
-        valueAt?: number[],
-      ) => void;
-      eval?: (ctx: Context) => void;
-    };
-
-    if (typeof maybeArrayRule.applyToInitialState === "function") {
-      maybeArrayRule.applyToInitialState(cells, whats, countAt, this.equipment, this.numPlayers, stateAt, valueAt);
-      return;
-    }
-
-    if (typeof maybeArrayRule.eval !== "function") return;
+    const evalRule = rule as { eval?: (ctx: Context) => void };
+    if (typeof evalRule.eval !== "function") return;
 
     const state = new State(1, cells, this.componentLabels, {
       numPlayers: this.numPlayers,
@@ -870,7 +853,7 @@ export class Game1to1 implements Game {
       (ctx as unknown as { topology: () => typeof topologyAdapter }).topology = () => topologyAdapter;
     }
 
-    const placeItem = maybeArrayRule as unknown as {
+    const placeItem = evalRule as unknown as {
       constructor?: { name?: string };
       item?: string;
       siteId?: { eval(ctx: Context): unknown } | null;
@@ -911,7 +894,7 @@ export class Game1to1 implements Game {
       }
     }
 
-    maybeArrayRule.eval(ctx);
+    evalRule.eval(ctx);
   }
 
   private facingStartStripSites(item: string): number[] {
