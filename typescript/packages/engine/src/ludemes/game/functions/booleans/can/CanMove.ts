@@ -5,6 +5,18 @@ import { BaseBooleanFunction } from "../BaseBooleanFunction.js";
 import { Moves } from "../../../rules/play/moves/Moves.js";
 
 /**
+ * Java Moves.canMove(context) default = "the generator yields at least one move".
+ * The compiled moves object may be a faithful Moves (has canMove) or a plain
+ * MovesFunction (registry/anonymous — eval only); accept both.
+ * @java game/rules/play/moves/Moves.java — canMove(Context)
+ */
+function movesCanMove(moves: Moves, context: Context): boolean {
+  const m = moves as unknown as { canMove?(c: Context): boolean; eval(c: Context): unknown[] };
+  if (typeof m.canMove === "function") return m.canMove(context);
+  return m.eval(context).length > 0;
+}
+
+/**
  * Checks if a list of moves is not empty.
  *
  * @java game/functions/booleans/can/CanMove.java
@@ -44,12 +56,12 @@ export class CanMove extends BaseBooleanFunction {
       };
       stateAny.visit?.(from);
       stateAny.visit?.(to);
-      const canMove = this.moves.canMove(context);
+      const canMove = movesCanMove(this.moves, context);
       stateAny.unvisit?.(from);
       stateAny.unvisit?.(to);
       return canMove;
     }
-    return this.moves.canMove(context);
+    return movesCanMove(this.moves, context);
   }
 
   /** @java CanMove.isStatic() */
