@@ -8,6 +8,7 @@
  */
 
 import type { Context } from "../../../../../../../../context.js";
+import { applyPostStateThen } from "../../effect/Then.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 
@@ -92,9 +93,12 @@ export class Or implements MovesFunction {
       for (const m of subMoves) moves.push(m);
     }
 
-    // @java if (then() != null) for (j ...) moves.moves().get(j).then().add(then().moves());
-    // NOTE: Move.then is readonly in this TS port; then-chaining approximated at generation level.
-
+    // @java Or.java:155-158 — the ludeme's own (then …) is added to every
+    // generated move's then() list (deferred to apply time).
+    const ownThen = this.then();
+    if (ownThen !== null) {
+      return moves.map((m) => applyPostStateThen(ownThen, ctx, m));
+    }
     return moves;
   }
 
