@@ -99,8 +99,12 @@ export class ForEachDirection extends Effect {
     this.dirnChoice = directionsFunction(directions);
     this.limit = range?.maxFn ?? intConst(1);
     this.min = range?.minFn ?? intConst(1);
-    this.betweenRule = between?.condition() ?? null;
-    this.rule = to?.cond() ?? null;
+    // Raw True/False literals land in BooleanFunction slots (Shogi's
+    // (to if:True ...)) — wrap so eval() works. @java BooleanConstant
+    const wrapB = (b: unknown): BooleanFunction | null =>
+      typeof b === "boolean" ? ({ eval: () => b } as BooleanFunction) : (b as BooleanFunction | null);
+    this.betweenRule = wrapB(between?.condition() ?? null);
+    this.rule = wrapB(to?.cond() ?? null);
     this.movesToApply = movesToApply;
   }
 
