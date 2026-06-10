@@ -1625,7 +1625,7 @@ const PLAYER_SITE_VARIANTS = new Set<string>([
   "p9", "p10", "p11", "p12", "p13", "p14", "p15", "p16",
 ]);
 const SIMPLE_SITE_VARIANTS = new Set<string>([
-  "board", "bottom", "center", "centre", "corners", "left", "outer", "right", "top",
+  "board", "bottom", "center", "centre", "corners", "left", "outer", "perimeter", "right", "top",
 ]);
 
 function playerSitesRegion(variantName: string): { eval(ctx: unknown): number[] } {
@@ -1683,6 +1683,7 @@ function simpleSiteVariant(variantName: string): string {
     case "corners": return "Corners";
     case "left": return "Left";
     case "outer": return "Outer";
+    case "perimeter": return "Perimeter";
     case "right": return "Right";
     case "top": return "Top";
     default: return "Board";

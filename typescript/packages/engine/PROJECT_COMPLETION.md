@@ -708,3 +708,32 @@ baseline). Coverage regrowth with CORRECT bindings is the next wave class: the f
 histogram now surfaces real reasons (Brick construct, (add) overload, TrackStep terminal).
 
 **Item 1 residuals remaining: Gekitai only** (ply-10 push detail).
+
+## Update 27 — ITEM 1 (faithful ≥ bespoke) MET: Gekitai OUTCOME_OK closes the last residual
+
+Gekitai root-cause chain (drift detector + per-ply ACTION-SIGNATURE diff vs the recorded
+Java actions — the recorded trial lists every consequence action, so TS-vs-Java apply
+divergence is directly measurable without the bespoke reference):
+1. **Decision-flag leak in baked consequences**: a push built by the inner Step's
+   buildMove carried isDecision=true; appended into the placement move by
+   applyPostStateThen it SHADOWED the placement in Move.from()/to() (moves read as
+   "2>1" instead of "37>3"). Fix: consequences are never decisions (Java keeps them in
+   move.then()) — applyPostStateThen now clears the flag (+ LUDII_DEBUG_THEN surfacing
+   for the silent catch).
+2. **(sites Around …) defaulted to Orthogonal** in BOTH directionNames and aroundSites —
+   @java SitesAround.java:97 defaults to AbsoluteDirection.Adjacent (8-way on square
+   cells). Diagonal pushes were never generated.
+3. **(sites Perimeter) mis-compiled to SitesCoords → []** — SitesSimpleType.Perimeter
+   missing from constructSimple and the SIMPLE_SITE_VARIANTS dispatch; the perimeter
+   push-off-board branch (piece returned to hand) never fired. Wired to
+   SitesPerimeter1to1 (@java Sites.java:582).
+
+**DEFINITION-OF-COMPLETE STATUS: item 1 DONE.** Faithful is now ≥ bespoke on every
+game where either engine achieves trial parity. Full gate suite green: probe-play /
+probe-slide / probe-compile-guard + 22-game canary sweep all OUTCOME_OK 2/2 (incl.
+El Perro 346 plies, Gekitai, the morris family, mancala canon, Tafl, Amazons, Go-rule
+games). tsc clean.
+
+Remaining: item 2 (bespoke deletion — Jun-13 codex waves for the transition re-export
+unwinding), item 3 (hardening: cross-imports, substrate, one State, dispatch
+minimization, mirror dedup e.g. If.ts/IfMoves.ts), item 4 (keep gates green).

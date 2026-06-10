@@ -38,6 +38,7 @@ import { SitesConcaveCorners } from "./simple/SitesConcaveCorners.js";
 import { SitesConvexCorners } from "./simple/SitesConvexCorners.js";
 import { SitesHint } from "./simple/SitesHint.js";
 import { SitesLeft } from "./simple/SitesLeft.js";
+import { SitesPerimeter1to1 } from "./simple/SitesPerimeter1to1.js";
 import { SitesOuter } from "./simple/SitesOuter.js";
 import { SitesRight } from "./simple/SitesRight.js";
 import { SitesTop } from "./simple/SitesTop.js";
@@ -216,6 +217,9 @@ export class Sites extends BaseRegionFunction {
         return makeTopologyFn("minor", elementType);
       case "Outer":
         return new SitesOuter(elementType);
+      case "Perimeter":
+        // @java Sites.java:582-583 — case Perimeter: return new SitesPerimeter(elementType);
+        return new SitesPerimeter1to1() as unknown as RegionFunction;
       case "Right":
         return new SitesRight(elementType);
       case "ToClear":
@@ -1057,11 +1061,14 @@ function resolveRoleIntFn(role: string): IntFunction {
 }
 
 function directionNames(directions: unknown, ctx: Context & EvalScratch): string[] {
-  if (directions === null || directions === undefined) return ["Orthogonal"];
+  // @java SitesAround.java:97 — (directions == null) ? AbsoluteDirection.Adjacent : directions.
+  // Adjacent on square-board cells is 8-way; an Orthogonal default drops diagonal
+  // neighbours (Gekitai's diagonal pushes).
+  if (directions === null || directions === undefined) return ["Adjacent"];
   if (typeof directions === "string") return [directions];
   const fn = directions as { eval?: (ctx: Context & EvalScratch) => string[] };
   if (typeof fn.eval === "function") return fn.eval(ctx);
-  return ["Orthogonal"];
+  return ["Adjacent"];
 }
 
 function aroundSites(ctx: Context & EvalScratch, site: number, distance: number, directions: readonly string[]): number[] {
@@ -1074,7 +1081,10 @@ function aroundSites(ctx: Context & EvalScratch, site: number, distance: number,
   })._trajectories;
   if (traj) {
     const out = new Set<number>();
-    for (const dir of directions.length > 0 ? directions : ["Orthogonal"]) {
+    // @java SitesAround.java:97 — (directions == null) ? AbsoluteDirection.Adjacent
+    // Adjacent on square-board CELLS is 8-way (orthogonal + diagonal); the previous
+    // Orthogonal default dropped diagonal pushes (Gekitai ply-6 drift).
+    for (const dir of directions.length > 0 ? directions : ["Adjacent"]) {
       const oneStep = dir === "All" || dir === "Adjacent"
         ? traj.group(site, "Adjacent")
         : dir === "Orthogonal" || dir === "Diagonal" || dir === "OffDiagonal"
