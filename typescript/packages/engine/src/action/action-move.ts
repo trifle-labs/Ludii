@@ -239,7 +239,7 @@ export class ActionMove extends BaseAction {
     if (
       this.fromIndex !== this.toIndex &&
       movingOwner !== 0 &&
-      (state.cells[this.toIndex] ?? 0) === movingOwner
+      state.who(this.toIndex) === movingOwner
     ) {
       const destHeight = Math.max(state.countAtSite(this.toIndex), 1);
       next = next.withCell(this.toIndex, movingOwner);

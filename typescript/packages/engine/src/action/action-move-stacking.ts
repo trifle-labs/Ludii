@@ -27,7 +27,7 @@ export class ActionMoveStacking extends BaseAction {
     // but the site is occupied (cells[from] > 0), fall back to cells[from].
     // @java ActionMoveStacking.apply: relocates the TOP piece of the source stack.
     const stackTop = stackSize > 0 ? state.stackAt(this.fromIndex, stackSize - 1) : 0;
-    const piece = stackTop > 0 ? stackTop : (state.cells[this.fromIndex] ?? 0);
+    const piece = stackTop > 0 ? stackTop : state.who(this.fromIndex);
     if (piece === 0) return state;
     // Pop the top from source: if stacks array is non-empty use withStackPop,
     // else just clear the cell (non-materialized single piece).

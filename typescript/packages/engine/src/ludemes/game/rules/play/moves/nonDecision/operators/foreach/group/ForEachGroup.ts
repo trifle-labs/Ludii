@@ -109,7 +109,7 @@ export class ForEachGroup extends Effect {
         } else {
           // Fallback: scan all cells
           for (let site = 0; site < context.state.cells.length; site++) {
-            if ((context.state.cells[site] ?? 0) !== 0 && site < maxIndexElement)
+            if (context.state.who(site) !== 0 && site < maxIndexElement)
               sitesToCheck.push(site);
           }
         }
@@ -127,7 +127,7 @@ export class ForEachGroup extends Effect {
       } else {
         // Fallback: scan for mover's cells
         for (let site = 0; site < context.state.cells.length; site++) {
-          if ((context.state.cells[site] ?? 0) === who && site < maxIndexElement)
+          if (context.state.who(site) === who && site < maxIndexElement)
             sitesToCheck.push(site);
         }
       }
@@ -150,7 +150,7 @@ export class ForEachGroup extends Effect {
       // @java if ((who == cs.who(from, type) && condition == null) || (condition != null && condition.eval(context)))
       const csWhoFrom: number = cs
         ? (cs as unknown as { who(site: number, type: unknown): number }).who(from, this.type) ?? 0
-        : (context.state.cells[from] ?? 0);
+        : context.state.who(from);
 
       if ((who === csWhoFrom && this.condition === null) ||
           (this.condition !== null && this.condition.eval(context))) {
@@ -196,7 +196,7 @@ export class ForEachGroup extends Effect {
             // @java if ((condition == null && who == cs.who(to, type)) || (condition != null && condition.eval(context)))
             const csWhoTo: number = cs
               ? (cs as unknown as { who(site: number, type: unknown): number }).who(to, this.type) ?? 0
-              : (context.state.cells[to] ?? 0);
+              : context.state.who(to);
 
             if ((this.condition === null && who === csWhoTo) ||
                 (this.condition !== null && this.condition.eval(context))) {

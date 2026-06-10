@@ -274,7 +274,7 @@ export class IsPath implements BooleanFunction {
     // Build adjacency for who-owned sites
     const adj = (v: number): number[] => {
       const ns = traj.neighbours(v);
-      return ns.filter(n => (ctx.state.cells[n] ?? 0) === whoSiteId);
+      return ns.filter(n => ctx.state.who(n) === whoSiteId);
     };
 
     // Check adjacent owned neighbours

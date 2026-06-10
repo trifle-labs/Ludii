@@ -164,7 +164,7 @@ export class IsLoop implements BooleanFunction {
       // @java IsLoop.java:337-337: check all loop pieces are owned by colourLoop
       let ownedPiecesLooping = true;
       for (const siteLoop of loop) {
-        if ((ctx.state.cells[siteLoop] ?? 0) !== colourLoop) {
+        if (ctx.state.who(siteLoop) !== colourLoop) {
           ownedPiecesLooping = false;
           break;
         }

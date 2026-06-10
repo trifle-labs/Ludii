@@ -41,7 +41,7 @@ abstract class ActionMoveLevelBase extends BaseAction {
     const movingOwner =
       stackSize > 0
         ? state.whoAtSiteLevel(this.fromIndex, sourceLevel)
-        : (state.cells[this.fromIndex] ?? 0);
+        : state.who(this.fromIndex);
     if (movingOwner === 0) return state;
     const movingWhat =
       stackSize > 0

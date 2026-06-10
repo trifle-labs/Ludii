@@ -123,7 +123,7 @@ export class SitesLineOfSight extends BaseRegionFunction {
 					let prevTo: number = -1;
 					for (let toIdx = 1; toIdx < radialSites.length; toIdx++) {
 						const to: number = radialSites[toIdx]!;
-						const what: number = cs ? cs.what(to, realType) : (context.state.cells[to] ?? 0);
+						const what: number = cs ? cs.what(to, realType) : context.state.who(to);
 						this.applyLoSSwitch(to, what, prevTo, toIdx, radialSites.length, sitesLineOfSight);
 						if (what !== 0) break;
 						prevTo = to;
@@ -137,7 +137,7 @@ export class SitesLineOfSight extends BaseRegionFunction {
 					let prevTo: number = -1;
 					for (let toIdx = 1; toIdx < radial.steps.length; toIdx++) {
 						const to: number = radial.steps[toIdx]!.id;
-						const what: number = cs ? cs.what(to, realType) : (context.state.cells[to] ?? 0);
+						const what: number = cs ? cs.what(to, realType) : context.state.who(to);
 						this.applyLoSSwitch(to, what, prevTo, toIdx, radial.steps.length, sitesLineOfSight);
 						if (what !== 0) break;
 						prevTo = to;

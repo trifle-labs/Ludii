@@ -107,7 +107,7 @@ export class SitesLoop extends BaseRegionFunction {
 		const cs = (context as unknown as { containerState?(n: number): CsLike }).containerState?.(0);
 
 		// @java final int what = cs.what(from, realType)
-		const what: number = cs ? cs.what(from, realType) : (context.state.cells[from] ?? 0);
+		const what: number = cs ? cs.what(from, realType) : context.state.who(from);
 
 		// @java if (what <= 0) return new Region(new int[0])
 		if (what <= 0) return [];
@@ -164,7 +164,7 @@ export class SitesLoop extends BaseRegionFunction {
 					if (groupSites.includes(nbSite)) continue;
 
 					// @java Not the border of the loop.
-					if (what !== (cs ? cs.what(nbSite, realType) : (context.state.cells[nbSite] ?? 0))) {
+					if (what !== (cs ? cs.what(nbSite, realType) : context.state.who(nbSite))) {
 						if (ownersOfEnclosedSite !== null) {
 							const whoTo: number = cs ? cs.who(nbSite, realType) : 0;
 							if (ownersOfEnclosedSite.includes(whoTo) && !outerSet.has(nbSite)) {
@@ -205,7 +205,7 @@ export class SitesLoop extends BaseRegionFunction {
 				// @java if all loop pieces owned by colourLoop
 				let ownedPiecesLooping = true;
 				for (const siteLoop of loop) {
-					if ((cs ? cs.who(siteLoop, realType) : (context.state.cells[siteLoop] ?? 0)) !== colourLoop) {
+					if ((cs ? cs.who(siteLoop, realType) : context.state.who(siteLoop)) !== colourLoop) {
 						ownedPiecesLooping = false;
 						break;
 					}
@@ -224,7 +224,7 @@ export class SitesLoop extends BaseRegionFunction {
 					const siteLoop: number = loopCopy[indexSiteLoop]!;
 					if (siteLoop === undefined) break;
 
-					const siteLoopWhat: number = cs ? cs.what(siteLoop, realType) : (context.state.cells[siteLoop] ?? 0);
+					const siteLoopWhat: number = cs ? cs.what(siteLoop, realType) : context.state.who(siteLoop);
 					if (siteLoopWhat !== what) {
 						loopCopy.splice(indexSiteLoop, 1);
 						exploredLoop.splice(exploredLoop.indexOf(siteLoop), 1);
@@ -235,7 +235,7 @@ export class SitesLoop extends BaseRegionFunction {
 					const loopNeighbs = this.getNeighbours(context, traj, siteLoop, this.directionName, realType);
 					let newSite: number = UNDEFINED;
 					for (const nb of loopNeighbs) {
-						const nbWhat: number = cs ? cs.what(nb, realType) : (context.state.cells[nb] ?? 0);
+						const nbWhat: number = cs ? cs.what(nb, realType) : context.state.who(nb);
 						if (loopCopy.includes(nb) && nbWhat === what) {
 							newSite = nb;
 							break;
