@@ -1484,6 +1484,7 @@ import { Mul as CMulInt } from "../../../ludemes/game/functions/ints/math/Mul.js
 import { Amount as CAmountInt } from "../../../ludemes/game/functions/ints/state/Amount.js";
 import { Sub as CSubInt } from "../../../ludemes/game/functions/ints/math/Sub.js";
 import { Site as CSiteIter } from "../../../ludemes/game/functions/ints/iterator/Site.js";
+import { Id as CIdBoard } from "../../../ludemes/game/functions/ints/board/IdFn.js";
 import { Mod as CModInt } from "../../../ludemes/game/functions/ints/math/Mod.js";
 import { Div as CDivInt } from "../../../ludemes/game/functions/ints/math/Div.js";
 import { Hint as CHintInt } from "../../../ludemes/game/functions/ints/iterator/Hint.js";
@@ -2978,6 +2979,7 @@ JAVA_TS_CTORS.set("game.functions.ints.math.Mul", CMulInt);
 JAVA_TS_CTORS.set("game.functions.ints.state.Amount", CAmountInt);
 JAVA_TS_CTORS.set("game.functions.ints.math.Sub", CSubInt);
 JAVA_TS_CTORS.set("game.functions.ints.iterator.Site", CSiteIter);
+JAVA_TS_CTORS.set("game.functions.ints.board.Id", CIdBoard);
 JAVA_TS_CTORS.set("game.functions.ints.math.Mod", CModInt);
 JAVA_TS_CTORS.set("game.functions.ints.math.Div", CDivInt);
 JAVA_TS_CTORS.set("game.functions.ints.iterator.Hint", CHintInt);
