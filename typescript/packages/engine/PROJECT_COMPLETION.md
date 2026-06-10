@@ -563,6 +563,17 @@ ludeme (a Sites variant routed to the wrong class, a missing RoleType case, a Ja
 mismatch like canMove). The diagnostic loop — first divergent ply -> inspect the compiled object's
 class/fields -> route/port faithfully — lands them in under an hour each, and each fix is corpus-wide.
 
+## Update 18: Rectangle dims fix — Tant Fant full parity; (rectangle ...) boards fixed corpus-wide
+Rectangle.construct typed dims as numbers but receives DimFunction/IntConstant OBJECTS (the
+eager->lazy wrapping) -> bogus 900-site boards for every (rectangle ...) form, incl. the whole
+AlquerqueGraph/AlquerqueBoard family. Resolved dims (Square's dimNumber pattern).
+RESULT: **Tant Fant OUTCOME_OK 2/2** (was 59-move ply-0 over-generation on a 900-site board).
+Remaining Alquerque variants (triangle extensions: Pulijudamu/Bagha Guti/Sam K'i) still diverge —
+their extended generators are next. Canary sweep green.
+LESSON (recurring class): construct dispatchers written pre-lazy-wrapping that type dims/ints as
+plain numbers silently mis-build when handed function objects — grep for `static construct(` with
+`number` params as a hardening sweep candidate.
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
