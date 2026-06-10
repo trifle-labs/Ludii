@@ -997,3 +997,17 @@ final hop's record. The TS matched move bakes only `Remove,Move`:
     likely the promote ludeme or (sites Next) in postCtx).
 Board drifts (site 6 keeps what=2 Counter instead of DoubleCounter) → no king moves
 at ply 49. Exact repro in the trace recipe; trial 1 of 2 already fully OUTCOME_OK.
+
+## Update 43 — International Draughts OUTCOME_OK 2/2: item-1 invariant fully restored
+
+The ply-49 residual resolved in two steps: (1) ForEachPiece frozen-then →
+applyPostStateThen (Update 41); (2) PromoteFaithful's itemNames path threw
+"not yet wired" (silently swallowed by applyPostStateThen's catch — found by
+evaluating the then chain DIRECTLY in the reconstructed postCtx, the recipe's
+standard escalation when LUDII_DEBUG_THEN shows nothing at compile probes).
+Now @java Promote.java:154-177: component-table lookup, name-contains + owner.
+
+**ZERO known faithful-behind-bespoke games.** Items 1 + registry burn-down both
+hold with no exceptions. Remaining for complete: the mechanical deletion
+(instantiateRegistry → play1to1 fallback → compiler1to1/LudemeRegistry/batches),
+*1to1 re-homing, StartRule eval(Context) migration, State convergence.
