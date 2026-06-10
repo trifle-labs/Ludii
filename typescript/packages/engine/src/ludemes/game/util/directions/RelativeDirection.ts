@@ -334,3 +334,32 @@ export function isSingleDir(dirName: string): boolean {
       return false; // Adjacent / Orthogonal / Diagonal / All → bidirectional axes
   }
 }
+
+/**
+ * Resolve SameDirection / OppositeDirection to the absolute compass of the LAST move.
+ * @java game/functions/directions/Directions.java:498-535 — convertToAbsolute:
+ * SameDirection = the absolute direction whose radial from (last From) passes through
+ * (last To); OppositeDirection = the radial from (last To) through (last From).
+ */
+export function resolveSameOppositeDir(
+  ctx: {
+    trial?: { lastMove?: () => { from?: () => number; to?: () => number } | undefined };
+    _trajectories?: { ray(site: number, dir: string): number[] } | null;
+  },
+  opposite: boolean,
+): string | null {
+  const last = ctx.trial?.lastMove?.();
+  if (!last) return null;
+  const lastFrom = last.from?.() ?? -1;
+  const lastTo = last.to?.() ?? -1;
+  if (lastFrom < 0 || lastTo < 0 || lastFrom === lastTo) return null;
+  const traj = ctx._trajectories;
+  if (!traj) return null;
+  const origin = opposite ? lastTo : lastFrom;
+  const target = opposite ? lastFrom : lastTo;
+  for (const name of COMPASS) {
+    const ray = traj.ray(origin, name);
+    if (ray.includes(target)) return name;
+  }
+  return null;
+}

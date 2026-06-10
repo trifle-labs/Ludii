@@ -31,7 +31,7 @@ import { ActionMove } from "../../../../../../../action/action-move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import { applyPostStateThen } from "./Then.js";
-import { resolveRelativeDir, isSingleDir } from "../../../../../util/directions/RelativeDirection.js";
+import { resolveRelativeDir, isSingleDir, resolveSameOppositeDir } from "../../../../../util/directions/RelativeDirection.js";
 import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
 
@@ -157,7 +157,19 @@ export class Hop extends Effect {
       out.push(ray);
     };
 
-    for (const dirName of directions) {
+    for (const rawDirName of directions) {
+      // @java Directions.java:498 — SameDirection/OppositeDirection resolve to the
+      // absolute compass of the LAST move (Konane's continuation hops:
+      // ("HopCapture" (from (last To)) SameDirection)).
+      let dirName = rawDirName;
+      if (rawDirName === "SameDirection" || rawDirName === "OppositeDirection") {
+        const resolved = resolveSameOppositeDir(
+          ctx as unknown as Parameters<typeof resolveSameOppositeDir>[0],
+          rawDirName === "OppositeDirection",
+        );
+        if (resolved === null) continue;
+        dirName = resolved;
+      }
       const relative = resolveRelativeDir(dirName, mover, playerDirs);
       if (Array.isArray(relative)) {
         for (const dir of relative) {
