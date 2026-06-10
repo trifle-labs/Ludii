@@ -574,7 +574,23 @@ LESSON (recurring class): construct dispatchers written pre-lazy-wrapping that t
 plain numbers silently mis-build when handed function objects — grep for `static construct(` with
 `number` params as a hardening sweep candidate.
 
-## (earlier) move-dispatch plan — now DONE (see Update 8):
+## Update 19: Pong Hau K'i full parity (getElement site-type fallback) — manual stretch tally
+Topology.getElement(coord, null) hardcoded Cell; vertex-play boards label VERTICES — coordinate
+placement found nothing. Now searches the given type or all populated types (Java SiteFinder
+semantics). **Pong Hau K'i OUTCOME_OK 2/2**; helps every vertex/edge-play board w/ coord placement.
+
+MANUAL STRETCH CUMULATIVE (8 corpus-leveraged fixes since codex ran out, all canary-verified):
+(sites Hand) dispatch+role · Then.applyPostStateThen in all 5 effects · RoleType.Player in role
+bindings · CanMove MovesFunction fallback · (sites Occupied by:) dispatch · Rectangle DimFunction
+dims · getElement site-type fallback. NEW full-parity games this stretch: Achi, Nerenchi Keliya,
+Nine/Twelve/Six Men's Morris, Tant Fant, Pong Hau K'i (morris family COMPLETE + Alquerque base).
+
+REMAINING QUEUE (each diagnosed or scoped): Sam K'i + stacked-piece games (stacking subsystem);
+Halma/Chinese Checkers deep (multi-hop); Pulijudamu/Bagha Guti (Alquerque triangle extensions);
+chess family ply-0; dice/track race games; Hnefatafl ply-75; Surakarta track breadth; Pente
+coordinate resolver; Oware vote/cycle; Go ko; 3D boards; Sow-2 left-out increments. Codex returns
+Jun 13 ~8pm for parallel waves; the manual diagnostic loop (first divergent ply -> inspect compiled
+object -> route/port faithfully) lands fixes reliably meanwhile.
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
      faithful instantiation over the registry make<X> alias. (instantiateFaithful currently never
