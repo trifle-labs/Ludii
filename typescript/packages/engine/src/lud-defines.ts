@@ -27,6 +27,10 @@ import {
 interface DefineEntry {
   readonly name: string;
   readonly body: LudNode;
+  /** True when `body` is the synthetic curly wrapper around a MULTI-term define
+   * body — Java's textual expansion SPLICES those terms into the parent list
+   * (e.g. Morra's "InitHand" = six (place …) forms inside one (start {…})). */
+  readonly synthetic?: boolean;
 }
 
 /** Maximum number of substitution passes before we give up on a recursive expansion. */
@@ -92,7 +96,7 @@ function collectDefines(node: LudNode, into: Map<string, DefineEntry>): void {
           range: item.range,
         };
       }
-      into.set(nameNode.value, { name: nameNode.value, body });
+      into.set(nameNode.value, { name: nameNode.value, body, synthetic: bodyTerms.length > 1 });
     } else {
       // Defines can be nested anywhere in the (post-option) tree, not just at
       // the file top level or inside a curly block. Java's `Expander` extracts
@@ -190,7 +194,13 @@ function expandItem(
       // self-referential macros like (define "X" ("X"))).
       const nextExpanding = new Set(expanding);
       nextExpanding.add(entry.name);
-      return expandSingle(substituted, defines, nextExpanding);
+      const result = expandSingle(substituted, defines, nextExpanding);
+      // A multi-term define body (synthetic curly wrapper) SPLICES into the
+      // parent list, exactly like Java's textual expansion.
+      if (entry.synthetic && isList(result) && result.delimiter === "curly") {
+        return [...result.items];
+      }
+      return result;
     }
   }
 
@@ -222,7 +232,11 @@ function expandList(
         nextExpanding.add(entry.name);
         const expanded = expandSingle(substituted, defines, nextExpanding);
         changed = true;
-        out.push(expanded);
+        if (entry.synthetic && isList(expanded) && expanded.delimiter === "curly") {
+          out.push(...expanded.items);
+        } else {
+          out.push(expanded);
+        }
         continue;
       }
     }
