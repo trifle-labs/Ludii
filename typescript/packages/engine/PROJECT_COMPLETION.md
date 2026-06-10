@@ -1768,3 +1768,8 @@ ForEachDie eval) + detailed harness action dumps:
 - Family standings (full sweeps): race 62/362 OK (was 30), sow 68/426 OK (MM 313, was 349), hunt 67/152 OK (44.1%, was 36.2%), space 287/678 OK (WM 82→73). Battery green throughout (28 games incl. Backgammon/Dubblets/Ashtapada/Cram). Unit suite 194/47 (pre-existing fails, byte-identical to pre-campaign).
 - Commits: 61ebac3da7 (temp+deferred-then), 0794d9c8bf (race wave), ForEachDie own-then, dice-race wave 2, SitesEquipmentRegion, large-piece+phase-purity.
 - NEXT: connection-family WM cluster (29), four-rows sow continuation (Bao ply 8 turn passing), START_FAIL 40 across families, long-trial budget, browser/interface verification pass, deferred subsystems (card/deck, teams, hidden).
+
+## Update 80 (2026-06-10) — Connection family + standings checkpoint
+- Connection wave: boardSides on the perimeter VERTEX ring (MeasureGraph.measureSides port; cells inherit vertex sides), (is Connected N Sides) staticRegions+number, Sites construct enum gates (LineOfSight had swallowed (sites Side NE)). Hex, Tabu Y, Y all 2/2 OUTCOME_OK.
+- Standings after this session's waves (full family sweeps): race 63/362, sow 68/426, hunt 67/152 (44%), space 299/678 (44.1%, WM 82→59), war 125/426 (29.3%). Battery green at 28 games.
+- Known residuals queued: Master Y / Cross board-geometry corner scoring on hex-triangle/hexhex rings (coordinate-scale sensitivity); four-rows sow turn passing (Bao ply 8); war family MM 245 (largest single bucket now); START_FAIL ~40 across families; browser/interface verification pass not started; deferred subsystems (card/deck, teams, hidden facets).
