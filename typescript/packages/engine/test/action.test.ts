@@ -70,9 +70,13 @@ describe("ActionAdd", () => {
     assert.equal(a.isDecision(), true);
   });
 
-  it("rejects invalid to / what arguments", () => {
-    assert.throws(() => new ActionAdd({ to: -1, what: 1 }));
-    assert.throws(() => new ActionAdd({ to: 0, what: 0 }));
+  it("applies as a no-op for OFF site / empty what", () => {
+    // @java ActionAdd.java — Java actions never validate in the constructor;
+    // an OFF site or what<=0 simply applies as a no-op (Loop Xiangqi probes
+    // piece ids during generation before any capture exists).
+    const s = emptyState(9);
+    assert.equal(new ActionAdd({ to: -1, what: 1 }).apply(s), s);
+    assert.equal(new ActionAdd({ to: 0, what: 0 }).apply(s), s);
   });
 });
 
