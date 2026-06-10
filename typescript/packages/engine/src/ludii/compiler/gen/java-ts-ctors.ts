@@ -1478,6 +1478,10 @@ import { Radial as C1474 } from "../../../eval/graph/trajectory/radial.js";
 import { VertexEl as C1475 } from "../../../eval/graph/trajectory/graph-element.js";
 import { SetDispatch as C1476 } from "../../../ludemes/game/rules/start/set/Set.js";
 import { NoDispatch as C1477 } from "../../../ludemes/game/functions/booleans/no/No.js";
+import { Min as CMinInt } from "../../../ludemes/game/functions/ints/math/Min.js";
+import { Max as CMaxInt } from "../../../ludemes/game/functions/ints/math/Max.js";
+import { TopLevel as CTopLevel } from "../../../ludemes/game/functions/ints/stacking/TopLevel.js";
+import { Intersection as CIntersectionRegion } from "../../../ludemes/game/functions/region/math/Intersection.js";
 
 export const JAVA_TS_CTORS = new Map();
 JAVA_TS_CTORS.set("game.functions.ints.board.MapEntry", FaithfulMapEntry);
@@ -2959,3 +2963,7 @@ JAVA_TS_CTORS.set("game.util.graph.Trajectories", C1472);
 JAVA_TS_CTORS.set("game.util.graph.Step", C1473);
 JAVA_TS_CTORS.set("game.util.graph.Radial", C1474);
 JAVA_TS_CTORS.set("game.util.graph.GraphElement", C1475);
+JAVA_TS_CTORS.set("game.functions.ints.math.Min", CMinInt);
+JAVA_TS_CTORS.set("game.functions.ints.math.Max", CMaxInt);
+JAVA_TS_CTORS.set("game.functions.ints.stacking.TopLevel", CTopLevel);
+JAVA_TS_CTORS.set("game.functions.region.math.Intersection", CIntersectionRegion);

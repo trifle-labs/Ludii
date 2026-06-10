@@ -1,0 +1,1107 @@
+{
+ "faithful": 156,
+ "fallback": 64,
+ "total": 220,
+ "perGame": [
+  {
+   "game": "WishlistDLP/war/replacement/Game of the Goose.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/hunt/Bam Blang Beh Khla.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/hunt/Gala (Buginese).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/hunt/Hund efter Hare (Vendsyssel).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/hunt/Komikan.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/hunt/Merimueng-rimueng-do.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/hunt/Pon Chochotl.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/hunt/Shui Yen Ho-Shang.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/race/escape/58 Holes.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/race/escape/Cab e Quinal.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/race/escape/Frangieh.lud",
+   "status": "THROW",
+   "reason": "terminal 6 did not match game.util.equipment.TrackStep"
+  },
+  {
+   "game": "board/race/escape/Ketch-Dolt.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/race/escape/Ludus Anglicorum.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/race/escape/Pachesi.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/race/escape/Piprjall.lud",
+   "status": "THROW",
+   "reason": "terminal 25 did not match game.util.equipment.TrackStep"
+  },
+  {
+   "game": "board/race/escape/Sokkattan.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/race/escape/Tsun K'i.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/race/fill/Camelot.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.Game: constructor threw (poly is not iterable)"
+  },
+  {
+   "game": "board/race/fill/Shanzak Kammar.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/race/reach/Bombardment.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/race/reach/Fianco.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/race/reach/Kawasukuts.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (value) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/race/reach/Paradis.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/race/reach/Setichch.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/race/reach/Squadro.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/race/reach/Zohn Ahl.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (trackSite) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/sow/four_rows/Bao Kiswahili (DR Congo).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/four_rows/Hus (Damara).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/four_rows/Kubuguza.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/four_rows/Msuwa.lud",
+   "status": "THROW",
+   "reason": "terminal 18..21 did not match game.functions.ints.IntFunction"
+  },
+  {
+   "game": "board/sow/four_rows/Nchuwa.lud",
+   "status": "THROW",
+   "reason": "terminal Value did not match game.rules.play.moves.nonDecision.effect.set.SetNextPlayerTyp"
+  },
+  {
+   "game": "board/sow/four_rows/Pereauni.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/four_rows/Tsoro (Baia).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/three_rows/Abalala'e.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Ako Okwe.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (value) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/sow/two_rows/Bechi.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Das Bohnenspiel.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Foji.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Galatjang.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Iyogh.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Khrour.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Leyla Gobale (Gabradarre).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Mangala (Turkey).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Obridje.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Qelat (Beni Amir-Mensa).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Toguz Kumalak.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Wa'ache Waledat.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/sow/two_rows/Yucebao.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/blocking/Cram.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/blocking/Game of Dwarfs.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/blocking/Lewthwaite's Game.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/blocking/Pong Hau K'i.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/blocking/Snowpaque.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/blocking/Wong.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/connection/Cross.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/connection/Havannah.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/connection/Spaji.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/connection/Unlur.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/group/Catchup.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/group/Meridians.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/group/Spao.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.ints.math.Mul: no TS constructor mapped"
+  },
+  {
+   "game": "board/space/line/Achi.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Bravalath.lud",
+   "status": "THROW",
+   "reason": "terminal Each did not match game.rules.play.moves.Moves"
+  },
+  {
+   "game": "board/space/line/Dala.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Fart (5x5).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Kassle.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Millieu.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Ngre E E.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Pente.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Round Merels.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Six-Penny Madell.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Sujjua.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Tic Tactics.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Triodi (Diagonal).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Vertiges.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/line/Yavalath.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/pattern/Upper Hand.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/territory/Flower Shop.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/territory/Lotus.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/space/territory/Pyrga.lud",
+   "status": "THROW",
+   "reason": "terminal Infinity did not match game.functions.ints.IntFunction"
+  },
+  {
+   "game": "board/space/territory/Sprite.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/custodial/Alea Evangelii.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/custodial/Gundru.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/custodial/Seega.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/diagonal/Brazilian Draughts.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/diagonal/Doov.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/diagonal/Maleys.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/lines/Bara Guti (Bihar).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/lines/Dama (Alquerque).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/lines/Kharbaga.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/lines/Nei-Pat-Kono.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/lines/Spoing.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/orthogonal/Caturvimsatikosthakatmiki Krida.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/orthogonal/Kanguruh.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/leaping/orthogonal/Seesaw.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chaturanga/Chandaraki.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chaturanga/Hindustani Chess.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chaturanga/Rumi Shatranj.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chaturanga/Shatranj (Turkey).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chaturanga/Sittuyin.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.Game: constructor threw (Cannot read properties of undefined (read"
+  },
+  {
+   "game": "board/war/replacement/checkmate/chess/Brusky Chess.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chess/Fischer Random Chess.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chess/Lombard Chess.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chess/Omega Chess.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chess/Short Assize.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/chess/Welschschach.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/checkmate/shogi/Tai Shogi.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (where) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi.lud",
+   "status": "THROW",
+   "reason": "array (?) did not match game.functions.booleans.BooleanFunction"
+  },
+  {
+   "game": "board/war/replacement/eliminate/all/Annuvin.lud",
+   "status": "THROW",
+   "reason": "terminal Undefined did not match game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/war/replacement/eliminate/all/Catapult.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/eliminate/all/Four-Player Chaturanga (al-Biruni).lud",
+   "status": "THROW",
+   "reason": "terminal Off did not match game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/war/replacement/eliminate/all/MensaSpiel.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/eliminate/all/Sig (Tidikelt).lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (min) as game.functions.region.RegionFunction"
+  },
+  {
+   "game": "board/war/replacement/eliminate/all/Tank Tactics.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "board/war/replacement/eliminate/target/Kriegsspiel.lud",
+   "status": "THROW",
+   "reason": "array (?) did not match game.rules.play.moves.Moves"
+  },
+  {
+   "game": "board/war/replacement/stalemate/Clobber.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "experimental/Breakthrough Checkers.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "experimental/Faraday.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "experimental/HopThrough.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "experimental/Polypods.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "experimental/Unlace.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "experimental/graph_theory/Ciri Amber.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "experimental/graph_theory/Radran.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "math/graph/DisPath.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "math/hand/Morra.lud",
+   "status": "THROW",
+   "reason": "array (?) did not match game.rules.start.StartRule"
+  },
+  {
+   "game": "puzzle/deduction/Killer Sudoku.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.ints.iterator.Hint: no TS constructor mapped"
+  },
+  {
+   "game": "puzzle/deduction/Sudoku.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.booleans.deductionPuzzle.all.All: no static construct(5)"
+  },
+  {
+   "game": "puzzle/planning/Insanity.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "puzzle/planning/Morpion Solitaire.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.ints.iterator.Edge: no TS constructor mapped"
+  },
+  {
+   "game": "puzzle/planning/Tchoukaillon.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/hunt/Kuang.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/race/escape/Pasakakrida (Type 2).lud",
+   "status": "THROW",
+   "reason": "terminal 12 did not match game.util.equipment.TrackStep"
+  },
+  {
+   "game": "reconstruction/done/board/sow/two_rows/Manddiare.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/space/line/Banyarwanda Mill Game.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/space/line/Feldja.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/space/line/Riga Game.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/war/leaping/diagonal/Ashanti Draughts.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/war/leaping/diagonal/Yup'ik Checkers.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/war/leaping/lines/Taptana.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/war/other/Ludus Rebellionis (Asymmetric).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/war/replacement/checkmate/chaturanga/Chatrang (Sassanian).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/done/board/war/replacement/checkmate/chaturanga/Two-Player Chaturanga (al-Biruni).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/pending/board/hunt/Machanan.lud",
+   "status": "FALLBACK_EQUIP",
+   "reason": "equip=Equipment1to1"
+  },
+  {
+   "game": "reconstruction/pending/board/hunt/Smasandyutakankarikrida (Large Triangles).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/pending/board/race/escape/Pancha (Mahabalipuram with Loop).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/pending/board/race/escape/Tavli (Zenon).lud",
+   "status": "THROW",
+   "reason": "terminal 6 did not match game.util.equipment.TrackStep"
+  },
+  {
+   "game": "reconstruction/pending/board/race/other/Chungani.lud",
+   "status": "THROW",
+   "reason": "terminal [?] did not match game.util.equipment.Values"
+  },
+  {
+   "game": "reconstruction/pending/board/race/other/Quechucague.lud",
+   "status": "THROW",
+   "reason": "terminal [?] did not match game.util.equipment.Values"
+  },
+  {
+   "game": "reconstruction/pending/board/race/reach/Barjiss.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.Game: constructor threw (poly is not iterable)"
+  },
+  {
+   "game": "reconstruction/pending/board/race/reach/Totolospi (Cross-Shaped).lud",
+   "status": "THROW",
+   "reason": "terminal [?] did not match game.util.equipment.Values"
+  },
+  {
+   "game": "reconstruction/pending/board/sow/three_rows/Arb'ata 'Ashara.lud",
+   "status": "THROW",
+   "reason": "terminal [3..30] did not match game.functions.dim.DimFunction"
+  },
+  {
+   "game": "reconstruction/pending/board/sow/two_rows/Okwe (Igbo).lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.equipment.container.board.Track: constructor threw (Track: Exactly"
+  },
+  {
+   "game": "reconstruction/pending/board/war/leaping/diagonal/Kokonag'n.lud",
+   "status": "FALLBACK_EQUIP",
+   "reason": "equip=Equipment1to1"
+  },
+  {
+   "game": "reconstruction/pending/board/war/other/Khreibga.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "reconstruction/pending/board/war/other/Sitta.lud",
+   "status": "FALLBACK_EQUIP",
+   "reason": "equip=Equipment1to1"
+  },
+  {
+   "game": "reconstruction/pending/board/war/replacement/checkmate/shogi/Heian Sho Shogi.lud",
+   "status": "THROW",
+   "reason": "terminal [ did not match game.functions.graph.GraphFunction"
+  },
+  {
+   "game": "subgame/race/escape/MahbousehSubgame.lud",
+   "status": "THROW",
+   "reason": "terminal 12 did not match game.util.equipment.TrackStep"
+  },
+  {
+   "game": "test/Disc Colour Test.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/Poly Test.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.graph.generators.basis.square.Square: no static construc"
+  },
+  {
+   "game": "test/Taikyoku Surakarta.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/Test.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/dennis/Tic-Tac-Choose-Chess.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/eric/Pancha Keliya (modern).lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.graph.generators.basis.brick.Brick: no static construct("
+  },
+  {
+   "game": "test/eric/TrackStep.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (track) as game.util.equipment.Values"
+  },
+  {
+   "game": "test/eric/recons/test.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/Graph Test - Colourings C.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/Graph Test - Phases (Terhuchu).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/operator/Graph Test - Add (Curved Edges, Rotated).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/operator/Graph Test - Dual (Circle x 2).lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (circle) as game.functions.graph.GraphFunction"
+  },
+  {
+   "game": "test/graph/operator/Graph Test - Hole (Poly in Square).lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.Game: constructor threw (poly is not iterable)"
+  },
+  {
+   "game": "test/graph/operator/Graph Test - Merge Tilings.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/operator/Graph Test - Renumber.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/operator/Graph Test - Subdivide (T3464).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/shape/Graph Test - Circle (1 8).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/shape/Graph Test - ConHex B.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/shape/Graph Test - Rectangle (1x2).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/shape/Graph Test - Shape (8, Subdivide).lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (shape) as game.functions.graph.GraphFunction"
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Brick (9, 6, Trim).lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.graph.generators.basis.brick.Brick: no static construct("
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Hex (1).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Hex (Custom, 4).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Hex (Rectangle, 4,7).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Mesh (8).lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.graph.generators.basis.mesh.Mesh: no static construct(2)"
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Square (Custom A).lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.functions.graph.generators.basis.square.Square: no static construc"
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Square (Pyramidal).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - T488.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Tri (Custom, 4).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/Graph Test - Tri (Rectangle, 4,7, Vertex).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/old/Graph Test - Subdivide (Tiling3464 2, Dual x 4).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/old/Graph Test - Subdivide (Tiling3464 2, Min 6, Dual x 5).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/old/Graph Test - Tiling333333_33434 (3, Dual x 3).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/old/Graph Test - Tiling33434 (2).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/graph/tiling/old/Graph Test - Tiling3464 (Diamond, 2).lud",
+   "status": "THROW",
+   "reason": "terminal Diamond did not match game.functions.dim.DimFunction"
+  },
+  {
+   "game": "test/graph/tiling/old/Graph Test - Tiling3464 (Dual x 9).lud",
+   "status": "THROW",
+   "reason": "terminal Star did not match game.functions.dim.DimFunction"
+  },
+  {
+   "game": "test/graph/tiling/old/Graph Test - Tiling3636 (Rhombus).lud",
+   "status": "THROW",
+   "reason": "terminal Rhombus did not match game.functions.dim.DimFunction"
+  },
+  {
+   "game": "test/graph/tiling/old/Graph Test - TilingP4_442 (3x4, Dual).lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (tilingP4_442) as game.functions.graph.GraphFunction"
+  },
+  {
+   "game": "test/knightMoves/Knight Moves 18.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/knightMoves/Knight Moves 9.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/old/SurakartaSquareTest.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (set) as game.util.end.Score"
+  },
+  {
+   "game": "test/parser/TestParserBadArgNameA.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (sites) as game.util.moves.To"
+  },
+  {
+   "game": "test/parser/TestParserBadOptionalA.lud",
+   "status": "THROW",
+   "reason": "(add) matched none of 1 reflection candidate(s) for game.rules.play.moves.Moves"
+  },
+  {
+   "game": "test/parser/TestParserBadTokenB.lud",
+   "status": "THROW",
+   "reason": "terminal P123 did not match game.rules.play.moves.Moves"
+  },
+  {
+   "game": "test/parser/TestParserNameOnOwnLine.lud",
+   "status": "THROW",
+   "reason": "(add) matched none of 1 reflection candidate(s) for game.rules.play.moves.Moves"
+  },
+  {
+   "game": "test/recon/TestReconCommentedEnumeration.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "test/recon/TestReconRange.lud",
+   "status": "THROW",
+   "reason": "(square) matched none of 1 reflection candidate(s) for game.functions.graph.GraphFunction"
+  },
+  {
+   "game": "wip/GIPF.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/exhibition/Baghchal Exhibition English.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/exhibition/MYOG/Exhibition_example_14.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/exhibition/MYOG/Exhibition_example_9.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/exhibition/Sahkku Exhibition Swedish.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/exhibition/Wari Exhibition Swedish.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/isg/year21/7- Breakthrough (Jump).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/isg/year22/8- Bear Off.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/matthew/competition/Amazons Competition.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/puzzle/deduction/Hashiwokakero.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (rect) as game.functions.graph.GraphFunction"
+  },
+  {
+   "game": "wip/reconstruction/board/race/reach/Bajii.lud",
+   "status": "THROW",
+   "reason": "cannot instantiate game.Game: constructor threw (poly is not iterable)"
+  },
+  {
+   "game": "wip/reconstruction/board/sow/three_rows/Gabata (Three Players).lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/reconstruction/noEvidence/Damii.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wip/reconstruction/noEvidence/Stenge Reven.lud",
+   "status": "THROW",
+   "reason": "no reflection candidate for (merge) as game.equipment.Item"
+  },
+  {
+   "game": "wip/reconstruction/validation/BoshValidation.lud",
+   "status": "FAITHFUL",
+   "reason": ""
+  },
+  {
+   "game": "wishlist/needReconstructionNoBoardInfo/Caixuan Baiguan Duo.lud",
+   "status": "THROW",
+   "reason": "(game) matched none of 1 reflection candidate(s) for game.Game"
+  }
+ ]
+}
