@@ -42,15 +42,15 @@ export class PlaceRegion implements StartRule {
     this.valueValue = valueValue;
   }
 
-  public applyToInitialState(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
-    equipment: Equipment1to1,
-    numPlayers: number,
-    stateAt?: number[],
-    valueAt?: number[],
-  ): void {
+  /** @java game/rules/start/place/item/PlaceItem.java — eval(Context) (region overload) */
+  public eval(ctx: Context): void {
+    const arrays = (ctx as unknown as {
+      _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
+    })._startArrays;
+    if (!arrays) return;
+    const { cells, whats, countAt, stateAt, valueAt } = arrays;
+    const equipment = (ctx.game as unknown as { equipment: Equipment1to1 }).equipment;
+
     // Parse player number from the piece id suffix.
     const match = this.pieceId.match(/^(.*?)(\d+)$/);
     if (!match) return;
@@ -62,56 +62,21 @@ export class PlaceRegion implements StartRule {
     );
     if (piece === undefined) return;
 
-    // Evaluate the region function using a minimal dummy context.
-    // The dummy context must have game._radials and the board shape accessible.
-    // We use a lightweight wrapper that only exposes board info.
-    const sites = this.evalRegion(equipment, numPlayers);
+    // Java evaluates the region on the REAL evolving start context.
+    let sites: number[];
+    try {
+      sites = this.regionFn.eval(ctx);
+    } catch {
+      sites = [];
+    }
 
     for (const site of sites) {
       if (site < 0 || site >= cells.length) continue;
       cells[site] = owner;
       whats[site] = piece.index;
       countAt[site] = this.count;
-      if (stateAt && this.stateValue >= 0) {
-        stateAt[site] = this.stateValue;
-      }
-      if (valueAt && this.valueValue >= 0) {
-        valueAt[site] = this.valueValue;
-      }
-    }
-  }
-
-  /**
-   * Evaluate the region function using a minimal fake context.
-   * We create a minimal context that has the board shape but no game state.
-   */
-  private evalRegion(equipment: Equipment1to1, numPlayers: number): number[] {
-    // Create a minimal fake context that the RegionFunction can use.
-    // Most site regions (Top, Bottom, Phase, etc.) only need board dimensions,
-    // which they get via ctx.game.equipment.board.width/height.
-    // We pass a fake game object with those properties.
-    const fakeGame = {
-      numPlayers,
-      equipment,
-    } as unknown as Game1to1;
-
-    const fakeCtx = {
-      game: fakeGame,
-      state: {
-        mover: 1,
-        cells: new Array(equipment.totalSites).fill(0),
-        isEmptySite: (_i: number) => true,
-      },
-      _evalFrom: -1,
-      _evalTo: -1,
-      _evalValue: 0,
-      _radials: equipment.board.radials,
-    } as unknown as Context;
-
-    try {
-      return this.regionFn.eval(fakeCtx);
-    } catch {
-      return [];
+      if (this.stateValue >= 0) stateAt[site] = this.stateValue;
+      if (this.valueValue >= 0) valueAt[site] = this.valueValue;
     }
   }
 }

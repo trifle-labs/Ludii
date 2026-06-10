@@ -16,6 +16,7 @@
  */
 
 import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
+import type { Context } from "../../../../context.js";
 import type { StartRule } from "./StartRule.js";
 
 export class PlaceHandCount implements StartRule {
@@ -46,7 +47,17 @@ export class PlaceHandCount implements StartRule {
    *
    * @java Game.start() → ActionAdd(to=handSite, what=componentIdx, count=N)
    */
-  public applyToInitialState(
+  /** @java game/rules/start/... — eval(Context). Bridge arrays + facade equipment. */
+  public eval(ctx: Context): void {
+    const a = (ctx as unknown as {
+      _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
+    })._startArrays;
+    if (!a) return;
+    const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
+    this.applyImpl(a.cells, a.whats, a.countAt, g.equipment, g.numPlayers);
+  }
+
+  private applyImpl(
     cells: number[],
     whats: number[],
     countAt: number[],

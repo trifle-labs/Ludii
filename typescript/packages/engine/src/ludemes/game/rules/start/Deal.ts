@@ -17,6 +17,7 @@
  */
 
 import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
+import type { Context } from "../../../../context.js";
 import type { StartRule } from "./StartRule.js";
 
 /**
@@ -61,17 +62,9 @@ export class Deal implements StartRule {
    *   context.sitesFrom(), context.containerState(), context.rng() are all
    *   unavailable via applyToInitialState.
    */
-  public applyToInitialState(
-    _cells: number[],
-    _whats: number[],
-    _countAt: number[],
-    _equipment: Equipment1to1,
-    _numPlayers: number,
-  ): void {
-    // Deferred: card/deck subsystem not accessible via applyToInitialState.
-    // Java evalCards: ActionMove from deck top to each player's hand, `count` times.
-    // Java evalDominoes: random component selection, Start.placePieces to hand slots.
+  public eval(_ctx: Context): void {
+    // Deferred until the card/deck subsystem is ported: Java Deal.eval(Context)
+    // deals component sets from the deck container through actions.
     void this.dealType;
-    void this.count;
   }
 }
