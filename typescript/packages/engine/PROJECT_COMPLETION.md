@@ -543,6 +543,26 @@ NEXT QUEUE (unchanged + new): Nine/Twelve Men's Morris removal mechanic; chess-f
 Alquerque span; dice/track race ply-0; Tant Fant over-gen; Surakarta breadth; Pente coordinates;
 Sow-2 left-out dispatch; Hnefatafl deep; 3D boards. Resume codex waves Jun 13 ~8pm.
 
+## Update 17: MORRIS FAMILY COMPLETE — manual loop highly leveraged
+Two more corpus-wide manual fixes:
+1. **CanMove accepts plain MovesFunction** (Java Moves.canMove default = generator yields >=1):
+   Nine Men's Morris apply() no longer throws mid-game (ply 31 -> 176).
+2. **(sites Occupied by:...) routed to faithful SitesOccupied** (generic path mis-resolved it to
+   SitesTrack -> empty region): fixes the flying phase + every occupied-region rule corpus-wide.
+RESULT: **Nine + Twelve + Six Men's Morris OUTCOME_OK 2/2** (full placement/mills/movement/flying).
+The morris family (Achi, Nerenchi Keliya, Nine/Twelve/Six Men's Morris) is fully faithful.
+Dara now compiles + plays (was COMPILE_FAIL). Full canary sweep green at every commit.
+
+CONFIRMED faithful full-parity (equip-verified or harness OUTCOME_OK post-fix), 20+:
+Breakthrough, Leap Frog, Gomoku, Amazons, Connect Four, Yavalath, Havannah, Tablut, Brandub,
+Kalah, J'odu, Achi, Nerenchi Keliya, Nine/Twelve/Six Men's Morris, TTT, Yavalade, Agapi,
+Dorvon Cag, Master Y, Djara-Badakh, Nine Holes, Squava, Tic-Tac-Four (+REPLAY_OK: Crossway, Chess 26 plies).
+
+PATTERN OBSERVED (for the remaining grind): most deep-play failures trace to ONE mis-resolved
+ludeme (a Sites variant routed to the wrong class, a missing RoleType case, a Java-API-shape
+mismatch like canMove). The diagnostic loop — first divergent ply -> inspect the compiled object's
+class/fields -> route/port faithfully — lands them in under an hour each, and each fix is corpus-wide.
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
