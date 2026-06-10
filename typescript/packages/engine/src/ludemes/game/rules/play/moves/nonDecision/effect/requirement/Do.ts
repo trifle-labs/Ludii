@@ -153,8 +153,18 @@ export class Do implements MovesFunction {
    * @java Do.movePassesCond(Move m, Context context, boolean includeRepetitionTests)
    */
   private _movePassesCond(m: Move, ctx: Context): boolean {
-    const newState = m.applyTo(ctx.state);
-    const newCtx = new Context(ctx.game, newState, ctx.trial, ctx.rng);
+    // @java Do.eval — ifAfterwards is evaluated in the POST-MOVE context with the move
+    // recorded on the trial (so (last To)/(last From) name THIS move) and with the
+    // board topology visible (radials/trajectories), mirroring Game.applyInternal.
+    const newState = m.applyTo(ctx.state, ctx.rng);
+    const newTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(m, false, -1) ?? ctx.trial;
+    const newCtx = new Context(ctx.game, newState, newTrial, ctx.rng);
+    const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
+    const aug = newCtx as Context & { _radials?: unknown; _trajectories?: unknown };
+    aug._radials = src._radials;
+    aug._trajectories = src._trajectories;
+    newCtx._evalFrom = m.from();
+    newCtx._evalTo = m.to();
     return this.ifAfterwards!.eval(newCtx);
   }
 
