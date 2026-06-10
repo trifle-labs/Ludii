@@ -1444,3 +1444,21 @@ Remaining: chunk 5 — the deny-named core renames (Game1to1→Game with a Ludii
 style alias for the engine surface, Equipment1to1/State1to1/Item1to1/Component1to1/
 Board1to1 → Java homes; wide but mechanical, same machinery as the Piece/Player/
 Move/Array promotions) — and the full behavioral parity re-verification (launched).
+
+## Update 66 (2026-06-10) — chunk 5 scoped: the core is smaller than it looked
+
+Registration truth for the "deny-named cores":
+- **Component, Board, Equipment**: the REGISTERED mirrors are ALREADY the faithful
+  classes (Component.ts C678, Board.ts C685, Equipment.ts C693). The *1to1 files are
+  engine-surface TYPES (Equipment1to1 18 files, Board1to1 6, Component1to1 2) — their
+  merge is a re-typing of engine surfaces onto the faithful classes, not a mirror swap.
+- **Game1to1 has NO faithful twin** — it IS the sole game.Game mirror (registered C1).
+  Game1to1→Game is a RENAME with import-aliasing against src/game.ts's engine Game
+  interface (the LudiiMove pattern; 56 files, mechanical with the proven machinery).
+- **Item1to1** is registered for game.equipment.Item while faithful Item.ts is the
+  live base of the faithful component hierarchy — 3 refs, swap-or-fold candidate.
+- **State1to1** (other/state/State.ts): 1 file + its registration.
+
+Full unlimited behavioral replay (every recorded Java trial) is RUNNING — the final
+re-verification gate. On green-at-baseline: execute the renames above, then the
+definition of complete is satisfied.
