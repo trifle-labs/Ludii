@@ -21,7 +21,7 @@ import type { From } from "../../../../../util/moves/From.js";
 import type { Between } from "../../../../../util/moves/Between.js";
 import { Who } from "../../../../../functions/ints/state/Who.js";
 import type { JavaIntFunction } from "../../../../../functions/ints/IntFunction.js";
-import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
+import { IsEnemy } from "../../../../../functions/booleans/is/player/IsEnemy.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 import { Remove } from "./Remove.js";
 

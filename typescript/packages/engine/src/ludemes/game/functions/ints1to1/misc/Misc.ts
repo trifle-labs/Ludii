@@ -23,7 +23,7 @@ import type { LudList } from "@ludii/typescript-language";
 import { isIdent, isString, isList } from "@ludii/typescript-language";
 import type { RoleType } from "../../../../base.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
-import { HandSite } from "../../ints/state1to1/HandSite.js";
+import { HandSite } from "../../ints/state/HandSite.js";
 import type { BooleanFunction } from "../../../../base.js";
 
 // ---------------------------------------------------------------------------

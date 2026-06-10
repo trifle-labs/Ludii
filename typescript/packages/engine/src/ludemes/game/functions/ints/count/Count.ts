@@ -24,7 +24,7 @@ import { CountRows, CountColumns, CountPlayers, CountTurns, CountMovesThisTurn }
 import { CountCells } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";
 import { CountPhases } from "./simple/CountPhases.js";
 import { CountTrials } from "./simple/CountTrials.js";
-import { CountMoves as CountMoves1to1 } from "../count1to1/CountMoves.js";
+import { CountMoves as CountMoves1to1 } from "./CountMoves.js";
 import { CountEdges } from "../../../../game/functions/ints1to1/count/CountEdges.js";
 import { CountVertices } from "../../../../game/functions/ints1to1/count/CountVertices.js";
 import { CountNumber } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";

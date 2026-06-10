@@ -6,8 +6,8 @@
  * @java game/functions/booleans/no/No.java — static construct() dispatchers
  */
 import type { BooleanFunction, IntFunction, RegionFunction, RoleType } from "../../../../base.js";
-import { NoMoves } from "../no1to1/NoMoves.js";
-import { NoPieces } from "../no1to1/NoPieces.js";
+import { NoMoves } from "./NoMoves.js";
+import { NoPieces } from "./NoPieces.js";
 
 type SiteType = "Cell" | "Edge" | "Vertex";
 
