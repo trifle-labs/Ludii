@@ -737,3 +737,27 @@ games). tsc clean.
 Remaining: item 2 (bespoke deletion — Jun-13 codex waves for the transition re-export
 unwinding), item 3 (hardening: cross-imports, substrate, one State, dispatch
 minimization, mirror dedup e.g. If.ts/IfMoves.ts), item 4 (keep gates green).
+
+## Update 28 — Coverage regrowth wave (manual): 67.7% → 81.4% corpus / 91.0% REAL games
+
+Three compiler-layer ports, each verified against canaries before commit:
+- **ApplicationConstants** (@java Grammar.java:114 / ArgTerminal.java:94): the idents
+  Off(-1)/End(-2)/Undefined(-1)/Infinity(1e9) are named int constants → IntConstant.
+  Unlocked +23 games in one step (IsEndTrack.def's `(= (trackSite …) End)` and every
+  other named-constant site). THE single biggest coverage lever found this campaign.
+- **Poly/Polygon normalization** in Hole/Keep/Clip (Java-signature Poly ludeme or
+  Polygon instance → point pairs) — Pachesi-class cross boards.
+- **ints.math.Min/Max/Mul, stacking.TopLevel, region.math.Intersection** faithful ports.
+
+**MEASUREMENT INSIGHT: the corpus number under-reports.** Excluding test/ +
+reconstruction/pending/ + wishlist (non-games: recon placeholders `[?]`, parser
+fixtures), REAL-game faithful-compile coverage is **132/145 = 91.0%** (pre-Mul
+snapshot; ~92% after). The 13 remaining real games, each with a named reason:
+range syntax `18..21` (Msuwa), `Each`-as-Moves (Bravalath), curly-array-as-
+Moves/Bool/StartRule (Qi Guo Xiangxi, Kriegsspiel, Morra), Game-ctor throws on the
+two giant chess variants (Sittuyin, Tai Shogi), puzzle iterators Hint/Edge/All
+(Sudoku family, Morpion Solitaire), wip/ files (rect, merge-as-Item).
+
+Diagnostic tooling added this wave (permanent): deepest-divergence head PATH
+breadcrumb (`game>equipment>piece>if>=>trackSite`), LUDII_DEBUG_INST (ctor-throw
+stacks), LUDII_DEBUG_THEN (silent then-catch surfacing).
