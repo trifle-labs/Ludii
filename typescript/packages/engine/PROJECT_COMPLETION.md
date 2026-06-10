@@ -574,6 +574,17 @@ LESSON (recurring class): construct dispatchers written pre-lazy-wrapping that t
 plain numbers silently mis-build when handed function objects — grep for `static construct(` with
 `number` params as a hardening sweep candidate.
 
+## Update 23: Pentalath CLOSED + Go replays — Do.ifAfterwards post-context (corpus-wide)
+1. **Intersect graph op rebuilds faces** (one-line makeFaces) — every (intersect ...) cell board
+   was 0 cells; Pentalath's HalfHexHex now 70 cells.
+2. **Do.ifAfterwards evaluated in the true post-move context** (move on a trial copy, topology
+   attached, _evalFrom/_evalTo set — the applyPostStateThen recipe). It previously filtered ALL
+   moves whenever the post-condition read (last To)/adjacency.
+RESULTS: **Pentalath OUTCOME_OK 2/2** (2nd of 3 faithful-behind games closed). **Base Go now
+REPLAY_OK over its full 41-ply recorded trial** (was MOVE_MISMATCH — the suicide rule is
+(do ... ifAfterwards:)). Every (do ... ifAfterwards:) game corpus-wide benefits.
+FAITHFUL-BEHIND LIST: El Perro residual (ply 110/346) + Gekitai (push mechanic, ply 10) ONLY.
+
 ## Update 22: El Perro root causes closed (bridge topology + Hop then) — ply 1 -> 110
 Two more foundational fixes:
 1. **Start-rule bridge no longer shadows Context.topology()/containers()** when the board has a
