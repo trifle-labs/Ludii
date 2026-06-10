@@ -650,6 +650,21 @@ export class Game implements Game {
       winner = 0; // draw
     }
 
+    // Step 4b: Turn/move limits.
+    // @java game/Game.java:3075,3764 — checkMaxTurns(context): the game ends as a
+    // DRAW (winner 0, EndType TurnLimit/MoveLimit) when
+    //   state.numTurn() >= DEFAULT_TURN_LIMIT(1250) * numPlayers, or
+    //   trial.numMoves() - numInitialPlacementMoves >= DEFAULT_MOVES_LIMIT(10000).
+    // Our trial records only decision moves, so numMoves compares directly.
+    if (!over) {
+      const numTurn = (newState as unknown as { numTurn?: number }).numTurn ?? 1;
+      const numMoves = evalTrial.moves.length;
+      if (numTurn >= 1250 * this.numPlayers || numMoves >= 10000) {
+        over = true;
+        winner = 0; // draw
+      }
+    }
+
     const setNextAct = move.actions.find(a => a.actionType() === "SetNextPlayer");
     const willContinueTurn = move.moveAgain || (setNextAct !== undefined && setNextAct.who() === mover);
 
