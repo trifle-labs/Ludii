@@ -1551,3 +1551,17 @@ DEFINITION OF COMPLETE — FINAL SCORECARD:
 Follow-on work (beyond the port's definition): the deep-parity long tail
 (MOVE_MISMATCH burn-down, 1,130 trials), the recon/wishlist fixture corpus, and
 optional cosmetic renames inside the surface types. The port itself is complete.
+
+## Update 70 (2026-06-10) — DEFINITION EXPANDED (user directive)
+
+"All of those things should be included in complete. keep going. no bespoke logic."
+
+The definition of complete now includes, beyond the structural port:
+- MOVE_MISMATCH burn-down (1,130 trials) — faithful per-ludeme fixes only
+- START_FAIL (44), WINNER_MISMATCH (92), REPLAY_OK_NO_OUTCOME (59)
+- Deferred subsystems, ported faithfully from Java: card/deck (Deal/Split),
+  per-site cost/rotation, State teams, hidden-data facets, faithful
+  Equipment._makeDie/_makeMergedDice unification
+- Standing constraint reaffirmed: NO bespoke logic — every fix is a 1:1 port
+  with @java provenance.
+Infrastructure: add a dice game to the canary battery; replay harness heap.
