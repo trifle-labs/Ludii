@@ -17,8 +17,6 @@ import type { IntFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import { isIdent, isString } from "@ludii/typescript-language";
-import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1 } from "../../../../../compiler1to1.js";
 
 // ---------------------------------------------------------------------------
 // Mover

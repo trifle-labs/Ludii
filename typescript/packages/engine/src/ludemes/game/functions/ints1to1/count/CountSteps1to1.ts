@@ -18,8 +18,6 @@ import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
-import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1, compileRegion1to1 } from "../../../../../compiler1to1.js";
 
 const INFINITY = 999999;
 

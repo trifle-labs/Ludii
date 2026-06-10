@@ -11,7 +11,6 @@
 import type { Context } from "../../../../../../../context.js";
 import type { Move } from "../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../base.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../registry1to1.js";
 import type { LudNode } from "@ludii/typescript-language";
 
 /**

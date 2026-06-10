@@ -19,8 +19,6 @@ import type { Context } from "../../../../../context.js";
 import type { IntFunction, RegionFunction, EvalScratch } from "../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
-import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1, compileRegion1to1 } from "../../../../../compiler1to1.js";
 
 export class CountOff1to1 implements IntFunction {
   private readonly siteFn: IntFunction | null;

@@ -12,7 +12,6 @@ import type { Context } from "../../../../../context.js";
 import type { IntFunction, EvalScratch } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
-import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
 
 export class CountVertices1to1 implements IntFunction {
   /**

@@ -9,13 +9,7 @@ import type { Context } from "../../../../../context.js";
 import type { IntArrayFunction, IntFunction } from "../../../../base.js";
 import { isList } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
-import { registerIntArray1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import {
-  compileIntArray1to1,
-  compileInt1to1,
-  parseArgs1to1,
-  headOf,
-} from "../../../../../compiler1to1.js";
+import { headOf } from "../../../../../compiler1to1.js";
 
 /** The set of heads that are IntArray-typed (not int-typed). */
 const INT_ARRAY_HEADS = new Set([

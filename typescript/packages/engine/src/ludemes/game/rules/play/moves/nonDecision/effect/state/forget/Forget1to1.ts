@@ -9,8 +9,6 @@ import type { Context } from "../../../../../../../../../context.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { Move } from "../../../../../../../../../move.js";
 import { ActionForgetValue } from "../../../../../../../../../action/action-remember.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1 } from "../../../../../../../../../compiler1to1.js";
 import { isIdent, isString, type LudNode } from "@ludii/typescript-language";
 
 /**

@@ -27,14 +27,7 @@ import type { Trajectories } from "../../../../../../../eval/graph/trajectories.
 import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../registry1to1.js";
-import {
-  parseArgs1to1,
-  compileInt1to1,
-  compileBool1to1,
-  compileMoves1to1,
-  headOf,
-} from "../../../../../../../compiler1to1.js";
+import { compileMoves1to1 } from "../../../../../../../compiler1to1.js";
 import { IntConstant } from "../../../../../functions/ints/IntConstant.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { isList, isIdent, type LudNode, type LudList } from "@ludii/typescript-language";

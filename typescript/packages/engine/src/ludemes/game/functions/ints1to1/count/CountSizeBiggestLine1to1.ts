@@ -18,8 +18,6 @@ import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import type { EvalScratch } from "../../../../base.js";
 import type { CellFlatRadials } from "../../../../topology-radials.js";
-import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileBool1to1 } from "../../../../../compiler1to1.js";
 
 export class CountSizeBiggestLine1to1 implements IntFunction {
   /** @java CountSizeBiggestLine.condition — default IsOccupied */

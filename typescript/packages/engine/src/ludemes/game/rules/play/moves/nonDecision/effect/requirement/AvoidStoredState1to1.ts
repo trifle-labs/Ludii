@@ -12,8 +12,7 @@
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
-import { parseArgs1to1, compileMoves1to1 } from "../../../../../../../../compiler1to1.js";
+import { compileMoves1to1 } from "../../../../../../../../compiler1to1.js";
 import { isList, type LudNode, type LudList } from "@ludii/typescript-language";
 
 /**

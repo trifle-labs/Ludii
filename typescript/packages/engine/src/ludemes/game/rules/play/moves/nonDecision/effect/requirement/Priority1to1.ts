@@ -9,13 +9,7 @@ import { isList } from "@ludii/typescript-language";
 import type { Context } from "../../../../../../../../context.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import type { Move } from "../../../../../../../../move.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
-import {
-  parseArgs1to1,
-  flattenMovesList,
-  attachThen,
-  headOf,
-} from "../../../../../../../../compiler1to1.js";
+import { flattenMovesList, attachThen } from "../../../../../../../../compiler1to1.js";
 import { type LudList, type LudNode } from "@ludii/typescript-language";
 
 /**

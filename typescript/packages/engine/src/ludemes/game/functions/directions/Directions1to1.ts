@@ -18,11 +18,6 @@ import type { Context } from "../../../../context.js";
 import type { IntFunction, DirectionsFunction } from "../../../base.js";
 import type { LudList, LudNode } from "@ludii/typescript-language";
 import { isIdent, isList } from "@ludii/typescript-language";
-import {
-  registerDirections1to1,
-  type Compile1to1Env,
-} from "../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1 } from "../../../../compiler1to1.js";
 import type { Game1to1 } from "../../../Game1to1.js";
 
 // The known AbsoluteDirection names (Java AbsoluteDirection enum names).

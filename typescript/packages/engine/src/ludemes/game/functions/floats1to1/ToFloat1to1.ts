@@ -9,8 +9,6 @@
 import type { Context } from "../../../../context.js";
 import type { FloatFunction, BooleanFunction, IntFunction } from "../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
-import { registerFloat1to1, type Compile1to1Env } from "../../../registry1to1.js";
-import { parseArgs1to1, compileFloat1to1, compileBool1to1, compileInt1to1 } from "../../../../compiler1to1.js";
 import { isList } from "@ludii/typescript-language";
 
 export class ToFloatBool1to1 implements FloatFunction {

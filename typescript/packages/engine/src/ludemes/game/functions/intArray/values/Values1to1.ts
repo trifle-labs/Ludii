@@ -10,8 +10,6 @@ import type { Context } from "../../../../../context.js";
 import type { IntArrayFunction } from "../../../../base.js";
 import { isIdent, isString } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
-import { registerIntArray1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1 } from "../../../../../compiler1to1.js";
 
 export class ValuesRemembered1to1 implements IntArrayFunction {
   /** @java game/functions/intArray/values/ValuesRemembered.java — eval(Context) */

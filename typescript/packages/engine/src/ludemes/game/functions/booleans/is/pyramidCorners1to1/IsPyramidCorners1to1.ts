@@ -22,8 +22,6 @@ import type { BooleanFunction, IntFunction, RegionFunction, EvalScratch } from "
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { SiteType } from "../../../../../../action/site-type.js";
-import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1, compileRegion1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
 
 // @java IsPyramidCorners.java:96-101 — down directions (descend)

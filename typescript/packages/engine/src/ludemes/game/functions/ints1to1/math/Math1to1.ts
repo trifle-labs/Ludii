@@ -22,7 +22,7 @@ import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import { isList } from "@ludii/typescript-language";
 import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1, compileBool1to1 } from "../../../../../compiler1to1.js";
+import { parseArgs1to1, compileInt1to1 } from "../../../../../compiler1to1.js";
 
 function isIntFunction(value: unknown): value is IntFunction {
   return value !== null && typeof value === "object" && typeof (value as { eval?: unknown }).eval === "function";

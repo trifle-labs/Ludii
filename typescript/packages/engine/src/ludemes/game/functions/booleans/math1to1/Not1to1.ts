@@ -4,8 +4,6 @@ import type { Context } from "../../../../../context.js";
 import type { BooleanFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isList, type LudList } from "@ludii/typescript-language";
-import { compileBool1to1, parseArgs1to1 } from "../../../../../compiler1to1.js";
-import { registerBool1to1, type Compile1to1Env } from "../../../../registry1to1.js";
 
 /**
  * (not <bool>)

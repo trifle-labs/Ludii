@@ -4,8 +4,6 @@ import type { Context } from "../../../../../context.js";
 import type { BooleanFunction, MovesFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, isList, type LudList } from "@ludii/typescript-language";
-import { parseArgs1to1, compileMoves1to1 } from "../../../../../compiler1to1.js";
-import { registerBool1to1, type Compile1to1Env } from "../../../../registry1to1.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
 
 /** Module-level recursion guard — mirrors Java's ThreadLocal<Boolean> autoFail. */

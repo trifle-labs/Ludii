@@ -10,8 +10,6 @@ import type { Context } from "../../../../../context.js";
 import type { IntFunction, RegionFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
-import { registerInt1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileRegion1to1 } from "../../../../../compiler1to1.js";
 
 export class CountSites1to1 implements IntFunction {
   /** @java CountSites.region */

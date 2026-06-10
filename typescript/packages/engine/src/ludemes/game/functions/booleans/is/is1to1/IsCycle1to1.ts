@@ -3,7 +3,6 @@
 import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
-import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 
 /**
  * (is Cycle)

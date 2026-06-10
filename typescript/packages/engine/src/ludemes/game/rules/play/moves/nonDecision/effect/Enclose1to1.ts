@@ -11,8 +11,6 @@ import type { CellFlatRadials } from "../../../../../../topology-radials.js";
 import { radialsForDirection } from "../../../../../../topology-radials.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1, headOf } from "../../../../../../../compiler1to1.js";
 import { isList, isIdent, type LudNode, type LudList } from "@ludii/typescript-language";
 
 /**

@@ -32,12 +32,6 @@ import { Context } from "../../../../../../../../context.js";
 import { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { Operator1to1 } from "../../operator/Operator1to1.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
-import {
-  parseArgs1to1,
-  compileMoves1to1,
-  headOf,
-} from "../../../../../../../../compiler1to1.js";
 import { isList, type LudList, type LudNode } from "@ludii/typescript-language";
 
 /**

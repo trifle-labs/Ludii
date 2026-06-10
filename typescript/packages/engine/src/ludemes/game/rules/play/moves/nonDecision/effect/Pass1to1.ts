@@ -7,7 +7,6 @@ import type { Context } from "../../../../../../../context.js";
 import type { MovesFunction } from "../../../../../../base.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionPass } from "../../../../../../../action/action-pass.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../registry1to1.js";
 import type { LudNode } from "@ludii/typescript-language";
 
 /**

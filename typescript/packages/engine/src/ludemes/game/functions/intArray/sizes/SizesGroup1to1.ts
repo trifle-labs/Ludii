@@ -13,12 +13,6 @@ import type { IntArrayFunction, BooleanFunction, IntFunction } from "../../../..
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import { isIdent } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
-import { registerIntArray1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import {
-  compileBool1to1,
-  compileInt1to1,
-  parseArgs1to1,
-} from "../../../../../compiler1to1.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
 
 function getNeighbours(ctx: Context, site: number, dirName: string): number[] {

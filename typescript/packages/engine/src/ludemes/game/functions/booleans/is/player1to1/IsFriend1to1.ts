@@ -5,8 +5,6 @@ import type { BooleanFunction, IntFunction } from "../../../../../base.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, type LudList } from "@ludii/typescript-language";
-import { compileInt1to1, parseArgs1to1 } from "../../../../../../compiler1to1.js";
-import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 
 /**
  * (is Friend <who>) / (is Friendly <who>)

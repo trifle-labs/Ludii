@@ -13,11 +13,9 @@ import type { Context } from "../../../../../../../../context.js";
 import { Move } from "../../../../../../../../move.js";
 import type { Move as IMove } from "../../../../../../../../move.js";
 import type { MovesFunction, IntFunction, RoleType } from "../../../../../../../base.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, isList, type LudList } from "@ludii/typescript-language";
 import { ActionSetScore } from "../../../../../../../../action/action-set-score.js";
-import { compileInt1to1, parseArgs1to1 } from "../../../../../../../../compiler1to1.js";
 import type { Then } from "../Then.js";
 import type { Player1to1 } from "../../../../../../util/moves/Player1to1.js";
 

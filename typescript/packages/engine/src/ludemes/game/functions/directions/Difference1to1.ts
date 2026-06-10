@@ -26,11 +26,6 @@ import type { Context } from "../../../../context.js";
 import type { DirectionsFunction } from "../../../base.js";
 import type { Trajectories } from "../../../../eval/graph/trajectories.js";
 import type { LudList, LudNode } from "@ludii/typescript-language";
-import {
-  registerDirections1to1,
-  type Compile1to1Env,
-} from "../../../registry1to1.js";
-import { parseArgs1to1, compileDirections1to1 } from "../../../../compiler1to1.js";
 
 // Canonical compass name sets used when Trajectories is unavailable.
 const ORTHO_FALLBACK = ["N", "E", "S", "W"] as const;

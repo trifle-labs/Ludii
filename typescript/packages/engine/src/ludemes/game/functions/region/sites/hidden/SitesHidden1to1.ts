@@ -31,8 +31,6 @@ import type { Context } from "../../../../../../context.js";
 import type { RegionFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, isList } from "@ludii/typescript-language";
-import { registerRegion1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
-import { parseArgs1to1 } from "../../../../../../compiler1to1.js";
 
 /**
  * Base class for all hidden-site queries.

@@ -24,8 +24,6 @@ import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../b
 import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent, isList, isNumber } from "@ludii/typescript-language";
 import { LastTo1to1 } from "../../../ints1to1/board/Board1to1.js";
 

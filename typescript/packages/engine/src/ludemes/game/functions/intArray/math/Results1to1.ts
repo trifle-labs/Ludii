@@ -10,12 +10,6 @@
 import type { Context } from "../../../../../context.js";
 import type { IntArrayFunction, IntFunction, RegionFunction, EvalScratch } from "../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
-import { registerIntArray1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import {
-  compileInt1to1,
-  compileRegion1to1,
-  parseArgs1to1,
-} from "../../../../../compiler1to1.js";
 
 /** Wraps a single int as a one-site "region". */
 function wrapIntAsRegion(fn: IntFunction): RegionFunction {

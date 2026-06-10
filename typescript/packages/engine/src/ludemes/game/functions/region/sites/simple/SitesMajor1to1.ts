@@ -18,7 +18,6 @@ import type { RegionFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { Game1to1 } from "../../../../../Game1to1.js";
-import { registerRegion1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 
 /** Minimal shape of FaceEl from core topology. */
 interface FaceLike {

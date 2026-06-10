@@ -10,8 +10,6 @@
 import type { Context } from "../../../../context.js";
 import type { FloatFunction } from "../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
-import { registerFloat1to1, type Compile1to1Env } from "../../../registry1to1.js";
-import { parseArgs1to1 } from "../../../../compiler1to1.js";
 import { isNumber } from "@ludii/typescript-language";
 
 export class FloatConstant1to1 implements FloatFunction {

@@ -33,7 +33,6 @@
 import type { Context } from "../../../../../../context.js";
 import type { RegionFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
-import { registerRegion1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
 // ---------------------------------------------------------------------------

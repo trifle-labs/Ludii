@@ -26,8 +26,7 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, RegionFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import { registerBool1to1, type Compile1to1Env } from "../../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1 } from "../../../../../../compiler1to1.js";
+import { compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
 
 type SiteTypeName = "Cell" | "Edge" | "Vertex";

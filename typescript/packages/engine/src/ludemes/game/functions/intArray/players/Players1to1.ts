@@ -13,12 +13,6 @@ import type { EvalScratch } from "../../../../base.js";
 import type { IntArrayFunction, BooleanFunction, IntFunction } from "../../../../base.js";
 import { isIdent } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
-import { registerIntArray1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import {
-  compileBool1to1,
-  compileInt1to1,
-  parseArgs1to1,
-} from "../../../../../compiler1to1.js";
 
 /** Java parity: team membership via state.valuePlayer() > 0 */
 function hasTeams(ctx: Context): boolean {

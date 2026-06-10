@@ -10,8 +10,6 @@ import type { Context } from "../../../../../context.js";
 import type { IntArrayFunction, RegionFunction, IntFunction } from "../../../../base.js";
 import { isList } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
-import { registerIntArray1to1, type Compile1to1Env } from "../../../../registry1to1.js";
-import { compileRegion1to1, compileInt1to1, parseArgs1to1 } from "../../../../../compiler1to1.js";
 
 export class Array1to1 implements IntArrayFunction {
   private readonly region: RegionFunction | null;

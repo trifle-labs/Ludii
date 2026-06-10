@@ -26,8 +26,6 @@ import { Context as ContextClass } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { Operator1to1 } from "../../operator/Operator1to1.js";
-import { registerMoves1to1, type Compile1to1Env } from "../../../../../../../registry1to1.js";
-import { parseArgs1to1, flattenMovesList } from "../../../../../../../../compiler1to1.js";
 import { type LudList, type LudNode } from "@ludii/typescript-language";
 
 /**
