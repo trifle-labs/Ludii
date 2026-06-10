@@ -574,6 +574,21 @@ LESSON (recurring class): construct dispatchers written pre-lazy-wrapping that t
 plain numbers silently mis-build when handed function objects — grep for `static construct(` with
 `number` params as a hardening sweep candidate.
 
+## Update 20: delta-measurement + Koro/infra fixes — the item-1 gap is NARROW
+FAITHFUL-vs-BESPOKE DELTA SAMPLE (12 remaining-mismatch games): faithful BEHIND bespoke on only 3
+(El Perro, Pentalath, Gekitai); TIED-failing on 6 (beyond-bespoke, ply-identical: Wolf and Sheep,
+Ludus Coriovalli, Sparro, Callanish, Make Muster, Spaiji); AHEAD/newly-green on 3 (Ho-Bag Gonu
+faithful replays 600 plies where bespoke fails ply-0!; Janes Soppi + Snailtrail both OUTCOME_OK).
+The sow stragglers (Ti/Fergen/Galatjang) + Halma + Hnefatafl are ALSO beyond-bespoke. **Definition
+item 1 (faithful >= bespoke) is CLOSE: the verified faithful-behind list is small and shrinking.**
+ALSO LANDED: Koro full replay (RoleType.Player in the sites dispatch: PLAYER_SITE_VARIANTS +
+resolveSitesPlayer reads ctx._evalPlayer); SitesLeft/Right rewritten on the real Trajectories API;
+PlaceItem region-in-loc-slot fill; start-bridge ctx carries trajectories/radials.
+KNOWN-DIAGNOSED (next): El Perro start region collapses on the bridge facade only (the union's
+intersection operand evals empty on the start facade ctx, fine on the play ctx — one diagnostic from
+done); Pentalath ply-0; Gekitai ply-10. Then beyond-bespoke stretch (var/value subsystem for
+Ti/Fergen, stacking for Sam K'i, dice-state races) and bespoke deletion + hardening.
+
 ## Update 19: Pong Hau K'i full parity (getElement site-type fallback) — manual stretch tally
 Topology.getElement(coord, null) hardcoded Cell; vertex-play boards label VERTICES — coordinate
 placement found nothing. Now searches the given type or all populated types (Java SiteFinder
