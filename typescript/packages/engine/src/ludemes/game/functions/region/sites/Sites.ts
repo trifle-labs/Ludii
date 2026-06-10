@@ -31,7 +31,7 @@ import { SitesHiddenWhat } from "./hidden/SitesHiddenWhat.js";
 import { SitesHiddenWho } from "./hidden/SitesHiddenWho.js";
 import { SitesIncident } from "./incidents/SitesIncident.js";
 import { SitesLineOfSight } from "./lineOfSight/SitesLineOfSight.js";
-import { cornerSitesTyped } from "./simple/corner-sites.js";
+import { perimeterVertexRings, cornersFromPerimeterTyped } from "./simple/corner-sites.js";
 import { SitesOccupied } from "./occupied/SitesOccupied.js";
 import { SitesEquipmentRegion } from "./player/SitesEquipmentRegion.js";
 import { SitesHand } from "./player/SitesHand.js";
@@ -1069,88 +1069,99 @@ export class Sites extends BaseRegionFunction {
  * the run (corners included — a corner belongs to BOTH adjacent sides) gets
  * the property. Side membership is computed on the play-site graph.
  */
-function boardSides(ctx: Context, dirName: string): number[] {
-  const traj = (ctx as unknown as { _trajectories?: {
-    perimeterSites?: () => readonly number[];
-    cornerSites?: () => readonly number[];
-    xOf(site: number): number;
-    yOf(site: number): number;
-  } | null })._trajectories
-    ?? ((ctx.game as unknown as { equipment?: { board?: { trajectories?: unknown } } }).equipment?.board?.trajectories as {
-      perimeterSites?: () => readonly number[];
-      cornerSites?: () => readonly number[];
-      xOf(site: number): number;
-      yOf(site: number): number;
-    } | null | undefined);
-  if (!traj || typeof traj.perimeterSites !== "function" || typeof traj.cornerSites !== "function") {
+export function boardSides(ctx: Context, dirName: string): number[] {
+  const traj = (ctx as unknown as { _trajectories?: unknown })._trajectories
+    ?? (ctx.game as unknown as { equipment?: { board?: { trajectories?: unknown } } }).equipment?.board?.trajectories;
+  const t = traj as {
+    xOf(site: number): number; yOf(site: number): number;
+    numSites: number;
+  } | null | undefined;
+  if (!t || typeof (t as { xOf?: unknown }).xOf !== "function") {
     // Rectangle fallback: N=top row, S=bottom row, E=right col, W=left col.
     const board = (ctx.game as unknown as { equipment?: { board?: { width: number; height: number } } }).equipment?.board;
     if (!board) return [];
     const { width: W, height: H } = board;
     const out: number[] = [];
-    for (let s = 0; s < W * H; s++) {
-      const col = s % W;
-      const row = Math.floor(s / W);
+    for (let s2 = 0; s2 < W * H; s2++) {
+      const col = s2 % W;
+      const row = Math.floor(s2 / W);
       if ((dirName === "N" && row === H - 1) || (dirName === "S" && row === 0)
-        || (dirName === "E" && col === W - 1) || (dirName === "W" && col === 0)) out.push(s);
+        || (dirName === "E" && col === W - 1) || (dirName === "W" && col === 0)) out.push(s2);
     }
     return out;
   }
 
-  const perim = [...traj.perimeterSites()];
-  if (perim.length === 0) return [];
-  // Corner sites in play-site ids: the curvature-scored corner detection
-  // (@java MeasureGraph.cornersFromPerimeter) ported in corner-sites.ts;
-  // works for Vertex AND Cell play. traj.cornerSites() covers vertex play.
-  let cornerList: readonly number[] | undefined = typeof traj.cornerSites === "function" ? traj.cornerSites() : undefined;
-  if (!cornerList || cornerList.length === 0) {
-    cornerList = cornerSitesTyped(ctx, traj as never, "convex");
-  }
-  const corners = new Set(cornerList ?? []);
-  // Board centroid over ALL perimeter sites (Java uses the graph centroid).
-  let cx = 0; let cy = 0;
-  for (const s of perim) { cx += traj.xOf(s); cy += traj.yOf(s); }
-  cx /= perim.length; cy /= perim.length;
-  // Cyclic perimeter order by angle around the centroid (Java's Perimeter
-  // list is already boundary-ordered; ours may not be).
-  perim.sort((a, b) =>
-    Math.atan2(traj.yOf(a) - cy, traj.xOf(a) - cx) - Math.atan2(traj.yOf(b) - cy, traj.xOf(b) - cx));
+  // @java MeasureGraph.measureSides — sides are computed on the perimeter
+  // VERTEX ring: corners split it into runs, each run is classified by the
+  // discrete direction (16 buckets) of its centroid from the graph centroid,
+  // and every vertex of the INCLUSIVE run is on that side (corners belong to
+  // both adjacent sides). Cells then inherit every side any of their vertices
+  // carries (MeasureGraph.java:760-790).
+  const rings = perimeterVertexRings(t as never);
+  if (!rings || rings.length === 0) return [];
 
-  // @java MeasureGraph.discreteDirection(angle, 16)
-  const discrete = (angle: number): number => {
-    const arc = (2 * Math.PI) / 16;
-    const off = arc / 2;
-    let a = angle;
-    while (a < 0) a += 2 * Math.PI;
-    while (a > 2 * Math.PI) a -= 2 * Math.PI;
-    return (Math.floor((a + off) / arc) + 16) % 16;
-  };
-  const sideOf = (dirn: number): string =>
-    dirn === 0 ? "E" : dirn === 4 ? "N" : dirn === 8 ? "W" : dirn === 12 ? "S"
-      : dirn < 4 ? "NE" : dirn < 8 ? "NW" : dirn < 12 ? "SW" : "SE";
+  // Graph centroid over the ring vertices.
+  const sideVertexIds = new Set<number>();
+  for (const ring of rings) {
+    if (ring.length === 0) continue;
+    let cx = 0; let cy = 0;
+    for (const [x, y] of ring) { cx += x; cy += y; }
+    cx /= ring.length; cy /= ring.length;
 
-  const num = perim.length;
-  const out = new Set<number>();
-  const cornerIdxs: number[] = [];
-  for (let i = 0; i < num; i++) if (corners.has(perim[i]!)) cornerIdxs.push(i);
-  if (cornerIdxs.length === 0) return [];
-  for (const from of cornerIdxs) {
-    // @java findSides — run extends to the NEXT corner (inclusive both ends)
-    let to = from;
-    do { to = (to + 1) % num; } while (!corners.has(perim[to]!) && to !== from);
-    const runLength = (to - from + num) % num;
-    let avgX = traj.xOf(perim[from]!);
-    let avgY = traj.yOf(perim[from]!);
-    for (let r = 0; r < runLength; r++) {
-      const s = perim[(from + 1 + r) % num]!;
-      avgX += traj.xOf(s); avgY += traj.yOf(s);
+    const poly: [number, number][] = ring.map(([x, y]) => [x, y]);
+    const { convexIdx, concaveIdx } = cornersFromPerimeterTyped(poly);
+    const cornerIdx = new Set<number>([...convexIdx, ...concaveIdx]);
+    if (cornerIdx.size === 0) continue;
+
+    // @java MeasureGraph.discreteDirection(angle, 16)
+    const discrete = (angle: number): number => {
+      const arc = (2 * Math.PI) / 16;
+      const off = arc / 2;
+      let a = angle;
+      while (a < 0) a += 2 * Math.PI;
+      while (a > 2 * Math.PI) a -= 2 * Math.PI;
+      return (Math.floor((a + off) / arc) + 16) % 16;
+    };
+    const sideOf = (dirn: number): string =>
+      dirn === 0 ? "E" : dirn === 4 ? "N" : dirn === 8 ? "W" : dirn === 12 ? "S"
+        : dirn < 4 ? "NE" : dirn < 8 ? "NW" : dirn < 12 ? "SW" : "SE";
+
+    const num = ring.length;
+    for (const from of cornerIdx) {
+      let to = from;
+      do { to = (to + 1) % num; } while (!cornerIdx.has(to) && to !== from);
+      const runLength = (to - from + num) % num;
+      let avgX = ring[from]![0];
+      let avgY = ring[from]![1];
+      for (let r = 0; r < runLength; r++) {
+        const e = ring[(from + 1 + r) % num]!;
+        avgX += e[0]; avgY += e[1];
+      }
+      avgX /= runLength + 1; avgY /= runLength + 1;
+      const dirn = discrete(Math.atan2(avgY - cy, avgX - cx));
+      if (sideOf(dirn) !== dirName) continue;
+      for (let r = 0; r <= runLength; r++) sideVertexIds.add(ring[(from + r) % num]![2]);
     }
-    avgX /= runLength + 1; avgY /= runLength + 1;
-    const dirn = discrete(Math.atan2(avgY - cy, avgX - cx));
-    if (sideOf(dirn) !== dirName) continue;
-    for (let r = 0; r <= runLength; r++) out.add(perim[(from + r) % num]!);
   }
-  return [...out];
+  if (sideVertexIds.size === 0) return [];
+
+  const trajAny = t as unknown as {
+    kind?: string;
+    playType?: unknown;
+    core?: { topo?: { faceEls?: Array<{ id: number; vertices: Array<{ id: number }> }> } };
+  };
+  // Vertex play: side sites are the vertices themselves.
+  if ((trajAny.kind ?? String(trajAny.playType)) === "Vertex") {
+    return [...sideVertexIds].filter((id) => id >= 0 && id < t.numSites).sort((a, b) => a - b);
+  }
+  // Cell play: faces inherit the sides of their vertices.
+  const faceEls = trajAny.core?.topo?.faceEls;
+  if (!faceEls) return [];
+  const out: number[] = [];
+  for (const f of faceEls) {
+    if (f.vertices.some((v) => sideVertexIds.has(v.id))) out.push(f.id);
+  }
+  return out.sort((a, b) => a - b);
 }
 
 

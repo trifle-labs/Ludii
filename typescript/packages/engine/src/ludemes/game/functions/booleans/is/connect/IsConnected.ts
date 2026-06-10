@@ -12,6 +12,7 @@
  */
 
 import type { Context } from "../../../../../../context.js";
+import { boardSides } from "../../../region/sites/Sites.js";
 import type { BooleanFunction, RegionFunction } from "../../../../../base.js";
 
 interface BoardLike {
@@ -82,6 +83,20 @@ function playerConnectionRegions(ctx: Context, pid: number): number[][] {
   return out;
 }
 
+/**
+ * Every non-empty board side as a separate target set.
+ * @java IsConnected.java — staticRegions = RegionTypeStatic.Sides resolves to
+ * topology.sides(type): one site list per compass direction.
+ */
+function sidesAsTargets(ctx: Context): number[][] {
+  const out: number[][] = [];
+  for (const dir of ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]) {
+    const sites = boardSides(ctx, dir);
+    if (sites.length > 0) out.push(sites);
+  }
+  return out;
+}
+
 export class IsConnected implements BooleanFunction {
   /** @java IsConnected.regionsToConnectFn */
   private readonly regions: readonly RegionFunction[] | null;
@@ -93,9 +108,21 @@ export class IsConnected implements BooleanFunction {
    *                   @Opt Direction directions, @Or RegionFunction[] regions, @Or RoleType role,
    *                   @Or RegionTypeStatic regionType)
    */
-  public constructor(regions: readonly RegionFunction[] | null, role: string | null) {
+  /** @java IsConnected.staticRegions — RegionTypeStatic (e.g. Sides). */
+  private readonly regionType: string | null;
+  /** @java IsConnected.number — minimum number of regions to connect. */
+  private readonly numberFn: { eval(ctx: unknown): number } | number | null;
+
+  public constructor(
+    regions: readonly RegionFunction[] | null,
+    role: string | null,
+    regionType: string | null = null,
+    numberFn: { eval(ctx: unknown): number } | number | null = null,
+  ) {
     this.regions = regions;
     this.role = role ?? "Mover";
+    this.regionType = regionType;
+    this.numberFn = numberFn;
   }
 
   /** @java IsConnected.eval(Context) — flood the mover's group, require every target touched. */
@@ -105,10 +132,21 @@ export class IsConnected implements BooleanFunction {
       : r === "Next" ? (ctx.state.mover % ctx.game.numPlayers) + 1
       : r === "Prev" ? ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1
       : /^P\d+$/.test(r) ? Number(r.slice(1)) : ctx.state.mover;
-    const targets = this.regions !== null && this.regions.length > 0
-      ? this.regions.map((fn) => fn.eval(ctx as never))
-      : playerConnectionRegions(ctx, pid);
+    // @java IsConnected.eval — staticRegions (RegionTypeStatic.Sides): every
+    // non-empty compass side of the board is one target set ((is Connected 3
+    // Sides) in the Y family: connect any `number` of the board's sides).
+    const targets = this.regionType === "Sides"
+      ? sidesAsTargets(ctx)
+      : this.regions !== null && this.regions.length > 0
+        ? this.regions.map((fn) => fn.eval(ctx as never))
+        : playerConnectionRegions(ctx, pid);
     if (targets.length === 0) return false;
+    // @java final int numRegionToConnect = (number != null) ? number.eval(context) : sitesRegions.size();
+    const required = this.numberFn === null
+      ? targets.length
+      : typeof this.numberFn === "number"
+        ? this.numberFn
+        : this.numberFn.eval(ctx);
 
     const board = (ctx.game as unknown as { equipment: { board: BoardLike } }).equipment.board;
     const owned = new Set<number>();
@@ -135,7 +173,8 @@ export class IsConnected implements BooleanFunction {
           }
         }
       }
-      if (touched.size === targetSets.length) return true;
+      // @java if (numRegionConnected == numRegionToConnect) return true;
+      if (touched.size >= required) return true;
     }
     return false;
   }

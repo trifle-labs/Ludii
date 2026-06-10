@@ -406,7 +406,11 @@ export class Is extends BaseBooleanFunction {
       // @java case Connected: new IsConnected(number, type, at, directions, regions, role, regionType)
       const regions = Array.isArray(_regions) ? (_regions as never[]) : (_regions ? [_regions as never] : null);
       const role = typeof _role === "string" ? _role : null;
-      return new IsConnected(regions, role);
+      // @java RegionTypeStatic (e.g. (is Connected 3 Sides)) + the minimum
+      // number of regions to connect — IsConnected.java staticRegions/number.
+      const regionType = typeof _regionType === "string" ? _regionType : null;
+      const numberFn = _number as { eval(ctx: unknown): number } | number | null;
+      return new IsConnected(regions, role, regionType, numberFn ?? null);
     }
     throw new Error("Is(): A ported IsConnectType variant is not implemented.");
   }

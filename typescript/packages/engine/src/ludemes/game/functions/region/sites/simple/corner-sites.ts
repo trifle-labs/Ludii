@@ -75,7 +75,7 @@ function sideClockwise(
  *
  * @java Core/src/other/util/graph/MeasureGraph.java — cornersFromPerimeter
  */
-function cornersFromPerimeterTyped(
+export function cornersFromPerimeterTyped(
   poly: readonly [number, number][],
 ): { convexIdx: Set<number>; concaveIdx: Set<number> } {
   const num = poly.length;
@@ -159,7 +159,7 @@ interface VertexLike { readonly pt: { readonly x: number; readonly y: number } }
  * Access perimeter vertex positions in ring order from a Trajectories object.
  * Returns null if the data is inaccessible.
  */
-function perimeterVertexRings(traj: Trajectories): Array<Array<readonly [number, number, number]>> | null {
+export function perimeterVertexRings(traj: Trajectories): Array<Array<readonly [number, number, number]>> | null {
   // Access (traj as any).perimeterVertexIds — ordered ring(s) of vertex ids.
   // In practice a single connected board has one ring; multi-ring boards (rare)
   // may have several. We process each ring independently.
