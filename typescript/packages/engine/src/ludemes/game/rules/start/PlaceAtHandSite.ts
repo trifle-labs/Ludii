@@ -49,22 +49,15 @@ export class PlaceAtHandSite implements StartRule {
 
   /** @java game/rules/start/... — eval(Context). Bridge arrays + facade equipment. */
   public eval(ctx: Context): void {
-    const a = (ctx as unknown as {
-      _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
-    })._startArrays;
-    if (!a) return;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
+    if (!cs) return;
     const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
-    this.applyImpl(a.cells, a.whats, a.countAt, g.equipment, g.numPlayers, a.stateAt, a.valueAt);
+    this.applyImpl(cs, g.equipment);
   }
 
   private applyImpl(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
+    cs: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void },
     equipment: Equipment1to1,
-    numPlayers: number,
-    stateAt?: number[],
-    valueAt?: number[],
   ): void {
     // Resolve owner from role.
     let owner: number;
@@ -86,7 +79,7 @@ export class PlaceAtHandSite implements StartRule {
     }
 
     const handSite = equipment.handSiteFor(owner, this.offset);
-    if (handSite < 0 || handSite >= cells.length) return;
+    if (handSite < 0) return;
 
     // Find the piece component by name (try with owner suffix, then without).
     // Ludii piece IDs are constructed as <BaseName><PlayerIdx>, e.g. "Disc11" = piece "Disc1" owned by P1.
@@ -129,16 +122,7 @@ export class PlaceAtHandSite implements StartRule {
     }
     if (!piece) return;
 
-    cells[handSite] = owner;
-    whats[handSite] = piece.index;
-    countAt[handSite] = this.count; // `count:N` pieces available at this hand slot
-    // Apply state:N if specified (e.g. EinStein cube numbers 1–6).
-    // @java ActionAdd.apply() — sets stateAt when the start rule carries state:.
-    if (stateAt && this.stateValue >= 0) {
-      stateAt[handSite] = this.stateValue;
-    }
-    if (valueAt && this.valueValue >= 0) {
-      valueAt[handSite] = this.valueValue;
-    }
+    // @java ActionAdd.apply() -> ContainerState.setSite(...) (state:N for EinStein cubes)
+    cs.setSite(handSite, owner, piece.index, this.count, this.stateValue >= 0 ? this.stateValue : -1, this.valueValue >= 0 ? this.valueValue : -1);
   }
 }

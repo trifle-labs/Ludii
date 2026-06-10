@@ -49,18 +49,15 @@ export class PlaceHandCount implements StartRule {
    */
   /** @java game/rules/start/... — eval(Context). Bridge arrays + facade equipment. */
   public eval(ctx: Context): void {
-    const a = (ctx as unknown as {
-      _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
-    })._startArrays;
-    if (!a) return;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void; who(site: number): number; what(site: number): number } })._startState;
+    if (!cs) return;
     const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
-    this.applyImpl(a.cells, a.whats, a.countAt, g.equipment, g.numPlayers);
+    this.applyImpl(ctx, cs, g.equipment, g.numPlayers);
   }
 
   private applyImpl(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
+    _ctx: Context,
+    cs: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void; who(site: number): number; what(site: number): number },
     equipment: Equipment1to1,
     numPlayers: number,
   ): void {
@@ -79,28 +76,20 @@ export class PlaceHandCount implements StartRule {
       const base = equipment.handSiteFor(p, 0);
       if (base < 0) continue;
 
-      // Find the first empty slot in this player's hand.
+      // Find the first empty slot in this player's hand (reads via the
+      // bridge State's @java ContainerState accessors; writes via setSite).
       let slotFound = false;
       for (let offset = 0; offset < hand.size; offset++) {
         const slot = base + offset;
-        if (slot >= cells.length) break;
-        // Empty slot: cells[slot] === 0 AND whats[slot] === 0
-        if ((cells[slot] ?? 0) === 0 && (whats[slot] ?? 0) === 0) {
-          cells[slot] = p;
-          whats[slot] = piece.index;
-          countAt[slot] = this.count;
+        if (cs.who(slot) === 0 && cs.what(slot) === 0) {
+          cs.setSite(slot, p, piece.index, this.count, -1, -1);
           slotFound = true;
           break;
         }
       }
       if (!slotFound) {
         // Fallback: use slot 0 (overwrite)
-        const slot = base;
-        if (slot < cells.length) {
-          cells[slot] = p;
-          whats[slot] = piece.index;
-          countAt[slot] = this.count;
-        }
+        cs.setSite(base, p, piece.index, this.count, -1, -1);
       }
     }
   }

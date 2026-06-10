@@ -832,6 +832,15 @@ export class Game1to1 implements Game {
       setAmount: (pid: number, amount: number): void => {
         if (amounts && pid >= 0 && pid < amounts.length) amounts[pid] = amount;
       },
+      /** @java ContainerState.who(site) — LIVE read (the per-rule bridge State
+       * snapshots the arrays at construction; intra-rule reads need the live view). */
+      who: (site: number): number => (site >= 0 && site < cells.length ? cells[site]! : 0),
+      /** @java ContainerState.what(site) — LIVE read. */
+      what: (site: number): number => {
+        if (site < 0 || site >= cells.length) return 0;
+        const w = whats[site] ?? 0;
+        return w !== 0 ? w : (cells[site] ?? 0);
+      },
     };
     ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
       if (site < 0 || site >= cells.length) return;
