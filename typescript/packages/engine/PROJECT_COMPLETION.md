@@ -1710,3 +1710,28 @@ carrying effect (FromToFaithful + the MoveAPiece/trackSite path), evaluate the
 Apply against the PRE-move occupant of the to-site and PREPEND its actions
 (victim to mapEntry(next) BEFORE the attacker's Move) — exactly the recorded
 order. DEBUG_PLY=<n> on the harness is the verification loop.
+
+## Update 77 (2026-06-10) — Backgammon plies 0-127 MATCH; bear-off endgame is the open seam
+
+THE BLOT-HIT FIX (the big one): capture effect actions are PREPENDED — Java
+records the VICTIM'S relocation before the attacker's move; appended order
+relocated the ATTACKER off the stack top onto the enemy bar. With FromTo pinning
+its decision from/to, trial 0 leapt ply 12 -> 128 (and trial 1 3 -> 123 -> 125
+after ForEachSite gained its then via applyPostStateThen).
+
+OPEN SEAM at ply 128 (bear-off), measured:
+- State matches EXACTLY at ply 128 (both sides' 15 pieces, dice [0,5], mover 2).
+- rec: Remove at site 9 — this is the noMoveYet: OVERSHOOT arm
+  (firstMoveOnTrack "Track" Mover (if "HaveAPieceAndCanEscape" "RemoveAPiece")):
+  with pip 5 nothing escapes exactly (IsEndTrack = (= walk End=-2)), the main
+  arm is empty, and the FARTHEST-BACK piece (track-order-first = site 9) removes.
+- TS produced Remove at 12 from the MAIN arm — wrong twice: walk(12,5) verified
+  = OFF(-1) not End(-2) (direct TrackSiteMove probes: walk(9,4)=-2 correct,
+  walk(12,1)=-2 correct, the walk tail is byte-identical to Java), so the
+  compiled CanEscape's no-name trackSite path (ownedTracks(player) selection or
+  the (pips) binding inside ForEachDie iteration) resolves differently than the
+  direct probe. NEXT: instrument the compiled CanEscape at ply 128 via DEBUG_PLY
+  + a temporary trace in TrackSiteMove (dump track-selection + steps value), and
+  implement FirstMoveOnTrack's track-order-first semantics check.
+Tracks verified correct (Track1/Track2 elems match the define; End=-2 with
+next=OFF). DEBUG_PLY=<n> remains the verification loop.
