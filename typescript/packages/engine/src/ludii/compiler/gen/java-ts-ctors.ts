@@ -516,7 +516,7 @@ import { PlayersTeam1to1 as C512 } from "../../../ludemes/game/functions/intArra
 import { PlayersTeam as C513 } from "../../../ludemes/game/functions/intArray/players/team/PlayersTeam.js";
 import { BaseIntArrayFunction as C514 } from "../../../ludemes/game/functions/intArray/BaseIntArrayFunction.js";
 import { ValuesRemembered as C515 } from "../../../ludemes/game/functions/intArray/values/ValuesRemembered.js";
-import { ValuesRemembered1to1 as C516 } from "../../../ludemes/game/functions/intArray/values/Values1to1.js";
+import { Values as C516 } from "../../../ludemes/game/functions/intArray/values/ValuesFn.js";
 import { Rotations as C517 } from "../../../ludemes/game/functions/intArray/state/Rotations.js";
 import { If1to1 as C518 } from "../../../ludemes/game/functions/intArray/math/If1to1.js";
 import { Results1to1 as C519 } from "../../../ludemes/game/functions/intArray/math/Results1to1.js";

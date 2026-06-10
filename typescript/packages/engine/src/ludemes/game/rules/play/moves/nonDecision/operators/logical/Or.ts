@@ -41,8 +41,8 @@ export class Or implements MovesFunction {
    */
   public constructor(
     movesA: MovesFunction | MovesFunction[],
-    movesB?: MovesFunction | ThenLike | null,
-    then?: ThenLike | null,
+    movesB: MovesFunction | ThenLike | null = null,
+    then: ThenLike | null = null,
   ) {
     if (Array.isArray(movesA)) {
       // (Moves[], Then?)
