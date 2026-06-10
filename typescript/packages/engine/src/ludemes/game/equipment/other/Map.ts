@@ -19,8 +19,13 @@ import type { Context } from "../../../../context.js";
 
 /** Java Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
-/** Java Constants.OFF = -2 */
-const OFF = -2;
+/**
+ * Java Constants.OFF = -1 (Constants.java:83) — NOT -2 (that's END).
+ * computeMap gates the string-coordinate fallback on `intKey/intValue == OFF`;
+ * with -2 the fallback never ran and every (pair P1 "D1")-style map entry was
+ * silently dropped (Ashtapada's Entry/Exit maps compiled empty).
+ */
+const OFF = -1;
 
 /**
  * Minimal interface for a Board needed by Map.computeMap().

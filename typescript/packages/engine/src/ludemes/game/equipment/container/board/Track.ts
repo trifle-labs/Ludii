@@ -238,7 +238,7 @@ export class Track {
     // trackDirection path requires topology; deferred in TS port.
   }
 
-  public buildTrack(width: number, height: number, traj?: { numSites: number; step(site: number, dir: string): number } | null): void {
+  public buildTrack(width: number, height: number, traj?: { numSites: number; step(site: number, dir: string): number; radialsByName?(site: number, dirName: string): number[][] } | null): void {
     if (this._track !== null) {
       this.buildFromIntArray(this._track);
       return;
@@ -249,17 +249,35 @@ export class Track {
   }
 }
 
+/**
+ * @java Core/src/game/equipment/container/board/Track.java:220-318 —
+ * trackDirection parsing. The spec is a comma list of site indices, compass
+ * runs and "End": a NUMBER jumps `current` to that site and appends it
+ * (always — Java never deduplicates); a DIRECTION token (optionally suffixed
+ * with a step count, e.g. "N3") walks the topology RADIAL from `current` in
+ * that direction, appending every step (the whole radial when no count, else
+ * at most `size` steps); "End" appends Constants.END. Radials follow the
+ * board's real adjacency, which is what makes spiral tracks on merged boards
+ * (Asi Keliya, Ashta-kashte) come out right — grid arithmetic does not.
+ */
 function parseTrackDirection(
   spec: string,
   width: number,
   height: number,
-  traj?: { numSites: number; step(site: number, dir: string): number } | null,
+  traj?: {
+    numSites: number;
+    step(site: number, dir: string): number;
+    radialsByName?(site: number, dirName: string): number[][];
+  } | null,
 ): number[] {
   const toks = spec.split(",").map((t) => t.trim()).filter(Boolean);
   if (toks.length === 0 || width <= 0 || height <= 0) return [];
   const start = Number.parseInt(toks[0]!, 10);
   if (!Number.isInteger(start) || start < 0) return [];
-  const boardSize = width * height;
+  const boardSize = traj?.numSites ?? width * height;
+
+  // Single-step fallback when the board exposes no radial query: the radial in
+  // direction d from `site` is the chain step(site,d), step(…,d), … to the edge.
   const stepOf = (site: number, dir: string): number => {
     if (traj && site >= 0 && site < traj.numSites) return traj.step(site, dir.toUpperCase());
     if (site >= boardSize) return -1;
@@ -273,33 +291,59 @@ function parseTrackDirection(
       default: return -1;
     }
   };
-  const out: number[] = [start];
-  let cur = start;
+  // @java topology.trajectories().radials(type, current, dirn.toAbsolute()) —
+  // each radial is a site chain beginning with `current`.
+  const radialsOf = (site: number, dir: string): number[][] => {
+    if (traj && typeof traj.radialsByName === "function") {
+      const rs = traj.radialsByName(site, dir.toUpperCase());
+      if (rs.length > 0) return rs;
+    }
+    const chain: number[] = [site];
+    let next = stepOf(site, dir);
+    while (next >= 0 && chain.length <= boardSize) {
+      chain.push(next);
+      next = stepOf(next, dir);
+    }
+    return chain.length > 1 ? [chain] : [];
+  };
+
+  const trackList: number[] = [start];
+  // @java Cell current = (start < cells.size()) ? cells.get(start) : null;
+  let current: number | null = start < boardSize ? start : null;
+
   for (let i = 1; i < toks.length; i += 1) {
     const tok = toks[i]!;
-    if (tok.toLowerCase() === "end") {
-      out.push(END);
-      break;
-    }
     const asInt = Number.parseInt(tok, 10);
     if (!Number.isNaN(asInt) && String(asInt) === tok) {
-      if (!out.includes(asInt)) out.push(asInt);
-      cur = asInt;
+      // @java number step — jump current and append unconditionally
+      current = asInt < boardSize ? asInt : null;
+      trackList.push(asInt);
       continue;
     }
-    const match = tok.match(/^([A-Za-z]+)(\d+)?$/);
-    const dir = match?.[1] ?? tok;
-    const limit = match?.[2] ? Number.parseInt(match[2], 10) : Infinity;
-    let steps = 0;
-    let next = stepOf(cur, dir);
-    while (next >= 0 && steps < limit && !out.includes(next)) {
-      out.push(next);
-      cur = next;
-      steps += 1;
-      next = stepOf(cur, dir);
+    if (tok === "End") {
+      // @java trackList.add(Constants.END)
+      trackList.push(END);
+      continue;
+    }
+    if (current === null) return trackList; // @java throws IllegalArgumentException
+    // @java split "N3" into direction "N" + size 3 (size UNDEFINED when absent)
+    let direction = "";
+    for (const ch of tok) if (!/\d/.test(ch)) direction += ch;
+    const size = direction.length !== tok.length
+      ? Number.parseInt(tok.slice(direction.length), 10)
+      : UNDEFINED;
+
+    const radials = radialsOf(current, direction);
+    const cap = size === UNDEFINED ? Number.POSITIVE_INFINITY : size + 1;
+    for (const radial of radials) {
+      for (let toIdx = 1; toIdx < radial.length && toIdx < cap; toIdx++) {
+        const site = radial[toIdx]!;
+        current = site;
+        trackList.push(site);
+      }
     }
   }
-  return out;
+  return trackList;
 }
 
 /** Minimal role-owner lookup for Track constructor. */

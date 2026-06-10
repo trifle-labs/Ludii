@@ -26,9 +26,14 @@ export class IfBool implements BooleanFunction {
     ok: BooleanFunction,
     notOk: BooleanFunction | null,
   ) {
-    this.cond = cond;
-    this.ok = ok;
-    this.notOk = notOk;
+    // compileTerminal hands BooleanFunction slots raw booleans for the lud
+    // literals True/False (Ashtapada: `(if (is In ...) (not ...) True)`) —
+    // wrap them so eval() works. @java BooleanConstant
+    const wrap = (b: BooleanFunction | boolean | null): BooleanFunction | null =>
+      typeof (b as unknown) === "boolean" ? { eval: () => b as unknown as boolean } : (b as BooleanFunction | null);
+    this.cond = wrap(cond) as BooleanFunction;
+    this.ok = wrap(ok) as BooleanFunction;
+    this.notOk = wrap(notOk);
   }
 
   /**

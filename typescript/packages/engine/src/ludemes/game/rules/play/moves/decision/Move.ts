@@ -346,8 +346,9 @@ export class Move extends Decision {
   ): MovesFunction {
     switch (moveType) {
       case "Pass":
-        void then;
-        return new Pass();
+        // @java new Pass(then) — the consequence rides the pass (Ashtapada's
+        // re-throw on pips=3 fires even when the player cannot move).
+        return new Pass(then);
       case "PlayCard":
         return new PlayCard(then);
       default:

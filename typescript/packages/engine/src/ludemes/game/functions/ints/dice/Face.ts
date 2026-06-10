@@ -41,6 +41,30 @@ export class Face extends BaseIntFunction {
    */
   public override eval(context: Context): number {
     const loc = this.locn.eval(context);
+    if (loc === OFF) return OFF;
+
+    // Engine path: the die at global site `loc` lives in a dice container at
+    // sitesFrom[dice.index()] + dieIndex, and its CURRENT FACE VALUE is
+    // state.diceValues[dieIndex] (the engine stores resolved values where
+    // Java stores the face index in the site-state channel and resolves
+    // faces[state] here — same result).
+    // @java Face.java — return component.getFaces()[cs.stateCell(loc)]
+    {
+      const game = context.game as unknown as {
+        handDice?: () => Array<{ index(): number; numLocs(): number }>;
+        sitesFrom?: () => number[];
+      };
+      const st = context.state as unknown as { diceValues?: readonly number[] };
+      if (typeof game.handDice === "function" && typeof game.sitesFrom === "function" && Array.isArray(st.diceValues)) {
+        const sitesFrom = game.sitesFrom();
+        for (const dice of game.handDice()) {
+          const base = sitesFrom[dice.index()] ?? -1;
+          if (base >= 0 && loc >= base && loc < base + dice.numLocs()) {
+            return st.diceValues[loc - base] ?? OFF;
+          }
+        }
+      }
+    }
 
     // Java: if (loc == Constants.OFF || context.containerId().length <= loc)
     const containerId_arr = (context as unknown as { containerId?: () => number[] }).containerId?.();

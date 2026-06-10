@@ -187,13 +187,37 @@ function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, M
   };
   const result = new Map<string, Map<number, number>>();
 
+  // @java Game.create — equipment.maps()[i].computeMap(this): the faithful
+  // computeMap resolves string coordinates via SiteFinder against the board
+  // topology and component names against the components list (Ashtapada's
+  // (map "Entry" {(pair P1 "D1") …})). Run it before reading the table.
+  const boardForMap = equipment.board as unknown as {
+    topology?: () => unknown;
+    defaultSite?: (() => string) | string;
+  };
+  const gameForMap = {
+    board: () => ({
+      defaultSite: () => (typeof boardForMap.defaultSite === "function"
+        ? boardForMap.defaultSite()
+        : (boardForMap.defaultSite ?? "Cell")),
+      topology: () => boardForMap.topology?.(),
+    }),
+    equipment: () => ({
+      components: () => [null, ...equipment.pieces.map((p) => ({ name: () => `${p.name}` }))],
+    }),
+  };
+
   for (const item of rawMaps) {
     if (item === null || typeof item !== "object") continue;
     const mapItem = item as {
       name?: () => string | null;
       map?: () => ReadonlyMap<number, number>;
       _mapPairs?: readonly unknown[];
+      computeMap?: (game: unknown) => void;
     };
+    if (typeof mapItem.computeMap === "function" && typeof boardForMap.topology === "function") {
+      try { mapItem.computeMap(gameForMap); } catch { /* fall through to the pair loop */ }
+    }
     const entries = new Map<number, number>(mapItem.map?.() ?? []);
     for (const pair of mapItem._mapPairs ?? []) {
       const pairObj = pair as {
@@ -680,6 +704,7 @@ export class Game implements Game {
       const setNextActEarly = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
       const turningOver = !appliedMove.moveAgain && !(setNextActEarly !== undefined && setNextActEarly.who() === mover);
       if (turningOver && newState.sitesToRemove.length > 0) {
+        if (process.env.TRACE_FLUSH) console.error(`[flush] sitesToRemove=${JSON.stringify([...newState.sitesToRemove])} ply=${(globalThis as Record<string, unknown>).__PLY}`);
         // Remove all deferred capture sites.
         for (const site of newState.sitesToRemove) {
           if (!newState.isEmptySite(site)) {
