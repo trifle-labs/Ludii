@@ -1312,3 +1312,32 @@ ForEachValue1to1 BEFORE or WITH PlaceItem1to1, or make it fall back to child.eva
 After the last impl: delete the applyToInitialState surface from the interface +
 Game1to1's array branch; the bridge becomes the only path; then State convergence
 replaces _startArrays with real ContainerState writes.
+
+## Update 60 (2026-06-10) — STARTRULE eval(Context) MIGRATION COMPLETE
+
+All 19 start-rule implementations are on the Java interface; the legacy
+applyToInitialState surface is DELETED from StartRule, Game1to1 (array branch
+removed) and Start (its eval is now the Java shape: iterate rule.eval(context)).
+Eight battery-gated commits.
+
+What changed beyond the signature (the migration was also a de-contamination):
+- FIVE private fakeContext synthesizers deleted (SetCountStart, PlaceRegion,
+  ForEachValue1to1, PlaceItem1to1's makeFakeCtx, and SetSite's bare-{} evals) —
+  every start rule now evaluates its IntFunction/RegionFunction args on the REAL
+  evolving bridge context, exactly as Java does.
+- SetScore and SetAmount went from documented NO-OPS to REAL: start() allocates
+  scores[]/amounts[], the bridge exposes them via _startArrays, and the initial
+  State is built with them ((set Score ...)/(set Amount ...) start rules now work).
+- SetRememberValue previously silently no-opped on the direct path (Game1to1
+  never passed it a context); it now always has one.
+- The ForEachValue1to1 hazard (optional-chained child dispatch) is gone — child
+  dispatch is rule.eval(ctx), required by the interface.
+
+Still TRANSITION (owned by State convergence): _startArrays itself (Java mutates
+ContainerState through actions), the equipment._initialRemembered/_initialHidden
+side-channels, and the SetTeam/SetPhase/SetCost/Deal/Split deferral no-ops.
+
+Definition-of-complete ledger after today: items 1+2 DONE; item 3 = de-contamination
+DONE for rules/start, re-homing DONE, merge set DONE, StartRule migration DONE;
+remaining: State convergence (the last structure), 3 exotic singles, and the final
+parity re-verification.

@@ -16,16 +16,6 @@ import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
  */
 interface JavaStartRule {
   eval(context: Context): void;
-  applyToInitialState?(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
-    equipment: Equipment1to1,
-    numPlayers: number,
-    stateAt?: number[],
-    valueAt?: number[],
-    context?: Context,
-  ): void;
 }
 
 /**
