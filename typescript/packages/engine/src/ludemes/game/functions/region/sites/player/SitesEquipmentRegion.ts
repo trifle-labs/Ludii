@@ -56,23 +56,43 @@ export class SitesEquipmentRegion extends BaseRegionFunction {
   public override eval(ctx: Context & EvalScratch): number[] {
     const g = ctx.game as unknown as Game;
     const who = this.index !== null ? this.index.eval(ctx) : 0;
+    const equipment = g.equipment as unknown as {
+      playerRegions?: ReadonlyMap<number, { eval(c: unknown): number[] }>;
+      namedPlayerRegions?: ReadonlyMap<string, ReadonlyMap<number, { eval(c: unknown): number[] }>>;
+    } | undefined;
 
-    // @java SitesEquipmentRegion — get regions for this player from equipment
-    const regionFn = g.equipment?.playerRegions?.get(who);
-    if (regionFn) {
-      const sites = regionFn.eval(ctx);
-      // Filter by name if specified
-      if (this.name === "" || this.name === undefined) {
-        return sites;
-      }
-      return sites;
-    }
-
-    // @java SitesEquipmentRegion — fallback: check all player regions
-    if (g.equipment?.playerRegions) {
+    // @java SitesEquipmentRegion.preprocess — regionsPerPlayer[p] collects the
+    // equipment regions whose `region.name().contains(name)` for owner p;
+    // eval(who) UNIONS regionsPerPlayer[who]. The name filter is essential:
+    // Bao's `(sites Mover "Inner")` must select the per-player "Inner" rows,
+    // not whatever region happens to be registered first for that owner.
+    const named = equipment?.namedPlayerRegions;
+    if (named && named.size > 0) {
+      const needle = this.name.toLowerCase();
       const result: number[] = [];
       const seen = new Set<number>();
-      for (const [pid, fn] of g.equipment.playerRegions) {
+      let matchedName = false;
+      for (const [regionName, byOwner] of named) {
+        // @java region.name().contains(name) — substring match ("" matches all)
+        if (!regionName.includes(needle)) continue;
+        matchedName = true;
+        const fn = byOwner.get(who);
+        if (!fn) continue;
+        for (const s of fn.eval(ctx)) {
+          if (!seen.has(s)) { seen.add(s); result.push(s); }
+        }
+      }
+      if (matchedName || this.name !== "") return result;
+    }
+
+    // Unnamed-region fallback (regions registered without a usable name).
+    const regionFn = equipment?.playerRegions?.get(who);
+    if (regionFn) return regionFn.eval(ctx);
+
+    if (equipment?.playerRegions) {
+      const result: number[] = [];
+      const seen = new Set<number>();
+      for (const [pid, fn] of equipment.playerRegions) {
         // @java regionsPerPlayer[who] — only for the specific player
         if (who === 0 || pid === who) {
           for (const s of fn.eval(ctx)) {
