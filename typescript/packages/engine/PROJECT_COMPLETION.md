@@ -574,6 +574,16 @@ LESSON (recurring class): construct dispatchers written pre-lazy-wrapping that t
 plain numbers silently mis-build when handed function objects — grep for `static construct(` with
 `number` params as a hardening sweep candidate.
 
+## Update 21: fidelity-hardening pass STARTED (item 3a first increment)
+- resolveRelativeDir/isSingleDir + COMPASS tables moved to game/util/directions/
+  RelativeDirection.ts (their @java home); faithful Step.ts/Hop.ts repointed; the bespoke step
+  dispatcher re-exports during the transition. Cross-imports: 69 -> 68 (one Hop residual import
+  of a different 1to1 module remains in the count).
+- INVENTORY for the remaining 3a work: the cross-import tail is dominated by the faithful Count.ts
+  (and friends) importing bespoke Count*1to1 implementations one symbol each — de-contaminating
+  means porting each Count*1to1 to its faithful mirrored path (mechanical batch; ideal codex wave
+  when credits return Jun 13 ~8pm). Same shape for the Iterator1to1 From/To/Between adapters.
+
 ## Update 20: delta-measurement + Koro/infra fixes — the item-1 gap is NARROW
 FAITHFUL-vs-BESPOKE DELTA SAMPLE (12 remaining-mismatch games): faithful BEHIND bespoke on only 3
 (El Perro, Pentalath, Gekitai); TIED-failing on 6 (beyond-bespoke, ply-identical: Wolf and Sheep,
