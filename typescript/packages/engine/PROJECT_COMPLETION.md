@@ -1257,3 +1257,21 @@ Remaining 6 singles, with root-cause notes:
 - Throngs (headless-as-Moves residue), Wumpus World (piece-as-Moves), Mutant Y^3
   (named-board string "Y3Board#1", experimental/), Senet ([#] recon placeholder —
   arguably not a real gap).
+
+## Update 58 (2026-06-10) — exotic singles 6 → 3
+
+- **Vanguard + Kriegspiel**: labeled head tokens — Java Token (Common/src/main/grammar/
+  Token.java:555-565) treats `name:(...)` as a parameter-labeled compound; in head
+  position the label is the ludeme token. ArgCompiler now strips a trailing colon from
+  list heads before token resolution (strictly additive: no registry token ends with
+  a colon). `(while:(cond) moves)` → While(cond, moves); `(from: (value))` → From(...).
+- **Senet**: now compiles — cleared en passant by an earlier fix in today's run
+  (empty-define splice or Poly registration).
+
+Remaining 3: Throngs (failure is mid-binder, expanded tree is well-formed — needs a
+dedicated trace), Wumpus World (terminal `piece` vs ForEachDirectionType), Mutant Y^3
+(experimental/, named-board string "Y3Board#1").
+
+Day total: 27 battery-gated commits. Real-game coverage 99.30% → expected higher on
+next audit (Make Muster, HexTrike, Block, Vanguard, Kriegspiel, Senet now compile —
+1289/1292 projected = 99.77%).
