@@ -1504,6 +1504,11 @@ import { Level as CLevelIter } from "../../../ludemes/game/functions/ints/iterat
 import { Score as CScoreState } from "../../../ludemes/game/functions/ints/state/ScoreFn.js";
 import { Pips as CPipsIter } from "../../../ludemes/game/functions/ints/iterator/PipsFn.js";
 import { RegionSite as CRegionSite } from "../../../ludemes/game/functions/ints/board/RegionSite.js";
+import { Next as CNextState } from "../../../ludemes/game/functions/ints/state/NextFn.js";
+import { Prev as CPrevState } from "../../../ludemes/game/functions/ints/state/PrevFn.js";
+import { Counter as CCounterState } from "../../../ludemes/game/functions/ints/state/CounterFn.js";
+import { Sub as CSubFloat } from "../../../ludemes/game/functions/floats/math/SubFloat.js";
+import { Div as CDivFloat } from "../../../ludemes/game/functions/floats/math/DivFloat.js";
 
 export const JAVA_TS_CTORS = new Map();
 JAVA_TS_CTORS.set("game.functions.ints.board.MapEntry", FaithfulMapEntry);
@@ -3012,3 +3017,8 @@ JAVA_TS_CTORS.set("game.functions.ints.iterator.Level", CLevelIter);
 JAVA_TS_CTORS.set("game.functions.ints.state.Score", CScoreState);
 JAVA_TS_CTORS.set("game.functions.ints.iterator.Pips", CPipsIter);
 JAVA_TS_CTORS.set("game.functions.ints.board.RegionSite", CRegionSite);
+JAVA_TS_CTORS.set("game.functions.ints.state.Next", CNextState);
+JAVA_TS_CTORS.set("game.functions.ints.state.Prev", CPrevState);
+JAVA_TS_CTORS.set("game.functions.ints.state.Counter", CCounterState);
+JAVA_TS_CTORS.set("game.functions.floats.math.Sub", CSubFloat);
+JAVA_TS_CTORS.set("game.functions.floats.math.Div", CDivFloat);
