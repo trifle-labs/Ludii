@@ -1501,6 +1501,9 @@ import { If as CIfRegion } from "../../../ludemes/game/functions/region/math/IfR
 import { Size as CSizeInt } from "../../../ludemes/game/functions/ints/size/Size.js";
 import { If as CIfInt } from "../../../ludemes/game/functions/ints/math/IfInt.js";
 import { Level as CLevelIter } from "../../../ludemes/game/functions/ints/iterator/Level.js";
+import { Score as CScoreState } from "../../../ludemes/game/functions/ints/state/ScoreFn.js";
+import { Pips as CPipsIter } from "../../../ludemes/game/functions/ints/iterator/PipsFn.js";
+import { RegionSite as CRegionSite } from "../../../ludemes/game/functions/ints/board/RegionSite.js";
 
 export const JAVA_TS_CTORS = new Map();
 JAVA_TS_CTORS.set("game.functions.ints.board.MapEntry", FaithfulMapEntry);
@@ -3006,3 +3009,6 @@ JAVA_TS_CTORS.set("game.functions.region.math.If", CIfRegion);
 JAVA_TS_CTORS.set("game.functions.ints.size.Size", CSizeInt);
 JAVA_TS_CTORS.set("game.functions.ints.math.If", CIfInt);
 JAVA_TS_CTORS.set("game.functions.ints.iterator.Level", CLevelIter);
+JAVA_TS_CTORS.set("game.functions.ints.state.Score", CScoreState);
+JAVA_TS_CTORS.set("game.functions.ints.iterator.Pips", CPipsIter);
+JAVA_TS_CTORS.set("game.functions.ints.board.RegionSite", CRegionSite);

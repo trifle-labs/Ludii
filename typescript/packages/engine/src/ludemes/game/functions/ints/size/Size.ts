@@ -38,8 +38,8 @@ export class Size extends BaseIntFunction {
 
   /** @java Size.construct(SizeLargePieceType, SiteType, in@Or, at@Or) */
   public static constructLargePiece(_sizeType: string, _type: unknown, inRegion: unknown, at: unknown = null): BaseIntFunction {
-    // SizeLargePiece TS ctor is (intFn, regionFn); the SiteType param is unused here.
-    return new SizeLargePiece((at ?? null) as never, (inRegion ?? null) as never) as unknown as BaseIntFunction;
+    // Exported SizeLargePiece ctor is (type, atFn, inFn) — the Java order.
+    return new SizeLargePiece(_type as never, (at ?? null) as never, (inRegion ?? null) as never) as unknown as BaseIntFunction;
   }
 
   /** @java Size.construct(SizeGroupType, SiteType, at@Name, Direction, If@Name) */

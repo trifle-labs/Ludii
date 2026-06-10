@@ -1098,7 +1098,7 @@ export class ArgCompiler {
     // Trace registry WINS (non-null) — the true bespoke-factory dependency of the
     // faithful path (item-2 deletion worklist). Attempts that return null are probes.
     if (result !== null && result !== undefined && process.env["LUDII_TRACE_REGISTRY"])
-      console.error("[registry]", info.className);
+      console.error("[registry]", info.className, "|", this.lastDivergence?.slice(0, 90) ?? "");
     return result;
   }
 

@@ -60,7 +60,9 @@ export class Coord extends BaseIntFunction {
   public constructor(
     type: SiteType | null,
     coordOrRow: string | JavaIntFunction,
-    column?: JavaIntFunction,
+    // `= undefined`, not `?:` — TS `?` optionals still count in emitted-JS
+    // Function.length, which the faithful-instantiation arity check reads.
+    column: JavaIntFunction | undefined = undefined,
   ) {
     super();
     this.type = type;
