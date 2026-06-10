@@ -1480,6 +1480,7 @@ import { SetDispatch as C1476 } from "../../../ludemes/game/rules/start/set/Set.
 import { NoDispatch as C1477 } from "../../../ludemes/game/functions/booleans/no/No.js";
 import { Min as CMinInt } from "../../../ludemes/game/functions/ints/math/Min.js";
 import { Max as CMaxInt } from "../../../ludemes/game/functions/ints/math/Max.js";
+import { Mul as CMulInt } from "../../../ludemes/game/functions/ints/math/Mul.js";
 import { TopLevel as CTopLevel } from "../../../ludemes/game/functions/ints/stacking/TopLevel.js";
 import { Intersection as CIntersectionRegion } from "../../../ludemes/game/functions/region/math/Intersection.js";
 
@@ -2965,5 +2966,6 @@ JAVA_TS_CTORS.set("game.util.graph.Radial", C1474);
 JAVA_TS_CTORS.set("game.util.graph.GraphElement", C1475);
 JAVA_TS_CTORS.set("game.functions.ints.math.Min", CMinInt);
 JAVA_TS_CTORS.set("game.functions.ints.math.Max", CMaxInt);
+JAVA_TS_CTORS.set("game.functions.ints.math.Mul", CMulInt);
 JAVA_TS_CTORS.set("game.functions.ints.stacking.TopLevel", CTopLevel);
 JAVA_TS_CTORS.set("game.functions.region.math.Intersection", CIntersectionRegion);
