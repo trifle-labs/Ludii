@@ -165,6 +165,8 @@ export class FromTo implements MovesFunction {
           ctx._evalFrom = from;
           ctx._evalTo = to;
           const captureActions = this.captureEffect.eval(ctx).flatMap(m => [...m.actions]);
+          // @java chainRuleWithAction(..., decision=false)
+          for (const a of captureActions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
           actions.unshift(...captureActions);
           ctx._evalFrom = origFrom;
           ctx._evalTo = origTo;

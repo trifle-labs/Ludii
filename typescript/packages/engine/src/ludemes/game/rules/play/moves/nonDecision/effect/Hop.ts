@@ -285,7 +285,10 @@ export class Hop extends Effect {
             const actions: Action[] = [];
             if (this.sideEffect !== null) {
               const sideActions = this.sideEffect.eval(ctx);
-              for (const sm of sideActions) for (const a of sm.actions) actions.push(a);
+              for (const sm of sideActions) for (const a of sm.actions) {
+              (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+              actions.push(a);
+            }
             }
             result.push(this.buildMove("step", from, to, mover, actions));
           }
@@ -335,7 +338,10 @@ export class Hop extends Effect {
                         const actions: Action[] = [];
                         if (this.stopEffect !== null) {
                           const stopMoves = this.stopEffect.eval(ctx);
-                          for (const sm of stopMoves) for (const a of sm.actions) actions.push(a);
+                          for (const sm of stopMoves) for (const a of sm.actions) {
+              (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+              actions.push(a);
+            }
                         }
                         result.push(this.buildMove("stop", from, afterHurdleTo, mover, actions));
                       }
@@ -355,13 +361,19 @@ export class Hop extends Effect {
                       (ctx as unknown as { _evalBetween?: number })._evalBetween = hurdleLoc;
                       if (this.sideEffect !== null) {
                         const sideMoves = this.sideEffect.eval(ctx);
-                        for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
+                        for (const sm of sideMoves) for (const a of sm.actions) {
+              (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+              actions.push(a);
+            }
                       }
                     }
 
                     if (this.stopEffect !== null) {
                       const stopMoves = this.stopEffect.eval(ctx);
-                      for (const sm of stopMoves) for (const a of sm.actions) actions.push(a);
+                      for (const sm of stopMoves) for (const a of sm.actions) {
+              (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+              actions.push(a);
+            }
                     }
 
                     result.push(this.buildMove("jump", from, afterHurdleTo, mover, actions));

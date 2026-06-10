@@ -129,6 +129,8 @@ export class Leap implements MovesFunction {
       // [Remove, Move] — appending relocated the ATTACKER off the square).
       if (this.sideEffect != null) {
         const sideActions = this.sideEffect.eval(ctx).flatMap(m => [...m.actions]);
+        // @java chainRuleWithAction(..., decision=false)
+        for (const a of sideActions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
         actions.unshift(...sideActions);
       }
 

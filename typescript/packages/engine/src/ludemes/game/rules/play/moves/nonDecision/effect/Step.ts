@@ -223,7 +223,13 @@ export class Step extends Effect {
       // @java Step.java:230 — chainRuleWithAction(sideEffect, ...)
       if (this.sideEffect !== null) {
         const sideMoves = this.sideEffect.eval(ctx);
-        for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
+        for (const sm of sideMoves) for (const a of sm.actions) {
+          // @java chainRuleWithAction(..., decision=false) — side-effect
+          // actions are NOT decisions; a decision-flagged Add (capture to
+          // hand) would shadow the step's from()/to().
+          (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+          actions.push(a);
+        }
       }
       const moveAction = new ActionMove({ from, to });
       moveAction.setDecision(true);
@@ -292,7 +298,13 @@ export class Step extends Effect {
         const actions: Action[] = [];
         if (this.sideEffect !== null) {
           const sideMoves = this.sideEffect.eval(ctx);
-          for (const sm of sideMoves) for (const a of sm.actions) actions.push(a);
+          for (const sm of sideMoves) for (const a of sm.actions) {
+          // @java chainRuleWithAction(..., decision=false) — side-effect
+          // actions are NOT decisions; a decision-flagged Add (capture to
+          // hand) would shadow the step's from()/to().
+          (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+          actions.push(a);
+        }
         }
         const moveAction = new ActionMove({ from, to });
         moveAction.setDecision(true);
