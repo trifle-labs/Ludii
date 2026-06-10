@@ -1779,3 +1779,9 @@ ForEachDie eval) + detailed harness action dumps:
 - Results: Chaturanga 2/2 OUTCOME_OK (~300-ply games), Chandaraki 2/2; chaturanga subfamily 8 OK / 8 MM / 9 budget-limited (was 82 MM ~all at ply 0). Ahead defaults steps=1 (Fanorona ply-0 throw).
 - Long-trial budget matters now: chess games >300 plies hit PER_TRIAL_MS and bucket NO_OUTCOME — use PER_TRIAL_MS=20000+ for war sweeps.
 - NEXT: remaining chaturanga MM 8 (incl. Chatrang = 4-player TEAMS subsystem, Hindustani ply-4 knight-ish 4→19, Cittabhramanrpasya alfil 11→29); checkmate/chess subfamily (48); shogi/xiangqi; Fanorona SameDirection; browser/interface pass; teams/cards/hidden subsystems.
+
+## Update 82 (2026-06-11) — Xiangqi/chess wave 3-4
+- Chess wave 3: Slide raw-boolean wrap (Atomic/Alice/Amazon Chess threw at ply 0); WhereSite/ValuePiece engine guards (ctx.state is a PROPERTY — typeof-check duck-calls); ActionSetValue/ActionAdd tolerant ctors (@java actions never validate; OFF site/what<=0 = no-op apply; action.test updated to Java semantics). checkmate/chess in-budget 7 OK / 26 MM (was 0/48).
+- Xiangqi wave: ForEachDirection engine adapters (game property guard, radials→radialsByName, supportedDirections strings, step fallback for to-heading); Column/Row ctor param order matched to Java (@Opt SiteType, @Name of) — args bind in JAVA slot order, `of` had landed in the type slot; directions/If wraps raw direction tokens. Janggi/MiniXiangqi/Manzhouqi/Xiangqi now generate full openings, replay into middlegame; residual = blockable-horse legs (Janggi ply 3-6: rec 88→69/13→3 horse moves missing from our 34-35).
+- KNOWN: Loop Xiangqi moves() pathologically slow (1161 moves/ply) — hangs family sweeps; exclude or investigate.
+- PARAM-ORDER LESSON: TS ludeme constructors MUST mirror Java parameter order exactly (the compiler binds positionally from reflection slots). Column/Row were swapped; audit other ints/board functions when null.eval throws appear.
