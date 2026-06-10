@@ -496,6 +496,7 @@ export class Sites extends BaseRegionFunction {
         // @java return new SitesOccupied(by, By, container, Container, component, Component, components, top, on);
         const byFn = by !== null ? resolveIntFn(by) : null;
         const roleVal = (By !== null ? (By as string) : null) as unknown as null;
+        // @java container:"Hand" + components:{names} restrict the scan
         return new SitesOccupied(
           byFn,
           roleVal,
@@ -503,9 +504,11 @@ export class Sites extends BaseRegionFunction {
           null,
           component,
           _Component,
-          _components as unknown as IntFunction[] | null,
+          null,
           top,
           on,
+          _Container,
+          (_components && _components.length > 0 ? _components : (_Component !== null ? [_Component] : null)),
         );
       }
       default:

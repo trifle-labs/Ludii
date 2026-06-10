@@ -72,6 +72,11 @@ export class SitesOccupied extends BaseRegionFunction {
    * @param siteType      The graph element type (Cell/Vertex/Edge).
    * @java SitesOccupied constructor
    */
+  /** @java SitesOccupied.containerName — restricts to the named container. */
+  private readonly containerName: string | null;
+  /** @java SitesOccupied.componentsNames — component-name filter. */
+  private readonly componentNames: readonly string[] | null;
+
   public constructor(
     who: IntFunction | null,
     role: RoleType | null,
@@ -82,6 +87,8 @@ export class SitesOccupied extends BaseRegionFunction {
     _components: IntFunction[] | null = null,
     top: boolean | null = null,
     siteType: string | null = null,
+    containerName: string | null = null,
+    componentNames: readonly string[] | null = null,
   ) {
     super();
     this.who = by ?? who ?? roleToIntFunction(role);
@@ -89,6 +96,8 @@ export class SitesOccupied extends BaseRegionFunction {
     this.component = component;
     this.top = top ?? true;
     this.siteType = siteType;
+    this.containerName = containerName;
+    this.componentNames = componentNames;
   }
 
   /**
@@ -111,6 +120,41 @@ export class SitesOccupied extends BaseRegionFunction {
     const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
 
     const whoId = this.who.eval(ctx);
+
+    // @java SitesOccupied — container:"Hand" restricts the scan to the
+    // player's HAND sites (Shogi drops: (sites Occupied by:Mover
+    // container:"Hand" components:{...})); without this the scan covered the
+    // BOARD and every piece "dropped" everywhere. componentNames filters by
+    // the component's base name.
+    if (this.containerName !== null && /hand/i.test(this.containerName)) {
+      const eq = g.equipment as unknown as {
+        hands?: readonly { owner: number; size: number }[];
+        pieces?: readonly { index: number; name: string }[];
+      };
+      const gameAny = ctx.game as unknown as { sitesFrom?: () => number[] };
+      const sitesFrom = typeof gameAny.sitesFrom === "function" ? gameAny.sitesFrom() : null;
+      const hands = eq.hands ?? [];
+      if (sitesFrom === null || hands.length === 0) return [];
+      const out: number[] = [];
+      for (let h = 0; h < hands.length; h++) {
+        const hand = hands[h]!;
+        if (hand.owner !== whoId) continue;
+        const base = sitesFrom[1 + h] ?? -1;
+        if (base < 0) continue;
+        for (let i = base; i < base + hand.size; i++) {
+          const what = ctx.state.what(i);
+          if (what <= 0) continue;
+          if (this.componentNames !== null) {
+            const piece = eq.pieces?.find((p) => p.index === what);
+            // @java component-name match ignores the owner suffix
+            const baseName = piece?.name ?? "";
+            if (!this.componentNames.some((n) => baseName === n || baseName.replace(/\d+$/, "") === n)) continue;
+          }
+          out.push(i);
+        }
+      }
+      return out;
+    }
     const role = this.role;
 
     // @java SitesOccupied — if component is specified, filter by component index

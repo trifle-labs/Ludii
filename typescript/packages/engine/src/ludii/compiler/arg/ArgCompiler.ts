@@ -715,11 +715,22 @@ export class ArgCompiler {
         ? this.compileMaybe(byNode, [parseJavaType("game.functions.ints.IntFunction")], env)
         : null;
       if (byNode && byRole === null && byFn === null) return null;
+      // @java container:"Hand"/components:{...} restrict the scan (Shogi drops)
+      const containerNode = parsed.argsIn.find((arg) => arg.parameterName === "container")?.node;
+      const containerName = containerNode && isString(containerNode) ? (containerNode as { value: string }).value : null;
+      const componentsNode = parsed.argsIn.find((arg) => arg.parameterName === "components")?.node;
+      const componentNames = componentsNode && isList(componentsNode)
+        ? (componentsNode.items as readonly unknown[]).filter((it) => isString(it as never)).map((it) => (it as { value: string }).value)
+        : null;
       return Sites.constructOccupied(
         "Occupied" as never,
         byFn as never,
         byRole as never,
-        null, null, null, null, null, null,
+        null,
+        containerName as never,
+        null, null,
+        (componentNames && componentNames.length > 0 ? componentNames : null) as never,
+        null,
         (node.items[2] && isIdent(node.items[2]) && ["Cell","Vertex","Edge"].includes(node.items[2].name) ? node.items[2].name : null) as never,
       );
     }
