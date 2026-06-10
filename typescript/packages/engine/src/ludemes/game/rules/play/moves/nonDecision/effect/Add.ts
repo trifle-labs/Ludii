@@ -20,7 +20,7 @@ import type { Context } from "../../../../../../../context.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { Move } from "../../../../../../../move.js";
 import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
-import type { Then } from "./Then.js";
+import { applyPostStateThen, type Then } from "./Then.js";
 
 interface AddOptions {
   readonly count?: IntFunction | null;
@@ -162,10 +162,9 @@ export class Add implements MovesFunction {
     ctx._evalTo = origTo;
 
     if (this.thenClause !== null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      const thenActions = thenMoves.flatMap((move) => [...move.actions]);
-      const moveAgain = thenMoves.some((move) => move.moveAgain);
-      return moves.map((move) => move.withConsequence(thenActions, moveAgain));
+      // @java Then.java — consequence evaluated in the POST-MOVE context (per move),
+      // so conditions like (is Line 3) see the just-placed piece.
+      return moves.map((move) => applyPostStateThen(this.thenClause, ctx, move));
     }
 
     return moves;

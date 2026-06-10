@@ -11,7 +11,7 @@
 import type { Context } from "../../../../../../../context.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
-import type { Then } from "./Then.js";
+import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
@@ -205,24 +205,9 @@ export class Slide implements MovesFunction {
   /** @java Slide.java — attach then while context.from()/to() name this candidate. */
   private withThen(ctx: Context, move: LudiiMove): LudiiMove {
     if (this.thenClause == null) return move;
-
-    const origFrom = ctx._evalFrom;
-    const origTo = ctx._evalTo;
-    const origBetween = ctx._evalBetween;
-    ctx._evalFrom = move.fromNonDecision();
-    ctx._evalTo = move.toNonDecision();
-    try {
-      const thenMoves = this.thenClause.eval(ctx);
-      if (thenMoves.length === 0) return move;
-      return move.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        thenMoves.some(tm => tm.moveAgain),
-      );
-    } finally {
-      ctx._evalFrom = origFrom;
-      ctx._evalTo = origTo;
-      ctx._evalBetween = origBetween;
-    }
+    // @java Then.java — consequence evaluated in the POST-MOVE context (the move applied
+    // to a simulated state with the move on the trial), per Game.applyInternal.
+    return applyPostStateThen(this.thenClause, ctx, move) as LudiiMove;
   }
 
   /** Build one slide move from→to with optional trail and between effects */
