@@ -1647,3 +1647,26 @@ One coordinated session: build the surface, START-place the die components,
 then Backgammon-family replays should begin matching (the harness's dice
 injection removes RNG divergence). This is THE single highest-leverage item
 left (≈320 trials).
+
+## Update 74 (2026-06-10) — dice workstream OPENED: the Java container surface is up
+
+Backgammon went from "moves() throws at ply 0" to generating real track moves.
+The surface built (all @java-provenanced, battery green incl. the HandSite
+guard interaction):
+- Game.handDice()/getHandDice()/sitesFrom() (@java Game/Equipment) over the
+  diceSpecs+diceSiteBase model (container idx = 1 + hands; one container view).
+- Context.containers() is now the JAVA list — board+hands+dice with
+  isHand/isDice/owner/index, consistent with sitesFrom(). (Adding sitesFrom
+  alone flipped HandSite's Java-path guard and broke the morris family until
+  containers() matched — guard pairs must land together.)
+- Die components appended in Context.components() (roll via ctx.rng.nextInt;
+  what-ids after pieces); die whats placed at dice sites at start.
+- Roll converts Java's global-site ActionUpdateDice to the engine's
+  dice-value mode at the boundary (faces value, not face index).
+- tracks-as-method shims (FirstMoveOnTrack/MaxDistance/TrackSiteMove);
+  board view gains ownedTracks()/tracks(); ForEachPiece top: raw-bool wrap.
+
+REMAINING for race-family green: the track-walk movegen — TS ply-0 moves don't
+include rec 0->17 yet (with harness-injected dice). Next: diff TrackSiteMove's
+walk (steps semantics, ownedTracks selection) against Java TrackSiteMove.java +
+the (forEach Die) pip flow; then Backgammon-family replays should cascade.
