@@ -16,7 +16,7 @@ import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../b
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
-import { Player1to1 } from "../../../../util/moves/Player1to1.js";
+import { Player } from "../../../../util/moves/Player.js";
 import { isIdent } from "@ludii/typescript-language";
 
 function findRoot(parent: number[], pos: number): number {
@@ -47,7 +47,7 @@ export class IsSpanningTree implements BooleanFunction {
   /**
    * @java IsSpanningTree(@Or Player who, @Or RoleType role)
    */
-  public constructor(who: Player1to1 | null, role: RoleTypeFull | null) {
+  public constructor(who: Player | null, role: RoleTypeFull | null) {
     this.whoFn = (role !== null) ? roleToIntFunction(role) : who!.index();
   }
 

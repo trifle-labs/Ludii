@@ -35,8 +35,8 @@ import type {
 } from "../../../../../base.js";
 import type { RangeFunction } from "../../../../functions/range/RangeFunction.js";
 import type { From } from "../../../../util/moves/From.js";
-import type { Piece1to1 } from "../../../../util/moves/Piece1to1.js";
-import type { Player1to1 } from "../../../../util/moves/Player1to1.js";
+import type { Piece } from "../../../../util/moves/Piece.js";
+import type { Player } from "../../../../util/moves/Player.js";
 import type { To } from "../../../../util/moves/To.js";
 import type { Between } from "../../../../util/moves/Between.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
@@ -176,7 +176,7 @@ export class Move extends Decision1to1 {
   public static constructSetNextPlayer(
     moveType: string,
     setType: string,
-    who: Player1to1 | null,
+    who: Player | null,
     nextPlayers: IntArrayFunction | null,
     then: Then | null
   ): MovesFunction {
@@ -265,7 +265,7 @@ export class Move extends Decision1to1 {
    */
   public static constructShoot(
     moveType: string,
-    what: Piece1to1,
+    what: Piece,
     from: From | null,
     dirn: string | null,
     between: Between | null,
@@ -324,8 +324,8 @@ export class Move extends Decision1to1 {
     moveType: string,
     type: string | null,
     locationFn: IntFunction | null,
-    what: Piece1to1,
-    who: Player1to1 | null,
+    what: Piece,
+    who: Player | null,
     role: string | null,
     then: Then | null
   ): MovesFunction {
@@ -415,7 +415,7 @@ export class Move extends Decision1to1 {
    */
   public static constructBet(
     moveType: string,
-    who: Player1to1 | null,
+    who: Player | null,
     role: string | null,
     range: RangeFunction,
     then: Then | null
@@ -433,7 +433,7 @@ export class Move extends Decision1to1 {
    */
   public static constructSite(
     moveType: string,
-    what: Piece1to1 | null,
+    what: Piece | null,
     to: To,
     count: IntFunction | null,
     stack: boolean | null,
@@ -465,7 +465,7 @@ class BetDecision1to1 implements MovesFunction {
   private readonly thenMoves: MovesFunction | null;
 
   public constructor(
-    who: Player1to1 | null,
+    who: Player | null,
     role: string | null,
     range: RangeFunction,
     then: Then | null

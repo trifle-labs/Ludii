@@ -17,10 +17,10 @@ import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, isList, type LudList } from "@ludii/typescript-language";
 import { ActionSetScore } from "../../../../../../../../action/action-set-score.js";
 import type { Then } from "../Then.js";
-import type { Player1to1 } from "../../../../../../util/moves/Player1to1.js";
+import type { Player } from "../../../../../../util/moves/Player.js";
 
 type AddScoreRole = RoleType | "Each";
-type AddScorePlayerArg = Player1to1 | readonly IntFunction[] | null;
+type AddScorePlayerArg = Player | readonly IntFunction[] | null;
 type AddScoreRoleArg = AddScoreRole | readonly AddScoreRole[] | null;
 type AddScoreScoreArg = IntFunction | readonly IntFunction[] | null;
 
@@ -67,7 +67,7 @@ export class AddScore implements MovesFunction {
       return;
     }
 
-    const player = playerOrPlayers as Player1to1 | null;
+    const player = playerOrPlayers as Player | null;
     const role = roleOrRoles as AddScoreRole | null;
     const score = scoreOrScores as IntFunction | null;
     AddScore.checkExactlyOne(player, role);

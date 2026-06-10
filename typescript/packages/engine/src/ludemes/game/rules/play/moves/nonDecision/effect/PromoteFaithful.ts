@@ -2,8 +2,8 @@
 
 import type { IntFunction } from "../../../../../../base.js";
 import type { Then } from "./Then.js";
-import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
-import type { Player1to1 } from "../../../../../util/moves/Player1to1.js";
+import type { Piece } from "../../../../../util/moves/Piece.js";
+import type { Player } from "../../../../../util/moves/Player.js";
 import { Promote } from "./Promote.js";
 import { TO_ITER } from "./EffectCtorAdapters.js";
 
@@ -11,8 +11,8 @@ export class PromoteFaithful extends Promote {
   public constructor(
     type: string | null,
     locationFn: IntFunction | null,
-    what: Piece1to1,
-    who: Player1to1 | null,
+    what: Piece,
+    who: Player | null,
     role: string | null,
     then: Then | null
   ) {

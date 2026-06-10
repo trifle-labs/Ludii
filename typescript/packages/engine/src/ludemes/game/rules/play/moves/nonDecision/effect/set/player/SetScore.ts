@@ -20,7 +20,7 @@ import type { IntFunction, MovesFunction } from "../../../../../../../../base.js
 import { ActionSetScore } from "../../../../../../../../../action/action-set-score.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
 import type { RoleTypeFull } from "../../../../../../../types/play/RoleType.js";
-import type { Player1to1 } from "../../../../../../../util/moves/Player1to1.js";
+import type { Player } from "../../../../../../../util/moves/Player.js";
 import type { Then } from "../../Then.js";
 
 export class SetScore implements MovesFunction {
@@ -44,7 +44,7 @@ export class SetScore implements MovesFunction {
    * @param then   The moves applied after that move is applied.
    */
   public constructor(
-    player: Player1to1 | null,
+    player: Player | null,
     role: RoleTypeFull | null,
     score: IntFunction,
     then: Then | null = null,

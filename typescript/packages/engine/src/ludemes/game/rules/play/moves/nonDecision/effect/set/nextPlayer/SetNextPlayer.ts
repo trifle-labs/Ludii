@@ -13,7 +13,7 @@ import type { IntArrayFunction, MovesFunction } from "../../../../../../../../ba
 import { ActionSetNextPlayer } from "../../../../../../../../../action/action-set-next-player.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
 import { IntArrayConstant } from "../../../../../../../../game/functions/intArray/IntArrayConstant.js";
-import type { Player1to1 } from "../../../../../../../../game/util/moves/Player1to1.js";
+import type { Player } from "../../../../../../../../game/util/moves/Player.js";
 
 /** @java Constants.OFF = -1 */
 const OFF = -1;
@@ -52,7 +52,7 @@ export class SetNextPlayer implements MovesFunction {
    * @param thenMoves   Optional subsequent moves.
    */
   public constructor(
-    who: Player1to1 | null,
+    who: Player | null,
     nextPlayers: IntArrayFunction | null,
     thenMoves: MovesFunction | null = null,
   ) {

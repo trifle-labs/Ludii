@@ -19,7 +19,7 @@ import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction, IntArrayFunction, IntFunction, BooleanFunction, RegionFunction } from "../../../../../../../base.js";
 import { IntArrayFromRegion } from "../../../../../../../other/IntArrayFromRegion.js";
-import type { Player1to1 } from "../../../../../../util/moves/Player1to1.js";
+import type { Player } from "../../../../../../util/moves/Player.js";
 import type { To } from "../../../../../../util/moves/To.js";
 import { SetTeam } from "./team/SetTeam.js";
 import { SetHidden } from "./hidden/SetHidden.js";
@@ -98,7 +98,7 @@ export class Set implements MovesFunction {
     region: RegionFunction | null,
     levelFn: IntFunction | null,
     valueFn: BooleanFunction | null,
-    toPlayer: Player1to1 | IntFunction | null,
+    toPlayer: Player | IntFunction | null,
     toRole: RoleType | null,
     thenMoves: MovesFunction | null,
   ): MovesFunction {
@@ -132,7 +132,7 @@ export class Set implements MovesFunction {
    */
   public static constructNextPlayer(
     _setType: SetNextPlayerType,
-    who: Player1to1 | null,
+    who: Player | null,
     nextPlayers: IntArrayFunction | null,
     thenMoves: MovesFunction | null,
   ): MovesFunction {
@@ -167,7 +167,7 @@ export class Set implements MovesFunction {
    */
   public static constructPlayer(
     setType: SetPlayerType,
-    player: Player1to1 | IntFunction | null,
+    player: Player | IntFunction | null,
     role: RoleType | null,
     valueFn: IntFunction,
     thenMoves: MovesFunction | null,
@@ -247,16 +247,16 @@ export class Set implements MovesFunction {
     }
   }
 
-  private static playerIndexFn(player: Player1to1 | IntFunction | null): IntFunction | null {
+  private static playerIndexFn(player: Player | IntFunction | null): IntFunction | null {
     if (player == null) return null;
     if ("eval" in player && typeof player.eval === "function") return player;
-    return (player as Player1to1).index();
+    return (player as Player).index();
   }
 
-  private static playerHolder(player: Player1to1 | IntFunction | null): Player1to1 | null {
+  private static playerHolder(player: Player | IntFunction | null): Player | null {
     if (player == null) return null;
     if ("index" in player && typeof player.index === "function") return player;
-    return { index: () => player } as Player1to1;
+    return { index: () => player } as Player;
   }
 
   /**

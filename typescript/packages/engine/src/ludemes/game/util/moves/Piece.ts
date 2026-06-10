@@ -1,5 +1,5 @@
 /**
- * Piece1to1.ts
+ * Piece.ts
  * @java game/util/moves/Piece.java
  *
  * Parameter holder for the ``what'' (piece) clause of move generators.
@@ -20,7 +20,7 @@ import type { IntFunction } from "../../../base.js";
  * Specifies operations based on the ``what'' data.
  * @java game/util/moves/Piece.java
  */
-export class Piece1to1 {
+export class Piece {
   /**
    * @java Piece.component — the index of the component (IntFunction).
    * When constructed from a name, this wraps an Id lookup.

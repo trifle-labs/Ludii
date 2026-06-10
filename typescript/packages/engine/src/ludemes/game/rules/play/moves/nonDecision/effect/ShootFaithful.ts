@@ -2,7 +2,7 @@
 
 import type { Then } from "./Then.js";
 import type { From } from "../../../../../util/moves/From.js";
-import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
+import type { Piece } from "../../../../../util/moves/Piece.js";
 import type { To } from "../../../../../util/moves/To.js";
 import type { Between } from "../../../../../util/moves/Between.js";
 import { Shoot } from "./Shoot.js";
@@ -13,7 +13,7 @@ export class ShootFaithful extends Shoot {
   // Defaults on the optional tail keep Function.length at 1, matching Java's
   // single required `what` argument for the ArgCompiler arity gate.
   public constructor(
-    what: Piece1to1,
+    what: Piece,
     from: From | null = null,
     dirn: string | null = null,
     between: Between | null = null,

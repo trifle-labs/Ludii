@@ -28,7 +28,7 @@ import { Effect } from "../../effect/Effect.js";
 import type { DirectionArg } from "../../effect/EffectCtorAdapters.js";
 import type { Between } from "../../../../../../util/moves/Between.js";
 import type { From } from "../../../../../../util/moves/From.js";
-import type { Player1to1 } from "../../../../../../util/moves/Player1to1.js";
+import type { Player } from "../../../../../../util/moves/Player.js";
 import type { To } from "../../../../../../util/moves/To.js";
 import { ForEachDie } from "./die/ForEachDie.js";
 import { ForEachDirection } from "./direction/ForEachDirection.js";
@@ -270,7 +270,7 @@ export class ForEach extends Effect {
     container: IntFunction | null,
     containerName: string | null,
     specificMoves: MovesFunction | null,
-    player: Player1to1 | IntFunction | null,
+    player: Player | IntFunction | null,
     role: RoleType | null,
     top: BooleanFunction | null,
     then: ThenLike | null,
@@ -349,9 +349,9 @@ export class ForEach extends Effect {
     return new ForEachPlayer(players, moves, then as never);
   }
 
-  private static playerIndexFn(player: Player1to1 | IntFunction | null): IntFunction | null {
+  private static playerIndexFn(player: Player | IntFunction | null): IntFunction | null {
     if (player === null) return null;
     if (typeof (player as IntFunction).eval === "function") return player as IntFunction;
-    return (player as Player1to1).index();
+    return (player as Player).index();
   }
 }

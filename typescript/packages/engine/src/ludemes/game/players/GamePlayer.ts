@@ -7,7 +7,7 @@
  * and facing direction. Used by Players1to1 to build the player roster.
  *
  * Named GamePlayer to avoid collision with the unrelated
- * game/util/moves/Player1to1.ts (which is a move-generator parameter holder).
+ * game/util/moves/Player.ts (which is a move-generator parameter holder).
  *
  * Data/structure class — no eval(ctx), not registered in the 1:1 registry.
  */

@@ -1,7 +1,7 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Add.java
 
 import type { IntFunction, RegionFunction } from "../../../../../../base.js";
-import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
+import type { Piece } from "../../../../../util/moves/Piece.js";
 import type { To } from "../../../../../util/moves/To.js";
 import type { Then } from "./Then.js";
 import { Add } from "./Add.js";
@@ -12,7 +12,7 @@ function ownerSuffix(name: string): number | null {
   return match ? Number(match[0]) : null;
 }
 
-function piecePlacement(piece: Piece1to1 | null): { what: IntFunction; owner: number; state?: IntFunction } | null {
+function piecePlacement(piece: Piece | null): { what: IntFunction; owner: number; state?: IntFunction } | null {
   if (piece === null) return null;
 
   const component = piece.component();
@@ -47,7 +47,7 @@ export class AddFaithful extends Add {
   // @Opt@Name Boolean stack, @Opt Then then). Defaults on the optional tail keep
   // Function.length at 2 so the ArgCompiler arity gate accepts forms without them.
   public constructor(
-    what: Piece1to1 | null = null,
+    what: Piece | null = null,
     to: To | null = null,
     count: IntFunction | null = null,
     stack: boolean | null = null,

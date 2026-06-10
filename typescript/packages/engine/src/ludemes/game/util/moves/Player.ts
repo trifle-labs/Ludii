@@ -1,5 +1,5 @@
 /**
- * Player1to1.ts
+ * Player.ts
  * @java game/util/moves/Player.java
  *
  * Parameter holder for the ``who'' clause of move generators.
@@ -25,7 +25,7 @@ const MOVER_DEFAULT = new MoverDefault();
  * Specifies operations based on the ``who'' data.
  * @java game/util/moves/Player.java
  */
-export class Player1to1 {
+export class Player {
   /** @java Player.index — original index function (may be null). */
   private readonly originalIndex: IntFunction | null;
 

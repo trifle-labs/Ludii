@@ -20,7 +20,7 @@ import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../b
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
-import { Player1to1 } from "../../../../util/moves/Player1to1.js";
+import { Player } from "../../../../util/moves/Player.js";
 import { isIdent } from "@ludii/typescript-language";
 
 const ZERO_INT: IntFunction = { eval: () => 0 };
@@ -64,7 +64,7 @@ export class IsRegularGraph implements BooleanFunction {
    *                      BooleanFunction odd, BooleanFunction even)
    */
   public constructor(
-    who: Player1to1 | null,
+    who: Player | null,
     role: RoleTypeFull | null,
     k?: IntFunction | null,
     odd?: BooleanFunction | null,

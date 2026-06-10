@@ -16,7 +16,7 @@
  */
 
 import type { BooleanFunction, IntFunction } from "../../../base.js";
-import type { Player1to1 } from "../../util/moves/Player1to1.js";
+import type { Player } from "../../util/moves/Player.js";
 
 type RoleTypeName = string;
 
@@ -44,7 +44,7 @@ export class NextPhase {
    */
   public constructor(
     role?: RoleTypeName | null,
-    indexPlayer?: Player1to1 | null,
+    indexPlayer?: Player | null,
     cond?: BooleanFunction | null,
     phaseName?: string | null,
   ) {

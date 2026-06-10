@@ -19,12 +19,12 @@ import { ActionNote } from "../../../../../../../action/action-note.js";
 import type { BooleanFunction, DirectionsFunction, EvalScratch, FloatFunction, IntArrayFunction, IntFunction, RegionFunction } from "../../../../../../base.js";
 import type { GraphFunction } from "../../../../../functions/graph/GraphFunction.js";
 import type { RangeFunction, RangeResult } from "../../../../../functions/range/RangeFunction.js";
-import type { Player1to1 } from "../../../../../util/moves/Player1to1.js";
+import type { Player } from "../../../../../util/moves/Player.js";
 import { Effect } from "./Effect.js";
 
 type RoleTypeName = string;
 type DirectionName = string;
-type PlayerArg = Player1to1 | { index(): IntFunction };
+type PlayerArg = Player | { index(): IntFunction };
 type RangeFunctionLike = RangeFunction | {
   eval(ctx: Context & EvalScratch): { min(ctx: Context): number; max(ctx: Context): number } | RangeResult;
 };

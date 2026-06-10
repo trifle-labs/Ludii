@@ -21,7 +21,7 @@ import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../b
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
-import { Player1to1 } from "../../../../util/moves/Player1to1.js";
+import { Player } from "../../../../util/moves/Player.js";
 import { isIdent } from "@ludii/typescript-language";
 
 /** Union-Find: find root with path-compression. */
@@ -61,7 +61,7 @@ export class IsTree implements BooleanFunction {
   /**
    * @java IsTree(@Or Player who, @Or RoleType role)
    */
-  public constructor(who: Player1to1 | null, role: RoleTypeFull | null) {
+  public constructor(who: Player | null, role: RoleTypeFull | null) {
     this.whoFn = role != null ? roleToIntFunction(role) : who!.index();
   }
 

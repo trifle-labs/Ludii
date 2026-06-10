@@ -6,7 +6,7 @@ import type { IntFunction } from "../../../../../base.js";
 import type { SiteType } from "../../../../../other/action/SiteType.js";
 import { IntConstant } from "../../../ints/IntConstant.js";
 import { roleTypeOwner, type RoleTypeFull } from "../../../../types/play/RoleType.js";
-import type { Player1to1 } from "../../../../util/moves/Player1to1.js";
+import type { Player } from "../../../../util/moves/Player.js";
 
 /**
  * Checks if the piece value on a site is hidden to a player.
@@ -41,7 +41,7 @@ export class IsHiddenValue extends BaseBooleanFunction {
     type: SiteType | null,
     at: IntFunction,
     level: IntFunction | null,
-    to: Player1to1 | null,
+    to: Player | null,
     To: RoleTypeFull | null,
   ) {
     super();
@@ -120,7 +120,7 @@ export class IsHiddenValue extends BaseBooleanFunction {
   }
 }
 
-function playerOriginalIndex(player: Player1to1 | null): IntFunction | null {
+function playerOriginalIndex(player: Player | null): IntFunction | null {
   if (player === null) {
     return null;
   }

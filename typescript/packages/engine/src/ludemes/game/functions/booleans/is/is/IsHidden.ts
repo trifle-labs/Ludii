@@ -7,7 +7,7 @@ import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, type LudList } from "@ludii/typescript-language";
 import { IntConstant } from "../../../ints/IntConstant.js";
 import { roleTypeOwner, type RoleTypeFull } from "../../../../types/play/RoleType.js";
-import { Player1to1 } from "../../../../util/moves/Player1to1.js";
+import { Player } from "../../../../util/moves/Player.js";
 
 /**
  * (is Hidden [<SiteType>] at:<site> [level:<int>] to:<player>)
@@ -28,7 +28,7 @@ export class IsHidden implements BooleanFunction {
     type: SiteType | null,
     at: IntFunction,
     level: IntFunction | null,
-    to: Player1to1 | null,
+    to: Player | null,
     To: RoleTypeFull | null,
   );
   public constructor(siteFn: IntFunction, whoFn: IntFunction);
@@ -36,7 +36,7 @@ export class IsHidden implements BooleanFunction {
     type: SiteType | IntFunction | null,
     at: IntFunction,
     level?: IntFunction | null,
-    to?: Player1to1 | null,
+    to?: Player | null,
     To?: RoleTypeFull | null,
   ) {
     if (isIntFunction(type) && level === undefined && to === undefined && To === undefined) {
@@ -96,7 +96,7 @@ function isIntFunction(value: unknown): value is IntFunction {
   return typeof (value as { eval?: unknown } | null)?.eval === "function";
 }
 
-function playerOriginalIndex(player: Player1to1 | null): IntFunction | null {
+function playerOriginalIndex(player: Player | null): IntFunction | null {
   if (player === null) {
     return null;
   }

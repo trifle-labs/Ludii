@@ -64,7 +64,7 @@ import { IsSpanningTree } from "./tree/IsSpanningTree.js";
 import { IsTree } from "./tree/IsTree.js";
 import { IsTreeCentre } from "./tree/IsTreeCentre.js";
 import type { RoleTypeFull } from "../../../types/play/RoleType.js";
-import { Player1to1 } from "../../../util/moves/Player1to1.js";
+import { Player } from "../../../util/moves/Player.js";
 
 type SiteTypeName = "Vertex" | "Edge" | "Cell";
 type RangeLike = Range | { readonly minFn?: IntFunction; readonly maxFn?: IntFunction } | IntFunction;
@@ -86,7 +86,7 @@ function siteType(value: unknown): SiteTypeName | null {
 }
 
 function asIntFunction(value: unknown, fallback: IntFunction | null = null): IntFunction {
-  if (value instanceof Player1to1) return value.index();
+  if (value instanceof Player) return value.index();
   if (value !== null && value !== undefined && typeof (value as { eval?: unknown }).eval === "function")
     return value as IntFunction;
   if (typeof value === "number") return new IntConstant(value);
@@ -114,10 +114,10 @@ function roleToIntFunction(role: unknown): IntFunction {
   };
 }
 
-function playerFrom(value: unknown): Player1to1 | null {
+function playerFrom(value: unknown): Player | null {
   if (value === null || value === undefined) return null;
-  if (value instanceof Player1to1) return value;
-  return new Player1to1(asIntFunction(value));
+  if (value instanceof Player) return value;
+  return new Player(asIntFunction(value));
 }
 
 function playerOrRoleInt(index: unknown, role: unknown): IntFunction {

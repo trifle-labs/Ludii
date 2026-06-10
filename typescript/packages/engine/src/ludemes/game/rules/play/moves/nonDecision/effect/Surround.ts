@@ -36,7 +36,7 @@ import { relationToAbsoluteDirection, type RelationType } from "../../../../../t
 import type { From } from "../../../../../util/moves/From.js";
 import type { Between } from "../../../../../util/moves/Between.js";
 import type { To } from "../../../../../util/moves/To.js";
-import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
+import type { Piece } from "../../../../../util/moves/Piece.js";
 import { Remove } from "./Remove.js";
 import { normaliseFriendAtPlaceholder } from "./EffectCtorAdapters.js";
 
@@ -78,7 +78,7 @@ export class Surround extends Effect {
     between?: Between | null,
     to?: To | null,
     except?: IntFunction | null,
-    withPiece?: Piece1to1 | null,
+    withPiece?: Piece | null,
     then?: Then | null,
   ) {
     super((then ?? null) as unknown as ThenLike | null);

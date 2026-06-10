@@ -29,7 +29,7 @@ import {
   ActionSetHiddenWho,
 } from "../../../../../../../../../action/action-set-hidden.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
-import type { Player1to1 } from "../../../../../../../../game/util/moves/Player1to1.js";
+import type { Player } from "../../../../../../../../game/util/moves/Player.js";
 
 /** @java game/types/board/SiteType.java — minimal subset */
 export type SiteType = "Cell" | "Edge" | "Vertex";
@@ -83,7 +83,7 @@ export class SetHidden implements MovesFunction {
     region: IntArrayFromRegion | IntFunction | RegionFunction,
     level: IntFunction | null | undefined,
     value: BooleanFunction | null | undefined,
-    to: Player1to1 | IntFunction | null | undefined,
+    to: Player | IntFunction | null | undefined,
     To: RoleType | null | undefined,
     then?: MovesFunction | null,
   ) {
@@ -257,7 +257,7 @@ export class SetHidden implements MovesFunction {
     return typeof sites === "function" ? sites.call(value) : [];
   }
 
-  private _playerToIntFunction(player: Player1to1 | IntFunction | null | undefined): IntFunction | null {
+  private _playerToIntFunction(player: Player | IntFunction | null | undefined): IntFunction | null {
     if (player == null) {
       return null;
     }

@@ -24,7 +24,7 @@ import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../b
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
-import { Player1to1 } from "../../../../util/moves/Player1to1.js";
+import { Player } from "../../../../util/moves/Player.js";
 import { isIdent } from "@ludii/typescript-language";
 
 function findRoot(parent: number[], pos: number): number {
@@ -35,7 +35,7 @@ function findRoot(parent: number[], pos: number): number {
   return pos;
 }
 
-type WhoArg = Player1to1 | IntFunction | null;
+type WhoArg = Player | IntFunction | null;
 
 function roleToIntFunction(role: RoleTypeFull): IntFunction {
   const key = role.toLowerCase();
@@ -65,9 +65,9 @@ function roleToIntFunction(role: RoleTypeFull): IntFunction {
 }
 
 function whoToIntFunction(who: WhoArg): IntFunction {
-  if (who instanceof Player1to1) return who.index();
+  if (who instanceof Player) return who.index();
   if (who !== null && typeof who === "object" && "eval" in who && typeof who.eval === "function") return who;
-  return new Player1to1(null).index();
+  return new Player(null).index();
 }
 
 /**

@@ -18,12 +18,12 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch, IntFunction } from "../../../../../base.js";
-import type { Player1to1 } from "../../../../util/moves/Player1to1.js";
+import type { Player } from "../../../../util/moves/Player.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
 
 type RoleTypeName = RoleTypeFull | string;
-type PlayerArgument = Player1to1 | IntFunction | number | {
+type PlayerArgument = Player | IntFunction | number | {
   original?: () => IntFunction | null;
   originalIndex?: () => IntFunction | null;
   index?: () => IntFunction | number;

@@ -14,7 +14,7 @@ import type { MovesFunction, RegionFunction } from "../../../../../../base.js";
 import { isList, type LudNode, type LudList } from "@ludii/typescript-language";
 import { Add } from "./Add.js";
 import type { Then } from "./Then.js";
-import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
+import type { Piece } from "../../../../../util/moves/Piece.js";
 import { To } from "../../../../../util/moves/To.js";
 import { pieceComponent, toRegion } from "./EffectCtorAdapters.js";
 
@@ -26,7 +26,7 @@ export class Claim implements MovesFunction {
   private readonly inner: MovesFunction;
 
   public constructor(
-    what: Piece1to1 | null,
+    what: Piece | null,
     to: To,
     then: Then | null = null,
   ) {

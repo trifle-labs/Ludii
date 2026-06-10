@@ -8,7 +8,7 @@ import { IsFriend } from "../../../../../functions/booleans/is/player/IsFriend.j
 import { Who } from "../../../../../functions/ints/state/Who.js";
 import type { JavaIntFunction } from "../../../../../functions/ints/IntFunction.js";
 import type { From } from "../../../../../util/moves/From.js";
-import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
+import type { Piece } from "../../../../../util/moves/Piece.js";
 import type { To } from "../../../../../util/moves/To.js";
 import type { Between, RangeLike } from "../../../../../util/moves/Between.js";
 
@@ -99,7 +99,7 @@ export function betweenEffect(between: Between | null): MovesFunction | null {
   return between?.effectFn() ?? null;
 }
 
-export function pieceComponent(piece: Piece1to1 | null): IntFunction {
+export function pieceComponent(piece: Piece | null): IntFunction {
   const component = piece?.component() ?? null;
   if (component !== null) return component;
 
@@ -121,7 +121,7 @@ export function pieceComponent(piece: Piece1to1 | null): IntFunction {
   return { eval: (ctx: Context) => ctx.state.mover };
 }
 
-export function pieceComponents(piece: Piece1to1 | null): IntFunction[] | null {
+export function pieceComponents(piece: Piece | null): IntFunction[] | null {
   return piece?.components() ?? null;
 }
 
