@@ -16,6 +16,9 @@ import { BaseRegionFunction } from "../BaseRegionFunction.js";
 
 // ---- Sub-class imports (ported classes) ------------------------------------
 import { SitesContext } from "./context/SitesContext.js";
+import { SitesFrom } from "./moves/SitesFrom.js";
+import { SitesTo } from "./moves/SitesTo.js";
+import { SitesBetween as SitesBetweenMoves } from "./moves/SitesBetween.js";
 import { SitesCoords } from "./coords/SitesCoords.js";
 import { SitesCrossing } from "./crossing/SitesCrossing.js";
 import { SitesCustom } from "./custom/SitesCustom.js";
@@ -279,7 +282,17 @@ export class Sites extends BaseRegionFunction {
   public static constructCoords(
     elementType: string | null,
     coords: string[],
-  ): RegionFunction {
+  ): RegionFunction | null {
+    // @java Sites.construct(SiteType, String[]) — Java overload resolution only
+    // reaches this clause when the args ARE a SiteType + coordinate strings. The
+    // dispatcher tries statics in order, so reject non-matching shapes (idents
+    // like SitesMoveType "From" with a Moves arg) by returning null.
+    if (elementType !== null && !["Cell", "Edge", "Vertex"].includes(elementType)) {
+      if (typeof elementType !== "string" || !/^[A-Za-z]+\d+$/.test(elementType)) return null;
+    }
+    if (!Array.isArray(coords) && typeof coords !== "string") return null;
+    const list = Array.isArray(coords) ? coords : [coords];
+    if (!list.every((c) => typeof c === "string")) return null;
     // @java return new SitesCoords(elementType, coords);
     return new SitesCoords(elementType, coords);
   }
@@ -292,7 +305,11 @@ export class Sites extends BaseRegionFunction {
   public static constructCustom(
     sites: IntFunction[] | null,
     array: IntArrayFunction | null,
-  ): RegionFunction {
+  ): RegionFunction | null {
+    // @java Sites.construct(IntFunction[], IntArrayFunction) — type-gate the clause
+    // (the dispatcher is order-driven; without this, (sites From <moves>) lands here).
+    if (sites !== null && !Array.isArray(sites)) return null;
+    if (sites === null && (array === null || typeof (array as { eval?: unknown }).eval !== "function")) return null;
     // @java if (sites != null) return new SitesCustom(sites); else return new SitesCustom(array);
     if (sites !== null && sites.length > 0) {
       // Wrap array of IntFunctions as a single IntArrayFunction
@@ -877,14 +894,18 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct(SitesMoveType, Moves) → SitesFrom/SitesTo/SitesBetween(moves)
    */
   public static constructMoves(
-    _moveType: string,
-    _moves: unknown,
+    moveType: string,
+    moves: unknown,
   ): RegionFunction {
-    // @java return new SitesFrom/To/Between(moves);
-    // Move-based site classes not yet ported in non-1to1 path
-    return new (class extends BaseRegionFunction {
-      override eval(_ctx: Context & EvalScratch): number[] { return []; }
-    })();
+    // @java Sites.java — case From: new SitesFrom(moves); To: SitesTo; Between: SitesBetween
+    const m = moves as ConstructorParameters<typeof SitesFrom>[0];
+    switch (moveType) {
+      case "From": return new SitesFrom(m);
+      case "To": return new SitesTo(m as ConstructorParameters<typeof SitesTo>[0]);
+      case "Between": return new SitesBetweenMoves(m as ConstructorParameters<typeof SitesBetweenMoves>[0]);
+      default:
+        throw new Error(`Sites(): SitesMoveType not implemented: ${moveType}`);
+    }
   }
 
   /**

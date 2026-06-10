@@ -18,6 +18,7 @@ import { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import { Move as LudiiMove } from "../../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
+import { applyPostStateThen } from "../Then.js";
 
 /**
  * @java game/rules/play/moves/nonDecision/effect/requirement/Do.java
@@ -127,17 +128,28 @@ export class Do implements MovesFunction {
         }
       }
 
-      // Append then().moves() to each passing move.
+      // @java Operator/Effect super(then) — the then consequence applies to every
+      // generated move (Asalto's huff: Move 28->29 + Remove 29 in ONE recorded move).
+      // Same recipe as If/ForEachPiece: bake the post-state then actions in.
       if (this.thenMoves != null) {
-        const thenList = this.thenMoves.eval(ctx);
-        if (thenList.length > 0) {
-          return filtered; // then appended inline by caller in Java
-        }
+        const thenLike = this._thenLike();
+        return filtered.map((m) => applyPostStateThen(thenLike, ctx, m));
       }
       return filtered;
     }
 
+    if (this.thenMoves != null) {
+      const thenLike = this._thenLike();
+      return result.map((m) => applyPostStateThen(thenLike, ctx, m));
+    }
     return result;
+  }
+
+  /** The reflection path hands a Then wrapper ({moves()}) or a bare Moves. */
+  private _thenLike(): { moves(): { eval(ctx: Context): Move[] } } {
+    const t = this.thenMoves as unknown as { moves?: () => { eval(ctx: Context): Move[] } };
+    if (t && typeof t.moves === "function") return t as { moves(): { eval(ctx: Context): Move[] } };
+    return { moves: () => this.thenMoves as unknown as { eval(ctx: Context): Move[] } };
   }
 
   /**
