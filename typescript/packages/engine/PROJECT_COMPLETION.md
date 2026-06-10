@@ -1275,3 +1275,40 @@ dedicated trace), Wumpus World (terminal `piece` vs ForEachDirectionType), Mutan
 Day total: 27 battery-gated commits. Real-game coverage 99.30% → expected higher on
 next audit (Make Muster, HexTrike, Block, Vanguard, Kriegspiel, Senet now compile —
 1289/1292 projected = 99.77%).
+
+## Update 59 (2026-06-10) — StartRule eval(Context) migration STARTED (interface flipped, 2/19 impls converted)
+
+The interface (src/ludemes/game/rules/start/StartRule.ts) is now the Java shape:
+`eval?(context)` is the primary surface; `applyToInitialState?` is an optional
+TRANSITION surface deleted when the last impl converts. Game1to1.applyStartRule
+already dual-dispatches per rule (array surface first, then the eval bridge), so
+impls convert ONE AT A TIME, battery-gated — no big-bang flip needed.
+
+THE RECIPE (established by SetCountStart + PlaceSites):
+1. Replace `applyToInitialState(cells, whats, countAt, equipment, numPlayers, stateAt?, valueAt?)`
+   with `eval(ctx: Context): void`.
+2. Arrays: `const { cells, whats, countAt, stateAt, valueAt } = (ctx as any)._startArrays`
+   (the bridge attaches the SAME arrays Game1to1.start() builds the initial State from).
+3. Equipment: `(ctx.game as any).equipment` (startGameFacade proxy forwards it).
+4. DELETE the impl's private fakeContext — the bridge ctx is a REAL context with
+   trajectories/radials attached; IntFunction/RegionFunction evals run on it directly.
+5. tsc + 24-game battery + commit.
+
+WORKLIST (17 array-shaped impls remain, simplest first):
+- sites family: SetSite, SetCount (set/sites/), SetPhase, SetCost
+- place family: PlaceRegion, PlaceAtHandSite, PlaceHandCount, Deal
+- player-state family (need start() to thread the values into the initial State —
+  small extension of the bridge): SetScore (currently a DEFERRED NO-OP — migration
+  is also a fix), SetAmount, SetRememberValue, SetTeam, SetHidden
+- big pairs (subsumes the last two *1to1 files): PlaceItem1to1 (419 lines; faithful
+  PlaceItem.ts already has an eval path used by the bridge's special case),
+  ForEachValue1to1 + ForEachValue (the start one), Split, Start (thin holder —
+  its eval currently takes arrays; flip to Context iterating rule.eval).
+
+HAZARD noted: ForEachValue1to1 calls `this.startRule.applyToInitialState?.(...)` —
+when its CHILD (typically PlaceItem) migrates, that call silently no-ops. Convert
+ForEachValue1to1 BEFORE or WITH PlaceItem1to1, or make it fall back to child.eval(ctx).
+
+After the last impl: delete the applyToInitialState surface from the interface +
+Game1to1's array branch; the bridge becomes the only path; then State convergence
+replaces _startArrays with real ContainerState writes.
