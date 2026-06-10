@@ -23,6 +23,7 @@ import type { Context } from "../../../../../../../context.js";
 import { radialsForDirection, type CellFlatRadials } from "../../../../../../topology-radials.js";
 import type { Trajectories } from "../../../../../../../eval/graph/trajectories.js";
 import { resolveRelativeDir, isSingleDir } from "./Step1to1.js";
+import { applyPostStateThen } from "./Then.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
@@ -226,6 +227,9 @@ export class Step extends Effect {
     (ctx as unknown as { _evalTo?: number })._evalTo = origTo;
     (ctx as unknown as { _evalFrom?: number })._evalFrom = origFrom;
 
+    // @java Then.java — consequence evaluated in the POST-MOVE context (mill replays etc.)
+    const thenClause = this.then();
+    if (thenClause != null) return result.map((m) => applyPostStateThen(thenClause, ctx, m));
     return result;
   }
 
@@ -293,6 +297,9 @@ export class Step extends Effect {
     (ctx as unknown as { _evalTo?: number })._evalTo = origTo;
     (ctx as unknown as { _evalFrom?: number })._evalFrom = origFrom;
 
+    // @java Then.java — consequence evaluated in the POST-MOVE context
+    const thenClauseR = this.then();
+    if (thenClauseR != null) return result.map((m) => applyPostStateThen(thenClauseR, ctx, m));
     return result;
   }
 

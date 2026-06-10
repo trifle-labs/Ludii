@@ -59,3 +59,53 @@ export class Then {
     return `[Then: ${this._moves}]`;
   }
 }
+
+/**
+ * Evaluate a `(then ...)` consequence in the POST-MOVE context and bake the resulting
+ * actions + moveAgain into the move.
+ *
+ * Java semantics: Game.applyInternal applies the move's actions, records the move on the
+ * trial, THEN evaluates the `then` consequence — so conditions like (is Line 3) see the
+ * just-placed piece and (last To)/(last From) resolve to THIS move. Faithful effects
+ * (FromTo/Step/Slide/...) share this helper instead of evaluating `then` against the
+ * pre-move state at generation time (which silently disabled conditional consequences
+ * like the Morris mill ReplayIfLine3).
+ *
+ * @java game/rules/play/moves/nonDecision/effect/Then.java
+ * @java other/move/Move.java — apply() adds the move to the trial before consequences
+ */
+export function applyPostStateThen(
+  thenLike: unknown,
+  ctx: Context,
+  m: Move,
+): Move {
+  if (thenLike == null) return m;
+  const t = thenLike as { eval?(ctx: Context): Move[]; moves?(): { eval(ctx: Context): Move[] } };
+  const gen = typeof t.eval === "function"
+    ? (t as { eval(c: Context): Move[] })
+    : (typeof t.moves === "function" ? t.moves() : null);
+  if (gen == null || typeof (gen as { eval?: unknown }).eval !== "function") return m;
+
+  let postCtx: Context;
+  try {
+    const postState = m.applyTo(ctx.state, ctx.rng);
+    const postTrial = ctx.trial.withMove(m, false, -1);
+    postCtx = new (ctx.constructor as new (...a: unknown[]) => Context)(ctx.game, postState, postTrial, ctx.rng);
+  } catch { return m; }
+  const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown; _thenContextDepth?: number };
+  const aug = postCtx as Context & { _radials?: unknown; _trajectories?: unknown; _thenContextDepth?: number };
+  aug._radials = src._radials;
+  aug._trajectories = src._trajectories;
+  aug._thenContextDepth = (src._thenContextDepth ?? 0) + 1;
+  postCtx._evalFrom = m.from();
+  postCtx._evalTo = m.to();
+  postCtx._evalValue = 0;
+
+  let thenMoves: Move[];
+  try { thenMoves = gen.eval(postCtx); } catch { return m; }
+  if (thenMoves.length === 0) return m;
+  const extraActions = thenMoves.flatMap((tm) => [...tm.actions]);
+  const moveAgain = thenMoves.some((tm) => tm.moveAgain);
+  if (extraActions.length === 0 && !moveAgain) return m;
+  return m.withConsequence(extraActions, moveAgain);
+}

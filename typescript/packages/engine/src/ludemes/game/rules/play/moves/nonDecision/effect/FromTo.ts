@@ -12,7 +12,7 @@
 import type { Context } from "../../../../../../../context.js";
 import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
-import type { Then } from "./Then.js";
+import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
@@ -182,13 +182,14 @@ export class FromTo implements MovesFunction {
     ctx._evalTo = origTo;
     ctx._evalFrom = origFrom;
 
-    // @java FromTo.java:427 — then clause
+    // @java FromTo.java:427 — then clause.
+    // Java's Then consequence is evaluated in the POST-MOVE context (Game.applyInternal
+    // applies the move's actions, records it on the trial, THEN evaluates `then`), so
+    // conditions like (is Line 3) see the just-placed piece. Evaluate per move against
+    // a simulated post-state, mirroring Then.java semantics.
+    // @java game/rules/play/moves/nonDecision/effect/Then.java — eval in post-move context
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return moves.map(m => m.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      ));
+      return moves.map(m => applyPostStateThen(this.thenClause, ctx, m));
     }
 
     return moves;
