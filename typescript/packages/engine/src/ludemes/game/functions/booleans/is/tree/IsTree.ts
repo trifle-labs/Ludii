@@ -81,7 +81,7 @@ export class IsTree implements BooleanFunction {
     let whoSiteId = this.whoFn.eval(ctx);
     if (whoSiteId === 0) {
       // @java IsTree.java:69-75
-      const w = ctx.state.whatAtSite(siteId);
+      const w = ctx.state.what(siteId);
       whoSiteId = (w === 0) ? 1 : w;
     }
 
@@ -93,7 +93,7 @@ export class IsTree implements BooleanFunction {
     // @java IsTree.java:82-93 — walk edges high-to-low, union vertices
     const numEdges = traj.numSites;
     for (let k = numEdges - 1; k >= 0; k--) {
-      if (ctx.state.whatAtSite(k) !== whoSiteId) continue;
+      if (ctx.state.what(k) !== whoSiteId) continue;
       const endpoints = traj.edgeEndpoints(k);
       if (!endpoints) continue;
       const aRoot = findRoot(parent, endpoints[0]);

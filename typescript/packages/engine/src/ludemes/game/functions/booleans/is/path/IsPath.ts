@@ -187,7 +187,7 @@ export class IsPath implements BooleanFunction {
     for (let k = 0; k < totalEdges; k++) {
       const kEp = traj.edgeEndpoints(k);
       edgeList.push(kEp ? { va: kEp[0], vb: kEp[1] } : { va: -1, vb: -1 });
-      if (ctx.state.whatAtSite(k) === whoSiteId && kEp) {
+      if (ctx.state.what(k) === whoSiteId && kEp) {
         adj[kEp[0]]!.push(kEp[1]);
         adj[kEp[1]]!.push(kEp[0]);
       }
@@ -209,7 +209,7 @@ export class IsPath implements BooleanFunction {
       const adjClosedGraph: number[][] = Array.from({ length: totalVertices }, () => []);
       for (let i = 0; i < totalEdges; i++) {
         const kEp = edgeList[i]!;
-        if (ctx.state.whatAtSite(i) === whoSiteId && kEp.va >= 0) {
+        if (ctx.state.what(i) === whoSiteId && kEp.va >= 0) {
           adjClosedGraph[kEp.va]!.push(kEp.vb);
           adjClosedGraph[kEp.vb]!.push(kEp.va);
           if (sccResult.members.has(kEp.va) && sccResult.members.has(kEp.vb)) {
@@ -231,7 +231,7 @@ export class IsPath implements BooleanFunction {
       // Collect all owned edges
       const edgeBitset = new Set<number>();
       for (let i = 0; i < totalEdges; i++) {
-        if (ctx.state.whatAtSite(i) === whoSiteId) edgeBitset.add(i);
+        if (ctx.state.what(i) === whoSiteId) edgeBitset.add(i);
       }
 
       const depthBitset1 = new Set<number>();

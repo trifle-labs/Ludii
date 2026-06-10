@@ -79,7 +79,7 @@ export class IsPattern implements BooleanFunction {
     if (this.whatsFn !== null) {
       whats = this.whatsFn.map(fn => fn.eval(ctx));
     } else {
-      const what = ctx.state.whatAtSite(from);
+      const what = ctx.state.what(from);
       if (what === 0) return false;
       whats = [what];
     }
@@ -95,7 +95,7 @@ export class IsPattern implements BooleanFunction {
       let whatIndex = 0;
 
       // @java IsPattern.java:120-126: check what at 'from' == whats[0]
-      if (ctx.state.whatAtSite(from) !== whats[whatIndex]!) return false;
+      if (ctx.state.what(from) !== whats[whatIndex]!) return false;
       whatIndex++;
       if (whatIndex === whats.length) whatIndex = 0;
 
@@ -106,7 +106,7 @@ export class IsPattern implements BooleanFunction {
           const to = traj.step(currentLoc, currentDir);
           currentLoc = to;
 
-          if (to < 0 || to === -1 || ctx.state.whatAtSite(to) !== whats[whatIndex]!) {
+          if (to < 0 || to === -1 || ctx.state.what(to) !== whats[whatIndex]!) {
             found = false;
             break;
           }

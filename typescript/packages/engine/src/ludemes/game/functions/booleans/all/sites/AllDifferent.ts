@@ -42,7 +42,7 @@ export class AllDifferent implements BooleanFunction {
         return false;
       }
       // Java: cs.what(site, type) — component index at site
-      const what = ctx.state.whatAtSite(site);
+      const what = ctx.state.what(site);
       if (seen.has(what)) {
         ctx._evalSite = origSite;
         return false;

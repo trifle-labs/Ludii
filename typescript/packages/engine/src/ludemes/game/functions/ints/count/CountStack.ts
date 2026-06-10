@@ -24,7 +24,7 @@ export class CountStack implements IntFunction {
    */
   public eval(ctx: Context): number {
     const site = this.siteFn.eval(ctx);
-    return ctx.state.countAtSite(site);
+    return ctx.state.count(site);
   }
 }
 

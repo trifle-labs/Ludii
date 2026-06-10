@@ -87,7 +87,7 @@ export class Remove implements MovesFunction {
       if (loc < 0) continue;
 
       // @java Remove.java:127-129 — skip empty sites
-      const what = ctx.state.whatAtSite(loc);
+      const what = ctx.state.what(loc);
       if (what <= 0) continue;
 
       // @java Remove.java:131 — applyNow = when != EndOfTurn

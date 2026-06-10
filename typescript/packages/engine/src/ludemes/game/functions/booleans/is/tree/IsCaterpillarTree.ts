@@ -127,7 +127,7 @@ export class IsCaterpillarTree implements BooleanFunction {
 
     let whoSiteId = this.whoFn.eval(ctx);
     if (whoSiteId === 0) {
-      const w = ctx.state.whatAtSite(siteId);
+      const w = ctx.state.what(siteId);
       whoSiteId = (w === 0) ? 1 : w;
     }
 
@@ -146,7 +146,7 @@ export class IsCaterpillarTree implements BooleanFunction {
     for (let k = 0; k < totalEdges; k++) {
       const ep = traj.edgeEndpoints(k);
       edgeList.push(ep ? { va: ep[0], vb: ep[1] } : { va: -1, vb: -1 });
-      if (ctx.state.whatAtSite(k) === whoSiteId) {
+      if (ctx.state.what(k) === whoSiteId) {
         if (!ep) continue;
         const aRoot = findRoot(parent, ep[0]);
         const bRoot = findRoot(parent, ep[1]);

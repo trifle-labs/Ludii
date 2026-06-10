@@ -102,12 +102,12 @@ export class IsSum extends BaseBooleanFunction {
 
     const isResolved = (site: number): boolean => {
       if (cs != null) return cs.isResolved(site, this.type);
-      return context.state.whatAtSite(site) !== 0;
+      return context.state.what(site) !== 0;
     };
 
     const whatAt = (site: number): number => {
       if (cs != null) return cs.what(site, this.type);
-      return context.state.whatAtSite(site);
+      return context.state.what(site);
     };
 
     const ctxEval = context as CtxWithEval;

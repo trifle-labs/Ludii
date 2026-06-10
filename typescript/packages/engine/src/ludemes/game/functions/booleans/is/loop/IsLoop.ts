@@ -92,7 +92,7 @@ export class IsLoop implements BooleanFunction {
 
     if (from >= traj.numSites) return false;
 
-    const what = ctx.state.whatAtSite(from);
+    const what = ctx.state.what(from);
     if (what <= 0) return false;
 
     const colourLoop = this.colourFn.eval(ctx);
@@ -106,7 +106,7 @@ export class IsLoop implements BooleanFunction {
     const adjNeighbours = traj.group(from, "Adjacent");
     for (const to of adjNeighbours) {
       if (outerSet.has(to)) continue;
-      if (ctx.state.whatAtSite(to) !== what) {
+      if (ctx.state.what(to) !== what) {
         aroundSites.push(to);
       }
     }
@@ -128,7 +128,7 @@ export class IsLoop implements BooleanFunction {
         for (const to of orthoNeighbours) {
           if (groupSites.includes(to)) continue;
 
-          if (ctx.state.whatAtSite(to) !== what) {
+          if (ctx.state.what(to) !== what) {
             // Not the loop border: add to interior
             groupSites.push(to);
 
@@ -183,7 +183,7 @@ export class IsLoop implements BooleanFunction {
         if (loopCopy.length === 0) break;
 
         const siteLoop = loopCopy[siteLoopIdx]!;
-        const whatElement = ctx.state.whatAtSite(siteLoop);
+        const whatElement = ctx.state.what(siteLoop);
         if (whatElement !== what) {
           loopCopy.splice(loopCopy.indexOf(siteLoop), 1);
           siteLoopIdx = previousIdx;
@@ -194,7 +194,7 @@ export class IsLoop implements BooleanFunction {
         const candidates = traj.group(siteLoop, this.dirnName(ctx));
         let newSite = -1;
         for (const to of candidates) {
-          const whatTo = ctx.state.whatAtSite(to);
+          const whatTo = ctx.state.what(to);
           if (loopCopy.includes(to) && whatTo === what) {
             newSite = to;
             break;

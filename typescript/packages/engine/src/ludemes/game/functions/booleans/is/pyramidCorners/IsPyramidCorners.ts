@@ -63,7 +63,7 @@ export class IsPyramidCorners implements BooleanFunction {
     for (const from of pivots) {
       if (from < 0 || from >= traj.numSites) continue;
 
-      const fromWhat = ctx.state.whatAtSite(from);
+      const fromWhat = ctx.state.what(from);
 
       // @java IsPyramidCorners.java:103-124 — down search
       {
@@ -80,7 +80,7 @@ export class IsPyramidCorners implements BooleanFunction {
               break;
             }
             sitesEncountered[i] = steps[0]!;
-            idEncountered[i] = ctx.state.whatAtSite(steps[0]!);
+            idEncountered[i] = ctx.state.what(steps[0]!);
           }
           if (!allOk) break;
           // @java IsPyramidCorners.java:120-123: all 4 corners have same what as pivot
@@ -111,7 +111,7 @@ export class IsPyramidCorners implements BooleanFunction {
               break;
             }
             sitesEncountered[i] = steps[0]!;
-            idEncountered[i] = ctx.state.whatAtSite(steps[0]!);
+            idEncountered[i] = ctx.state.what(steps[0]!);
           }
           if (!allOk) break;
           // @java IsPyramidCorners.java:154-157

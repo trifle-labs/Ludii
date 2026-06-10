@@ -78,7 +78,7 @@ export class CardSuit extends BaseIntFunction {
       if (cs) {
         what = (cs as unknown as { what(s: number, t: unknown): number }).what(site, "Cell");
       } else {
-        what = context.state.whatAtSite(site);
+        what = context.state.what(site);
       }
     }
 

@@ -155,7 +155,7 @@ export class IsLine implements BooleanFunction {
     }
 
     const what = level === null
-      ? ctx.state.whatAtSite(pivot)
+      ? ctx.state.what(pivot)
       : ctx.state.whatAtSiteLevel(pivot, level);
     return what === 0 ? new Set<number>() : new Set([what]);
   }
@@ -248,7 +248,7 @@ export class IsLine implements BooleanFunction {
       const site = ray[i];
       if (site === undefined || site < 0 || site >= ctx.state.cells.length) break;
       ctx._evalTo = site;
-      const what = ctx.state.whatAtSite(site);
+      const what = ctx.state.what(site);
       if (targets.has(what) && this.conditionFn.eval(ctx)) {
         count++;
         seenWhats.add(what);

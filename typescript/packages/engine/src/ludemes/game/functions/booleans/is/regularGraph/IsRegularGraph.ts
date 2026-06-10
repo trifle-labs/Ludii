@@ -89,7 +89,7 @@ export class IsRegularGraph implements BooleanFunction {
 
     let whoSiteId = this.whoFn.eval(ctx);
     if (whoSiteId === 0) {
-      const w = ctx.state.whatAtSite(siteId);
+      const w = ctx.state.what(siteId);
       whoSiteId = (w === 0) ? 1 : w;
     }
 
@@ -105,7 +105,7 @@ export class IsRegularGraph implements BooleanFunction {
     for (let k = 0; k < totalEdges; k++) {
       const ep = traj.edgeEndpoints(k);
       if (!ep) continue;
-      if (ctx.state.whatAtSite(k) === whoSiteId) {
+      if (ctx.state.what(k) === whoSiteId) {
         degree[ep[0] as number]! += 1;
         degree[ep[1] as number]! += 1;
       }

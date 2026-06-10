@@ -186,8 +186,8 @@ export class Flip implements MovesFunction {
       moves.push(builtMove);
     } else if (stackSize === 1) {
       // @java Flip.java:117-135 — single piece flip: ActionSetState with new flipped state
-      const currentState = ctx.state.stateAtSite(loc);
-      const whatValue = ctx.state.whatAtSite(loc);
+      const currentState = ctx.state.stateValue(loc);
+      const whatValue = ctx.state.what(loc);
 
       if (whatValue === 0) return moves;
 

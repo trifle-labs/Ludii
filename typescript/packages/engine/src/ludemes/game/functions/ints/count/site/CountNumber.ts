@@ -26,7 +26,7 @@ export class CountNumber implements IntFunction {
     let count = 0;
     for (const s of sites) {
       if (s < 0) continue;
-      count += ctx.state.countAtSite(s);
+      count += ctx.state.count(s);
     }
     return count;
   }

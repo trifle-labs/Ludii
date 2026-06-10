@@ -110,8 +110,8 @@ export class FromTo implements MovesFunction {
       // @java FromTo.java:186-187 — check source occupancy. Mancala captures
       // use count:N on seed pits, which have counts but no component `what`.
       const hasSource = this.countFn !== null
-        ? ctx.state.countAtSite(from) > 0
-        : ctx.state.whatAtSite(from) > 0;
+        ? ctx.state.count(from) > 0
+        : ctx.state.what(from) > 0;
       if (!hasSource) continue;
 
       ctx._evalFrom = from;

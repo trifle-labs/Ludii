@@ -57,7 +57,7 @@ export class IsFreedom implements BooleanFunction {
         const neighbours = traj.steps(loc, dir);
         for (const neigh of neighbours) {
           if (neigh === pid) continue;
-          const what = ctx.state.whatAtSite(neigh);
+          const what = ctx.state.what(neigh);
           // @java IsFreedom.java:96-98: what == 0 AND layer == 0
           // layer = 0 for ground-level sites; use zOf for pyramid boards
           const layer = traj.zOf(neigh);

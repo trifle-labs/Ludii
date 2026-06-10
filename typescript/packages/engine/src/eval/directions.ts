@@ -67,7 +67,7 @@ export function facingForSite(
     // players with no `(player <Dir>)` declaration.
     const compFacing = ctx.board.componentFacing;
     if (compFacing) {
-      const what = ctx.state.whatAtSite(site);
+      const what = ctx.state.what(site);
       const f = what > 0 ? compFacing[what] : undefined;
       if (f !== undefined) {
         baseFacing = f;

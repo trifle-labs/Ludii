@@ -54,13 +54,13 @@ export class IsTarget implements BooleanFunction {
       const boardN = g.equipment ? g.equipment.board.numSites : ctx.state.cells.length;
       if (boardN !== configuration.length) return false;
       for (let i = 0; i < boardN; i++) {
-        if (ctx.state.whatAtSite(i) !== (configuration[i] ?? 0)) return false;
+        if (ctx.state.what(i) !== (configuration[i] ?? 0)) return false;
       }
       return true;
     } else if (configuration.length === specificSites.length) {
       for (let i = 0; i < specificSites.length; i++) {
         const site = specificSites[i]!;
-        if (ctx.state.whatAtSite(site) !== (configuration[i] ?? 0)) return false;
+        if (ctx.state.what(site) !== (configuration[i] ?? 0)) return false;
       }
       return true;
     }

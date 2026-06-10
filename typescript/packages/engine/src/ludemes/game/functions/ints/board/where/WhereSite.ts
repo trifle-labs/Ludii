@@ -154,7 +154,7 @@ export class WhereSite extends BaseIntFunction {
       } else {
         // TS state fallback
         for (let site = 0; site < numSite; site++) {
-          if (context.state.whatAtSite(site) === what) return site;
+          if (context.state.what(site) === what) return site;
         }
       }
     } else {
@@ -211,7 +211,7 @@ export class WhereSite extends BaseIntFunction {
         } else {
           for (let i = 0; i < ownedSites.size(); i++) {
             const site = ownedSites.getQuick(i);
-            if (site < numSite && context.state.whatAtSite(site) === what) {
+            if (site < numSite && context.state.what(site) === what) {
               if (localState === UNDEFINED_CONST) return site;
             }
           }
@@ -219,7 +219,7 @@ export class WhereSite extends BaseIntFunction {
       } else {
         // Fallback: linear scan
         for (let site = 0; site < numSite; site++) {
-          if (context.state.whatAtSite(site) === what) return site;
+          if (context.state.what(site) === what) return site;
         }
       }
     }

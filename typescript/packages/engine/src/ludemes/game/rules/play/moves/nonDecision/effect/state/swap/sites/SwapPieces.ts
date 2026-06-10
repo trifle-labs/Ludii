@@ -53,7 +53,7 @@ export class SwapPieces implements MovesFunction {
     const mover = ctx.state.mover;
 
     // @java SwapPieces.java:73-74 — get whatB = what is currently at locB
-    const whatB = ctx.state.whatAtSite(locB);
+    const whatB = ctx.state.what(locB);
 
     // @java SwapPieces.java:76-78 — ActionMove(locA → locB)
     const actionMove = new ActionMove({ from: locA, to: locB });

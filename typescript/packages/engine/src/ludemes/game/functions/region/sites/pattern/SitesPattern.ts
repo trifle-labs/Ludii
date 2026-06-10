@@ -107,11 +107,11 @@ export class SitesPattern implements RegionFunction {
     // @java SitesPattern.java:95-105 — resolve whats array
     const whats: number[] = this.whatsFns
       ? this.whatsFns.map((fn) => fn.eval(ctx))
-      : [ctx.state.whatAtSite(from)];
+      : [ctx.state.what(from)];
     if (whats.length === 0) return [];
 
     // @java SitesPattern.java:118-119 — from must match whats[0]
-    if (ctx.state.whatAtSite(from) !== whats[0]) return [];
+    if (ctx.state.what(from) !== whats[0]) return [];
 
     // @java SitesPattern.java:107-110 — get supported orthogonal directions
     let startDirs: readonly string[];
@@ -133,7 +133,7 @@ export class SitesPattern implements RegionFunction {
       let whatIndex = 0;
 
       // @java SitesPattern.java:118-120 — check from
-      if (ctx.state.whatAtSite(from) !== whats[whatIndex]) {
+      if (ctx.state.what(from) !== whats[whatIndex]) {
         // Already checked above, but per-rotation recheck just in case
         continue;
       }
@@ -150,7 +150,7 @@ export class SitesPattern implements RegionFunction {
                 (ctx.game as unknown as { equipment: { board: { width: number; height: number } } }).equipment.board.width,
                 (ctx.game as unknown as { equipment: { board: { width: number; height: number } } }).equipment.board.height);
           currentLoc = to;
-          if (to < 0 || ctx.state.whatAtSite(to) !== whats[whatIndex]) {
+          if (to < 0 || ctx.state.what(to) !== whats[whatIndex]) {
             correctPattern = false;
             break;
           }

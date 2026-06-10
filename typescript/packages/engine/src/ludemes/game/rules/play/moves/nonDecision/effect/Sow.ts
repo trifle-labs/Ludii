@@ -184,7 +184,7 @@ export class Sow extends Effect {
       ?? (ctx as unknown as { _evalFrom?: number })._evalFrom
       ?? -1;
     if (start < 0) return [];
-    const count = this.countFn?.eval(ctx) ?? ctx.state.countAtSite(start);
+    const count = this.countFn?.eval(ctx) ?? ctx.state.count(start);
     if (count <= 0) return [];
     const numPerHoleDefault = () => this.numPerHoleFn?.eval(ctx) ?? 1;
 

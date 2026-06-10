@@ -162,7 +162,7 @@ export class IsTreeCentre implements BooleanFunction {
     const parent = new Array<number>(totalVertices);
     for (let i = 0; i < totalVertices; i++) parent[i] = i;
     for (let k = 0; k < numEdges; k++) {
-      const w = ctx.state.whatAtSite(k);
+      const w = ctx.state.what(k);
       const who = ctx.state.who(k);
       const isOwnedEdge =
         (whoSiteId === numPlayers + 1 && w !== 0) ||
