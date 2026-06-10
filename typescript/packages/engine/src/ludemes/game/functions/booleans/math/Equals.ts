@@ -15,9 +15,11 @@ export class Equals implements BooleanFunction {
   /** @java Equals.valueB */
   private readonly valueB: IntFunction;
 
-  public constructor(valueA: IntFunction, valueB: IntFunction) {
+  /** @java Equals(IntFunction valueA, @Or IntFunction valueB, @Or RoleType roleB) */
+  public constructor(valueA: IntFunction, valueB: IntFunction | null = null, roleB: string | null = null) {
     this.valueA = valueA;
-    this.valueB = valueB;
+    // @java Equals.java:78 — valueB = (valueB != null) ? valueB : RoleType.toIntFunction(roleB)
+    this.valueB = valueB !== null ? valueB : roleToIntFunction(roleB ?? "Neutral");
   }
 
   /** @java Equals.eval(Context): valueA.eval(context) == valueB.eval(context) */
@@ -26,3 +28,18 @@ export class Equals implements BooleanFunction {
   }
 }
 
+/** @java game/types/play/RoleType.java — RoleType.toIntFunction(role) */
+function roleToIntFunction(role: string): IntFunction {
+  if (/^P\d+$/.test(role)) { const v = Number(role.slice(1)); return { eval: () => v }; }
+  if (role === "Neutral" || role === "Shared") return { eval: () => 0 };
+  return {
+    eval: (ctx: Context): number => {
+      const numPlayers = (ctx.game as unknown as { numPlayers: number }).numPlayers;
+      if (role === "Mover") return ctx.state.mover;
+      if (role === "Next") return (ctx.state.mover % numPlayers) + 1;
+      if (role === "Prev") return ((ctx.state.mover - 2 + numPlayers) % numPlayers) + 1;
+      if (role === "Player") return (ctx as Context & { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover;
+      return 0;
+    },
+  };
+}

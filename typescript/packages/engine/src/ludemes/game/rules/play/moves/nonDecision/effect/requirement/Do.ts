@@ -82,6 +82,14 @@ export class Do implements MovesFunction {
     if (this.next != null) {
       const newState = this._applyPriorToContext(ctx);
       const newCtx = new Context(ctx.game, newState, ctx.trial, ctx.rng);
+      // @java TempContext copies the whole context — the derived context must keep
+      // the board topology scratch (Asalto: do->Hop threw "requires _radials").
+      {
+        const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
+        const aug = newCtx as Context & { _radials?: unknown; _trajectories?: unknown };
+        aug._radials = src._radials;
+        aug._trajectories = src._trajectories;
+      }
       const priorMoves = this.prior.eval(ctx);
       const nextMoves = this.next.eval(newCtx);
 
