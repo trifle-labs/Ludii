@@ -920,3 +920,18 @@ caught-and-fixed by it):
 Remaining 22 (2,149 wins): RegionSite 513, intArray Values 414, moves And 243 /
 Or 66, Where 192, Score 146, Pips 113, Coord 99, Is-variant residue 66,
 floats.Sub 60, + 12 singles. Same recipe; ~2 more waves of this size to zero.
+
+## Update 38 — Burn-down at 98.3%: 10 classes / 383 wins remain
+
+This wave: Coord ctor fix + Score/Pips/RegionSite + moves And/Or + intArray Values +
+Next/Prev/Counter + floats Sub/Div. TWO new recipe traps documented:
+- **TS `?:` optionals COUNT in emitted-JS Function.length** (only `= default` doesn't)
+  — broke the faithful arity check for Coord/And/Or. Convention: ported ctors use
+  explicit `= null`/`= undefined` defaults, never `?:` on tail params.
+- **Engine override slots default 0, Java accessors are always-real** — state.next/
+  prev are 0-default override slots; Java State.next() is the natural order. Reading
+  them verbatim broke Kalah's store mapping (and the canary commit raced one step
+  ahead — sequencing rule: MEASURE then commit, never同 block).
+Remaining 10: Where 192 (3 construct overloads), Is-residue 66, Forget 59, Graph 41,
+Players 8, requirement.Max 6, Phase 3, Was 3, Equipment 3, Satisfy 2. One more wave
+to zero, then the deletion (instantiateRegistry + batch factories + compiler1to1).

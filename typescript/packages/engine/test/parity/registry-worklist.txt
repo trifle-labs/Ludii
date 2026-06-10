@@ -1,21 +1,9 @@
- 513 game.functions.ints.board.RegionSite
- 414 game.functions.intArray.values.Values
- 243 game.rules.play.moves.nonDecision.operators.logical.And
  192 game.functions.ints.board.where.Where
- 146 game.functions.ints.state.Score
- 113 game.functions.ints.iterator.Pips
-  99 game.functions.ints.board.Coord
-  66 game.rules.play.moves.nonDecision.operators.logical.Or
   66 game.functions.booleans.is.Is
-  60 game.functions.floats.math.Sub
-  60 game.functions.floats.math.Div
   59 game.rules.play.moves.nonDecision.effect.state.forget.Forget
   41 game.util.graph.Graph
-  34 game.functions.ints.state.Next
-  15 game.functions.ints.state.Counter
    8 game.functions.intArray.players.Players
    6 game.rules.play.moves.nonDecision.effect.requirement.max.Max
-   3 game.functions.ints.state.Prev
    3 game.functions.ints.board.Phase
    3 game.functions.booleans.was.Was
    3 game.equipment.Equipment
