@@ -1498,6 +1498,9 @@ import { Intersection as CIntersectionRegion } from "../../../ludemes/game/funct
 import { Difference as CDifferenceRegion } from "../../../ludemes/game/functions/region/math/Difference.js";
 import { Union as CUnionRegion } from "../../../ludemes/game/functions/region/math/Union.js";
 import { If as CIfRegion } from "../../../ludemes/game/functions/region/math/IfRegion.js";
+import { Size as CSizeInt } from "../../../ludemes/game/functions/ints/size/Size.js";
+import { If as CIfInt } from "../../../ludemes/game/functions/ints/math/IfInt.js";
+import { Level as CLevelIter } from "../../../ludemes/game/functions/ints/iterator/Level.js";
 
 export const JAVA_TS_CTORS = new Map();
 JAVA_TS_CTORS.set("game.functions.ints.board.MapEntry", FaithfulMapEntry);
@@ -3000,3 +3003,6 @@ JAVA_TS_CTORS.set("game.functions.region.math.Intersection", CIntersectionRegion
 JAVA_TS_CTORS.set("game.functions.region.math.Difference", CDifferenceRegion);
 JAVA_TS_CTORS.set("game.functions.region.math.Union", CUnionRegion);
 JAVA_TS_CTORS.set("game.functions.region.math.If", CIfRegion);
+JAVA_TS_CTORS.set("game.functions.ints.size.Size", CSizeInt);
+JAVA_TS_CTORS.set("game.functions.ints.math.If", CIfInt);
+JAVA_TS_CTORS.set("game.functions.ints.iterator.Level", CLevelIter);
