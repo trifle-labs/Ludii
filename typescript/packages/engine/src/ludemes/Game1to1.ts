@@ -829,10 +829,18 @@ export class Game1to1 implements Game {
       bottom: (_siteType: string): Array<{ index(): number }> =>
         Array.from({ length: this.equipment.board.width }, (_, i) => ({ index: () => i })),
     };
-    (ctx as unknown as { containers: () => Array<{ topology: () => typeof topologyAdapter }> }).containers = () => [
-      { topology: () => topologyAdapter },
-    ];
-    (ctx as unknown as { topology: () => typeof topologyAdapter }).topology = () => topologyAdapter;
+    // Only shadow Context.topology()/containers() with the synthetic adapter when the
+    // board has NO faithful topology — otherwise the real Context methods (which resolve
+    // via the faithful Board topology, with real labels/rows) must stay visible. The
+    // shadowing collapsed start-rule regions like El Perro's
+    // (intersection (union (sites Left)(sites Right)) (sites Row 2)) to empty.
+    const boardHasFaithfulTopology = typeof (this.equipment.board as unknown as { topology?: () => unknown }).topology === "function";
+    if (!boardHasFaithfulTopology) {
+      (ctx as unknown as { containers: () => Array<{ topology: () => typeof topologyAdapter }> }).containers = () => [
+        { topology: () => topologyAdapter },
+      ];
+      (ctx as unknown as { topology: () => typeof topologyAdapter }).topology = () => topologyAdapter;
+    }
 
     const placeItem = maybeArrayRule as unknown as {
       constructor?: { name?: string };
