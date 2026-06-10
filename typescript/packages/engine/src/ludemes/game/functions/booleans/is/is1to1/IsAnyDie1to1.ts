@@ -38,14 +38,3 @@ export class IsAnyDie1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:anydie", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  // (is AnyDie <value>)
-  // positional[0] = "AnyDie", positional[1] = value int-fn
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const valNode = positional[1];
-  if (!valNode) {
-    return { eval(_ctx: Context): boolean { return false; } };
-  }
-  const valueFn = compileInt1to1(valNode);
-  return new IsAnyDie1to1(valueFn);
-});

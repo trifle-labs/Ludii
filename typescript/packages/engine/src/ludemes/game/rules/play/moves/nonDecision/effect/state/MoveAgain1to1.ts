@@ -25,4 +25,3 @@ export class MoveAgain1to1 implements MovesFunction {
   }
 }
 
-registerMoves1to1("moveagain", (_node: LudNode, _env: Compile1to1Env): MovesFunction => new MoveAgain1to1());

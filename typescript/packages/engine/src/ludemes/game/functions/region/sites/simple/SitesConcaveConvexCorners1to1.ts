@@ -290,12 +290,3 @@ export class SitesConvexCorners1to1 implements RegionFunction {
 // Registrations
 // ---------------------------------------------------------------------------
 
-registerRegion1to1("sites:concavecorners", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesConcaveCorners1to1();
-});
-
-registerRegion1to1("sites:convexcorners", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesConvexCorners1to1();
-});

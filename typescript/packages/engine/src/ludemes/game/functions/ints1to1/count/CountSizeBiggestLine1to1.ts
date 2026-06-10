@@ -101,14 +101,3 @@ export class CountSizeBiggestLine1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:sizebiggestline", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const { named } = parseArgs1to1((node as LudList).items);
-  const ifNode = named.get("if");
-
-  let condition: BooleanFunction | null = null;
-  if (ifNode) {
-    try { condition = compileBool1to1(ifNode, env.numPlayers); } catch { /* skip */ }
-  }
-
-  return new CountSizeBiggestLine1to1(condition);
-});

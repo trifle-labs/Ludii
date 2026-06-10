@@ -100,30 +100,3 @@ export class SitesHiddenValue1to1 extends SitesHiddenBase {}
 // ---------------------------------------------------------------------------
 // Registration — single key "sites:hidden" dispatches on HiddenData arg
 // ---------------------------------------------------------------------------
-registerRegion1to1("sites:hidden", (node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  // Grammar: (sites Hidden [<hiddenData>] [<siteType>] to:<player>)
-  // The hiddenData ident (What|Who|State|Count|Rotation|Value) is optional 2nd arg.
-  const { positional, named } = parseArgs1to1(isList(node) ? node.items : []);
-  // positional[0] = "Hidden", positional[1] = hiddenData ident (if present)
-  const secondArg = positional[1];
-  const hiddenDataName = (secondArg && isIdent(secondArg))
-    ? secondArg.name.toLowerCase()
-    : null;
-
-  // Resolve the target player at compile time.
-  // @java SitesHidden.java — whoFn = RoleType.toIntFunction(To)
-  const toNode = named.get("to");
-  const roleStr = toNode && isIdent(toNode) ? toNode.name.toLowerCase() : "mover";
-  const fixedPid = roleStr.startsWith("p") && !isNaN(parseInt(roleStr.slice(1), 10))
-    ? parseInt(roleStr.slice(1), 10) : -1;
-
-  switch (hiddenDataName) {
-    case "what":      return new SitesHiddenWhat1to1(fixedPid, roleStr);
-    case "who":       return new SitesHiddenWho1to1(fixedPid, roleStr);
-    case "state":     return new SitesHiddenState1to1(fixedPid, roleStr);
-    case "count":     return new SitesHiddenCount1to1(fixedPid, roleStr);
-    case "rotation":  return new SitesHiddenRotation1to1(fixedPid, roleStr);
-    case "value":     return new SitesHiddenValue1to1(fixedPid, roleStr);
-    default:          return new SitesHidden1to1(fixedPid, roleStr);
-  }
-});

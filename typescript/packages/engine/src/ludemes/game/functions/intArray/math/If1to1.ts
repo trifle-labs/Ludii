@@ -29,11 +29,3 @@ export class If1to1 implements IntArrayFunction {
   }
 }
 
-registerIntArray1to1("if", (node: LudNode, env: Compile1to1Env): IntArrayFunction => {
-  const list = node as LudList;
-  const { positional } = parseArgs1to1(list.items);
-  const condFn = compileBool1to1(positional[0], env.numPlayers);
-  const okFn = compileIntArray1to1(positional[1]);
-  const notOkFn = positional[2] ? compileIntArray1to1(positional[2]) : { eval: (_ctx: Context) => [] as number[] };
-  return new If1to1(condFn, okFn, notOkFn);
-});

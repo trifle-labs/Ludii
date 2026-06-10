@@ -194,47 +194,6 @@ function squareBoardWalkSites(
  * @java game/functions/region/sites/walk/SitesWalk.java
  * Registry key: "sites:walk" — (sites Walk [<from>] <steps> [rotations:<bool>])
  */
-registerRegion1to1("sites:walk", (node: LudNode, env: Compile1to1Env): RegionFunction => {
-  const { positional, named } = parseArgs1to1((node as unknown as { items: LudNode[] }).items);
-  // positional[0] = "Walk" ident
-  // remaining positionals: optional site type, optional start-site int, then walk steps
-  // named: rotations:<bool>
-
-  let type: SiteType | null = null;
-  let fromFn: IntFunction = { eval: (ctx: Context) => ctx._evalFrom };
-  let walksNode: LudNode | undefined;
-
-  // Scan positional[1..] for a walk node (curly list or named string)
-  for (let i = 1; i < positional.length; i++) {
-    const p = positional[i]!;
-    const siteType = siteTypeFromNode(p);
-    if (siteType !== null) {
-      type = siteType;
-      continue;
-    }
-    if (isString(p)) {
-      // Named walk like "KnightWalk"
-      walksNode = p;
-    } else if (isList(p) && p.delimiter === "curly") {
-      walksNode = p;
-    } else if (!walksNode) {
-      // Try to parse as an int (start location)
-      try {
-        fromFn = compileInt1to1(p);
-      } catch { /* ignore — might be a walk specifier */ }
-    }
-  }
-
-  const walks = parseWalks(walksNode);
-
-  const rotationsNode = named.get("rotations");
-  const rotations: BooleanFunction = rotationsNode
-    ? compileBool1to1(rotationsNode, env.numPlayers)
-    : { eval: () => true };
-
-  return new SitesWalk1to1(type, fromFn, walks as readonly (readonly StepType[])[], rotations);
-});
-
 function siteTypeFromNode(node: LudNode): SiteType | null {
   const value = isIdent(node) ? node.name : isString(node) ? node.value : null;
   return value === "Cell" || value === "Vertex" || value === "Edge" ? value : null;

@@ -28,4 +28,3 @@ export class Pass1to1 implements MovesFunction {
   }
 }
 
-registerMoves1to1("pass", (_node: LudNode, _env: Compile1to1Env): MovesFunction => new Pass1to1());

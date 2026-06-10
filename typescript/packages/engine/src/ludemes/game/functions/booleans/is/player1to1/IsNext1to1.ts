@@ -39,19 +39,6 @@ export class IsNext1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:next", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const whoNode = positional[1];
-  if (!whoNode) {
-    return { eval(_ctx: Context): boolean { return false; } };
-  }
-  if (isIdent(whoNode)) {
-    return new IsNext1to1(null, whoNode.name as RoleTypeFull);
-  }
-  const who = compileInt1to1(whoNode);
-  return new IsNext1to1(who, null);
-});
-
 /**
  * @java game.types.play.RoleType.toIntFunction(RoleType)
  */

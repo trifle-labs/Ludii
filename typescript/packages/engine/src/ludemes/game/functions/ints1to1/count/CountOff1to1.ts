@@ -66,34 +66,3 @@ export class CountOff1to1 implements IntFunction {
 /** SiteType idents to skip when parsing positional args. */
 const SITE_TYPE_IDENTS = new Set(["cell", "edge", "vertex"]);
 
-registerInt1to1("count:off", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _env;
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // named: at:<site> or in:<region>
-  const atNode = named.get("at");
-  const inNode = named.get("in");
-
-  let siteFn: IntFunction | null = null;
-  let regionFn: RegionFunction | null = null;
-
-  if (atNode) {
-    try { siteFn = compileInt1to1(atNode); } catch { /* default */ }
-  }
-  if (inNode) {
-    try { regionFn = compileRegion1to1(inNode); } catch { /* default */ }
-  }
-
-  // If positional[0] is a non-SiteType ident or list, treat as at:
-  if (!siteFn && !regionFn) {
-    for (const p of positional) {
-      // Skip SiteType idents (Cell, Edge, Vertex)
-      if (isIdent(p) && SITE_TYPE_IDENTS.has(p.name.toLowerCase())) continue;
-      try {
-        siteFn = compileInt1to1(p);
-        break;
-      } catch { /* skip */ }
-    }
-  }
-
-  return new CountOff1to1(siteFn, regionFn);
-});

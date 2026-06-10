@@ -52,12 +52,3 @@ export class Priority1to1 implements MovesFunction {
 // @java Priority.java — compile factory: parse (priority { ... }) / (priority <moves1> <moves2>).
 // Excludes top-level (then ...) from the sub-move list (it is the Effect.then()
 // consequence) and wraps the result via attachThen — mirrors Java Priority.eval().
-registerMoves1to1("priority", (node: LudNode, env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // Separate (then ...) from sub-move generators — they are the Effect.then() clause.
-  const nonThenPositional = positional.filter(p => !(isList(p) && headOf(p) === "then"));
-  const subMoves = flattenMovesList(nonThenPositional, env.equipment as Parameters<typeof flattenMovesList>[1]);
-  const base = new Priority1to1(subMoves);
-  // Attach the (then ...) consequence, mirroring Java's Priority.eval() appending then-moves.
-  return attachThen(base, positional, env.equipment as Parameters<typeof attachThen>[2]);
-});

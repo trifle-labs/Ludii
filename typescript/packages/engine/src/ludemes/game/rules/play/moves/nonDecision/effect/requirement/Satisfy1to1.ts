@@ -25,6 +25,3 @@ export class Satisfy1to1 implements MovesFunction {
 }
 
 // @java Satisfy.java — compile factory: (satisfy ...)
-registerMoves1to1("satisfy", (_node: LudNode, _env: Compile1to1Env): MovesFunction => {
-  return new Satisfy1to1();
-});

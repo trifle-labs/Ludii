@@ -134,31 +134,3 @@ export class Append1to1 extends Operator1to1 {
 // Faithful Java semantics: list is the ONLY sub-generator; (then ...) is a consequence,
 // not a parallel sub-generator. If the list produces 0 moves, return []. Otherwise
 // merge all sub-move actions into ONE compound Move and attach then.
-registerMoves1to1("append", (node: LudNode, env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // Separate the `list` (first non-then positional) from the `then` clause.
-  const appendListNode = positional.find(p => !(isList(p) && headOf(p as LudList) === "then"));
-  const appendThenNode = positional.find(p => isList(p) && headOf(p as LudList) === "then");
-
-  if (!appendListNode) {
-    return { eval(_ctx: Context): Move[] { return []; } };
-  }
-
-  let appendListFn: MovesFunction;
-  try {
-    appendListFn = compileMoves1to1(appendListNode, env.equipment as import("../../../../../../../../ludemes/game/equipment/Equipment1to1.js").Equipment1to1 | undefined);
-  } catch {
-    return { eval(_ctx: Context): Move[] { return []; } };
-  }
-
-  let appendThenFn: MovesFunction | null = null;
-  if (appendThenNode && isList(appendThenNode)) {
-    const { positional: thenPos } = parseArgs1to1((appendThenNode as LudList).items);
-    const thenInner = thenPos[0];
-    if (thenInner) {
-      try { appendThenFn = compileMoves1to1(thenInner, env.equipment as import("../../../../../../../../ludemes/game/equipment/Equipment1to1.js").Equipment1to1 | undefined); } catch { /* skip */ }
-    }
-  }
-
-  return new Append1to1(appendListFn, appendThenFn);
-});

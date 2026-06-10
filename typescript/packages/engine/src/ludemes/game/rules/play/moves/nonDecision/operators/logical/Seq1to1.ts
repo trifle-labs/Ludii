@@ -103,8 +103,3 @@ export class Seq1to1 extends Operator1to1 {
 
 // @java Seq.java — compile factory: parse (seq { ... }) / (seq <moves1> <moves2>).
 // Logic relocated VERBATIM from the inline compileMoves1to1Impl "seq" handler.
-registerMoves1to1("seq", (node: LudNode, env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const subMoves = flattenMovesList(positional, env.equipment as Parameters<typeof flattenMovesList>[1]);
-  return new Seq1to1(subMoves);
-});

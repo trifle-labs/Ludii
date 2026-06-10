@@ -30,16 +30,3 @@ export class ValuesRemembered1to1 implements IntArrayFunction {
   }
 }
 
-registerIntArray1to1("values", (node: LudNode, _env: Compile1to1Env): IntArrayFunction => {
-  const list = node as LudList;
-  const { positional } = parseArgs1to1(list.items);
-  const kindNode = positional[0];
-  const kind = (kindNode && isIdent(kindNode)) ? kindNode.name : "";
-  if (kind.toLowerCase() !== "remembered") {
-    // Unknown Values subtype — return empty
-    return { eval: (_ctx: Context) => [] };
-  }
-  const nameNode = positional[1];
-  const name = (nameNode && isString(nameNode)) ? nameNode.value : null;
-  return new ValuesRemembered1to1(name);
-});

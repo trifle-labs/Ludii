@@ -57,18 +57,3 @@ export class AllDifferent1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("all:different", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  // node = (all Different <region> if:<cond>)
-  // positional[0] = "Different", positional[1] = region node
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  const regionNode = positional[1];
-  const ifNode = named.get("if");
-
-  if (!regionNode || !ifNode) {
-    throw new Error("compiler1to1: (all Different <region> if:<cond>) — missing args");
-  }
-
-  const regionFn = compileRegion1to1(regionNode);
-  const condFn = compileBool1to1(ifNode, env.numPlayers);
-  return new AllDifferent1to1(regionFn, condFn);
-});

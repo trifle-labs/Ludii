@@ -22,7 +22,3 @@ export class SitesPending1to1 implements RegionFunction {
   }
 }
 
-registerRegion1to1("sites:pending", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesPending1to1();
-});

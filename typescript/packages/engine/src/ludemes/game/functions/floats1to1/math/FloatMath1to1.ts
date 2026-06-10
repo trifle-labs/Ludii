@@ -466,61 +466,13 @@ function registerFloatPow() {
 registerFloatPow();
 
 // Sqrt
-registerFloat1to1("sqrt", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileFloat1to1(positional[0]);
-  return new FloatSqrt1to1(a);
-});
-
 // Abs
-registerFloat1to1("abs", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileFloat1to1(positional[0]);
-  return new FloatAbs1to1(a);
-});
-
 // Cos
-registerFloat1to1("cos", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileFloat1to1(positional[0]);
-  return new FloatCos1to1(a);
-});
-
 // Sin
-registerFloat1to1("sin", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileFloat1to1(positional[0]);
-  return new FloatSin1to1(a);
-});
-
 // Tan
-registerFloat1to1("tan", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileFloat1to1(positional[0]);
-  return new FloatTan1to1(a);
-});
-
 // Exp
-registerFloat1to1("exp", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileFloat1to1(positional[0]);
-  return new FloatExp1to1(a);
-});
-
 // Log (natural)
-registerFloat1to1("log", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileFloat1to1(positional[0]);
-  return new FloatLog1to1(a);
-});
-
 // Log10
-registerFloat1to1("log10", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileFloat1to1(positional[0]);
-  return new FloatLog10_1to1(a);
-});
-
 // Min
 function registerFloatMin() {
   const factory = (node: LudNode, env: Compile1to1Env): FloatFunction => {

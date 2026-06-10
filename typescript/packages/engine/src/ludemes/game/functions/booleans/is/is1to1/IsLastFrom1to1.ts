@@ -32,17 +32,3 @@ export class IsLastFrom1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:lastfrom", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  // (is LastFrom <Cell|Vertex|Edge>)
-  // positional[0] = "LastFrom", positional[1] = SiteType ident
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const typeNode = positional[1];
-  let siteType: SiteType = "Cell";
-  if (typeNode && isIdent(typeNode)) {
-    const name = typeNode.name;
-    if (name === "Cell" || name === "Vertex" || name === "Edge") {
-      siteType = name as SiteType;
-    }
-  }
-  return new IsLastFrom1to1(siteType);
-});

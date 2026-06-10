@@ -51,18 +51,3 @@ export class IsRepeat1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:repeat", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  // (is Repeat [Positional | Situational | PositionalInTurn | SituationalInTurn])
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Repeat", positional[1] = optional StateType ident
-  const typeNode = positional[1];
-  let repeatType: RepeatType = "Positional";
-  if (typeNode && isIdent(typeNode)) {
-    const name = typeNode.name;
-    if (name === "Positional" || name === "Situational" ||
-        name === "PositionalInTurn" || name === "SituationalInTurn") {
-      repeatType = name as RepeatType;
-    }
-  }
-  return new IsRepeat1to1(repeatType);
-});

@@ -39,26 +39,3 @@ export class ToFloatInt1to1 implements FloatFunction {
   }
 }
 
-registerFloat1to1("tofloat", (node: LudNode, env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const argNode = positional[0];
-  if (!argNode) return { eval: (_ctx: Context) => 0 };
-
-  // Try bool first (Java: @Or boolFn or intFn; try bool first, then int)
-  if (isList(argNode)) {
-    try {
-      const boolFn = compileBool1to1(argNode, env.numPlayers);
-      return new ToFloatBool1to1(boolFn);
-    } catch {
-      // fall through to int
-    }
-    try {
-      const intFn = compileInt1to1(argNode);
-      return new ToFloatInt1to1(intFn);
-    } catch {
-      // fall through to float
-    }
-  }
-  // Last resort: compile as float (handles int literals etc.)
-  return compileFloat1to1(argNode);
-});

@@ -254,38 +254,3 @@ export class IsLoop1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:loop", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Loop"
-  // named: colour, start, path (tile-path — not supported)
-
-  // start: default = LastTo
-  const startNode = named.get("start");
-  let startFn: IntFunction;
-  if (startNode) {
-    try { startFn = compileInt1to1(startNode); }
-    catch { startFn = { eval: (c: Context & EvalScratch) => c._evalTo }; }
-  } else {
-    startFn = { eval: (c: Context & EvalScratch) => c._evalTo };
-  }
-
-  // colour: default = Mover
-  const colourNode = named.get("colour") ?? named.get("color");
-  const colourFn = makeColourFn(colourNode);
-
-  // directions: named or from positionals after "Loop"
-  // @java IsLoop — dirnChoice defaults to Adjacent
-  let dirnName = "Adjacent";
-  for (let i = 1; i < positional.length; i++) {
-    const p = positional[i];
-    if (p && isIdent(p)) {
-      const n = p.name.toLowerCase();
-      if (n === "orthogonal" || n === "adjacent" || n === "diagonal") {
-        dirnName = p.name;
-        break;
-      }
-    }
-  }
-
-  return new IsLoop1to1(null, null, null, dirnName, colourFn, startFn, null, null);
-});

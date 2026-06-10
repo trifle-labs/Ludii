@@ -204,32 +204,3 @@ export class SitesSlosh1to1 implements RegionFunction {
 // Registrations
 // ---------------------------------------------------------------------------
 
-registerRegion1to1("sites:angled", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesAngled1to1();
-});
-
-registerRegion1to1("sites:axial", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesAxial1to1();
-});
-
-registerRegion1to1("sites:horizontal", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesHorizontal1to1();
-});
-
-registerRegion1to1("sites:vertical", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesVertical1to1();
-});
-
-registerRegion1to1("sites:slash", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesSlash1to1();
-});
-
-registerRegion1to1("sites:slosh", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesSlosh1to1();
-});

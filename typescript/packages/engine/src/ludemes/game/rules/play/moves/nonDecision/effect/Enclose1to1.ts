@@ -79,13 +79,3 @@ export class Enclose1to1 implements MovesFunction {
 }
 
 // @java Enclose.java — compile factory: parse (enclose (from <site>) [<dirn>]).
-registerMoves1to1("enclose", (node: LudNode, _env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const fromNode = positional.find(n => isList(n) && headOf(n) === "from");
-  const fromInner = fromNode && isList(fromNode) ? parseArgs1to1((fromNode as LudList).items).positional[0] : undefined;
-  const fromFn: IntFunction = fromInner ? compileInt1to1(fromInner) : { eval: (ctx: Context): number => ctx._evalTo };
-  let dirnName = "Orthogonal";
-  const dirnIdent = positional.find(n => isIdent(n) && n.name.toLowerCase() !== "from");
-  if (dirnIdent && isIdent(dirnIdent)) dirnName = dirnIdent.name;
-  return new Enclose1to1(fromFn, dirnName);
-});

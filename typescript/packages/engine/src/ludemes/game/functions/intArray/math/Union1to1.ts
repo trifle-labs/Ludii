@@ -29,21 +29,3 @@ export class Union1to1 implements IntArrayFunction {
   }
 }
 
-registerIntArray1to1("union", (node: LudNode, _env: Compile1to1Env): IntArrayFunction => {
-  const list = node as LudList;
-  const { positional } = parseArgs1to1(list.items);
-  // (union {a b ...}) or (union a b)
-  let arrayNodes: readonly LudNode[];
-  if (
-    positional.length === 1 &&
-    positional[0] &&
-    isList(positional[0]) &&
-    positional[0].delimiter === "curly"
-  ) {
-    arrayNodes = positional[0].items;
-  } else {
-    arrayNodes = positional;
-  }
-  const arrays = arrayNodes.map(n => compileIntArray1to1(n));
-  return new Union1to1(arrays);
-});

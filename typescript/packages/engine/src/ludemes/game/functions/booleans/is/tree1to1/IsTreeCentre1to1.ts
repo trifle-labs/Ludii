@@ -234,15 +234,4 @@ export class IsTreeCentre1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:treecentre", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const { who, role } = makeWhoArg(positional[1]);
-  return new IsTreeCentre1to1(who, role);
-});
-
 // Also register with American spelling "is:treecenter"
-registerBool1to1("is:treecenter", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const { who, role } = makeWhoArg(positional[1]);
-  return new IsTreeCentre1to1(who, role);
-});

@@ -143,12 +143,3 @@ function expandNames(
   return result;
 }
 
-registerDirections1to1(
-  "difference",
-  (node: LudNode, _env: Compile1to1Env): DirectionsFunction => {
-    const { positional } = parseArgs1to1((node as LudList).items);
-    const orig = compileDirections1to1(positional[0]);
-    const rem  = compileDirections1to1(positional[1]);
-    return new Difference1to1(orig, rem);
-  },
-);

@@ -98,28 +98,3 @@ export class CountSteps1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:steps", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Steps", positional[1] = site1, positional[2] = region2
-  // named may have "from:" and "to:" keys
-  const site1Node = positional[1] ?? named.get("from");
-  const region2Node = positional[2] ?? named.get("to");
-
-  let site1Fn: IntFunction;
-  try { site1Fn = compileInt1to1(site1Node); } catch { site1Fn = { eval: (_ctx: Context) => -1 }; }
-
-  let region2Fn: RegionFunction;
-  try {
-    region2Fn = compileRegion1to1(region2Node);
-  } catch {
-    // Try compiling as IntFunction and wrapping as single-site region
-    try {
-      const siteFn = compileInt1to1(region2Node);
-      region2Fn = { eval: (ctx: Context) => { const s = siteFn.eval(ctx); return s >= 0 ? [s] : []; } };
-    } catch {
-      region2Fn = { eval: (_ctx: Context) => [] };
-    }
-  }
-
-  return new CountSteps1to1(site1Fn, region2Fn);
-});

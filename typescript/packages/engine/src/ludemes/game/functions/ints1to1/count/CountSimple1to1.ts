@@ -71,27 +71,3 @@ export class CountMovesThisTurn1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // Registration
 // ---------------------------------------------------------------------------
-registerInt1to1("count:rows", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _node; void _env;
-  return new CountRows1to1();
-});
-
-registerInt1to1("count:columns", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _node; void _env;
-  return new CountColumns1to1();
-});
-
-registerInt1to1("count:players", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _node; void _env;
-  return new CountPlayers1to1();
-});
-
-registerInt1to1("count:turns", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _node; void _env;
-  return new CountTurns1to1();
-});
-
-registerInt1to1("count:movesthisturn", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _node; void _env;
-  return new CountMovesThisTurn1to1();
-});

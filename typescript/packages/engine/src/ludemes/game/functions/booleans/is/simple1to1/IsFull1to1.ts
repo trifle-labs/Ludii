@@ -26,6 +26,3 @@ export class IsFull1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:full", (_node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  return new IsFull1to1();
-});

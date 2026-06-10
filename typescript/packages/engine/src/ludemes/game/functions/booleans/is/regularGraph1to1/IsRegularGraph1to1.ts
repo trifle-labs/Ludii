@@ -148,31 +148,3 @@ export class IsRegularGraph1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:regulargraph", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "RegularGraph"
-  // positional[1] = who/role ident or expression
-  // named: k, odd, even
-
-  const { who, role } = makeWhoArg(positional[1]);
-
-  let kFn: IntFunction = { eval: () => 0 };
-  const kNode = named.get("k");
-  if (kNode) {
-    try { kFn = compileInt1to1(kNode); } catch { /* keep default */ }
-  }
-
-  let oddFn: BooleanFunction = { eval: () => false };
-  const oddNode = named.get("odd");
-  if (oddNode) {
-    try { oddFn = compileBool1to1(oddNode, env.numPlayers); } catch { /* keep default */ }
-  }
-
-  let evenFn: BooleanFunction = { eval: () => false };
-  const evenNode = named.get("even");
-  if (evenNode) {
-    try { evenFn = compileBool1to1(evenNode, env.numPlayers); } catch { /* keep default */ }
-  }
-
-  return new IsRegularGraph1to1(who, role, kFn, oddFn, evenFn);
-});

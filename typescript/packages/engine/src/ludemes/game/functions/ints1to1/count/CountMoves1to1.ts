@@ -19,7 +19,3 @@ export class CountMoves1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:moves", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _node; void _env;
-  return new CountMoves1to1();
-});

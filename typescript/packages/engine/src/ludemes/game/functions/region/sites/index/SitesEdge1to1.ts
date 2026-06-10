@@ -66,14 +66,3 @@ export class SitesEdge1to1 implements RegionFunction {
   }
 }
 
-registerRegion1to1("sites:edge", (node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _env;
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Edge" ident (matched by sites:edge key), positional[1] = index.
-  let indexNode = positional[1]; // skip the "Edge" ident
-  if (!indexNode) {
-    indexNode = positional[0]; // fallback: only one arg, treat as index
-  }
-  const indexFn = indexNode ? compileInt1to1(indexNode) : { eval: (_ctx: Context) => 0 };
-  return new SitesEdge1to1(indexFn);
-});

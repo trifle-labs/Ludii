@@ -42,19 +42,3 @@ export class AllSites1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("all:sites", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  // node = (all Sites <region> if:<cond>)
-  // After parseArgs1to1 (startFrom=1): positional[0]="Sites", positional[1]=region
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Sites" ident, positional[1] = region node
-  const regionNode = positional[1];
-  const ifNode = named.get("if");
-
-  if (!regionNode || !ifNode) {
-    throw new Error("compiler1to1: (all Sites <region> if:<cond>) — missing args");
-  }
-
-  const regionFn = compileRegion1to1(regionNode);
-  const condFn = compileBool1to1(ifNode, env.numPlayers);
-  return new AllSites1to1(regionFn, condFn);
-});

@@ -157,14 +157,3 @@ function compileAngle(node: LudNode, env: Compile1to1Env, predicate: AnglePredic
   return new IsAngle1to1(atFn, cond1, cond2, predicate);
 }
 
-registerBool1to1("is:acute", (node: LudNode, env: Compile1to1Env): BooleanFunction =>
-  compileAngle(node, env, "acute"));
-
-registerBool1to1("is:obtuse", (node: LudNode, env: Compile1to1Env): BooleanFunction =>
-  compileAngle(node, env, "obtuse"));
-
-registerBool1to1("is:reflex", (node: LudNode, env: Compile1to1Env): BooleanFunction =>
-  compileAngle(node, env, "reflex"));
-
-registerBool1to1("is:right", (node: LudNode, env: Compile1to1Env): BooleanFunction =>
-  compileAngle(node, env, "right"));

@@ -138,26 +138,3 @@ export class PlayersMany1to1 implements IntArrayFunction {
   }
 }
 
-registerIntArray1to1("players", (node: LudNode, env: Compile1to1Env): IntArrayFunction => {
-  const list = node as LudList;
-  const { positional, named } = parseArgs1to1(list.items);
-  const kindNode = positional[0];
-  const kind = (kindNode && isIdent(kindNode)) ? kindNode.name : "All";
-
-  const condNode = named.get("if") ?? named.get("If");
-  const cond: BooleanFunction = condNode
-    ? compileBool1to1(condNode, env.numPlayers)
-    : { eval: (_ctx: Context) => true };
-
-  // Team type: Team1, Team2, etc.
-  const teamMatch = /^Team(\d+)$/i.exec(kind);
-  if (teamMatch?.[1]) {
-    const teamIndex = parseInt(teamMatch[1], 10);
-    return new PlayersTeam1to1(teamIndex, cond);
-  }
-
-  // ManyType: All, Ally, Enemy, Friend, NonMover
-  const ofNode = named.get("of");
-  const ofFn: IntFunction | null = ofNode ? compileInt1to1(ofNode) : null;
-  return new PlayersMany1to1(kind, ofFn, cond);
-});

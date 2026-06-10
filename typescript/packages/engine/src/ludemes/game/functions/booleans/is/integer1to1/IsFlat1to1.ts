@@ -23,6 +23,3 @@ export class IsFlat1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:flat", (_node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  return new IsFlat1to1();
-});

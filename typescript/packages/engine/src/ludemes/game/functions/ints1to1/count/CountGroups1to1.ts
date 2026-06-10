@@ -113,16 +113,3 @@ export class CountGroups1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:groups", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const { named } = parseArgs1to1((node as LudList).items);
-  const ifNode = named.get("if");
-  const minNode = named.get("min");
-
-  let condition: BooleanFunction | null = null;
-  if (ifNode) {
-    try { condition = compileBool1to1(ifNode, env.numPlayers); } catch { /* skip */ }
-  }
-  const minFn: IntFunction = minNode ? compileInt1to1(minNode) : { eval: (_ctx: Context) => 0 };
-
-  return new CountGroups1to1(condition, minFn);
-});

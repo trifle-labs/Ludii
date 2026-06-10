@@ -23,6 +23,3 @@ export class Note1to1 implements MovesFunction {
 }
 
 // @java Note.java — compile factory: (note ...)
-registerMoves1to1("note", (_node: LudNode, _env: Compile1to1Env): MovesFunction => {
-  return new Note1to1();
-});

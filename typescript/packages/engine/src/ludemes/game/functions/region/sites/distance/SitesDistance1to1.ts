@@ -186,39 +186,3 @@ const RELATIONS = new Set([
  * @java game/functions/region/sites/distance/SitesDistance.java
  * Registry key: "sites:distance" — (sites Distance from:<int> <range> [<relation>])
  */
-registerRegion1to1("sites:distance", (node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _env;
-  const { positional, named } = parseArgs1to1((node as unknown as { items: LudNode[] }).items);
-  // positional[0] = "Distance" ident (subtype)
-  // named: from:<intFn>
-  // positional[1..]: optional RelationType ident, then range node
-
-  const fromNode = named.get("from");
-  if (!fromNode) {
-    // (sites Distance from:<int> distance) — 'from' is required in Java
-    return { eval: () => [] };
-  }
-  const fromFn = compileInt1to1(fromNode);
-
-  // Remaining positionals after "Distance": scan for relation and range
-  let relation = "Adjacent";
-  let rangeNode: LudNode | undefined;
-  for (let i = 1; i < positional.length; i++) {
-    const p = positional[i];
-    if (!p) continue;
-    if (isIdent(p) && RELATIONS.has(p.name.toLowerCase())) {
-      relation = p.name;
-    } else if (!rangeNode) {
-      rangeNode = p;
-    }
-  }
-
-  // Also look for unnamed distance node
-  const distNode = named.get("distance") ?? rangeNode;
-  const range = compileDistanceRange(distNode);
-  if (!range) {
-    return { eval: () => [] };
-  }
-
-  return new SitesDistance1to1(fromFn, range.minFn, range.maxFn, relation);
-});

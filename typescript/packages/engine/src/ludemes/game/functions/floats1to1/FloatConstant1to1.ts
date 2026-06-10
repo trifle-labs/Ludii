@@ -27,9 +27,3 @@ export class FloatConstant1to1 implements FloatFunction {
   }
 }
 
-registerFloat1to1("float", (node: LudNode, _env: Compile1to1Env): FloatFunction => {
-  const { positional } = parseArgs1to1((node as import("@ludii/typescript-language").LudList).items);
-  const valNode = positional[0];
-  if (valNode && isNumber(valNode)) return new FloatConstant1to1(valNode.value);
-  return new FloatConstant1to1(0);
-});

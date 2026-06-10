@@ -40,7 +40,3 @@ export class CountVertices1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:vertices", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _node; void _env;
-  return new CountVertices1to1();
-});

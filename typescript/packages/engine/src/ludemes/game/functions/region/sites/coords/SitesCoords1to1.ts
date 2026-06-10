@@ -65,29 +65,3 @@ export class SitesCoords1to1 implements RegionFunction {
 }
 
 // Key: (sites Coords "A1" "B2" ...) → first positional ident "Coords" → key "sites:coords"
-registerRegion1to1("sites:coords", (node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _env;
-  const { positional } = parseArgs1to1((node as unknown as { items: LudNode[] }).items);
-  // positional[0] = "Coords" ident (the subtype); positional[1..] = coord strings or a list
-  const coords: string[] = [];
-  for (let i = 1; i < positional.length; i++) {
-    const p = positional[i]!;
-    if (isString(p)) {
-      coords.push(p.value);
-    } else if (isIdent(p) && !p.name.endsWith(":")) {
-      // Sometimes coords appear as idents without quotes (e.g. A1 as identifier)
-      coords.push(p.name);
-    }
-  }
-  // Also handle (sites Coords { "A1" "B2" ... }) with curly list
-  const firstArg = positional[1];
-  const firstArgAny = firstArg as unknown as { delimiter?: string; items?: LudNode[] };
-  if (coords.length === 0 && firstArg && firstArgAny.delimiter === "curly") {
-    const items = firstArgAny.items ?? [];
-    for (const item of items) {
-      if (isString(item)) coords.push(item.value);
-      else if (isIdent(item)) coords.push(item.name);
-    }
-  }
-  return new SitesCoords1to1(coords);
-});

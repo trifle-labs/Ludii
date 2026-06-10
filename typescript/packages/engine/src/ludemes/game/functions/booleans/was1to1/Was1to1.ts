@@ -22,15 +22,3 @@ export class Was1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("was", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const typeNode = positional[0];
-  if (typeNode && isIdent(typeNode)) {
-    const typeName = typeNode.name.toLowerCase();
-    if (typeName === "last") {
-      // (was Last In/To/From) — check last move site
-      return new Was1to1();
-    }
-  }
-  return { eval(_ctx: Context): boolean { return false; } };
-});

@@ -22,7 +22,3 @@ export class SitesToClear1to1 implements RegionFunction {
   }
 }
 
-registerRegion1to1("sites:toclear", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesToClear1to1();
-});

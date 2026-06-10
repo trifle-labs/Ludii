@@ -58,17 +58,3 @@ export class IsIn1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:in", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "In", positional[1] = site, positional[2] = region
-  const siteNode = positional[1];
-  const regionNode = positional[2];
-
-  if (!siteNode || !regionNode) {
-    return { eval(_ctx: Context): boolean { return false; } };
-  }
-
-  const siteFn = compileInt1to1(siteNode);
-  const regionFn = compileRegion1to1(regionNode);
-  return new IsIn1to1(siteFn, regionFn);
-});

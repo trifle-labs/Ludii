@@ -185,38 +185,3 @@ export class SitesPattern1to1 implements RegionFunction {
  * Registry key: "sites:pattern" —
  *   (sites Pattern <walk> [from:<int>] [what:<int>] [whats:{<int>...}])
  */
-registerRegion1to1("sites:pattern", (node: LudNode, env: Compile1to1Env): RegionFunction => {
-  void env;
-  const { positional, named } = parseArgs1to1((node as unknown as { items: LudNode[] }).items);
-  // positional[0] = "Pattern" ident
-  // positional[1] = walk curly-list or remaining
-
-  // Parse walk from positional[1]
-  let walk: string[] = [];
-  const walkNode = positional[1];
-  if (walkNode && isList(walkNode) && walkNode.delimiter === "curly") {
-    for (const item of walkNode.items) {
-      if (isIdent(item)) walk.push(item.name.toUpperCase());
-    }
-  }
-
-  // from: (default LastTo)
-  const fromNode = named.get("from");
-  const fromFn: IntFunction = fromNode
-    ? compileInt1to1(fromNode)
-    : { eval: (ctx: Context) => ctx._evalTo };
-
-  // whats: or what:
-  let whatsFns: IntFunction[] | null = null;
-  const whatsNode = named.get("whats");
-  if (whatsNode && isList(whatsNode) && whatsNode.delimiter === "curly") {
-    whatsFns = whatsNode.items.map((item) => compileInt1to1(item));
-  } else {
-    const whatNode = named.get("what");
-    if (whatNode) {
-      whatsFns = [compileInt1to1(whatNode)];
-    }
-  }
-
-  return new SitesPattern1to1(walk, fromFn, whatsFns);
-});

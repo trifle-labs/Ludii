@@ -26,12 +26,3 @@ export class IsOdd1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:odd", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const valNode = positional[1];
-  if (!valNode) {
-    return { eval(_ctx: Context): boolean { return false; } };
-  }
-  const val = compileInt1to1(valNode);
-  return new IsOdd1to1(val);
-});

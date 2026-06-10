@@ -143,18 +143,3 @@ export class AddScore1to1 implements MovesFunction {
 }
 
 // @java AddScore.java — compile factory: (addScore <role> <delta>)
-registerMoves1to1("addscore", (node: LudNode, _env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] = role (Mover, Next, P1, ...), positional[1] = delta int-fn
-  const roleNode = positional[0];
-  let role: RoleType | "All" | "Each" = "Mover";
-  if (roleNode && isIdent(roleNode)) {
-    role = roleNode.name as RoleType | "All" | "Each";
-  }
-  const deltaNode = positional[1];
-  let deltaFn: IntFunction | null = null;
-  if (deltaNode) {
-    try { deltaFn = compileInt1to1(deltaNode); } catch { /* default delta=1 */ }
-  }
-  return new AddScore1to1(null, role, deltaFn, null);
-});

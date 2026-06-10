@@ -25,8 +25,3 @@ export class Not1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("not", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const sub = compileBool1to1(positional[0], env.numPlayers);
-  return new Not1to1(sub);
-});

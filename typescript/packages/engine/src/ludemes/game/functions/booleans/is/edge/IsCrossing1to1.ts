@@ -104,16 +104,3 @@ function segmentsCross(
   return s > MARGIN && s < 1 - MARGIN && t > MARGIN && t < 1 - MARGIN;
 }
 
-registerBool1to1("is:crossing", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  void _env;
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Crossing" ident (matched by is:crossing key)
-  // positional[1] = edge1 intFn, positional[2] = edge2 intFn
-  const edge1Node = positional[1];
-  const edge2Node = positional[2];
-
-  const edge1Fn = edge1Node ? compileInt1to1(edge1Node) : { eval: (_c: Context) => -1 };
-  const edge2Fn = edge2Node ? compileInt1to1(edge2Node) : { eval: (_c: Context) => -1 };
-
-  return new IsCrossing1to1(edge1Fn, edge2Fn);
-});

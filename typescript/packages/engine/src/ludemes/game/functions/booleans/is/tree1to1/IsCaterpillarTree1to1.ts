@@ -226,8 +226,3 @@ export class IsCaterpillarTree1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:caterpillartree", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const { who, role } = makeWhoArg(positional[1]);
-  return new IsCaterpillarTree1to1(who, role);
-});

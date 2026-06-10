@@ -62,17 +62,3 @@ export class Difference1to1 implements IntArrayFunction {
   }
 }
 
-registerIntArray1to1("difference", (node: LudNode, _env: Compile1to1Env): IntArrayFunction => {
-  const list = node as LudList;
-  const { positional } = parseArgs1to1(list.items);
-  const sourceNode = positional[0];
-  const subNode = positional[1];
-  if (!sourceNode) return { eval: (_ctx: Context) => [] };
-  const sourceFn = compileIntArray1to1(sourceNode);
-  if (!subNode) return new Difference1to1(sourceFn, null, { eval: (_ctx: Context) => 0 });
-  if (isIntArrayNode(subNode)) {
-    return new Difference1to1(sourceFn, compileIntArray1to1(subNode), null);
-  } else {
-    return new Difference1to1(sourceFn, null, compileInt1to1(subNode));
-  }
-});

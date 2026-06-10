@@ -33,19 +33,3 @@ export class IsVisited1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:visited", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const siteNode = positional[1];
-  if (!siteNode) {
-    // Default: check _evalTo
-    return { eval(ctx: Context): boolean {
-      const s = ctx._evalTo;
-      const state = ctx.state as unknown as { isVisited?: (s: number) => boolean; visited?: Set<number> };
-      if (state.isVisited) return state.isVisited(s);
-      if (state.visited) return state.visited.has(s);
-      return false;
-    }};
-  }
-  const siteFn = compileInt1to1(siteNode);
-  return new IsVisited1to1(siteFn);
-});

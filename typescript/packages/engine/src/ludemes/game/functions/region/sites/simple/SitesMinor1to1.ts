@@ -59,7 +59,3 @@ export class SitesMinor1to1 implements RegionFunction {
   }
 }
 
-registerRegion1to1("sites:minor", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesMinor1to1();
-});

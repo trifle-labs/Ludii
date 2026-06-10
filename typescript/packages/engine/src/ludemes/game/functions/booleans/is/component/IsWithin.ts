@@ -202,16 +202,3 @@ function toSiteArray(raw: unknown): readonly number[] {
   return [];
 }
 
-registerBool1to1("is:within", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // (is Within <pieceId> in:<region>) is the common PieceTypeReachWin expansion.
-  const pieceNode = positional[1];
-  if (!pieceNode) return { eval(_ctx: Context): boolean { return false; } };
-
-  const regionNode = named.get("in") ?? positional[2];
-  const locnNode = named.get("at");
-  const pieceId = compileInt1to1(pieceNode);
-  const region = regionNode ? compileRegion1to1(regionNode) : null;
-  const locn = locnNode ? compileInt1to1(locnNode) : null;
-  return new IsWithin(pieceId, null, locn, region);
-});

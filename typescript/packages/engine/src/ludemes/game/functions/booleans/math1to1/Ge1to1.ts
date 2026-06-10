@@ -26,9 +26,3 @@ export class Ge1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1(">=", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileInt1to1(positional[0]);
-  const b = compileInt1to1(positional[1]);
-  return new Ge1to1(a, b);
-});

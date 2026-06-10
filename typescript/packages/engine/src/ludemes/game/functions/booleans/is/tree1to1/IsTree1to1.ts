@@ -107,19 +107,3 @@ export class IsTree1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:tree", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  // @java IsTree(@Or Player who, @Or RoleType role)
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Tree", positional[1] = role ident or who int expression
-  const arg = positional[1];
-  if (arg && isIdent(arg)) {
-    return new IsTree1to1(null, arg.name as RoleTypeFull);
-  }
-
-  let whoFn: IntFunction = { eval: (c: Context & EvalScratch) => c.state.mover };
-  if (arg) {
-    try { whoFn = compileInt1to1(arg); }
-    catch { /* keep Java Player default mover fallback */ }
-  }
-  return new IsTree1to1(new Player1to1(whoFn), null);
-});

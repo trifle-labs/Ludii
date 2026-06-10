@@ -38,6 +38,3 @@ export class IsBlocked1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:blocked", (_node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  return new IsBlocked1to1();
-});

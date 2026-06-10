@@ -49,6 +49,3 @@ export class IsCycle1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:cycle", (_node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  return new IsCycle1to1();
-});

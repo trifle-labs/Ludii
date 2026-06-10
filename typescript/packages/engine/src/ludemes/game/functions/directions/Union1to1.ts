@@ -53,12 +53,3 @@ export class Union1to1 implements DirectionsFunction {
   }
 }
 
-registerDirections1to1(
-  "union",
-  (node: LudNode, _env: Compile1to1Env): DirectionsFunction => {
-    const { positional } = parseArgs1to1((node as LudList).items);
-    const dir1 = compileDirections1to1(positional[0]);
-    const dir2 = compileDirections1to1(positional[1]);
-    return new Union1to1(dir1, dir2);
-  },
-);

@@ -36,26 +36,3 @@ export class IsOccupied1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:occupied", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // Skip optional SiteType idents
-  let type: SiteType | null = null;
-  let siteNode: LudNode | undefined;
-  for (let i = 1; i < positional.length; i++) {
-    const p = positional[i]!;
-    if (isIdent(p)) {
-      const name = p.name;
-      if (name === "Cell" || name === "Edge" || name === "Vertex") {
-        type = name;
-        continue;
-      }
-    }
-    siteNode = p;
-    break;
-  }
-  if (!siteNode) {
-    return { eval(ctx: Context): boolean { return !ctx.state.isEmptySite(ctx._evalTo); } };
-  }
-  const siteFn = compileInt1to1(siteNode);
-  return new IsOccupied1to1(type, siteFn);
-});

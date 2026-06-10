@@ -77,13 +77,3 @@ export class Or1to1 extends Operator1to1 {
 // The (then ...) must NOT appear as a sub-move-generator — filter it out first,
 // then wrap via attachThen so it fires as an after-consequence on every move.
 // @java game/rules/play/moves/nonDecision/operators/logical/Or.java — eval(Context):155-157
-registerMoves1to1("or", (node: LudNode, env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // Exclude (then ...) nodes — they are afterConsequences, not sub-generators.
-  const nonThenPositional = positional.filter(
-    (p): p is LudNode => !(isList(p as LudNode) && headOf(p as LudNode) === "then"),
-  );
-  const equip = env.equipment as Parameters<typeof flattenMovesList>[1];
-  const subMoves = flattenMovesList(nonThenPositional, equip);
-  return attachThen(new Or1to1(subMoves), positional, equip);
-});

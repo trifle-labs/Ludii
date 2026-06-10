@@ -35,21 +35,6 @@ export class IsMover1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:mover", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Mover" ident, positional[1] = who int-fn
-  const whoNode = positional[1];
-  if (!whoNode) {
-    // No argument: (is Mover) — compare ctx.state.mover to itself → always true
-    return { eval(_ctx: Context): boolean { return true; } };
-  }
-  if (isIdent(whoNode)) {
-    return new IsMover1to1(null, whoNode.name as RoleTypeFull);
-  }
-  const who = compileInt1to1(whoNode);
-  return new IsMover1to1(who, null);
-});
-
 /**
  * @java game.types.play.RoleType.toIntFunction(RoleType)
  */

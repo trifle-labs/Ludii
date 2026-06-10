@@ -44,18 +44,3 @@ export class IfBool1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("if", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // Try compiling all branches as booleans; propagate errors so fall-through works
-  const cond = compileBool1to1(positional[0], env.numPlayers);
-  const ok = compileBool1to1(positional[1], env.numPlayers);
-  let notOk: BooleanFunction | null = null;
-  if (positional[2]) {
-    try {
-      notOk = compileBool1to1(positional[2], env.numPlayers);
-    } catch {
-      notOk = null;
-    }
-  }
-  return new IfBool1to1(cond, ok, notOk);
-});

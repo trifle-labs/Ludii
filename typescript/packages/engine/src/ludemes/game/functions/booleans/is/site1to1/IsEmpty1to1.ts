@@ -36,30 +36,3 @@ export class IsEmpty1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:empty", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  // (is Empty [SiteType] <site>)
-  // positional[0] = "Empty" ident, positional[1] = optional SiteType or site
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] is the "Empty" subtype ident
-  // Skip optional SiteType (Cell/Edge/Vertex) idents
-  let type: SiteType | null = null;
-  let siteNode: LudNode | undefined;
-  for (let i = 1; i < positional.length; i++) {
-    const p = positional[i]!;
-    if (isIdent(p)) {
-      const name = p.name;
-      if (name === "Cell" || name === "Edge" || name === "Vertex") {
-        type = name;
-        continue;
-      }
-    }
-    siteNode = p;
-    break;
-  }
-  if (!siteNode) {
-    // No explicit site: use context._evalTo (last placed site)
-    return { eval(ctx: Context): boolean { return ctx.state.isEmptySite(ctx._evalTo); } };
-  }
-  const siteFn = compileInt1to1(siteNode);
-  return new IsEmpty1to1(type, siteFn);
-});

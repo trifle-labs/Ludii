@@ -29,8 +29,3 @@ export class ToBool1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("tobool", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const intFn = compileInt1to1(positional[0]);
-  return new ToBool1to1(intFn);
-});

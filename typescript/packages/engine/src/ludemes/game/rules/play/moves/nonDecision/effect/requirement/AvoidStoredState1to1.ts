@@ -35,14 +35,3 @@ export class AvoidStoredState1to1 implements MovesFunction {
 const emptyMoves: MovesFunction = { eval(_ctx: Context): Move[] { return []; } };
 
 // @java AvoidStoredState.java — compile factory: (avoidStoredState <moves> ...)
-registerMoves1to1("avoidstoredstate", (node: LudNode, env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const subMovesNode = positional[0];
-  if (subMovesNode && isList(subMovesNode)) {
-    try {
-      const subFn = compileMoves1to1(subMovesNode, env.equipment as Parameters<typeof compileMoves1to1>[1]);
-      return new AvoidStoredState1to1(subFn);
-    } catch { /* fall through */ }
-  }
-  return emptyMoves;
-});

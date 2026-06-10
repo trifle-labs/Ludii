@@ -31,9 +31,3 @@ export class Pow1to1Caret implements IntFunction {
 }
 
 // "^" is @Alias(alias = "^") on Pow.java — register under the caret key.
-registerInt1to1("^", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileInt1to1(positional[0]);
-  const b = compileInt1to1(positional[1]);
-  return new Pow1to1Caret(a, b);
-});

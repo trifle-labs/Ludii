@@ -46,7 +46,3 @@ export class CountEdges1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:edges", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  void _node; void _env;
-  return new CountEdges1to1();
-});

@@ -72,8 +72,3 @@ export class And1to1 extends Operator1to1 {
 
 // @java And.java — compile factory: parse (and { ... }) / (and <moves1> <moves2>).
 // Logic relocated VERBATIM from the inline compileMoves1to1Impl "and" handler.
-registerMoves1to1("and", (node: LudNode, env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const subMoves = flattenMovesList(positional, env.equipment as Parameters<typeof flattenMovesList>[1]);
-  return new And1to1(subMoves);
-});

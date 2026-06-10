@@ -50,7 +50,3 @@ export class SitesLastTo1to1 implements RegionFunction {
   }
 }
 
-registerRegion1to1("sites:lastto", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesLastTo1to1();
-});

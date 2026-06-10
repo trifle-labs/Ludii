@@ -96,7 +96,3 @@ function makeFactory(dir: DirGroup) {
   };
 }
 
-registerInt1to1("count:adjacent", makeFactory("Adjacent"));
-registerInt1to1("count:orthogonal", makeFactory("Orthogonal"));
-registerInt1to1("count:diagonal", makeFactory("Diagonal"));
-registerInt1to1("count:neighbours", makeFactory("Adjacent"));

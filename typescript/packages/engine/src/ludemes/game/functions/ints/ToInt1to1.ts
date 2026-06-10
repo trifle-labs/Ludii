@@ -28,17 +28,3 @@ export class ToInt1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("toint", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const arg = positional[0];
-  if (arg) {
-    try {
-      const boolFn = compileBool1to1(arg, env.numPlayers);
-      return new ToInt1to1(boolFn);
-    } catch {
-      // Argument is not a boolean — fall through
-    }
-  }
-  // No recognisable argument: return 0 (mirrors Java fallback for malformed input)
-  return { eval(_ctx: Context): number { return 0; } };
-});

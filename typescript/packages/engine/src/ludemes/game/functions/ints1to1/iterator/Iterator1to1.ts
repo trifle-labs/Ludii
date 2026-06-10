@@ -102,21 +102,6 @@ export class Pips1to1 implements IntFunction {
 // Registration
 // ---------------------------------------------------------------------------
 
-registerInt1to1("from", (_node: LudNode, _env: Compile1to1Env): IntFunction => new From1to1());
-registerInt1to1("to", (_node: LudNode, _env: Compile1to1Env): IntFunction => new To1to1());
-registerInt1to1("site", (_node: LudNode, _env: Compile1to1Env): IntFunction => new Site1to1());
-registerInt1to1("between", (_node: LudNode, _env: Compile1to1Env): IntFunction => new Between1to1());
-registerInt1to1("level", (_node: LudNode, _env: Compile1to1Env): IntFunction => new Level1to1());
-registerInt1to1("pips", (_node: LudNode, _env: Compile1to1Env): IntFunction => new Pips1to1());
 // Hint — puzzle hint (not applicable in 1:1 play path; return _evalSite or 0)
-registerInt1to1("hint", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  return { eval: (ctx: Context) => ctx._evalSite ?? 0 };
-});
 // Edge — current edge index in iterator
-registerInt1to1("edge", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  return { eval: (ctx: Context) => ctx._evalSite ?? ctx._evalFrom };
-});
 // Track — current track index in iterator
-registerInt1to1("track", (_node: LudNode, _env: Compile1to1Env): IntFunction => {
-  return { eval: (_ctx: Context) => 0 };
-});

@@ -51,13 +51,3 @@ export class If1to1 implements DirectionsFunction {
   }
 }
 
-registerDirections1to1(
-  "if",
-  (node: LudNode, env: Compile1to1Env): DirectionsFunction => {
-    const { positional } = parseArgs1to1((node as LudList).items);
-    const cond    = compileBool1to1(positional[0], env.numPlayers);
-    const dirOk   = compileDirections1to1(positional[1]);
-    const dirNot  = compileDirections1to1(positional[2]);
-    return new If1to1(cond, dirOk, dirNot);
-  },
-);

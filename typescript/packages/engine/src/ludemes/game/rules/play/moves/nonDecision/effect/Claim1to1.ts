@@ -47,19 +47,3 @@ export class Claim1to1 implements MovesFunction {
 const emptyMoves: MovesFunction = { eval(_ctx: Context): Move[] { return []; } };
 
 // @java Claim.java — compile factory: (claim (to <region> ...) ...)
-registerMoves1to1("claim", (node: LudNode, _env: Compile1to1Env): MovesFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // (claim (to <region> ...) ...)
-  const toNode = positional.find((n: LudNode) => isList(n) && headOf(n) === "to");
-  if (toNode && isList(toNode)) {
-    const toArgs = parseArgs1to1((toNode as LudList).items);
-    const regionNode: LudNode | undefined = toArgs.positional.find((n: LudNode) => isList(n)) ?? toArgs.positional[0];
-    if (regionNode) {
-      try {
-        const regionFn: RegionFunction = compileRegion1to1(regionNode);
-        return new Claim1to1(null, new To1to1({ region: regionFn }), null);
-      } catch { /* fall through */ }
-    }
-  }
-  return emptyMoves;
-});

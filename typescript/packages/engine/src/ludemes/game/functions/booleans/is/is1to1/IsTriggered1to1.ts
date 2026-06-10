@@ -51,35 +51,6 @@ export class IsTriggered1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("is:triggered", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  // (is Triggered "event" <roleOrIntFn>)
-  // positional[0] = "Triggered", positional[1] = event string (skip), positional[2] = player
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // Find the first non-string, non-"Triggered" positional (skip event string)
-  let playerNode: LudNode | undefined;
-  for (let i = 1; i < positional.length; i++) {
-    const p = positional[i]!;
-    if (isString(p)) continue; // event string — skip
-    playerNode = p;
-    break;
-  }
-  if (!playerNode) {
-    // (is Triggered "event") with no player — check mover
-    return new IsTriggered1to1(eventFromPositional(positional), { eval(ctx: Context): number { return ctx.state.mover; } }, null);
-  }
-  // Could be a role ident (Mover, Next, P1, ...) or an int fn
-  if (isIdent(playerNode)) {
-    const name = playerNode.name.toLowerCase();
-    if (name === "mover") return new IsTriggered1to1(eventFromPositional(positional), null, "Mover");
-    if (name === "next") return new IsTriggered1to1(eventFromPositional(positional), null, "Next");
-    if (name.startsWith("p") && !isNaN(parseInt(name.slice(1), 10))) {
-      return new IsTriggered1to1(eventFromPositional(positional), null, playerNode.name as RoleTypeFull);
-    }
-  }
-  const playerFn = compileInt1to1(playerNode);
-  return new IsTriggered1to1(eventFromPositional(positional), playerFn, null);
-});
-
 function eventFromPositional(positional: readonly LudNode[]): string {
   for (let index = 1; index < positional.length; index++) {
     const node = positional[index]!;

@@ -89,34 +89,6 @@ function resolvePlayerFn(positional: LudNode[]): IntFunction {
   return { eval(ctx: Context): number { return ctx.state.mover; } };
 }
 
-registerBool1to1("is:hidden", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  // (is Hidden [SiteType] at:<site> [level:<int>] to:<player|role>)
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // named.at = site, named.to = player
-  const atNode = named.get("at");
-  const toNode = named.get("to");
-  const siteFn = atNode ? compileInt1to1(atNode) : { eval(ctx: Context): number { return ctx._evalTo; } };
-  let whoFn: IntFunction;
-  if (toNode) {
-    if (isIdent(toNode)) {
-      const name = toNode.name.toLowerCase();
-      if (name === "mover") whoFn = { eval(ctx: Context): number { return ctx.state.mover; } };
-      else if (name === "next") whoFn = { eval(ctx: Context): number { return (ctx.state.mover % ctx.game.numPlayers) + 1; } };
-      else if (name.startsWith("p") && !isNaN(parseInt(name.slice(1), 10))) {
-        const pid = parseInt(name.slice(1), 10);
-        whoFn = { eval(_ctx: Context): number { return pid; } };
-      } else {
-        whoFn = compileInt1to1(toNode);
-      }
-    } else {
-      whoFn = compileInt1to1(toNode);
-    }
-  } else {
-    whoFn = resolvePlayerFn(positional.slice(1));
-  }
-  return new IsHidden1to1(null, siteFn, null, new Player1to1(whoFn), null);
-});
-
 // Variant keys for the hidden sub-types: all check the same isHidden(who, site) on the TS side
 // because TS State only exposes one hidden array (per player per site, no sub-fields).
 // Java tracks hidden sub-fields (count, rotation, state, value, what, who) but TS collapses them.

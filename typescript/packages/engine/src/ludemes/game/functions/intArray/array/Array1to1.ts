@@ -46,17 +46,3 @@ export class Array1to1 implements IntArrayFunction {
   }
 }
 
-registerIntArray1to1("array", (node: LudNode, _env: Compile1to1Env): IntArrayFunction => {
-  const list = node as LudList;
-  const { positional } = parseArgs1to1(list.items);
-  const first = positional[0];
-  if (!first) return new Array1to1([]);
-  // (array {int int ...}) — curly list of int expressions
-  if (isList(first) && first.delimiter === "curly") {
-    const ints: IntFunction[] = first.items.map(it => compileInt1to1(it));
-    return new Array1to1(ints);
-  }
-  // (array <region>) — wrap region as array
-  const region = compileRegion1to1(first);
-  return new Array1to1(region);
-});

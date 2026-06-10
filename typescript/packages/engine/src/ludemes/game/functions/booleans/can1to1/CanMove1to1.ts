@@ -43,17 +43,3 @@ export class CanMove1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("can", (node: LudNode, _env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const first = positional[0];
-  if (!first || !isIdent(first) || first.name.toLowerCase() !== "move") {
-    return { eval(_ctx: Context): boolean { return false; } };
-  }
-  // (can Move <specificMoves>) — compile the moves argument if present.
-  let specific: MovesFunction | null = null;
-  const movesArg = positional[1];
-  if (movesArg && isList(movesArg)) {
-    try { specific = compileMoves1to1(movesArg); } catch { specific = null; }
-  }
-  return new CanMove1to1(specific);
-});

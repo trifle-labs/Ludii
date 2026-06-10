@@ -29,17 +29,3 @@ export class And1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("and", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const bools: BooleanFunction[] = [];
-  for (const p of positional) {
-    if (isList(p) && p.delimiter === "curly") {
-      for (const child of p.items) {
-        if (isList(child)) bools.push(compileBool1to1(child, env.numPlayers));
-      }
-    } else if (isList(p)) {
-      bools.push(compileBool1to1(p, env.numPlayers));
-    }
-  }
-  return new And1to1(bools);
-});

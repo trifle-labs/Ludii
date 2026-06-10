@@ -30,15 +30,3 @@ export class CountSites1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:sites", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const { named } = parseArgs1to1((node as LudList).items);
-  const inNode = named.get("in");
-  if (inNode) {
-    try {
-      const regionFn = compileRegion1to1(inNode);
-      return new CountSites1to1(regionFn);
-    } catch { /* fall through */ }
-  }
-  // Fallback: count all board sites
-  return { eval: (_ctx: Context) => 0 };
-});

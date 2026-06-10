@@ -52,19 +52,3 @@ export class AllValues1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("all:values", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  // node = (all Values <intArrayFn> if:<cond>)
-  // positional[0] = "Values" ident, positional[1] = array node
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  const arrayNode = positional[1];
-  const ifNode = named.get("if");
-
-  if (!arrayNode || !ifNode) {
-    throw new Error("compiler1to1: (all Values <array> if:<cond>) — missing args");
-  }
-
-  // Java IntArrayFunction is bridged to RegionFunction (int[]) in the 1:1 port
-  const arrayFn = compileRegion1to1(arrayNode);
-  const condFn = compileBool1to1(ifNode, env.numPlayers);
-  return new AllValues1to1(arrayFn, condFn);
-});

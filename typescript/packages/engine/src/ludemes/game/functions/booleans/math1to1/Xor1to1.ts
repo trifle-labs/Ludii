@@ -32,9 +32,3 @@ export class Xor1to1 implements BooleanFunction {
   }
 }
 
-registerBool1to1("xor", (node: LudNode, env: Compile1to1Env): BooleanFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const a = compileBool1to1(positional[0], env.numPlayers);
-  const b = compileBool1to1(positional[1], env.numPlayers);
-  return new Xor1to1(a, b);
-});

@@ -35,17 +35,3 @@ export class CardTrumpSuit1to1 implements IntFunction {
  * card component APIs that are not available in the TS engine; they are
  * deferred (not registered here).
  */
-registerInt1to1("card", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const typeNode = positional[0];
-  if (typeNode && isIdent(typeNode)) {
-    const sub = typeNode.name.toLowerCase();
-    if (sub === "trumpsuit") {
-      return new CardTrumpSuit1to1();
-    }
-  }
-  // Other card subtypes (rank, suit, trumprank, trumpvalue) need card
-  // component data not available in TS engine — return -1 (Constants.OFF)
-  // so callers see an honest "absent" value rather than a wrong 0.
-  return { eval(_ctx: Context): number { return -1; } };
-});

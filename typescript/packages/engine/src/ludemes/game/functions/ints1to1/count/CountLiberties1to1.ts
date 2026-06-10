@@ -137,23 +137,3 @@ export class CountLiberties1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:liberties", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const { named } = parseArgs1to1((node as LudList).items);
-  const atNode = named.get("at");
-  const ifNode = named.get("if");
-
-  // Default: last-to site (mirrors Java's LastTo default)
-  let startFn: IntFunction;
-  if (atNode) {
-    try { startFn = compileInt1to1(atNode); } catch { startFn = { eval: (ctx: Context) => ctx._evalTo }; }
-  } else {
-    startFn = { eval: (ctx: Context) => ctx._evalTo };
-  }
-
-  let condition: BooleanFunction | null = null;
-  if (ifNode) {
-    try { condition = compileBool1to1(ifNode, env.numPlayers); } catch { /* skip */ }
-  }
-
-  return new CountLiberties1to1(startFn, condition);
-});

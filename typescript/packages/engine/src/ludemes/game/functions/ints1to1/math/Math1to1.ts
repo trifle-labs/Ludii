@@ -338,33 +338,3 @@ function registerMod() {
 }
 registerMod();
 
-registerInt1to1("abs", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  try { return new Abs1to1(compileInt1to1(positional[0])); } catch { return { eval: (_ctx: Context) => 0 }; }
-});
-
-registerInt1to1("pow", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const fns = collectFns(node, env);
-  if (fns.length < 2) return fns[0] ?? { eval: (_ctx: Context) => 0 };
-  return new Pow1to1(fns[0]!, fns[1]!);
-});
-
-registerInt1to1("max", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const fns = collectFns(node, env);
-  if (fns.length === 0) return { eval: (_ctx: Context) => 0 };
-  return new Max1to1(fns);
-});
-
-registerInt1to1("min", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const fns = collectFns(node, env);
-  if (fns.length === 0) return { eval: (_ctx: Context) => 0 };
-  return new Min1to1(fns);
-});
-
-registerInt1to1("if", (node: LudNode, env: Compile1to1Env): IntFunction => {
-  const { positional } = parseArgs1to1((node as LudList).items);
-  const condFn = compileBool1to1(positional[0], env.numPlayers);
-  const thenFn = compileInt1to1(positional[1]);
-  const elseFn = positional[2] ? compileInt1to1(positional[2]) : { eval: (_ctx: Context) => 0 };
-  return new IfInt1to1(condFn, thenFn, elseFn);
-});

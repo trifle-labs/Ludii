@@ -30,24 +30,3 @@ export class CountStack1to1 implements IntFunction {
   }
 }
 
-registerInt1to1("count:stack", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  const { named } = parseArgs1to1((node as LudList).items);
-  const toNode = named.get("to") ?? named.get("at");
-  if (toNode) {
-    try {
-      return new CountStack1to1(compileInt1to1(toNode));
-    } catch { /* fall through */ }
-  }
-  return new CountStack1to1({ eval: (ctx: Context) => ctx._evalTo });
-});
-
-registerInt1to1("count:cell", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  const { named } = parseArgs1to1((node as LudList).items);
-  const atNode = named.get("at");
-  if (atNode) {
-    try {
-      return new CountStack1to1(compileInt1to1(atNode));
-    } catch { /* fall through */ }
-  }
-  return new CountStack1to1({ eval: (ctx: Context) => ctx._evalFrom });
-});

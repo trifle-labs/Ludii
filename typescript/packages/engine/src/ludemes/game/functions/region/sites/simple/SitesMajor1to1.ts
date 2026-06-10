@@ -63,7 +63,3 @@ export class SitesMajor1to1 implements RegionFunction {
   }
 }
 
-registerRegion1to1("sites:major", (_node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _node; void _env;
-  return new SitesMajor1to1();
-});

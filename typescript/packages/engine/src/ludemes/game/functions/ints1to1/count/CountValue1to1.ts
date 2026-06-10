@@ -65,14 +65,3 @@ export class CountValue1to1 implements IntFunction {
  * Positional layout: [0]="Value", [1]=of-int (fallback), [2]=in-array (fallback)
  * Named: of:<int>, in:<intArray>
  */
-registerInt1to1("count:value", (node: LudNode, _env: Compile1to1Env): IntFunction => {
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // named params: of:<int>, in:<intArray>
-  const ofNode  = named.get("of")  ?? positional[1];
-  const inNode  = named.get("in")  ?? positional[2];
-
-  const valueFn  = compileInt1to1(ofNode);
-  const arrayFn  = compileIntArray1to1(inNode);
-
-  return new CountValue1to1(valueFn, arrayFn);
-});

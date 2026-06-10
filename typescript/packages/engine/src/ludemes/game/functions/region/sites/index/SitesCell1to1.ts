@@ -57,18 +57,3 @@ export class SitesCell1to1 implements RegionFunction {
   }
 }
 
-registerRegion1to1("sites:cell", (node: LudNode, _env: Compile1to1Env): RegionFunction => {
-  void _env;
-  const { positional } = parseArgs1to1((node as LudList).items);
-  // positional[0] may be the SiteType ident "Cell"; the index is the next positional
-  // or positional[0] if it's not a SiteType ident.
-  // Java constructor: (optional SiteType elementType, IntFunction index)
-  // The head is "sites", positional[0] is "Cell" (matched by sites:cell key), positional[1] is index.
-  // But parseArgs1to1 skips the head (startFrom=1), so positional[0] = "Cell", positional[1] = index.
-  let indexNode = positional[1]; // skip the "Cell" ident
-  if (!indexNode) {
-    indexNode = positional[0]; // fallback: only one arg, treat as index
-  }
-  const indexFn = indexNode ? compileInt1to1(indexNode) : { eval: (_ctx: Context) => 0 };
-  return new SitesCell1to1(indexFn);
-});
