@@ -1011,3 +1011,19 @@ Now @java Promote.java:154-177: component-table lookup, name-contains + owner.
 hold with no exceptions. Remaining for complete: the mechanical deletion
 (instantiateRegistry → play1to1 fallback → compiler1to1/LudemeRegistry/batches),
 *1to1 re-homing, StartRule eval(Context) migration, State convergence.
+
+## Update 44 — DELETION steps 1+2 LANDED: registry retired, no silent fallback
+
+- Step 1: instantiateRegistry returns null (LUDII_LEGACY_REGISTRY hatch only);
+  batch factories are dead code pending physical deletion.
+- Step 2: play1to1 SURFACES faithful-compile failures (no silent compileNode1to1
+  fallback; LUDII_BESPOKE=1 explicit reference survives until step 3).
+- The honest engine immediately exposed Gomoku: its <Exact> option expanded to the
+  glued ident `exact:True` (the option-value split now handles label:Ident, matching
+  Java's textual re-lex). LESSON: the sampled coverage probe (stride 10) misses
+  games — the FULL-corpus stride-1 audit is the deletion gate, running now.
+- 24-game canary battery green on the no-fallback engine, incl. Int. Draughts.
+
+After the audit: fix any surfaced real-game gaps (Gomoku-class option/lex issues
+expected), then step 3 (physical deletion of compiler1to1/LudemeRegistry/batches +
+ArgCompiler registry plumbing + the LUDII_BESPOKE branch + obsolete probes).
