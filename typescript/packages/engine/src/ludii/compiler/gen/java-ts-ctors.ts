@@ -1495,6 +1495,9 @@ import { Hint as CHintInt } from "../../../ludemes/game/functions/ints/iterator/
 import { EdgeIterator as CEdgeInt } from "../../../ludemes/game/functions/ints/iterator/EdgeIterator.js";
 import { TopLevel as CTopLevel } from "../../../ludemes/game/functions/ints/stacking/TopLevel.js";
 import { Intersection as CIntersectionRegion } from "../../../ludemes/game/functions/region/math/Intersection.js";
+import { Difference as CDifferenceRegion } from "../../../ludemes/game/functions/region/math/Difference.js";
+import { Union as CUnionRegion } from "../../../ludemes/game/functions/region/math/Union.js";
+import { If as CIfRegion } from "../../../ludemes/game/functions/region/math/IfRegion.js";
 
 export const JAVA_TS_CTORS = new Map();
 JAVA_TS_CTORS.set("game.functions.ints.board.MapEntry", FaithfulMapEntry);
@@ -2994,3 +2997,6 @@ JAVA_TS_CTORS.set("game.functions.ints.iterator.Hint", CHintInt);
 JAVA_TS_CTORS.set("game.functions.ints.iterator.Edge", CEdgeInt);
 JAVA_TS_CTORS.set("game.functions.ints.stacking.TopLevel", CTopLevel);
 JAVA_TS_CTORS.set("game.functions.region.math.Intersection", CIntersectionRegion);
+JAVA_TS_CTORS.set("game.functions.region.math.Difference", CDifferenceRegion);
+JAVA_TS_CTORS.set("game.functions.region.math.Union", CUnionRegion);
+JAVA_TS_CTORS.set("game.functions.region.math.If", CIfRegion);
