@@ -278,7 +278,6 @@ import { SwapPieces as C274 } from "../../../ludemes/game/rules/play/moves/nonDe
 import { Swap as C275 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/swap/Swap.js";
 import { ForgetValueAll as C276 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/forget/value/ForgetValueAll.js";
 import { ForgetValue as C277 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/forget/value/ForgetValue.js";
-import { Forget1to1 as C278 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/forget/Forget1to1.js";
 import { AddScore as C279 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/AddScore.js";
 import { Remember as C280 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/remember/Remember.js";
 import { RememberState as C281 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/state/remember/state/RememberState.js";
@@ -291,7 +290,6 @@ import { While as C287 } from "../../../ludemes/game/rules/play/moves/nonDecisio
 import { MaxCaptures as C288 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxCaptures.js";
 import { MaxMoves as C289 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxMoves.js";
 import { MaxDistance as C290 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/distance/MaxDistance.js";
-import { Max as C291 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/max/Max.js";
 import { Priority as C292 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/Priority.js";
 import { AvoidStoredState as C293 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/AvoidStoredState.js";
 import { Satisfy as C294 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/requirement/Satisfy.js";
@@ -423,7 +421,6 @@ import { HexagonOn3464 as C419 } from "../../../ludemes/game/functions/graph/gen
 import { Tiling3464 as C420 } from "../../../ludemes/game/functions/graph/generators/basis/tiling/tiling3464/Tiling3464.js";
 import { ParallelogramOn3464 as C421 } from "../../../ludemes/game/functions/graph/generators/basis/tiling/tiling3464/ParallelogramOn3464.js";
 import { Basis as C422 } from "../../../ludemes/game/functions/graph/generators/basis/Basis.js";
-import { Was1to1 as C423 } from "../../../ludemes/game/functions/booleans/was1to1/Was1to1.js";
 import { IsUnique as C424 } from "../../../ludemes/game/functions/booleans/deductionPuzzle/is/graph/IsUnique.js";
 import { IsSolved as C425 } from "../../../ludemes/game/functions/booleans/deductionPuzzle/is/simple/IsSolved.js";
 import { Is as C426 } from "../../../ludemes/game/functions/booleans/deductionPuzzle/is/Is.js";
@@ -512,7 +509,6 @@ import { Team as C508 } from "../../../ludemes/game/functions/intArray/iteraror/
 import { IntArrayConstant as C509 } from "../../../ludemes/game/functions/intArray/IntArrayConstant.js";
 import { Array1to1 as C510 } from "../../../ludemes/game/functions/intArray/array/Array1to1.js";
 import { PlayersMany as C511 } from "../../../ludemes/game/functions/intArray/players/many/PlayersMany.js";
-import { PlayersTeam1to1 as C512 } from "../../../ludemes/game/functions/intArray/players/Players1to1.js";
 import { PlayersTeam as C513 } from "../../../ludemes/game/functions/intArray/players/team/PlayersTeam.js";
 import { BaseIntArrayFunction as C514 } from "../../../ludemes/game/functions/intArray/BaseIntArrayFunction.js";
 import { ValuesRemembered as C515 } from "../../../ludemes/game/functions/intArray/values/ValuesRemembered.js";
@@ -1802,7 +1798,6 @@ JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.swap.sites.Swa
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.swap.Swap", C275);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.forget.value.ForgetValueAll", C276);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.forget.value.ForgetValue", C277);
-JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.forget.Forget", C278);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.AddScore", C279);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.remember.Remember", C280);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.state.remember.state.RememberState", C281);
@@ -1815,7 +1810,6 @@ JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.While", 
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.max.moves.MaxCaptures", C288);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.max.moves.MaxMoves", C289);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.max.distance.MaxDistance", C290);
-JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.max.Max", C291);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.Priority", C292);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.AvoidStoredState", C293);
 JAVA_TS_CTORS.set("game.rules.play.moves.nonDecision.effect.requirement.Satisfy", C294);
@@ -1947,14 +1941,12 @@ JAVA_TS_CTORS.set("game.functions.graph.generators.basis.tiling.tiling3464.Hexag
 JAVA_TS_CTORS.set("game.functions.graph.generators.basis.tiling.tiling3464.Tiling3464", C420);
 JAVA_TS_CTORS.set("game.functions.graph.generators.basis.tiling.tiling3464.ParallelogramOn3464", C421);
 JAVA_TS_CTORS.set("game.functions.graph.generators.basis.Basis", C422);
-JAVA_TS_CTORS.set("game.functions.booleans.was.Was", C423);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.is.graph.IsUnique", C424);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.is.simple.IsSolved", C425);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.is.Is", C426);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.is.regionResult.IsCount", C427);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.is.regionResult.IsSum", C428);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.all.AllDifferent", C429);
-JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.all.All", C430);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.all.All", C430);
 JAVA_TS_CTORS.set("game.functions.booleans.deductionPuzzle.ForAll", C431);
 JAVA_TS_CTORS.set("game.functions.booleans.BooleanConstant", C432);
@@ -2037,7 +2029,6 @@ JAVA_TS_CTORS.set("game.functions.intArray.iteraror.Team", C508);
 JAVA_TS_CTORS.set("game.functions.intArray.IntArrayConstant", C509);
 JAVA_TS_CTORS.set("game.functions.intArray.array.Array", C510);
 JAVA_TS_CTORS.set("game.functions.intArray.players.many.PlayersMany", C511);
-JAVA_TS_CTORS.set("game.functions.intArray.players.Players", C512);
 JAVA_TS_CTORS.set("game.functions.intArray.players.team.PlayersTeam", C513);
 JAVA_TS_CTORS.set("game.functions.intArray.BaseIntArrayFunction", C514);
 JAVA_TS_CTORS.set("game.functions.intArray.values.ValuesRemembered", C515);
