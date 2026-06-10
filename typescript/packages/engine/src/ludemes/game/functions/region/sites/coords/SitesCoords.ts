@@ -104,7 +104,11 @@ export class SitesCoords extends BaseRegionFunction {
     if (board) {
       const topo = board.topology?.();
       const siteType = this.siteType ?? board.defaultSite?.() ?? "Cell";
-      const direct = topo?.getElement?.(coord, this.siteType ?? null) ?? topo?.findByCoord?.(coord, siteType) ?? null;
+      // @java SiteFinder.find(board, coord, type) — a null type resolves to the
+      // BOARD'S default site type before lookup. Passing null here let getElement
+      // try Cells first on vertex-play boards and centroid-match a FACE (Coyote's
+      // "A3" -> cell 4 instead of vertex 10).
+      const direct = topo?.getElement?.(coord, (this.siteType ?? siteType) as never) ?? topo?.findByCoord?.(coord, siteType) ?? null;
       if (direct !== null) return direct.index();
       if (siteType === "Cell" && topo?.cells) {
         for (const cell of topo.cells()) {
