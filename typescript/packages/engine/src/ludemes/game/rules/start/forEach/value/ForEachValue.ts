@@ -104,40 +104,6 @@ export class ForEachValue {
     context._evalValue = savedValue;
   }
 
-  public applyToInitialState(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
-    equipment: Equipment1to1,
-    numPlayers: number,
-    stateAt?: number[],
-    valueAt?: number[],
-  ): void {
-    const fakeCtx = {
-      game: { numPlayers, equipment },
-      state: { mover: 1, cells, countAt, isEmptySite: (i: number) => !cells[i] },
-      _evalFrom: -1,
-      _evalTo: -1,
-      _evalValue: 0,
-      _evalSite: -1,
-      _evalPlayer: 1,
-      _radials: equipment.board.radials,
-    } as unknown as Context;
-
-    const savedValue = fakeCtx._evalValue;
-    const min = this.minFn.eval(fakeCtx);
-    const max = this.maxFn.eval(fakeCtx);
-    for (let to = min; to <= max; to++) {
-      fakeCtx._evalValue = to;
-      if (typeof this.startRule.applyToInitialState === "function") {
-        this.startRule.applyToInitialState(cells, whats, countAt, equipment, numPlayers, stateAt, valueAt, fakeCtx);
-      } else {
-        this.startRule.eval(fakeCtx);
-      }
-    }
-    fakeCtx._evalValue = savedValue;
-  }
-
   //-------------------------------------------------------------------------
 
   /** @java ForEachValue.gameFlags(Game) */

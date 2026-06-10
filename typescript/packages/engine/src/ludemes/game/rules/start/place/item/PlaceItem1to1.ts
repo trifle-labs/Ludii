@@ -172,14 +172,26 @@ export class PlaceItem1to1 implements StartRule {
    *
    * Deferred: deduction-puzzle path, container-based (non-hand), stacking.
    */
-  public applyToInitialState(
+  /** @java PlaceItem.eval(Context) — bridge arrays + facade equipment. */
+  public eval(ctx: Context): void {
+    const a = (ctx as unknown as {
+      _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
+    })._startArrays;
+    if (!a) return;
+    const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
+    this.applyImpl(a.cells, a.whats, a.countAt, g.equipment, g.numPlayers, ctx);
+  }
+
+  private applyImpl(
     cells: number[],
     whats: number[],
     countAt: number[],
     equipment: Equipment1to1,
     numPlayers: number,
+    ctx: Context,
   ): void {
-    const fakeCtx = makeFakeCtx(cells, equipment, numPlayers);
+    // The REAL bridge context (Java evaluates start args on the live context).
+    const fakeCtx = ctx;
 
     // Java: if (locationIds != null || region != null || coords != null || countsFn != null)
     if (
@@ -392,28 +404,6 @@ function isSiteTypeName(value: unknown): value is string {
   return value === "Cell" || value === "Edge" || value === "Vertex";
 }
 
-/** Minimal fake context for IntFunction/RegionFunction evaluation. */
-function makeFakeCtx(
-  cells: number[],
-  equipment: Equipment1to1,
-  numPlayers: number,
-): Context {
-  const fakeGame = { numPlayers, equipment } as unknown as Game1to1;
-  return {
-    game: fakeGame,
-    state: {
-      mover: 1,
-      cells,
-      isEmptySite: (i: number) => !cells[i],
-    },
-    _evalFrom: -1,
-    _evalTo: -1,
-    _evalValue: 0,
-    _evalSite: -1,
-    _evalPlayer: 1,
-    _radials: equipment.board.radials,
-  } as unknown as Context;
-}
 
 // Re-export OFF for consumers (mirrors Java Constants.OFF = -1).
 export { OFF };
