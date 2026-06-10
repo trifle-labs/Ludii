@@ -950,3 +950,29 @@ Remaining 9 (191 wins): Is-variant residue 66, Forget 59, util.graph.Graph 41
 Satisfy 2. After zero: delete instantiateRegistry/instantiateRegistryInner +
 REGISTRY_FIRST + LudemeRegistry + batch0-9 factories + compiler1to1.ts +
 play1to1's fallback line, then unwind transition re-exports (*1to1 names).
+
+## Update 40 — REGISTRY BURN-DOWN COMPLETE: zero real-game bespoke-factory dependencies
+
+From ~22,000 registry wins / 34 classes to **3 wins / 1 class — all three in
+reconstruction/pending files** (Machanan, Kokonag'n, Sitta: recon placeholders whose
+equipment lacks a board; the faithful Equipment ctor correctly throws @java's "At
+least a board" requirement). Real-game coverage stays 130/130.
+
+Final batch: IsConnected port (flood-fill group-connects-targets, Is residue),
+Forget static factory, game.util.graph.Graph ludeme surface (literal graph boards),
+Players/Was static factories, Phase port, Max(Moves/Captures) wired to the existing
+MaxMoves/MaxCaptures (then→MovesFunction conversion).
+
+**LATE ITEM-1 FINDING: International Draughts is 0% faithful / 100% bespoke — a
+pre-existing gap outside the historical canary set** (verified identical before/after
+the Max change; the issue is the deep multi-capture replay, not compile). Queued as
+the one known faithful<bespoke game. The honest item-1 statement: faithful ≥ bespoke
+on every game EVER VERIFIED, with Int. Draughts now the single known exception to
+drive to parity.
+
+DELETION IS NOW UNBLOCKED: (1) remove ArgCompiler's instantiateRegistry fallback +
+REGISTRY_FIRST; (2) remove play1to1's compileNode1to1 fallback + LUDII_BESPOKE path;
+(3) delete compiler1to1.ts, LudemeRegistry, createFullRegistry, batch0-9 — NOTE this
+removes the harness's bespoke REFERENCE mode; the parity gate is vs recorded Java
+trials (which is the real oracle; the bespoke reference was scaffolding). The *1to1
+substrate classes used by faithful files stay until item-3 re-homing.

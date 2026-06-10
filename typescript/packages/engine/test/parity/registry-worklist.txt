@@ -1,9 +1,1 @@
-  66 game.functions.booleans.is.Is
-  59 game.rules.play.moves.nonDecision.effect.state.forget.Forget
-  41 game.util.graph.Graph
-   8 game.functions.intArray.players.Players
-   6 game.rules.play.moves.nonDecision.effect.requirement.max.Max
-   3 game.functions.ints.board.Phase
-   3 game.functions.booleans.was.Was
    3 game.equipment.Equipment
-   2 game.rules.play.moves.nonDecision.effect.Satisfy
