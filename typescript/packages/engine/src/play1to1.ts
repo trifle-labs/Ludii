@@ -27,7 +27,7 @@ import {
 } from "@ludii/typescript-language";
 import { getBuiltinDefines } from "./builtin-defines.js";
 import { expandDefines } from "./lud-defines.js";
-import { applyOptions } from "./lud-options.js";
+import { applyOptions, collectDefaultOptions } from "./lud-options.js";
 import { expandRanges, expandSiteRanges } from "./lud-ranges.js";
 import type { Game1to1 } from "./ludemes/Game1to1.js";
 import { ArgCompiler } from "./ludii/compiler/arg/ArgCompiler.js";
@@ -56,12 +56,48 @@ export interface Play1to1Options {
  * @param opts   Optional resolver for `(match ...)` subgames
  * @returns A `Game1to1` instance ready for start/moves/apply
  */
+
+/**
+ * Textually resolve `<Tag:arg>` / `<Tag>` placeholders that appear as a range
+ * bound (`N..<Tag:arg>`, `<Tag:arg>..N`, `<Tag:a>..<Tag:b>`) BEFORE the range
+ * pre-pass. @java Expander substitutes options into the raw text before
+ * expandRanges; only single-token number/ident values can be a range bound.
+ */
+function resolveRangePlaceholders(source: string): string {
+  if (!/\.\.</.test(source) && !/>\.\./.test(source)) return source;
+  const opts = collectDefaultOptions(parseLud(source));
+  const valueText = new Map<string, string>();
+  for (const o of opts) {
+    o.args.forEach((argName, i) => {
+      const v = o.values[i];
+      const tok = v && v.length === 1 ? v[0] : undefined;
+      if (!tok) return;
+      const text = tok.kind === "number" ? String((tok as { value: number }).value)
+        : tok.kind === "ident" ? (tok as { name: string }).name : null;
+      if (text === null) return;
+      valueText.set(`<${o.tag}:${argName}>`, text);
+      if (i === 0) valueText.set(`<${o.tag}>`, text);
+    });
+  }
+  return source.replace(/<\w+(?::\w+)?>/g, (ph, offset: number) => {
+    const before = source.slice(Math.max(0, offset - 2), offset);
+    const after = source.slice(offset + ph.length, offset + ph.length + 2);
+    if (before !== ".." && after !== "..") return ph;
+    return valueText.get(ph) ?? ph;
+  });
+}
+
 export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
   // Step 0: Java text pre-pass — expand `m..n` number ranges and `"A1".."C3"` site
   // ranges before lexing (@java Expander.expand; the lexer would otherwise produce a
   // single `18..21` ident that can never bind a parameter).
+  // Java substitutes option values TEXTUALLY before expanding ranges, so a range
+  // bound may be an option placeholder — Mutant Y^3's `{0..<Board:aTri>}`. The
+  // lexer mangles `..<` beyond recovery, so resolve single-token placeholder
+  // bounds textually here (complex values still go through the AST option pass).
+  const preRanged = resolveRangePlaceholders(source);
   // Step 1–3: Parse, apply options, expand defines.
-  const parsed = parseLud(expandSiteRanges(expandRanges(source)));
+  const parsed = parseLud(expandSiteRanges(expandRanges(preRanged)));
   const resolved = applyOptions(parsed);
   const ast = expandDefines(resolved, [...getBuiltinDefines()]);
 
