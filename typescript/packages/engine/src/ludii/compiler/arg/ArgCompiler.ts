@@ -227,6 +227,9 @@ export class ArgCompiler {
     const preferredSites = this.compilePreferredSitesVariant(node, head, expectedTypes, env);
     if (preferredSites !== null) return preferredSites;
 
+    const preferredDirectionsFromTo = this.compilePreferredDirectionsFromTo(node, head, expectedTypes, env);
+    if (preferredDirectionsFromTo !== null) return preferredDirectionsFromTo;
+
     const preferred = this.compilePreferredTokenClass(node, head, expectedTypes, env);
     if (preferred !== null) return preferred;
 
@@ -706,6 +709,61 @@ export class ArgCompiler {
     }
     if (PLAYER_SITE_VARIANTS.has(variantName)) return playerSitesRegion(variantName);
     return Sites.constructSimple(simpleSiteVariant(variantName) as never, siteType);
+  }
+
+  /**
+   * @java Directions(SiteType, from:IntFunction, to:IntFunction) — the direction(s) from
+   * one site to another, computed from the board geometry. The generic candidate path
+   * mis-binds this overload onto the static-names Directions ctor (empty names), breaking
+   * push mechanics like Gekitai's (directions Cell from:(last To) to:(site)).
+   */
+  private compilePreferredDirectionsFromTo(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+    env: ArgCompilerEnv,
+  ): unknown | null {
+    if (normalise(head) !== "directions") return null;
+    if (!expectedTypes.some((expected) => expected.dims === 0 &&
+      (expected.name === "game.functions.directions.DirectionsFunction" ||
+       expected.name === "game.util.directions.Direction" ||
+       expected.name === "game.functions.directions.Directions"))) return null;
+    const parsed = parseNodeArgs(node);
+    const fromNode = parsed.argsIn.find((arg) => arg.parameterName === "from")?.node;
+    const toNode = parsed.argsIn.find((arg) => arg.parameterName === "to")?.node;
+    if (!fromNode || !toNode) return null;
+    const fromFn = this.compileMaybe(fromNode, [parseJavaType("game.functions.ints.IntFunction")], env);
+    const toFn = this.compileMaybe(toNode, [parseJavaType("game.functions.ints.IntFunction")], env);
+    if (fromFn === null || toFn === null) return null;
+    this.resolveTrace.push({ token: head, cls: "game.functions.directions.Directions" });
+    type Ctx = { game?: { equipment?: { board?: { trajectories?: { xOf(s: number): number; yOf(s: number): number } | null; width?: number } } } };
+    const f = fromFn as { eval(c: unknown): number };
+    const t = toFn as { eval(c: unknown): number };
+    return {
+      eval(ctx: unknown): string[] {
+        const a = f.eval(ctx);
+        const b = t.eval(ctx);
+        if (a < 0 || b < 0 || a === b) return [];
+        const board = (ctx as Ctx).game?.equipment?.board;
+        const traj = board?.trajectories;
+        let dx: number; let dy: number;
+        if (traj) {
+          dx = traj.xOf(b) - traj.xOf(a);
+          dy = traj.yOf(b) - traj.yOf(a);
+        } else {
+          const W = board?.width ?? 8;
+          dx = (b % W) - (a % W);
+          dy = Math.floor(b / W) - Math.floor(a / W);
+        }
+        const sx = Math.sign(dx); const sy = Math.sign(dy);
+        const name =
+          sx === 0 && sy > 0 ? "N" : sx > 0 && sy > 0 ? "NE" :
+          sx > 0 && sy === 0 ? "E" : sx > 0 && sy < 0 ? "SE" :
+          sx === 0 && sy < 0 ? "S" : sx < 0 && sy < 0 ? "SW" :
+          sx < 0 && sy === 0 ? "W" : "NW";
+        return [name];
+      },
+    };
   }
 
   private compileCandidate(node: LudList, candidate: Candidate, env: ArgCompilerEnv): unknown | null {
