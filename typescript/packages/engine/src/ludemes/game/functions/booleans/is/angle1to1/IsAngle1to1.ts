@@ -29,7 +29,6 @@ import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../b
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import { type Compile1to1Env } from "../../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1, compileBool1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
 
 type AnglePredicate = "acute" | "obtuse" | "reflex" | "right";
@@ -114,46 +113,5 @@ export class IsAngle1to1 implements BooleanFunction {
     ctx._evalSite = originSite;
     return false;
   }
-}
-
-/** Parse angle node: positionals after the subtype ident are: [type] at:<int> cond1 cond2 */
-function compileAngle(node: LudNode, env: Compile1to1Env, predicate: AnglePredicate): BooleanFunction {
-  const { positional, named } = parseArgs1to1((node as LudList).items);
-  // positional[0] = "Acute"/"Obtuse"/"Reflex"/"Right"
-  // named: at = IntFunction
-  // positional[1] = optional SiteType ident (skip)
-  // positional[2], [3] = cond1, cond2 (positional OR named conditionSite/conditionSite2)
-
-  let atFn: IntFunction = { eval: (c: Context & EvalScratch) => c._evalTo };
-  const atNode = named.get("at");
-  if (atNode) {
-    try { atFn = compileInt1to1(atNode); } catch { /* keep default */ }
-  }
-
-  // Skip optional SiteType ident in positionals
-  let posIdx = 1;
-  {
-    const p = positional[posIdx];
-    if (p && isIdent(p)) {
-      const n = p.name.toLowerCase();
-      if (n === "cell" || n === "edge" || n === "vertex") posIdx++;
-    }
-  }
-
-  let cond1: BooleanFunction = { eval: () => false };
-  let cond2: BooleanFunction = { eval: () => false };
-
-  const c1Node = positional[posIdx];
-  posIdx++;
-  const c2Node = positional[posIdx];
-
-  if (c1Node) {
-    try { cond1 = compileBool1to1(c1Node, env.numPlayers); } catch { /* keep */ }
-  }
-  if (c2Node) {
-    try { cond2 = compileBool1to1(c2Node, env.numPlayers); } catch { /* keep */ }
-  }
-
-  return new IsAngle1to1(atFn, cond1, cond2, predicate);
 }
 

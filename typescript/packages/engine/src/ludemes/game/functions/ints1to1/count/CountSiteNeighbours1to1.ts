@@ -22,7 +22,6 @@ import type { LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
 import { type Compile1to1Env } from "../../../../registry1to1.js";
-import { parseArgs1to1, compileInt1to1 } from "../../../../../compiler1to1.js";
 
 type DirGroup = "Adjacent" | "Orthogonal" | "Diagonal";
 
@@ -80,19 +79,5 @@ export class CountSiteNeighbours1to1 implements IntFunction {
     }
     return n;
   }
-}
-
-function makeFactory(dir: DirGroup) {
-  return (node: LudNode, _env: Compile1to1Env): IntFunction => {
-    const { named } = parseArgs1to1((node as LudList).items);
-    const atNode = named.get("at");
-    let siteFn: IntFunction;
-    if (atNode) {
-      try { siteFn = compileInt1to1(atNode); } catch { siteFn = { eval: (ctx: Context) => ctx._evalFrom }; }
-    } else {
-      siteFn = { eval: (ctx: Context) => ctx._evalFrom };
-    }
-    return new CountSiteNeighbours1to1(siteFn, dir);
-  };
 }
 

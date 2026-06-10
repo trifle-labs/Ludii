@@ -17,7 +17,6 @@ import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
 import { Player1to1 } from "../../../../util/moves/Player1to1.js";
-import { compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
 
 function findRoot(parent: number[], pos: number): number {
@@ -40,15 +39,6 @@ function roleToIntFunction(role: RoleTypeFull): IntFunction {
       return c.state.mover;
     },
   };
-}
-
-function makeWhoArg(arg: import("@ludii/typescript-language").LudNode | undefined): { who: Player1to1 | null; role: RoleTypeFull | null } {
-  if (arg && isIdent(arg)) return { who: null, role: arg.name as RoleTypeFull };
-  if (arg) {
-    try { return { who: new Player1to1(compileInt1to1(arg)), role: null }; }
-    catch { /* fall through */ }
-  }
-  return { who: new Player1to1(null), role: null };
 }
 
 export class IsSpanningTree1to1 implements BooleanFunction {

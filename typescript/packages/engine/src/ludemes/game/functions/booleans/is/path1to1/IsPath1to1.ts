@@ -25,33 +25,9 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import { compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent, isNumber } from "@ludii/typescript-language";
 
 const INFINITY = 999999;
-
-function makeWhoFn(arg: import("@ludii/typescript-language").LudNode | undefined): IntFunction {
-  if (arg && isIdent(arg)) {
-    const roleName = arg.name.toLowerCase();
-    return {
-      eval: (c: Context & EvalScratch): number => {
-        if (roleName === "mover") return c.state.mover;
-        if (roleName === "next") return (c.state.mover % c.game.numPlayers) + 1;
-        if (roleName === "neutral") return 0;
-        const m = roleName.match(/^p(\d+)$/);
-        if (m) return parseInt(m[1] as string, 10);
-        return c.state.mover;
-      },
-    };
-  }
-  if (arg) {
-    try { return compileInt1to1(arg); }
-    catch { /* fall through */ }
-  }
-  return { eval: (c: Context & EvalScratch) => c.state.mover };
-}
-
-// ---- Tarjan SCC (modified, from Java IsPath.strongComponent) ----
 
 interface SCCResult {
   count: number;        // size of the SCC containing both v1 and v2

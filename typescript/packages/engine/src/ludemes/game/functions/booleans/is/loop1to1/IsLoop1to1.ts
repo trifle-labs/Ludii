@@ -26,34 +26,11 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, RegionFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import { compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
 
 type SiteTypeName = "Cell" | "Edge" | "Vertex";
 type RoleTypeName = string;
 type DirectionArg = string | DirectionsFunction;
-
-function makeColourFn(arg: import("@ludii/typescript-language").LudNode | undefined): IntFunction {
-  if (arg && isIdent(arg)) {
-    const roleName = arg.name.toLowerCase();
-    return {
-      eval: (c: Context & EvalScratch): number => {
-        if (roleName === "mover") return c.state.mover;
-        if (roleName === "next") return (c.state.mover % c.game.numPlayers) + 1;
-        if (roleName === "neutral") return 0;
-        const m = roleName.match(/^p(\d+)$/);
-        if (m) return parseInt(m[1] as string, 10);
-        return c.state.mover;
-      },
-    };
-  }
-  if (arg) {
-    try { return compileInt1to1(arg); }
-    catch { /* fall through */ }
-  }
-  // default = Mover
-  return { eval: (c: Context & EvalScratch) => c.state.mover };
-}
 
 function defaultLastToFn(): IntFunction {
   return { eval: (c: Context & EvalScratch) => c._evalTo };

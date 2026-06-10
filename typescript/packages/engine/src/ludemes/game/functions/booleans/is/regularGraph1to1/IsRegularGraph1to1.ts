@@ -21,22 +21,10 @@ import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
 import { Player1to1 } from "../../../../util/moves/Player1to1.js";
-import { compileInt1to1 } from "../../../../../../compiler1to1.js";
 import { isIdent } from "@ludii/typescript-language";
 
 const ZERO_INT: IntFunction = { eval: () => 0 };
 const FALSE_BOOL: BooleanFunction = { eval: () => false };
-
-function makeWhoArg(arg: import("@ludii/typescript-language").LudNode | undefined): { who: Player1to1 | null; role: RoleTypeFull | null } {
-  if (arg && isIdent(arg)) {
-    return { who: null, role: arg.name as RoleTypeFull };
-  }
-  if (arg) {
-    try { return { who: new Player1to1(compileInt1to1(arg)), role: null }; }
-    catch { /* fall through */ }
-  }
-  return { who: null, role: "Mover" };
-}
 
 function roleToIntFunction(role: RoleTypeFull | null): IntFunction {
   const key = (role ?? "Mover").toLowerCase();

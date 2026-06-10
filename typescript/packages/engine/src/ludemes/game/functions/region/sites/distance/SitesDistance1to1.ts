@@ -20,47 +20,11 @@ import type { Context } from "../../../../../../context.js";
 import type { IntFunction, RegionFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, isNumber, isList } from "@ludii/typescript-language";
-import { compileInt1to1, parseArgs1to1, headOf } from "../../../../../../compiler1to1.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import type { Game1to1 } from "../../../../../Game1to1.js";
 
 // ---------------------------------------------------------------------------
 // Range helper
-// ---------------------------------------------------------------------------
-
-/** Compile a distance range node → { minFn, maxFn }. */
-function compileDistanceRange(node: LudNode | undefined): { minFn: IntFunction; maxFn: IntFunction } | null {
-  if (!node) return null;
-  if (isNumber(node)) {
-    const v = node.value;
-    return { minFn: { eval: () => v }, maxFn: { eval: () => v } };
-  }
-  if (!isList(node)) {
-    try {
-      const fn = compileInt1to1(node);
-      return { minFn: fn, maxFn: fn };
-    } catch { return null; }
-  }
-  const h = headOf(node)?.toLowerCase();
-  const { positional } = parseArgs1to1(node.items);
-  if (h === "exact") {
-    const fn = compileInt1to1(positional[0]);
-    return { minFn: fn, maxFn: fn };
-  }
-  if (h === "range") {
-    const minFn = compileInt1to1(positional[0]);
-    const maxFn = positional[1] ? compileInt1to1(positional[1]) : minFn;
-    return { minFn, maxFn };
-  }
-  // Fallback: compile entire node as int → exact distance
-  try {
-    const fn = compileInt1to1(node);
-    return { minFn: fn, maxFn: fn };
-  } catch { return null; }
-}
-
-// ---------------------------------------------------------------------------
-// Class
 // ---------------------------------------------------------------------------
 
 export class SitesDistance1to1 implements RegionFunction {
