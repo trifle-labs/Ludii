@@ -206,7 +206,16 @@ export class ArgCompiler {
       return this.compileMaybe(node.items[0]!, expectedTypes, env);
     }
 
-    const head = listHead(node);
+    // @java Common/src/main/grammar/Token.java:555-565 — a token written
+    // `name:(...)` carries `name` as a parameterLabel and the remainder as the
+    // token value. In HEAD position the label is the ludeme token itself:
+    // Vanguard's `(while:(cond) moves)` compiles as While(cond, moves) and
+    // Kriegspiel's `(from: (value))` as From((value)). No registry token ends
+    // with a colon, so stripping it here is strictly additive.
+    const rawHead = listHead(node);
+    const head = rawHead && rawHead.length > 1 && rawHead.endsWith(":")
+      ? rawHead.slice(0, -1)
+      : rawHead;
     if (!head) {
       // @java a parenthesized GROUP `((a) (b))` satisfies an ARRAY-typed parameter
       // exactly like a `{...}` list (Unfair's `(and ((= …) (is Line …)))`).
