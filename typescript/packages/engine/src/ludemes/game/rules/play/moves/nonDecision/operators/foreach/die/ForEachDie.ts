@@ -70,7 +70,9 @@ export class ForEachDie extends NonDecision {
     // @java this.combined = (combined == null) ? new BooleanConstant(false) : combined;
     this.combined = combined ?? constBoolFn(false);
     // @java replayDoubleFn = (replayDouble == null) ? new BooleanConstant(false) : replayDouble;
-    this.replayDoubleFn = replayDouble ?? constBoolFn(false);
+    this.replayDoubleFn = typeof (replayDouble as unknown) === "boolean"
+      ? { eval: () => replayDouble as unknown as boolean }
+      : (replayDouble ?? constBoolFn(false));
     this.subMoves = moves;
   }
 
@@ -117,11 +119,41 @@ export class ForEachDie extends NonDecision {
     const mover = ctxWorking.state?.mover ?? context.state?.mover ?? 1;
 
     // ------------------------------------------------------------------
-    // Attempt Java-style Context path
+    // Java-style path — adapted to the engine context shapes (@java
+    // ForEachDie.eval): state is a property carrying diceValues/temp; pip
+    // get/set ride the _evalPips scratch; game.handDice()/sitesFrom() are real.
     // ------------------------------------------------------------------
-    if (typeof ctxJava.state === "function" && typeof ctxJava.setPipCount === "function") {
-      const javaState = ctxJava.state();
+    const engineState = context.state as unknown as {
+      diceValues?: readonly number[];
+      temp?: (() => number) | number;
+    };
+    const hasEngineDice = Array.isArray(engineState.diceValues)
+      && typeof (context.game as { handDice?: unknown }).handDice === "function";
+    if ((typeof ctxJava.state === "function" && typeof ctxJava.setPipCount === "function") || hasEngineDice) {
+      const javaState = typeof ctxJava.state === "function" ? ctxJava.state() : {
+        currentDice: ((idx?: number) => idx === undefined
+          ? [ [...(engineState.diceValues ?? [])] ]
+          : [...(engineState.diceValues ?? [])]) as { (): number[][] | null; (idx: number): number[] },
+        temp: () => {
+          const t = engineState.temp;
+          return typeof t === "function" ? t.call(context.state) : (t ?? UNDEFINED);
+        },
+      };
       if (javaState === null) return returnMoves;
+      // pip get/set: prefer the Java methods, else the _evalPips scratch.
+      const getPip = typeof ctxJava.pipCount === "function"
+        ? () => ctxJava.pipCount!()
+        : () => (context as unknown as { _evalPips?: number })._evalPips ?? 0;
+      const setPip = typeof ctxJava.setPipCount === "function"
+        ? (v: number) => ctxJava.setPipCount!(v)
+        : (v: number) => { (context as unknown as { _evalPips?: number })._evalPips = v; };
+      const gameFns = typeof ctxJava.game === "function" ? ctxJava.game() : (context.game as unknown as {
+        getHandDice(idx: number): { index(): number };
+        handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number }>;
+      });
+      const sitesFromFn = typeof ctxJava.sitesFrom === "function"
+        ? () => ctxJava.sitesFrom!()
+        : () => ((context as unknown as { sitesFrom?: () => number[] }).sitesFrom?.() ?? []);
 
       // @java if (context.state().currentDice() == null) return returnMoves;
       if (javaState.currentDice() === null) return returnMoves;
@@ -130,7 +162,7 @@ export class ForEachDie extends NonDecision {
       const dieValues = javaState.currentDice(handDiceIndex);
 
       // @java final int containerIndex = context.game().getHandDice(handDiceIndex).index();
-      const containerIndex = ctxJava.game!().getHandDice(handDiceIndex).index();
+      const containerIndex = gameFns.getHandDice(handDiceIndex).index();
 
       // @java boolean replayDouble = replayDoubleFn.eval(context);
       let replayDouble = this.replayDoubleFn.eval(context);
@@ -142,16 +174,16 @@ export class ForEachDie extends NonDecision {
       }
 
       // @java final int origDieValue = context.pipCount();
-      const origDieValue = ctxJava.pipCount!();
+      const origDieValue = getPip();
 
       for (let i = 0; i < dieValues.length; i++) {
         const pipCount = dieValues[i] ?? 0;
-        ctxJava.setPipCount!(pipCount);
+        setPip(pipCount);
 
         if (this.rule.eval(context)) {
           const computedMoves = this.subMoves.eval(context);
           // @java final int site = context.sitesFrom()[containerIndex] + i;
-          const site = (ctxJava.sitesFrom ? ctxJava.sitesFrom()[containerIndex]! : 0) + i;
+          const site = (sitesFromFn()[containerIndex] ?? 0) + i;
           // @java new ActionUseDie(handDiceIndex, i, site)
           const action = new ActionUseDie(i, site);
           const temp = javaState.temp();
@@ -167,9 +199,9 @@ export class ForEachDie extends NonDecision {
               newActions.push(new ActionSetTemp(mover, UNDEFINED));
             } else if (temp !== UNDEFINED) {
               // @java ActionUpdateDice for each die in handDice
-              for (const dice of ctxJava.game!().handDice()) {
+              for (const dice of gameFns.handDice()) {
                 if ((temp - 1) < dice.getNumFaces()) {
-                  const siteFrom = ctxJava.sitesFrom ? ctxJava.sitesFrom()[dice.index()]! : 0;
+                  const siteFrom = sitesFromFn()[dice.index()] ?? 0;
                   for (let loc = siteFrom; loc < siteFrom + dice.numLocs(); loc++) {
                     newActions.push(new ActionUpdateDice(loc, temp - 1));
                   }
@@ -192,11 +224,11 @@ export class ForEachDie extends NonDecision {
 
       // @java if (combined.eval(context))
       if (this.combined.eval(context)) {
-        this._evalCombined(context, dieValues, handDiceIndex, containerIndex, ctxJava.sitesFrom?.() ?? [], returnMoves);
+        this._evalCombined(context, dieValues, handDiceIndex, containerIndex, sitesFromFn(), returnMoves);
       }
 
       // @java context.setPipCount(origDieValue);
-      ctxJava.setPipCount!(origDieValue);
+      setPip(origDieValue);
 
       return returnMoves;
     }
