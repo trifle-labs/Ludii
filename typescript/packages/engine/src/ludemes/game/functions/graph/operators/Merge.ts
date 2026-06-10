@@ -64,6 +64,13 @@ export class Merge extends BaseGraphFunction {
       out.makeFaces();
     }
 
+    // @java Graph.assemble(checkCrossings) — every finalized Java graph makes its
+    // faces (Graph.java:1846). Without this, merge boards report 0 faces and the
+    // container span (max(numFaces, numPlaySites), Equipment.java maxSiteMainBoard)
+    // collapses to the vertex count — Fox and Geese's fox hand landed at 33
+    // instead of Java's 40.
+    if (!this.connect) out.makeFaces();
+
     return out;
   }
 }

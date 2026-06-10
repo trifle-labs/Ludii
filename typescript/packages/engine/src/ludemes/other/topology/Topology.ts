@@ -370,11 +370,20 @@ export class Topology {
    * Java compatibility for SiteFinder-style coordinate lookup.
    * @java SiteFinder.find(board, coord, type) via Context.board().topology()
    */
+  /** The owning board's default play type — set when the board builds this
+   *  topology. @java SiteFinder.find resolves a null type to board.defaultSite(). */
+  public defaultSiteType: SiteType | null = null;
+
   getElement(coord: string, type: SiteType | null = null): TopologyElement | null {
-    // @java SiteFinder.find(...) — a null type resolves against the board's default site
-    // type; vertex-play boards (use:Vertex) label vertices, not cells. Search the given
-    // type, or all populated types (Cell, Vertex, Edge) when unspecified.
-    const types: SiteType[] = type !== null ? [type] : ["Cell", "Vertex", "Edge"];
+    // @java other/topology/SiteFinder.java — find(board, coord, type): a null type
+    // resolves to the BOARD'S default site type, and the search is label-driven on
+    // that single type. Iterating Cell-first regardless of play type made vertex-play
+    // boards centroid-match a FACE once faces existed (Adugo's C5 -> cell 18).
+    const types: SiteType[] = type !== null
+      ? [type]
+      : this.defaultSiteType !== null
+        ? [this.defaultSiteType]
+        : ["Cell", "Vertex", "Edge"];
     for (const realType of types) {
       const elements = this.getGraphElements(realType);
       for (const element of elements) {

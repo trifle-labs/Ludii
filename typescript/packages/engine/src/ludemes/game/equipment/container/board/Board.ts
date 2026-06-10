@@ -290,6 +290,8 @@ export class Board extends Container {
    */
   private populateFaithfulTopology(graph: GraphLike): void {
     const topology = this.faithfulTopology;
+    // @java SiteFinder.find — null-type lookups resolve to the board's default site.
+    topology.defaultSiteType = (this.defaultSite ?? "Cell") as SiteType;
     topology.cells().length = 0;
     topology.edges().length = 0;
     topology.vertices().length = 0;
