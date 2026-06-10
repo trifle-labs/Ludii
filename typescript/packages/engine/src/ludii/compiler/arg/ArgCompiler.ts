@@ -924,6 +924,10 @@ export class ArgCompiler {
       const out: unknown[] = [];
       let ok = true;
       for (const item of node.items) {
+        // @java Expander.java:952 — unfilled define params become <DELETE_ME> and are
+        // text-removed, leaving empty "()" residue (Throngs' "(#2)" with #2 unfilled).
+        // Java's compiler tolerates the empty token; an empty group contributes nothing.
+        if (isList(item) && item.items.length === 0) continue;
         const value = this.compileMaybe(item, [elementType], env);
         if (value === null) {
           ok = false;

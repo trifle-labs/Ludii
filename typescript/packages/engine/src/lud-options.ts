@@ -384,8 +384,13 @@ function stripOptions(node: LudNode): LudNode {
       isList(item) &&
       item.items[0] &&
       isIdent(item.items[0]) &&
-      item.items[0].name === "option"
+      (item.items[0].name === "option" || item.items[0].name === "rulesets")
     ) {
+      // @java Language/src/parser/Expander.java:535 — realiseRulesets REMOVES the
+      // (rulesets ...) block from the game description (rulesets are stored for the
+      // UI; the game compiles with regular option priorities). Throngs' ruleset
+      // selector strings ("Version/Simplified") otherwise leak into the tree as
+      // string-headed lists.
       changed = true;
       prev = item;
       continue;
