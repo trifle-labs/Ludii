@@ -7,13 +7,15 @@
  * This class is NOT registered (would clobber the existing "max" key).
  */
 
-import type { DimFunction1to1 } from "../DimConstant1to1.js";
+import type { DimFunction } from "../DimFunction.js";
+import { BaseDimFunction } from "../BaseDimFunction.js";
 
-export class DimMax implements DimFunction1to1 {
-  private readonly valueA: DimFunction1to1;
-  private readonly valueB: DimFunction1to1;
+export class DimMax extends BaseDimFunction {
+  private readonly valueA: DimFunction;
+  private readonly valueB: DimFunction;
 
-  constructor(valueA: DimFunction1to1, valueB: DimFunction1to1) {
+  constructor(valueA: DimFunction, valueB: DimFunction) {
+    super();
     this.valueA = valueA;
     this.valueB = valueB;
   }

@@ -7,13 +7,15 @@
  * This class is NOT registered (would clobber the existing "/" key).
  */
 
-import type { DimFunction1to1 } from "../DimConstant1to1.js";
+import type { DimFunction } from "../DimFunction.js";
+import { BaseDimFunction } from "../BaseDimFunction.js";
 
-export class DimDiv implements DimFunction1to1 {
-  private readonly a: DimFunction1to1;
-  private readonly b: DimFunction1to1;
+export class DimDiv extends BaseDimFunction {
+  private readonly a: DimFunction;
+  private readonly b: DimFunction;
 
-  constructor(a: DimFunction1to1, b: DimFunction1to1) {
+  constructor(a: DimFunction, b: DimFunction) {
+    super();
     this.a = a;
     this.b = b;
   }

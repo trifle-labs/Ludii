@@ -7,29 +7,31 @@
  * This class is NOT registered (would clobber the existing "+" key).
  */
 
-import type { DimFunction1to1 } from "../DimConstant1to1.js";
+import type { DimFunction } from "../DimFunction.js";
+import { BaseDimFunction } from "../BaseDimFunction.js";
 
-export class DimAdd implements DimFunction1to1 {
+export class DimAdd extends BaseDimFunction {
   /** Two-arg form: a + b */
-  private readonly a: DimFunction1to1 | null;
-  private readonly b: DimFunction1to1 | null;
+  private readonly a: DimFunction | null;
+  private readonly b: DimFunction | null;
   /** List form: sum of all elements */
-  private readonly list: readonly DimFunction1to1[] | null;
+  private readonly list: readonly DimFunction[] | null;
 
   /** @java Add(DimFunction a, DimFunction b) */
-  public constructor(a: DimFunction1to1, b: DimFunction1to1);
+  public constructor(a: DimFunction, b: DimFunction);
   /** @java Add(DimFunction[] list) */
-  public constructor(list: readonly DimFunction1to1[]);
+  public constructor(list: readonly DimFunction[]);
   public constructor(
-    a: DimFunction1to1 | readonly DimFunction1to1[],
-    b?: DimFunction1to1,
+    a: DimFunction | readonly DimFunction[],
+    b?: DimFunction,
   ) {
+    super();
     if (Array.isArray(a)) {
       this.a = null;
       this.b = null;
-      this.list = a as readonly DimFunction1to1[];
+      this.list = a as readonly DimFunction[];
     } else {
-      this.a = a as DimFunction1to1;
+      this.a = a as DimFunction;
       this.b = b!;
       this.list = null;
     }

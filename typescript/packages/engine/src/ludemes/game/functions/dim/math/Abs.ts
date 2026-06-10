@@ -7,12 +7,14 @@
  * This class is NOT registered (would clobber the existing "abs" key).
  */
 
-import type { DimFunction1to1 } from "../DimConstant1to1.js";
+import type { DimFunction } from "../DimFunction.js";
+import { BaseDimFunction } from "../BaseDimFunction.js";
 
-export class DimAbs implements DimFunction1to1 {
-  private readonly value: DimFunction1to1;
+export class DimAbs extends BaseDimFunction {
+  private readonly value: DimFunction;
 
-  constructor(value: DimFunction1to1) {
+  constructor(value: DimFunction) {
+    super();
     this.value = value;
   }
 
