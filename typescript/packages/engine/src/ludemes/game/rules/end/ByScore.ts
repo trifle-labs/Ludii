@@ -19,7 +19,6 @@ import type { Context } from "../../../../context.js";
 import type { BooleanFunction, EndResult, EndRuleFunction } from "../../../base.js";
 import { RoleType, roleTypeOwner } from "../../util/end/RoleType.js";
 import type { Score } from "../../util/end/Score.js";
-import type { Score1to1 } from "../../util/end/Score1to1.js";
 
 /**
  * Optional score-override entry: set player `pid`'s score to `score` before ranking.
@@ -38,7 +37,7 @@ export interface FinalScoreEntry {
  */
 export class ByScore implements EndRuleFunction {
   /** Optional per-player final score overrides. @java ByScore.finalScore */
-  private readonly finalScore: readonly (Score | Score1to1 | FinalScoreEntry)[] | null;
+  private readonly finalScore: readonly (Score | FinalScoreEntry)[] | null;
   /** Misere: lowest score wins when true. @java ByScore.misereFn */
   private readonly misereFn: BooleanFunction;
 
@@ -49,7 +48,7 @@ export class ByScore implements EndRuleFunction {
    * @param misere      If true, lowest score wins (misere variant).
    */
   public constructor(
-    finalScore?: readonly (Score | Score1to1 | FinalScoreEntry)[] | null,
+    finalScore?: readonly (Score | FinalScoreEntry)[] | null,
     misere?: BooleanFunction | null,
   ) {
     this.finalScore = finalScore ?? null;
@@ -146,7 +145,7 @@ export class ByScore implements EndRuleFunction {
   }
 }
 
-function scoreEntryPlayerId(entry: Score | Score1to1 | FinalScoreEntry, ctx: Context): number {
+function scoreEntryPlayerId(entry: Score | FinalScoreEntry, ctx: Context): number {
   const scoreEntry = entry as unknown as {
     pid?: number;
     role?: unknown;
@@ -157,7 +156,7 @@ function scoreEntryPlayerId(entry: Score | Score1to1 | FinalScoreEntry, ctx: Con
   return roleToPlayerId(scoreEntry.getRole?.(), ctx);
 }
 
-function scoreEntryValue(entry: Score | Score1to1 | FinalScoreEntry, ctx: Context): number {
+function scoreEntryValue(entry: Score | FinalScoreEntry, ctx: Context): number {
   const scoreEntry = entry as unknown as {
     score?: import("../../../base.js").IntFunction | (() => import("../../../base.js").IntFunction);
   };

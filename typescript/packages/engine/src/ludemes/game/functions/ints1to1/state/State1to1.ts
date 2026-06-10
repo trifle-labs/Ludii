@@ -29,23 +29,6 @@ export class Mover implements IntFunction {
 }
 
 // ---------------------------------------------------------------------------
-// Score
-// ---------------------------------------------------------------------------
-export class Score1to1 implements IntFunction {
-  private readonly playerFn: IntFunction;
-
-  /** @java game/functions/ints/state/Score.java — eval: context.score(playerFn.eval(context)) */
-  public constructor(playerFn: IntFunction) {
-    this.playerFn = playerFn;
-  }
-
-  public eval(ctx: Context): number {
-    const pid = this.playerFn.eval(ctx);
-    return ctx.state.scores[pid] ?? 0;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Registration
 // ---------------------------------------------------------------------------
 
