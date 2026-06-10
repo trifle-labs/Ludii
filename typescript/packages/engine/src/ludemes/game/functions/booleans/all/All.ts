@@ -606,8 +606,13 @@ class AllDiceUsed extends BaseBooleanFunction {
     // Java: final int[][] diceValues = context.state().currentDice();
     const state = context.state as unknown as {
       currentDice?: () => number[][];
+      diceValues?: readonly number[];
     };
-    const diceValues = typeof state.currentDice === "function" ? state.currentDice() : [];
+    // Engine state carries a flat diceValues array (@java currentDice() is the
+    // per-hand nested form) — read whichever is present.
+    const diceValues = typeof state.currentDice === "function"
+      ? state.currentDice()
+      : Array.isArray(state.diceValues) ? [ [...state.diceValues] ] : [];
     for (let indexHand = 0; indexHand < diceValues.length; indexHand++) {
       const hand = diceValues[indexHand] ?? [];
       for (let indexDie = 0; indexDie < hand.length; indexDie++) {

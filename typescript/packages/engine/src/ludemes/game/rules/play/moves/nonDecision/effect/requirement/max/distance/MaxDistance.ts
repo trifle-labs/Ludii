@@ -10,6 +10,7 @@ import type { Context } from "../../../../../../../../../../context.js";
 import type { MovesFunction } from "../../../../../../../../../base.js";
 import type { Move } from "../../../../../../../../../../move.js";
 import type { Then } from "../../../Then.js";
+import { applyPostStateThen } from "../../../Then.js";
 
 /** Constants.UNDEFINED = -2 matching Java */
 const UNDEFINED = -2;
@@ -128,13 +129,16 @@ export class MaxDistance implements MovesFunction {
       if (distanceCount[i] === max) returnMoves.push(movesToEval[i]!);
     }
 
-    // @java MaxDistance.java:129-130 — then clause
+    // @java Effect super(then) — the then evaluates in the POST-move state and
+    // its moveAgain flag must survive (Backgammon: (then (if (not (all DiceUsed))
+    // ... (moveAgain))) keeps the mover through a doubles turn). Same recipe as
+    // If/Do/ForEachPiece: applyPostStateThen.
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return returnMoves.map(m => m.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      ));
+      const thenLike = (this.thenClause as unknown as { moves?: () => { eval(c: Context): Move[] } });
+      const wrapped = thenLike && typeof thenLike.moves === "function"
+        ? (thenLike as { moves(): { eval(c: Context): Move[] } })
+        : { moves: () => this.thenClause as unknown as { eval(c: Context): Move[] } };
+      return returnMoves.map(m => applyPostStateThen(wrapped, ctx, m));
     }
 
     return returnMoves;

@@ -135,8 +135,14 @@ export class ForEachDie extends NonDecision {
           ? [ [...(engineState.diceValues ?? [])] ]
           : [...(engineState.diceValues ?? [])]) as { (): number[][] | null; (idx: number): number[] },
         temp: () => {
-          const t = engineState.temp;
-          return typeof t === "function" ? t.call(context.state) : (t ?? UNDEFINED);
+          // @java State.temp() — the engine keeps per-player temps (temp(pid)).
+          const t = engineState.temp as unknown;
+          const v = typeof t === "function"
+            ? (t as (pid: number) => number).call(context.state, mover)
+            : ((t as number | undefined) ?? UNDEFINED);
+          // @java Constants.UNDEFINED = -1; the engine temp defaults 0 and a
+          // legit armed temp is a pip 1..6 — map the unarmed default.
+          return v === 0 || v === undefined ? UNDEFINED : v;
         },
       };
       if (javaState === null) return returnMoves;
@@ -203,7 +209,10 @@ export class ForEachDie extends NonDecision {
                 if ((temp - 1) < dice.getNumFaces()) {
                   const siteFrom = sitesFromFn()[dice.index()] ?? 0;
                   for (let loc = siteFrom; loc < siteFrom + dice.numLocs(); loc++) {
-                    newActions.push(new ActionUpdateDice(loc, temp - 1));
+                    // @java ActionUpdateDice(loc, temp-1): global site + face
+                    // INDEX, currentDice = faces[temp-1] = the pip `temp`.
+                    // Engine dice-value mode: (dieIndex, faceIndex, value).
+                    newActions.push(new ActionUpdateDice(loc - siteFrom, temp - 1, temp));
                   }
                 }
               }
