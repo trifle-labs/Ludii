@@ -1052,3 +1052,18 @@ callbacks) + *1to1 substrate classes used by faithful files — item-3 re-homing
 
 VERIFICATION: tsc clean; probe-play + probe-compile-guard green; 24-game battery
 all OUTCOME_OK 2/2 on the post-deletion engine.
+
+## Update 46 — Post-deletion polish: real-game coverage 96.1% → 98.15%+
+
+Audit v3 (probe now compiles through the REAL play1to1 entry — the Tavli/backgammon
+(match …) cluster was a probe artifact, not an engine gap). Fixes landed:
+- iterator.Player / floats.Mul / ints.Abs ports (18 games).
+- IsIn default-site = To.instance() (@java IsIn.construct) — Tamman cluster.
+- Repeat accepts Poly-or-Polygon (Hole-class normalization) — Awithlaknan pair.
+- Headless round GROUP ((a) (b)) satisfies array params like {…} — Unfair cluster.
+
+~15 real-game singles remain (pow, le-as-?, meta-as-start, from:/while:-shapes,
+P#1 token, Move-as-trackSiteType, (=)-as-String, square-basis ctor, component
+throw) — each a one-shot by the established repro→fix→canary recipe. Item-3
+structural work (callback removal, *1to1 re-homing, StartRule eval(Context),
+State convergence) follows.
