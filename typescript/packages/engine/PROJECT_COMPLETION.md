@@ -1591,3 +1591,30 @@ START_FAIL 4, WINNER_MISMATCH 1, COMPILE_FAIL 0. Adugo/Baghchal/Coyote and frien
 flipped from 0 to green; Asalto/El Zorro/Fox&Geese at 1/2 (second trials diverge
 deeper). The loop continues: next divergences are in the same family's deeper
 plies (huff rules / multi-hop sequences) and then the next families by volume.
+
+## Update 72 (2026-06-10) — parity waves 2-3: re-sweep 388 OK; facing/limits/sites-From
+
+Re-sweep after wave 2: OUTCOME_OK 357->388, MOVE_MISMATCH 1130->1047. Family
+ranking: sow 349/426, race 320/360, space 272/644(256 OK), hunt 77/152.
+
+Wave 3 fixes (battery-gated, @java-provenanced):
+- (sites From/To/Between <moves>) implemented (constructMoves was an empty-region
+  stub); coords/custom clauses type-gated to mirror Java's type-driven overload
+  resolution (the order-driven dispatcher let lenient clauses swallow mismatches).
+- Do bakes its then consequence (Asalto's huff fires: Move+Remove in one move).
+  Asalto residue: huff-then ordering + turn sequencing at dec 13 (noted).
+- Turn/move limits (@java Game.java:3075/3764): 1250*players turns or 10000 moves
+  end as a DRAW. El Cazador's 2500-move trial terminates exactly as Java (verified
+  manually; the harness's 6s per-trial soft deadline still buckets it NO_OUTCOME —
+  raise PER_TRIAL_MS for long trials).
+- FACING TABLES: componentFacing/playerFacing were populated only by the deleted
+  bespoke compiler. Now populated at Game construction (pieces surface carries
+  Component.getDirn() as `dirn`; players' (player <Dir>) fill playerFacing), and
+  Step's relative-direction resolution takes the piece's own facing as the base
+  (@java Component.getDirn precedence). Dodgem AND Toads and Frogs -> OUTCOME_OK 2/2.
+  This reaches every directional-piece game (race/escape cluster).
+
+Diagnostic toolkit addition: the SHADOW BOARD — replay recorded ACTIONS alongside
+chosen moves and diff occupancy per ply; pinpoints silent effect divergences
+(found the huff bug). Lives in the session transcripts; worth scripting into
+test/parity as a --shadow mode.
