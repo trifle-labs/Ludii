@@ -154,13 +154,18 @@ export class FromTo implements MovesFunction {
         }
         actions.push(moveAction);
 
-        // @java FromTo.java:406-414 — capture effect if capture rule passes
+        // @java FromTo.java:406-414 — capture effect if capture rule passes.
+        // The recorded Java move orders the VICTIM'S relocation FIRST
+        // (Backgammon dec9: Move(25->19) then Move(20->25)): the apply's
+        // (from (to)) names the PRE-move occupant. Appending it after the
+        // attacker's ActionMove made the hit relocate the ATTACKER off the
+        // stack top (P1's piece surfaced on P2's bar). PREPEND.
         if (this.captureEffect != null &&
             (this.captureRule == null || this.captureRule.eval(ctx))) {
           ctx._evalFrom = from;
           ctx._evalTo = to;
           const captureActions = this.captureEffect.eval(ctx).flatMap(m => [...m.actions]);
-          actions.push(...captureActions);
+          actions.unshift(...captureActions);
           ctx._evalFrom = origFrom;
           ctx._evalTo = origTo;
         }
@@ -172,6 +177,11 @@ export class FromTo implements MovesFunction {
           mover,
           placedOwner: mover,
           actions,
+          // Pin the DECISION from/to — a prepended capture action would
+          // otherwise shift what from()/to() report (the recorded move keeps
+          // the movement's sites: Move:mover=1,from=20,to=25,[victim,attacker]).
+          fromSite: from,
+          toSite: to,
           fromNonDecisionSite: from,
           toNonDecisionSite: to,
         });
