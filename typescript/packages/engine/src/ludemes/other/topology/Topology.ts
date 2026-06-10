@@ -371,23 +371,28 @@ export class Topology {
    * @java SiteFinder.find(board, coord, type) via Context.board().topology()
    */
   getElement(coord: string, type: SiteType | null = null): TopologyElement | null {
-    const realType = type ?? "Cell";
-    const elements = this.getGraphElements(realType);
-    for (const element of elements) {
-      if (element.label() === coord) return element;
-    }
+    // @java SiteFinder.find(...) — a null type resolves against the board's default site
+    // type; vertex-play boards (use:Vertex) label vertices, not cells. Search the given
+    // type, or all populated types (Cell, Vertex, Edge) when unspecified.
+    const types: SiteType[] = type !== null ? [type] : ["Cell", "Vertex", "Edge"];
+    for (const realType of types) {
+      const elements = this.getGraphElements(realType);
+      for (const element of elements) {
+        if (element.label() === coord) return element;
+      }
 
-    const parsed = parseAlgebraicCoord(coord);
-    if (parsed === null) return null;
-    const targetX = parsed.col + (realType === "Cell" ? 0.5 : 0);
-    const targetY = parsed.row + (realType === "Cell" ? 0.5 : 0);
-    for (const element of elements) {
-      const centroid = element.centroid3D();
-      if (
-        Math.abs(centroid.x() - targetX) < 0.25 &&
-        Math.abs(centroid.y() - targetY) < 0.25
-      ) {
-        return element;
+      const parsed = parseAlgebraicCoord(coord);
+      if (parsed === null) continue;
+      const targetX = parsed.col + (realType === "Cell" ? 0.5 : 0);
+      const targetY = parsed.row + (realType === "Cell" ? 0.5 : 0);
+      for (const element of elements) {
+        const centroid = element.centroid3D();
+        if (
+          Math.abs(centroid.x() - targetX) < 0.25 &&
+          Math.abs(centroid.y() - targetY) < 0.25
+        ) {
+          return element;
+        }
       }
     }
     return null;
