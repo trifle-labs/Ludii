@@ -112,21 +112,8 @@ export class SetHidden implements StartRule {
    *   ActionSetHidden*(who, realType, site, level, value).apply(context)
    * TS-deferred: State.hiddenForPlayer[][] not accessible via applyToInitialState.
    */
-  public applyToInitialState(
-    _cells: number[],
-    _whats: number[],
-    _countAt: number[],
-    _equipment: Equipment1to1,
-    _numPlayers: number,
-  ): void {
-    // Deferred: State.hiddenForPlayer[][] not accessible via applyToInitialState.
-    // Java: ActionSetHidden*(who, type, site, level, value) for each site/facet.
-    void this.dataTypes;
-    void this.region;
-    void this.levelFn;
-    void this.valueFn;
-    void this.whoFn;
-    void this.roleType;
+  public eval(_ctx: Context): void {
+    // Deferred until State convergence: State.hiddenForPlayer is populated via the equipment._initialHidden side-channel (ArgCompiler).
     void this.type;
   }
 }

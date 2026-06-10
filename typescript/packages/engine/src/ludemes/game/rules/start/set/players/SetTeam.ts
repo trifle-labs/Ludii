@@ -11,6 +11,7 @@
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
 
 /**
@@ -41,16 +42,8 @@ export class SetTeam implements StartRule {
    * Java: for each player in players: ActionAddPlayerToTeam(teamId, playerIndex).apply(context)
    * TS-deferred: team membership not accessible via applyToInitialState interface.
    */
-  public applyToInitialState(
-    _cells: number[],
-    _whats: number[],
-    _countAt: number[],
-    _equipment: Equipment1to1,
-    _numPlayers: number,
-  ): void {
-    // Deferred: State team membership not accessible via applyToInitialState.
-    // Java: new ActionAddPlayerToTeam(teamId, playerIndex).apply(context) for each player.
+  public eval(_ctx: Context): void {
+    // Deferred until State convergence: team membership is not yet part of the engine State.
     void this.teamId;
-    void this.playerIds;
   }
 }

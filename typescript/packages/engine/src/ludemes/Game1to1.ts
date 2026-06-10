@@ -373,16 +373,22 @@ export class Game1to1 implements Game {
     // @java ActionAdd.apply() — setStateAt / setValueAt on the initial container state.
     const stateAt = new Array<number>(totalSites).fill(0);
     const valueAt = new Array<number>(totalSites).fill(0);
+    // Player-level start values (from (set Score ...) / (set Amount ...) rules).
+    // @java State.scores / State.amounts — initialised by ActionSetScore/SetAmount.
+    const scores = new Array<number>(this.numPlayers + 1).fill(0);
+    const amounts = new Array<number>(this.numPlayers + 1).fill(0);
 
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt);
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts);
     }
 
     // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
     const hasNonZeroState = stateAt.some(v => v !== 0);
     const hasNonZeroValue = valueAt.some(v => v !== 0);
+    const hasNonZeroScores = scores.some(v => v !== 0);
+    const hasNonZeroAmounts = amounts.some(v => v !== 0);
 
     // Compute initial phase indices for each player.
     // @java other/state/State.java — initPhase(game)
@@ -418,6 +424,8 @@ export class Game1to1 implements Game {
       diceValues: initialDiceValues,
       stateAt: hasNonZeroState ? stateAt : undefined,
       valueAt: hasNonZeroValue ? valueAt : undefined,
+      scores: hasNonZeroScores ? scores : undefined,
+      amounts: hasNonZeroAmounts ? amounts : undefined,
     });
 
     // Apply remembered-value start rules (from (set RememberValue "name" <region>)).
@@ -766,6 +774,8 @@ export class Game1to1 implements Game {
     countAt: number[],
     stateAt: number[],
     valueAt: number[],
+    scores?: number[],
+    amounts?: number[],
   ): void {
     const maybeArrayRule = rule as unknown as {
       applyToInitialState?: (
@@ -816,7 +826,7 @@ export class Game1to1 implements Game {
     // mutates ContainerState through actions (ActionSetCount etc.); until State
     // convergence lands, migrated rules write these arrays directly — the same
     // arrays Game1to1.start() builds the initial State from.
-    (ctx as unknown as { _startArrays?: unknown })._startArrays = { cells, whats, countAt, stateAt, valueAt };
+    (ctx as unknown as { _startArrays?: unknown })._startArrays = { cells, whats, countAt, stateAt, valueAt, scores, amounts };
     ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
       if (site < 0 || site >= cells.length) return;
       const component = this.equipment.componentAt(what);

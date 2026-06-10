@@ -10,7 +10,7 @@
  * The compile1to1 path currently skips (set Amount …) start rules.
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
 
 /**
@@ -44,16 +44,20 @@ export class SetAmount implements StartRule {
    * Java: ActionSetAmount(playerId, amount).apply(context) for each target player.
    * TS-deferred: State.amounts[] not accessible via applyToInitialState.
    */
-  public applyToInitialState(
-    _cells: number[],
-    _whats: number[],
-    _countAt: number[],
-    _equipment: Equipment1to1,
-    _numPlayers: number,
-  ): void {
-    // Deferred: State.amounts[] not accessible via applyToInitialState interface.
-    // Java: for each player: new ActionSetAmount(playerId, amount).apply(context).
-    void this.playerId;
-    void this.amount;
+  /**
+   * @java game/rules/start/set/player/SetAmount.java — eval(Context)
+   * Java: ActionSetAmount(playerId, amount).apply(context) per target player.
+   */
+  public eval(ctx: Context): void {
+    const arrays = (ctx as unknown as { _startArrays?: { amounts?: number[] } })._startArrays;
+    const amounts = arrays?.amounts;
+    if (!amounts) return;
+    const numPlayers = (ctx.game as unknown as { numPlayers: number }).numPlayers;
+    if (this.playerId !== null) {
+      if (this.playerId >= 0 && this.playerId < amounts.length) amounts[this.playerId] = this.amount;
+      return;
+    }
+    // Each/All role: same amount to every player.
+    for (let pid = 1; pid <= numPlayers; pid++) amounts[pid] = this.amount;
   }
 }

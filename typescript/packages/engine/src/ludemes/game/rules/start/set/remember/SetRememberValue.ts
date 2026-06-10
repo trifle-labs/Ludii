@@ -11,7 +11,6 @@
  * The compile1to1 path currently skips (set RememberValue …) start rules.
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
 import { BooleanConstant } from "../../../../functions/booleans/BooleanConstant.js";
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../base.js";
 import type { StartRule } from "../../StartRule.js";
@@ -71,31 +70,28 @@ export class SetRememberValue implements StartRule {
    *   (skipped if unique && value already in State.rememberingValues / mapRememberingValues)
    * TS-deferred: State.remembered map not accessible via applyToInitialState.
    */
-  public applyToInitialState(
-    _cells: number[],
-    _whats: number[],
-    _countAt: number[],
-    equipment: Equipment1to1,
-    _numPlayers: number,
-    _stateAt?: number[],
-    _valueAt?: number[],
-    context?: Context,
-  ): void {
+  /**
+   * @java game/rules/start/set/remember/SetRememberValue.java — eval(Context)
+   * Stashes into equipment._initialRemembered; Game1to1.start() threads it into
+   * the initial State via withRemember (replaced by ActionRememberValue at
+   * State convergence).
+   */
+  public eval(ctx: Context): void {
     const values: number[] = [];
     if (this.value !== null) {
-      if (context === undefined) return;
-      values.push(this.value.eval(context));
+      values.push(this.value.eval(ctx));
     } else if (this.regionValue !== null) {
-      if (context === undefined) return;
-      values.push(...this.regionValue.eval(context));
+      values.push(...this.regionValue.eval(ctx));
     }
     if (values.length === 0) return;
 
-    const eq = equipment as unknown as { _initialRemembered?: Map<string, number[]> };
+    const eq = (ctx.game as unknown as { equipment: unknown }).equipment as {
+      _initialRemembered?: Map<string, number[]>;
+    };
     eq._initialRemembered ??= new Map();
     const key = this.name ?? "";
     const bucket = eq._initialRemembered.get(key) ?? [];
-    const unique = context !== undefined ? this.uniqueFn.eval(context) : false;
+    const unique = this.uniqueFn.eval(ctx);
     for (const value of values) {
       if (unique && bucket.includes(value)) continue;
       bucket.push(value);

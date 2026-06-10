@@ -10,9 +10,9 @@
  * The compile1to1 path currently skips (set Score …) start rules.
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
 import { IntConstant } from "../../../../functions/ints/IntConstant.js";
 import type { IntFunction } from "../../../../../base.js";
+import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
 
 /** @java game/types/play/RoleType.java */
@@ -63,18 +63,25 @@ export class SetScore implements StartRule {
    * Java: ActionSetScore(playerId, score, FALSE).apply(context) for each player.
    * TS-deferred: scores[] not available in applyToInitialState interface.
    */
-  public applyToInitialState(
-    _cells: number[],
-    _whats: number[],
-    _countAt: number[],
-    _equipment: Equipment1to1,
-    _numPlayers: number,
-  ): void {
-    // Deferred: State.scores[] not accessible via applyToInitialState.
-    // Java: ActionSetScore(pid, score, Boolean.FALSE).apply(context) for each player.
-    void this.players;
-    void this.scores;
-    void this.initSameScoreToEachPlayer;
+  /**
+   * @java game/rules/start/set/player/SetScore.java — eval(Context)
+   * Java: ActionSetScore(playerId, score, FALSE).apply(context) for each player.
+   */
+  public eval(ctx: Context): void {
+    const arrays = (ctx as unknown as { _startArrays?: { scores?: number[] } })._startArrays;
+    const scores = arrays?.scores;
+    if (!scores) return;
+    const numPlayers = (ctx.game as unknown as { numPlayers: number }).numPlayers;
+    if (this.initSameScoreToEachPlayer) {
+      const score = this.scores[0]?.eval(ctx) ?? 0;
+      for (let pid = 1; pid <= numPlayers; pid++) scores[pid] = score;
+      return;
+    }
+    for (let i = 0; i < this.players.length; i++) {
+      const pid = this.players[i]!.eval(ctx);
+      const score = this.scores[i]?.eval(ctx) ?? 0;
+      if (pid >= 0 && pid < scores.length) scores[pid] = score;
+    }
   }
 }
 
