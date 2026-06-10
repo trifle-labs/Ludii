@@ -1022,7 +1022,16 @@ export class ArgCompiler {
         // is silently dropped (El Perro's winner detection). ENUM_CONSTANTS is
         // generated from the Java sources by tools/parity/extract-enum-constants.py.
         const constants = ENUM_CONSTANTS.get(expected.name);
-        if (constants && !constants.has(node.name)) continue;
+        if (constants) {
+          if (constants.has(node.name)) return node.name;
+          // @java grammar convention lowercases ludeme tokens; the official corpus
+          // writes (forEach piece) for ForEachPieceType.Piece (Wumpus World). Match
+          // the canonical constant when only the first letter's case differs —
+          // strict membership otherwise.
+          const cap = node.name.charAt(0).toUpperCase() + node.name.slice(1);
+          if (constants.has(cap)) return cap;
+          continue;
+        }
         return node.name;
       }
       if (meta && meta.executables.length === 0) {
@@ -1033,8 +1042,11 @@ export class ArgCompiler {
         // ident is never a legal value for a non-enum interface like IntFunction (it used
         // to leak through as a raw string, e.g. (value Player Mover) binding "Mover" into
         // the @Or IntFunction slot instead of the RoleType slot).
-        if (this.enumConstantsAssignableTo(expected.name).has(node.name)) {
-          return node.name;
+        {
+          const assignable = this.enumConstantsAssignableTo(expected.name);
+          if (assignable.has(node.name)) return node.name;
+          const cap = node.name.charAt(0).toUpperCase() + node.name.slice(1);
+          if (assignable.has(cap)) return cap;
         }
         continue;
       }
