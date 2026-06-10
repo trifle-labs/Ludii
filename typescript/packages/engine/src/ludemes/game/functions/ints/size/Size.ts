@@ -10,9 +10,9 @@
 import type { Context } from "../../../../../context.js";
 import { BaseIntFunction } from "../BaseIntFunction.js";
 import type { JavaIntFunction } from "../IntFunction.js";
-// Transitional delegates: these classes hold the engine-substrate logic; their
-// re-homing to @java paths is a separate mechanical step (item-3 recipe).
-import { SizeGroup, SizeStack, SizeArray } from "../../ints1to1/size/Size.js";
+import { SizeGroup } from "./connection/SizeGroup.js";
+import { SizeStack } from "./site/SizeStack.js";
+import { SizeArray } from "./array/SizeArray.js";
 import { SizeTerritory } from "./connection/SizeTerritory.js";
 import { SizeLargePiece } from "./largePiece/SizeLargePiece.js";
 import { LastTo } from "../last/LastTo.js";

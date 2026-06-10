@@ -27,7 +27,7 @@ import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
 import type { Then } from "./Then.js";
 import { IntConstant } from "../../../../../functions/ints/IntConstant.js";
-import { Between as IteratorBetween, From as IteratorFrom, To as IteratorTo } from "../../../../../functions/ints1to1/iterator/Iterator1to1.js";
+import { Between as IteratorBetween, From as IteratorFrom, To as IteratorTo } from "../../../../../functions/ints/iterator/Iterator1to1.js";
 import { IsEnemy } from "../../../../../functions/booleans/is/player/IsEnemy.js";
 import { IsFriend } from "../../../../../functions/booleans/is/player/IsFriend.js";
 import { relationToAbsoluteDirection, type RelationType } from "../../../../../types/board/RelationType.js";

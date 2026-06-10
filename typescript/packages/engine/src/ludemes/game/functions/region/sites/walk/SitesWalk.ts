@@ -24,7 +24,7 @@ import type { Trajectories } from "../../../../../../eval/graph/trajectories.js"
 import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { StepType } from "../../../../types/board/StepType.js";
 import { BooleanConstant } from "../../../booleans/BooleanConstant.js";
-import { From } from "../../../ints1to1/iterator/Iterator1to1.js";
+import { From } from "../../../ints/iterator/Iterator1to1.js";
 
 // ---------------------------------------------------------------------------
 // Named walks (Java StepType named constants)
