@@ -1785,3 +1785,9 @@ ForEachDie eval) + detailed harness action dumps:
 - Xiangqi wave: ForEachDirection engine adapters (game property guard, radials→radialsByName, supportedDirections strings, step fallback for to-heading); Column/Row ctor param order matched to Java (@Opt SiteType, @Name of) — args bind in JAVA slot order, `of` had landed in the type slot; directions/If wraps raw direction tokens. Janggi/MiniXiangqi/Manzhouqi/Xiangqi now generate full openings, replay into middlegame; residual = blockable-horse legs (Janggi ply 3-6: rec 88→69/13→3 horse moves missing from our 34-35).
 - KNOWN: Loop Xiangqi moves() pathologically slow (1161 moves/ply) — hangs family sweeps; exclude or investigate.
 - PARAM-ORDER LESSON: TS ludeme constructors MUST mirror Java parameter order exactly (the compiler binds positionally from reflection slots). Column/Row were swapped; audit other ints/board functions when null.eval throws appear.
+
+## Update 83 (2026-06-11) — Janggi palace fix, shogi unblocked, named-region compile fix
+- (sites <Role> "Name") in the player-variant compile shortcut now honors the NAME (builds SitesEquipmentRegion role+name; the shortcut returned the owner's FIRST region). Janggi 6→31 (palace "PalaceOrtho" vs "Palace"), Bao 8→18 as a side effect.
+- ForEachDirection: relative dirs resolve against newDirection (@java convertToAbsolute — Janggi Ma forks); raw-boolean wrap on rule/betweenRule (Shogi threw at ply 0, now generates).
+- PERF CLASS identified: Shogi moves() takes minutes (2350 moves/ply over-generation), Loop Xiangqi similar (1161) — generation performance/visibility item; family sweeps hang on these. Investigate over-generation root (likely a rule passing everywhere making steppers slide) before perf tuning.
+- Janggi residual ply 31 (rec 69→86 Ma fork missing situationally); Minishogi over-generates 92 at ply 0 (drops?); Hasami Shogi reaches ply 311; Kyoto Shogi ply 1 n=2.
