@@ -1,5 +1,5 @@
 /**
- * State1to1.ts
+ * Mover.ts
  *
  * Faithful 1:1 ports of state int ludemes:
  *   Mover, Next, Prev, Score, Var, Counter

@@ -597,7 +597,7 @@ import { SitesWinning as C597 } from "../../../ludemes/game/functions/region/sit
 import { CentrePoint as C598 } from "../../../ludemes/game/functions/ints/board/CentrePoint.js";
 import { CountValue as C599 } from "../../../ludemes/game/functions/ints/count/CountValue.js";
 import { CountGroups as C600 } from "../../../ludemes/game/functions/ints/count/CountGroups.js";
-import { CountCells as C601 } from "../../../ludemes/game/functions/ints/count/CountSimpleExtra1to1.js";
+import { CountCells as C601 } from "../../../ludemes/game/functions/ints/count/simple/CountCells.js";
 import { CountEdges as C602 } from "../../../ludemes/game/functions/ints/count/CountEdges.js";
 import { CountStack as C603 } from "../../../ludemes/game/functions/ints/count/CountStack.js";
 import { CountSites as C604 } from "../../../ludemes/game/functions/ints/count/CountSites.js";
@@ -612,10 +612,10 @@ import { CountSizeBiggestGroup as C612 } from "../../../ludemes/game/functions/i
 import { CountVertices as C613 } from "../../../ludemes/game/functions/ints/count/CountVertices.js";
 import { CountSizeBiggestLine as C614 } from "../../../ludemes/game/functions/ints/count/sizeBiggestLine/CountSizeBiggestLine.js";
 import { ValuePiece as C615 } from "../../../ludemes/game/functions/ints/value/piece/ValuePiece.js";
-import { Mover as C616 } from "../../../ludemes/game/functions/ints/state/State1to1.js";
-import { Add as C617 } from "../../../ludemes/game/functions/ints/math/Math1to1.js";
+import { Mover as C616 } from "../../../ludemes/game/functions/ints/state/Mover.js";
+import { Add as C617 } from "../../../ludemes/game/functions/ints/math/Add.js";
 import { PowCaret as C618 } from "../../../ludemes/game/functions/ints/math/PowCaret.js";
-import { From as C619 } from "../../../ludemes/game/functions/ints/iterator/Iterator1to1.js";
+import { From as C619 } from "../../../ludemes/game/functions/ints/iterator/From.js";
 import { SizeGroup as C620 } from "../../../ludemes/game/functions/ints/size/connection/SizeGroup.js";
 import { ToInt as C621 } from "../../../ludemes/game/functions/ints/ToInt.js";
 import { Last as C622 } from "../../../ludemes/game/functions/ints/last/Last.js";
