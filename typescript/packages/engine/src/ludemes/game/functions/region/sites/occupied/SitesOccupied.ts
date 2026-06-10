@@ -159,6 +159,20 @@ export class SitesOccupied extends BaseRegionFunction {
 
     // @java SitesOccupied — if component is specified, filter by component index
     const specificWhat = this.component !== null ? this.component.eval(ctx) : UNDEFINED;
+    // @java component:"Name"/components:{...} — name filter resolves to the
+    // matching component indices (board scan; the hand branch above filters
+    // by name directly).
+    let allowedWhats: Set<number> | null = null;
+    if (this.componentNames !== null && this.componentNames.length > 0) {
+      const pieces = (g.equipment as unknown as { pieces?: readonly { index: number; name: string }[] })?.pieces ?? [];
+      allowedWhats = new Set(
+        pieces
+          .filter((p) => this.componentNames!.some((n) => p.name === n || p.name.replace(/\d+$/, "") === n))
+          .map((p) => p.index),
+      );
+    }
+    const whatOk = (w: number): boolean =>
+      (specificWhat === UNDEFINED || w === specificWhat) && (allowedWhats === null || allowedWhats.has(w));
 
     const sitesOccupied: number[] = [];
 
@@ -168,7 +182,7 @@ export class SitesOccupied extends BaseRegionFunction {
       for (let i = 0; i < boardN; i++) {
         const owner = cells[i] ?? 0;
         if (owner !== 0 && owner !== mover) {
-          if (specificWhat === UNDEFINED || (whats[i] ?? 0) === specificWhat) {
+          if (whatOk(whats[i] ?? 0)) {
             sitesOccupied.push(i);
           }
         }
@@ -179,7 +193,7 @@ export class SitesOccupied extends BaseRegionFunction {
       for (let i = 0; i < boardN; i++) {
         const owner = cells[i] ?? 0;
         if (owner !== mover && ctx.state.isOccupiedSite(i)) {
-          if (specificWhat === UNDEFINED || (whats[i] ?? 0) === specificWhat) {
+          if (whatOk(whats[i] ?? 0)) {
             sitesOccupied.push(i);
           }
         }
@@ -188,7 +202,7 @@ export class SitesOccupied extends BaseRegionFunction {
       // @java RoleType.All — all occupied sites
       for (let i = 0; i < boardN; i++) {
         if (ctx.state.isOccupiedSite(i)) {
-          if (specificWhat === UNDEFINED || (whats[i] ?? 0) === specificWhat) {
+          if (whatOk(whats[i] ?? 0)) {
             sitesOccupied.push(i);
           }
         }
@@ -198,7 +212,7 @@ export class SitesOccupied extends BaseRegionFunction {
       for (let i = 0; i < boardN; i++) {
         const owner = cells[i] ?? 0;
         if (owner === 0 && (whats[i] ?? 0) !== 0) {
-          if (specificWhat === UNDEFINED || (whats[i] ?? 0) === specificWhat) {
+          if (whatOk(whats[i] ?? 0)) {
             sitesOccupied.push(i);
           }
         }
@@ -216,7 +230,7 @@ export class SitesOccupied extends BaseRegionFunction {
           owner = cells[i] ?? 0;
         }
         if (owner === whoId) {
-          if (specificWhat === UNDEFINED || (whats[i] ?? 0) === specificWhat) {
+          if (whatOk(whats[i] ?? 0)) {
             sitesOccupied.push(i);
           }
         }

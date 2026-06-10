@@ -719,9 +719,15 @@ export class ArgCompiler {
       const containerNode = parsed.argsIn.find((arg) => arg.parameterName === "container")?.node;
       const containerName = containerNode && isString(containerNode) ? (containerNode as { value: string }).value : null;
       const componentsNode = parsed.argsIn.find((arg) => arg.parameterName === "components")?.node;
-      const componentNames = componentsNode && isList(componentsNode)
+      let componentNames = componentsNode && isList(componentsNode)
         ? (componentsNode.items as readonly unknown[]).filter((it) => isString(it as never)).map((it) => (it as { value: string }).value)
         : null;
+      // @java the SINGULAR component:"Name" form (Minishogi's OnePawnPerColumn
+      // counts (sites Occupied ... component:"Fuhyo")).
+      const componentNode = parsed.argsIn.find((arg) => arg.parameterName === "component")?.node;
+      if ((componentNames === null || componentNames.length === 0) && componentNode && isString(componentNode)) {
+        componentNames = [(componentNode as { value: string }).value];
+      }
       return Sites.constructOccupied(
         "Occupied" as never,
         byFn as never,
