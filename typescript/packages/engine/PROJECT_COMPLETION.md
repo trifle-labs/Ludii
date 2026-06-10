@@ -1618,3 +1618,32 @@ Diagnostic toolkit addition: the SHADOW BOARD — replay recorded ACTIONS alongs
 chosen moves and diff occupancy per ply; pinpoints silent effect divergences
 (found the huff bug). Lives in the session transcripts; worth scripting into
 test/parity as a --shadow mode.
+
+## Update 73 (2026-06-10) — race family = the dice workstream; entry points measured
+
+board/race (320 MM, the 2nd-largest block) bottoms out at the deferred dice
+subsystem. Backgammon ply 0: moves() throws `game.handDice is not a function`.
+
+THE REQUIRED JAVA SURFACE (measured from the faithful Roll/ForEachDie ports,
+which are already written against it):
+- Game.handDice(): Dice CONTAINER list — [{ index(), getNumFaces(), numLocs() }]
+  (@java Game.handDice). Our model: equipment.diceSpecs (per-die {faces[]}) +
+  diceSiteBase. One container view: index = 1 + hands.length, numLocs =
+  diceSpecs.length, getNumFaces = faces.length.
+- Game/Context.sitesFrom(): container base-site array — [0(board), handBases...,
+  diceSiteBase] (@java Equipment.sitesFrom; the maxSiteMainBoard span work from
+  Update 71 already fixed the board span).
+- Context.containerState(idx).what(loc, type): global-site reads — our
+  state.what(loc) suffices (sites are global).
+- components()[what].roll(ctx): die components must BE at the dice sites
+  (state.what(diceSiteBase+i) = die component id) with roll(ctx) = Java
+  Die.roll: context.rng().nextInt(faces.length). Our Die.roll takes a
+  rngNextInt fn — align the signature or adapt at the facade.
+- ForEachDie's Java-style guard needs ctx.setPipCount/pipCount + javaState
+  .currentDice(handIdx) (the harness already injects Java dice VALUES into
+  state.diceValues — wire currentDice() onto it).
+
+One coordinated session: build the surface, START-place the die components,
+then Backgammon-family replays should begin matching (the harness's dice
+injection removes RNG divergence). This is THE single highest-leverage item
+left (≈320 trials).
