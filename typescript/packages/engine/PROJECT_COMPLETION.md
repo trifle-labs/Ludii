@@ -574,6 +574,15 @@ LESSON (recurring class): construct dispatchers written pre-lazy-wrapping that t
 plain numbers silently mis-build when handed function objects — grep for `static construct(` with
 `number` params as a hardening sweep candidate.
 
+## Update 24: directions from:/to: dispatch routed; item-1 residuals down to two part-fixed games
+ArgCompiler preferred hook routes (directions <SiteType> from:<int> to:<int>) to a geometry-computed
+DirectionsFunction (verified ["E"]/["S"] on Gekitai's 6x6); the generic path had mis-bound the
+overload to empty static names. Gekitai's residual is now a different push detail (perimeter
+push-off branch / hand counts) at ply 10. El Perro residual: pass/turn-order at ply 110/346.
+THESE TWO RESIDUALS are all that remain of definition item 1 (faithful >= bespoke); everything else
+failing is beyond-bespoke. Items 2 (bespoke deletion) + 3-bulk (Count*/Iterator re-ports, dispatch
+minimization, substrate migration) resume with codex Jun 13 ~8pm; item 4 green at all 53 commits.
+
 ## Update 23: Pentalath CLOSED + Go replays — Do.ifAfterwards post-context (corpus-wide)
 1. **Intersect graph op rebuilds faces** (one-line makeFaces) — every (intersect ...) cell board
    was 0 cells; Pentalath's HalfHexHex now 70 cells.
