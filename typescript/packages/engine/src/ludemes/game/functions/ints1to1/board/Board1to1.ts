@@ -27,64 +27,6 @@ import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
 
 // ---------------------------------------------------------------------------
-// Who  (owner at site)
-// ---------------------------------------------------------------------------
-export class Who1to1 implements IntFunction {
-  private readonly siteFn: IntFunction;
-
-  public constructor(siteFn: IntFunction) {
-    this.siteFn = siteFn;
-  }
-
-  /** @java game/functions/ints/state/Who.java — eval: containerState.who(site, type) */
-  public eval(ctx: Context): number {
-    const s = this.siteFn.eval(ctx);
-    if (s < 0) return 0;
-    return ctx.state.cells[s] ?? 0;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// LastTo  (last move's destination)
-// ---------------------------------------------------------------------------
-export class LastTo1to1 implements IntFunction {
-  /**
-   * afterConsequence:True → return the to-site AFTER consequences, i.e. the to
-   * of the last applied action with a real to (e.g. the final sown hole).
-   * @java game/functions/ints/last/LastTo.java — move.toAfterSubsequents()
-   */
-  private readonly afterConsequence: boolean;
-
-  public constructor(afterConsequence = false) {
-    this.afterConsequence = afterConsequence;
-  }
-
-  /**
-   * @java game/functions/ints/last/LastTo.java — eval:
-   * Returns the non-decision "to" site of the last applied move.
-   */
-  public eval(ctx: Context): number {
-    const moves = ctx.trial.moves;
-    if (moves.length === 0) return ctx._evalTo;
-    const last = moves[moves.length - 1];
-    if (!last) return ctx._evalTo;
-    if (this.afterConsequence) {
-      // @java Move.toAfterSubsequents(): scan actions from the end, skip OFF.
-      const acts = last.actions;
-      for (let i = acts.length - 1; i >= 0; i--) {
-        const t = acts[i]!.to();
-        if (t >= 0) return t;
-      }
-    }
-    const t = last.toNonDecision();
-    if (t >= 0) return t;
-    const t2 = last.to();
-    if (t2 >= 0) return t2;
-    return ctx._evalTo;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Helper: algebraicToSite
 // ---------------------------------------------------------------------------
 function algebraicToSite(coordStr: string, W: number, H: number): number {

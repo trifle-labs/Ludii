@@ -9,7 +9,8 @@ import type { Between } from "../../../../../util/moves/Between.js";
 import { Custodial } from "./Custodial.js";
 import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
 import { IsFriend } from "../../../../../functions/booleans/is/player1to1/IsFriend.js";
-import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
+import { Who } from "../../../../../functions/ints/state/Who.js";
+import type { JavaIntFunction } from "../../../../../functions/ints/IntFunction.js";
 import { Remove } from "./Remove.js";
 import { BETWEEN_ITER, betweenCond, betweenEffect, betweenRange, directionName, fromLoc, intConst, LAST_TO, normaliseFriendAtPlaceholder, toCond, TO_ITER } from "./EffectCtorAdapters.js";
 
@@ -28,8 +29,8 @@ export class CustodialFaithful extends Custodial {
       dirnChoice: directionName(dirnChoice),
       minimum: range?.minFn ?? intConst(0),
       limit: range?.maxFn ?? intConst(1000),
-      targetRule: betweenCond(between, new IsEnemy(new Who1to1(BETWEEN_ITER), null)),
-      friendRule: normaliseFriendAtPlaceholder(toCond(to, new IsFriend(new Who1to1(TO_ITER), null))),
+      targetRule: betweenCond(between, new IsEnemy(new Who(null, BETWEEN_ITER as unknown as JavaIntFunction), null)),
+      friendRule: normaliseFriendAtPlaceholder(toCond(to, new IsFriend(new Who(null, TO_ITER as unknown as JavaIntFunction), null))),
       targetEffect: betweenEffect(between) ?? new Remove({ locationFn: BETWEEN_ITER }),
       then,
     });

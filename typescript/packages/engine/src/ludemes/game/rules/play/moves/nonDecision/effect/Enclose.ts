@@ -19,7 +19,8 @@ import type { Then } from "./Then.js";
 import type { SiteType } from "../../../../../../../action/site-type.js";
 import type { From } from "../../../../../util/moves/From.js";
 import type { Between } from "../../../../../util/moves/Between.js";
-import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
+import { Who } from "../../../../../functions/ints/state/Who.js";
+import type { JavaIntFunction } from "../../../../../functions/ints/IntFunction.js";
 import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 import { Remove } from "./Remove.js";
@@ -82,7 +83,7 @@ export class Enclose implements MovesFunction {
   ) {
     this.startFn = from?.loc() ?? LAST_TO;
     this.dirnChoice = directions ?? "Adjacent";
-    this.targetRule = between?.condition() ?? new IsEnemy(new Who1to1(BETWEEN), null);
+    this.targetRule = between?.condition() ?? new IsEnemy(new Who(null, BETWEEN as unknown as JavaIntFunction), null);
     this.numEmptySitesInGroup = numException ?? { eval: () => 0 };
     this.effect = between?.effect() ?? new Remove({
       locationFn: BETWEEN,

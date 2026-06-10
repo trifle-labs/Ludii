@@ -25,7 +25,7 @@ import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import { isIdent, isList, isNumber } from "@ludii/typescript-language";
-import { LastTo1to1 } from "../../../ints1to1/board/Board1to1.js";
+import { LastTo } from "../../../ints/last/LastTo.js";
 
 // StepType: F, R, L (mirrors Java StepType enum)
 type StepType = "F" | "R" | "L";
@@ -57,7 +57,7 @@ export class IsPattern implements BooleanFunction {
   ) {
     this.walk = walk;
     this.type = type;
-    this.fromFn = from ?? new LastTo1to1();
+    this.fromFn = from ?? new LastTo();
     this.whatsFn = whats ?? (what !== null ? [what] : null);
   }
 

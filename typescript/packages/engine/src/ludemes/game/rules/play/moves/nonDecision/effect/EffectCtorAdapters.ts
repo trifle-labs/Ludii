@@ -5,7 +5,8 @@ import { LastTo } from "../../../../../functions/ints/last/LastTo.js";
 import { AndBool } from "../../../../../functions/booleans/math1to1/AndBool.js";
 import { OrBool } from "../../../../../functions/booleans/math1to1/OrBool.js";
 import { IsFriend } from "../../../../../functions/booleans/is/player1to1/IsFriend.js";
-import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
+import { Who } from "../../../../../functions/ints/state/Who.js";
+import type { JavaIntFunction } from "../../../../../functions/ints/IntFunction.js";
 import type { From } from "../../../../../util/moves/From.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
 import type { To } from "../../../../../util/moves/To.js";
@@ -71,7 +72,7 @@ export function toCond(to: To | null, fallback: BooleanFunction = TRUE_FN): Bool
 }
 
 export function normaliseFriendAtPlaceholder(rule: BooleanFunction): BooleanFunction {
-  return rewriteFriendPlaceholder(rule, new IsFriend(new Who1to1(TO_ITER), null));
+  return rewriteFriendPlaceholder(rule, new IsFriend(new Who(null, TO_ITER as unknown as JavaIntFunction), null));
 }
 
 export function toEffect(to: To | null): MovesFunction | null {
