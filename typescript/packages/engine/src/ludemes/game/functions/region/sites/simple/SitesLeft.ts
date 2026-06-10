@@ -72,20 +72,18 @@ export class SitesLeft extends BaseRegionFunction {
  * @java Topology.left(SiteType) — sites with minimum centroid x.
  */
 function sitesWithMinX(traj: Trajectories): number[] {
-  const core = (traj as unknown as {
-    core?: { topo?: { elements?(type: string): Array<{ id: number; centroid?(): { x: number; y: number } }> } }
-  }).core;
-  const elements = core?.topo?.elements?.("Cell");
-  if (!elements || elements.length === 0) return [];
-
-  let minX = Infinity;
-  for (const el of elements) {
-    const c = el.centroid?.();
-    if (c && c.x < minX) minX = c.x;
+  // @java Topology — min-x play-sites. Use the Trajectories play-site API directly
+  // (xOf over [0, numSites)); the old duck-typed core.topo.elements("Cell") path was
+  // empty on vertex-play boards (e.g. 5x5 Alquerque hunts), returning [].
+  const n = traj.numSites;
+  if (n === 0) return [];
+  let best = traj.xOf(0);
+  for (let s = 1; s < n; s++) {
+    const x = traj.xOf(s);
+    if (x < best) best = x;
   }
   const tol = 0.001;
-  return elements
-    .filter((el) => { const c = el.centroid?.(); return c !== undefined && Math.abs(c.x - minX) < tol; })
-    .map((el) => el.id)
-    .sort((a, b) => a - b);
+  const sites: number[] = [];
+  for (let s = 0; s < n; s++) if (Math.abs(traj.xOf(s) - best) < tol) sites.push(s);
+  return sites;
 }

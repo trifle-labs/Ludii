@@ -795,6 +795,10 @@ export class Game1to1 implements Game {
       ) => void;
     };
 
+    // Attach the board's trajectories/radials so Sites* region evals (Row/Left/Right/...)
+    // resolve on the start-rule bridge context exactly as they do in play.
+    (ctx as unknown as { _trajectories?: unknown })._trajectories = this.equipment.board.trajectories;
+    (ctx as unknown as { _radials?: unknown })._radials = this.equipment.board.radials;
     ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
       if (site < 0 || site >= cells.length) return;
       const component = this.equipment.componentAt(what);

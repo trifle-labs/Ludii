@@ -236,6 +236,7 @@ export class PlaceItem {
    * Dispatches to evalFill, evalPuzzle, or the single-site path.
    */
   public eval(context: Context): void {
+
     // Java: if (locationIds != null || region != null || coords != null || countsFn != null)
     if (this.locationIds !== null || this.region !== null || this.coords !== null || this.countsFn !== null) {
       this.evalFill(context);
@@ -327,7 +328,18 @@ export class PlaceItem {
           }
           site = element.index();
         } else if (this.siteId !== null) {
-          site = this.siteId.eval(context);
+          // The reflection binding can put a REGION into the loc slot (Java's two PlaceItem
+          // overloads are ambiguous positionally: @Opt IntFunction loc vs @Or RegionFunction
+          // region). A region's eval returns an ARRAY of sites — fill each, per Java's
+          // fill-region constructor semantics.
+          const evaluated = (this.siteId as unknown as { eval(c: unknown): number | number[] }).eval(context);
+          if (Array.isArray(evaluated)) {
+            for (const s of evaluated) {
+              this.placePieces(context, s, what, count, state, rotation, value, false);
+            }
+            return;
+          }
+          site = evaluated;
         }
 
         this.placePieces(context, site, what, count, state, rotation, value, false);
