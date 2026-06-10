@@ -30,6 +30,7 @@ import { Move } from "../../../../../../../move.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
+import { applyPostStateThen } from "./Then.js";
 import { resolveRelativeDir, isSingleDir } from "../../../../../util/directions/RelativeDirection.js";
 import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
@@ -368,6 +369,13 @@ export class Hop extends Effect {
     (ctx as unknown as { _evalFrom?: number })._evalFrom = origFrom;
     (ctx as unknown as { _evalBetween?: number })._evalBetween = origBetween;
 
+    // @java Then.java — consequence evaluated in the POST-MOVE context (hop-chain
+    // continuations like (then (if (can Move (hop ...)) (moveAgain))) must see the
+    // just-applied hop).
+    const thenClause = this.then();
+    if (thenClause != null) {
+      return result.map((m) => applyPostStateThen(thenClause, ctx, m));
+    }
     return result;
   }
 
