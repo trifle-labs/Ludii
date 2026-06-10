@@ -1055,6 +1055,10 @@ export class Equipment extends BaseLudeme {
       // (@java Die.getFaces; the surface object otherwise drops die accessors).
       const facesFn = (component as unknown as { getFaces?: () => number[] }).getFaces;
       const faces = typeof facesFn === "function" ? facesFn.call(component) : undefined;
+      // Large pieces (tiles with a turtle-graphics walk): carry the walk so
+      // Add can enumerate footprints. @java Component.walk() / isLargePiece()
+      const walkFn = (component as unknown as { walk?: () => readonly (readonly string[])[] | null }).walk;
+      const walks = typeof walkFn === "function" ? walkFn.call(component) : null;
       pieces.push(Object.freeze({
         name: component.name() ?? "",
         owner: component.owner(),
@@ -1062,6 +1066,7 @@ export class Equipment extends BaseLudeme {
         generator: component.generator(),
         dirn,
         faces: faces && faces.length > 0 ? Object.freeze([...faces]) : undefined,
+        walks: walks && walks.length > 0 ? Object.freeze(walks.map((w) => Object.freeze([...w]))) : undefined,
       }));
     }
     return Object.freeze(pieces);

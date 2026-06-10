@@ -1215,18 +1215,11 @@ export class ArgCompiler {
       ) {
         resolveNextPhaseTargets(info.args[3]);
       }
-      if (
-        info.className === "game.rules.Rules" &&
-        info.args.length === 5 &&
-        info.args[2] === null &&
-        Array.isArray(info.args[3]) &&
-        info.args[3].length > 0
-      ) {
-        const firstPhasePlay = (info.args[3][0] as { play?: unknown } | undefined)?.play;
-        if (firstPhasePlay !== undefined && firstPhasePlay !== null) {
-          return new ctor(info.args[0], info.args[1], firstPhasePlay, info.args[3], info.args[4]);
-        }
-      }
+      // @java Rules.java:83-104 — when `play` is null each phase keeps its OWN
+      // play; nothing is merged. (A removed shim used to inject phase 0's play
+      // into the shared slot here, which Or-merged it into EVERY phase --
+      // Blue Nile's "play" phase then offered phase-0 placements on any empty
+      // cell, so (no Moves Next) never fired and the game never ended.)
       return new ctor(...info.args);
     } catch (e) {
       this.noteInstFail(`cannot instantiate ${info.className}: constructor threw (${String((e as Error)?.message ?? e).slice(0, 80)})`);

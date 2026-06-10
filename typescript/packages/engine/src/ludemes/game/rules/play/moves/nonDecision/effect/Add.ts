@@ -91,6 +91,60 @@ export class Add implements MovesFunction {
    *
    * Java lines 263-300: `for (int toSite = ...) { ActionAdd action = ... }`
    */
+  /**
+   * The cells covered by a large piece anchored at `from` with rotation
+   * `state`, or [] when the walk leaves the board.
+   * @java Core/src/game/equipment/component/Component.java — locs(Context,
+   * int, int, Topology): startDirection = orthogonalSupported[state % 4],
+   * indexWalk = state / 4; F steps move along the current direction, R/L
+   * rotate it; a step off the board invalidates the whole walk.
+   */
+  private static locsLargePiece(
+    ctx: Context,
+    from: number,
+    state: number,
+    walks: readonly (readonly string[])[],
+  ): number[] {
+    // @java supportedOrthogonalDirections(Cell) — N,E,S,W for square boards.
+    const ORTHO = ["N", "E", "S", "W"] as const;
+    const traj = (ctx as unknown as { _trajectories?: { step(site: number, dir: string): number } | null })._trajectories;
+    const board = (ctx.game as unknown as { equipment?: { board?: { width: number; height: number; numSites: number } } }).equipment?.board;
+    const W = board?.width ?? 0;
+    const H = board?.height ?? 0;
+    const stepTo = (site: number, dir: string): number => {
+      if (traj && typeof traj.step === "function") return traj.step(site, dir);
+      const col = site % W;
+      const row = Math.floor(site / W);
+      switch (dir) {
+        case "E": return col + 1 < W ? site + 1 : -1;
+        case "W": return col - 1 >= 0 ? site - 1 : -1;
+        case "N": return row + 1 < H ? site + W : -1;
+        case "S": return row - 1 >= 0 ? site - W : -1;
+        default: return -1;
+      }
+    };
+    const out: number[] = [from];
+    const realState = state >= 0 ? state : 0;
+    let dirIdx = realState % ORTHO.length;
+    const indexWalk = Math.floor(realState / ORTHO.length);
+    if (indexWalk >= walks.length) return out;
+    let cur = from;
+    for (const step of walks[indexWalk]!) {
+      if (step === "F") {
+        const to = stepTo(cur, ORTHO[dirIdx]!);
+        // @java no correct walk with that state — return empty
+        if (to < 0) return [];
+        if (!out.includes(to)) out.push(to);
+        cur = to;
+      } else if (step === "R") {
+        dirIdx = (dirIdx + 1) % ORTHO.length;
+      } else if (step === "L") {
+        dirIdx = (dirIdx + ORTHO.length - 1) % ORTHO.length;
+      }
+    }
+    return out;
+  }
+
   public eval(ctx: Context): Move[] {
     const mover = ctx.state.mover;
     const sites = this.toRegion.eval(ctx);
@@ -126,6 +180,53 @@ export class Add implements MovesFunction {
       what = mover;
       owner = mover;
       placedOwner = mover;
+    }
+
+    // @java Add.java:174-177 — large pieces (tiles with a turtle-graphics
+    // walk) route through evalLargePiece: for every anchor site, every
+    // rotation state 0..walk.length*4 whose footprint is entirely empty
+    // yields one move; the placed move carries the state and the body cells
+    // leave the empty set (Cram/Domineering dominoes).
+    const largePiece = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number; walks?: readonly (readonly string[])[] }> } })
+      .equipment?.pieces?.find((p) => p.index === what && p.walks && p.walks.length > 0);
+    if (largePiece?.walks) {
+      const walks = largePiece.walks;
+      // @java final int nbPossibleStates = largePiece.walk().length * 4;
+      const nbPossibleStates = walks.length * 4;
+      for (const site of sites) {
+        if (site < 0) continue;
+        ctx._evalTo = site;
+        if (this.toCondition !== null && !this.toCondition.eval(ctx)) continue;
+        for (let st = 0; st < nbPossibleStates; st++) {
+          // @java if (localStateToAdd != UNDEFINED && localStateToAdd != state) continue;
+          if (stateVal !== undefined && stateVal !== st) continue;
+          const locs = Add.locsLargePiece(ctx, site, st, walks);
+          if (locs.length === 0) continue;
+          // @java every covered site must be empty
+          if (locs.some((loc) => !ctx.state.isEmptySite(loc))) continue;
+          const action = new ActionAdd({
+            to: site,
+            what,
+            owner,
+            state: st,
+            footprint: locs,
+          });
+          action.setDecision(true);
+          moves.push(new Move({
+            id: `add:${mover}:${site}:st${st}`,
+            label: `Add(${site} st${st})`,
+            siteIndices: [site],
+            mover,
+            placedOwner,
+            actions: [action],
+          }));
+        }
+      }
+      ctx._evalTo = origTo;
+      if (this.thenClause !== null) {
+        return moves.map((move) => applyPostStateThen(this.thenClause, ctx, move));
+      }
+      return moves;
     }
 
     for (const site of sites) {
