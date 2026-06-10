@@ -128,8 +128,16 @@ export class FirstMoveOnTrack implements MovesFunction {
    * Resolve a RoleType string to a player index.
    * @java FirstMoveOnTrack.java:68 — new Id(null, owner).eval(context)
    */
-  private resolveOwner(_ctx: Context): number {
-    // Not yet wired — RoleType resolution requires a player registry
+  /** @java RoleType resolution — new Id(null, role).eval(context). */
+  private resolveOwner(ctx: Context): number {
+    const role = this.owner;
+    if (role === null) return UNDEFINED;
+    if (/^P\d+$/.test(role)) return Number(role.slice(1));
+    const numPlayers = (ctx.game as unknown as { numPlayers: number }).numPlayers;
+    if (role === "Mover") return ctx.state.mover;
+    if (role === "Next") return (ctx.state.mover % numPlayers) + 1;
+    if (role === "Prev") return ((ctx.state.mover - 2 + numPlayers) % numPlayers) + 1;
+    if (role === "Neutral" || role === "Shared") return 0;
     return UNDEFINED;
   }
 

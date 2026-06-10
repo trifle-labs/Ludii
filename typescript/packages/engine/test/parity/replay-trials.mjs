@@ -805,7 +805,7 @@ function replayTrial(trialPath) {
       console.error(`occupied: ${cells.join(' ')}`);
       console.error(`tsMoves (${tsMoves.length}):`);
       for (const m of tsMoves) {
-        console.error(`  mover=${m.mover} from=${m.from()} to=${m.to()} isPass=${m.isPass()} again=${m.moveAgain} acts=[${m.actions.map(a=>a.constructor.name).join(',')}]`);
+        console.error(`  mover=${m.mover} from=${m.from()} to=${m.to()} isPass=${m.isPass()} again=${m.moveAgain} acts=[${m.actions.map(a=>{try{return a.constructor.name+'('+(a.from?a.from():'')+'>'+(a.to?a.to():'')+(a.state?(' st'+a.state()):'')+')';}catch(e){return a.constructor.name;}}).join(',')}]`);
       }
       console.error(`=== END DEBUG ===\n`);
     }

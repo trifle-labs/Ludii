@@ -274,6 +274,11 @@ export class TrackSiteMove extends BaseIntFunction {
 
     const numSteps = this.steps.eval(context);
 
+    if (process.env.TRACE_TRACK) {
+      const elems = track.elems();
+      console.error(`[trackSite] player=${playerId} name=${this.name} trackName=${(track as unknown as { name?: () => string }).name?.()} from=${this.currentLocation ? this.currentLocation.eval(context) : "?"} i=${i} steps=${numSteps} len=${elems.length}`);
+    }
+
     i += numSteps >= 0 ? numSteps : 0;
 
     if (i < track.elems().length)

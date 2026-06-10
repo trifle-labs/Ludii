@@ -180,6 +180,9 @@ export class ForEachDie extends NonDecision {
       }
 
       // @java final int origDieValue = context.pipCount();
+      if (process.env.TRACE_DICE) {
+        console.error(`[forEachDie] mover=${mover} dice=${JSON.stringify(dieValues)} replayDouble=${replayDouble} temp=${javaState.temp()}`);
+      }
       const origDieValue = getPip();
 
       for (let i = 0; i < dieValues.length; i++) {
