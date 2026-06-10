@@ -802,3 +802,19 @@ subsystem** (a boardless game has no graph; Trajectories needs Java's Boardless
 container = large hidden hex field) — same documented subsystem class as stacking /
 3D / dice-state races. Item 2's compile-coverage precondition is otherwise met:
 129/130 real games compile faithfully; play-parity canaries (22 games) all green.
+
+## Update 31 — Item-3 hardening underway: mirror dedup + de-contamination recipe
+
+- **If/IfMoves dedup DONE**: one faithful class (If.ts, the full Java mirror) is
+  registered; IfMoves.ts is a transition re-export used only by compiler1to1
+  (dies with item 2). 14-game canary green.
+- **Cross-import census (the item-3 batch)**: 73 faithful files import *1to1 modules.
+  Top: Is.ts (38 — the (is …) variant dispatch), Count.ts (16), equipment barrel (14),
+  EffectCtorAdapters (8), Surround (7), Set (6), CustodialFaithful (6).
+  Many are TYPE-ONLY (Equipment1to1 type refs) — light re-homing, not re-ports.
+- **De-contamination recipe (exemplar: RangeFunction)**: (1) create the interface/
+  class at its @java-mirrored path; (2) the *1to1 module becomes a type alias /
+  re-export under the legacy name (transition, removed with item 2); (3) consumers
+  import the faithful home. Values.ts done this way; build+canaries green.
+
+The 73-file batch parallelizes cleanly over the recipe (codex wave, Jun 13).

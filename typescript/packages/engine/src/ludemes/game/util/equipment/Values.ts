@@ -3,7 +3,7 @@
 // Defines the set of values of a graph variable in a deduction puzzle.
 // Holds the SiteType (Vertex/Edge/Cell) and the range of valid values.
 
-import type { RangeFunction1to1 } from "../../functions/range/Range1to1.js";
+import type { RangeFunction } from "../../functions/range/RangeFunction.js";
 
 /** Graph element types — mirrors Java's SiteType ordinals. */
 export type UtilSiteType = "Vertex" | "Edge" | "Cell";
@@ -18,7 +18,7 @@ export class Values {
   private readonly _type: UtilSiteType;
 
   /** The range of valid values. @java Values.range */
-  private readonly _range: RangeFunction1to1;
+  private readonly _range: RangeFunction;
 
   /**
    * @java Values(SiteType type, Range range)
@@ -26,7 +26,7 @@ export class Values {
    * @param type  The graph element type.
    * @param range The range of valid values.
    */
-  public constructor(type: UtilSiteType, range: RangeFunction1to1) {
+  public constructor(type: UtilSiteType, range: RangeFunction) {
     this._type = type;
     this._range = range;
   }
@@ -35,5 +35,5 @@ export class Values {
   public type(): UtilSiteType { return this._type; }
 
   /** @java Values.range() */
-  public range(): RangeFunction1to1 { return this._range; }
+  public range(): RangeFunction { return this._range; }
 }

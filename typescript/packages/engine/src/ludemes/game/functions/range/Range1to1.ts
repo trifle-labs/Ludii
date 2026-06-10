@@ -15,21 +15,11 @@ import type { Context } from "../../../../context.js";
 import type { EvalScratch } from "../../../base.js";
 import type { IntFunction } from "../../../base.js";
 
-/** Result type returned by RangeFunction1to1.eval(). */
-export interface RangeResult {
-  readonly min: number;
-  readonly max: number;
-}
-
-/**
- * Interface mirroring Java's RangeFunction.
- * @java game/functions/range/RangeFunction.java
- */
-export interface RangeFunction1to1 {
-  eval(ctx: Context & EvalScratch): RangeResult;
-  readonly minFn: IntFunction;
-  readonly maxFn: IntFunction;
-}
+// RangeResult/RangeFunction moved to their @java home (RangeFunction.ts);
+// re-exported here under the legacy 1to1 name for the bespoke path's transition.
+import type { RangeFunction, RangeResult } from "./RangeFunction.js";
+export type { RangeResult };
+export type RangeFunction1to1 = RangeFunction;
 
 /**
  * Returns a range of values (inclusive) according to specified min/max.
