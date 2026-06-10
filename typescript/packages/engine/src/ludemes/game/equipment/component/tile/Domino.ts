@@ -33,7 +33,12 @@ export type ComponentStyleType =
  */
 abstract class Component extends Item {
   /** @java Component.generator — optional move generator */
-  public generator: MovesFunction | null;
+  protected _generator: MovesFunction | null;
+
+  /** @java Component.generator() */
+  public generator(): MovesFunction | null {
+    return this._generator;
+  }
 
   /** @java Component.nameWithoutNumber */
   public nameWithoutNumber: string;
@@ -62,7 +67,7 @@ abstract class Component extends Item {
     maxValue: number | null,
   ) {
     super(label, UNDEFINED, role);
-    this.generator         = generator;
+    this._generator        = generator;
     this.nameWithoutNumber = (label ?? "").replace(/\d+$/, "");
     this.style             = "Piece";
     this.maxState          = maxState !== null ? maxState : OFF;
@@ -143,7 +148,7 @@ export class Domino extends Component {
       this.role(),
       this._value,
       this._value2,
-      this.generator,
+      this._generator,
     );
   }
 
