@@ -644,6 +644,7 @@ export class ArgCompiler {
       variantName !== "board" &&
       variantName !== "phase" &&
       variantName !== "track" &&
+      variantName !== "hand" &&
       !PLAYER_SITE_VARIANTS.has(variantName) &&
       !SIMPLE_SITE_VARIANTS.has(variantName)
     ) return null;
@@ -675,6 +676,13 @@ export class ArgCompiler {
         ? this.compileMaybe(toNode, [parseJavaType("game.functions.ints.IntFunction")], env)
         : null;
       return Sites.constructTrack("Track" as never, null, role as never, name, from as never, to as never);
+    }
+    if (variantName === "hand") {
+      // @java Sites.construct(SitesPlayerType.Hand, ...) -> SitesHand. The role/player
+      // arg is node.items[2] (e.g. `(sites Hand Mover)`); the generic candidate path
+      // mis-resolved this to SitesEquipmentRegion (empty), breaking HandEmpty conditions.
+      const roleArg = node.items[2] && isIdent(node.items[2]) ? node.items[2].name : null;
+      return Sites.constructPlayer("Hand" as never, null, null, roleArg, null, null);
     }
     if (PLAYER_SITE_VARIANTS.has(variantName)) return playerSitesRegion(variantName);
     return Sites.constructSimple(simpleSiteVariant(variantName) as never, siteType);

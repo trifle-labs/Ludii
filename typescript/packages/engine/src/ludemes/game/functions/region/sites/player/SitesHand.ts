@@ -16,6 +16,23 @@ import type { Game1to1 } from "../../../../../Game1to1.js";
 type RoleType = "Mover" | "Next" | "Shared" | "P1" | "P2" | "P3" | "P4" | string;
 
 /**
+ * Resolve a RoleType to a 1-based player id against the current context.
+ * @java game/types/play/RoleType.java — toIntFunction(role).eval(context)
+ */
+function roleToPlayerId(role: RoleType, ctx: Context, numPlayers: number): number {
+  switch (role) {
+    case "Mover": return ctx.state.mover;
+    case "Next": return (ctx.state.mover % numPlayers) + 1;
+    case "Prev": return ((ctx.state.mover + numPlayers - 2) % numPlayers) + 1;
+    case "Shared": case "All": return numPlayers + 1; // @java RoleType.Shared.owner() post-create
+    default: {
+      const m = /^P(\d+)$/.exec(role);
+      return m ? parseInt(m[1]!, 10) : -1;
+    }
+  }
+}
+
+/**
  * Returns all the sites in a specific hand.
  *
  * @java game/functions/region/sites/player/SitesHand.java
@@ -52,13 +69,21 @@ export class SitesHand extends BaseRegionFunction {
    *   6. Build site array: sitesFrom[id] + i for each i in 0..numSites-1.
    */
   public override eval(ctx: Context & EvalScratch): number[] {
-    if (this.index === null) {
-      return [];
-    }
-
-    const pid = this.index.eval(ctx);
     const g = ctx.game as unknown as Game1to1;
     const numPlayers = g.numPlayers;
+
+    // @java SitesHand constructor — index = (indexPlayer != null) ? indexPlayer.index()
+    //   : (role != null) ? RoleType.toIntFunction(role) : null.
+    // The TS ctor stores the role separately, so resolve the pid from the role here
+    // when no explicit index function was bound (e.g. `(sites Hand Mover)`).
+    let pid: number;
+    if (this.index !== null) {
+      pid = this.index.eval(ctx);
+    } else if (this.role !== null) {
+      pid = roleToPlayerId(this.role, ctx, numPlayers);
+    } else {
+      return [];
+    }
 
     // @java SitesHand — validate pid
     if (pid < 1 || pid > numPlayers) {
