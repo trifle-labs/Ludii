@@ -1485,3 +1485,36 @@ faithful classes with baseline-identical spot checks (both *1to1 files deleted);
 *1to1 census: 4 files — Equipment1to1/Board1to1/Component1to1 (the engine-surface
 DATA TYPES — their merge is making faithful Equipment the runtime model, the true
 substrate-extinction endpoint) + play1to1.ts (the intentional public API).
+
+## Update 68 (2026-06-10) — the final seam, measured to ground truth
+
+The last three *1to1 files (Equipment1to1 18 refs, Board1to1 6, Component1to1 2)
+are the ENGINE RUNTIME MODEL, not stale mirrors. Ground truth from this probe:
+- Component.ts (faithful, registered C678) has the full Java API including
+  isDie/getFaces/getNumFaces — API-compatible with every duck-typed Die consumer
+  (ActionUpdateDice, ForEachDie, Face, PlaceItem isDie guards).
+- BUT the runtime dice path constructs the REGISTERED Die (Component1to1-based,
+  owner:number ctor) via reflection, while faithful Equipment._makeDie is a STUB
+  placeholder object — the two equipment builds are parallel, with the faithful
+  one incomplete on the dice branch.
+- Re-basing Die onto faithful Component changes the ctor contract (owner:number
+  vs role:RoleType) on a path with NO battery coverage (dice games are all
+  pre-existing MOVE_MISMATCH baselines, so a ctor break shows only as
+  START/COMPILE bucket shifts — verify with Backgammon-family bucket checks).
+
+EXECUTION PLAN for the seam (one session, battery + dice-bucket gated):
+1. Complete faithful Equipment._makeDie/_makeMergedDice (real Die/Dice, not stubs).
+2. Re-base Die onto faithful Component (ctor adapter: number→RoleType via P<n>).
+3. Re-type the engine surfaces: Game.equipment: Equipment1to1 → faithful Equipment
+   (18 files; the GameEquipmentSurface type in Game.ts is the choke point),
+   board: Board1to1 → faithful Board (6 files).
+4. Delete the three *1to1 files; play1to1.ts remains as the public API.
+
+Definition-of-complete scorecard as of this update:
+1. faithful ≥ bespoke parity: DONE (re-verified at scale: OUTCOME_OK 157→357 abs)
+2. bespoke deleted: DONE
+3. fidelity hardening: de-contamination/dispatch/mirror-completeness/one-State DONE;
+   substrate migration DONE for start+read paths; runtime-model unification = the
+   one seam above
+4. verification green throughout: DONE (70+ battery-gated commits, audits v7–v9,
+   full-replay baseline recorded)
