@@ -872,3 +872,18 @@ factories + *1to1 modules, (4) per-batch canary sweeps throughout.
   recipe: port @java class, register in JAVA_TS_CTORS, canary. After the registry
   worklist hits zero, instantiateRegistry + REGISTRY_FIRST + the batch factories +
   compiler1to1 delete cleanly.
+
+## Update 35 — Item-2 burn-down instrumented: 34 registry classes, per-game win counts
+
+- Trace refined to count registry WINS (non-null results), not probe attempts:
+  **34 bespoke factory classes** still serve faithful compiles
+  (test/parity/registry-worklist.txt). Site ported+registered (2.4k sites rerouted,
+  16-game canary green).
+- **Last is registered and the minimal (last To) routes faithfully** — its 5.5k wins
+  come from specific call shapes in complex games. Per-game win counts: Gomoku/
+  Breakthrough/NMM 0, Sudoku 1, Kalah 11, El Perro 21, Tablut 41, Pachesi 54,
+  Sittuyin 256. The burn-down loop: pick a game, trace its registry wins, diagnose
+  why instantiateFaithful failed for each (arity/clause/ctor mismatch — same
+  recipes as today's All.construct fix), drive to 0, canary, commit. When every
+  real game compiles with 0 registry wins, instantiateRegistry + the batch
+  factories + compiler1to1 delete cleanly (item 2 complete).

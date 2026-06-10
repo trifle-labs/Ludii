@@ -1094,7 +1094,15 @@ export class ArgCompiler {
   }
 
   private instantiateRegistry(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
-    if (process.env["LUDII_TRACE_REGISTRY"]) console.error("[registry]", info.className);
+    const result = this.instantiateRegistryInner(info, env);
+    // Trace registry WINS (non-null) — the true bespoke-factory dependency of the
+    // faithful path (item-2 deletion worklist). Attempts that return null are probes.
+    if (result !== null && result !== undefined && process.env["LUDII_TRACE_REGISTRY"])
+      console.error("[registry]", info.className);
+    return result;
+  }
+
+  private instantiateRegistryInner(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
     const registry = env.registry ?? this.registry;
     const named = new Map<string, unknown>();
     info.paramNames.forEach((name, index) => {
