@@ -186,7 +186,7 @@ function perimeterVertexRings(traj: Trajectories): Array<Array<readonly [number,
  * For Cell play we approximate: a face is a corner face when any of its
  * vertices is a corner vertex.
  */
-function cornerSitesTyped(
+export function cornerSitesTyped(
   ctx: Context,
   traj: Trajectories,
   kind: "convex" | "concave",
@@ -238,7 +238,7 @@ function cornerSitesTyped(
 // Square-board fallback
 // ---------------------------------------------------------------------------
 
-function squareBoardConvexCorners(ctx: Context): number[] {
+export function squareBoardConvexCorners(ctx: Context): number[] {
   const g = ctx.game as unknown as Game1to1;
   const W = g.equipment.board.width;
   const H = g.equipment.board.height;
@@ -246,46 +246,3 @@ function squareBoardConvexCorners(ctx: Context): number[] {
   const n = g.equipment.board.numSites;
   return [...new Set([0, W - 1, n - W, n - 1])].sort((a, b) => a - b);
 }
-
-// ---------------------------------------------------------------------------
-// ConcaveCorners class
-// ---------------------------------------------------------------------------
-
-export class SitesConcaveCorners1to1 implements RegionFunction {
-  /**
-   * @java game/functions/region/sites/simple/SitesConcaveCorners.java — eval(Context)
-   */
-  public eval(ctx: Context): number[] {
-    const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
-    const traj = ctxT._trajectories;
-    if (traj) {
-      return cornerSitesTyped(ctx, traj, "concave");
-    }
-    // Square boards have no concave corners
-    return [];
-  }
-}
-
-// ---------------------------------------------------------------------------
-// ConvexCorners class
-// ---------------------------------------------------------------------------
-
-export class SitesConvexCorners1to1 implements RegionFunction {
-  /**
-   * @java game/functions/region/sites/simple/SitesConvexCorners.java — eval(Context)
-   */
-  public eval(ctx: Context): number[] {
-    const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
-    const traj = ctxT._trajectories;
-    if (traj) {
-      return cornerSitesTyped(ctx, traj, "convex");
-    }
-    // Square board: four corners (all convex)
-    return squareBoardConvexCorners(ctx);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Registrations
-// ---------------------------------------------------------------------------
-

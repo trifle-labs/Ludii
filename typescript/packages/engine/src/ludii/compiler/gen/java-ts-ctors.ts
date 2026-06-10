@@ -679,7 +679,7 @@ import { Card as C679 } from "../../../ludemes/game/equipment/component/Card.js"
 import { Domino as C680 } from "../../../ludemes/game/equipment/component/tile/Domino.js";
 import { Path as C681 } from "../../../ludemes/game/equipment/component/tile/Path.js";
 import { Tile as C682 } from "../../../ludemes/game/equipment/component/tile/Tile.js";
-import { Die1to1 as C683 } from "../../../ludemes/game/equipment/component/Die1to1.js";
+import { Die as C683 } from "../../../ludemes/game/equipment/component/Die.js";
 import { Boardless as C684 } from "../../../ludemes/game/equipment/container/board/Boardless.js";
 import { Board as C685 } from "../../../ludemes/game/equipment/container/board/Board.js";
 import { Track as C686 } from "../../../ludemes/game/equipment/container/board/Track.js";

@@ -12,7 +12,7 @@ import type { EvalScratch } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
 import type { Game1to1 } from "../../../../../Game1to1.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import { SitesConvexCorners1to1 } from "./SitesConcaveConvexCorners1to1.js";
+import { cornerSitesTyped, squareBoardConvexCorners } from "./corner-sites.js";
 
 /**
  * Returns all the convex corners sites of the board.
@@ -24,8 +24,6 @@ import { SitesConvexCorners1to1 } from "./SitesConcaveConvexCorners1to1.js";
  *     For square boards: returns the four corner cells.
  */
 export class SitesConvexCorners extends BaseRegionFunction {
-  /** @java SitesConvexCorners — delegate 1:1 implementation */
-  private readonly delegate: SitesConvexCorners1to1;
 
   /**
    * @param siteType The graph element type (Cell/Edge/Vertex) or null for default.
@@ -34,7 +32,6 @@ export class SitesConvexCorners extends BaseRegionFunction {
   public constructor(siteType: string | null = null) {
     super();
     this.siteType = siteType;
-    this.delegate = new SitesConvexCorners1to1();
   }
 
   /**
@@ -50,7 +47,7 @@ export class SitesConvexCorners extends BaseRegionFunction {
     const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
     const traj = ctxAny._trajectories;
     if (traj) {
-      return this.delegate.eval(ctx);
+      return cornerSitesTyped(ctx, traj, "convex");
     }
 
     // @java SitesConvexCorners — square board: four physical corners
