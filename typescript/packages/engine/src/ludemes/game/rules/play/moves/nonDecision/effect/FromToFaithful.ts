@@ -2,8 +2,8 @@
 
 import type { BooleanFunction, IntFunction } from "../../../../../../base.js";
 import type { Then } from "./Then.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
+import type { To } from "../../../../../util/moves/To.js";
 import { FromTo } from "./FromTo.js";
 import { FALSE_FN, fromCond, fromLevel, fromLoc, fromRegion, toApplyCondition, toApplyEffect, toLoc } from "./EffectCtorAdapters.js";
 

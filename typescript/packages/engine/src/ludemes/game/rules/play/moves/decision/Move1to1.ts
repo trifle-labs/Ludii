@@ -35,11 +35,11 @@ import type {
   RegionFunction,
 } from "../../../../../base.js";
 import type { RangeFunction1to1 } from "../../../../functions/range/Range1to1.js";
-import type { From } from "../../../../util/moves/From1to1.js";
+import type { From } from "../../../../util/moves/From.js";
 import type { Piece1to1 } from "../../../../util/moves/Piece1to1.js";
 import type { Player1to1 } from "../../../../util/moves/Player1to1.js";
-import type { To } from "../../../../util/moves/To1to1.js";
-import type { Between } from "../../../../util/moves/Between1to1.js";
+import type { To } from "../../../../util/moves/To.js";
+import type { Between } from "../../../../util/moves/Between.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
 import type { ThenLike } from "../Moves.js";
 import type { DirectionArg } from "../nonDecision/effect/EffectCtorAdapters.js";

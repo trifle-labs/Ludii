@@ -1,8 +1,8 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Step.java
 
 import type { ThenLike } from "../../Moves.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
+import type { To } from "../../../../../util/moves/To.js";
 import { Step } from "./Step.js";
 import { directionsFunction, fromCond, fromLevel, fromLoc, fromRegion, toApplyEffect, toCond } from "./EffectCtorAdapters.js";
 import type { DirectionArg } from "./EffectCtorAdapters.js";

@@ -1,9 +1,9 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Slide.java
 
 import type { Then } from "./Then.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
-import type { Between } from "../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
+import type { To } from "../../../../../util/moves/To.js";
+import type { Between } from "../../../../../util/moves/Between.js";
 import { Slide } from "./Slide.js";
 import {
   betweenCond,

@@ -11,7 +11,7 @@
 
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../base.js";
 import type { Apply } from "../../rules/play/moves/nonDecision/effect/Apply.js";
-import type { SiteType1to1 } from "./From1to1.js";
+import type { SiteType1to1 } from "./From.js";
 
 export interface RotationsLike {
   eval(ctx: unknown): unknown;

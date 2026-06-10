@@ -1,9 +1,9 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Intervene.java
 
 import type { ThenLike } from "../../Moves.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
-import type { Between } from "../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
+import type { To } from "../../../../../util/moves/To.js";
+import type { Between } from "../../../../../util/moves/Between.js";
 import { Intervene } from "./Intervene.js";
 import { betweenRange, directionName, fromLoc, intConst, LAST_TO, toApplyEffect, toCond } from "./EffectCtorAdapters.js";
 

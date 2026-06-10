@@ -3,9 +3,9 @@
 import type { ThenLike } from "../../Moves.js";
 import type { Context } from "../../../../../../../context.js";
 import type { IntFunction } from "../../../../../../base.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
-import type { Between } from "../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
+import type { To } from "../../../../../util/moves/To.js";
+import type { Between } from "../../../../../util/moves/Between.js";
 import { Custodial } from "./Custodial.js";
 import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
 import { IsFriend } from "../../../../../functions/booleans/is/player1to1/IsFriend.js";

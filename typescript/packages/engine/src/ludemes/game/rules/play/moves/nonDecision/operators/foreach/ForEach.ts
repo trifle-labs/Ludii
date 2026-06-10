@@ -26,10 +26,10 @@ import type {
 import type { ThenLike } from "../../../Moves.js";
 import { Effect } from "../../effect/Effect.js";
 import type { DirectionArg } from "../../effect/EffectCtorAdapters.js";
-import type { Between } from "../../../../../../util/moves/Between1to1.js";
-import type { From } from "../../../../../../util/moves/From1to1.js";
+import type { Between } from "../../../../../../util/moves/Between.js";
+import type { From } from "../../../../../../util/moves/From.js";
 import type { Player1to1 } from "../../../../../../util/moves/Player1to1.js";
-import type { To } from "../../../../../../util/moves/To1to1.js";
+import type { To } from "../../../../../../util/moves/To.js";
 import { ForEachDie } from "./die/ForEachDie.js";
 import { ForEachDirection } from "./direction/ForEachDirection.js";
 import { ForEachGroup } from "./group/ForEachGroup.js";

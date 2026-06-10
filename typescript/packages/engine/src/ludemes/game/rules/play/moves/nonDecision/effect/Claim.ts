@@ -15,7 +15,7 @@ import { isList, type LudNode, type LudList } from "@ludii/typescript-language";
 import { Add } from "./Add.js";
 import type { Then } from "./Then.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
-import { To } from "../../../../../util/moves/To1to1.js";
+import { To } from "../../../../../util/moves/To.js";
 import { pieceComponent, toRegion } from "./EffectCtorAdapters.js";
 
 /**

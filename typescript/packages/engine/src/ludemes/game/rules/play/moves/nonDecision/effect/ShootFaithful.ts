@@ -1,10 +1,10 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Shoot.java
 
 import type { Then } from "./Then.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
-import type { Between } from "../../../../../util/moves/Between1to1.js";
+import type { To } from "../../../../../util/moves/To.js";
+import type { Between } from "../../../../../util/moves/Between.js";
 import { Shoot } from "./Shoot.js";
 import { betweenCond, directionName, LAST_TO, pieceComponent, toCond } from "./EffectCtorAdapters.js";
 

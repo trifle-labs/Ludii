@@ -20,7 +20,7 @@ import type { IntFunction, IntArrayFunction, RegionFunction, BooleanFunction } f
 import { BaseBooleanFunction } from "../../booleans/BaseBooleanFunction.js";
 import { CountValue } from "../../../../game/functions/ints1to1/count/CountValue.js";
 import { CountStack } from "../../../../game/functions/ints1to1/count/CountStack.js";
-import { CountRows, CountColumns, CountPlayers, CountTurns, CountMovesThisTurn } from "../../../../game/functions/ints1to1/count/CountSimple1to1.js";
+import { CountRows, CountColumns, CountPlayers, CountTurns, CountMovesThisTurn } from "../../../../game/functions/ints1to1/count/CountSimple.js";
 import { CountCells } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";
 import { CountPhases } from "./simple/CountPhases.js";
 import { CountTrials } from "./simple/CountTrials.js";

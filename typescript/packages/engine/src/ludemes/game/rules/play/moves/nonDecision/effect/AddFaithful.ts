@@ -2,7 +2,7 @@
 
 import type { IntFunction, RegionFunction } from "../../../../../../base.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
+import type { To } from "../../../../../util/moves/To.js";
 import type { Then } from "./Then.js";
 import { Add } from "./Add.js";
 import { pieceComponent, toRegion } from "./EffectCtorAdapters.js";

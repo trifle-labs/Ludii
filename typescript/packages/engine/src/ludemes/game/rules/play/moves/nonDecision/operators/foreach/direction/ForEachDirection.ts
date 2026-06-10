@@ -15,9 +15,9 @@ import { Move } from "../../../../../../../../../move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { Effect } from "../../../effect/Effect.js";
 import type { ThenLike } from "../../../../Moves.js";
-import type { From } from "../../../../../../../util/moves/From1to1.js";
-import type { Between } from "../../../../../../../util/moves/Between1to1.js";
-import type { To } from "../../../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../../../util/moves/From.js";
+import type { Between } from "../../../../../../../util/moves/Between.js";
+import type { To } from "../../../../../../../util/moves/To.js";
 import {
   directionsFunction,
   fromLoc,

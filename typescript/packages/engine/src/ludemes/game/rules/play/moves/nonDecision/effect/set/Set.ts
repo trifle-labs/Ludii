@@ -20,7 +20,7 @@ import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction, IntArrayFunction, IntFunction, BooleanFunction, RegionFunction } from "../../../../../../../base.js";
 import { IntArrayFromRegion } from "../../../../../../../other/IntArrayFromRegion.js";
 import type { Player1to1 } from "../../../../../../util/moves/Player1to1.js";
-import type { To } from "../../../../../../util/moves/To1to1.js";
+import type { To } from "../../../../../../util/moves/To.js";
 import { SetTeam } from "./team/SetTeam.js";
 import { SetHidden } from "./hidden/SetHidden.js";
 import { SetPot } from "./value/SetPot.js";

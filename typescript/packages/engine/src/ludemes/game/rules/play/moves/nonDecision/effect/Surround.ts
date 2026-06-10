@@ -31,9 +31,9 @@ import { Between as IteratorBetween, From as IteratorFrom, To as IteratorTo } fr
 import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
 import { IsFriend } from "../../../../../functions/booleans/is/player1to1/IsFriend.js";
 import { relationToAbsoluteDirection, type RelationType } from "../../../../../types/board/RelationType.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
-import type { Between } from "../../../../../util/moves/Between1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
+import type { Between } from "../../../../../util/moves/Between.js";
+import type { To } from "../../../../../util/moves/To.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
 import { Remove } from "./Remove.js";
 import { normaliseFriendAtPlaceholder } from "./EffectCtorAdapters.js";

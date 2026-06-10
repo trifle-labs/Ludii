@@ -17,8 +17,8 @@ import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } 
 import type { Move } from "../../../../../../../move.js";
 import type { Then } from "./Then.js";
 import type { SiteType } from "../../../../../../../action/site-type.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
-import type { Between } from "../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
+import type { Between } from "../../../../../util/moves/Between.js";
 import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
 import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";

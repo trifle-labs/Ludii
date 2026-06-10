@@ -6,10 +6,10 @@ import { AndBool } from "../../../../../functions/booleans/math1to1/AndBool.js";
 import { OrBool } from "../../../../../functions/booleans/math1to1/OrBool.js";
 import { IsFriend } from "../../../../../functions/booleans/is/player1to1/IsFriend.js";
 import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
-import type { From } from "../../../../../util/moves/From1to1.js";
+import type { From } from "../../../../../util/moves/From.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
-import type { To } from "../../../../../util/moves/To1to1.js";
-import type { Between, RangeLike } from "../../../../../util/moves/Between1to1.js";
+import type { To } from "../../../../../util/moves/To.js";
+import type { Between, RangeLike } from "../../../../../util/moves/Between.js";
 
 export type DirectionArg = string | DirectionsFunction | { directionsFunctions?: () => DirectionsFunction } | null;
 
