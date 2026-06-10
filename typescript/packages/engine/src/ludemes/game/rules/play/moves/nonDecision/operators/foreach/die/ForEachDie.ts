@@ -17,6 +17,7 @@ import { ActionSetTemp } from "../../../../../../../../../action/action-set-temp
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { NonDecision } from "../../../NonDecision.js";
 import type { ThenLike } from "../../../../Moves.js";
+import { applyPostStateThen } from "../../../effect/Then.js";
 import type { Action } from "../../../../../../../../../action/index.js";
 
 /** Java parity: Constants.UNDEFINED = -1 */
@@ -247,6 +248,13 @@ export class ForEachDie extends NonDecision {
       // @java context.setPipCount(origDieValue);
       setPip(origDieValue);
 
+      // @java ForEachDie.java:239-241 — the ludeme's own (then …) is added to
+      // every generated move's then() list (Baralie: each die move carries
+      // (then (moveAgain)) so the mover continues until all dice are used).
+      const ownThen = this.then();
+      if (ownThen !== null) {
+        return returnMoves.map((m) => applyPostStateThen(ownThen, context, m));
+      }
       return returnMoves;
     }
 
@@ -286,6 +294,11 @@ export class ForEachDie extends NonDecision {
 
     ctxWorking._evalPips = origPips;
 
+    // @java ForEachDie.java:239-241 — own (then …) added to every move.
+    const ownThenFallback = this.then();
+    if (ownThenFallback !== null) {
+      return returnMoves.map((m) => applyPostStateThen(ownThenFallback, context, m));
+    }
     return returnMoves;
   }
 
