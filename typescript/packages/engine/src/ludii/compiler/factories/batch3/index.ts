@@ -240,8 +240,9 @@ export function registerBatch3(registry: LudemeRegistry): void {
   registry.registerLudeme("handsite:handsite", (b) => {
     const owner = b.positional[0];
     const site = b.positional[1] === undefined ? new IntConstant(0) : asIntFunction(b.positional[1]);
-    if (typeof owner === "string") return new HandSite(asJavaIntFunction(roleIntFunction(owner)), asJavaIntFunction(site));
-    return new HandSite(asJavaIntFunction(asIntFunction(owner)), asJavaIntFunction(site));
+    // HandSite now mirrors the Java 3-param signature (indexPlayer, role, site).
+    if (typeof owner === "string") return new HandSite(asJavaIntFunction(roleIntFunction(owner)), null, asJavaIntFunction(site));
+    return new HandSite(asJavaIntFunction(asIntFunction(owner)), null, asJavaIntFunction(site));
   });
 
   registry.registerLudeme("hex:hex", (b) => {
@@ -380,7 +381,11 @@ function countCountFactory(b: ArgBundle): IntFunction {
   }
 
   if (kind === "Pieces") {
-    const role = findFirstValue(b, (v): v is string => typeof v === "string" && isRoleType(v)) ?? "All";
+    // The role may arrive positionally OR under the clause-named "role" slot (the
+    // ArgCompiler's enum validation now binds idents to their typed @Or slot).
+    const namedRole = b.named.get("role");
+    const role = (typeof namedRole === "string" && isRoleType(namedRole) ? namedRole : null) ??
+      findFirstValue(b, (v): v is string => typeof v === "string" && isRoleType(v)) ?? "All";
     const of = optionalNamedInt(b, "of");
     const who = of ?? roleCountFunction(role);
     const isAll = of === null && (role === "All" || role === "Any" || role === "Each");

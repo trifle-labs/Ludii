@@ -11,6 +11,7 @@ import {
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { getBuiltinDefines } from "../../../builtin-defines.js";
+import { ENUM_CONSTANTS } from "../gen/enum-constants.js";
 import { expandDefines } from "../../../lud-defines.js";
 import { applyOptions } from "../../../lud-options.js";
 import {
@@ -106,6 +107,7 @@ class ArgCompileMiss extends Error {
 
 export class ArgCompiler {
   private readonly reflection: ReadonlyMap<string, ReflectionClass>;
+  private readonly _enumConstantsByAssignable = new Map<string, Set<string>>();
   private readonly grammar: GrammarModel;
   private readonly registry: LudemeRegistry;
   private readonly byToken = new Map<string, Candidate[]>();
@@ -992,13 +994,46 @@ export class ArgCompiler {
       if (expected.dims !== 0) continue;
       const meta = this.reflection.get(expected.name);
       if (meta?.assignableTo.includes("java.lang.Enum") || expected.name.startsWith("game.types.")) {
+        // @java Enum.valueOf during reflection compilation: an ident only matches an
+        // enum-typed parameter when it IS one of that enum's constants. Without this
+        // check `(no Pieces P2)` binds P2 to the @Opt SiteType slot and the RoleType
+        // is silently dropped (El Perro's winner detection). ENUM_CONSTANTS is
+        // generated from the Java sources by tools/parity/extract-enum-constants.py.
+        const constants = ENUM_CONSTANTS.get(expected.name);
+        if (constants && !constants.has(node.name)) continue;
         return node.name;
       }
       if (meta && meta.executables.length === 0) {
-        return node.name;
+        // Interface/abstract grammar type with no constructors (e.g. game.util.directions.
+        // Direction): Java matches an ident here by Enum.valueOf against the enums that
+        // IMPLEMENT it (AbsoluteDirection.N satisfies a Direction param). Accept the ident
+        // only when it is a constant of an enum assignable to this expected type — a bare
+        // ident is never a legal value for a non-enum interface like IntFunction (it used
+        // to leak through as a raw string, e.g. (value Player Mover) binding "Mover" into
+        // the @Or IntFunction slot instead of the RoleType slot).
+        if (this.enumConstantsAssignableTo(expected.name).has(node.name)) {
+          return node.name;
+        }
+        continue;
       }
     }
     return NO_MATCH;
+  }
+
+  /** Union of constants of every enum class assignable to `typeName` (lazily built). */
+  private enumConstantsAssignableTo(typeName: string): ReadonlySet<string> {
+    let set = this._enumConstantsByAssignable.get(typeName);
+    if (set === undefined) {
+      set = new Set<string>();
+      for (const [enumClass, constants] of ENUM_CONSTANTS) {
+        const enumMeta = this.reflection.get(enumClass);
+        if (enumMeta?.assignableTo.includes(typeName)) {
+          for (const c of constants) set.add(c);
+        }
+      }
+      this._enumConstantsByAssignable.set(typeName, set);
+    }
+    return set;
   }
 
   private instantiateTerminal(

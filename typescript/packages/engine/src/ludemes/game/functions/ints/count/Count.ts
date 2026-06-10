@@ -124,12 +124,21 @@ function roleToInt(role: unknown): IntFunction {
       return { eval: (context: Context) => context.state.mover };
     case "Next":
       return { eval: (context: Context) => (context.state.mover % context.game.numPlayers) + 1 };
-    case "P1":
-      return { eval: (_context: Context) => 1 };
-    case "P2":
-      return { eval: (_context: Context) => 2 };
-    default:
+    case "Prev":
+      return { eval: (context: Context) => ((context.state.mover - 2 + context.game.numPlayers) % context.game.numPlayers) + 1 };
+    case "Player":
+      // @java RoleType.Player — the player iterated by (forEach Player ...): context.player().
+      return { eval: (context: Context) => (context as Context & { _evalPlayer?: number })._evalPlayer ?? context.state.mover };
+    case "Neutral":
+    case "Shared":
       return ZERO_INT;
+    default: {
+      if (typeof role === "string" && /^P\d+$/.test(role)) {
+        const pid = Number(role.slice(1));
+        return { eval: (_context: Context) => pid };
+      }
+      return ZERO_INT;
+    }
   }
 }
 

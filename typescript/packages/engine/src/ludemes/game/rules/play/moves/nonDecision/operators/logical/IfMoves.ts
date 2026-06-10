@@ -17,7 +17,7 @@
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
-import type { Then } from "../../effect/Then.js";
+import { applyPostStateThen, type Then } from "../../effect/Then.js";
 
 export class IfMoves implements MovesFunction {
   /** The condition. @java If.cond */
@@ -55,11 +55,19 @@ export class IfMoves implements MovesFunction {
    * Java lines 119-145.
    */
   public eval(ctx: Context): Move[] {
+    // @java If.java: if (then() != null) moves.moves().get(j).then().add(then().moves());
+    // Java evaluates the then AFTER the chosen move applies; applyPostStateThen bakes the
+    // post-state consequence actions into each generated move (same recipe as the effect
+    // classes — e.g. El Perro's play-level (then (if (not (can Move …)) (set Value P2 …)))).
     if (this.cond.eval(ctx)) {
-      return this.thenMoves.eval(ctx);
+      const moves = this.thenMoves.eval(ctx);
+      if (this.thenClause !== null) return moves.map(m => applyPostStateThen(this.thenClause, ctx, m));
+      return moves;
     }
     if (this.elseMoves !== null) {
-      return this.elseMoves.eval(ctx);
+      const moves = this.elseMoves.eval(ctx);
+      if (this.thenClause !== null) return moves.map(m => applyPostStateThen(this.thenClause, ctx, m));
+      return moves;
     }
     return [];
   }

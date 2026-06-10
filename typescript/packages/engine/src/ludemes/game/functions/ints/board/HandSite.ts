@@ -40,17 +40,19 @@ export class HandSite extends BaseIntFunction {
   private precomputedValue: number = OFF;
 
   /**
-   * @param playerId  IntFunction resolving to the player index.
-   * @param siteFn    IntFunction resolving to the slot offset within the hand.
-   * @java HandSite(IntFunction|RoleType, IntFunction)
+   * @java HandSite(@Or IntFunction indexPlayer, @Or RoleType role, @Opt IntFunction site)
+   * Matches the Java reflection signature: exactly one of indexPlayer/role is non-null
+   * (the compiler binds the @Or pair); role arrives as the enum constant name string
+   * (evalPlayer resolves role names like "Mover" contextually).
    */
   public constructor(
-    playerId: JavaIntFunction | string | number,
-    siteFn: JavaIntFunction | number | null = 0,
+    indexPlayer: JavaIntFunction | string | number | null,
+    role: string | null = null,
+    site: JavaIntFunction | number | null = null,
   ) {
     super();
-    this.playerId = playerId;
-    this.siteFn = siteFn;
+    this.playerId = indexPlayer ?? role ?? 0;
+    this.siteFn = site ?? 0;
   }
 
   /**

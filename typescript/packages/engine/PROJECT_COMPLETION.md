@@ -672,3 +672,39 @@ object -> route/port faithfully) lands fixes reliably meanwhile.
      capture side-effect; then widen to other direction-based games.
   4. Then the per-ludeme eval grind continues; delete bespoke (compiler1to1 + *1to1 + registry/
      make<X> adapters) once faithful ≥ parity.
+
+## Update 26 (El Perro CLOSED + enum-constant validation, measurement correction)
+
+**El Perro: OUTCOME_OK 2/2 — item 1 residual #1 closed.** Root-cause chain (found via the
+strict drift detector probe-replay-diff.mjs, now in occupancy mode):
+1. No board drift at all — states identical through ply 109. The "membership drift" theory
+   was wrong; the divergence was PLAYER VALUE state ((set Value P2 …)), invisible to the
+   occupancy diff until extended (probe now snapshots valuePlayer too).
+2. Play-level `(if … (then …))` dropped its then: the live class is **IfMoves** (registered
+   in java-ts-ctors), not the mirror If.ts — both now applyPostStateThen (the mirror
+   duplication is a hardening-pass dedup item).
+3. The then's `(set Value P2 …)` toggled, BUT the END rule `(no Pieces P2)` still failed:
+   the compiled NoPieces had **role=All, type="P2"** — the ArgCompiler bound the ident P2
+   into the @Opt SiteType slot because **compileEnum accepted any ident for any enum**.
+4. Fix: **ENUM_CONSTANTS** (generated from Java sources by
+   tools/parity/extract-enum-constants.py, 236 enums) + compileEnum membership validation,
+   exactly like Java's Enum.valueOf during reflection compilation. Also: an ident only
+   satisfies a 0-executable interface type (Direction) when it is a constant of an enum
+   ASSIGNABLE to it — bare idents no longer leak into IntFunction slots as raw strings.
+
+**Knock-on fixes (the validation un-masked leak-shaped ctors):**
+- HandSite ctor was 2-ary, shaped around the string leak → now mirrors the Java 3-param
+  signature (indexPlayer@Or, role@Or, site@Opt). batch3's registry call updated.
+- Count.ts roleToInt lacked Player/Prev/P3+ → ZERO_INT → Nerenchi winner regression.
+  Now mirrors RoleType.toIntFunction (Player reads ctx._evalPlayer = Java context.player()).
+- batch3 countPieces also reads the clause-named "role" slot.
+
+**MEASUREMENT CORRECTION (honesty):** faithful-compile coverage drops 81.8% → **67.7%
+(149/220)**. The old number counted silently mis-bound compiles (enum idents landing in
+wrong slots — El Perro's bug class). Canary parity HELD or improved everywhere: 22-game
+extended sweep all OUTCOME_OK except Konane/Reversi-variant/Surakarta/Pente/Hnefatafl-deep,
+ALL of which measure 0% at HEAD too (pre-existing, NOT regressions — verified by stash
+baseline). Coverage regrowth with CORRECT bindings is the next wave class: the fallback
+histogram now surfaces real reasons (Brick construct, (add) overload, TrackStep terminal).
+
+**Item 1 residuals remaining: Gekitai only** (ply-10 push detail).

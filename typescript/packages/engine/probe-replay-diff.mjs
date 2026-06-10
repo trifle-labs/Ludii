@@ -18,6 +18,7 @@ const worker = (useArg) => {
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { parseTrial } from './test/parity/trial-format.mjs';
+import { findMatchingMove } from './test/parity/move-match.mjs';
 const lroot='/Users/billy/GitHub/trifle-labs/Ludii/Common/res/lud';
 const idx=new Map();(function w(d){for(const e of readdirSync(d)){const p=join(d,e);const s=statSync(p);if(s.isDirectory())w(p);else if(e.endsWith('.lud'))idx.set(e.toLowerCase(),p);}})(lroot);
 const rs=n=>{const m=idx.get(n.toLowerCase()+'.lud');return m?readFileSync(m,'utf8'):null;};
@@ -29,21 +30,27 @@ const trial=parseTrial(readFileSync(trialPath,'utf8'), trialPath);
 const engine=await import('./dist/src/index.js');
 const g=engine.play1to1(rs(${JSON.stringify(GAME)}),{resolveSubgame:rs});
 let ctx=g.start();
+// Skip the recorded setup block exactly like the harness (replay-trials.mjs replayFrom logic):
+// explicit numInitialPlacementMoves, else the contiguous leading mover=0 block.
+let replayFrom = trial.numInitialPlacementMoves > 0 ? trial.numInitialPlacementMoves : 0;
+if (replayFrom === 0) while (replayFrom < trial.moves.length && trial.moves[replayFrom].mover === 0) replayFrom++;
+const gameMoves = trial.moves.slice(replayFrom);
+// Occupancy snapshot per ply (what + count per site). Move SETS are deliberately
+// NOT compared: the bespoke engine over-generates legal moves (membership replay
+// tolerates it), so full-set diffs vs bespoke are noise. The honest drift signal
+// is the BOARD STATE after each applied recorded move.
+const occ=()=>{const r=[];for(let i=0;i<200;i++){let w=0;try{w=ctx.state.whatAtSite(i);}catch{break;}if(w){let c=1;try{c=ctx.state.countAtSite(i)??1;}catch{}r.push(i+':'+w+(c>1?'x'+c:''));}}
+  // player values are game state too ((set Value P2 …) drives e.g. El Perro's goat reversal)
+  for(let p=1;p<=4;p++){try{const v=ctx.state.valuePlayer(p);if(v!==-1&&v!==undefined)r.push('v'+p+'='+v);}catch{}}
+  return r.join(' ');};
 const out=[];
-for (let i=0;i<Math.min(trial.moves.length, ${MAX});i++){
-  const rec=trial.moves[i];
+for (let i=0;i<Math.min(gameMoves.length, ${MAX});i++){
+  const rec=gameMoves[i];
   const ts=g.moves(ctx);
-  const real=ts.filter(m=>!m.isPass?.());
-  out.push(real.map(m=>m.from?.()+'>'+m.to?.()).sort().join(' '));
-  // find the replayed move: from/to match (tiered like the harness's basic tier)
-  // NOTE(next session): replay-trials.mjs is a SCRIPT (importing it runs the corpus walk);
-  // extract findMatchingMove into test/parity/move-match.mjs and import THAT here for the
-  // tiered matching multi-action hops need. The simple tier below stops at chained hops.
-  const match = ts.find(m=>m.from?.()===rec.from && m.to?.()===rec.to && (m.mover===rec.mover)) ??
-                ts.find(m=>m.from?.()===rec.from && m.to?.()===rec.to) ??
-                (rec.from===-1&&rec.to===-1 ? ts.find(m=>m.isPass?.()) : undefined);
+  const match = findMatchingMove(ts, rec);
   if (!match){ out.push('NO_MATCH at ply '+i+' rec='+rec.mover+':'+rec.from+'>'+rec.to); break; }
   ctx=g.apply(ctx, match);
+  out.push('after ply '+i+' ('+rec.mover+':'+rec.from+'>'+rec.to+'): '+occ());
 }
 console.log(JSON.stringify({sets: out}));
 `;
@@ -63,10 +70,12 @@ for (let i = 0; i < n; i++) {
   if (b.sets[i] !== f.sets[i]) {
     const bs = new Set(b.sets[i].split(" ")), fs = new Set(f.sets[i].split(" "));
     const missing = [...bs].filter((x) => !fs.has(x)), extra = [...fs].filter((x) => !bs.has(x));
-    console.log(`FIRST SET DIVERGENCE at ply ${i}:`);
-    console.log(`  missing in faithful: ${missing.slice(0, 8).join(" ")} (${missing.length})`);
-    console.log(`  extra in faithful:   ${extra.slice(0, 8).join(" ")} (${extra.length})`);
+    console.log(`FIRST STATE DIVERGENCE at ply ${i}:`);
+    console.log(`  bespoke : ${b.sets[i]}`);
+    console.log(`  faithful: ${f.sets[i]}`);
+    console.log(`  only in bespoke : ${missing.slice(0, 10).join(" ")} (${missing.length})`);
+    console.log(`  only in faithful: ${extra.slice(0, 10).join(" ")} (${extra.length})`);
     process.exit(2);
   }
 }
-console.log(`sets identical for ${n} plies (bespoke ${b.sets.length}, faithful ${f.sets.length})`);
+console.log(`states identical for ${n} plies (bespoke ${b.sets.length}, faithful ${f.sets.length})`);

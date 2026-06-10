@@ -10,6 +10,7 @@
 import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
+import { applyPostStateThen } from "../../effect/Then.js";
 
 /**
  * Minimal interface for a Then (consequence moves following a primary move).
@@ -90,12 +91,16 @@ export class If implements MovesFunction {
     if (this.cond.eval(ctx)) {
       // @java return list.eval(context) with then applied
       const moves = this.list.eval(ctx);
-      // NOTE: Move.then is readonly in this TS port; then-chaining approximated at generation level.
+      // @java If.java: if (then() != null) moves.moves().get(j).then().add(then().moves());
+      // Java evaluates the then AFTER the move applies; applyPostStateThen bakes the
+      // post-state consequence actions into each generated move (same recipe as the
+      // effect classes — e.g. El Perro's play-level (then (… (set Value P2 …)))).
+      if (this._then !== null) return moves.map(m => applyPostStateThen(this._then, ctx, m));
       return moves;
     } else if (this.elseList !== null) {
       // @java return elseList.eval(context) with then applied
       const moves = this.elseList.eval(ctx);
-      // NOTE: Move.then is readonly in this TS port.
+      if (this._then !== null) return moves.map(m => applyPostStateThen(this._then, ctx, m));
       return moves;
     }
 
