@@ -163,7 +163,7 @@ import { Between as C159 } from "../../../ludemes/game/util/moves/Between.js";
 import { Flips as C160 } from "../../../ludemes/game/util/moves/Flips.js";
 import { To as C161 } from "../../../ludemes/game/util/moves/To.js";
 import { DirectionType as C162 } from "../../../ludemes/game/util/directions/DirectionType.js";
-import { Polygon as C163 } from "../../../ludemes/game/util/graph/Poly.js";
+import { Poly as C163 } from "../../../ludemes/game/util/graph/Poly.js";
 import { MeasureGraph as C164 } from "../../../ludemes/game/util/graph/MeasureGraph.js";
 import { Perimeter as C165 } from "../../../ludemes/game/util/graph/Perimeter.js";
 import { Properties as C166 } from "../../../ludemes/game/util/graph/Properties.js";
