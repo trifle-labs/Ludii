@@ -26,10 +26,10 @@ import type {
 import type { ThenLike } from "../../../Moves.js";
 import { Effect } from "../../effect/Effect.js";
 import type { DirectionArg } from "../../effect/EffectCtorAdapters.js";
-import type { Between1to1 } from "../../../../../../util/moves/Between1to1.js";
-import type { From1to1 } from "../../../../../../util/moves/From1to1.js";
+import type { Between } from "../../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../../util/moves/From1to1.js";
 import type { Player1to1 } from "../../../../../../util/moves/Player1to1.js";
-import type { To1to1 } from "../../../../../../util/moves/To1to1.js";
+import type { To } from "../../../../../../util/moves/To1to1.js";
 import { ForEachDie } from "./die/ForEachDie.js";
 import { ForEachDirection } from "./direction/ForEachDirection.js";
 import { ForEachGroup } from "./group/ForEachGroup.js";
@@ -175,10 +175,10 @@ export class ForEach extends Effect {
    */
   public static constructDirection(
     forEachType: string,
-    from: From1to1 | null,
+    from: From | null,
     directions: DirectionArg,
-    between: Between1to1 | null,
-    to: To1to1 | null,
+    between: Between | null,
+    to: To | null,
     moves: MovesFunction | null,
     then: ThenLike | null,
   ): MovesFunction {

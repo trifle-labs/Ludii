@@ -53,7 +53,7 @@ function edgeDir16(ax: number, ay: number, bx: number, by: number): number {
 // @java game/functions/region/sites/edges/SitesAngled.java — eval(Context)
 // Java: graph.angled(SiteType.Edge) = edges not in axial/slash/slosh sets
 // ---------------------------------------------------------------------------
-export class SitesAngled1to1 implements RegionFunction {
+export class SitesAngled implements RegionFunction {
   /** @java game/functions/region/sites/edges/SitesAngled.java — eval(Context) */
   public eval(ctx: Context): number[] {
     const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
@@ -84,7 +84,7 @@ export class SitesAngled1to1 implements RegionFunction {
 // @java game/functions/region/sites/edges/SitesAxial.java — eval(Context)
 // Java: graph.axial(SiteType.Edge) = horizontal or vertical edges
 // ---------------------------------------------------------------------------
-export class SitesAxial1to1 implements RegionFunction {
+export class SitesAxial implements RegionFunction {
   /** @java game/functions/region/sites/edges/SitesAxial.java — eval(Context) */
   public eval(ctx: Context): number[] {
     const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
@@ -108,7 +108,7 @@ export class SitesAxial1to1 implements RegionFunction {
 // @java game/functions/region/sites/edges/SitesHorizontal.java — eval(Context)
 // Java: graph.horizontal(SiteType.Edge) = edges with angle ~0° or ~180°
 // ---------------------------------------------------------------------------
-export class SitesHorizontal1to1 implements RegionFunction {
+export class SitesHorizontal implements RegionFunction {
   /** @java game/functions/region/sites/edges/SitesHorizontal.java — eval(Context) */
   public eval(ctx: Context): number[] {
     const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
@@ -132,7 +132,7 @@ export class SitesHorizontal1to1 implements RegionFunction {
 // @java game/functions/region/sites/edges/SitesVertical.java — eval(Context)
 // Java: graph.vertical(SiteType.Edge) = edges with angle ~90° or ~270°
 // ---------------------------------------------------------------------------
-export class SitesVertical1to1 implements RegionFunction {
+export class SitesVertical implements RegionFunction {
   /** @java game/functions/region/sites/edges/SitesVertical.java — eval(Context) */
   public eval(ctx: Context): number[] {
     const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
@@ -156,7 +156,7 @@ export class SitesVertical1to1 implements RegionFunction {
 // @java game/functions/region/sites/edges/SitesSlash.java — eval(Context)
 // Java: graph.slash(SiteType.Edge) = edges angled NE (45°) or SW (225°)
 // ---------------------------------------------------------------------------
-export class SitesSlash1to1 implements RegionFunction {
+export class SitesSlash implements RegionFunction {
   /** @java game/functions/region/sites/edges/SitesSlash.java — eval(Context) */
   public eval(ctx: Context): number[] {
     const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };
@@ -180,7 +180,7 @@ export class SitesSlash1to1 implements RegionFunction {
 // @java game/functions/region/sites/edges/SitesSlosh.java — eval(Context)
 // Java: graph.slosh(SiteType.Edge) = edges angled NW (135°) or SE (315°)
 // ---------------------------------------------------------------------------
-export class SitesSlosh1to1 implements RegionFunction {
+export class SitesSlosh implements RegionFunction {
   /** @java game/functions/region/sites/edges/SitesSlosh.java — eval(Context) */
   public eval(ctx: Context): number[] {
     const ctxT = ctx as unknown as { _trajectories?: Trajectories | null };

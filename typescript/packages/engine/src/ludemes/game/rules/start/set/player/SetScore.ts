@@ -24,7 +24,7 @@ export type RoleType = string;
  * Initialises the score of the given player(s) to a constant value.
  * applyToInitialState is a no-op because scores[] is not in the interface.
  */
-export class SetScore1to1 implements StartRule {
+export class SetScore implements StartRule {
   /**
    * Player functions to set, or empty if `initSameScoreToEachPlayer` applies.
    * Java: players[] (length 0 when Each/All roleType).

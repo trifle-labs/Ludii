@@ -14,7 +14,7 @@ import type { StartRule } from "../../StartRule.js";
  * indices and sets the count at each site to the given value.
  * Java additionally sets the `what` to the last component's index; we mirror that.
  */
-export class SetCount1to1 implements StartRule {
+export class SetCount implements StartRule {
   /** Site indices where the count will be set. */
   private readonly sites: readonly number[];
 

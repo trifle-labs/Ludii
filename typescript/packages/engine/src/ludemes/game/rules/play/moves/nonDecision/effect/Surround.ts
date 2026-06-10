@@ -27,13 +27,13 @@ import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
 import type { Then } from "./Then.js";
 import { IntConstant } from "../../../../../functions/ints/IntConstant.js";
-import { Between1to1 as IteratorBetween, From1to1 as IteratorFrom, To1to1 as IteratorTo } from "../../../../../functions/ints1to1/iterator/Iterator1to1.js";
-import { IsEnemy1to1 } from "../../../../../functions/booleans/is/player1to1/IsEnemy1to1.js";
-import { IsFriend1to1 } from "../../../../../functions/booleans/is/player1to1/IsFriend1to1.js";
+import { Between as IteratorBetween, From as IteratorFrom, To as IteratorTo } from "../../../../../functions/ints1to1/iterator/Iterator1to1.js";
+import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
+import { IsFriend } from "../../../../../functions/booleans/is/player1to1/IsFriend.js";
 import { relationToAbsoluteDirection, type RelationType } from "../../../../../types/board/RelationType.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { Between1to1 } from "../../../../../util/moves/Between1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { Between } from "../../../../../util/moves/Between1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
 import { Remove } from "./Remove.js";
 import { normaliseFriendAtPlaceholder } from "./EffectCtorAdapters.js";
@@ -71,10 +71,10 @@ export class Surround extends Effect {
    * @java game/rules/play/moves/nonDecision/effect/Surround.java — constructor
    */
   public constructor(
-    from?: From1to1 | null,
+    from?: From | null,
     relation?: RelationType | null,
-    between?: Between1to1 | null,
-    to?: To1to1 | null,
+    between?: Between | null,
+    to?: To | null,
     except?: IntFunction | null,
     withPiece?: Piece1to1 | null,
     then?: Then | null,
@@ -82,8 +82,8 @@ export class Surround extends Effect {
     super((then ?? null) as unknown as ThenLike | null);
     this.startLocationFn = from?.loc() ?? new IteratorFrom();
     this.dirnChoice = relation == null ? "Adjacent" : relationToAbsoluteDirection(relation);
-    this.targetRule = between?.condition() ?? new IsEnemy1to1(new IteratorBetween(), null);
-    this.friendRule = normaliseFriendAtPlaceholder(to?.cond() ?? new IsFriend1to1(new IteratorTo(), null));
+    this.targetRule = between?.condition() ?? new IsEnemy(new IteratorBetween(), null);
+    this.friendRule = normaliseFriendAtPlaceholder(to?.cond() ?? new IsFriend(new IteratorTo(), null));
     this.effect = between?.effect() ?? new Remove({ locationFn: new IteratorBetween() });
     this.exception = except ?? new IntConstant(0);
     this.withAtLeastPiece = withPiece?.component() ?? null;

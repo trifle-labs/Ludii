@@ -13,56 +13,56 @@ import type {
 import { IntConstant } from "../../ints/IntConstant.js";
 import type { Range } from "../../range/Range.js";
 import { BaseBooleanFunction } from "../BaseBooleanFunction.js";
-import { IsAngle1to1 } from "./angle1to1/IsAngle1to1.js";
+import { IsAngle } from "./angle1to1/IsAngle.js";
 import { IsWithin } from "./component/IsWithin.js";
-import { IsFreedom1to1 } from "./component1to1/IsFreedom1to1.js";
-import { IsCrossing1to1 } from "./edge/IsCrossing1to1.js";
+import { IsFreedom } from "./component1to1/IsFreedom.js";
+import { IsCrossing } from "./edge/IsCrossing.js";
 import { IsHiddenCount } from "./Hidden/IsHiddenCount.js";
 import { IsHiddenRotation } from "./Hidden/IsHiddenRotation.js";
 import { IsHiddenState } from "./Hidden/IsHiddenState.js";
 import { IsHiddenValue } from "./Hidden/IsHiddenValue.js";
 import { IsHiddenWhat } from "./Hidden/IsHiddenWhat.js";
 import { IsHiddenWho } from "./Hidden/IsHiddenWho.js";
-import { IsIn1to1 } from "./in1to1/IsIn1to1.js";
-import { IsAnyDie1to1 } from "./is1to1/IsAnyDie1to1.js";
-import { IsCycle1to1 } from "./is1to1/IsCycle1to1.js";
-import { IsHidden1to1 } from "./is1to1/IsHidden1to1.js";
-import { IsLastFrom1to1 } from "./is1to1/IsLastFrom1to1.js";
-import { IsLastTo1to1 } from "./is1to1/IsLastTo1to1.js";
-import { IsRepeat1to1 } from "./is1to1/IsRepeat1to1.js";
-import { IsTarget1to1 } from "./is1to1/IsTarget1to1.js";
-import { IsTriggered1to1 } from "./is1to1/IsTriggered1to1.js";
+import { IsIn } from "./in1to1/IsIn.js";
+import { IsAnyDie } from "./is1to1/IsAnyDie.js";
+import { IsCycle } from "./is1to1/IsCycle.js";
+import { IsHidden } from "./is1to1/IsHidden.js";
+import { IsLastFrom } from "./is1to1/IsLastFrom.js";
+import { IsLastTo } from "./is1to1/IsLastTo.js";
+import { IsRepeat } from "./is1to1/IsRepeat.js";
+import { IsTarget } from "./is1to1/IsTarget.js";
+import { IsTriggered } from "./is1to1/IsTriggered.js";
 import { IsPipsMatch } from "./integer/IsPipsMatch.js";
 import { IsSidesMatch } from "./integer/IsSidesMatch.js";
 import { IsThreatened } from "./component/IsThreatened.js";
 import { IsEven1to1 } from "./integer1to1/IsEven1to1.js";
-import { IsFlat1to1 } from "./integer1to1/IsFlat1to1.js";
-import { IsOdd1to1 } from "./integer1to1/IsOdd1to1.js";
-import { IsVisited1to1 } from "./integer1to1/IsVisited1to1.js";
+import { IsFlat } from "./integer1to1/IsFlat.js";
+import { IsOdd } from "./integer1to1/IsOdd.js";
+import { IsVisited } from "./integer1to1/IsVisited.js";
 import { IsLine } from "./line/IsLine.js";
-import { IsLoop1to1 } from "./loop1to1/IsLoop1to1.js";
-import { IsPath1to1 } from "./path1to1/IsPath1to1.js";
-import { IsPattern1to1 } from "./pattern1to1/IsPattern1to1.js";
-import { IsActive1to1 } from "./player1to1/IsActive1to1.js";
-import { IsEnemy1to1 } from "./player1to1/IsEnemy1to1.js";
-import { IsFriend1to1 } from "./player1to1/IsFriend1to1.js";
-import { IsMover1to1 } from "./player1to1/IsMover1to1.js";
-import { IsNext1to1 } from "./player1to1/IsNext1to1.js";
-import { IsPrev1to1 } from "./player1to1/IsPrev1to1.js";
-import { IsPyramidCorners1to1 } from "./pyramidCorners1to1/IsPyramidCorners1to1.js";
-import { IsRegularGraph1to1 } from "./regularGraph1to1/IsRegularGraph1to1.js";
-import { IsRelated1to1 } from "./related/IsRelated1to1.js";
-import { IsEmpty1to1 } from "./site1to1/IsEmpty1to1.js";
-import { IsOccupied1to1 } from "./site1to1/IsOccupied1to1.js";
-import { IsBlocked1to1 } from "./simple1to1/IsBlocked1to1.js";
-import { IsFull1to1 } from "./simple1to1/IsFull1to1.js";
-import { IsPending1to1 } from "./simple1to1/IsPending1to1.js";
+import { IsLoop } from "./loop1to1/IsLoop.js";
+import { IsPath } from "./path1to1/IsPath.js";
+import { IsPattern } from "./pattern1to1/IsPattern.js";
+import { IsActive } from "./player1to1/IsActive.js";
+import { IsEnemy } from "./player1to1/IsEnemy.js";
+import { IsFriend } from "./player1to1/IsFriend.js";
+import { IsMover } from "./player1to1/IsMover.js";
+import { IsNext } from "./player1to1/IsNext.js";
+import { IsPrev } from "./player1to1/IsPrev.js";
+import { IsPyramidCorners } from "./pyramidCorners1to1/IsPyramidCorners.js";
+import { IsRegularGraph } from "./regularGraph1to1/IsRegularGraph.js";
+import { IsRelated } from "./related/IsRelated.js";
+import { IsEmpty } from "./site1to1/IsEmpty.js";
+import { IsOccupied } from "./site1to1/IsOccupied.js";
+import { IsBlocked } from "./simple1to1/IsBlocked.js";
+import { IsFull } from "./simple1to1/IsFull.js";
+import { IsPending } from "./simple1to1/IsPending.js";
 import { IsDecided } from "./string/IsDecided.js";
 import { IsProposed } from "./string/IsProposed.js";
-import { IsCaterpillarTree1to1 } from "./tree1to1/IsCaterpillarTree1to1.js";
-import { IsSpanningTree1to1 } from "./tree1to1/IsSpanningTree1to1.js";
-import { IsTree1to1 } from "./tree1to1/IsTree1to1.js";
-import { IsTreeCentre1to1 } from "./tree1to1/IsTreeCentre1to1.js";
+import { IsCaterpillarTree } from "./tree1to1/IsCaterpillarTree.js";
+import { IsSpanningTree } from "./tree1to1/IsSpanningTree.js";
+import { IsTree } from "./tree1to1/IsTree.js";
+import { IsTreeCentre } from "./tree1to1/IsTreeCentre.js";
 import type { RoleTypeFull } from "../../../types/play/RoleType.js";
 import { Player1to1 } from "../../../util/moves/Player1to1.js";
 
@@ -198,10 +198,10 @@ export class Is extends BaseBooleanFunction {
     conditionSite: BooleanFunction,
     conditionSite2: BooleanFunction,
   ): BooleanFunction {
-    if (matchesType(isType, "Acute")) return new IsAngle1to1(at, conditionSite, conditionSite2, "acute");
-    if (matchesType(isType, "Obtuse")) return new IsAngle1to1(at, conditionSite, conditionSite2, "obtuse");
-    if (matchesType(isType, "Reflex")) return new IsAngle1to1(at, conditionSite, conditionSite2, "reflex");
-    if (matchesType(isType, "Right")) return new IsAngle1to1(at, conditionSite, conditionSite2, "right");
+    if (matchesType(isType, "Acute")) return new IsAngle(at, conditionSite, conditionSite2, "acute");
+    if (matchesType(isType, "Obtuse")) return new IsAngle(at, conditionSite, conditionSite2, "obtuse");
+    if (matchesType(isType, "Reflex")) return new IsAngle(at, conditionSite, conditionSite2, "reflex");
+    if (matchesType(isType, "Right")) return new IsAngle(at, conditionSite, conditionSite2, "right");
     throw new Error("Is(): An IsAngleType is not implemented.");
   }
 
@@ -222,7 +222,7 @@ export class Is extends BaseBooleanFunction {
     const levelFn = level ?? ZERO_INT;
     const realType = siteType(type);
     if (dataType === null || dataType === undefined || dataType === "Invisible" || dataType === "Hidden")
-      return new IsHidden1to1(at, whoFn);
+      return new IsHidden(at, whoFn);
     if (dataType === "What") return new IsHiddenWhat(realType, at, levelFn, toPlayer, toRole);
     if (dataType === "Who") return new IsHiddenWho(realType, at, levelFn, toPlayer, toRole);
     if (dataType === "Count") return new IsHiddenCount(realType, at, levelFn, toPlayer, toRole);
@@ -234,7 +234,7 @@ export class Is extends BaseBooleanFunction {
 
   /** @java Is.construct(IsRepeatType, RepetitionType) */
   public static constructRepeat(isType: unknown, repetitionType: unknown): BooleanFunction {
-    if (matchesType(isType, "Repeat")) return new IsRepeat1to1((repetitionType ?? "Positional") as RepeatTypeName);
+    if (matchesType(isType, "Repeat")) return new IsRepeat((repetitionType ?? "Positional") as RepeatTypeName);
     throw new Error("Is(): An IsRepeatType is not implemented.");
   }
 
@@ -249,9 +249,9 @@ export class Is extends BaseBooleanFunction {
     froms: RegionFunction | null,
   ): BooleanFunction {
     if (matchesType(isType, "Pattern"))
-      return new IsPattern1to1((walk ?? []) as readonly StepTypeName[], siteType(_type), from ?? LAST_TO_INT, what, whats);
+      return new IsPattern((walk ?? []) as readonly StepTypeName[], siteType(_type), from ?? LAST_TO_INT, what, whats);
     if (matchesType(isType, "PyramidCorners"))
-      return new IsPyramidCorners1to1(siteType(_type) ?? "Cell", from ?? LAST_TO_INT, froms ?? null);
+      return new IsPyramidCorners(siteType(_type) ?? "Cell", from ?? LAST_TO_INT, froms ?? null);
     throw new Error("Is(): An IsPatternType is not implemented.");
   }
 
@@ -259,10 +259,10 @@ export class Is extends BaseBooleanFunction {
   public static constructTree(isType: unknown, who: unknown, role: unknown): BooleanFunction {
     const player = role === null || role === undefined ? playerFrom(who) : null;
     const roleName = role as RoleTypeFull | null;
-    if (matchesType(isType, "Tree")) return new IsTree1to1(player, roleName);
-    if (matchesType(isType, "SpanningTree")) return new IsSpanningTree1to1(player, roleName);
-    if (matchesType(isType, "CaterpillarTree")) return new IsCaterpillarTree1to1(player, roleName);
-    if (matchesType(isType, "TreeCentre")) return new IsTreeCentre1to1(player, roleName);
+    if (matchesType(isType, "Tree")) return new IsTree(player, roleName);
+    if (matchesType(isType, "SpanningTree")) return new IsSpanningTree(player, roleName);
+    if (matchesType(isType, "CaterpillarTree")) return new IsCaterpillarTree(player, roleName);
+    if (matchesType(isType, "TreeCentre")) return new IsTreeCentre(player, roleName);
     throw new Error("Is(): A IsTreeType is not implemented.");
   }
 
@@ -276,7 +276,7 @@ export class Is extends BaseBooleanFunction {
     even: BooleanFunction | null,
   ): BooleanFunction {
     if (matchesType(isType, "RegularGraph"))
-      return new IsRegularGraph1to1(playerFrom(who), role as RoleTypeFull | null, k, odd, even);
+      return new IsRegularGraph(playerFrom(who), role as RoleTypeFull | null, k, odd, even);
     throw new Error("Is(): A IsRegularGraphType is not implemented.");
   }
 
@@ -284,33 +284,33 @@ export class Is extends BaseBooleanFunction {
   public static constructPlayer(isType: unknown, index: unknown, role: unknown): BooleanFunction {
     const who = index === null || index === undefined ? null : asIntFunction(index);
     const roleName = role as RoleTypeFull | null;
-    if (matchesType(isType, "Enemy")) return new IsEnemy1to1(who, roleName);
-    if (matchesType(isType, "Friend")) return new IsFriend1to1(who, roleName);
-    if (matchesType(isType, "Mover")) return new IsMover1to1(who, roleName);
-    if (matchesType(isType, "Next")) return new IsNext1to1(who, roleName);
-    if (matchesType(isType, "Prev")) return new IsPrev1to1(who, roleName);
-    if (matchesType(isType, "Active")) return new IsActive1to1(who, roleName);
+    if (matchesType(isType, "Enemy")) return new IsEnemy(who, roleName);
+    if (matchesType(isType, "Friend")) return new IsFriend(who, roleName);
+    if (matchesType(isType, "Mover")) return new IsMover(who, roleName);
+    if (matchesType(isType, "Next")) return new IsNext(who, roleName);
+    if (matchesType(isType, "Prev")) return new IsPrev(who, roleName);
+    if (matchesType(isType, "Active")) return new IsActive(who, roleName);
     throw new Error("Is(): A IsPlayerType is not implemented.");
   }
 
   /** @java Is.construct(IsTriggeredType, String, IntFunction, RoleType) */
   public static constructTriggered(isType: unknown, event: string, index: unknown, role: unknown): BooleanFunction {
     if (matchesType(isType, "Triggered"))
-      return new IsTriggered1to1(event, index === null || index === undefined ? null : asIntFunction(index), role as RoleTypeFull | null);
+      return new IsTriggered(event, index === null || index === undefined ? null : asIntFunction(index), role as RoleTypeFull | null);
     throw new Error("Is(): A IsTriggeredType is not implemented.");
   }
 
   /** @java Is.construct(IsSimpleType) */
   public static constructSimple(isType: unknown): BooleanFunction {
-    if (matchesType(isType, "Cycle")) return new IsCycle1to1();
-    if (matchesType(isType, "Pending")) return new IsPending1to1();
-    if (matchesType(isType, "Full")) return new IsFull1to1();
+    if (matchesType(isType, "Cycle")) return new IsCycle();
+    if (matchesType(isType, "Pending")) return new IsPending();
+    if (matchesType(isType, "Full")) return new IsFull();
     throw new Error("Is(): A IsSimpleType is not implemented.");
   }
 
   /** @java Is.construct(IsEdgeType, IntFunction, IntFunction) */
   public static constructEdge(isType: unknown, edge1: IntFunction, edge2: IntFunction): BooleanFunction {
-    if (matchesType(isType, "Crossing")) return new IsCrossing1to1(edge1, edge2);
+    if (matchesType(isType, "Crossing")) return new IsCrossing(edge1, edge2);
     throw new Error("Is(): A IsEdgeType is not implemented.");
   }
 
@@ -324,8 +324,8 @@ export class Is extends BaseBooleanFunction {
   /** @java Is.construct(IsGraphType, SiteType) */
   public static constructGraph(isType: unknown, type: unknown): BooleanFunction {
     const realType = siteType(type) ?? "Cell";
-    if (matchesType(isType, "LastFrom")) return new IsLastFrom1to1(realType);
-    if (matchesType(isType, "LastTo")) return new IsLastTo1to1(realType);
+    if (matchesType(isType, "LastFrom")) return new IsLastFrom(realType);
+    if (matchesType(isType, "LastTo")) return new IsLastTo(realType);
     throw new Error("Is(): A IsGraphType is not implemented.");
   }
 
@@ -333,12 +333,12 @@ export class Is extends BaseBooleanFunction {
   public static constructInteger(isType: unknown, value: IntFunction | null): BooleanFunction {
     const fn = value ?? LAST_TO_INT;
     if (matchesType(isType, "Even")) return new IsEven1to1(fn);
-    if (matchesType(isType, "Odd")) return new IsOdd1to1(fn);
-    if (matchesType(isType, "Flat")) return new IsFlat1to1();
+    if (matchesType(isType, "Odd")) return new IsOdd(fn);
+    if (matchesType(isType, "Flat")) return new IsFlat();
     if (matchesType(isType, "PipsMatch")) return new IsPipsMatch(value);
     if (matchesType(isType, "SidesMatch")) return new IsSidesMatch(value);
-    if (matchesType(isType, "Visited")) return new IsVisited1to1(fn);
-    if (matchesType(isType, "AnyDie")) return value !== null ? new IsAnyDie1to1(value) : FALSE_BOOL;
+    if (matchesType(isType, "Visited")) return new IsVisited(fn);
+    if (matchesType(isType, "AnyDie")) return value !== null ? new IsAnyDie(value) : FALSE_BOOL;
     throw new Error("Is(): A IsIntegerType is not implemented.");
   }
 
@@ -366,7 +366,7 @@ export class Is extends BaseBooleanFunction {
     region: RegionFunction | null,
   ): BooleanFunction {
     if (matchesType(isType, "Related"))
-      return new IsRelated1to1(String(relationType), siteType(_type), siteA, region ?? regionFromSite(asIntFunction(siteB)));
+      return new IsRelated(String(relationType), siteType(_type), siteA, region ?? regionFromSite(asIntFunction(siteB)));
     throw new Error("Is(): A IsRelationType is not implemented.");
   }
 
@@ -380,7 +380,7 @@ export class Is extends BaseBooleanFunction {
     specificSites: readonly number[] | null,
   ): BooleanFunction {
     if (matchesType(isType, "Target"))
-      return new IsTarget1to1(
+      return new IsTarget(
         _containerIdFn === null || _containerIdFn === undefined ? null : asIntFunction(_containerIdFn),
         _containerName === null || _containerName === undefined ? null : String(_containerName),
         configuration,
@@ -401,7 +401,7 @@ export class Is extends BaseBooleanFunction {
     _role: unknown,
     _regionType: unknown,
   ): BooleanFunction {
-    if (matchesType(isType, "Blocked")) return new IsBlocked1to1();
+    if (matchesType(isType, "Blocked")) return new IsBlocked();
     if (matchesType(isType, "Connected")) {
       // @java case Connected: new IsConnected(number, type, at, directions, regions, role, regionType)
       const regions = Array.isArray(_regions) ? (_regions as never[]) : (_regions ? [_regions as never] : null);
@@ -466,7 +466,7 @@ export class Is extends BaseBooleanFunction {
     _path: boolean | null,
   ): BooleanFunction {
     if (matchesType(isType, "Loop"))
-      return new IsLoop1to1(
+      return new IsLoop(
         siteType(_type),
         _surround === null || _surround === undefined ? null : String(_surround),
         _surroundList as readonly RoleTypeFull[] | null,
@@ -491,15 +491,15 @@ export class Is extends BaseBooleanFunction {
   ): BooleanFunction {
     if (matchesType(isType, "Path")) {
       const range = rangeFns(length);
-      return new IsPath1to1(siteType(type) ?? "Edge", from ?? LAST_TO_INT, playerOrRoleInt(who, role), range.min, range.max, boolFn(closed));
+      return new IsPath(siteType(type) ?? "Edge", from ?? LAST_TO_INT, playerOrRoleInt(who, role), range.min, range.max, boolFn(closed));
     }
     throw new Error("Is(): A IsPathType is not implemented.");
   }
 
   /** @java Is.construct(IsSiteType, SiteType, IntFunction) */
   public static constructSite(isType: unknown, _type: unknown, at: IntFunction): BooleanFunction {
-    if (matchesType(isType, "Empty")) return new IsEmpty1to1(siteType(_type), at);
-    if (matchesType(isType, "Occupied")) return new IsOccupied1to1(siteType(_type), at);
+    if (matchesType(isType, "Empty")) return new IsEmpty(siteType(_type), at);
+    if (matchesType(isType, "Occupied")) return new IsOccupied(siteType(_type), at);
     throw new Error("Is(): A IsSiteType is not implemented.");
   }
 
@@ -518,14 +518,14 @@ export class Is extends BaseBooleanFunction {
     if (array !== null) return new IsInArray(site ?? (sites === null ? toDefault : null), sites, array);
     if (region !== null) {
       if (sites !== null) return new IsAllInRegion(sites, region);
-      return new IsIn1to1(site ?? toDefault, region);
+      return new IsIn(site ?? toDefault, region);
     }
     throw new Error("Is(): With IsInType one region or array parameter must be non-null.");
   }
 
   /** @java Is.construct(IsGroupType, SiteType, RegionFunction, IntFunction) */
   public static constructGroup(isType: unknown, _type: unknown, inArg: RegionFunction, toPlace: IntFunction | null): BooleanFunction {
-    if (matchesType(isType, "Freedom")) return new IsFreedom1to1(siteType(_type), inArg, toPlace);
+    if (matchesType(isType, "Freedom")) return new IsFreedom(siteType(_type), inArg, toPlace);
     throw new Error("Is(): A IsGroupType is not implemented.");
   }
 

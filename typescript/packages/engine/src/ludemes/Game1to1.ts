@@ -48,8 +48,8 @@ import { Trial } from "../trial.js";
 
 import type { Equipment1to1 } from "./game/equipment/Equipment1to1.js";
 import { Mode1to1 } from "./game/mode/Mode1to1.js";
-import { GamePlayers1to1 } from "./game/players/GamePlayers1to1.js";
-import type { Rules1to1 } from "./game/rules/Rules1to1.js";
+import { GamePlayers } from "./game/players/GamePlayers.js";
+import type { Rules } from "./game/rules/Rules.js";
 import type { Phase } from "./game/rules/phase/Phase.js";
 import type { StartRule } from "./game/rules/start/StartRule.js";
 import type { CellFlatRadials } from "./topology-radials.js";
@@ -94,7 +94,7 @@ interface Game1to1PortOptions {
   readonly playerDirs?: Map<number, number>;
 }
 
-const GAME_PORT_OPTIONS = new WeakMap<Rules1to1, Game1to1PortOptions>();
+const GAME_PORT_OPTIONS = new WeakMap<Rules, Game1to1PortOptions>();
 
 type GameBoardSurface = Equipment1to1["board"] & {
   getTracks?: () => readonly unknown[];
@@ -124,7 +124,7 @@ function equipmentNeedsCreate(equipment: GameEquipmentSurface): boolean {
   return false;
 }
 
-function prepareFaithfulEquipment(equipment: GameEquipmentSurface, players: GamePlayers1to1): void {
+function prepareFaithfulEquipment(equipment: GameEquipmentSurface, players: GamePlayers): void {
   if (!equipmentNeedsCreate(equipment)) return;
 
   const gameStub = {
@@ -147,11 +147,11 @@ function prepareFaithfulEquipment(equipment: GameEquipmentSurface, players: Game
   equipment.createItems!(gameStub);
 }
 
-function startRulesFromRules(rules: Rules1to1): readonly StartRule[] {
+function startRulesFromRules(rules: Rules): readonly StartRule[] {
   return rules.start?.rules ?? [];
 }
 
-function playerDirsFromPlayers(players: GamePlayers1to1): Map<number, number> | undefined {
+function playerDirsFromPlayers(players: GamePlayers): Map<number, number> | undefined {
   const dirs = new Map<number, number>();
   for (let pid = 1; pid <= players.count(); pid++) {
     const direction = players.get(pid)?.direction;
@@ -235,13 +235,13 @@ export class Game1to1 implements Game {
   /** @java Game.numSites() */
   public readonly numSites: number;
   /** Players record. @java Game.players */
-  private readonly playersRecord: GamePlayers1to1;
+  private readonly playersRecord: GamePlayers;
   /** Mode record. @java Game.mode */
   private readonly modeRecord: Mode1to1;
   /** Equipment (board + pieces + hands). */
   public readonly equipment: GameEquipmentSurface;
   /** Rules (play + end + optional phases). */
-  public readonly rules: Rules1to1;
+  public readonly rules: Rules;
   /** Optional start rules. @java game/rules/start/StartRules.java */
   public readonly startRules: readonly StartRule[];
 
@@ -285,20 +285,20 @@ export class Game1to1 implements Game {
    * Carries TS-port-only construction details that are not Java Game constructor
    * parameters. The next Game1to1 constructed with these Rules consumes them.
    */
-  public static setPortOptions(rules: Rules1to1, options: Game1to1PortOptions): void {
+  public static setPortOptions(rules: Rules, options: Game1to1PortOptions): void {
     GAME_PORT_OPTIONS.set(rules, options);
   }
 
   public constructor(
     name: string,
-    players: GamePlayers1to1 | null,
+    players: GamePlayers | null,
     mode: Mode1to1 | null,
     equipment: GameEquipmentSurface,
-    rules: Rules1to1,
+    rules: Rules,
   ) {
     this.name = name;
     this.id = name;
-    this.playersRecord = players ?? GamePlayers1to1.fromCount(2);
+    this.playersRecord = players ?? GamePlayers.fromCount(2);
     this.numPlayers = this.playersRecord.count();
     if (this.numPlayers === 0) {
       this.modeRecord = new Mode1to1("Simulation");
@@ -346,7 +346,7 @@ export class Game1to1 implements Game {
   /**
    * @java Game.players()
    */
-  public players(): GamePlayers1to1 {
+  public players(): GamePlayers {
     return this.playersRecord;
   }
 
@@ -990,7 +990,7 @@ export class Game1to1 implements Game {
    *
    * For bare games: returns rules.play.
    */
-  private getPlayForMover(ctx: Context1to1): Rules1to1["play"] {
+  private getPlayForMover(ctx: Context1to1): Rules["play"] {
     if (this.rules.phases !== null) {
       const mover = ctx.state.mover;
       const phaseIdx = ctx.state.phase(mover);

@@ -4,12 +4,12 @@ import { IntConstant } from "../../../../../functions/ints/IntConstant.js";
 import { LastTo } from "../../../../../functions/ints/last/LastTo.js";
 import { AndBool } from "../../../../../functions/booleans/math1to1/AndBool.js";
 import { OrBool } from "../../../../../functions/booleans/math1to1/OrBool.js";
-import { IsFriend1to1 } from "../../../../../functions/booleans/is/player1to1/IsFriend1to1.js";
+import { IsFriend } from "../../../../../functions/booleans/is/player1to1/IsFriend.js";
 import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
-import type { Between1to1, RangeLike } from "../../../../../util/moves/Between1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
+import type { Between, RangeLike } from "../../../../../util/moves/Between1to1.js";
 
 export type DirectionArg = string | DirectionsFunction | { directionsFunctions?: () => DirectionsFunction } | null;
 
@@ -39,62 +39,62 @@ export function directionName(direction: string | DirectionsFunction | null): st
   return "Adjacent";
 }
 
-export function fromLoc(from: From1to1 | null, fallback: IntFunction = FROM_ITER): IntFunction {
+export function fromLoc(from: From | null, fallback: IntFunction = FROM_ITER): IntFunction {
   return from?.locFn() ?? fallback;
 }
 
-export function fromRegion(from: From1to1 | null): RegionFunction | null {
+export function fromRegion(from: From | null): RegionFunction | null {
   return from?.regionFn() ?? null;
 }
 
-export function fromLevel(from: From1to1 | null): IntFunction | null {
+export function fromLevel(from: From | null): IntFunction | null {
   return from?.levelFn() ?? null;
 }
 
-export function fromCond(from: From1to1 | null): BooleanFunction | null {
+export function fromCond(from: From | null): BooleanFunction | null {
   return from?.condFn() ?? null;
 }
 
-export function toLoc(to: To1to1 | null, fallback: IntFunction = TO_ITER): IntFunction {
+export function toLoc(to: To | null, fallback: IntFunction = TO_ITER): IntFunction {
   return to?.locFn() ?? fallback;
 }
 
-export function toRegion(to: To1to1 | null): RegionFunction {
+export function toRegion(to: To | null): RegionFunction {
   const region = to?.regionFn() ?? null;
   if (region !== null) return region;
   const loc = toLoc(to);
   return { eval: (ctx) => [loc.eval(ctx)] };
 }
 
-export function toCond(to: To1to1 | null, fallback: BooleanFunction = TRUE_FN): BooleanFunction {
+export function toCond(to: To | null, fallback: BooleanFunction = TRUE_FN): BooleanFunction {
   return to?.condFn() ?? fallback;
 }
 
 export function normaliseFriendAtPlaceholder(rule: BooleanFunction): BooleanFunction {
-  return rewriteFriendPlaceholder(rule, new IsFriend1to1(new Who1to1(TO_ITER), null));
+  return rewriteFriendPlaceholder(rule, new IsFriend(new Who1to1(TO_ITER), null));
 }
 
-export function toEffect(to: To1to1 | null): MovesFunction | null {
+export function toEffect(to: To | null): MovesFunction | null {
   return to?.effectFn() ?? null;
 }
 
-export function toApplyEffect(to: To1to1 | null): MovesFunction | null {
+export function toApplyEffect(to: To | null): MovesFunction | null {
   return to?.effectFn()?.effectMoves() ?? null;
 }
 
-export function toApplyCondition(to: To1to1 | null): BooleanFunction | null {
+export function toApplyCondition(to: To | null): BooleanFunction | null {
   return to?.effectFn()?.condition() ?? null;
 }
 
-export function betweenRange(between: Between1to1 | null): RangeLike | null {
+export function betweenRange(between: Between | null): RangeLike | null {
   return between?.range() ?? null;
 }
 
-export function betweenCond(between: Between1to1 | null, fallback: BooleanFunction = TRUE_FN): BooleanFunction {
+export function betweenCond(between: Between | null, fallback: BooleanFunction = TRUE_FN): BooleanFunction {
   return between?.condition() ?? fallback;
 }
 
-export function betweenEffect(between: Between1to1 | null): MovesFunction | null {
+export function betweenEffect(between: Between | null): MovesFunction | null {
   return between?.effectFn() ?? null;
 }
 

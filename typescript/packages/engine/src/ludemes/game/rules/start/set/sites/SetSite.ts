@@ -21,7 +21,7 @@ export type RoleType = string;
  * Sets a board site (or multiple sites / a region) to the first piece of the
  * given RoleType owner. Mirrors Java SetSite.eval(Context).
  */
-export class SetSite1to1 implements StartRule {
+export class SetSite implements StartRule {
   /** The role of the owner of the piece to set. */
   private readonly role: RoleType;
 

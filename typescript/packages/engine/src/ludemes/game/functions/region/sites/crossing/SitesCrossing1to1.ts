@@ -14,7 +14,7 @@
  *
  * TS: uses Trajectories.edgeEndpointPts(site) for Edge-play boards, or accesses
  * the core topology's edgeEls for Cell/Vertex-play boards (same pattern as
- * IsCrossing1to1.ts).
+ * IsCrossing.ts).
  */
 
 import type { Context } from "../../../../../../context.js";
@@ -24,7 +24,7 @@ import { isIdent } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
 // ---------------------------------------------------------------------------
-// Segment-crossing helper (same as IsCrossing1to1.ts)
+// Segment-crossing helper (same as IsCrossing.ts)
 // @java main.math.MathRoutines.isCrossing
 // ---------------------------------------------------------------------------
 

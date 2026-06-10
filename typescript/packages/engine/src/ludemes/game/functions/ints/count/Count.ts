@@ -18,26 +18,26 @@ import type { Context } from "../../../../../context.js";
 import type { JavaIntFunction } from "../IntFunction.js";
 import type { IntFunction, IntArrayFunction, RegionFunction, BooleanFunction } from "../../../../base.js";
 import { BaseBooleanFunction } from "../../booleans/BaseBooleanFunction.js";
-import { CountValue1to1 } from "../../../../game/functions/ints1to1/count/CountValue1to1.js";
-import { CountStack1to1 } from "../../../../game/functions/ints1to1/count/CountStack1to1.js";
-import { CountRows1to1, CountColumns1to1, CountPlayers1to1, CountTurns1to1, CountMovesThisTurn1to1 } from "../../../../game/functions/ints1to1/count/CountSimple1to1.js";
-import { CountCells1to1 } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";
+import { CountValue } from "../../../../game/functions/ints1to1/count/CountValue.js";
+import { CountStack } from "../../../../game/functions/ints1to1/count/CountStack.js";
+import { CountRows, CountColumns, CountPlayers, CountTurns, CountMovesThisTurn } from "../../../../game/functions/ints1to1/count/CountSimple1to1.js";
+import { CountCells } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";
 import { CountPhases } from "./simple/CountPhases.js";
 import { CountTrials } from "./simple/CountTrials.js";
 import { CountMoves as CountMoves1to1 } from "../count1to1/CountMoves.js";
-import { CountEdges1to1 } from "../../../../game/functions/ints1to1/count/CountEdges1to1.js";
-import { CountVertices1to1 } from "../../../../game/functions/ints1to1/count/CountVertices1to1.js";
-import { CountNumber1to1 } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";
-import { CountSiteNeighbours1to1 } from "../../../../game/functions/ints1to1/count/CountSiteNeighbours1to1.js";
-import { CountOff1to1 } from "../../../../game/functions/ints1to1/count/CountOff1to1.js";
-import { CountSites1to1 } from "../../../../game/functions/ints1to1/count/CountSites1to1.js";
+import { CountEdges } from "../../../../game/functions/ints1to1/count/CountEdges.js";
+import { CountVertices } from "../../../../game/functions/ints1to1/count/CountVertices.js";
+import { CountNumber } from "../../../../game/functions/ints1to1/count/CountSimpleExtra1to1.js";
+import { CountSiteNeighbours } from "../../../../game/functions/ints1to1/count/CountSiteNeighbours.js";
+import { CountOff } from "../../../../game/functions/ints1to1/count/CountOff.js";
+import { CountSites } from "../../../../game/functions/ints1to1/count/CountSites.js";
 import { CountSitesPlatformBelow } from "./sitesPlatformBelow/CountSitesPlatformBelow.js";
-import { CountPieces1to1 } from "../../../../game/functions/ints1to1/count/CountPieces1to1.js";
-import { CountGroups1to1 } from "../../../../game/functions/ints1to1/count/CountGroups1to1.js";
-import { CountSizeBiggestGroup1to1 } from "../../../../game/functions/ints1to1/count/CountSizeBiggestGroup1to1.js";
+import { CountPieces } from "../../../../game/functions/ints1to1/count/CountPieces.js";
+import { CountGroups } from "../../../../game/functions/ints1to1/count/CountGroups.js";
+import { CountSizeBiggestGroup } from "../../../../game/functions/ints1to1/count/CountSizeBiggestGroup.js";
 import { CountSizeBiggestLine } from "./sizeBiggestLine/CountSizeBiggestLine.js";
-import { CountLiberties1to1 } from "../../../../game/functions/ints1to1/count/CountLiberties1to1.js";
-import { CountSteps1to1 } from "../../../../game/functions/ints1to1/count/CountSteps1to1.js";
+import { CountLiberties } from "../../../../game/functions/ints1to1/count/CountLiberties.js";
+import { CountSteps } from "../../../../game/functions/ints1to1/count/CountSteps.js";
 import { CountStepsOnTrack } from "./stepsOnTrack/CountStepsOnTrack.js";
 
 type SiteType = "Cell" | "Edge" | "Vertex";
@@ -230,7 +230,7 @@ export class Count extends BaseIntFunction {
   public static constructValue(countType: unknown, of: unknown, inArg: unknown): JavaIntFunction {
     switch (countType) {
       case "Value":
-        return asJavaReturn(new CountValue1to1(asLeanInt(of), asIntArray(inArg)));
+        return asJavaReturn(new CountValue(asLeanInt(of), asIntArray(inArg)));
       default:
         throw new Error("Count(): A CountValueType is not implemented.");
     }
@@ -247,7 +247,7 @@ export class Count extends BaseIntFunction {
 
     switch (countType) {
       case "Stack":
-        return asJavaReturn(new CountStack1to1(at !== null && at !== undefined ? asLeanInt(at) : firstSiteFn(to)));
+        return asJavaReturn(new CountStack(at !== null && at !== undefined ? asLeanInt(at) : firstSiteFn(to)));
       default:
         throw new Error("Count(): A CountStackType is not implemented.");
     }
@@ -261,27 +261,27 @@ export class Count extends BaseIntFunction {
       case "Active":
         return asJavaReturn(countActive());
       case "Cells":
-        return asJavaReturn(new CountCells1to1());
+        return asJavaReturn(new CountCells());
       case "Columns":
-        return asJavaReturn(new CountColumns1to1());
+        return asJavaReturn(new CountColumns());
       case "Edges":
-        return asJavaReturn(new CountEdges1to1());
+        return asJavaReturn(new CountEdges());
       case "Moves":
         return asJavaReturn(new CountMoves1to1());
       case "MovesThisTurn":
-        return asJavaReturn(new CountMovesThisTurn1to1());
+        return asJavaReturn(new CountMovesThisTurn());
       case "Phases":
         return new CountPhases();
       case "Players":
-        return asJavaReturn(new CountPlayers1to1());
+        return asJavaReturn(new CountPlayers());
       case "Rows":
-        return asJavaReturn(new CountRows1to1());
+        return asJavaReturn(new CountRows());
       case "Trials":
         return new CountTrials();
       case "Turns":
-        return asJavaReturn(new CountTurns1to1());
+        return asJavaReturn(new CountTurns());
       case "Vertices":
-        return asJavaReturn(new CountVertices1to1());
+        return asJavaReturn(new CountVertices());
       case "LegalMoves":
         return asJavaReturn(countLegalMoves());
       default:
@@ -303,23 +303,23 @@ export class Count extends BaseIntFunction {
     }
 
     if (countType === null || countType === undefined) {
-      return asJavaReturn(new CountNumber1to1(regionFrom(inArg, at)));
+      return asJavaReturn(new CountNumber(regionFrom(inArg, at)));
     }
 
     const siteFn = at !== null && at !== undefined ? asLeanInt(at) : firstSiteFn(inArg, LAST_TO);
     switch (countType) {
       case "Adjacent":
-        return asJavaReturn(new CountSiteNeighbours1to1(siteFn, "Adjacent"));
+        return asJavaReturn(new CountSiteNeighbours(siteFn, "Adjacent"));
       case "Diagonal":
-        return asJavaReturn(new CountSiteNeighbours1to1(siteFn, "Diagonal"));
+        return asJavaReturn(new CountSiteNeighbours(siteFn, "Diagonal"));
       case "Neighbours":
-        return asJavaReturn(new CountSiteNeighbours1to1(siteFn, "Adjacent"));
+        return asJavaReturn(new CountSiteNeighbours(siteFn, "Adjacent"));
       case "Off":
-        return asJavaReturn(new CountOff1to1(at !== null && at !== undefined ? asLeanInt(at) : null, inArg !== null && inArg !== undefined ? asRegion(inArg) : null));
+        return asJavaReturn(new CountOff(at !== null && at !== undefined ? asLeanInt(at) : null, inArg !== null && inArg !== undefined ? asRegion(inArg) : null));
       case "Orthogonal":
-        return asJavaReturn(new CountSiteNeighbours1to1(siteFn, "Orthogonal"));
+        return asJavaReturn(new CountSiteNeighbours(siteFn, "Orthogonal"));
       case "Sites":
-        return asJavaReturn(new CountSites1to1(regionFrom(inArg, at)));
+        return asJavaReturn(new CountSites(regionFrom(inArg, at)));
       case "SitesPlatformBelow":
         return new CountSitesPlatformBelow(
           type as SiteType | null,
@@ -346,7 +346,7 @@ export class Count extends BaseIntFunction {
       case "Pieces": {
         const isAll = role === null || role === undefined || role === "All";
         const whoFn = of !== null && of !== undefined ? asLeanInt(of) : roleToInt(role);
-        return asJavaReturn(new CountPieces1to1(whoFn, inArg !== null && inArg !== undefined ? asRegion(inArg) : null, typeof name === "string" ? name : null, isAll));
+        return asJavaReturn(new CountPieces(whoFn, inArg !== null && inArg !== undefined ? asRegion(inArg) : null, typeof name === "string" ? name : null, isAll));
       }
       case "Pips":
         return asJavaReturn(countPips());
@@ -361,9 +361,9 @@ export class Count extends BaseIntFunction {
   public static constructGroups(countType: unknown, _type: unknown, _directions: unknown, _throughAny: unknown, If: unknown, min: unknown, _isVisible: unknown): JavaIntFunction {
     switch (countType) {
       case "Groups":
-        return asJavaReturn(new CountGroups1to1(asBool(If), asLeanInt(min, ZERO_INT)));
+        return asJavaReturn(new CountGroups(asBool(If), asLeanInt(min, ZERO_INT)));
       case "SizeBiggestGroup":
-        return asJavaReturn(new CountSizeBiggestGroup1to1(asBool(If)));
+        return asJavaReturn(new CountSizeBiggestGroup(asBool(If)));
       default:
         throw new Error("Count(): A CountGroupsType is not implemented.");
     }
@@ -387,7 +387,7 @@ export class Count extends BaseIntFunction {
   public static constructLiberties(countType: unknown, _type: unknown, at: unknown, _directions: unknown, If: unknown): JavaIntFunction {
     switch (countType) {
       case "Liberties":
-        return asJavaReturn(new CountLiberties1to1(asLeanInt(at, LAST_TO), asBool(If)));
+        return asJavaReturn(new CountLiberties(asLeanInt(at, LAST_TO), asBool(If)));
       default:
         throw new Error("Count(): A CountLibertiesType is not implemented.");
     }
@@ -399,7 +399,7 @@ export class Count extends BaseIntFunction {
   public static constructSteps(countType: unknown, _type: unknown, _relation: unknown, _stepMove: unknown, _newRotation: unknown, site1: unknown, site2: unknown, region2: unknown): JavaIntFunction {
     switch (countType) {
       case "Steps":
-        return asJavaReturn(new CountSteps1to1(asLeanInt(site1), region2 !== null && region2 !== undefined ? asRegion(region2) : singleSiteRegion(site2)));
+        return asJavaReturn(new CountSteps(asLeanInt(site1), region2 !== null && region2 !== undefined ? asRegion(region2) : singleSiteRegion(site2)));
       default:
         throw new Error("Count(): A CountStepsType is not implemented.");
     }

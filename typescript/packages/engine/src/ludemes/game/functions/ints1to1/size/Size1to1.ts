@@ -20,7 +20,7 @@ import type { Game1to1 } from "../../../../Game1to1.js";
 // ---------------------------------------------------------------------------
 // SizeGroup
 // ---------------------------------------------------------------------------
-export class SizeGroup1to1 implements IntFunction {
+export class SizeGroup implements IntFunction {
   private readonly siteFn: IntFunction;
   private readonly dirName: string;
 
@@ -74,7 +74,7 @@ export class SizeGroup1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // SizeStack  (stack depth at site)
 // ---------------------------------------------------------------------------
-export class SizeStack1to1 implements IntFunction {
+export class SizeStack implements IntFunction {
   private readonly siteFn: IntFunction;
 
   public constructor(siteFn: IntFunction) {
@@ -94,7 +94,7 @@ export class SizeStack1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // SizeArray  (size of a region/array)
 // ---------------------------------------------------------------------------
-export class SizeArray1to1 implements IntFunction {
+export class SizeArray implements IntFunction {
   private readonly regionFn: RegionFunction;
 
   public constructor(regionFn: RegionFunction) {

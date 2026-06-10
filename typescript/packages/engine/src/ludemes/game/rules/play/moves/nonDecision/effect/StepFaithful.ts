@@ -1,8 +1,8 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Step.java
 
 import type { ThenLike } from "../../Moves.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
 import { Step } from "./Step.js";
 import { directionsFunction, fromCond, fromLevel, fromLoc, fromRegion, toApplyEffect, toCond } from "./EffectCtorAdapters.js";
 import type { DirectionArg } from "./EffectCtorAdapters.js";
@@ -13,9 +13,9 @@ export class StepFaithful extends Step {
   // ArgCompiler arity gate (args.length < ctor.length) admits the faithful instantiation
   // instead of falling back to the bespoke registry's makeStep (which dropped directions).
   public constructor(
-    from: From1to1 | null = null,
+    from: From | null = null,
     directions: DirectionArg = null,
-    to: To1to1 | null = null,
+    to: To | null = null,
     stack: boolean | null = null,
     then: ThenLike | null = null
   ) {

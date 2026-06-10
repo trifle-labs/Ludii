@@ -1,5 +1,5 @@
 /**
- * Pow1to1.ts
+ * Pow.ts
  * @java game/functions/dim/math/Pow.java
  *
  * Computes the first parameter to the power of the second.
@@ -9,7 +9,7 @@
 
 import type { DimFunction1to1 } from "../DimConstant1to1.js";
 
-export class DimPow1to1 implements DimFunction1to1 {
+export class DimPow implements DimFunction1to1 {
   private readonly a: DimFunction1to1;
   private readonly b: DimFunction1to1;
 

@@ -23,7 +23,7 @@ import type { StartRule } from "../../StartRule.js";
  * because the interface does not expose the costAt[] array that Java's
  * ActionSetCost writes to.
  */
-export class SetCost1to1 implements StartRule {
+export class SetCost implements StartRule {
   /** The cost value function. */
   private readonly costFn: IntFunction;
 

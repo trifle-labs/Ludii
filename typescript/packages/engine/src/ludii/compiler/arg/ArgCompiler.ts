@@ -23,18 +23,18 @@ import { JAVA_TS_CTORS } from "../gen/java-ts-ctors.js";
 import { Sites } from "../../../ludemes/game/functions/region/sites/Sites.js";
 import { EmptyDefault } from "../../../ludemes/game/functions/region/sites/index/SitesEmpty.js";
 import { SitesPhase } from "../../../ludemes/game/functions/region/sites/simple/SitesSide1to1.js";
-import { IsIn1to1 } from "../../../ludemes/game/functions/booleans/is/in1to1/IsIn1to1.js";
-import { IsPending1to1 } from "../../../ludemes/game/functions/booleans/is/simple1to1/IsPending1to1.js";
-import { IsMover1to1 } from "../../../ludemes/game/functions/booleans/is/player1to1/IsMover1to1.js";
-import { IsPrev1to1 } from "../../../ludemes/game/functions/booleans/is/player1to1/IsPrev1to1.js";
+import { IsIn } from "../../../ludemes/game/functions/booleans/is/in1to1/IsIn.js";
+import { IsPending } from "../../../ludemes/game/functions/booleans/is/simple1to1/IsPending.js";
+import { IsMover } from "../../../ludemes/game/functions/booleans/is/player1to1/IsMover.js";
+import { IsPrev } from "../../../ludemes/game/functions/booleans/is/player1to1/IsPrev.js";
 import { NoMoves } from "../../../ludemes/game/functions/booleans/no1to1/NoMoves.js";
 import { SetPending } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.js";
-import { SetCountStart1to1 } from "../../../ludemes/game/rules/start/SetCountStart1to1.js";
+import { SetCountStart } from "../../../ludemes/game/rules/start/SetCountStart.js";
 import { Board1to1 } from "../../../ludemes/game/equipment/container/board/Board1to1.js";
 import { RectangleOnSquare } from "../../../ludemes/game/functions/graph/generators/basis/square/RectangleOnSquare.js";
 import { ConcentricCircle } from "../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricCircle.js";
-import { Rules1to1 } from "../../../ludemes/game/rules/Rules1to1.js";
-import { Play1to1 } from "../../../ludemes/game/rules/play/Play1to1.js";
+import { Rules } from "../../../ludemes/game/rules/Rules.js";
+import { Play } from "../../../ludemes/game/rules/play/Play.js";
 
 export interface ArgCompilerOptions {
   readonly reflectionPath?: string;
@@ -293,7 +293,7 @@ export class ArgCompiler {
     if (!body || node.items.length !== 2 || !isReconHash(body)) return null;
     if (!expectedTypes.some((expected) => expected.dims === 0 && expected.name === "game.rules.Rules")) return null;
     this.resolveTrace.push({ token: head, cls: "game.rules.Rules" });
-    return new Rules1to1(null, null, new Play1to1({ eval: () => [] }), null as never);
+    return new Rules(null, null, new Play({ eval: () => [] }), null as never);
   }
 
   private compileFallbackCircle(
@@ -389,7 +389,7 @@ export class ArgCompiler {
     if (!variant || !isIdent(variant) || normalise(variant.name) !== "pending") return null;
     if (!this.fitsExpected("game.functions.booleans.is.simple.IsPending", expectedTypes)) return null;
     this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.simple.IsPending" });
-    return new IsPending1to1();
+    return new IsPending();
   }
 
   private compileStartSetCount(
@@ -422,7 +422,7 @@ export class ArgCompiler {
     if (region === null && at === null) return null;
 
     this.resolveTrace.push({ token: head, cls: "game.rules.start.set.sites.SetCount" });
-    return new SetCountStart1to1(count as never, null, at as never, region as never);
+    return new SetCountStart(count as never, null, at as never, region as never);
   }
 
   private compileFallbackMoveSetPending(
@@ -572,7 +572,7 @@ export class ArgCompiler {
       const regionFn = this.compileMaybe(regionNode, [parseJavaType("game.functions.region.RegionFunction")], env);
       if (regionFn === null) return null;
       this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.in.IsIn" });
-      return new IsIn1to1(siteFn as never, regionFn as never);
+      return new IsIn(siteFn as never, regionFn as never);
     }
 
     if (headName === "is" && variantName === "mover") {
@@ -581,12 +581,12 @@ export class ArgCompiler {
       if (!whoNode) return { eval: () => true };
       if (isIdent(whoNode)) {
         this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.player.IsMover" });
-        return new IsMover1to1(null, whoNode.name as never);
+        return new IsMover(null, whoNode.name as never);
       }
       const whoFn = this.compileMaybe(whoNode, [parseJavaType("game.functions.ints.IntFunction")], env);
       if (whoFn === null) return null;
       this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.player.IsMover" });
-      return new IsMover1to1(whoFn as never, null);
+      return new IsMover(whoFn as never, null);
     }
 
     if (headName === "is" && variantName === "prev") {
@@ -595,12 +595,12 @@ export class ArgCompiler {
       if (!whoNode) return null;
       if (isIdent(whoNode)) {
         this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.player.IsPrev" });
-        return new IsPrev1to1(null, whoNode.name as never);
+        return new IsPrev(null, whoNode.name as never);
       }
       const whoFn = this.compileMaybe(whoNode, [parseJavaType("game.functions.ints.IntFunction")], env);
       if (whoFn === null) return null;
       this.resolveTrace.push({ token: head, cls: "game.functions.booleans.is.player.IsPrev" });
-      return new IsPrev1to1(whoFn as never, null);
+      return new IsPrev(whoFn as never, null);
     }
 
     if (headName === "no" && variantName === "moves") {

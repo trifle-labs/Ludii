@@ -11,7 +11,7 @@ import type { FloatFunction, BooleanFunction, IntFunction } from "../../../base.
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import { isList } from "@ludii/typescript-language";
 
-export class ToFloatBool1to1 implements FloatFunction {
+export class ToFloatBool implements FloatFunction {
   private readonly boolFn: BooleanFunction;
 
   public constructor(boolFn: BooleanFunction) {
@@ -24,7 +24,7 @@ export class ToFloatBool1to1 implements FloatFunction {
   }
 }
 
-export class ToFloatInt1to1 implements FloatFunction {
+export class ToFloatInt implements FloatFunction {
   private readonly intFn: IntFunction;
 
   public constructor(intFn: IntFunction) {

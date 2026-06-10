@@ -1,5 +1,5 @@
 /**
- * To1to1.ts
+ * To.ts
  * @java game/util/moves/To.java
  *
  * Parameter holder for the ``to'' clause of move generators.
@@ -21,7 +21,7 @@ export interface RotationsLike {
  * Specifies operations based on the ``to'' location.
  * @java game/util/moves/To.java
  */
-export class To1to1 {
+export class To {
   /** @java To.loc — the to location (IntFunction). */
   private readonly locValue: IntFunction | null;
 

@@ -17,10 +17,10 @@ import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } 
 import type { Move } from "../../../../../../../move.js";
 import type { Then } from "./Then.js";
 import type { SiteType } from "../../../../../../../action/site-type.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { Between1to1 } from "../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { Between } from "../../../../../util/moves/Between1to1.js";
 import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
-import { IsEnemy1to1 } from "../../../../../functions/booleans/is/player1to1/IsEnemy1to1.js";
+import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 import { Remove } from "./Remove.js";
 
@@ -74,15 +74,15 @@ export class Enclose implements MovesFunction {
    */
   public constructor(
     type?: SiteType | null,
-    from?: From1to1 | null,
+    from?: From | null,
     directions?: DirectionArg | null,
-    between?: Between1to1 | null,
+    between?: Between | null,
     numException?: IntFunction | null,
     then?: Then | null,
   ) {
     this.startFn = from?.loc() ?? LAST_TO;
     this.dirnChoice = directions ?? "Adjacent";
-    this.targetRule = between?.condition() ?? new IsEnemy1to1(new Who1to1(BETWEEN), null);
+    this.targetRule = between?.condition() ?? new IsEnemy(new Who1to1(BETWEEN), null);
     this.numEmptySitesInGroup = numException ?? { eval: () => 0 };
     this.effect = between?.effect() ?? new Remove({
       locationFn: BETWEEN,

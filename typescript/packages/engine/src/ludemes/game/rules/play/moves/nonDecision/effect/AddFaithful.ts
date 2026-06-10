@@ -2,7 +2,7 @@
 
 import type { IntFunction, RegionFunction } from "../../../../../../base.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
 import type { Then } from "./Then.js";
 import { Add } from "./Add.js";
 import { pieceComponent, toRegion } from "./EffectCtorAdapters.js";
@@ -48,7 +48,7 @@ export class AddFaithful extends Add {
   // Function.length at 2 so the ArgCompiler arity gate accepts forms without them.
   public constructor(
     what: Piece1to1 | null = null,
-    to: To1to1 | null = null,
+    to: To | null = null,
     count: IntFunction | null = null,
     stack: boolean | null = null,
     then: Then | null = null

@@ -25,7 +25,7 @@ import type { Context } from "../../../../../../context.js";
  * prevents duplicates.
  * applyToInitialState is a no-op because State.remembered is not accessible.
  */
-export class SetRememberValue1to1 implements StartRule {
+export class SetRememberValue implements StartRule {
   /**
    * Optional name for the remembered-value bucket.
    * Java: name field (null → default anonymous bucket).

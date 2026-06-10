@@ -13,7 +13,7 @@
  *  - Container-based placement for non-Hand containers is not supported —
  *    the TS Equipment1to1 only exposes hand sites.
  *  - The "stringWithoutNumber / Hand" loop (player-suffixed generic piece) is
- *    not supported; use PlaceHandCount1to1 for those cases.
+ *    not supported; use PlaceHandCount for those cases.
  *  - coord-based placement relies on algebraicToSite which only handles
  *    single-letter, fixed-width boards.
  */

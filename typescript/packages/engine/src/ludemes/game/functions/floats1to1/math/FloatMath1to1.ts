@@ -29,7 +29,7 @@ import { isList } from "@ludii/typescript-language";
 
 // ---------------------------------------------------------------------------
 // Helper — collect FloatFunction[] from positional args (handles curly-list)
-export class FloatAdd1to1 implements FloatFunction {
+export class FloatAdd implements FloatFunction {
   private readonly a: FloatFunction | null;
   private readonly b: FloatFunction | null;
   private readonly list: readonly FloatFunction[] | null;
@@ -66,7 +66,7 @@ export class FloatAdd1to1 implements FloatFunction {
 // Sub  (alias "-")
 // @java game/functions/floats/math/Sub.java
 // ---------------------------------------------------------------------------
-export class FloatSub1to1 implements FloatFunction {
+export class FloatSub implements FloatFunction {
   private readonly valueA: FloatFunction;
   private readonly valueB: FloatFunction;
 
@@ -85,7 +85,7 @@ export class FloatSub1to1 implements FloatFunction {
 // Mul  (alias "*")
 // @java game/functions/floats/math/Mul.java
 // ---------------------------------------------------------------------------
-export class FloatMul1to1 implements FloatFunction {
+export class FloatMul implements FloatFunction {
   private readonly a: FloatFunction | null;
   private readonly b: FloatFunction | null;
   private readonly list: readonly FloatFunction[] | null;
@@ -122,7 +122,7 @@ export class FloatMul1to1 implements FloatFunction {
 // Div  (alias "/")
 // @java game/functions/floats/math/Div.java
 // ---------------------------------------------------------------------------
-export class FloatDiv1to1 implements FloatFunction {
+export class FloatDiv implements FloatFunction {
   private readonly a: FloatFunction;
   private readonly b: FloatFunction;
 
@@ -143,7 +143,7 @@ export class FloatDiv1to1 implements FloatFunction {
 // Pow  (alias "^")
 // @java game/functions/floats/math/Pow.java
 // ---------------------------------------------------------------------------
-export class FloatPow1to1 implements FloatFunction {
+export class FloatPow implements FloatFunction {
   private readonly a: FloatFunction;
   private readonly b: FloatFunction;
 
@@ -162,7 +162,7 @@ export class FloatPow1to1 implements FloatFunction {
 // Sqrt
 // @java game/functions/floats/math/Sqrt.java
 // ---------------------------------------------------------------------------
-export class FloatSqrt1to1 implements FloatFunction {
+export class FloatSqrt implements FloatFunction {
   private readonly a: FloatFunction;
 
   public constructor(a: FloatFunction) {
@@ -181,7 +181,7 @@ export class FloatSqrt1to1 implements FloatFunction {
 // Abs
 // @java game/functions/floats/math/Abs.java
 // ---------------------------------------------------------------------------
-export class FloatAbs1to1 implements FloatFunction {
+export class FloatAbs implements FloatFunction {
   private readonly value: FloatFunction;
 
   public constructor(value: FloatFunction) {
@@ -198,7 +198,7 @@ export class FloatAbs1to1 implements FloatFunction {
 // Cos
 // @java game/functions/floats/math/Cos.java
 // ---------------------------------------------------------------------------
-export class FloatCos1to1 implements FloatFunction {
+export class FloatCos implements FloatFunction {
   private readonly a: FloatFunction;
 
   public constructor(a: FloatFunction) {
@@ -215,7 +215,7 @@ export class FloatCos1to1 implements FloatFunction {
 // Sin
 // @java game/functions/floats/math/Sin.java
 // ---------------------------------------------------------------------------
-export class FloatSin1to1 implements FloatFunction {
+export class FloatSin implements FloatFunction {
   private readonly a: FloatFunction;
 
   public constructor(a: FloatFunction) {
@@ -232,7 +232,7 @@ export class FloatSin1to1 implements FloatFunction {
 // Tan
 // @java game/functions/floats/math/Tan.java
 // ---------------------------------------------------------------------------
-export class FloatTan1to1 implements FloatFunction {
+export class FloatTan implements FloatFunction {
   private readonly a: FloatFunction;
 
   public constructor(a: FloatFunction) {
@@ -249,7 +249,7 @@ export class FloatTan1to1 implements FloatFunction {
 // Exp
 // @java game/functions/floats/math/Exp.java
 // ---------------------------------------------------------------------------
-export class FloatExp1to1 implements FloatFunction {
+export class FloatExp implements FloatFunction {
   private readonly a: FloatFunction;
 
   public constructor(a: FloatFunction) {
@@ -266,7 +266,7 @@ export class FloatExp1to1 implements FloatFunction {
 // Log  (natural log)
 // @java game/functions/floats/math/Log.java
 // ---------------------------------------------------------------------------
-export class FloatLog1to1 implements FloatFunction {
+export class FloatLog implements FloatFunction {
   private readonly a: FloatFunction;
 
   public constructor(a: FloatFunction) {
@@ -285,7 +285,7 @@ export class FloatLog1to1 implements FloatFunction {
 // Log10
 // @java game/functions/floats/math/Log10.java
 // ---------------------------------------------------------------------------
-export class FloatLog10_1to1 implements FloatFunction {
+export class FloatLog10_ implements FloatFunction {
   private readonly a: FloatFunction;
 
   public constructor(a: FloatFunction) {
@@ -304,7 +304,7 @@ export class FloatLog10_1to1 implements FloatFunction {
 // Min
 // @java game/functions/floats/math/Min.java
 // ---------------------------------------------------------------------------
-export class FloatMin1to1 implements FloatFunction {
+export class FloatMin implements FloatFunction {
   private readonly a: FloatFunction | null;
   private readonly b: FloatFunction | null;
   private readonly list: readonly FloatFunction[] | null;
@@ -343,7 +343,7 @@ export class FloatMin1to1 implements FloatFunction {
 // Max
 // @java game/functions/floats/math/Max.java
 // ---------------------------------------------------------------------------
-export class FloatMax1to1 implements FloatFunction {
+export class FloatMax implements FloatFunction {
   private readonly a: FloatFunction | null;
   private readonly b: FloatFunction | null;
   private readonly list: readonly FloatFunction[] | null;

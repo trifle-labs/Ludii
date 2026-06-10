@@ -23,29 +23,29 @@ export { SetRememberValueType } from "./SetRememberValueType.js";
 
 // Concrete sub-rules (re-export for convenience)
 export { SetHidden1to1 } from "./hidden/SetHidden.js";
-export { SetAmount1to1 } from "./player/SetAmount.js";
-export { SetScore1to1 } from "./player/SetScore.js";
+export { SetAmount } from "./player/SetAmount.js";
+export { SetScore } from "./player/SetScore.js";
 export { SetTeam1to1 } from "./players/SetTeam.js";
-export { SetRememberValue1to1 } from "./remember/SetRememberValue.js";
-export { SetCost1to1 } from "./sites/SetCost.js";
-export { SetCount1to1 } from "./sites/SetCount.js";
-export { SetPhase1to1 } from "./sites/SetPhase.js";
-export { SetSite1to1 } from "./sites/SetSite.js";
+export { SetRememberValue } from "./remember/SetRememberValue.js";
+export { SetCost } from "./sites/SetCost.js";
+export { SetCount } from "./sites/SetCount.js";
+export { SetPhase } from "./sites/SetPhase.js";
+export { SetSite } from "./sites/SetSite.js";
 
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../base.js";
 import { IntArrayFromRegion } from "../../../../other/IntArrayFromRegion.js";
 import type { SiteType } from "../../../../other/action/SiteType.js";
 import type { RoleTypeFull } from "../../../types/play/RoleType.js";
 import type { StartRule } from "../StartRule.js";
-import { SetCountStart1to1 } from "../SetCountStart1to1.js";
+import { SetCountStart } from "../SetCountStart.js";
 import { SetHidden1to1, type HiddenData } from "./hidden/SetHidden.js";
-import { SetAmount1to1 } from "./player/SetAmount.js";
-import { SetScore1to1 } from "./player/SetScore.js";
+import { SetAmount } from "./player/SetAmount.js";
+import { SetScore } from "./player/SetScore.js";
 import { SetTeam1to1 } from "./players/SetTeam.js";
-import { SetRememberValue1to1 } from "./remember/SetRememberValue.js";
-import { SetCost1to1 } from "./sites/SetCost.js";
-import { SetPhase1to1 } from "./sites/SetPhase.js";
-import { SetSite1to1 } from "./sites/SetSite.js";
+import { SetRememberValue } from "./remember/SetRememberValue.js";
+import { SetCost } from "./sites/SetCost.js";
+import { SetPhase } from "./sites/SetPhase.js";
+import { SetSite } from "./sites/SetSite.js";
 
 /**
  * Static-factory dispatcher for "(set …)" start rules, mirroring Java's
@@ -68,7 +68,7 @@ export class SetDispatch {
     unique: BooleanFunction | null,
   ): StartRule | null {
     switch (setType) {
-      case "RememberValue": return new SetRememberValue1to1(name, value, regionValue, unique);
+      case "RememberValue": return new SetRememberValue(name, value, regionValue, unique);
       default: return null;
     }
   }
@@ -114,7 +114,7 @@ export class SetDispatch {
     loc: IntFunction | null,
     coord: string | null,
   ): StartRule {
-    return new SetSite1to1(role, type, loc, coord);
+    return new SetSite(role, type, loc, coord);
   }
 
   /**
@@ -128,7 +128,7 @@ export class SetDispatch {
     region: RegionFunction | null,
     coords: readonly string[] | null,
   ): StartRule {
-    return new SetSite1to1(role, type, locs, region, coords);
+    return new SetSite(role, type, locs, region, coords);
   }
 
   /**
@@ -144,9 +144,9 @@ export class SetDispatch {
     to: RegionFunction | null,
   ): StartRule | null {
     switch (startType) {
-      case "Count": return new SetCountStart1to1(value, type, at, to);
-      case "Cost": return new SetCost1to1(value, type, at, to);
-      case "Phase": return new SetPhase1to1(value, type, at, to);
+      case "Count": return new SetCountStart(value, type, at, to);
+      case "Cost": return new SetCost(value, type, at, to);
+      case "Phase": return new SetPhase(value, type, at, to);
       default: return null;
     }
   }
@@ -161,8 +161,8 @@ export class SetDispatch {
     value: IntFunction,
   ): StartRule | null {
     switch (startType) {
-      case "Amount": return new SetAmount1to1(roleToPlayerId(role), evalIntFunction(value));
-      case "Score": return new SetScore1to1(role ?? "Each", value);
+      case "Amount": return new SetAmount(roleToPlayerId(role), evalIntFunction(value));
+      case "Score": return new SetScore(role ?? "Each", value);
       default: return null;
     }
   }

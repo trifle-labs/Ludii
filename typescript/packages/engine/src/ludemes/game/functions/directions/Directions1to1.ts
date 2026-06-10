@@ -38,7 +38,7 @@ const ABSOLUTE_DIRECTION_NAMES = new Set<string>([
  * compile time (AbsoluteDirection form).  eval(ctx) is a pure constant.
  * @java Directions.java — constructor(AbsoluteDirection absoluteDirection, AbsoluteDirection[] absoluteDirections)
  */
-export class Directions1to1Static implements DirectionsFunction {
+export class DirectionsStatic implements DirectionsFunction {
   private readonly names: readonly string[];
 
   /**

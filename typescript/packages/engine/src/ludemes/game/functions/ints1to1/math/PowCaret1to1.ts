@@ -13,10 +13,10 @@ import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 
 /**
- * Pow1to1Caret — faithful 1:1 port of Pow.java for the "^" alias.
+ * PowCaret — faithful 1:1 port of Pow.java for the "^" alias.
  * @java game/functions/ints/math/Pow.java — eval: (int)(Math.pow(a, b))
  */
-export class Pow1to1Caret implements IntFunction {
+export class PowCaret implements IntFunction {
   constructor(
     private readonly a: IntFunction,
     private readonly b: IntFunction,

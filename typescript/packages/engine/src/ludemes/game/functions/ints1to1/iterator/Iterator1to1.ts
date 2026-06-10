@@ -23,7 +23,7 @@ import type { LudList } from "@ludii/typescript-language";
 // ---------------------------------------------------------------------------
 // From
 // ---------------------------------------------------------------------------
-export class From1to1 implements IntFunction {
+export class From implements IntFunction {
   /** @java game/functions/ints/iterator/From.java — eval: context.from() */
   public eval(ctx: Context): number {
     return ctx._evalFrom;
@@ -33,7 +33,7 @@ export class From1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // To
 // ---------------------------------------------------------------------------
-export class To1to1 implements IntFunction {
+export class To implements IntFunction {
   /** @java game/functions/ints/iterator/To.java — eval: context.to() */
   public eval(ctx: Context): number {
     return ctx._evalTo;
@@ -57,7 +57,7 @@ export class Site1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // Between
 // ---------------------------------------------------------------------------
-export class Between1to1 implements IntFunction {
+export class Between implements IntFunction {
   /**
    * @java game/functions/ints/iterator/Between.java — eval: context.between()
    * The "between" site (hurdle) set during hop iteration.

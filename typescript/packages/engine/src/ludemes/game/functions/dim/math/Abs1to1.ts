@@ -9,7 +9,7 @@
 
 import type { DimFunction1to1 } from "../DimConstant1to1.js";
 
-export class DimAbs1to1 implements DimFunction1to1 {
+export class DimAbs implements DimFunction1to1 {
   private readonly value: DimFunction1to1;
 
   constructor(value: DimFunction1to1) {

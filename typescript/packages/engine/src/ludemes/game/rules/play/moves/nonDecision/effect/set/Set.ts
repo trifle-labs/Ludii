@@ -20,7 +20,7 @@ import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction, IntArrayFunction, IntFunction, BooleanFunction, RegionFunction } from "../../../../../../../base.js";
 import { IntArrayFromRegion } from "../../../../../../../other/IntArrayFromRegion.js";
 import type { Player1to1 } from "../../../../../../util/moves/Player1to1.js";
-import type { To1to1 } from "../../../../../../util/moves/To1to1.js";
+import type { To } from "../../../../../../util/moves/To1to1.js";
 import { SetTeam } from "./team/SetTeam.js";
 import { SetHidden } from "./hidden/SetHidden.js";
 import { SetPot } from "./value/SetPot.js";
@@ -29,11 +29,11 @@ import { SetTrumpSuit } from "./suit/SetTrumpSuit.js";
 import { SetNextPlayer } from "./nextPlayer/SetNextPlayer.js";
 import { SetRotation } from "./direction/SetRotation.js";
 import { SetValuePlayer } from "./player/SetValuePlayer.js";
-import { SetScore1to1 } from "./player/SetScore1to1.js";
+import { SetScore } from "./player/SetScore.js";
 import { SetPending } from "./pending/SetPending.js";
-import { SetVar1to1 } from "./var/SetVar1to1.js";
-import { SetCount1to1 } from "./site/SetCount1to1.js";
-import { SetState1to1 } from "./site/SetState1to1.js";
+import { SetVar } from "./var/SetVar.js";
+import { SetCount } from "./site/SetCount.js";
+import { SetState } from "./site/SetState.js";
 import { SetValue } from "./site/SetValue.js";
 
 /** @java game/types/board/SiteType.java — minimal subset */
@@ -144,7 +144,7 @@ export class Set implements MovesFunction {
    */
   public static constructRotation(
     _setType: SetRotationType,
-    to: To1to1 | null,
+    to: To | null,
     directions: IntFunction[] | null,
     direction: IntFunction | null,
     previous: BooleanFunction | null,
@@ -176,7 +176,7 @@ export class Set implements MovesFunction {
       case SetPlayerType.Value:
         return new SetValuePlayer(Set.playerIndexFn(player), role, valueFn, thenMoves);
       case SetPlayerType.Score:
-        return new SetScore1to1(Set.playerHolder(player), role as never, valueFn, thenMoves as never);
+        return new SetScore(Set.playerHolder(player), role as never, valueFn, thenMoves as never);
       default:
         throw new Error(`Set(): A SetPlayerType is not implemented: ${setType}`);
     }
@@ -203,7 +203,7 @@ export class Set implements MovesFunction {
     newValue: IntFunction | null,
     thenMoves: MovesFunction | null,
   ): MovesFunction {
-    return new SetVar1to1(name, newValue, thenMoves as never);
+    return new SetVar(name, newValue, thenMoves as never);
   }
 
   /**
@@ -237,9 +237,9 @@ export class Set implements MovesFunction {
   ): MovesFunction {
     switch (setType) {
       case SetSiteType.Count:
-        return new SetCount1to1(type as never, atFn, valueFn, thenMoves as never);
+        return new SetCount(type as never, atFn, valueFn, thenMoves as never);
       case SetSiteType.State:
-        return new SetState1to1(type as never, atFn, levelFn, valueFn, thenMoves as never);
+        return new SetState(type as never, atFn, levelFn, valueFn, thenMoves as never);
       case SetSiteType.Value:
         return new SetValue(type as never, atFn, levelFn, valueFn, thenMoves);
       default:

@@ -5,14 +5,14 @@
  *
  * A Phase holds:
  *   - name:        string label for this phase
- *   - play:        the move generator (Play1to1) for this phase
+ *   - play:        the move generator (Play) for this phase
  *   - end:         optional per-phase end rule
  *   - nextPhases:  ordered list of NextPhase transition conditions
  *
  * @java game/rules/phase/Phase.java — Phase(name, role, mode, play, end, nextPhase, nextPhases)
  */
 
-import type { Play1to1 } from "../play/Play1to1.js";
+import type { Play } from "../play/Play.js";
 import type { End } from "../end/End.js";
 import type { NextPhase } from "./NextPhase.js";
 import type { Mode1to1 } from "../../mode/Mode1to1.js";
@@ -27,7 +27,7 @@ export class Phase {
   /** Owner role of this phase. @java Phase.owner() */
   public readonly role: PhaseRoleType;
   /** Move logic. @java Phase.play() */
-  public play: Play1to1;
+  public play: Play;
   /** Per-phase end logic (optional). @java Phase.end() */
   public end: End | null;
   /** Conditions to transition to another phase. @java Phase.nextPhase() */
@@ -50,7 +50,7 @@ export class Phase {
     name: string,
     role: PhaseRoleType | null | undefined,
     mode: Mode1to1 | null | undefined,
-    play: Play1to1,
+    play: Play,
     end?: End | null,
     nextPhase?: NextPhase | null,
     nextPhases?: readonly NextPhase[] | null,
@@ -85,7 +85,7 @@ export class Phase {
   }
 
   /** @java Phase.setPlay(Play) */
-  public setPlay(play: Play1to1): void {
+  public setPlay(play: Play): void {
     this.play = play;
   }
 

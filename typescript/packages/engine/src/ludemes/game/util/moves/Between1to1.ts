@@ -1,5 +1,5 @@
 /**
- * Between1to1.ts
+ * Between.ts
  * @java game/util/moves/Between.java
  *
  * Parameter holder for the ``between'' clause of hop/step moves.
@@ -23,7 +23,7 @@ export interface RangeLike {
  * ``from'' and ``to''.
  * @java game/util/moves/Between.java
  */
-export class Between1to1 {
+export class Between {
   /** @java Between.trail — the piece to let between the from and to. */
   private readonly trail: IntFunction | null;
 

@@ -25,7 +25,7 @@ import type { SplitType } from "./SplitType.js";
  * Splits the deck by dealing one card at a time round-robin to each player's hand.
  * applyToInitialState is a no-op because the card/deck subsystem is not ported.
  */
-export class Split1to1 implements StartRule {
+export class Split implements StartRule {
   /** The type of object to split. Currently only Deck is defined. */
   private readonly splitType: SplitType;
 

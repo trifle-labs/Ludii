@@ -173,7 +173,7 @@ export class Abs1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // Pow
 // ---------------------------------------------------------------------------
-export class Pow1to1 implements IntFunction {
+export class Pow implements IntFunction {
   private readonly base: IntFunction;
   private readonly exp: IntFunction;
 
@@ -235,7 +235,7 @@ export class Min1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // If (int)
 // ---------------------------------------------------------------------------
-export class IfInt1to1 implements IntFunction {
+export class IfInt implements IntFunction {
   private readonly cond: BooleanFunction;
   private readonly then: IntFunction;
   private readonly else_: IntFunction;

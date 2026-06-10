@@ -19,7 +19,7 @@ import type { StartRule } from "../../StartRule.js";
  * Initialises the amount of the given player(s). Used mainly for betting games.
  * applyToInitialState is a no-op because amounts[] is not in the interface.
  */
-export class SetAmount1to1 implements StartRule {
+export class SetAmount implements StartRule {
   /**
    * 1-based player id, or null if "all players".
    * Java: playersFn field (null when role not specified → all players).

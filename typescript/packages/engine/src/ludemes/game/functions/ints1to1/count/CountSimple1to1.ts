@@ -20,7 +20,7 @@ import type { Game1to1 } from "../../../../Game1to1.js";
 // ---------------------------------------------------------------------------
 // CountRows
 // ---------------------------------------------------------------------------
-export class CountRows1to1 implements IntFunction {
+export class CountRows implements IntFunction {
   /** @java game/functions/ints/count/simple/CountRows.java — eval: context.topology().rows(siteType).size() */
   public eval(ctx: Context): number {
     return (ctx.game as unknown as Game1to1).equipment.board.height;
@@ -30,7 +30,7 @@ export class CountRows1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // CountColumns
 // ---------------------------------------------------------------------------
-export class CountColumns1to1 implements IntFunction {
+export class CountColumns implements IntFunction {
   /** @java game/functions/ints/count/simple/CountColumns.java — eval: context.topology().columns(siteType).size() */
   public eval(ctx: Context): number {
     return (ctx.game as unknown as Game1to1).equipment.board.width;
@@ -40,7 +40,7 @@ export class CountColumns1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // CountPlayers
 // ---------------------------------------------------------------------------
-export class CountPlayers1to1 implements IntFunction {
+export class CountPlayers implements IntFunction {
   /** @java game/functions/ints/count/simple/CountPlayers.java — eval: context.game().players().count() */
   public eval(ctx: Context): number {
     return ctx.game.numPlayers;
@@ -50,7 +50,7 @@ export class CountPlayers1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // CountTurns
 // ---------------------------------------------------------------------------
-export class CountTurns1to1 implements IntFunction {
+export class CountTurns implements IntFunction {
   /** @java game/functions/ints/count/simple/CountTurns.java — eval: context.state().numTurn() */
   public eval(ctx: Context): number {
     return ctx.state.numTurn ?? 1;
@@ -60,7 +60,7 @@ export class CountTurns1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // CountMovesThisTurn
 // ---------------------------------------------------------------------------
-export class CountMovesThisTurn1to1 implements IntFunction {
+export class CountMovesThisTurn implements IntFunction {
   /** @java game/functions/ints/count/simple/CountMovesThisTurn.java — eval: context.state().numTurnSamePlayer() */
   public eval(ctx: Context): number {
     return ctx.state.numTurnSamePlayer ?? 0;

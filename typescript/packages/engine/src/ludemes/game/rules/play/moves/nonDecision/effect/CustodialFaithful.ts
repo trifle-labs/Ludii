@@ -3,22 +3,22 @@
 import type { ThenLike } from "../../Moves.js";
 import type { Context } from "../../../../../../../context.js";
 import type { IntFunction } from "../../../../../../base.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
-import type { Between1to1 } from "../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
+import type { Between } from "../../../../../util/moves/Between1to1.js";
 import { Custodial } from "./Custodial.js";
-import { IsEnemy1to1 } from "../../../../../functions/booleans/is/player1to1/IsEnemy1to1.js";
-import { IsFriend1to1 } from "../../../../../functions/booleans/is/player1to1/IsFriend1to1.js";
+import { IsEnemy } from "../../../../../functions/booleans/is/player1to1/IsEnemy.js";
+import { IsFriend } from "../../../../../functions/booleans/is/player1to1/IsFriend.js";
 import { Who1to1 } from "../../../../../functions/ints1to1/board/Board1to1.js";
 import { Remove } from "./Remove.js";
 import { BETWEEN_ITER, betweenCond, betweenEffect, betweenRange, directionName, fromLoc, intConst, LAST_TO, normaliseFriendAtPlaceholder, toCond, TO_ITER } from "./EffectCtorAdapters.js";
 
 export class CustodialFaithful extends Custodial {
   public constructor(
-    from: From1to1 | null = null,
+    from: From | null = null,
     dirnChoice: string | null = null,
-    between: Between1to1 | null = null,
-    to: To1to1 | null = null,
+    between: Between | null = null,
+    to: To | null = null,
     then: ThenLike | null = null
   ) {
     const range = betweenRange(between);
@@ -28,8 +28,8 @@ export class CustodialFaithful extends Custodial {
       dirnChoice: directionName(dirnChoice),
       minimum: range?.minFn ?? intConst(0),
       limit: range?.maxFn ?? intConst(1000),
-      targetRule: betweenCond(between, new IsEnemy1to1(new Who1to1(BETWEEN_ITER), null)),
-      friendRule: normaliseFriendAtPlaceholder(toCond(to, new IsFriend1to1(new Who1to1(TO_ITER), null))),
+      targetRule: betweenCond(between, new IsEnemy(new Who1to1(BETWEEN_ITER), null)),
+      friendRule: normaliseFriendAtPlaceholder(toCond(to, new IsFriend(new Who1to1(TO_ITER), null))),
       targetEffect: betweenEffect(between) ?? new Remove({ locationFn: BETWEEN_ITER }),
       then,
     });

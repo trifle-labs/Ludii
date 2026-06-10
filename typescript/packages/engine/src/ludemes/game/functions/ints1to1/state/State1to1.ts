@@ -21,7 +21,7 @@ import { isIdent, isString } from "@ludii/typescript-language";
 // ---------------------------------------------------------------------------
 // Mover
 // ---------------------------------------------------------------------------
-export class Mover1to1 implements IntFunction {
+export class Mover implements IntFunction {
   /** @java game/functions/ints/state/Mover.java — eval: context.state().mover() */
   public eval(ctx: Context): number {
     return ctx.state.mover;

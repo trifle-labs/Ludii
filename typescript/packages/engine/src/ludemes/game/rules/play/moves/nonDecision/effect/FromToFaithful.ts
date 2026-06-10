@@ -2,15 +2,15 @@
 
 import type { BooleanFunction, IntFunction } from "../../../../../../base.js";
 import type { Then } from "./Then.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
 import { FromTo } from "./FromTo.js";
 import { FALSE_FN, fromCond, fromLevel, fromLoc, fromRegion, toApplyCondition, toApplyEffect, toLoc } from "./EffectCtorAdapters.js";
 
 export class FromToFaithful extends FromTo {
   public constructor(
-    from: From1to1,
-    to: To1to1,
+    from: From,
+    to: To,
     count: IntFunction | null,
     copy: BooleanFunction | null,
     stack: boolean | null,

@@ -22,7 +22,7 @@ import type { StartRule } from "../../StartRule.js";
  * because the interface does not expose a per-site phase array for the board
  * topology (distinct from the per-player phases in State.phases[]).
  */
-export class SetPhase1to1 implements StartRule {
+export class SetPhase implements StartRule {
   /** The phase value function. */
   private readonly phaseFn: IntFunction;
 

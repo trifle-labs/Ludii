@@ -7,7 +7,7 @@
  */
 import type { BooleanFunction, IntFunction, RegionFunction, RoleType } from "../../../../base.js";
 import { NoMoves } from "../no1to1/NoMoves.js";
-import { NoPieces1to1 } from "../no1to1/NoPieces.js";
+import { NoPieces } from "../no1to1/NoPieces.js";
 
 type SiteType = "Cell" | "Edge" | "Vertex";
 
@@ -25,7 +25,7 @@ export class NoDispatch {
     name: string | null,
     in_: RegionFunction | null,
   ): BooleanFunction {
-    return new NoPieces1to1(type, role, of, name, in_);
+    return new NoPieces(type, role, of, name, in_);
   }
 
   /**

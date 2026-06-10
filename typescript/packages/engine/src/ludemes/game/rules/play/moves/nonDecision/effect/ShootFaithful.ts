@@ -1,10 +1,10 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Shoot.java
 
 import type { Then } from "./Then.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
 import type { Piece1to1 } from "../../../../../util/moves/Piece1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
-import type { Between1to1 } from "../../../../../util/moves/Between1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
+import type { Between } from "../../../../../util/moves/Between1to1.js";
 import { Shoot } from "./Shoot.js";
 import { betweenCond, directionName, LAST_TO, pieceComponent, toCond } from "./EffectCtorAdapters.js";
 
@@ -14,10 +14,10 @@ export class ShootFaithful extends Shoot {
   // single required `what` argument for the ArgCompiler arity gate.
   public constructor(
     what: Piece1to1,
-    from: From1to1 | null = null,
+    from: From | null = null,
     dirn: string | null = null,
-    between: Between1to1 | null = null,
-    to: To1to1 | null = null,
+    between: Between | null = null,
+    to: To | null = null,
     then: Then | null = null
   ) {
     super({

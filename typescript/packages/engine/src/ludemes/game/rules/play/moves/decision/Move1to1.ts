@@ -35,20 +35,20 @@ import type {
   RegionFunction,
 } from "../../../../../base.js";
 import type { RangeFunction1to1 } from "../../../../functions/range/Range1to1.js";
-import type { From1to1 } from "../../../../util/moves/From1to1.js";
+import type { From } from "../../../../util/moves/From1to1.js";
 import type { Piece1to1 } from "../../../../util/moves/Piece1to1.js";
 import type { Player1to1 } from "../../../../util/moves/Player1to1.js";
-import type { To1to1 } from "../../../../util/moves/To1to1.js";
-import type { Between1to1 } from "../../../../util/moves/Between1to1.js";
+import type { To } from "../../../../util/moves/To1to1.js";
+import type { Between } from "../../../../util/moves/Between1to1.js";
 import type { RoleTypeFull } from "../../../../types/play/RoleType.js";
 import type { ThenLike } from "../Moves.js";
 import type { DirectionArg } from "../nonDecision/effect/EffectCtorAdapters.js";
 import { AddFaithful } from "../nonDecision/effect/AddFaithful.js";
-import { Claim1to1 } from "../nonDecision/effect/Claim1to1.js";
+import { Claim } from "../nonDecision/effect/Claim.js";
 import { FromToFaithful } from "../nonDecision/effect/FromToFaithful.js";
 import { HopFaithful } from "../nonDecision/effect/HopFaithful.js";
 import { LeapFaithful } from "../nonDecision/effect/LeapFaithful.js";
-import { Pass1to1 } from "../nonDecision/effect/Pass1to1.js";
+import { Pass } from "../nonDecision/effect/Pass.js";
 import { PlayCard } from "../nonDecision/effect/PlayCard.js";
 import { PromoteFaithful } from "../nonDecision/effect/PromoteFaithful.js";
 import { Propose } from "../nonDecision/effect/Propose.js";
@@ -196,7 +196,7 @@ export class Move1to1 extends Decision1to1 {
   public static constructSetRotation(
     moveType: string,
     setType: string,
-    to: To1to1 | null,
+    to: To | null,
     directions: IntFunction[] | null,
     direction: IntFunction | null,
     previous: BooleanFunction | null,
@@ -226,9 +226,9 @@ export class Move1to1 extends Decision1to1 {
    */
   public static constructStep(
     moveType: string,
-    from: From1to1 | null,
+    from: From | null,
     directions: DirectionArg,
-    to: To1to1,
+    to: To,
     stack: boolean | null,
     then: Then | null
   ): MovesFunction {
@@ -245,11 +245,11 @@ export class Move1to1 extends Decision1to1 {
    */
   public static constructSlide(
     moveType: string,
-    from: From1to1 | null,
+    from: From | null,
     track: string | null,
     directions: DirectionArg,
-    between: Between1to1 | null,
-    to: To1to1 | null,
+    between: Between | null,
+    to: To | null,
     stack: boolean | null,
     then: Then | null
   ): MovesFunction {
@@ -267,10 +267,10 @@ export class Move1to1 extends Decision1to1 {
   public static constructShoot(
     moveType: string,
     what: Piece1to1,
-    from: From1to1 | null,
+    from: From | null,
     dirn: string | null,
-    between: Between1to1 | null,
-    to: To1to1 | null,
+    between: Between | null,
+    to: To | null,
     then: Then | null
   ): MovesFunction {
     switch (moveType) {
@@ -286,8 +286,8 @@ export class Move1to1 extends Decision1to1 {
    */
   public static constructSelect(
     moveType: string,
-    from: From1to1,
-    to: To1to1 | null,
+    from: From,
+    to: To | null,
     mover: RoleTypeFull | null,
     then: Then | null
   ): MovesFunction {
@@ -348,7 +348,7 @@ export class Move1to1 extends Decision1to1 {
     switch (moveType) {
       case "Pass":
         void then;
-        return new Pass1to1();
+        return new Pass();
       case "PlayCard":
         return new PlayCard(then);
       default:
@@ -361,11 +361,11 @@ export class Move1to1 extends Decision1to1 {
    */
   public static constructLeap(
     moveType: string,
-    from: From1to1 | null,
+    from: From | null,
     walk: RegionFunction | unknown[][],
     forward: BooleanFunction | null,
     rotations: BooleanFunction | null,
-    to: To1to1,
+    to: To,
     then: Then | null
   ): MovesFunction {
     switch (moveType) {
@@ -381,10 +381,10 @@ export class Move1to1 extends Decision1to1 {
    */
   public static constructHop(
     moveType: string,
-    from: From1to1 | null,
+    from: From | null,
     directions: DirectionArg,
-    between: Between1to1 | null,
-    to: To1to1,
+    between: Between | null,
+    to: To,
     stack: boolean | null,
     then: Then | null
   ): MovesFunction {
@@ -400,8 +400,8 @@ export class Move1to1 extends Decision1to1 {
    * @java Move.construct(From, To, IntFunction, BooleanFunction, Boolean, RoleType, Then)
    */
   public static constructFromTo(
-    from: From1to1,
-    to: To1to1,
+    from: From,
+    to: To,
     count: IntFunction | null,
     copy: BooleanFunction | null,
     stack: boolean | null,
@@ -435,7 +435,7 @@ export class Move1to1 extends Decision1to1 {
   public static constructSite(
     moveType: string,
     what: Piece1to1 | null,
-    to: To1to1,
+    to: To,
     count: IntFunction | null,
     stack: boolean | null,
     then: Then | null
@@ -444,7 +444,7 @@ export class Move1to1 extends Decision1to1 {
       case "Add":
         return new AddFaithful(what, to, count, stack, then);
       case "Claim":
-        return new Claim1to1(what, to, then);
+        return new Claim(what, to, then);
       default:
         throw new Error(`Move(): MoveSiteType '${moveType}' is not implemented.`);
     }

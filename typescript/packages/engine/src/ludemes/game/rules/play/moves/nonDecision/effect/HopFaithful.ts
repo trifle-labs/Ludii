@@ -1,9 +1,9 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Hop.java
 
 import type { ThenLike } from "../../Moves.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
-import type { Between1to1 } from "../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
+import type { Between } from "../../../../../util/moves/Between1to1.js";
 import { Hop } from "./Hop.js";
 import {
   betweenCond,
@@ -21,10 +21,10 @@ import type { DirectionArg } from "./EffectCtorAdapters.js";
 
 export class HopFaithful extends Hop {
   public constructor(
-    from: From1to1 | null = null,
+    from: From | null = null,
     directions: DirectionArg = null,
-    between: Between1to1 | null = null,
-    to: To1to1 | null = null,
+    between: Between | null = null,
+    to: To | null = null,
     stack: boolean | null = null,
     then: ThenLike | null = null
   ) {

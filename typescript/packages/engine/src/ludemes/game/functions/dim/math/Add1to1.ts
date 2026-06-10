@@ -9,7 +9,7 @@
 
 import type { DimFunction1to1 } from "../DimConstant1to1.js";
 
-export class DimAdd1to1 implements DimFunction1to1 {
+export class DimAdd implements DimFunction1to1 {
   /** Two-arg form: a + b */
   private readonly a: DimFunction1to1 | null;
   private readonly b: DimFunction1to1 | null;

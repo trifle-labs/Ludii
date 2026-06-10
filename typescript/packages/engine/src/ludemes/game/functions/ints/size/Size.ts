@@ -12,7 +12,7 @@ import { BaseIntFunction } from "../BaseIntFunction.js";
 import type { JavaIntFunction } from "../IntFunction.js";
 // Transitional delegates: these classes hold the engine-substrate logic; their
 // re-homing to @java paths is a separate mechanical step (item-3 recipe).
-import { SizeGroup1to1, SizeStack1to1, SizeArray1to1 } from "../../ints1to1/size/Size1to1.js";
+import { SizeGroup, SizeStack, SizeArray } from "../../ints1to1/size/Size1to1.js";
 import { SizeTerritory } from "./connection/SizeTerritory.js";
 import { SizeLargePiece } from "./largePiece/SizeLargePiece.js";
 import { LastTo } from "../last/LastTo.js";
@@ -22,7 +22,7 @@ export class Size extends BaseIntFunction {
 
   /** @java Size.construct(SizeArrayType, IntArrayFunction array) */
   public static constructArray(_sizeType: string, array: unknown): BaseIntFunction {
-    return new SizeArray1to1(array as never) as unknown as BaseIntFunction;
+    return new SizeArray(array as never) as unknown as BaseIntFunction;
   }
 
   /** @java Size.construct(SizeTerritoryType, SiteType, @Or RoleType, @Or Player, AbsoluteDirection) */
@@ -33,7 +33,7 @@ export class Size extends BaseIntFunction {
   /** @java Size.construct(SizeSiteType Stack, SiteType, in@Or, at@Or) */
   public static constructSite(_sizeType: string, _type: unknown, _inRegion: unknown, at: unknown = null): BaseIntFunction {
     const atFn = (at as JavaIntFunction | null) ?? new LastTo();
-    return new SizeStack1to1(atFn as never) as unknown as BaseIntFunction;
+    return new SizeStack(atFn as never) as unknown as BaseIntFunction;
   }
 
   /** @java Size.construct(SizeLargePieceType, SiteType, in@Or, at@Or) */
@@ -45,7 +45,7 @@ export class Size extends BaseIntFunction {
   /** @java Size.construct(SizeGroupType, SiteType, at@Name, Direction, If@Name) */
   public static constructGroup(_sizeType: string, _type: unknown, at: unknown, directions: unknown = null, _If: unknown = null): BaseIntFunction {
     const dir = typeof directions === "string" ? directions : "Adjacent";
-    return new SizeGroup1to1(at as never, dir) as unknown as BaseIntFunction;
+    return new SizeGroup(at as never, dir) as unknown as BaseIntFunction;
   }
 
   /** @java Size.eval — never called (static-factory-only). */

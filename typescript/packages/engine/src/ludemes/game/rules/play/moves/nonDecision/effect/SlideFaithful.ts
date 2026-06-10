@@ -1,9 +1,9 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Slide.java
 
 import type { Then } from "./Then.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
-import type { Between1to1 } from "../../../../../util/moves/Between1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
+import type { Between } from "../../../../../util/moves/Between1to1.js";
 import { Slide } from "./Slide.js";
 import {
   betweenCond,
@@ -21,11 +21,11 @@ import type { DirectionArg } from "./EffectCtorAdapters.js";
 
 export class SlideFaithful extends Slide {
   public constructor(
-    from: From1to1 | null = null,
+    from: From | null = null,
     track: string | null = null,
     directions: DirectionArg = null,
-    between: Between1to1 | null = null,
-    to: To1to1 | null = null,
+    between: Between | null = null,
+    to: To | null = null,
     stack: boolean | null = null,
     then: Then | null = null
   ) {

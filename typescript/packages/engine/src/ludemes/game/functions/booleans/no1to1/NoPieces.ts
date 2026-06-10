@@ -20,7 +20,7 @@ import type { Game1to1 } from "../../../../Game1to1.js";
 
 type SiteType = "Cell" | "Edge" | "Vertex";
 
-export class NoPieces1to1 implements BooleanFunction {
+export class NoPieces implements BooleanFunction {
   /** Cell/Edge/Vertex. @java NoPieces.type */
   private readonly type: SiteType | null;
 

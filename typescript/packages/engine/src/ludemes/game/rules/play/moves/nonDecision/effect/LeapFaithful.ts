@@ -2,18 +2,18 @@
 
 import type { BooleanFunction, RegionFunction } from "../../../../../../base.js";
 import type { Then } from "./Then.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
 import { Leap } from "./Leap.js";
 import { FALSE_FN, fromCond, fromLoc, toApplyEffect, toCond } from "./EffectCtorAdapters.js";
 
 export class LeapFaithful extends Leap {
   public constructor(
-    from: From1to1 | null,
+    from: From | null,
     walk: RegionFunction | unknown[][],
     forward: BooleanFunction | null,
     rotations: BooleanFunction | null,
-    to: To1to1,
+    to: To,
     then: Then | null
   ) {
     void rotations;

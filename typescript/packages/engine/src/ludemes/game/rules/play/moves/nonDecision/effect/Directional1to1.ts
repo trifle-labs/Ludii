@@ -29,8 +29,8 @@ import type { CellFlatRadials } from "../../../../../../topology-radials.js";
 import { radialsForDirection } from "../../../../../../topology-radials.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
 import type { Then } from "./Then.js";
 import { directionsFunction, directionName, LAST_TO } from "./EffectCtorAdapters.js";
 import type { DirectionArg } from "./EffectCtorAdapters.js";
@@ -82,9 +82,9 @@ export class Directional1to1 implements MovesFunction {
    *               @Opt To to, @Opt Then then)
    */
   public constructor(
-    from?: From1to1 | null,
+    from?: From | null,
     directions?: DirectionArg,
-    to?: To1to1 | null,
+    to?: To | null,
     then?: Then | null,
   ) {
     void then;

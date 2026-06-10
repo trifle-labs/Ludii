@@ -12,7 +12,7 @@ import type { Path1to1 } from "./Path1to1.js";
 import type { MovesFunction } from "../../../../base.js";
 
 /** Mirrors Java's game.util.moves.Flips (flipA ↔ flipB face-swap). */
-export interface Flips1to1 {
+export interface Flips {
   /** @java Flips.flipA() */
   readonly flipA: number;
   /** @java Flips.flipB() */
@@ -41,7 +41,7 @@ export class Tile1to1 extends Component1to1 {
   private _numSides: number;
 
   /** @java Tile.flips */
-  public readonly flips: Flips1to1 | null;
+  public readonly flips: Flips | null;
 
   /**
    * @java game/equipment/component/tile/Tile.java constructor (simplified)
@@ -65,7 +65,7 @@ export class Tile1to1 extends Component1to1 {
     slots: number[] | null,
     slotsPerSide: number | null,
     paths: readonly Path1to1[] | null,
-    flips: Flips1to1 | null,
+    flips: Flips | null,
     generator: MovesFunction | null = null,
     maxState: number | null = null,
     maxCount: number | null = null,
@@ -119,5 +119,5 @@ export class Tile1to1 extends Component1to1 {
   public setNumSides(n: number): void { this._numSides = n; }
 
   /** @java Tile.getFlips() */
-  public getFlips(): Flips1to1 | null { return this.flips; }
+  public getFlips(): Flips | null { return this.flips; }
 }

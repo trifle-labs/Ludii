@@ -27,7 +27,7 @@ import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 import type { ThenLike } from "../../Moves.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
 import { directionsFunction, type DirectionArg, LAST_TO } from "./EffectCtorAdapters.js";
 
 export class Push1to1 implements MovesFunction {
@@ -50,7 +50,7 @@ export class Push1to1 implements MovesFunction {
    * @param then       The moves applied after that move is applied.
    */
   public constructor(
-    from: From1to1 | null,
+    from: From | null,
     directions: DirectionArg,
     then: ThenLike | null = null,
   ) {

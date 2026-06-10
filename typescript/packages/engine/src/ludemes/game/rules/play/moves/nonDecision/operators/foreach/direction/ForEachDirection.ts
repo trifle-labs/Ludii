@@ -15,9 +15,9 @@ import { Move } from "../../../../../../../../../move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { Effect } from "../../../effect/Effect.js";
 import type { ThenLike } from "../../../../Moves.js";
-import type { From1to1 } from "../../../../../../../util/moves/From1to1.js";
-import type { Between1to1 } from "../../../../../../../util/moves/Between1to1.js";
-import type { To1to1 } from "../../../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../../../util/moves/From1to1.js";
+import type { Between } from "../../../../../../../util/moves/Between1to1.js";
+import type { To } from "../../../../../../../util/moves/To1to1.js";
 import {
   directionsFunction,
   fromLoc,
@@ -79,10 +79,10 @@ export class ForEachDirection extends Effect {
    * @param then       The moves applied after that move is applied.
    */
   public constructor(
-    from: From1to1 | null,
+    from: From | null,
     directions: DirectionArg,
-    between: Between1to1 | null,
-    to: To1to1 | null,
+    between: Between | null,
+    to: To | null,
     moves: MovesFunction | null,
     then: ThenLike | null,
   ) {

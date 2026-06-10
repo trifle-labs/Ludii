@@ -15,12 +15,12 @@ import type { IntFunction, RegionFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import type { Game1to1 } from "../../../../Game1to1.js";
-import type { Rules1to1 } from "../../../rules/Rules1to1.js";
+import type { Rules } from "../../../rules/Rules.js";
 
 // ---------------------------------------------------------------------------
 // CountCells
 // ---------------------------------------------------------------------------
-export class CountCells1to1 implements IntFunction {
+export class CountCells implements IntFunction {
   /**
    * @java game/functions/ints/count/simple/CountCells.java — eval(Context)
    * Returns context.game().board().topology().cells().size() — i.e. board numSites.
@@ -39,7 +39,7 @@ export class CountPhases1to1 implements IntFunction {
    * Returns context.game().rules().phases().length — number of game phases.
    */
   public eval(ctx: Context): number {
-    const rules = (ctx.game as unknown as Game1to1).rules as unknown as Rules1to1;
+    const rules = (ctx.game as unknown as Game1to1).rules as unknown as Rules;
     return rules.phases?.length ?? 1;
   }
 }
@@ -47,7 +47,7 @@ export class CountPhases1to1 implements IntFunction {
 // ---------------------------------------------------------------------------
 // CountNumber
 // ---------------------------------------------------------------------------
-export class CountNumber1to1 implements IntFunction {
+export class CountNumber implements IntFunction {
   /** @java CountNumber.region */
   private readonly regionFn: RegionFunction;
 

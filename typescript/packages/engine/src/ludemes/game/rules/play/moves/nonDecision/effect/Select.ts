@@ -26,8 +26,8 @@ import type { Action } from "../../../../../../../action/index.js";
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
-import type { From1to1 } from "../../../../../util/moves/From1to1.js";
-import type { To1to1 } from "../../../../../util/moves/To1to1.js";
+import type { From } from "../../../../../util/moves/From1to1.js";
+import type { To } from "../../../../../util/moves/To1to1.js";
 import type { RoleTypeFull } from "../../../../../types/play/RoleType.js";
 
 const TRUE_FUNCTION: BooleanFunction = { eval: () => true };
@@ -92,8 +92,8 @@ export class Select extends Effect {
    * @java Select(From from, @Opt To to, @Opt RoleType mover, @Opt Then then)
    */
   public constructor(
-    from: From1to1,
-    to?: To1to1 | null,
+    from: From,
+    to?: To | null,
     mover?: RoleTypeFull | null,
     then?: ThenLike | null
   ) {

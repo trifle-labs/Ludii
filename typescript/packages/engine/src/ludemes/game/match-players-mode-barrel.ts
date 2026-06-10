@@ -14,13 +14,13 @@
  */
 
 // match
-export * from "./match/Subgame1to1.js";
-export * from "./match/Games1to1.js";
-export * from "./match/Match1to1.js";
+export * from "./match/Subgame.js";
+export * from "./match/Games.js";
+export * from "./match/Match.js";
 
 // players
-export * from "./players/GamePlayer1to1.js";
-export * from "./players/GamePlayers1to1.js";
+export * from "./players/GamePlayer.js";
+export * from "./players/GamePlayers.js";
 
 // mode
 export * from "./mode/Mode1to1.js";

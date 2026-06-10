@@ -9,7 +9,7 @@
 
 import type { DimFunction1to1 } from "../DimConstant1to1.js";
 
-export class DimMin1to1 implements DimFunction1to1 {
+export class DimMin implements DimFunction1to1 {
   private readonly valueA: DimFunction1to1;
   private readonly valueB: DimFunction1to1;
 

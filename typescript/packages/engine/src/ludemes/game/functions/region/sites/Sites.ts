@@ -38,7 +38,7 @@ import { SitesConcaveCorners } from "./simple/SitesConcaveCorners.js";
 import { SitesConvexCorners } from "./simple/SitesConvexCorners.js";
 import { SitesHint } from "./simple/SitesHint.js";
 import { SitesLeft } from "./simple/SitesLeft.js";
-import { SitesPerimeter1to1 } from "./simple/SitesPerimeter1to1.js";
+import { SitesPerimeter } from "./simple/SitesPerimeter.js";
 import { SitesOuter } from "./simple/SitesOuter.js";
 import { SitesRight } from "./simple/SitesRight.js";
 import { SitesTop } from "./simple/SitesTop.js";
@@ -219,7 +219,7 @@ export class Sites extends BaseRegionFunction {
         return new SitesOuter(elementType);
       case "Perimeter":
         // @java Sites.java:582-583 — case Perimeter: return new SitesPerimeter(elementType);
-        return new SitesPerimeter1to1() as unknown as RegionFunction;
+        return new SitesPerimeter() as unknown as RegionFunction;
       case "Right":
         return new SitesRight(elementType);
       case "ToClear":

@@ -1,5 +1,5 @@
 /**
- * From1to1.ts
+ * From.ts
  * @java game/util/moves/From.java
  *
  * Parameter holder for the ``from'' clause of move generators.
@@ -17,7 +17,7 @@ export type SiteType1to1 = "Cell" | "Vertex" | "Edge";
  * Specifies operations based on the ``from'' location.
  * @java game/util/moves/From.java
  */
-export class From1to1 {
+export class From {
   /** @java From.loc — the from location (IntFunction). */
   private readonly locValue: IntFunction | null;
 
