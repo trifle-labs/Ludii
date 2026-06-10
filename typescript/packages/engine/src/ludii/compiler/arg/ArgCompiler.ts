@@ -1528,7 +1528,7 @@ const PREFERRED_TOKEN_CLASSES = new Map<string, string>([
 ]);
 const PREFERRED_IS_VARIANTS = new Set<string>(["empty", "enemy", "in", "line", "occupied"]);
 const PLAYER_SITE_VARIANTS = new Set<string>([
-  "mover", "next", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8",
+  "mover", "next", "player", "p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8",
   "p9", "p10", "p11", "p12", "p13", "p14", "p15", "p16",
 ]);
 const SIMPLE_SITE_VARIANTS = new Set<string>([
@@ -1569,6 +1569,11 @@ function resolveSitesPlayer(
   ctx: { state: { mover: number; next?: number }; game: { numPlayers: number } },
 ): number {
   if (variantName === "mover") return ctx.state.mover;
+  // @java RoleType.Player — the player iterated by (forEach Player ...): context.player().
+  if (variantName === "player") {
+    const p = (ctx as { _evalPlayer?: number })._evalPlayer;
+    return p !== undefined ? p : ctx.state.mover;
+  }
   if (variantName === "next") {
     const stateNext = ctx.state.next ?? 0;
     return stateNext > 0 ? stateNext : (ctx.state.mover % ctx.game.numPlayers) + 1;
