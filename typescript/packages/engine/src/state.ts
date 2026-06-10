@@ -649,6 +649,41 @@ export class State {
     return h >>> 0;
   }
 
+  // -------------------------------------------------------------------------
+  // @java other/state/container/ContainerState.java — the canonical accessor
+  // names. STATE CONVERGENCE chunk 1 (PROJECT_COMPLETION Update 62): consumers
+  // migrate from raw arrays (state.cells[s]) to these; the internal arrays then
+  // become free to converge on Java's chunked representation.
+  // -------------------------------------------------------------------------
+
+  /** @java ContainerState.who(site, type) — owner recorded at a site. */
+  public who(siteIndex: number, _type?: string | null): number {
+    if (siteIndex < 0 || siteIndex >= this.cells.length) return 0;
+    return this.cells[siteIndex] ?? 0;
+  }
+
+  /** @java ContainerState.what(site, type) — component index at a site. */
+  public what(siteIndex: number, _type?: string | null): number {
+    return this.whatAtSite(siteIndex);
+  }
+
+  /** @java ContainerState.count(site, type) — piece count at a site. */
+  public count(siteIndex: number, _type?: string | null): number {
+    if (siteIndex < 0 || siteIndex >= this.cells.length) return 0;
+    return this.countAt[siteIndex] ?? 0;
+  }
+
+  /** @java ContainerState.state(site, type) — per-site state value. */
+  public stateValue(siteIndex: number, _type?: string | null): number {
+    if (siteIndex < 0 || siteIndex >= this.stateAt.length) return 0;
+    return this.stateAt[siteIndex] ?? 0;
+  }
+
+  /** @java ContainerState.isEmpty(site, type) — what-based occupancy inverse. */
+  public isEmpty(siteIndex: number, _type?: string | null): boolean {
+    return this.isEmptySite(siteIndex);
+  }
+
   /** Returns the conceptual ContainerState slice for the board. */
   public containerState(): ContainerStateView {
     const cells = this.cells;
