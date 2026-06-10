@@ -120,6 +120,14 @@ export class ArgCompiler {
       const candidates = this.byToken.get(key) ?? [];
       candidates.push({ className, meta });
       this.byToken.set(key, candidates);
+      // @java aliased ludemes (e.g. Pow token "^", Le token "<=") are ALSO
+      // addressable by their class-derived name ((pow …), (le …)) — index both.
+      const simple = normalise(className.split(".").pop()!.split("$").pop()!);
+      if (simple !== key) {
+        const byName = this.byToken.get(simple) ?? [];
+        byName.push({ className, meta });
+        this.byToken.set(simple, byName);
+      }
     }
   }
 
