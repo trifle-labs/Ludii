@@ -99,7 +99,7 @@ export class ActionAdd extends BaseAction {
       return next;
     }
     const currentWhat = state.whatAtSite(this.toIndex);
-    const currentOwner = state.cells[this.toIndex] ?? 0;
+    const currentOwner = state.who(this.toIndex);
     if (currentWhat === this.whatIndex && currentOwner === this.ownerIndex) {
       const oldCount = state.countAtSite(this.toIndex) || 1;
       // Java parity: occupied ActionAdd sites accumulate count instead of

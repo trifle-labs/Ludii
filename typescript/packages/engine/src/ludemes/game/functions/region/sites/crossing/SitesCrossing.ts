@@ -138,7 +138,7 @@ export class SitesCrossing extends BaseRegionFunction {
     for (let k = 0; k < n; k++) {
       // @java SitesCrossing.java:87-90 — filter by ownership
       const what = ctx.state.whatAtSite?.(k) ?? ctx.state.who(k);
-      const who = ctx.state.cells[k] ?? 0;
+      const who = ctx.state.who(k);
       const occupied =
         (whoSiteId === numPlayers + 1 && what !== 0) ||
         (player < numPlayers + 1 && who === whoSiteId);

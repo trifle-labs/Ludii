@@ -185,7 +185,7 @@ export class WhereSite extends BaseIntFunction {
         // Java: if (what <= Constants.OFF) return Constants.OFF
         // Try scanning by owner
         for (let site = 0; site < numSite; site++) {
-          if (context.state.cells[site] === playerId) return site;
+          if (context.state.who(site) === playerId) return site;
         }
         return OFF;
       }

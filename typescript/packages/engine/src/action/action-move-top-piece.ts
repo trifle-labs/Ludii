@@ -23,7 +23,7 @@ export class ActionMoveTopPiece extends BaseAction {
   public override apply(state: State): State {
     const stackSize = state.stackSize(this.fromIndex);
     if (stackSize === 0) {
-      const owner = state.cells[this.fromIndex] ?? 0;
+      const owner = state.who(this.fromIndex);
       if (owner === 0) return state;
       return state.withCell(this.fromIndex, 0).withCell(this.toIndex, owner);
     }

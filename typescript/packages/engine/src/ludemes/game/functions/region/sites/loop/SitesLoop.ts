@@ -281,7 +281,7 @@ export class SitesLoop extends BaseRegionFunction {
 	): number[] {
 		const minimumGroup: number[] = [...winningGroup];
 		const cs = (context as unknown as { containerState?(n: number): CsLike }).containerState?.(0);
-		const what: number = cs ? cs.what(minimumGroup[0] ?? 0, realType) : (context.state.cells[minimumGroup[0] ?? 0] ?? 0);
+		const what: number = cs ? cs.what(minimumGroup[0] ?? 0, realType) : (context.state.who(minimumGroup[0] ?? 0));
 
 		for (let i = minimumGroup.length - 1; i >= 0; i--) {
 			const groupMinusI: number[] = minimumGroup.filter((_, j) => j !== i);

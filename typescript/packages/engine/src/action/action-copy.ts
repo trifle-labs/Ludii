@@ -25,7 +25,7 @@ export class ActionCopy extends BaseAction {
     // Unlike ActionMove, ActionCopy does NOT decrement hand counts.
     // We check `what` (component index) as well as `owner` for Shared pieces
     // which have owner=0 but a valid what.
-    const owner = state.cells[this.fromIndex] ?? 0;
+    const owner = state.who(this.fromIndex);
     const what = state.whatAtSite(this.fromIndex);
     if (owner === 0 && what === 0) return state; // Truly empty source
     let next = state.withCell(this.toIndex, owner);

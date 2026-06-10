@@ -413,18 +413,15 @@ function scanPositions(
   allPlayers: boolean,
   realType: string,
 ): { site(): number; level(): number; siteType(): string }[] {
-  const state = context.state as unknown as {
-    cells: readonly number[];
-    whats?: readonly number[];
-    whatAtSite?(site: number): number;
-  };
+  // @java ContainerState accessors — the real State, no narrowing cast.
+  const state = context.state;
   const out: { site(): number; level(): number; siteType(): string }[] = [];
   const boardSites = (context.game as unknown as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites
     ?? state.cells.length;
   for (let site = 0; site < boardSites; site++) {
-    const owner = state.cells[site] ?? 0;
+    const owner = state.who(site);
     if (!allPlayers && owner !== specificPlayer) continue;
-    const what = state.whatAtSite?.(site) ?? state.whats?.[site] ?? 0;
+    const what = state.what(site);
     if (what !== componentId) continue;
     out.push({
       site: () => site,

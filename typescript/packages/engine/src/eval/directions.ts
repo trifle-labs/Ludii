@@ -74,7 +74,7 @@ export function facingForSite(
       }
     }
     if (baseFacing === undefined) {
-      const w = ctx.state.cells[site] ?? 0;
+      const w = ctx.state.who(site);
       baseFacing = facings && w > 0 ? facings[w] : undefined;
     }
     // @java Directions.java:472-478 — apply per-site rotation to the base

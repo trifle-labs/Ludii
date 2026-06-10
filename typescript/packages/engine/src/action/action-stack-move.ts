@@ -30,7 +30,7 @@ export class ActionSubStackMove extends BaseAction {
   public override apply(state: State): State {
     const fromSize = state.stackSize(this.fromIndex);
     if (fromSize === 0) {
-      const single = state.cells[this.fromIndex] ?? 0;
+      const single = state.who(this.fromIndex);
       if (single === 0) return state;
       return state
         .withCell(this.fromIndex, 0)

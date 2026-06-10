@@ -18,7 +18,7 @@ export class ActionToggle extends BaseAction {
   }
 
   public override apply(state: State): State {
-    const current = state.cells[this.toIndex] ?? 0;
+    const current = state.who(this.toIndex);
     const next = current === this.whatValue ? 0 : this.whatValue;
     return state.withCell(this.toIndex, next);
   }

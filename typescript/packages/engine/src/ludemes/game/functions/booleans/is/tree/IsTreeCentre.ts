@@ -67,7 +67,7 @@ function buildAdj(
 
   for (let k = 0; k < numEdges; k++) {
     const w = state.whatAtSite(k);
-    const who = state.cells[k] ?? 0;
+    const who = state.who(k);
     const isOwnedEdge =
       (whoSiteId === numPlayers + 1 && w !== 0) ||
       (whoSiteId <= numPlayers && who === whoSiteId);
@@ -163,7 +163,7 @@ export class IsTreeCentre implements BooleanFunction {
     for (let i = 0; i < totalVertices; i++) parent[i] = i;
     for (let k = 0; k < numEdges; k++) {
       const w = ctx.state.whatAtSite(k);
-      const who = ctx.state.cells[k] ?? 0;
+      const who = ctx.state.who(k);
       const isOwnedEdge =
         (whoSiteId === numPlayers + 1 && w !== 0) ||
         (whoSiteId <= numPlayers && who === whoSiteId);

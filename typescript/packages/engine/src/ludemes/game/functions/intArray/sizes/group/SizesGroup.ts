@@ -158,7 +158,7 @@ export class SizesGroup extends BaseIntArrayFunction {
 
   /** @java ContainerState.who(site) fallback. */
   private _whoAt(ctx: Context & EvalScratch, site: number): number {
-    return ctx.state.cells[site] ?? 0;
+    return ctx.state.who(site);
   }
 
   /**

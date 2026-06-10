@@ -1168,7 +1168,7 @@ function directionDeltas(direction: string): Array<[number, number]> {
 }
 
 function dynamicRegionAccepts(ctx: Context & EvalScratch, site: number, type: string): boolean {
-  const who = ctx.state.cells[site] ?? 0;
+  const who = ctx.state.who(site);
   const mover = ctx.state.mover;
   switch (type) {
     case "own":

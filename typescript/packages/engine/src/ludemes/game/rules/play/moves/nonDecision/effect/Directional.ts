@@ -43,7 +43,7 @@ class IsEnemyTo implements BooleanFunction {
   public eval(ctx: Context): boolean {
     const to = ctx._evalTo;
     if (to < 0) return false;
-    const who = ctx.state.cells[to] ?? 0;
+    const who = ctx.state.who(to);
     const mover = ctx.state.mover;
     return who !== 0 && who !== mover;
   }

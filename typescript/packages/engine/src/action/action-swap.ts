@@ -18,8 +18,8 @@ export class ActionSwap extends BaseAction {
   }
 
   public override apply(state: State): State {
-    const a = state.cells[this.fromIndex] ?? 0;
-    const b = state.cells[this.toIndex] ?? 0;
+    const a = state.who(this.fromIndex);
+    const b = state.who(this.toIndex);
     return state.withCell(this.fromIndex, b).withCell(this.toIndex, a);
   }
   public override actionType(): ActionType {
