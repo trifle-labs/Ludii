@@ -109,6 +109,21 @@ export class Step extends Effect {
     const directions = this.dirnChoice.eval(ctx);
     const mover = ctx.state.mover;
     const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+    // @java Component.getDirn() — the stepping piece's own facing (componentFacing
+    // by what id) takes precedence over the player facing for relative directions.
+    const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+    let facingOverride: number | undefined;
+    {
+      const fromSite = cellRadials.axes[0]?.ray[0] ?? -1;
+      const compFacing = (ctx.game as unknown as {
+        equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } };
+      }).equipment?.board?.componentFacing;
+      if (compFacing && fromSite >= 0) {
+        const what = ctx.state.what(fromSite);
+        const tok = what > 0 ? compFacing[what] : undefined;
+        if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
+      }
+    }
     const traj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
 
     const out: number[] = [];
@@ -136,7 +151,7 @@ export class Step extends Effect {
     };
 
     for (const dirName of directions) {
-      const relative = resolveRelativeDir(dirName, mover, playerDirs);
+      const relative = resolveRelativeDir(dirName, mover, playerDirs, facingOverride);
       if (Array.isArray(relative)) {
         // Forwards/Backwards group → forward ray of each resolved compass heading.
         for (const d of relative) for (const { ray } of axesForDir(d)) pushRay(ray);

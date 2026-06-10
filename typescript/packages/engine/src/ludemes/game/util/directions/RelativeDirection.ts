@@ -255,11 +255,16 @@ export function resolveRelativeDir(
   dirName: string,
   mover: number,
   playerDirs?: Map<number, number>,
+  facingOverride?: number,
 ): string | string[] | null {
   // Determine the mover's facing direction (in 45°-units: 0=N … 7=NW).
+  // @java Component.getDirn() — a piece's OWN declared facing overrides its
+  // owner's (player <Dir>) facing (Dodgem's E/N Cars, Toads & Frogs).
   // Default: P1=N(0), P2=S(4). Override with per-player dirs when available.
   let facingDir: number;
-  if (playerDirs) {
+  if (facingOverride !== undefined) {
+    facingDir = facingOverride;
+  } else if (playerDirs) {
     const pd = playerDirs.get(mover);
     if (pd !== undefined) {
       facingDir = pd;
