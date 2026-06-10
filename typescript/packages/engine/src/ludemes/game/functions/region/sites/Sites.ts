@@ -31,6 +31,7 @@ import { SitesHiddenWhat } from "./hidden/SitesHiddenWhat.js";
 import { SitesHiddenWho } from "./hidden/SitesHiddenWho.js";
 import { SitesIncident } from "./incidents/SitesIncident.js";
 import { SitesLineOfSight } from "./lineOfSight/SitesLineOfSight.js";
+import { SitesStart } from "./piece/SitesStart.js";
 import { perimeterVertexRings, cornersFromPerimeterTyped } from "./simple/corner-sites.js";
 import { SitesOccupied } from "./occupied/SitesOccupied.js";
 import { SitesEquipmentRegion } from "./player/SitesEquipmentRegion.js";
@@ -1003,13 +1004,18 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct(SitesPieceType, Piece) → SitesStart
    */
   public static constructPiece(
-    _regionType: SitesPieceType,
-    _pid: unknown,
+    regionType: SitesPieceType,
+    pid: unknown,
   ): RegionFunction {
-    // @java return new SitesStart(pid);
-    return new (class extends BaseRegionFunction {
-      override eval(_ctx: Context & EvalScratch): number[] { return []; }
-    })();
+    // @java overload resolution — the SitesPieceType discriminant selects this clause
+    if ((regionType as unknown as string) !== "Start") return null as unknown as RegionFunction;
+    // @java return new SitesStart(pid); — pid is a Piece wrapper; SitesStart
+    // reads indexFn = piece.component() (the component-index IntFunction).
+    const p = pid as { component?: () => IntFunction; what?: IntFunction; eval?: (c: unknown) => number } | null;
+    const indexFn: IntFunction | null = p === null ? null
+      : typeof p.component === "function" ? p.component()
+      : p.what ?? (typeof p.eval === "function" ? (p as IntFunction) : null);
+    return new SitesStart(indexFn);
   }
 
   /**

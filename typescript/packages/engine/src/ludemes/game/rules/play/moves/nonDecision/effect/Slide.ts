@@ -9,6 +9,7 @@
  */
 
 import type { Context } from "../../../../../../../context.js";
+import { resolveRelativeDir } from "../../../../../util/directions/RelativeDirection.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
 import { applyPostStateThen, type Then } from "./Then.js";
@@ -156,7 +157,28 @@ export class Slide implements MovesFunction {
 
     const realType = ctxAny.board?.().defaultSite?.() ?? "Cell";
     const trajectories = topology.trajectories();
-    const radialsList = slideRadials(trajectories, realType, from, this.dirnName, boardWidth(ctx));
+    // @java Slide directions are converted to ABSOLUTE via the mover's facing
+    // before querying radials (DirectionsFunction.convertToAbsolute): a pawn
+    // double-step uses Forward, which is N for P1 / S for P2 (or the piece's
+    // own declared dirn). Same recipe as Step.
+    let effDirNames: string[] = [this.dirnName];
+    {
+      const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+      const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+      let facingOverride: number | undefined;
+      const compFacing = (ctx.game as unknown as {
+        equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } };
+      }).equipment?.board?.componentFacing;
+      if (compFacing && from >= 0) {
+        const what = ctx.state.what(from);
+        const tok = what > 0 ? compFacing[what] : undefined;
+        if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
+      }
+      const relative = resolveRelativeDir(this.dirnName, mover, playerDirs, facingOverride);
+      if (Array.isArray(relative)) effDirNames = relative;
+      else if (relative !== null) effDirNames = [relative];
+    }
+    const radialsList = effDirNames.flatMap((d) => slideRadials(trajectories, realType, from, d, boardWidth(ctx)));
 
     for (const radial of radialsList) {
       const betweenSites: number[] = [];
@@ -166,7 +188,12 @@ export class Slide implements MovesFunction {
         const to = radial.steps[toIdx]!.id();
         ctx._evalTo = to;
 
-        // @java Slide.java:226-296 — check stopRule
+        // @java Slide.java:226-298 — check stopRule. The break sits INSIDE
+        // `if (min <= toIdx)`: when the stop condition fires before the
+        // minimum distance, Java FALLS THROUGH to the goRule check and keeps
+        // sliding (DoubleStepForwardToEmpty: (between (exact 2)) with
+        // (to if:(is Empty (to))) — the empty square at distance 1 must not
+        // end the slide or the pawn double-step never generates).
         if (this.stopRule != null && this.stopRule.eval(ctx)) {
           if (min <= toIdx) {
             const move = this.buildMove(ctx, from, to, toIdx, betweenSites, mover, radial);
@@ -175,8 +202,6 @@ export class Slide implements MovesFunction {
             }
             break;
           }
-          // Stop rule fired but minimum not reached — stop without adding move
-          break;
         }
 
         // @java Slide.java:300-301 — check goRule on between site
