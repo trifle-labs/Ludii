@@ -1690,3 +1690,23 @@ PLY-1 FINDINGS (the doubles-replay seam, measured):
   doubles moves. Resolve WHO keeps the mover in Java (SetTemp arming? state.next
   flow? — rec dec2 carries SetTemp[-1] + SetNextPlayer[1]) before wiring — check
   Game.java applyInternal's next-mover derivation for moves carrying SetTemp.
+
+## Update 76 (2026-06-10) — Backgammon plies 0-11 match; the blot-hit apply is next
+
+Doubles replay COMPLETE (temp per-player + UNDEFINED mapping, re-arm boundary
+conversion, AllDiceUsed engine-dice read, MaxDistance then via applyPostStateThen)
+and (size Stack) clause-gated — trial 0 advanced ply 2 -> 9 -> 12.
+
+PLY-12 ROOT CAUSE (measured via DEBUG_PLY): the blot-hit. dec9 records
+[Move(25->19) victim FIRST, Move(20->25) attacker] but our generated move carries
+ONE ActionMove — `To.effect()` (the Apply holding ("HittingCapture" =
+(apply if:(IsEnemyAt (to)) (fromTo (from (to)) (to (mapEntry (next))))))) is
+NEVER consumed by the FromTo/decision-move builders (grep: no effect() reader in
+FromTo/FromToFaithful). The plies-later symptom: P1's piece surfaced at 19 and the
+bar-entry from 6 never existed.
+
+THE FIX (next increment): in the builders that construct moves from a util To
+carrying effect (FromToFaithful + the MoveAPiece/trackSite path), evaluate the
+Apply against the PRE-move occupant of the to-site and PREPEND its actions
+(victim to mapEntry(next) BEFORE the attacker's Move) — exactly the recorded
+order. DEBUG_PLY=<n> on the harness is the verification loop.
