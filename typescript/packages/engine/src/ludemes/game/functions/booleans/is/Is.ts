@@ -1,5 +1,6 @@
 // @java Core/src/game/functions/booleans/is/Is.java
 
+import { IsConnected } from "./connect/IsConnected.js";
 import type { Context } from "../../../../../context.js";
 import type {
   BooleanFunction,
@@ -401,6 +402,12 @@ export class Is extends BaseBooleanFunction {
     _regionType: unknown,
   ): BooleanFunction {
     if (matchesType(isType, "Blocked")) return new IsBlocked1to1();
+    if (matchesType(isType, "Connected")) {
+      // @java case Connected: new IsConnected(number, type, at, directions, regions, role, regionType)
+      const regions = Array.isArray(_regions) ? (_regions as never[]) : (_regions ? [_regions as never] : null);
+      const role = typeof _role === "string" ? _role : null;
+      return new IsConnected(regions, role);
+    }
     throw new Error("Is(): A ported IsConnectType variant is not implemented.");
   }
 
