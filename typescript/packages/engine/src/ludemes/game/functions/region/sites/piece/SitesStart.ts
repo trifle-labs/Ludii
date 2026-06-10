@@ -72,7 +72,7 @@ export class SitesStart extends BaseRegionFunction {
     }
 
     // @java return context.trial().startingPos().get(index)
-    // In TS, Trial._startingPos is a number[][] populated by Game1to1.start().
+    // In TS, Trial._startingPos is a number[][] populated by Game.start().
     const startingPos: number[][] | null = ctx.trial._startingPos
       ?? (ctx.trial as unknown as { _startingPos?: number[][] | null })._startingPos
       ?? null;

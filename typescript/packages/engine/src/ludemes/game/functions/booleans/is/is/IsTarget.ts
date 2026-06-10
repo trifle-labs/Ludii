@@ -4,7 +4,7 @@ import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, isList, isNumber, type LudList } from "@ludii/typescript-language";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 /**
  * (is Target {<config>} [at:{<sites>}])
@@ -50,7 +50,7 @@ export class IsTarget implements BooleanFunction {
 
     if (specificSites === null) {
       // Check all board sites
-      const g = ctx.game as unknown as Game1to1;
+      const g = ctx.game as unknown as Game;
       const boardN = g.equipment ? g.equipment.board.numSites : ctx.state.cells.length;
       if (boardN !== configuration.length) return false;
       for (let i = 0; i < boardN; i++) {

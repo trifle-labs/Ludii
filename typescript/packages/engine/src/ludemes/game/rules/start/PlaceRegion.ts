@@ -5,7 +5,7 @@
  * RegionFunction evaluated against the initial game state.
  *
  * The RegionFunction is compiled at AST-compile time but evaluated lazily
- * during Game1to1.start() using a dummy context that knows the board shape.
+ * during Game.start() using a dummy context that knows the board shape.
  *
  * @java game/rules/start/place/StartPlacementType.java — start(Context)
  */
@@ -14,7 +14,7 @@ import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
 import type { RegionFunction } from "../../../base.js";
 import type { StartRule } from "./StartRule.js";
 import type { Context } from "../../../../context.js";
-import type { Game1to1 } from "../../../Game1to1.js";
+import type { Game } from "../../../Game.js";
 
 export class PlaceRegion implements StartRule {
   /** Full piece id (e.g. "Ball1", "Marker1"). */

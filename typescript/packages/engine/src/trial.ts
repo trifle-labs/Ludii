@@ -44,7 +44,7 @@ export class Trial {
   /**
    * Starting positions per component index.
    * @java other/trial/Trial.java — startingPos: List<Region>
-   * Populated by Game1to1.start() from the initial board placement.
+   * Populated by Game.start() from the initial board placement.
    * Used by (sites Start (piece ...)) in defines like InitialPawnMove.
    */
   public _startingPos: number[][] | null = null;

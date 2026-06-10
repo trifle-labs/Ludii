@@ -6,7 +6,7 @@ import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import { isIdent, isList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 export class SizeStack implements IntFunction {
   private readonly siteFn: IntFunction;

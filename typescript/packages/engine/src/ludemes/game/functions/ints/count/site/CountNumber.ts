@@ -5,7 +5,7 @@ import type { Context } from "../../../../../../context.js";
 import type { IntFunction, RegionFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 import type { Rules } from "../../../../rules/Rules.js";
 
 export class CountNumber implements IntFunction {

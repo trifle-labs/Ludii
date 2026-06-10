@@ -18,7 +18,7 @@ import type { Context } from "../../../../context.js";
 import type { IntFunction, DirectionsFunction } from "../../../base.js";
 import type { LudList, LudNode } from "@ludii/typescript-language";
 import { isIdent, isList } from "@ludii/typescript-language";
-import type { Game1to1 } from "../../../Game1to1.js";
+import type { Game } from "../../../Game.js";
 
 // The known AbsoluteDirection names (Java AbsoluteDirection enum names).
 // Matches the TS AbsoluteDirection enum in absolute-direction.ts.
@@ -100,7 +100,7 @@ class Directions1to1FromTo implements DirectionsFunction {
     const to = this.toFn.eval(ctx);
     if (from < 0 || to < 0 || from === to) return [];
 
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const W = game.equipment?.board?.width ?? 0;
     if (W <= 0) return [];
 

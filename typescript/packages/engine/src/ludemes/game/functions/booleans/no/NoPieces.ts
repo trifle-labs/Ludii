@@ -16,7 +16,7 @@
 import type { Context } from "../../../../../context.js";
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../base.js";
 import type { RoleType } from "../../../../base.js";
-import type { Game1to1 } from "../../../../Game1to1.js";
+import type { Game } from "../../../../Game.js";
 
 type SiteType = "Cell" | "Edge" | "Vertex";
 
@@ -83,7 +83,7 @@ export class NoPieces implements BooleanFunction {
 
     // Check board cells for player's pieces.
     const cells = state.cells;
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const boardSize = game.equipment.board.numSites;
 
     for (let i = 0; i < boardSize; i++) {

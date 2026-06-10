@@ -20,7 +20,7 @@
 import type { Context } from "../../../../../context.js";
 import type { BooleanFunction } from "../../../../base.js";
 import type { RoleType } from "../../../../base.js";
-import type { Game1to1, Context1to1 } from "../../../../Game1to1.js";
+import type { Game, Context1to1 } from "../../../../Game.js";
 import { Context as ContextClass } from "../../../../../context.js";
 
 /** Recursion guard: prevent NoMoves(Next) from calling itself. */
@@ -61,7 +61,7 @@ export class NoMoves implements BooleanFunction {
 
       _noMovesNextActive = true;
       try {
-        const game = ctx.game as unknown as Game1to1;
+        const game = ctx.game as unknown as Game;
         if (!game || !game.equipment) return state.stalemated[nextPlayer] === true;
 
         // Build a temp context for the next player.

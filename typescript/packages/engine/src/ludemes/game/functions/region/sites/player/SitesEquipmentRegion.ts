@@ -10,7 +10,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch, IntFunction, RegionFunction } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 /**
  * Returns all the sites of a region defined in the equipment.
@@ -54,7 +54,7 @@ export class SitesEquipmentRegion extends BaseRegionFunction {
    *   3. Union all matching regions for that player.
    */
   public override eval(ctx: Context & EvalScratch): number[] {
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const who = this.index !== null ? this.index.eval(ctx) : 0;
 
     // @java SitesEquipmentRegion — get regions for this player from equipment

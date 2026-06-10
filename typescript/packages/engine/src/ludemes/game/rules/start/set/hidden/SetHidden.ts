@@ -5,7 +5,7 @@
  *
  * DEFERRED: Java ActionSetHidden* writes to State.hiddenForPlayer[][] via Context.
  * The applyToInitialState interface only provides cells/whats/countAt arrays.
- * Hidden-information setup cannot be applied until Game1to1.start() exposes
+ * Hidden-information setup cannot be applied until Game.start() exposes
  * the hiddenForPlayer[][] array or the StartRule interface is extended.
  * The compile1to1 path currently skips (set Hidden …) start rules.
  */

@@ -186,4 +186,4 @@ export {
 export { Trial, type TrialOptions, type TrialStatus } from "./trial.js";
 // 1:1 Java→TS port path
 export { play1to1 } from "./play1to1.js";
-export type { Game1to1 } from "./ludemes/Game1to1.js";
+export type { Game } from "./ludemes/Game.js";

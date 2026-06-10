@@ -14,7 +14,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 /**
  * Returns the playable sites of any boardless game.
@@ -61,7 +61,7 @@ export class SitesPlayable extends BaseRegionFunction {
     }
 
     // @java SitesPlayable — non-boardless fallback: return all empty board sites
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const boardN = g.equipment ? g.equipment.board.numSites : ctx.state.cells.length;
     const result: number[] = [];
     for (let i = 0; i < boardN; i++) {

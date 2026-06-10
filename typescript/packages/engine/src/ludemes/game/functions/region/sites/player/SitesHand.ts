@@ -10,7 +10,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch, IntFunction } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 /** Mirror of Java RoleType values used by SitesHand. */
 type RoleType = "Mover" | "Next" | "Shared" | "P1" | "P2" | "P3" | "P4" | string;
@@ -69,7 +69,7 @@ export class SitesHand extends BaseRegionFunction {
    *   6. Build site array: sitesFrom[id] + i for each i in 0..numSites-1.
    */
   public override eval(ctx: Context & EvalScratch): number[] {
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const numPlayers = g.numPlayers;
 
     // @java SitesHand constructor — index = (indexPlayer != null) ? indexPlayer.index()

@@ -32,7 +32,7 @@ import type { Context } from "../../../../../../context.js";
 import type { IntFunction, RegionFunction, BooleanFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 import type { SiteType } from "../../../../../../action/site-type.js";
 
 /** Relation type → Trajectories direction name */
@@ -99,7 +99,7 @@ export class IsRelated implements BooleanFunction {
     }
 
     // Fallback for plain square grid (no trajectories): only Orthogonal/Adjacent supported
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const W = g.equipment?.board?.width ?? 0;
     const H = g.equipment?.board?.height ?? 0;
     if (W <= 0 || H <= 0) return false;

@@ -11,7 +11,7 @@ import type { IntFunction, RegionFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import { isIdent } from "@ludii/typescript-language";
-import type { Game1to1 } from "../../../../Game1to1.js";
+import type { Game } from "../../../../Game.js";
 
 export class CountPieces implements IntFunction {
   /** @java CountPieces.whoFn */
@@ -45,7 +45,7 @@ export class CountPieces implements IntFunction {
     const cells = ctx.state.cells;
     const stacks = ctx.state.stacks;
     const countAt = ctx.state.countAt;
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
     const totalN = cells.length;
 

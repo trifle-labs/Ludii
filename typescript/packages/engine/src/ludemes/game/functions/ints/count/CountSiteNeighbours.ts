@@ -20,7 +20,7 @@ import type { IntFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
-import type { Game1to1 } from "../../../../Game1to1.js";
+import type { Game } from "../../../../Game.js";
 
 type DirGroup = "Adjacent" | "Orthogonal" | "Diagonal";
 
@@ -46,7 +46,7 @@ export class CountSiteNeighbours implements IntFunction {
       return traj.group(site, this.dir).length;
     }
     // Fallback: grid-based orthogonal count
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const W = g.equipment.board.width;
     const H = g.equipment.board.height;
     const col = site % W;

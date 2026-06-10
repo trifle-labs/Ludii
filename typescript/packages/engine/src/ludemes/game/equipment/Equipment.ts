@@ -80,7 +80,7 @@ interface Component extends Item {
   owner(): number;
 }
 
-/** Surface consumed by Game1to1; mirrors Equipment1to1's piece shape. */
+/** Surface consumed by Game; mirrors Equipment1to1's piece shape. */
 interface GamePieceSurface {
   readonly name: string;
   readonly owner: number;
@@ -88,7 +88,7 @@ interface GamePieceSurface {
   readonly generator: unknown;
 }
 
-/** Surface consumed by Game1to1; mirrors Board1to1's public board shape. */
+/** Surface consumed by Game; mirrors Board1to1's public board shape. */
 interface GameBoardSurface {
   readonly width: number;
   readonly height: number;
@@ -1014,7 +1014,7 @@ export class Equipment extends BaseLudeme {
   public components(): Component[] | null { return this._components; }
 
   /**
-   * Main board container surface consumed by Game1to1.
+   * Main board container surface consumed by Game.
    * @java Equipment.board()
    */
   public get board(): GameBoardSurface {
@@ -1033,7 +1033,7 @@ export class Equipment extends BaseLudeme {
 
   /**
    * Real components, excluding Java's empty slot 0, adapted to the field-style
-   * shape used by the existing Game1to1 surface.
+   * shape used by the existing Game surface.
    * @java Equipment.components()
    */
   public get pieces(): readonly GamePieceSurface[] {
@@ -1061,7 +1061,7 @@ export class Equipment extends BaseLudeme {
     return this._offset?.length ?? this._totalDefaultSites;
   }
 
-  /** Dice specs surface consumed by Game1to1. Full dice containers remain Java-style. */
+  /** Dice specs surface consumed by Game. Full dice containers remain Java-style. */
   public get diceSpecs(): readonly { readonly faces: readonly number[] }[] {
     const out: Array<{ readonly faces: readonly number[] }> = [];
     for (const container of this._containers ?? []) {

@@ -16,7 +16,7 @@ import type { IntFunction, BooleanFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
-import type { Game1to1 } from "../../../../Game1to1.js";
+import type { Game } from "../../../../Game.js";
 import type { EvalScratch } from "../../../../base.js";
 
 export class CountGroups implements IntFunction {
@@ -36,7 +36,7 @@ export class CountGroups implements IntFunction {
    */
   public eval(ctx: Context & EvalScratch): number {
     const cells = ctx.state.cells;
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
     const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
     const traj = ctxAny._trajectories;

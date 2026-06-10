@@ -37,7 +37,7 @@
  */
 
 import { Context } from "../context.js";
-import type { Game } from "../game.js";
+import type { Game as EngineGame } from "../game.js";
 import { Move } from "../move.js";
 import { ActionPass } from "../action/action-pass.js";
 import { ActionSwapPlayers } from "../action/action-swap-players.js";
@@ -218,10 +218,10 @@ function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, M
 }
 
 // ---------------------------------------------------------------------------
-// Game1to1
+// Game
 // ---------------------------------------------------------------------------
 
-export class Game1to1 implements Game {
+export class Game implements Game {
   /** @java Game.name */
   public readonly name: string;
   /** @java Game.id — same as name for 1:1 port */
@@ -283,7 +283,7 @@ export class Game1to1 implements Game {
 
   /**
    * Carries TS-port-only construction details that are not Java Game constructor
-   * parameters. The next Game1to1 constructed with these Rules consumes them.
+   * parameters. The next Game constructed with these Rules consumes them.
    */
   public static setPortOptions(rules: Rules, options: Game1to1PortOptions): void {
     GAME_PORT_OPTIONS.set(rules, options);
@@ -968,7 +968,7 @@ export class Game1to1 implements Game {
    * Minimal Java Game facade for faithful start-rule eval().
    * @java game/Game.java — getComponent/mapContainer/equipment/players
    */
-  private startGameFacade(): Game {
+  private startGameFacade(): EngineGame {
     const game = this;
     const equipmentCallable = new Proxy(
       function equipmentFn() { return game.equipment; },
@@ -988,7 +988,7 @@ export class Game1to1 implements Game {
         if (prop === "mapContainer") return () => game.containerMap();
         return target[prop];
       },
-    }) as unknown as Game;
+    }) as unknown as EngineGame;
   }
 
   private componentByName(name: string): { index(): number; role(): { equals(role: string): boolean } } | null {

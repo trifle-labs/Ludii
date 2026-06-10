@@ -12,7 +12,7 @@
  *   2. applyOptions(ast)               → option-applied AST
  *   3. expandDefines(ast, builtins)    → fully expanded (game ...) node
  *   4. findGameNode(ast)               → the (game ...) LudList
- *   5. compileNode1to1(gameNode)       → Game1to1 (ludeme object tree)
+ *   5. compileNode1to1(gameNode)       → Game (ludeme object tree)
  *
  * This path does NOT call compile.ts or lud-compiler.ts.
  */
@@ -29,7 +29,7 @@ import { getBuiltinDefines } from "./builtin-defines.js";
 import { expandDefines } from "./lud-defines.js";
 import { applyOptions, collectDefaultOptions } from "./lud-options.js";
 import { expandRanges, expandSiteRanges } from "./lud-ranges.js";
-import type { Game1to1 } from "./ludemes/Game1to1.js";
+import type { Game } from "./ludemes/Game.js";
 import { ArgCompiler } from "./ludii/compiler/arg/ArgCompiler.js";
 
 /** Lazily-built faithful ArgCompiler (reused across calls; loads reflection once). */
@@ -50,11 +50,11 @@ export interface Play1to1Options {
 }
 
 /**
- * Parse and compile a `.lud` source string into a `Game1to1`.
+ * Parse and compile a `.lud` source string into a `Game`.
  *
  * @param source The `.lud` file contents
  * @param opts   Optional resolver for `(match ...)` subgames
- * @returns A `Game1to1` instance ready for start/moves/apply
+ * @returns A `Game` instance ready for start/moves/apply
  */
 
 /**
@@ -87,7 +87,7 @@ function resolveRangePlaceholders(source: string): string {
   });
 }
 
-export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
+export function play1to1(source: string, opts?: Play1to1Options): Game {
   // Step 0: Java text pre-pass — expand `m..n` number ranges and `"A1".."C3"` site
   // ranges before lexing (@java Expander.expand; the lexer would otherwise produce a
   // single `18..21` ident that can never bind a parameter).
@@ -106,14 +106,14 @@ export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
 
   // Step 5: Compile to ludeme object tree.
   // FAITHFUL BY DEFAULT (definition-of-complete item 2, step 1): the reflection-
-  // driven ArgCompiler (game.Game -> Game1to1 through JAVA_TS_CTORS) is the engine.
+  // driven ArgCompiler (game.Game -> Game through JAVA_TS_CTORS) is the engine.
   // LUDII_BESPOKE=1 selects the legacy bespoke dispatcher (the parity harness's
   // reference mode); it and the silent fallback die with the bespoke deletion.
   // LUDII_ARGCOMPILER stays honored for explicit-faithful callers.
   // ITEM-2 DELETION (step 3): the faithful ArgCompiler IS the engine. The bespoke
   // dispatcher (compiler1to1) is deleted; compile failures surface.
   argCompiler ??= new ArgCompiler();
-  const game = argCompiler.compile<Game1to1>(gameNode, ["game.Game"]);
+  const game = argCompiler.compile<Game>(gameNode, ["game.Game"]);
   if (game == null) throw new Error("play1to1: faithful compile returned null");
   return game;
 }

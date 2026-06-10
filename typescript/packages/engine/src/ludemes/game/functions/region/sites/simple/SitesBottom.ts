@@ -10,7 +10,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
 /**
@@ -44,7 +44,7 @@ export class SitesBottom extends BaseRegionFunction {
   public override eval(ctx: Context & EvalScratch): number[] {
     // @java SitesBottom — check graph board first
     const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
-    const board = (ctx.game as unknown as Game1to1).equipment.board;
+    const board = (ctx.game as unknown as Game).equipment.board;
     const mancalaBottom = twoRowMancalaBottom(board);
     if (mancalaBottom !== null) return mancalaBottom;
     const traj = ctxAny._trajectories ?? board.trajectories;

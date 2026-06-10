@@ -10,12 +10,12 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { RegionFunction, IntFunction } from "../../../../../base.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 /** Returns all sites in the bottom row (row 0). */
 export class SitesBottom implements RegionFunction {
   public eval(ctx: Context): number[] {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const board = game.equipment.board;
     const traj = board.trajectories;
     // Graph boards: iterate all sites, find min-y, return those matching it.
@@ -45,7 +45,7 @@ export class SitesBottom implements RegionFunction {
 /** Returns all sites in the top row (row H-1). */
 export class SitesTop implements RegionFunction {
   public eval(ctx: Context): number[] {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const board = game.equipment.board;
     const traj = board.trajectories;
     // Graph boards: iterate all sites, find max-y, return those matching it.
@@ -77,7 +77,7 @@ export class SitesTop implements RegionFunction {
 /** Returns all sites in the left column (column 0). */
 export class SitesLeft implements RegionFunction {
   public eval(ctx: Context): number[] {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const board = game.equipment.board;
     const traj = board.trajectories;
     // Graph boards: iterate all sites, find min-x, return those matching it.
@@ -105,7 +105,7 @@ export class SitesLeft implements RegionFunction {
 /** Returns all sites in the right column (column W-1). */
 export class SitesRight implements RegionFunction {
   public eval(ctx: Context): number[] {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const board = game.equipment.board;
     const traj = board.trajectories;
     // Graph boards: iterate all sites, find max-x, return those matching it.
@@ -137,7 +137,7 @@ export class SitesRow implements RegionFunction {
     this.rowFn = rowFn;
   }
   public eval(ctx: Context): number[] {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const board = game.equipment.board;
     const row = this.rowFn.eval(ctx);
     // Graph boards: use trajectory y-coordinates to identify sites in the row.
@@ -181,7 +181,7 @@ export class SitesColumn implements RegionFunction {
     this.colFn = colFn;
   }
   public eval(ctx: Context): number[] {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const board = game.equipment.board;
     const col = this.colFn.eval(ctx);
     // Graph boards: use trajectory x-coordinates to identify sites in the column.
@@ -226,7 +226,7 @@ export class SitesPhase implements RegionFunction {
     this.phaseFn = phaseFn;
   }
   public eval(ctx: Context): number[] {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const W = game.equipment.board.width;
     const H = game.equipment.board.height;
     const phase = this.phaseFn.eval(ctx);
@@ -245,7 +245,7 @@ export class SitesPhase implements RegionFunction {
 /** Returns the 4 corner sites. */
 export class SitesCorners implements RegionFunction {
   public eval(ctx: Context): number[] {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const board = game.equipment.board;
     // For graph boards (non-rectangular): corners are the sites at extreme
     // positions — minimum/maximum x and y coordinates. Returns up to 4 sites

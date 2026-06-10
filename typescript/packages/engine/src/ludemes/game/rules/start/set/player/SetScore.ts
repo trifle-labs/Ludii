@@ -5,7 +5,7 @@
  *
  * DEFERRED: Java ActionSetScore modifies State.scores[] via Context.
  * The applyToInitialState interface only provides cells/whats/countAt arrays.
- * Score initialisation cannot be applied until Game1to1.start() accepts a
+ * Score initialisation cannot be applied until Game.start() accepts a
  * scores[] array or the StartRule interface is extended with scores/amounts.
  * The compile1to1 path currently skips (set Score …) start rules.
  */

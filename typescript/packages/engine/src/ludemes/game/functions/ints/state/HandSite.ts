@@ -16,7 +16,7 @@
 import type { Context } from "../../../../../context.js";
 import type { IntFunction } from "../../../../base.js";
 import type { RoleType } from "../../../../base.js";
-import type { Game1to1 } from "../../../../Game1to1.js";
+import type { Game } from "../../../../Game.js";
 
 export class HandSite implements IntFunction {
   /** Player role. @java HandSite.role */
@@ -36,7 +36,7 @@ export class HandSite implements IntFunction {
    * @java game/functions/ints/board/HandSite.java — eval(Context)
    */
   public eval(ctx: Context): number {
-    const game = ctx.game as unknown as Game1to1;
+    const game = ctx.game as unknown as Game;
     const state = ctx.state;
     const numPlayers = game.numPlayers;
 

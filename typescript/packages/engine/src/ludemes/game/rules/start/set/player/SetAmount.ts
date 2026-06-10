@@ -5,7 +5,7 @@
  *
  * DEFERRED: Java ActionSetAmount modifies State.amounts[] via Context.
  * The applyToInitialState interface only provides cells/whats/countAt arrays.
- * Amount initialisation cannot be applied until Game1to1.start() accepts an
+ * Amount initialisation cannot be applied until Game.start() accepts an
  * amounts[] array or the StartRule interface is extended.
  * The compile1to1 path currently skips (set Amount …) start rules.
  */

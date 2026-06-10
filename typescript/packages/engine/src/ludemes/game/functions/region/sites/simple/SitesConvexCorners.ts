@@ -10,7 +10,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import { cornerSitesTyped, squareBoardConvexCorners } from "./corner-sites.js";
 
@@ -51,7 +51,7 @@ export class SitesConvexCorners extends BaseRegionFunction {
     }
 
     // @java SitesConvexCorners — square board: four physical corners
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const W = g.equipment.board.width;
     const H = g.equipment.board.height;
     if (W === 0 || H === 0) return [];

@@ -8,7 +8,7 @@
  *   (b) an array of Phase objects + end rule (phases game).
  *
  * When phases are present, `play` is the shared play rule if supplied,
- * otherwise phases[0].play (for backward-compat accessors); Game1to1 uses
+ * otherwise phases[0].play (for backward-compat accessors); Game uses
  * `phases` directly.
  *
  * @java game/rules/Rules.java — phases()/play()/end()

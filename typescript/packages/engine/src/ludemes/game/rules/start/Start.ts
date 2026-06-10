@@ -4,8 +4,8 @@
  * @java game/rules/start/Start.java — eval(Context)
  *
  * Java Start holds a StartRule[] and iterates them in eval(Context).
- * In the 1:1 TS path this is mirrored by Game1to1.startRules: StartRule[]
- * which are applied in Game1to1.start() via applyToInitialState().
+ * In the 1:1 TS path this is mirrored by Game.startRules: StartRule[]
+ * which are applied in Game.start() via applyToInitialState().
  * Start is a thin data-holder that mirrors the Java class structure.
  */
 
@@ -15,7 +15,7 @@ import type { StartRule } from "./StartRule.js";
  * @java game/rules/start/Start.java
  *
  * Container for one or more StartRule instances. eval() iterates each rule.
- * In TS the rules array is consumed by Game1to1.start() directly; Start
+ * In TS the rules array is consumed by Game.start() directly; Start
  * is here to faithfully mirror the Java class.
  */
 export class Start {
@@ -46,7 +46,7 @@ export class Start {
   /**
    * Evaluate all starting rules.
    *
-   * In the 1:1 TS path this is handled by Game1to1.start() which calls
+   * In the 1:1 TS path this is handled by Game.start() which calls
    * rule.applyToInitialState() on each rule. This method is provided for
    * completeness to mirror Java Start.eval(Context).
    *

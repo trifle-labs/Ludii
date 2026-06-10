@@ -17,7 +17,7 @@ import type { Context } from "../../../../../../context.js";
 import type { RegionFunction, EvalScratch } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 /** Minimal shape of FaceEl from core topology. */
 interface FaceLike {
@@ -56,7 +56,7 @@ export class SitesMajor implements RegionFunction {
       return Array.from({ length: traj.numSites }, (_, i) => i);
     }
     // No trajectory: return all board sites
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const n = g.equipment ? g.equipment.board.numSites : ctx.state.cells.length;
     return Array.from({ length: n }, (_, i) => i);
   }

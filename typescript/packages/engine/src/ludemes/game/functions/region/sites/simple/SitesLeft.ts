@@ -10,7 +10,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
 /**
@@ -50,7 +50,7 @@ export class SitesLeft extends BaseRegionFunction {
     }
 
     // @java SitesLeft — square board: left column = cells 0, W, 2W, ...
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const W = g.equipment.board.width;
     const H = g.equipment.board.height;
     return Array.from({ length: H }, (_, i) => i * W);

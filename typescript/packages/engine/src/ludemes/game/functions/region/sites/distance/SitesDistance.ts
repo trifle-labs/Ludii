@@ -21,7 +21,7 @@ import type { IntFunction, RegionFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import { isIdent, isNumber, isList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 // ---------------------------------------------------------------------------
 // Range helper
@@ -112,7 +112,7 @@ function getNeighbours(
     return traj.group(site, relation);
   }
   // Square-board fallback
-  const g = ctx.game as unknown as Game1to1;
+  const g = ctx.game as unknown as Game;
   const W = g.equipment.board.width;
   const H = g.equipment.board.height;
   const col = site % W;

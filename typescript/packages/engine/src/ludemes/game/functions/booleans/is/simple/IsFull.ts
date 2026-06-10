@@ -3,7 +3,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 /**
  * (is Full)
@@ -16,7 +16,7 @@ export class IsFull implements BooleanFunction {
    *   context.state().containerStates()[0].emptyRegion(…).sites().length == 0
    */
   public eval(ctx: Context): boolean {
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const boardN = g.equipment ? g.equipment.board.numSites : ctx.state.cells.length;
     for (let i = 0; i < boardN; i++) {
       if (ctx.state.isEmptySite(i)) return false;

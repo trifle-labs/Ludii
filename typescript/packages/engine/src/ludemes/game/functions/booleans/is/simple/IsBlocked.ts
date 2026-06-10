@@ -3,7 +3,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 /**
  * (is Blocked <role>)
@@ -28,7 +28,7 @@ export class IsBlocked implements BooleanFunction {
     const origMover = ctx.state.mover;
     (ctx.state as unknown as { mover: number }).mover = evalPlayer;
     try {
-      const g = ctx.game as unknown as Game1to1;
+      const g = ctx.game as unknown as Game;
       const moves = g.moves ? g.moves(ctx) : [];
       return !moves || moves.length === 0;
     } finally {

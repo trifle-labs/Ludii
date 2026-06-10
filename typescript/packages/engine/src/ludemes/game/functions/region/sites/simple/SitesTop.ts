@@ -10,7 +10,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
 /**
@@ -50,7 +50,7 @@ export class SitesTop extends BaseRegionFunction {
     if (this.precomputedRegion !== null)
       return this.precomputedRegion;
 
-    const board = (ctx.game as unknown as Game1to1).equipment.board;
+    const board = (ctx.game as unknown as Game).equipment.board;
     const mancalaTop = twoRowMancalaTop(board);
     if (mancalaTop !== null) return mancalaTop;
     const traj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? board.trajectories;

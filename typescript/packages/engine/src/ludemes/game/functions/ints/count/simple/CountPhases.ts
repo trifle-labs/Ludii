@@ -45,7 +45,7 @@ export class CountPhases extends BaseIntFunction {
       return phases.length;
     }
 
-    // Fallback: access via context.game typed as Game1to1
+    // Fallback: access via context.game typed as Game
     const game = context.game as unknown as {
       rules?: { phases?: unknown[] };
     };

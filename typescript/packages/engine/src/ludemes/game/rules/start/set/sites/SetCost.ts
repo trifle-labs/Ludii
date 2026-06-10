@@ -8,7 +8,7 @@
  * interface only provides cells/whats/countAt arrays; costAt is not accessible.
  * The compile1to1 path skips (set Cost …) start rules entirely.
  * This class is a faithful data-holder but cannot apply its cost mutation
- * until Game1to1.start() exposes the costAt array.
+ * until Game.start() exposes the costAt array.
  */
 
 import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";

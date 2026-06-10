@@ -70,7 +70,7 @@ export class Board extends Container {
   // ---- Topology surface (Board1to1-compatible) -----------------------------
   // Built by createTopology() from the graph function, or lazily on first read.
   // These mirror Board1to1's public fields so the faithful Board duck-types as
-  // the board the engine (Game1to1, evals) reads: numSites/width/height/radials/
+  // the board the engine (Game, evals) reads: numSites/width/height/radials/
   // trajectories/containerSpan.
   // @java game/equipment/container/board/Board.java — createTopology / topology()
   /** Board bounding-box width. @java Board.topology() */

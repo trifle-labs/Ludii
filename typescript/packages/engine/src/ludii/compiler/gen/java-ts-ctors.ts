@@ -1,7 +1,7 @@
 // AUTO-GENERATED. Java class name -> TS constructor.
 import { MapEntry as FaithfulMapEntry } from "../../../ludemes/game/functions/ints/board/MapEntry.js";
 import { State as C0 } from "../../../state.js";
-import { Game1to1 as C1 } from "../../../ludemes/Game1to1.js";
+import { Game as C1 } from "../../../ludemes/Game.js";
 import { RankUtils as C2 } from "../../../ludemes/other/RankUtils.js";
 import { MoveSequence as C3 } from "../../../ludemes/other/move/MoveSequence.js";
 import { MovesIterator as C4 } from "../../../ludemes/other/move/MovesIterator.js";

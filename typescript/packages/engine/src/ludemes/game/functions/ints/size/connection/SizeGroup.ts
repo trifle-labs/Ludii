@@ -6,7 +6,7 @@ import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import { isIdent, isList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 export class SizeGroup implements IntFunction {
   private readonly siteFn: IntFunction;
@@ -37,7 +37,7 @@ export class SizeGroup implements IntFunction {
       if (traj) {
         neighbours = traj.group(s, this.dirName);
       } else {
-        const g = ctx.game as unknown as Game1to1;
+        const g = ctx.game as unknown as Game;
         const W = g.equipment.board.width;
         const H = g.equipment.board.height;
         const col = s % W;

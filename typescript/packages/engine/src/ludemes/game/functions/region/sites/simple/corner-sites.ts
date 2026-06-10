@@ -24,7 +24,7 @@ import type { Context } from "../../../../../../context.js";
 import type { RegionFunction } from "../../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 // ---------------------------------------------------------------------------
 // Geometry helpers
@@ -239,7 +239,7 @@ export function cornerSitesTyped(
 // ---------------------------------------------------------------------------
 
 export function squareBoardConvexCorners(ctx: Context): number[] {
-  const g = ctx.game as unknown as Game1to1;
+  const g = ctx.game as unknown as Game;
   const W = g.equipment.board.width;
   const H = g.equipment.board.height;
   if (W === 0 || H === 0) return [];

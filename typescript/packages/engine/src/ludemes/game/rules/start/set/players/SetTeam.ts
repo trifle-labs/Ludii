@@ -5,7 +5,7 @@
  *
  * DEFERRED: Java ActionAddPlayerToTeam modifies State team membership via Context.
  * The applyToInitialState interface only provides cells/whats/countAt arrays.
- * Team setup cannot be applied until Game1to1.start() exposes a team-membership
+ * Team setup cannot be applied until Game.start() exposes a team-membership
  * structure or the StartRule interface is extended.
  * The compile1to1 path currently skips (set Team …) start rules.
  */

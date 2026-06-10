@@ -10,7 +10,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { EvalScratch, IntFunction, RegionFunction } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
-import type { Game1to1 } from "../../../../../Game1to1.js";
+import type { Game } from "../../../../../Game.js";
 
 // Java: Constants.UNDEFINED = -1, Constants.INFINITY = Integer.MAX_VALUE
 const UNDEFINED = -1;
@@ -107,7 +107,7 @@ export class SitesOccupied extends BaseRegionFunction {
     const cells = ctx.state.cells;
     const whats = ctx.state.whats;
     const stacks = ctx.state.stacks;
-    const g = ctx.game as unknown as Game1to1;
+    const g = ctx.game as unknown as Game;
     const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
 
     const whoId = this.who.eval(ctx);

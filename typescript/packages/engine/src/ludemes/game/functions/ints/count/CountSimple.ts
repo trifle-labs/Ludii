@@ -15,7 +15,7 @@ import type { Context } from "../../../../../context.js";
 import type { IntFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
-import type { Game1to1 } from "../../../../Game1to1.js";
+import type { Game } from "../../../../Game.js";
 
 // ---------------------------------------------------------------------------
 // CountRows
@@ -23,7 +23,7 @@ import type { Game1to1 } from "../../../../Game1to1.js";
 export class CountRows implements IntFunction {
   /** @java game/functions/ints/count/simple/CountRows.java — eval: context.topology().rows(siteType).size() */
   public eval(ctx: Context): number {
-    return (ctx.game as unknown as Game1to1).equipment.board.height;
+    return (ctx.game as unknown as Game).equipment.board.height;
   }
 }
 
@@ -33,7 +33,7 @@ export class CountRows implements IntFunction {
 export class CountColumns implements IntFunction {
   /** @java game/functions/ints/count/simple/CountColumns.java — eval: context.topology().columns(siteType).size() */
   public eval(ctx: Context): number {
-    return (ctx.game as unknown as Game1to1).equipment.board.width;
+    return (ctx.game as unknown as Game).equipment.board.width;
   }
 }
 

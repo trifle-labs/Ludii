@@ -6,7 +6,7 @@
  * DEFERRED: Java ActionRememberValue writes to State.rememberingValues (or
  * State.mapRememberingValues for named buckets) via Context.
  * The applyToInitialState interface only provides cells/whats/countAt arrays.
- * Remembered-value initialisation cannot be applied until Game1to1.start()
+ * Remembered-value initialisation cannot be applied until Game.start()
  * exposes the remembered-values map or the StartRule interface is extended.
  * The compile1to1 path currently skips (set RememberValue …) start rules.
  */
@@ -72,7 +72,7 @@ export class SetRememberValue implements StartRule {
    */
   /**
    * @java game/rules/start/set/remember/SetRememberValue.java — eval(Context)
-   * Writes through the bridge ContainerState facade; Game1to1.start() threads the
+   * Writes through the bridge ContainerState facade; Game.start() threads the
    * collected values into the initial State via withRemember.
    */
   public eval(ctx: Context): void {
