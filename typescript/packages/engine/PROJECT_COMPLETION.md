@@ -1391,3 +1391,16 @@ CHUNK PLAN (same migrate-then-delete shape as the StartRule migration):
 4. Fold _initialRemembered/_initialHidden side-channels into the bridge.
 5. Rename the engine files/classes to the Java homes (other/state/State.ts hosts
    the State1to1 registration — resolve with the Game1to1/Equipment1to1 core renames).
+
+## Update 63 (2026-06-10) — CERTIFIED: 100.00% REAL-GAME FAITHFUL-COMPILE COVERAGE
+
+Audit v9 (full 2,200-lud corpus): **REAL GAMES 1292/1292 = 100.00%. ZERO fails.**
+Full corpus including wishlist/reconstruction/test fixtures: 1952/2200 (88.7%) —
+the remainder is recon-placeholder syntax ([#]/[?]) and fixture files, not games.
+
+Every real game in the Ludii corpus compiles through the faithful reflection path
+(ArgCompiler + JAVA_TS_CTORS), with the bespoke engine deleted. The exotic-singles
+line item of the definition of complete is CLOSED.
+
+Remaining for the definition of complete: State convergence (chunk plan in Update
+62), then the final behavioral parity re-verification.

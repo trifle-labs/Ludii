@@ -1,6 +1,6 @@
 {
- "faithful": 1947,
- "fallback": 252,
+ "faithful": 1952,
+ "fallback": 247,
  "total": 2200,
  "perGame": [
   {
@@ -4580,8 +4580,8 @@
   },
   {
    "game": "board/war/leaping/lines/Throngs.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.rules.play.moves.Moves"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/leaping/lines/Tsukkalavde.lud",
@@ -5925,8 +5925,8 @@
   },
   {
    "game": "experimental/Mutant Y^3.lud",
-   "status": "THROW",
-   "reason": "terminal \"Y3Board#1\" did not match game.functions.graph.GraphFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "experimental/N-Mesh.lud",
@@ -6470,8 +6470,8 @@
   },
   {
    "game": "puzzle/planning/Wumpus World.lud",
-   "status": "THROW",
-   "reason": "terminal piece did not match game.rules.play.moves.nonDecision.operators.foreach.ForEachDi"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "reconstruction/done/board/hunt/Comina.lud",
@@ -7985,8 +7985,8 @@
   },
   {
    "game": "test/Test Caps.lud",
-   "status": "THROW",
-   "reason": "terminal vertex did not match game.types.board.SiteType"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/Test Define Case.lud",
@@ -8070,8 +8070,8 @@
   },
   {
    "game": "test/eric/Biloba.lud",
-   "status": "THROW",
-   "reason": "terminal piece did not match game.rules.play.moves.nonDecision.operators.foreach.ForEachDi"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/eric/Blooms.lud",
