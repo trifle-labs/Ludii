@@ -1426,3 +1426,21 @@ Remaining: PlaceItem1to1 write clusters → facade (then DELETE _startArrays);
 chunk 4 side-channels (equipment._initialRemembered/_initialHidden → bridge);
 chunk 5 core renames (Game1to1/Equipment1to1/State1to1/Item1to1/Component1to1
 → Java homes); final behavioral parity re-verification.
+
+## Update 65 (2026-06-10) — State convergence chunks 3+4 COMPLETE
+
+- **Chunk 3 COMPLETE**: `_startArrays` DELETED. Every start rule (including
+  PlaceItem1to1's five write clusters) writes through the @java ContainerState
+  facade: setSite (Java's setSite shape, UNDEFINED leaves slots), setScore,
+  setAmount, plus live who/what/size reads.
+- **Chunk 4 COMPLETE**: the equipment._initialRemembered/_initialHidden
+  side-channels are DELETED. Remembered/hidden start values flow through
+  bridge-owned collections via facade rememberValue/setHidden; start() threads
+  them into the initial State. **SetHidden went from no-op to REAL** (region +
+  value + who evaluated on the live context; per-(player,site) visibility).
+- Battery green at every step (4 commits this stretch).
+
+Remaining: chunk 5 — the deny-named core renames (Game1to1→Game with a LudiiGame-
+style alias for the engine surface, Equipment1to1/State1to1/Item1to1/Component1to1/
+Board1to1 → Java homes; wide but mechanical, same machinery as the Piece/Player/
+Move/Array promotions) — and the full behavioral parity re-verification (launched).
