@@ -1735,3 +1735,29 @@ OPEN SEAM at ply 128 (bear-off), measured:
   implement FirstMoveOnTrack's track-order-first semantics check.
 Tracks verified correct (Track1/Track2 elems match the define; End=-2 with
 next=OFF). DEBUG_PLY=<n> remains the verification loop.
+
+## Update 78 (2026-06-10) — Backgammon ply 134; the doubles second-pass turn shape
+
+resolveOwner in FirstMoveOnTrack was a STUB returning UNDEFINED — the named-track
+match ((firstMoveOnTrack "Track" Mover ...)) never found Track2, fell into the
+track-null fallback, and evaluated the overshoot rule once with a STALE (site)
+(=12 left over from the main arm's loop). Implemented @java RoleType resolution;
+trial 0 advanced 128 -> 134.
+
+PLY-133/134 SEAM, measured with TRACE_DICE (mover/dice/replayDouble/temp per
+ForEachDie eval) + detailed harness action dumps:
+- Java's doubles SECOND PASS is a NEW TURN: rec 132 carries a fresh ROLL +
+  SetTemp; rec 131 ends with SetNextPlayer(player=1) — i.e. the doubles replay
+  passes the turn TO THE SAME PLAYER and "NewTurn" is TRUE again (fresh roll
+  re-arms [3,3]); rec 133 is then the plain second move ([Move, UseDie] only,
+  branch 3 skipped because temp disarmed at 132 per Java's chain:
+  arm(130) -> re-arm-no-SetTemp(131) -> disarm(132) -> plain(133)).
+- OUR 133 list contains 3>0 twins whose actions include branch-3 re-arm pairs
+  generated in an eval with temp=3 — i.e. an EXTRA evaluation of the play tree
+  against the pre-roll/armed state contributes moves to the same list (the
+  TRACE shows interleaved [3,0]/temp=3 and [3,3]/temp=3 batches inside one
+  moves() call). NEXT: find which wrapper evaluates `next` twice (Do case A
+  evaluates prior on ctx and next on newCtx ONLY — instrument Do/If/MaxDistance
+  eval entry counts at DEBUG_PLY=133) and dedup/eliminate the stale-state batch.
+  Also verify our "NewTurn" predicate matches Java (numTurnSamePlayer==0?) so
+  the second-pass roll fires as a new turn.
