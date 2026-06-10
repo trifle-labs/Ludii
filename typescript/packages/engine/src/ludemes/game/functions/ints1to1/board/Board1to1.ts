@@ -27,55 +27,6 @@ import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Game1to1 } from "../../../../Game1to1.js";
 
 // ---------------------------------------------------------------------------
-// CentrePoint
-// ---------------------------------------------------------------------------
-export class CentrePoint1to1 implements IntFunction {
-  /** @java game/functions/ints/board/CentrePoint.java — eval: centre site index */
-  public eval(ctx: Context): number {
-    const g = ctx.game as unknown as Game1to1;
-    return Math.floor(g.equipment.board.numSites / 2);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Row
-// ---------------------------------------------------------------------------
-export class Row1to1 implements IntFunction {
-  private readonly siteFn: IntFunction;
-
-  public constructor(siteFn: IntFunction) {
-    this.siteFn = siteFn;
-  }
-
-  /** @java game/functions/ints/board/Row.java — eval: context.topology().cells().get(index).row() */
-  public eval(ctx: Context): number {
-    const s = this.siteFn.eval(ctx);
-    if (s < 0) return -1;
-    const W = (ctx.game as unknown as Game1to1).equipment.board.width;
-    return Math.floor(s / W);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Column
-// ---------------------------------------------------------------------------
-export class Column1to1 implements IntFunction {
-  private readonly siteFn: IntFunction;
-
-  public constructor(siteFn: IntFunction) {
-    this.siteFn = siteFn;
-  }
-
-  /** @java game/functions/ints/board/Column.java — eval: context.topology().cells().get(index).column() */
-  public eval(ctx: Context): number {
-    const s = this.siteFn.eval(ctx);
-    if (s < 0) return -1;
-    const W = (ctx.game as unknown as Game1to1).equipment.board.width;
-    return s % W;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Who  (owner at site)
 // ---------------------------------------------------------------------------
 export class Who1to1 implements IntFunction {
@@ -90,68 +41,6 @@ export class Who1to1 implements IntFunction {
     const s = this.siteFn.eval(ctx);
     if (s < 0) return 0;
     return ctx.state.cells[s] ?? 0;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// What  (component index at site)
-// ---------------------------------------------------------------------------
-export class What1to1 implements IntFunction {
-  private readonly siteFn: IntFunction;
-
-  public constructor(siteFn: IntFunction) {
-    this.siteFn = siteFn;
-  }
-
-  /** @java game/functions/ints/state/What.java — eval: containerState.what(site, type) */
-  public eval(ctx: Context): number {
-    const s = this.siteFn.eval(ctx);
-    if (s < 0) return 0;
-    return ctx.state.whatAtSite(s);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Ahead
-// ---------------------------------------------------------------------------
-export class Ahead1to1 implements IntFunction {
-  private readonly fromFn: IntFunction;
-  private readonly dirName: string;
-
-  public constructor(fromFn: IntFunction, dirName: string) {
-    this.fromFn = fromFn;
-    this.dirName = dirName;
-  }
-
-  /**
-   * @java game/functions/ints/board/Ahead.java — eval:
-   * Returns site one step in direction from the given site.
-   */
-  public eval(ctx: Context): number {
-    const from = this.fromFn.eval(ctx);
-    if (from < 0) return -1;
-    const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
-    const traj = ctxAny._trajectories;
-    if (traj) {
-      const steps = traj.steps(from, this.dirName);
-      return steps.length > 0 ? steps[0]! : -1;
-    }
-    // Fallback: grid-based
-    const g = ctx.game as unknown as Game1to1;
-    const W = g.equipment.board.width;
-    const H = g.equipment.board.height;
-    const col = from % W;
-    const row = Math.floor(from / W);
-    const d = this.dirName.toUpperCase();
-    if (d === "N" || d === "NORTH") return row < H - 1 ? from + W : -1;
-    if (d === "S" || d === "SOUTH") return row > 0 ? from - W : -1;
-    if (d === "E" || d === "EAST") return col < W - 1 ? from + 1 : -1;
-    if (d === "W" || d === "WEST") return col > 0 ? from - 1 : -1;
-    if (d === "NE" || d === "NORTHEAST") return (row < H - 1 && col < W - 1) ? from + W + 1 : -1;
-    if (d === "NW" || d === "NORTHWEST") return (row < H - 1 && col > 0) ? from + W - 1 : -1;
-    if (d === "SE" || d === "SOUTHEAST") return (row > 0 && col < W - 1) ? from - W + 1 : -1;
-    if (d === "SW" || d === "SOUTHWEST") return (row > 0 && col > 0) ? from - W - 1 : -1;
-    return -1;
   }
 }
 
@@ -196,27 +85,6 @@ export class LastTo1to1 implements IntFunction {
 }
 
 // ---------------------------------------------------------------------------
-// LastFrom  (last move's source)
-// ---------------------------------------------------------------------------
-export class LastFrom1to1 implements IntFunction {
-  /**
-   * @java game/functions/ints/last/LastFrom.java — eval:
-   * Returns the non-decision "from" site of the last applied move.
-   */
-  public eval(ctx: Context): number {
-    const moves = ctx.trial.moves;
-    if (moves.length === 0) return ctx._evalFrom;
-    const last = moves[moves.length - 1];
-    if (!last) return ctx._evalFrom;
-    const f = last.fromNonDecision();
-    if (f >= 0) return f;
-    const f2 = last.from();
-    if (f2 >= 0) return f2;
-    return ctx._evalFrom;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Helper: algebraicToSite
 // ---------------------------------------------------------------------------
 function algebraicToSite(coordStr: string, W: number, H: number): number {
@@ -234,95 +102,6 @@ function algebraicToSite(coordStr: string, W: number, H: number): number {
   const row = rowNum - 1; // 0-based
   if (col < 0 || col >= W || row < 0 || row >= H) return -1;
   return row * W + col;
-}
-
-// ---------------------------------------------------------------------------
-// Coord
-// ---------------------------------------------------------------------------
-export class Coord1to1 implements IntFunction {
-  private readonly coordStr: string;
-
-  public constructor(coordStr: string) {
-    this.coordStr = coordStr;
-  }
-
-  /** @java game/functions/ints/board/Coord.java — eval: algebraicToIndex(coord, board) */
-  public eval(ctx: Context): number {
-    const g = ctx.game as unknown as Game1to1;
-    const W = g.equipment?.board?.width ?? 0;
-    const H = g.equipment?.board?.height ?? 0;
-    return algebraicToSite(this.coordStr, W, H);
-  }
-}
-
-// ---------------------------------------------------------------------------
-// WhereSite  (board site of named piece)
-// ---------------------------------------------------------------------------
-export class WhereSite1to1 implements IntFunction {
-  private readonly pieceName: string | null;
-  private readonly ownerFn: IntFunction;
-
-  public constructor(pieceName: string | null, ownerFn: IntFunction) {
-    this.pieceName = pieceName;
-    this.ownerFn = ownerFn;
-  }
-
-  /**
-   * @java game/functions/ints/board/where/WhereSite.java — eval:
-   * Returns first board site containing the named piece for the given owner.
-   */
-  public eval(ctx: Context): number {
-    const cells = ctx.state.cells;
-    const g = ctx.game as unknown as Game1to1;
-    const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
-    const ownerId = this.ownerFn.eval(ctx);
-
-    if (this.pieceName && g.equipment) {
-      const matchingIdx = g.equipment.pieces
-        .filter(p => p.name.toLowerCase() === this.pieceName!.toLowerCase() && p.owner === ownerId)
-        .map(p => p.index);
-      for (let i = 0; i < boardN; i++) {
-        const what = ctx.state.whatAtSite(i);
-        if (matchingIdx.includes(what)) return i;
-      }
-    } else {
-      for (let i = 0; i < boardN; i++) {
-        if (cells[i] === ownerId) return i;
-      }
-    }
-    return -1;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// MapEntry
-// ---------------------------------------------------------------------------
-export class MapEntry1to1 implements IntFunction {
-  private readonly mapName: string | null;
-  private readonly keyFn: IntFunction;
-
-  public constructor(mapName: string | null, keyFn: IntFunction) {
-    this.mapName = mapName;
-    this.keyFn = keyFn;
-  }
-
-  /**
-   * @java game/functions/ints/board/mapEntry/MapEntry.java — eval
-   */
-  public eval(ctx: Context): number {
-    const game = ctx.game as unknown as Game1to1;
-    const maps = (game as unknown as { _maps?: Map<string, Map<number, number>> })._maps;
-    if (maps) {
-      const mapKey = this.mapName ?? "__default__";
-      const m = maps.get(mapKey);
-      if (m) {
-        const key = this.keyFn.eval(ctx);
-        const val = m.get(key);
-        if (val !== undefined) return val;
-      }
-    }
-    return this.keyFn.eval(ctx);
-  }
 }
 
 // ---------------------------------------------------------------------------

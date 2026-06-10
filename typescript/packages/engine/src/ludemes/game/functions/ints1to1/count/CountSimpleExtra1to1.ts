@@ -31,20 +31,6 @@ export class CountCells implements IntFunction {
 }
 
 // ---------------------------------------------------------------------------
-// CountPhases
-// ---------------------------------------------------------------------------
-export class CountPhases1to1 implements IntFunction {
-  /**
-   * @java game/functions/ints/count/simple/CountPhases.java — eval(Context)
-   * Returns context.game().rules().phases().length — number of game phases.
-   */
-  public eval(ctx: Context): number {
-    const rules = (ctx.game as unknown as Game1to1).rules as unknown as Rules;
-    return rules.phases?.length ?? 1;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // CountNumber
 // ---------------------------------------------------------------------------
 export class CountNumber implements IntFunction {

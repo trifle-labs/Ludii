@@ -135,26 +135,6 @@ export class Div1to1 implements IntFunction {
 }
 
 // ---------------------------------------------------------------------------
-// Mod  (alias "%")
-// ---------------------------------------------------------------------------
-export class Mod1to1 implements IntFunction {
-  private readonly a: IntFunction;
-  private readonly b: IntFunction;
-
-  public constructor(a: IntFunction, b: IntFunction) {
-    this.a = a;
-    this.b = b;
-  }
-
-  /** @java game/functions/ints/math/Mod.java — eval: a % b, returns 0 if b==0 */
-  public eval(ctx: Context): number {
-    const bv = this.b.eval(ctx);
-    if (bv === 0) return 0;
-    return this.a.eval(ctx) % bv;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Abs
 // ---------------------------------------------------------------------------
 export class Abs1to1 implements IntFunction {

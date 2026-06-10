@@ -41,20 +41,6 @@ export class To implements IntFunction {
 }
 
 // ---------------------------------------------------------------------------
-// Site (forEach site iterator current site)
-// ---------------------------------------------------------------------------
-export class Site1to1 implements IntFunction {
-  /**
-   * @java game/functions/ints/iterator/Site.java — eval: context.site()
-   * Returns the current site being iterated over by forEach.
-   */
-  public eval(ctx: Context): number {
-    const s = ctx._evalSite;
-    return (s !== undefined && s !== null && s >= 0) ? s : ctx._evalFrom;
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Between
 // ---------------------------------------------------------------------------
 export class Between implements IntFunction {
@@ -66,34 +52,6 @@ export class Between implements IntFunction {
     // Java: context.between() — set by hop moves via _evalBetween.
     const b = ctx._evalBetween;
     return b >= 0 ? b : ctx._evalFrom;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Level
-// ---------------------------------------------------------------------------
-export class Level1to1 implements IntFunction {
-  /**
-   * @java game/functions/ints/iterator/Level.java — eval: context.level()
-   * For stacking games; returns 0 in non-stacking games.
-   */
-  public eval(ctx: Context): number {
-    const ctxAny = ctx as unknown as { _evalLevel?: number };
-    return ctxAny._evalLevel ?? 0;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Pips
-// ---------------------------------------------------------------------------
-export class Pips1to1 implements IntFunction {
-  /**
-   * @java game/functions/ints/iterator/Pips.java — eval: context.pipCount()
-   * Current die pip value set by forEach Die iteration.
-   */
-  public eval(ctx: Context): number {
-    const ctxAny = ctx as unknown as { _evalPips?: number };
-    return ctxAny._evalPips ?? 0;
   }
 }
 

@@ -77,24 +77,6 @@ class SitesHiddenBase implements RegionFunction {
 /** @java game/functions/region/sites/hidden/SitesHidden.java */
 export class SitesHidden extends SitesHiddenBase {}
 
-/** @java game/functions/region/sites/hidden/SitesHiddenWhat.java */
-export class SitesHiddenWhat1to1 extends SitesHiddenBase {}
-
-/** @java game/functions/region/sites/hidden/SitesHiddenWho.java */
-export class SitesHiddenWho1to1 extends SitesHiddenBase {}
-
-/** @java game/functions/region/sites/hidden/SitesHiddenState.java */
-export class SitesHiddenState1to1 extends SitesHiddenBase {}
-
-/** @java game/functions/region/sites/hidden/SitesHiddenCount.java */
-export class SitesHiddenCount1to1 extends SitesHiddenBase {}
-
-/** @java game/functions/region/sites/hidden/SitesHiddenRotation.java */
-export class SitesHiddenRotation1to1 extends SitesHiddenBase {}
-
-/** @java game/functions/region/sites/hidden/SitesHiddenValue.java */
-export class SitesHiddenValue1to1 extends SitesHiddenBase {}
-
 // ---------------------------------------------------------------------------
 // Registration — single key "sites:hidden" dispatches on HiddenData arg
 // ---------------------------------------------------------------------------
