@@ -1094,6 +1094,7 @@ export class ArgCompiler {
   }
 
   private instantiateRegistry(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
+    if (process.env["LUDII_TRACE_REGISTRY"]) console.error("[registry]", info.className);
     const registry = env.registry ?? this.registry;
     const named = new Map<string, unknown>();
     info.paramNames.forEach((name, index) => {

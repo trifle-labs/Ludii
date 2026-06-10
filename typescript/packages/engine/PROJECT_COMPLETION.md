@@ -857,3 +857,18 @@ sequence (codex wave or careful solo): (1) flip play1to1's default to faithful-o
 (keep LUDII_BESPOKE=1 escape hatch), (2) re-port the 73 cross-import files
 (recipe in Update 31), (3) delete compiler1to1.ts + LudemeRegistry + batch
 factories + *1to1 modules, (4) per-batch canary sweeps throughout.
+
+## Update 34 — FAITHFUL IS THE DEFAULT ENGINE; item-2 worklist measured at 39 classes
+
+- play1to1 compiles via the ArgCompiler BY DEFAULT; LUDII_BESPOKE=1 is the reference
+  escape hatch (harness/probe reference workers updated). 10-game default sweep green.
+- **LUDII_TRACE_REGISTRY instrumentation**: the REAL item-2 worklist is the bespoke
+  registry factories that faithful compiles still call — measured at **39 classes**
+  (test/parity/registry-worklist.txt, hit-count ordered), NOT the 73-file import
+  census. Top: ints.last.Last (5.5k hits), iterator.Site, board.Id, state.Var/Who/
+  What/State, region.math.Difference/If/Union, ints.size.Size, math.If, iterator.
+  Level, board.RegionSite, intArray.values.Values, moves.And, board.where.Where.
+- Sub/Mod/Div ported (Min/Max pattern) — 42→39. Each remaining class is the same
+  recipe: port @java class, register in JAVA_TS_CTORS, canary. After the registry
+  worklist hits zero, instantiateRegistry + REGISTRY_FIRST + the batch factories +
+  compiler1to1 delete cleanly.
