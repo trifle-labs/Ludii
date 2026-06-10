@@ -1128,3 +1128,22 @@ tsc clean; 24-game battery all OUTCOME_OK 2/2; probe-play/compile-guard green.
 
 Item-3 remaining: substrate re-homing (rename/move, no behavior), StartRule
 eval(Context) migration, State convergence, + the 9 exotic compile singles.
+
+## Update 51 — Item-3 remaining scope, measured
+
+With the bespoke layer extinct, item 3's residue is precisely:
+1. **Substrate re-homing**: 235 *1to1-NAMED files (329 referencing the suffix) —
+   faithful implementations carrying transitional names/locations. Core anchors:
+   Game1to1 (68 referencing files), Equipment1to1 (29), Board1to1 (11). Pure
+   rename/move campaign (git mv + import-path rewrite), scriptable, battery-gated;
+   no behavior change. Best done as one automated sweep with the 24-game battery
+   between chunks.
+2. **StartRule eval(Context) migration**: one interface + ~dozens of impls + the
+   Game1to1.start() call site, coordinated (Update 31a design).
+3. **State convergence**: the single largest remaining structure — 196 files touch
+   State; converging the engine state to Java's State/ContainerState API shapes.
+4. **9 exotic compile singles** (Update 48 list; Senet is a recon-placeholder file).
+
+Items 1 and 2 of the definition of complete: DONE. Item 3: the registration layer,
+dead callbacks, shims, orphans = all deleted; dedup recipe proven; remaining = the
+three campaigns above (each sized, designed, and battery-gated).
