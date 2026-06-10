@@ -10,7 +10,7 @@
  * @java game/rules/start/place/StartPlacementType.java — start(Context)
  */
 
-import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../equipment/EquipmentSurface.js";
 import type { Context } from "../../../../context.js";
 import type { StartRule } from "./StartRule.js";
 import type { RoleType } from "../../../base.js";
@@ -51,13 +51,13 @@ export class PlaceAtHandSite implements StartRule {
   public eval(ctx: Context): void {
     const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
     if (!cs) return;
-    const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
+    const g = ctx.game as unknown as { equipment: EquipmentSurface; numPlayers: number };
     this.applyImpl(cs, g.equipment);
   }
 
   private applyImpl(
     cs: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void },
-    equipment: Equipment1to1,
+    equipment: EquipmentSurface,
   ): void {
     // Resolve owner from role.
     let owner: number;

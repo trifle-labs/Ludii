@@ -30,7 +30,7 @@ import { IsPrev } from "../../../ludemes/game/functions/booleans/is/player/IsPre
 import { NoMoves } from "../../../ludemes/game/functions/booleans/no/NoMoves.js";
 import { SetPending } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/set/pending/SetPending.js";
 import { SetCountStart } from "../../../ludemes/game/rules/start/SetCountStart.js";
-import { Board1to1 } from "../../../ludemes/game/equipment/container/board/Board1to1.js";
+import { BoardSurface } from "../../../ludemes/game/equipment/container/board/BoardSurface.js";
 import { RectangleOnSquare } from "../../../ludemes/game/functions/graph/generators/basis/square/RectangleOnSquare.js";
 import { ConcentricCircle } from "../../../ludemes/game/functions/graph/generators/shape/concentric/ConcentricCircle.js";
 import { Rules } from "../../../ludemes/game/rules/Rules.js";

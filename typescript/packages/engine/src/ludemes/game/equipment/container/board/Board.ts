@@ -67,9 +67,9 @@ export class Board extends Container {
   /** @java Board.graphFunction */
   private readonly graphFunction: GraphFunction;
 
-  // ---- Topology surface (Board1to1-compatible) -----------------------------
+  // ---- Topology surface (BoardSurface-compatible) -----------------------------
   // Built by createTopology() from the graph function, or lazily on first read.
-  // These mirror Board1to1's public fields so the faithful Board duck-types as
+  // These mirror BoardSurface's public fields so the faithful Board duck-types as
   // the board the engine (Game, evals) reads: numSites/width/height/radials/
   // trajectories/containerSpan.
   // @java game/equipment/container/board/Board.java — createTopology / topology()
@@ -375,7 +375,7 @@ export class Board extends Container {
   /**
    * @java Board.numSites() — site count, building topology lazily if create()
    * hasn't run yet. Container stores `numSites` (protected); expose it here so
-   * the faithful Board duck-types as Board1to1 for the engine.
+   * the faithful Board duck-types as BoardSurface for the engine.
    */
   public getNumSitesBuilt(): number {
     if (!this.topologyBuilt) this.buildTopology();

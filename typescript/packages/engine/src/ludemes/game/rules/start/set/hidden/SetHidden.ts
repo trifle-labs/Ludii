@@ -10,7 +10,7 @@
  * The compile1to1 path currently skips (set Hidden …) start rules.
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../../../equipment/EquipmentSurface.js";
 import type { BooleanFunction, EvalScratch, IntFunction } from "../../../../../base.js";
 import type { Context } from "../../../../../../context.js";
 import { BooleanConstant } from "../../../../functions/booleans/BooleanConstant.js";

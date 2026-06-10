@@ -4,7 +4,7 @@
  * @java game/rules/start/set/sites/SetSite.java — eval(Context)
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../../../equipment/EquipmentSurface.js";
 import type { IntFunction, RegionFunction } from "../../../../../base.js";
 import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
@@ -103,7 +103,7 @@ export class SetSite implements StartRule {
   public eval(ctx: Context): void {
     const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
     if (!cs) return;
-    const game = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
+    const game = ctx.game as unknown as { equipment: EquipmentSurface; numPlayers: number };
 
     // Find the first piece owned by this player (Java: iterates components until component.index() == what)
     const owner = roleOwner(this.role, game.numPlayers);

@@ -18,7 +18,7 @@ import {
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Track } from "./Track.js";
 
-export class Board1to1 {
+export class BoardSurface {
   /** Number of play sites on the board (vertices for vertex-play boards). @java Board.numSites() */
   public readonly numSites: number;
   /**

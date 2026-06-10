@@ -10,7 +10,7 @@
  * The compile1to1 path currently skips (set Team …) start rules.
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../../../equipment/EquipmentSurface.js";
 import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
 

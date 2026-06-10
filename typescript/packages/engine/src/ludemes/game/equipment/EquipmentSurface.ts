@@ -1,7 +1,8 @@
 /**
- * @java game/equipment/Equipment.java Equipment
- *
- * 1:1-port equipment container.
+ * The engine's typed READ SURFACE over the faithful game.equipment.Equipment
+ * runtime object (never instantiated — the runtime instance is the faithful
+ * Equipment; this type names the property surface engine code reads).
+ * @java game/equipment/Equipment.java Equipment (surface view)
  *
  * Holds the board, pieces, and optional hand containers for a game.
  * Assigns 1-based component indices to pieces (mirroring Java's
@@ -15,7 +16,7 @@
  * @java game/equipment/container/other/Hand.java — hand container
  */
 
-import type { Board1to1 } from "./container/board/Board1to1.js";
+import type { BoardSurface } from "./container/board/BoardSurface.js";
 import type { Piece } from "./component/Piece.js";
 
 /**
@@ -29,11 +30,11 @@ export interface HandSpec {
   readonly size: number;
 }
 
-export class Equipment1to1 {
+export class EquipmentSurface {
   /**
    * The board. @java Equipment.board()
    */
-  public readonly board: Board1to1;
+  public readonly board: BoardSurface;
 
   /**
    * All pieces, indexed 0-based. Each piece's `index` field will be set to
@@ -110,7 +111,7 @@ export class Equipment1to1 {
    * Java assigns indices starting at 1 in declaration order.
    */
   public constructor(
-    board: Board1to1,
+    board: BoardSurface,
     pieces: Piece[],
     hands: HandSpec[] = [],
     playerRegions: Map<number, import("../../base.js").RegionFunction> = new Map(),

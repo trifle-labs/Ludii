@@ -4,7 +4,7 @@
  * @java game/rules/start/set/sites/SetCount.java — eval(Context)
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../../../equipment/EquipmentSurface.js";
 import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
 
@@ -43,7 +43,7 @@ export class SetCount implements StartRule {
   public eval(ctx: Context): void {
     const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
     if (!cs) return;
-    const equipment = (ctx.game as unknown as { equipment: Equipment1to1 }).equipment;
+    const equipment = (ctx.game as unknown as { equipment: EquipmentSurface }).equipment;
     // Java: uses context.components()[length-1].index() as `what`
     const pieces = equipment.pieces;
     if (pieces.length === 0) return;

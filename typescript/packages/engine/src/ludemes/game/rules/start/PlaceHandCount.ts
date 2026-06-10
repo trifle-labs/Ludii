@@ -15,7 +15,7 @@
  * @java game/rules/start/place/StartPlacementStackType.java
  */
 
-import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../equipment/EquipmentSurface.js";
 import type { Context } from "../../../../context.js";
 import type { StartRule } from "./StartRule.js";
 
@@ -51,14 +51,14 @@ export class PlaceHandCount implements StartRule {
   public eval(ctx: Context): void {
     const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void; who(site: number): number; what(site: number): number } })._startState;
     if (!cs) return;
-    const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
+    const g = ctx.game as unknown as { equipment: EquipmentSurface; numPlayers: number };
     this.applyImpl(ctx, cs, g.equipment, g.numPlayers);
   }
 
   private applyImpl(
     _ctx: Context,
     cs: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void; who(site: number): number; what(site: number): number },
-    equipment: Equipment1to1,
+    equipment: EquipmentSurface,
     numPlayers: number,
   ): void {
     for (let p = 1; p <= numPlayers; p++) {

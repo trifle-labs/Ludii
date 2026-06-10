@@ -46,7 +46,7 @@ import { ActionRemove } from "../action/action-remove.js";
 import { State } from "../state.js";
 import { Trial } from "../trial.js";
 
-import type { Equipment1to1 } from "./game/equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "./game/equipment/EquipmentSurface.js";
 import { Mode } from "./game/mode/Mode.js";
 import { GamePlayers } from "./game/players/GamePlayers.js";
 import type { Rules } from "./game/rules/Rules.js";
@@ -96,15 +96,15 @@ interface Game1to1PortOptions {
 
 const GAME_PORT_OPTIONS = new WeakMap<Rules, Game1to1PortOptions>();
 
-type GameBoardSurface = Equipment1to1["board"] & {
+type GameBoardSurface = EquipmentSurface["board"] & {
   getTracks?: () => readonly unknown[];
 };
 
-type GamePieceSurface = Equipment1to1["pieces"][number] & {
+type GamePieceSurface = EquipmentSurface["pieces"][number] & {
   readonly generator?: unknown;
 };
 
-type GameEquipmentSurface = Omit<Equipment1to1, "board" | "pieces"> & {
+type GameEquipmentSurface = Omit<EquipmentSurface, "board" | "pieces"> & {
   readonly board: GameBoardSurface;
   readonly pieces: readonly GamePieceSurface[];
   createItems?: (game: unknown) => void;

@@ -210,7 +210,7 @@ export class IsLine implements BooleanFunction {
     // Square/rectangle path: use precomputed flat radials table.
     const radials = ctxAny._radials;
     if (radials === undefined) {
-      throw new Error("IsLine(1:1): _radials not attached to context. Board1to1 must set ctx._radials.");
+      throw new Error("IsLine(1:1): _radials not attached to context. BoardSurface must set ctx._radials.");
     }
 
     const cellRadials = radials[pivot];
@@ -349,7 +349,7 @@ export class IsLine implements BooleanFunction {
     }
     const radials = ctxAny._radials;
     if (radials === undefined) {
-      throw new Error("IsLine(1:1): _radials not attached to context. Board1to1 must set ctx._radials.");
+      throw new Error("IsLine(1:1): _radials not attached to context. BoardSurface must set ctx._radials.");
     }
     const cellRadials = radials[pivot];
     if (cellRadials === undefined) return [];

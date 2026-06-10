@@ -10,7 +10,7 @@
  * until Game.start() exposes a phaseAt[] array.
  */
 
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../../../equipment/EquipmentSurface.js";
 import type { IntFunction, RegionFunction } from "../../../../../base.js";
 import type { SiteType } from "../../../../../other/action/SiteType.js";
 import type { Context } from "../../../../../../context.js";

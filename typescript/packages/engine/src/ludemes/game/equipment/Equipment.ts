@@ -80,7 +80,7 @@ interface Component extends Item {
   owner(): number;
 }
 
-/** Surface consumed by Game; mirrors Equipment1to1's piece shape. */
+/** Surface consumed by Game; mirrors EquipmentSurface's piece shape. */
 interface GamePieceSurface {
   readonly name: string;
   readonly owner: number;
@@ -88,7 +88,7 @@ interface GamePieceSurface {
   readonly generator: unknown;
 }
 
-/** Surface consumed by Game; mirrors Board1to1's public board shape. */
+/** Surface consumed by Game; mirrors BoardSurface's public board shape. */
 interface GameBoardSurface {
   readonly width: number;
   readonly height: number;

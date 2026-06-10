@@ -8,7 +8,7 @@
  */
 
 import type { Context } from "../../../../../../context.js";
-import type { Equipment1to1 } from "../../../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../../../equipment/EquipmentSurface.js";
 
 /**
  * Minimal interface for a start rule that can be eval'd with a Context.

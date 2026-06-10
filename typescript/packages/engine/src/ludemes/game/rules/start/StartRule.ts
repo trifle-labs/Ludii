@@ -7,7 +7,7 @@
  * @java game/rules/start/StartRule.java — start(Context)
  */
 
-import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../equipment/EquipmentSurface.js";
 import type { Context } from "../../../../context.js";
 
 /**

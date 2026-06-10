@@ -10,7 +10,7 @@
  * @java game/rules/start/place/StartPlacementType.java — start(Context)
  */
 
-import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
+import type { EquipmentSurface } from "../../equipment/EquipmentSurface.js";
 import type { RegionFunction } from "../../../base.js";
 import type { StartRule } from "./StartRule.js";
 import type { Context } from "../../../../context.js";
@@ -46,7 +46,7 @@ export class PlaceRegion implements StartRule {
   public eval(ctx: Context): void {
     const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
     if (!cs) return;
-    const equipment = (ctx.game as unknown as { equipment: Equipment1to1 }).equipment;
+    const equipment = (ctx.game as unknown as { equipment: EquipmentSurface }).equipment;
 
     // Parse player number from the piece id suffix.
     const match = this.pieceId.match(/^(.*?)(\d+)$/);
