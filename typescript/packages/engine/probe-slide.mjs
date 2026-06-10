@@ -24,7 +24,7 @@ process.stdout.write(JSON.stringify({equip:g?.equipment?.constructor?.name,count
 `;
   const r = spawnSync(process.execPath, ["--input-type=module", "-e", code], {
     cwd: process.cwd(),
-    env: { ...process.env, LUDII_ARGCOMPILER: useArg ? "1" : "" },
+    env: { ...process.env, LUDII_ARGCOMPILER: useArg ? "1" : "", LUDII_BESPOKE: useArg ? "" : "1" },
     encoding: "utf8", maxBuffer: 64 * 1024 * 1024,
   });
   if (r.status !== 0) return { error: (r.stderr || "").split("\n").filter(Boolean).slice(-4).join(" | ") };

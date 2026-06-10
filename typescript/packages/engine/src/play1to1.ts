@@ -70,10 +70,12 @@ export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
   const gameNode = findGameNode(ast, opts?.resolveSubgame);
 
   // Step 5: Compile to ludeme object tree.
-  // Faithful path: when LUDII_ARGCOMPILER is set, compile via the reflection-driven
-  // ArgCompiler (game.Game -> Game1to1 through JAVA_TS_CTORS). Falls back to the
-  // compiler1to1 dispatcher on any failure so behaviour never regresses below baseline.
-  if (process.env.LUDII_ARGCOMPILER) {
+  // FAITHFUL BY DEFAULT (definition-of-complete item 2, step 1): the reflection-
+  // driven ArgCompiler (game.Game -> Game1to1 through JAVA_TS_CTORS) is the engine.
+  // LUDII_BESPOKE=1 selects the legacy bespoke dispatcher (the parity harness's
+  // reference mode); it and the silent fallback die with the bespoke deletion.
+  // LUDII_ARGCOMPILER stays honored for explicit-faithful callers.
+  if (!process.env.LUDII_BESPOKE) {
     try {
       argCompiler ??= new ArgCompiler();
       const game = argCompiler.compile<Game1to1>(gameNode, ["game.Game"]);

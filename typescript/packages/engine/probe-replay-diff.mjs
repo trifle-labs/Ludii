@@ -55,7 +55,7 @@ for (let i=0;i<Math.min(gameMoves.length, ${MAX});i++){
 console.log(JSON.stringify({sets: out}));
 `;
   const r = spawnSync(process.execPath, ["--input-type=module", "-e", code],
-    { cwd: process.cwd(), env: { ...process.env, LUDII_ARGCOMPILER: useArg ? "1" : "" }, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 180000 });
+    { cwd: process.cwd(), env: { ...process.env, LUDII_ARGCOMPILER: useArg ? "1" : "", LUDII_BESPOKE: useArg ? "" : "1" }, encoding: "utf8", maxBuffer: 256 * 1024 * 1024, timeout: 180000 });
   if (r.status !== 0) return { error: (r.stderr || "").split("\n").filter(Boolean).slice(-3).join(" | ") };
   try { return JSON.parse(r.stdout.trim().split("\n").pop()); } catch { return { error: "parse:" + (r.stdout || "").slice(-150) }; }
 };
