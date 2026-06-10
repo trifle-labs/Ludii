@@ -1404,3 +1404,25 @@ line item of the definition of complete is CLOSED.
 
 Remaining for the definition of complete: State convergence (chunk plan in Update
 62), then the final behavioral parity re-verification.
+
+## Update 64 (2026-06-10) — State convergence chunks 1–3 substantially done
+
+Chunks landed (7 battery-gated commits):
+1. **ContainerState READ accessors** on State (who/what/count/stateValue/isEmpty,
+   @java other/state/container/ContainerState.java) — pure addition.
+2. **Read-path migration COMPLETE**: zero raw `state.cells[...]` reads outside
+   State (34 sites/22 files → who()); 55 accessor call sites on the Java names
+   (what/count/stateValue); ForEachPiece's narrowing cast dissolved.
+3. **Mutation facade on the start bridge** (`ctx._startState`): setSite (the Java
+   ContainerState.setSite shape, UNDEFINED leaves slots), setScore, setAmount,
+   plus LIVE who/what reads (the per-rule bridge State snapshots its arrays —
+   Object.freeze([...cells]) — so intra-rule reads must use the live view; this
+   subtlety would have made PlaceHandCount overwrite hand slots).
+   9 of 10 writing rules converted; `_startArrays` now feeds ONLY PlaceItem1to1's
+   applyImpl (the 419-line reflection-path placement — its ~6 write clusters
+   convert to cs.setSite the same way, next increment).
+
+Remaining: PlaceItem1to1 write clusters → facade (then DELETE _startArrays);
+chunk 4 side-channels (equipment._initialRemembered/_initialHidden → bridge);
+chunk 5 core renames (Game1to1/Equipment1to1/State1to1/Item1to1/Component1to1
+→ Java homes); final behavioral parity re-verification.
