@@ -377,11 +377,15 @@ export class Game1to1 implements Game {
     // @java State.scores / State.amounts — initialised by ActionSetScore/SetAmount.
     const scores = new Array<number>(this.numPlayers + 1).fill(0);
     const amounts = new Array<number>(this.numPlayers + 1).fill(0);
+    // Bridge-owned start collections (STATE CONVERGENCE chunk 4 — the equipment
+    // side-channels fold into these; rules write via the ContainerState facade).
+    const startRemembered = new Map<string, number[]>();
+    const startHidden = new Map<string, boolean>();
 
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts);
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden);
     }
 
     // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
@@ -430,9 +434,8 @@ export class Game1to1 implements Game {
 
     // Apply remembered-value start rules (from (set RememberValue "name" <region>)).
     // @java game/rules/start/set/remember/SetRememberValue.java — eval() calls ActionRememberValue.apply()
-    const initRemembered = (this.equipment as unknown as { _initialRemembered?: Map<string, number[]> })._initialRemembered;
-    if (initRemembered) {
-      for (const [key, values] of initRemembered) {
+    if (startRemembered.size > 0) {
+      for (const [key, values] of startRemembered) {
         for (const v of values) {
           state = state.withRemember(key, v);
         }
@@ -441,9 +444,8 @@ export class Game1to1 implements Game {
 
     // Apply hidden-info start rules (from (set Hidden ... to:P1)).
     // @java game/rules/start/set/hidden/SetHidden.java — eval() calls ActionSetHidden.apply()
-    const initHidden = (this.equipment as unknown as { _initialHidden?: Map<string, boolean> })._initialHidden;
-    if (initHidden) {
-      for (const [key, val] of initHidden) {
+    if (startHidden.size > 0) {
+      for (const [key, val] of startHidden) {
         const colonIdx = key.indexOf(':');
         const pidStr = key.slice(0, colonIdx);
         const siteStr = key.slice(colonIdx + 1);
@@ -776,6 +778,8 @@ export class Game1to1 implements Game {
     valueAt: number[],
     scores?: number[],
     amounts?: number[],
+    startRemembered?: Map<string, number[]>,
+    startHidden?: Map<string, boolean>,
   ): void {
     const evalRule = rule as { eval?: (ctx: Context) => void };
     if (typeof evalRule.eval !== "function") return;
@@ -826,6 +830,20 @@ export class Game1to1 implements Game {
       /** @java State.setAmount(player, amount) */
       setAmount: (pid: number, amount: number): void => {
         if (amounts && pid >= 0 && pid < amounts.length) amounts[pid] = amount;
+      },
+      /** @java State.remember(name, value) — ActionRememberValue.apply(context). */
+      rememberValue: (name: string | null, value: number, unique: boolean): void => {
+        if (!startRemembered) return;
+        const key = name ?? "";
+        const bucket = startRemembered.get(key) ?? [];
+        if (unique && bucket.includes(value)) return;
+        bucket.push(value);
+        startRemembered.set(key, bucket);
+      },
+      /** @java ActionSetHidden.apply(context) — State.setHidden(pid, site, value). */
+      setHidden: (pid: number, site: number, value: boolean): void => {
+        if (!startHidden) return;
+        startHidden.set(`${pid}:${site}`, value);
       },
       /** @java ContainerState.who(site) — LIVE read (the per-rule bridge State
        * snapshots the arrays at construction; intra-rule reads need the live view). */

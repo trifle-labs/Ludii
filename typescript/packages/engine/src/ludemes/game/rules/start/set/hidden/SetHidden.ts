@@ -112,9 +112,24 @@ export class SetHidden implements StartRule {
    *   ActionSetHidden*(who, realType, site, level, value).apply(context)
    * TS-deferred: State.hiddenForPlayer[][] not accessible via applyToInitialState.
    */
-  public eval(_ctx: Context): void {
-    // Deferred until State convergence: State.hiddenForPlayer is populated via the equipment._initialHidden side-channel (ArgCompiler).
+  public eval(ctx: Context): void {
+    const cs = (ctx as unknown as {
+      _startState?: { setHidden(pid: number, site: number, value: boolean): void };
+    })._startState;
+    if (!cs) return;
+    // @java SetHidden.eval(Context): for each site, ActionSetHidden*(who, type,
+    // site, level, value).apply(context). The engine's hidden model is per
+    // (player, site) visibility; HiddenData facets collapse onto it.
     void this.type;
+    void this.dataTypes;
+    void this.levelFn;
+    const sites = this.region.eval(ctx as unknown as Parameters<IntArrayFromRegion["eval"]>[0]);
+    const value = this.valueFn.eval(ctx);
+    const who = this.whoFn.eval(ctx);
+    for (const site of sites) {
+      if (site < 0) continue;
+      cs.setHidden(who, site, value);
+    }
   }
 }
 

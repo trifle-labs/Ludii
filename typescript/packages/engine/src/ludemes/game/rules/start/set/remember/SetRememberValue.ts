@@ -72,11 +72,14 @@ export class SetRememberValue implements StartRule {
    */
   /**
    * @java game/rules/start/set/remember/SetRememberValue.java — eval(Context)
-   * Stashes into equipment._initialRemembered; Game1to1.start() threads it into
-   * the initial State via withRemember (replaced by ActionRememberValue at
-   * State convergence).
+   * Writes through the bridge ContainerState facade; Game1to1.start() threads the
+   * collected values into the initial State via withRemember.
    */
   public eval(ctx: Context): void {
+    const cs = (ctx as unknown as {
+      _startState?: { rememberValue(name: string | null, value: number, unique: boolean): void };
+    })._startState;
+    if (!cs) return;
     const values: number[] = [];
     if (this.value !== null) {
       values.push(this.value.eval(ctx));
@@ -84,18 +87,8 @@ export class SetRememberValue implements StartRule {
       values.push(...this.regionValue.eval(ctx));
     }
     if (values.length === 0) return;
-
-    const eq = (ctx.game as unknown as { equipment: unknown }).equipment as {
-      _initialRemembered?: Map<string, number[]>;
-    };
-    eq._initialRemembered ??= new Map();
-    const key = this.name ?? "";
-    const bucket = eq._initialRemembered.get(key) ?? [];
+    // @java ActionRememberValue(name, value, unique).apply(context) per value.
     const unique = this.uniqueFn.eval(ctx);
-    for (const value of values) {
-      if (unique && bucket.includes(value)) continue;
-      bucket.push(value);
-    }
-    eq._initialRemembered.set(key, bucket);
+    for (const value of values) cs.rememberValue(this.name, value, unique);
   }
 }
