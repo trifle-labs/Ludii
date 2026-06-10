@@ -1,6 +1,6 @@
 {
- "faithful": 179,
- "fallback": 41,
+ "faithful": 183,
+ "fallback": 37,
  "total": 220,
  "perGame": [
   {
@@ -150,8 +150,8 @@
   },
   {
    "game": "board/sow/four_rows/Msuwa.lud",
-   "status": "THROW",
-   "reason": "terminal 18..21 did not match game.functions.ints.IntFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/four_rows/Nchuwa.lud",
@@ -305,8 +305,8 @@
   },
   {
    "game": "board/space/group/Spao.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.ints.math.Mul: no TS constructor mapped"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/line/Achi.lud",
@@ -500,8 +500,8 @@
   },
   {
    "game": "board/war/replacement/checkmate/chaturanga/Sittuyin.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.Game: constructor threw (Cannot read properties of undefined (read"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/checkmate/chess/Brusky Chess.lud",
@@ -535,8 +535,8 @@
   },
   {
    "game": "board/war/replacement/checkmate/shogi/Tai Shogi.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.Game: constructor threw (Cannot read properties of undefined (read"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/checkmate/xiangqi/Qi Guo Xiangxi.lud",
@@ -756,7 +756,7 @@
   {
    "game": "reconstruction/pending/board/sow/three_rows/Arb'ata 'Ashara.lud",
    "status": "THROW",
-   "reason": "terminal [3..30] did not match game.functions.dim.DimFunction"
+   "reason": "(rectangle) matched none of 1 reflection candidate(s) for game.functions.graph.GraphFuncti"
   },
   {
    "game": "reconstruction/pending/board/sow/two_rows/Okwe (Igbo).lud",

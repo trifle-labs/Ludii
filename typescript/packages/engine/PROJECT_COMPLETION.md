@@ -761,3 +761,24 @@ two giant chess variants (Sittuyin, Tai Shogi), puzzle iterators Hint/Edge/All
 Diagnostic tooling added this wave (permanent): deepest-divergence head PATH
 breadcrumb (`game>equipment>piece>if>=>trackSite`), LUDII_DEBUG_INST (ctor-throw
 stacks), LUDII_DEBUG_THEN (silent then-catch surfacing).
+
+## Update 29 — Regrowth continues: real-game coverage 93.1% → 94.6%
+
+- **Expander range pre-pass** (@java Expander.java:1282/1360): `m..n` and `"A1".."C3"`
+  expand on the source text before lexing (play1to1 step 0 + coverage probe). Msuwa
+  compiles+starts (play depth = bespoke's, beyond-bespoke mancala class).
+- **Static maps get an equipment-derived eval context** (@java Map.computeMap uses a
+  real Context): `(coord "A1")`-keyed map pairs work → Sittuyin + Tai Shogi compile.
+
+**Remaining real-game queue (7)**, each root-cause-localized:
+- Morra: `(start { … <Players:initP3> })` — applyOptions leaves an EMPTY option
+  placeholder node in the array (options-layer fix: drop empty substitutions).
+- Kriegsspiel / Qi Guo Xiangxi: failing node is an `(or {…})`/`(and {…})` whose array
+  items include nested `?`-headed (headless) lists after define expansion — needs AST
+  dump of the failing subtree (deepest.path now available: `piece>or>?>?`).
+- Sudoku / Killer Sudoku / Morpion Solitaire: puzzle ludemes unported
+  (ints.iterator.Hint, ints.iterator.Edge, booleans.deductionPuzzle.all.All).
+- Bravalath: `(tile <Tiling:tile> Each <numSides>)` Tile-component clause binding.
+
+Tooling note for the next session: minimal repro pattern is
+`new ArgCompiler({}).compile(parseLud(snippet), [expectedType])` + `ac.deepest.path`.
