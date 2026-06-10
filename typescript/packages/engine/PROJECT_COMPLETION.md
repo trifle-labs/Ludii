@@ -782,3 +782,23 @@ stacks), LUDII_DEBUG_THEN (silent then-catch surfacing).
 
 Tooling note for the next session: minimal repro pattern is
 `new ArgCompiler({}).compile(parseLud(snippet), [expectedType])` + `ac.deepest.path`.
+
+## Update 30 — Real-game faithful-compile coverage 99.2% (129/130)
+
+Final regrowth increments, each canary-gated:
+- **Multi-term define bodies SPLICE** into the parent list (Java textual-expansion
+  parity; Morra's "InitHand"). Fixed Morra + Kriegsspiel + Qi Guo Xiangxi at once.
+- **ints.state.Amount** ported (reads state.amounts, Java State.amount(player)).
+- **Puzzle compile**: Hint/Edge iterators ported; deductionPuzzle.all.All was imported
+  but never registered (one line); Values.type/range fields → Java accessor METHODS;
+  static-construct dispatch accepts overloads whose REQUIRED params are satisfiable
+  (JS Function.length stops at the first default — All.construct could never match).
+  Sudoku, Killer Sudoku, Morpion Solitaire all compile faithfully.
+- **Labeled option values split like Java's textual re-lex** (`<numSides:6>` → ident
+  `numSides:` + number 6) — Bravalath's Tile binds correctly.
+
+**The ONE remaining real-game compile gap is Bravalath, blocked on the BOARDLESS
+subsystem** (a boardless game has no graph; Trajectories needs Java's Boardless
+container = large hidden hex field) — same documented subsystem class as stacking /
+3D / dice-state races. Item 2's compile-coverage precondition is otherwise met:
+129/130 real games compile faithfully; play-parity canaries (22 games) all green.

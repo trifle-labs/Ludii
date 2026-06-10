@@ -248,7 +248,8 @@ function normalizeAngleTokens(items: readonly LudNode[]): LudNode[] {
           } else if (t.name.startsWith("<") && t.name.endsWith(">")) {
             out.push({ kind: "ident", name: t.name, range: item.range });
           } else {
-            out.push(identOrNumber(t.name, item.range));
+            const r = identOrNumber(t.name, item.range);
+            if (Array.isArray(r)) out.push(...r); else out.push(r);
           }
         }
         continue;
@@ -314,7 +315,8 @@ function extractItemValues(itemNode: LudList): LudNode[][] {
         if (stripped === "") {
           out.push([]);
         } else {
-          out.push([identOrNumber(stripped, node.range)]);
+          const r = identOrNumber(stripped, node.range);
+          out.push(Array.isArray(r) ? r : [r]);
         }
         i += 1;
         continue;
@@ -344,12 +346,24 @@ function containsItem(list: LudList): boolean {
 function identOrNumber(
   text: string,
   range: LudIdent["range"],
-): LudIdent | LudNumber {
+): LudIdent | LudNumber | (LudIdent | LudNumber)[] {
   if (/^-?\d+$/.test(text)) {
     return { kind: "number", value: Number.parseInt(text, 10), range };
   }
   if (/^-?\d+\.\d+$/.test(text)) {
     return { kind: "number", value: Number.parseFloat(text), range };
+  }
+  // Java substitutes option values TEXTUALLY and re-lexes, so a labeled value like
+  // `numSides:6` becomes TWO tokens (`numSides:` ident + `6` number) — exactly how
+  // the same text lexes inline. Mirror that here (Bravalath's <numSides:6>).
+  const labeled = text.match(/^([A-Za-z][A-Za-z0-9_]*:)(-?\d+(?:\.\d+)?)$/);
+  if (labeled) {
+    return [
+      { kind: "ident", name: labeled[1]!, range },
+      /\./.test(labeled[2]!)
+        ? { kind: "number", value: Number.parseFloat(labeled[2]!), range }
+        : { kind: "number", value: Number.parseInt(labeled[2]!, 10), range },
+    ];
   }
   return { kind: "ident", name: text, range };
 }
