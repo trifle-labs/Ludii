@@ -525,6 +525,24 @@ Sow-2 left-out dispatch increments; Tant Fant over-generation; Surakarta track b
 coordinate resolver; AlquerqueBoard hunt span; dice/track race games. Codex credits return Jun 13
 ~8pm — resume codex waves then; manual waves work fine meanwhile (this update proves the loop).
 
+## Update 16: manual stretch complete — Achi 239 plies, Nerenchi 137 plies full faithful parity
+Three foundational manual fixes (codex still out until Jun 13 ~8pm):
+1. (sites Hand <role>) dispatch + role->pid (Update 15).
+2. **Then.applyPostStateThen wired into ALL five high-traffic effects** (FromTo/Step/Add/Slide/
+   Remove/Shoot): every conditional then-consequence corpus-wide now evaluates post-move per Java.
+3. **RoleType.Player** added to the role->IntFunction conversions (batch9 roleIntFunction, batch1
+   roleToIntFunction, CountPieces1to1 binding): (forEach Player ...) end rules with (count Pieces
+   Player) now resolve the iterated player (was IntConstant(0) -> end never fired -> tsWinner=-1).
+RESULTS: Achi OUTCOME_OK 2/2 (239-ply trial), Nerenchi Keliya OUTCOME_OK 2/2 (137 plies). Full
+canary set green at every commit. Corpus window snapshot (PRE-dating fixes 2b/3): 8 OUTCOME_OK +
+1 REPLAY_OK (was 7+1) — understates the current tree.
+MEASUREMENT NOTE: the single-process strided corpus run times out (~25 min) at a slow game around
+trial 92 — shard it (--shard k/n) or per-game-process it for full-corpus numbers; per-game harness
+checks remain the reliable gates.
+NEXT QUEUE (unchanged + new): Nine/Twelve Men's Morris removal mechanic; chess-family ply-0; hunt/
+Alquerque span; dice/track race ply-0; Tant Fant over-gen; Surakarta breadth; Pente coordinates;
+Sow-2 left-out dispatch; Hnefatafl deep; 3D boards. Resume codex waves Jun 13 ~8pm.
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
