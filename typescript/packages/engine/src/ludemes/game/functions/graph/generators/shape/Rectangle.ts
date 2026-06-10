@@ -33,10 +33,17 @@ export class Rectangle extends BaseGraphFunction {
    * @java Rectangle.construct(DimFunction dimA, DimFunction dimB, DiagonalsType)
    */
   public static construct(
-    rows: number,
-    columns?: number,
+    rows: number | { eval(): number },
+    columns?: number | { eval(): number } | null,
     diagonals?: DiagonalsType,
   ): GraphFunction {
-    return new RectangleOnSquare(rows, columns ?? rows, diagonals ?? null);
+    // @java Rectangle.construct(DimFunction dimA, @Opt DimFunction dimB, @Opt DiagonalsType)
+    // Dims arrive as DimFunction/IntConstant objects from the compiler (Java reflection
+    // passes DimFunctions); resolve to numbers like Square's dimNumber helper does.
+    const dimNumber = (d: number | { eval(): number } | null | undefined): number | null =>
+      d == null ? null : (typeof d === "number" ? d : d.eval());
+    const r = dimNumber(rows)!;
+    const c = dimNumber(columns) ?? r;
+    return new RectangleOnSquare(r, c, diagonals ?? null);
   }
 }
