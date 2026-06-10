@@ -1232,3 +1232,28 @@ exact known exotic singles (Update 48). Zero regressions across 20 merge commits
 
 The "67-file merge set" line item of the definition of complete is DONE as an
 independent work stream; what remains of it is subsumed by the two migrations.
+
+## Update 57 (2026-06-10) — exotic singles 9 → 6
+
+Three compile singles cleared (each battery-gated, each a faithful root-cause fix):
+- **Make Muster**: JAVA_TS_CTORS mapped game.util.graph.Poly to the Polygon points
+  class instead of the faithful Poly wrapper — every basis generator (Square/Hex/Tri
+  constructCustom) faithfully calls poly.polygon(). One-line registration fix; now
+  plays to MOVE_MISMATCH (parity work, not a compile gap).
+- **HexTrike**: empty defines — `(define "TriCorners")` — were skipped at registration,
+  so the call `("TriCorners")` survived expansion and shadowed the Rules start slot.
+  Empty defines now register with an empty synthetic splice body (Java Expander
+  expands their calls to nothing). Compiles clean.
+- **Block (dominoes)**: Domino's file-local Component base exposed `generator` as a
+  FIELD where Java Component (and faithful Equipment.createItems) use a generator()
+  METHOD. Converted to the Java accessor shape. Compiles clean.
+
+Remaining 6 singles, with root-cause notes:
+- Vanguard (while:) and Kriegspiel (from:) are the SAME family: Java's Token parser
+  treats `name:(...)` as a parameter-LABELED compound token (Token.java:555-565 strips
+  the label, keeps the list). `(while:(cond) (moves))` is therefore a headless round
+  group whose first item is a labeled arg — our parser/ArgCompiler does not yet carry
+  per-token parameter labels into compound tokens. Dedicated parser+binder work.
+- Throngs (headless-as-Moves residue), Wumpus World (piece-as-Moves), Mutant Y^3
+  (named-board string "Y3Board#1", experimental/), Senet ([#] recon placeholder —
+  arguably not a real gap).
