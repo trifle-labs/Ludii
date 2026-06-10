@@ -591,7 +591,39 @@ function makeDimMul(b: ArgBundle): DimMul1to1 {
 
 function makeDirections(b: ArgBundle): DirectionsFunction {
   if (stringAt(b, 0) === "Random") deferred("directions Random");
-  if (b.named.has("from") || b.named.has("to")) deferred("directions from/to");
+  if (b.named.has("from") || b.named.has("to")) {
+    // @java Directions(SiteType, from:IntFunction, to:IntFunction) — the direction(s)
+    // from the from-site to the to-site, computed from the board geometry. Used by
+    // push mechanics, e.g. Gekitai: (directions Cell from:(last To) to:(site)).
+    const fromFn = intNamed(b, "from") ?? new IntConstant(-1);
+    const toFn = intNamed(b, "to") ?? new IntConstant(-1);
+    return {
+      eval(ctx: Parameters<DirectionsFunction["eval"]>[0]): string[] {
+        const f = fromFn.eval(ctx);
+        const t = toFn.eval(ctx);
+        if (f < 0 || t < 0 || f === t) return [];
+        const game = (ctx as { game?: { equipment?: { board?: { trajectories?: { xOf(s: number): number; yOf(s: number): number } | null; width?: number } } } }).game;
+        const board = game?.equipment?.board;
+        const traj = board?.trajectories;
+        let dx: number; let dy: number;
+        if (traj) {
+          dx = traj.xOf(t) - traj.xOf(f);
+          dy = traj.yOf(t) - traj.yOf(f);
+        } else {
+          const W = board?.width ?? 8;
+          dx = (t % W) - (f % W);
+          dy = Math.floor(t / W) - Math.floor(f / W);
+        }
+        const sx = Math.sign(dx); const sy = Math.sign(dy);
+        const name =
+          sx === 0 && sy > 0 ? "N" : sx > 0 && sy > 0 ? "NE" :
+          sx > 0 && sy === 0 ? "E" : sx > 0 && sy < 0 ? "SE" :
+          sx === 0 && sy < 0 ? "S" : sx < 0 && sy < 0 ? "SW" :
+          sx < 0 && sy === 0 ? "W" : "NW";
+        return [name];
+      },
+    };
+  }
   const names = flatten(b.positional).filter((v): v is string => typeof v === "string");
   if (names.length === 0) return new Directions1to1Static(null, ["Adjacent"]);
   if (!names.every((name) => ABSOLUTE_DIRECTIONS.has(name))) deferred("directions relative");
