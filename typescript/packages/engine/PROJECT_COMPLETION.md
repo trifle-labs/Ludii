@@ -1083,3 +1083,14 @@ Each verified by 16-24-game battery. ~10 exotic singles remain (Senet Each-as-Mo
 Make Muster square-basis ctor, HexTrike meta-as-start, Kriegspiel from:-decision,
 Vanguard while:, Block component ctor, Mutant Y^3 named-board string, Wumpus World
 piece-as-Moves, Mehen Move-as-TrackSiteType, Throngs residue).
+
+## Update 48 — Real-game faithful coverage 99.31% (1,287/1,296)
+
+Audit v5 after the parser-semantics round (group splice cleared Mehen + the sow
+pair too). NINE real games remain, each an exotic single:
+- Senet: contains a RECON placeholder `[#]` in its move rule (a partially
+  reconstructed game in the real folder — its "failure" is placeholder shape).
+- Make Muster (square-basis ctor), HexTrike (meta-as-start), Throngs (headless-as-
+  Moves residue), Kriegspiel (from:-decision), Vanguard (while:), Block (component
+  ctor), Mutant Y^3 (named-board string), Wumpus World (piece-as-Moves).
+Each follows the standard repro→fix→canary recipe; none block item-3 structural work.

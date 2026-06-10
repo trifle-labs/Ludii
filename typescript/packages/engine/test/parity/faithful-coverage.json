@@ -1,6 +1,6 @@
 {
- "faithful": 1916,
- "fallback": 283,
+ "faithful": 1936,
+ "fallback": 263,
  "total": 2200,
  "perGame": [
   {
@@ -910,8 +910,8 @@
   },
   {
    "game": "board/race/fill/Suffragetto.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.functions.booleans.BooleanFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/race/fill/Tablan.lud",
@@ -1775,8 +1775,8 @@
   },
   {
    "game": "board/sow/two_rows/Ceelkoqyuqkoqiji.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.functions.ints.IntFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/two_rows/Chongka'.lud",
@@ -2150,8 +2150,8 @@
   },
   {
    "game": "board/sow/two_rows/O An Quan.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.functions.ints.IntFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/sow/two_rows/Obridje.lud",
@@ -2970,8 +2970,8 @@
   },
   {
    "game": "board/space/group/Omega.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (pow) as game.functions.ints.IntFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/group/Omny.lud",
@@ -3030,8 +3030,8 @@
   },
   {
    "game": "board/space/group/Vigilance.lud",
-   "status": "THROW",
-   "reason": "terminal P#1 did not match game.types.play.RoleType"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/group/Yoin.lud",
@@ -3120,13 +3120,13 @@
   },
   {
    "game": "board/space/line/Centrifugal Force.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.functions.booleans.BooleanFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/line/Centripetal Force.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.functions.booleans.BooleanFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/line/Complica.lud",
@@ -3700,8 +3700,8 @@
   },
   {
    "game": "board/space/line/Unfair.lud",
-   "status": "THROW",
-   "reason": "headless list did not match game.functions.booleans.BooleanFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/line/Vertiges.lud",
@@ -4350,8 +4350,8 @@
   },
   {
    "game": "board/war/leaping/lines/Awithlaknan Mosona.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.shape.Repeat: constructor threw (poly.p"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/leaping/lines/Bara Guti (Bihar).lud",
@@ -4465,8 +4465,8 @@
   },
   {
    "game": "board/war/leaping/lines/Kolowis Awithlaknannai.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.shape.Repeat: constructor threw (poly.p"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/leaping/lines/Kotu Ellima.lud",
@@ -4581,7 +4581,7 @@
   {
    "game": "board/war/leaping/lines/Throngs.lud",
    "status": "THROW",
-   "reason": "no reflection candidate for (le) as game.functions.booleans.BooleanFunction"
+   "reason": "headless list did not match game.rules.play.moves.Moves"
   },
   {
    "game": "board/war/leaping/lines/Tsukkalavde.lud",
@@ -5550,8 +5550,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/all/Mehen.lud",
-   "status": "THROW",
-   "reason": "terminal Move did not match game.functions.ints.trackSite.TrackSiteType"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/all/MensaSpiel.lud",
@@ -5585,8 +5585,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/all/Sahkku.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (=) as java.lang.String"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/all/Sig (El Oued Capture).lud",
@@ -5645,8 +5645,8 @@
   },
   {
    "game": "board/war/replacement/eliminate/all/Tab.lud",
-   "status": "THROW",
-   "reason": "no reflection candidate for (=) as java.lang.String"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/war/replacement/eliminate/all/Tablas Astronomias.lud",
@@ -5990,8 +5990,8 @@
   },
   {
    "game": "experimental/Tennessee Waltz.lud",
-   "status": "THROW",
-   "reason": "terminal 1 did not match game.functions.region.RegionFunction"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "experimental/The SmallHolder.lud",
@@ -6130,8 +6130,8 @@
   },
   {
    "game": "math/Mastermind.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.shape.Repeat: constructor threw (poly.p"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "math/So Long Sucker.lud",
@@ -8775,28 +8775,28 @@
   },
   {
    "game": "test/graph/shape/Graph Test - Repeat A (1x1).lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.shape.Repeat: constructor threw (poly.p"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/graph/shape/Graph Test - Repeat A (4x4, Ball).lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.shape.Repeat: constructor threw (poly.p"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/graph/shape/Graph Test - Repeat A (4x4, Dual).lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.shape.Repeat: constructor threw (poly.p"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/graph/shape/Graph Test - Repeat A (8x8).lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.shape.Repeat: constructor threw (poly.p"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/graph/shape/Graph Test - Repeat B.lud",
-   "status": "THROW",
-   "reason": "cannot instantiate game.functions.graph.generators.shape.Repeat: constructor threw (poly.p"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "test/graph/shape/Graph Test - Shape (6).lud",
