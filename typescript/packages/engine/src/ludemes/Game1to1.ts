@@ -812,6 +812,11 @@ export class Game1to1 implements Game {
     // resolve on the start-rule bridge context exactly as they do in play.
     (ctx as unknown as { _trajectories?: unknown })._trajectories = this.equipment.board.trajectories;
     (ctx as unknown as { _radials?: unknown })._radials = this.equipment.board.radials;
+    // Raw initial-state arrays for migrated eval(Context) start rules. Java
+    // mutates ContainerState through actions (ActionSetCount etc.); until State
+    // convergence lands, migrated rules write these arrays directly — the same
+    // arrays Game1to1.start() builds the initial State from.
+    (ctx as unknown as { _startArrays?: unknown })._startArrays = { cells, whats, countAt, stateAt, valueAt };
     ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
       if (site < 0 || site >= cells.length) return;
       const component = this.equipment.componentAt(what);

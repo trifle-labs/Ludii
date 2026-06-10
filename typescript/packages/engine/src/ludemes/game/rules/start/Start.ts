@@ -60,7 +60,7 @@ export class Start {
     numPlayers: number,
   ): void {
     for (const rule of this.rules) {
-      rule.applyToInitialState(cells, whats, countAt, equipment, numPlayers);
+      rule.applyToInitialState?.(cells, whats, countAt, equipment, numPlayers);
     }
   }
 }

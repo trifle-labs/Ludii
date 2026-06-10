@@ -68,7 +68,7 @@ export class ForEachValue1to1 implements StartRule {
     // Java: for (int to = min; to <= max; to++) { context.setValue(to); startRule.eval(context); }
     for (let to = min; to <= max; to++) {
       fakeCtx._evalValue = to;
-      this.startRule.applyToInitialState(cells, whats, countAt, equipment, numPlayers, undefined, undefined, fakeCtx);
+      this.startRule.applyToInitialState?.(cells, whats, countAt, equipment, numPlayers, undefined, undefined, fakeCtx);
     }
     // Java: context.setValue(savedValue); (restored — fake ctx is discarded)
   }

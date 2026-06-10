@@ -195,11 +195,11 @@ export class PlaceItem1to1 implements StartRule {
     // Java: else if (context.game().isDeductionPuzzle()) → evalPuzzle (deferred)
 
     // Java: else — single-site placement
-    const count = this.eval(this.countFn, fakeCtx, 1);
+    const count = this.evalInt(this.countFn, fakeCtx, 1);
     // state/rotation/value not used by applyToInitialState but evaluated faithfully
-    // const state = this.eval(this.stateFn, fakeCtx, OFF);
-    // const rotation = this.eval(this.rotationFn, fakeCtx, OFF);
-    // const value = this.eval(this.valueFn, fakeCtx, OFF);
+    // const state = this.evalInt(this.stateFn, fakeCtx, OFF);
+    // const rotation = this.evalInt(this.rotationFn, fakeCtx, OFF);
+    // const value = this.evalInt(this.valueFn, fakeCtx, OFF);
 
     // --- hand / container placement ---
     if (this.container !== null) {
@@ -268,7 +268,7 @@ export class PlaceItem1to1 implements StartRule {
     const piece = resolveComponent(this.item, equipment);
     if (piece === null) return;
 
-    const count = this.eval(this.countFn, fakeCtx, 1);
+    const count = this.evalInt(this.countFn, fakeCtx, 1);
 
     // Java: if (container != null) → container-based fill (deferred)
 
@@ -303,7 +303,7 @@ export class PlaceItem1to1 implements StartRule {
         const c =
           countsFn.length === 0
             ? count
-            : this.eval(countsFn[k] ?? countsFn[countsFn.length - 1]!, fakeCtx, count);
+            : this.evalInt(countsFn[k] ?? countsFn[countsFn.length - 1]!, fakeCtx, count);
         cells[loc] = piece.owner;
         whats[loc] = piece.index;
         countAt[loc] = c;
@@ -325,7 +325,7 @@ export class PlaceItem1to1 implements StartRule {
         const c =
           countsFn.length === 0
             ? count
-            : this.eval(countsFn[k] ?? countsFn[countsFn.length - 1]!, fakeCtx, count);
+            : this.evalInt(countsFn[k] ?? countsFn[countsFn.length - 1]!, fakeCtx, count);
         cells[loc] = piece.owner;
         whats[loc] = piece.index;
         countAt[loc] = c;
@@ -334,7 +334,7 @@ export class PlaceItem1to1 implements StartRule {
   }
 
   /** Safe IntFunction evaluation. */
-  private eval(fn: IntFunction, ctx: Context, fallback: number): number {
+  private evalInt(fn: IntFunction, ctx: Context, fallback: number): number {
     try {
       return fn.eval(ctx);
     } catch {

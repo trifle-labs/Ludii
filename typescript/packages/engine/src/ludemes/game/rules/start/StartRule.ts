@@ -18,7 +18,18 @@ import type { Context } from "../../../../context.js";
  */
 export interface StartRule {
   /**
-   * Apply this start rule to the raw initial-state arrays.
+   * Apply this start rule through the start-bridge Context.
+   * @java game/rules/start/StartRule.java — eval(Context)
+   *
+   * Migrated rules implement THIS — the Java signature. The bridge context
+   * (Game1to1.applyStartRule) carries placePieces, the board trajectories and
+   * the raw start arrays (ctx._startArrays) until State convergence.
+   */
+  eval?(context: Context): void;
+
+  /**
+   * TRANSITION surface — legacy raw-array mutation; deleted once every start
+   * rule implements eval(Context).
    *
    * @param cells       cells[site] = owner (mutable)
    * @param whats       whats[site] = component index (mutable)
@@ -28,7 +39,7 @@ export interface StartRule {
    * @param stateAt     stateAt[site] = per-site state value (mutable, optional)
    * @param valueAt     valueAt[site] = per-site value (mutable, optional)
    */
-  applyToInitialState(
+  applyToInitialState?(
     cells: number[],
     whats: number[],
     countAt: number[],
