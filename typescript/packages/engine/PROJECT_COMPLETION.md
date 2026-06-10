@@ -1094,3 +1094,17 @@ pair too). NINE real games remain, each an exotic single:
   Moves residue), Kriegspiel (from:-decision), Vanguard (while:), Block (component
   ctor), Mutant Y^3 (named-board string), Wumpus World (piece-as-Moves).
 Each follows the standard repro→fix→canary recipe; none block item-3 structural work.
+
+## Update 49 — Item 3 structural work UNDERWAY: dead-callback purge complete
+
+- All 140 ludeme files' module-scope register*1to1 callbacks EXCISED by
+  paren-matching automation (3,386 lines) — the write-only registration layer is
+  gone from the ludeme tree. tsc clean; 24-game battery green.
+- Unused shim/registry imports swept from 138 files. SEVENTEEN files retain live
+  compile* references (18 call sites: compileInt1to1 ×11, attachThen ×2,
+  compileMoves1to1 ×2, compileBool/Float ×1, flattenMovesList ×1) inside remaining
+  factory helpers — each needs an individual look (replace with faithful
+  construction or delete the dead helper). After that the shim shrinks to
+  parseArgs1to1/headOf only, then registry1to1.ts deletes.
+- Remaining item-3 after the 17: *1to1 substrate re-homing (naming/locations),
+  StartRule eval(Context) migration, State convergence, + the 9 exotic singles.
