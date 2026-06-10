@@ -488,6 +488,24 @@ ply 0: faithful 189 vs bespoke 4). CONSEQUENCES:
    measured by the coverage probe x harness, not harness alone. The J'odu/Tablut/Breakthrough
    canaries remain valid as no-breakage gates, but only equip-verified games count as faithful wins.
 
+## Update 14: coverage waves complete (81.8%); play-parity regime change understood
+COVERAGE CAMPAIGN (4 waves): 36.4% -> 54.9% (Hand/Dice containers) -> 69.1% (MancalaBoard +
+Tiling/Tri) -> 79.3% ([#] expansion + Value/Is/Move overloads) -> 81.8% (Sow-3 side-effect).
+PLAY-PARITY waves: Sow-3 (Kalah + J'odu faithful OUTCOME_OK, J'odu guard removed, Galatjang ply 132);
+small-games (Reversi/Mu Torere/Shisima faithful; Context tracks API; Tant Fant/Surakarta unblocked).
+
+KEY MEASUREMENT INSIGHT (apples-to-apples window, stride-23): harness full-replay in the window went
+13 OUTCOME_OK + 3 REPLAY_OK -> 7 + 1. NOT a regression: games that previously "passed" via silent
+bespoke fallback now compile faithfully and expose their faithful play gaps. FLIPPED games (played
+perfectly on bespoke -> now faithful + MOVE_MISMATCH): Achi, Liu Tsi, Nerenchi Keliya, Twelve Men's
+Morris, Breakthru — the MORRIS family + Breakthru. These are ideal targets (Java parity proven
+achievable by bespoke). EXPECT the harness aggregate to dip as coverage rises, then climb as faithful
+play catches up. The true progress metric: equip-verified faithful play (strictly increasing:
+J'odu 202 plies, Kalah, Reversi, Mu Torere, Shisima, ... all newly faithful-playing).
+REMAINING PLAY CLUSTERS (from the 92-trial sample): morris family (flipped), AlquerqueBoard hunt
+family (ply-0 span), dice/track race games (ply-0), chess family (ply-0 MOVE_MISMATCH; base Chess
+replays 26 plies), Tant Fant over-generation, Surakarta track breadth, Pente coordinate resolver.
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
