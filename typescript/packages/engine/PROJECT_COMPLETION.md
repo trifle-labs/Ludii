@@ -574,6 +574,14 @@ LESSON (recurring class): construct dispatchers written pre-lazy-wrapping that t
 plain numbers silently mis-build when handed function objects — grep for `static construct(` with
 `number` params as a hardening sweep candidate.
 
+## Update 25 (final this session): El Perro residual root-caused to SILENT BOARD DRIFT
+At ply 110 the diagonal 20-16 EXISTS in the TS graph but site 16 is occupied — an earlier
+hop's SIDE-EFFECTS diverged while the replayed moves kept matching, because the harness only
+checks recMove IS IN tsMoves (membership), not full-set equality. NEXT-SESSION TOOL: a strict
+harness mode (or probe) comparing the FULL legal-move set at every replayed ply — it will
+pinpoint the first silently-drifting apply for El Perro (and any similar case) immediately.
+Same likely mechanism behind Gekitai's ply-10 residual (push side-effects).
+
 ## Update 24: directions from:/to: dispatch routed; item-1 residuals down to two part-fixed games
 ArgCompiler preferred hook routes (directions <SiteType> from:<int> to:<int>) to a geometry-computed
 DirectionsFunction (verified ["E"]/["S"] on Gekitai's 6x6); the generic path had mis-bound the
