@@ -84,7 +84,9 @@ export class Ahead extends BaseIntFunction {
     super();
     this.type = type;
     this.siteFn = site;
-    this.stepsFn = steps;
+    // @java Ahead.java:74 — stepsFn = (steps == null) ? new IntConstant(1) : steps;
+    // (@Opt @Name steps is absent in e.g. Fanorona's (ahead (to) SameDirection)).
+    this.stepsFn = steps ?? ({ eval: () => 1 } as unknown as JavaIntFunction);
     this.dirnChoice = directions;
   }
 
