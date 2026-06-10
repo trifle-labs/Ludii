@@ -512,10 +512,13 @@ export class Is extends BaseBooleanFunction {
     array: IntArrayFunction | null,
   ): BooleanFunction {
     if (!matchesType(isType, "In")) throw new Error("Is(): A IsInType is not implemented.");
-    if (array !== null) return new IsInArray(site, sites, array);
+    // @java IsIn.construct: site == null -> To.instance() (the (to) iterator default).
+    const toDefault = { eval: (ctx: { to?: () => number; _evalTo?: number }) =>
+      ctx.to?.() ?? ctx._evalTo ?? -1 } as unknown as IntFunction;
+    if (array !== null) return new IsInArray(site ?? (sites === null ? toDefault : null), sites, array);
     if (region !== null) {
-      if (site !== null) return new IsIn1to1(site, region);
       if (sites !== null) return new IsAllInRegion(sites, region);
+      return new IsIn1to1(site ?? toDefault, region);
     }
     throw new Error("Is(): With IsInType one region or array parameter must be non-null.");
   }
