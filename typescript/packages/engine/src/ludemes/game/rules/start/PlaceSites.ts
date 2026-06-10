@@ -13,6 +13,7 @@
 
 import type { Equipment1to1 } from "../../equipment/Equipment1to1.js";
 import type { StartRule } from "./StartRule.js";
+import type { Context } from "../../../../context.js";
 
 export class PlaceSites implements StartRule {
   /**
@@ -59,25 +60,23 @@ export class PlaceSites implements StartRule {
 
   /**
    * @java Game.start() → ActionAdd(to=site, what=componentIdx, owner=player)
+   * @java game/rules/start/place/item/PlaceItem.java — eval(Context)
    */
-  public applyToInitialState(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
-    equipment: Equipment1to1,
-    _numPlayers: number,
-    stateAt?: number[],
-    valueAt?: number[],
-  ): void {
+  public eval(ctx: Context): void {
+    const arrays = (ctx as unknown as {
+      _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
+    })._startArrays;
+    if (!arrays) return;
+    const { cells, whats, countAt, stateAt, valueAt } = arrays;
+    const equipment = (ctx.game as unknown as { equipment: Equipment1to1 }).equipment;
+
     // Parse player number from the piece id suffix.
     // "Ball1" → name="Ball", owner=1
-    // "Queen2" → name="Queen", owner=2
     const match = this.pieceId.match(/^(.*?)(\d+)$/);
     if (!match) return;
     const pieceName = match[1]!;
     const owner = parseInt(match[2]!, 10);
 
-    // Find the component.
     const piece = equipment.pieces.find(
       pi => pi.owner === owner && pi.name.toLowerCase() === pieceName.toLowerCase(),
     );
@@ -88,14 +87,9 @@ export class PlaceSites implements StartRule {
       cells[site] = owner;
       whats[site] = piece.index;
       countAt[site] = this.count;
-      // Apply state:N and value:N if specified.
       // @java ActionAdd.apply() — sets stateAt and valueAt alongside cells/whats.
-      if (stateAt && this.stateValue >= 0) {
-        stateAt[site] = this.stateValue;
-      }
-      if (valueAt && this.valueValue >= 0) {
-        valueAt[site] = this.valueValue;
-      }
+      if (this.stateValue >= 0) stateAt[site] = this.stateValue;
+      if (this.valueValue >= 0) valueAt[site] = this.valueValue;
     }
   }
 }
