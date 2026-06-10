@@ -221,3 +221,116 @@ export function resolveRelativeDirections(
       return [];
   }
 }
+
+// ---------------------------------------------------------------------------
+// Relative->absolute conversion helpers.
+// @java game/util/directions/RelativeDirection.java — convertToAbsolute(...)
+// Moved here (the Java-mirrored home) out of the bespoke step dispatcher as part of the
+// fidelity-hardening de-contamination (definition-of-complete item 3a); the bespoke step
+// dispatcher re-exports them for the bespoke path during the transition.
+// ---------------------------------------------------------------------------
+const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const;
+/** Map a compass name to its 45°-unit index. */
+const COMPASS_IDX: Record<string, number> = {
+  N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7,
+  NORTH: 0, NORTHEAST: 1, EAST: 2, SOUTHEAST: 3, SOUTH: 4, SOUTHWEST: 5, WEST: 6, NORTHWEST: 7,
+};
+
+/**
+ * Resolve a player-RELATIVE direction name to absolute compass names for the
+ * given mover. Default: P1 faces N, P2 faces S. When the game supplies
+ * per-player facing directions via `_playerDirs`, those override the default.
+ * Returns null if `dirName` is not a relative direction.
+ *
+ * "Forwards" / "Backwards" are GROUP directions (3 compass headings):
+ *   Forwards = [d-1, d, d+1] (forward-left, forward, forward-right)
+ *   Backwards = the opposite 3
+ *
+ * "Forward" (singular, no "s") = SINGLE direction (just the primary facing direction).
+ *   This is different from "Forwards" which includes diagonals.
+ *
+ * @java game/util/directions/RelativeDirection.java
+ */
+export function resolveRelativeDir(
+  dirName: string,
+  mover: number,
+  playerDirs?: Map<number, number>,
+): string | string[] | null {
+  // Determine the mover's facing direction (in 45°-units: 0=N … 7=NW).
+  // Default: P1=N(0), P2=S(4). Override with per-player dirs when available.
+  let facingDir: number;
+  if (playerDirs) {
+    const pd = playerDirs.get(mover);
+    if (pd !== undefined) {
+      facingDir = pd;
+    } else {
+      // Default for players not in the map
+      facingDir = (mover === 1) ? 0 : 4;
+    }
+  } else {
+    facingDir = (mover === 1) ? 0 : 4;
+  }
+  const dn = dirName.toLowerCase();
+  switch (dn) {
+    // GROUP directions (3 compass headings in the forward half-plane).
+    // @java RelativeDirection.Forwards (with 's') = forward half-plane = 3 compass dirs.
+    // @java RelativeDirection.Forward  (no 's')   = primary facing direction = 1 compass dir.
+    case "forwards":
+      // "Forwards" (plural) covers d-1, d, d+1 (the 3 forward-ish dirs) for custom player dirs.
+      if (playerDirs && playerDirs.has(mover)) {
+        return [
+          COMPASS[(facingDir + 7) % 8]!,  // forward-left
+          COMPASS[facingDir]!,              // primary forward
+          COMPASS[(facingDir + 1) % 8]!,  // forward-right
+        ];
+      }
+      // Default 2-player case (P1=N, P2=S): return 3 directions.
+      return [
+        COMPASS[(facingDir + 7) % 8]!,
+        COMPASS[facingDir]!,
+        COMPASS[(facingDir + 1) % 8]!,
+      ];
+    case "forward":
+      // "Forward" (singular) = exactly the primary facing direction (no diagonals).
+      // @java RelativeDirection.Forward.convertToAbsolute(playerDir) = single compass dir
+      return COMPASS[facingDir % 8]!;
+    case "backwards":
+      // "Backwards" (plural) = backward half-plane = 3 dirs.
+      if (playerDirs && playerDirs.has(mover)) {
+        const back = (facingDir + 4) % 8;
+        return [
+          COMPASS[(back + 7) % 8]!,
+          COMPASS[back]!,
+          COMPASS[(back + 1) % 8]!,
+        ];
+      }
+      return [
+        COMPASS[(facingDir + 4 + 7) % 8]!,
+        COMPASS[(facingDir + 4) % 8]!,
+        COMPASS[(facingDir + 4 + 1) % 8]!,
+      ];
+    case "backward":
+      // "Backward" (singular) = single backward direction.
+      return COMPASS[(facingDir + 4) % 8]!;
+    case "rightward": case "right":      return COMPASS[(facingDir + 2) % 8]!;
+    case "leftward": case "left":        return COMPASS[(facingDir + 6) % 8]!;
+    case "forwardleft": case "fl":       return COMPASS[(facingDir + 7) % 8]!;
+    case "forwardright": case "fr":      return COMPASS[(facingDir + 1) % 8]!;
+    case "backwardleft": case "bl":      return COMPASS[(facingDir + 5) % 8]!;
+    case "backwardright": case "br":     return COMPASS[(facingDir + 3) % 8]!;
+    default: return null;
+  }
+}
+
+/** True when the direction names a SINGLE compass heading (one ray), not a group. */
+export function isSingleDir(dirName: string): boolean {
+  switch (dirName.toUpperCase()) {
+    case "N": case "S": case "E": case "W":
+    case "NE": case "NW": case "SE": case "SW":
+    case "NORTH": case "SOUTH": case "EAST": case "WEST":
+    case "NORTHEAST": case "NORTHWEST": case "SOUTHEAST": case "SOUTHWEST":
+      return true;
+    default:
+      return false; // Adjacent / Orthogonal / Diagonal / All → bidirectional axes
+  }
+}

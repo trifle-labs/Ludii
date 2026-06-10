@@ -22,7 +22,7 @@
 import type { Context } from "../../../../../../../context.js";
 import { radialsForDirection, type CellFlatRadials } from "../../../../../../topology-radials.js";
 import type { Trajectories } from "../../../../../../../eval/graph/trajectories.js";
-import { resolveRelativeDir, isSingleDir } from "./Step1to1.js";
+import { resolveRelativeDir, isSingleDir } from "../../../../../util/directions/RelativeDirection.js";
 import { applyPostStateThen } from "./Then.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
