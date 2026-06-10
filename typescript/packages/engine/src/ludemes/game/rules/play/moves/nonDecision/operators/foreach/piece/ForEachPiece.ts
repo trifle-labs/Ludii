@@ -12,6 +12,7 @@
  *          are used.
  */
 
+import { applyPostStateThen } from "../../../effect/Then.js";
 import type { Context } from "../../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../../move.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
@@ -315,21 +316,14 @@ export class ForEachPiece extends Operator {
 
         for (const m of pieceMoves) {
           // @java if (then() != null) ret.then().add(then().moves());
-          if (this._then !== null) {
-            const mThen = (m as unknown as { then?: Move[] }).then;
-            if (Array.isArray(mThen)) {
-              const thenMoves = this._then.moves();
-              const thenArr = (thenMoves as unknown as { eval?(ctx: Context): Move[]; moves?(): Move[] });
-              if (typeof thenArr.eval === "function") {
-                mThen.push(...thenArr.eval(context));
-              } else if (typeof thenArr.moves === "function") {
-                mThen.push(...thenArr.moves());
-              }
-            }
-          }
+          // Java evaluates the then AFTER the move applies — applyPostStateThen bakes the
+          // post-state consequence actions in (the old code pushed into the FROZEN
+          // Move.then array, throwing as soon as a forEach-Piece carried a then —
+          // International Draughts' promote-or-replay chain).
+          const withThen = this._then !== null ? applyPostStateThen(this._then, context, m) : m;
           // @java ret.setMover(context.state().mover())
-          (m as unknown as { mover?: number }).mover = context.state.mover;
-          moves.moves().push(m);
+          (withThen as unknown as { mover?: number }).mover = context.state.mover;
+          moves.moves().push(withThen);
         }
       }
     }
