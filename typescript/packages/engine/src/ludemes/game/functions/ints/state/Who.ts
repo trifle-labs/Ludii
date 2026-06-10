@@ -27,6 +27,11 @@ export class Who extends BaseIntFunction {
     this.level = level;
   }
 
+  /** @java Who.construct — static factory mirroring the ctor (reflection lists both). */
+  public static construct(type: string | null, at: JavaIntFunction, level: JavaIntFunction | null = null): Who {
+    return new Who(type, at, level);
+  }
+
   /** @java Who.eval(Context) — containerState.who(site, type) */
   public override eval(context: Context): number {
     const site = this.loc.eval(context);

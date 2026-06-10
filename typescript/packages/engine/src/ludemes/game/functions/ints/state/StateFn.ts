@@ -27,6 +27,11 @@ export class State extends BaseIntFunction {
     this.level = level;
   }
 
+  /** @java State.construct — static factory mirroring the ctor (reflection lists both). */
+  public static construct(type: string | null, at: JavaIntFunction, level: JavaIntFunction | null = null): State {
+    return new State(type, at, level);
+  }
+
   /** @java State.eval(Context) — containerState.state(site, level, type) */
   public override eval(context: Context): number {
     const site = this.loc.eval(context);

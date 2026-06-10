@@ -27,6 +27,11 @@ export class What extends BaseIntFunction {
     this.level = level;
   }
 
+  /** @java What.construct — static factory mirroring the ctor (reflection lists both). */
+  public static construct(type: string | null, at: JavaIntFunction, level: JavaIntFunction | null = null): What {
+    return new What(type, at, level);
+  }
+
   /** @java What.eval(Context) — containerState.what(site, level, type) */
   public override eval(context: Context): number {
     const site = this.loc.eval(context);
