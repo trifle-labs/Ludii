@@ -226,7 +226,12 @@ function expandList(
     // `"BoardUsed"` resolve to their full board definition.
     if (isString(item)) {
       const entry = defines.get(item.value);
-      if (entry && !expanding.has(entry.name)) {
+      // @java Expander.protectedSubstring: a string following the tokens
+      // game / match / instance is PROTECTED from define expansion (a game whose
+      // NAME matches a define — Sahkku, Tab — must not be clobbered).
+      const headTok = listHead(node)?.toLowerCase();
+      const isProtected = headTok === "game" || headTok === "match" || headTok === "instance";
+      if (entry && !expanding.has(entry.name) && !isProtected) {
         const substituted = substitute(entry.body, []);
         const nextExpanding = new Set(expanding);
         nextExpanding.add(entry.name);
@@ -314,6 +319,17 @@ function spliceGluedParams(node: LudNode, args: readonly (readonly LudNode[])[])
   });
   if (!changed) return node;
   return { kind: "ident", name, range: node.range };
+}
+
+
+/** True when the define body still contains `#k` placeholders (needs call args). */
+function defineBodyHasParams(entry: DefineEntry): boolean {
+  const walk = (n: LudNode): boolean => {
+    if (isIdent(n) && /#\d+/.test(n.name)) return true;
+    if (isList(n)) return n.items.some(walk);
+    return false;
+  };
+  return walk(entry.body);
 }
 
 function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNode {
