@@ -1,6 +1,7 @@
 // @java Core/src/game/rules/play/moves/nonDecision/effect/Leap.java
 
 import type { BooleanFunction, RegionFunction } from "../../../../../../base.js";
+import { Sites } from "../../../../../functions/region/sites/Sites.js";
 import type { Then } from "./Then.js";
 import type { From } from "../../../../../util/moves/From.js";
 import type { To } from "../../../../../util/moves/To.js";
@@ -16,8 +17,12 @@ export class LeapFaithful extends Leap {
     to: To,
     then: Then | null
   ) {
-    void rotations;
-    const walkRegion: RegionFunction = isRegionFunction(walk) ? walk : { eval: () => [] };
+    // @java Leap.java:98 — this.walk = Sites.construct(null, startLocationFn,
+    // walk, rotations): a raw StepType[][] becomes a SitesWalk anchored at the
+    // from-site (KnightWalk {{F F R F} {F F L F}} with all rotations).
+    const walkRegion: RegionFunction = isRegionFunction(walk)
+      ? walk
+      : Sites.constructWalk(null, fromLoc(from), walk as unknown[][], rotations);
     super({
       startLocationFn: fromLoc(from),
       fromCondition: fromCond(from),

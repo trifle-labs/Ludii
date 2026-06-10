@@ -238,16 +238,20 @@ export class Slide implements MovesFunction {
       const origBetween = ctx._evalBetween;
       for (const between of betweenSites) {
         ctx._evalBetween = between;
+        // @java Slide.java:285 — betweenEffect also chains with prepend=true.
         const betweenActions = this.betweenEffect.eval(ctx).flatMap(m => [...m.actions]);
-        actions.push(...betweenActions);
+        actions.unshift(...betweenActions);
       }
       ctx._evalBetween = origBetween;
     }
 
-    // @java Slide.java:233-237 — side effect on landing
+    // @java Slide.java:238/257/266 — chainRuleWithAction(context, sideEffect,
+    // move, /*prepend=*/true, false): the capture effect's actions go BEFORE
+    // the slide's ActionMove (recorded slide captures are [Remove, Move];
+    // appending relocated the ATTACKER off the landing square).
     if (this.sideEffect != null) {
       const sideActions = this.sideEffect.eval(ctx).flatMap(m => [...m.actions]);
-      actions.push(...sideActions);
+      actions.unshift(...sideActions);
     }
 
     return new LudiiMove({
@@ -257,6 +261,9 @@ export class Slide implements MovesFunction {
       mover,
       placedOwner: mover,
       actions,
+      // Prepended capture actions shift actions[0]; pin the decision sites.
+      fromSite: from,
+      toSite: to,
       fromNonDecisionSite: from,
       toNonDecisionSite: to,
     });

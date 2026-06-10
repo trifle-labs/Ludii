@@ -123,10 +123,13 @@ export class Leap implements MovesFunction {
         new ActionMove({ from, to }),
       ];
 
-      // @java Leap.java:156-158 — chain sideEffect
+      // @java Leap.java:156 — chainRuleWithAction(context, sideEffect,
+      // thisAction, /*prepend=*/true, false): the capture effect's actions go
+      // BEFORE the leap's ActionMove (recorded knight captures are
+      // [Remove, Move] — appending relocated the ATTACKER off the square).
       if (this.sideEffect != null) {
         const sideActions = this.sideEffect.eval(ctx).flatMap(m => [...m.actions]);
-        actions.push(...sideActions);
+        actions.unshift(...sideActions);
       }
 
       const move = new LudiiMove({
@@ -136,6 +139,9 @@ export class Leap implements MovesFunction {
         mover,
         placedOwner: mover,
         actions,
+        // Prepended capture actions shift actions[0]; pin the decision sites.
+        fromSite: from,
+        toSite: to,
         fromNonDecisionSite: from,
         toNonDecisionSite: to,
       });

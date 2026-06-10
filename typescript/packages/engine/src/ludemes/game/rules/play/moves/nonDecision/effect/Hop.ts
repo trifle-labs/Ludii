@@ -102,18 +102,23 @@ export class Hop extends Effect {
     then?: ThenLike | null;
   }) {
     super(opts.then ?? null);
+    // compileTerminal hands BooleanFunction slots raw booleans for the lud
+    // literals True/False (Chaturanga: `(between if:True)`) — wrap them.
+    // @java BooleanConstant
+    const wrapB = <T extends BooleanFunction | null | undefined>(b: T | boolean): T =>
+      (typeof (b as unknown) === "boolean" ? ({ eval: () => b as unknown as boolean } as unknown as T) : (b as T));
     this.startLocationFn = opts.startLocationFn;
     this.dirnChoice = opts.dirnChoice;
-    this.goRule = opts.goRule;
-    this.hurdleRule = opts.hurdleRule;
-    this.stopRule = opts.stopRule ?? null;
+    this.goRule = wrapB(opts.goRule);
+    this.hurdleRule = wrapB(opts.hurdleRule);
+    this.stopRule = wrapB(opts.stopRule ?? null);
     this.stopEffect = opts.stopEffect ?? null;
     this.maxDistanceFromHurdleFn = opts.maxDistanceFromHurdleFn;
     this.minLengthHurdleFn = opts.minLengthHurdleFn;
     this.maxLengthHurdleFn = opts.maxLengthHurdleFn;
     this.maxDistanceHurdleToFn = opts.maxDistanceHurdleToFn;
     this.sideEffect = opts.sideEffect ?? null;
-    this.fromCondition = opts.fromCondition ?? null;
+    this.fromCondition = wrapB(opts.fromCondition ?? null);
     this.stack = opts.stack ?? false;
   }
 

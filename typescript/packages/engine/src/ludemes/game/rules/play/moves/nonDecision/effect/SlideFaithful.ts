@@ -14,6 +14,7 @@ import {
   fromLevel,
   fromLoc,
   intConst,
+  toApplyCondition,
   toApplyEffect,
   toCond,
 } from "./EffectCtorAdapters.js";
@@ -38,7 +39,12 @@ export class SlideFaithful extends Slide {
       minFn: range?.minFn ?? intConst(-2),
       goRule: betweenCond(between, { eval: (ctx) => ctx.state.isEmptySite(ctx._evalBetween) }),
       stopRule: to?.condFn() ?? null,
-      toRule: to === null ? null : toCond(to),
+      // @java Slide.java:173 — toRule = (to == null || to.effect() == null)
+      //   ? null : to.effect().condition();
+      // It is the APPLY's if:, NOT the to-condition. Mapping to.cond here too
+      // gated every empty-square slide on "IsEnemyAt" and rooks/bishops
+      // generated only captures (Chaturanga rook produced zero moves).
+      toRule: toApplyCondition(to),
       letFn: between?.trailFn() ?? null,
       betweenEffect: betweenEffect(between),
       sideEffect: toApplyEffect(to),
