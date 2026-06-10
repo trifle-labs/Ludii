@@ -15,6 +15,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { MovesFunction, RegionFunction } from "../../../../../../../../base.js";
 import { Effect } from "../../../../nonDecision/effect/Effect.js";
 import type { ThenLike } from "../../../../Moves.js";
+import { applyPostStateThen } from "../../../../nonDecision/effect/Then.js";
 
 /**
  * Applies a move for each site in a region.
@@ -97,12 +98,21 @@ export class ForEachSite extends Effect {
       return this.elseMoves.eval(context);
     }
 
-    // @java if (then() != null) for (j ...) moves.moves().get(j).then().add(then().moves());
-    // NOTE: In this TS port, Move.then is readonly; then-chaining approximated at generation level.
-
     // @java context.setTo(savedTo); context.setSite(originSiteValue);
     ctx.setTo(savedTo);
     ctx.setSite(originSiteValue);
+
+    // @java if (then() != null) moves.get(j).then().add(then().moves()) — the
+    // standard Effect-then: bake post-state consequences + moveAgain into each
+    // move (Backgammon in-home: (then ("ReplayNotAllDiceUsed")) keeps the mover
+    // while dice remain). Same recipe as If/Do/MaxDistance/ForEachPiece.
+    const thenObj = this.then() as unknown as { moves?: () => { eval(c: Context): Move[] }; eval?(c: Context): Move[] } | null;
+    if (thenObj !== null) {
+      const thenLike = typeof thenObj.moves === "function"
+        ? (thenObj as { moves(): { eval(c: Context): Move[] } })
+        : { moves: () => thenObj as { eval(c: Context): Move[] } };
+      return moves.map((m) => applyPostStateThen(thenLike, context, m));
+    }
 
     return moves;
   }
