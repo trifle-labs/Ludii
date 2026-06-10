@@ -887,3 +887,16 @@ factories + *1to1 modules, (4) per-batch canary sweeps throughout.
   recipes as today's All.construct fix), drive to 0, canary, commit. When every
   real game compiles with 0 registry wins, instantiateRegistry + the batch
   factories + compiler1to1 delete cleanly (item 2 complete).
+
+## Update 36 — Burn-down in motion: Site + Id ported (4.6k call sites); WAVE LESSON
+
+Sub/Mod/Div + Site + Id/IndexOfComponent ported and registered; worklist 34 → 31.
+**CRITICAL RECIPE ADDENDUM for the remaining 31 (and the codex wave):** port Java's
+CONTROL FLOW but read the ENGINE's substrate. Id's first attempt used Java's
+components()[i] 1-based array convention — Tafl went 0% instantly (canary caught
+it); the engine's what-indices key off equipment.pieces[].index until item-3 State
+convergence. Every port that touches component/site indexing MUST cross-check the
+registry factory's substrate access before replacing it, and MUST run the 16-game
+canary before commit. Remaining top: state.Var/Who/What/State (state functions),
+region.math.Difference/If/Union, ints.size.Size, math.If, iterator.Level,
+board.RegionSite, intArray.values.Values, moves And/Or.
