@@ -2,15 +2,22 @@
  * @java game/equipment/component/Die.java Die
  *
  * A single non-stochastic die component that can be turned to show each of its
- * faces. Extends Component1to1 and stores numFaces and face values.
+ * faces. Extends the faithful Component and stores numFaces and face values.
  *
  * @java game/equipment/component/Die.java — constructor/getFaces/getNumFaces/roll/setFaces
  */
 
-import { Component1to1 } from "./Component1to1.js";
+import { Component } from "./Component.js";
+import type { RoleType } from "../Item.js";
+
+/** Engine ctor passes a 1-based owner id; Java Die takes a RoleType. */
+function roleFromOwner(owner: number): RoleType {
+  if (owner === 0) return "Neutral" as RoleType;
+  return (`P${owner}`) as RoleType;
+}
 import type { MovesFunction } from "../../../base.js";
 
-export class Die extends Component1to1 {
+export class Die extends Component {
   /** @java Die.numFaces */
   private readonly _numFaces: number;
 
@@ -31,11 +38,10 @@ export class Die extends Component1to1 {
     numFaces: number,
     generator: MovesFunction | null = null,
   ) {
-    super(name, owner, Component1to1.OFF, Component1to1.OFF, Component1to1.OFF, generator);
+    // @java Die.java:84 — super(name, role, null, null, generator, null, null, null)
+    super(name, roleFromOwner(owner), null, null, generator, null, null, null);
     this._numFaces = numFaces;
     this._faces    = null;
-    // @java Die.java — style = ComponentStyleType.Die
-    this.style = "Die";
   }
 
   /** @java Die.isDie() */
@@ -54,7 +60,7 @@ export class Die extends Component1to1 {
    *   - if start != null: build sequential array [start, start+1, ..., start+numFaces-1]
    *   - else if faces != null: copy provided faces
    */
-  public setFaces(faces: number[] | null, start: number | null): void {
+  public override setFaces(faces: number[] | null, start: number | null): void {
     // @java Die.java:121–129 — setFaces implementation
     if (start !== null) {
       this._faces = [];
@@ -74,7 +80,7 @@ export class Die extends Component1to1 {
    *
    * @java game/equipment/component/Die.java:113 — return context.rng().nextInt(faces.length)
    */
-  public roll(rngNextInt: (n: number) => number): number {
+  public override roll(rngNextInt: (n: number) => number): number {
     const len = this._faces?.length ?? this._numFaces;
     return rngNextInt(len);
   }
