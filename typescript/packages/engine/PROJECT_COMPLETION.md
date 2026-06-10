@@ -506,6 +506,25 @@ REMAINING PLAY CLUSTERS (from the 92-trial sample): morris family (flipped), Alq
 family (ply-0 span), dice/track race games (ply-0), chess family (ply-0 MOVE_MISMATCH; base Chess
 replays 26 plies), Tant Fant over-generation, Surakarta track breadth, Pente coordinate resolver.
 
+## Update 15: MANUAL waves (codex exhausted until Jun 13 ~8pm) — post-state Then + sites-Hand
+Codex hit its usage limit mid-morris-wave; continued MANUALLY with two foundational fixes:
+1. **(sites Hand <role>)**: dispatched to SitesHand (was SitesEquipmentRegion->empty) + SitesHand
+   resolves pid from its role (RoleType.toIntFunction parity). Fixed the morris phase-skip
+   ("HandEmpty" was vacuously true -> Placement jumped to Movement at ply 0).
+2. **Then.applyPostStateThen** (the deepest semantics fix of the campaign): Java evaluates a move's
+   then-consequence in the POST-MOVE context; the faithful effects evaluated it pre-move at
+   generation time, silently disabling EVERY conditional consequence (morris mill ReplayIfLine3,
+   conditional moveAgain, capture-again chains). Ported at the Java-mirrored location (Then.ts) and
+   wired into FromTo + Step + Add + Slide.
+RESULTS: **Achi full OUTCOME_OK 2/2**; Nerenchi plays through (winner-only gap); Nine/Twelve Men's
+Morris deeper. Full canary set green throughout (Kalah/J'odu/Breakthrough/Tablut/Gomoku/Connect Four/
+Brandub + all probes); bespoke untouched.
+NEXT (queued): wire applyPostStateThen into the remaining faithful effects (Hop/Remove/Select/Shoot
+where conditional thens appear); Nine/Twelve Men's Morris mill-removal mechanic; Nerenchi winner;
+Sow-2 left-out dispatch increments; Tant Fant over-generation; Surakarta track breadth; Pente
+coordinate resolver; AlquerqueBoard hunt span; dice/track race games. Codex credits return Jun 13
+~8pm — resume codex waves then; manual waves work fine meanwhile (this update proves the loop).
+
 ## (earlier) move-dispatch plan — now DONE (see Update 8):
   1. Make ArgCompiler route `(move X ...)` to the faithful move class: when the constructKey is
      `move:<x>` and JAVA_TS_CTORS has the faithful class (StepFaithful, SlideFaithful, …), prefer
