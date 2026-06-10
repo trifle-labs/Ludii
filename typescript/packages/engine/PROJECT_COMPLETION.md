@@ -1670,3 +1670,23 @@ REMAINING for race-family green: the track-walk movegen — TS ply-0 moves don't
 include rec 0->17 yet (with harness-injected dice). Next: diff TrackSiteMove's
 walk (steps semantics, ownedTracks selection) against Java TrackSiteMove.java +
 the (forEach Die) pip flow; then Backgammon-family replays should cascade.
+
+## Update 75 (2026-06-10) — Backgammon ply 0 MATCHES; doubles replay is the next seam
+
+The compound roll+move pipeline is correct end-to-end: real Die components placed
+(what=1,2 exactly as the trials record), faces carried through the pieces surface
+with a roll(ctx) adapter (diceSpecs fallback by ordinal), Do's merge pins the
+decision from/to (prepended roll actions had shifted decisionIndex — moves read
+-1>0), the track walk verified EXACT (0>17, 17>23 under dice 5,5), and ForEachDie
+now runs its Java path against engine context shapes (fallback semantics gap was
+the doubles flow).
+
+PLY-1 FINDINGS (the doubles-replay seam, measured):
+- Our State.temp() defaults 0; Java Constants.UNDEFINED=-1 — the ForEachDie shim
+  must map 0->UNDEFINED (temp stores a pip 1-6; 0 is never legit) or State.temp
+  should default -1. As-is the replay arm takes the temp!==UNDEFINED branch and
+  emits the wrong action pair.
+- Mover advances after the first double move; Java keeps mover=1 for all four
+  doubles moves. Resolve WHO keeps the mover in Java (SetTemp arming? state.next
+  flow? — rec dec2 carries SetTemp[-1] + SetNextPlayer[1]) before wiring — check
+  Game.java applyInternal's next-mover derivation for moves carrying SetTemp.
