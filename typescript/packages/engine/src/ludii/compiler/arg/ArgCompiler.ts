@@ -1353,6 +1353,13 @@ function parseNodeArgs(node: LudList): ParsedArgs {
         argsIn.push({ node: value, parameterName: item.name.slice(0, -1).toLowerCase() });
         i++;
       }
+    } else if (
+      isList(item) && item.delimiter === "round" && listHead(item) === undefined &&
+      item.items.length > 1 && item.items.every((sub) => isList(sub))
+    ) {
+      // @java a headless round GROUP `((a) (b))` splices into the surrounding arg
+      // list (textual expansion semantics — O An Quan's `(!= (("LeftMostEmpty") (to)))`).
+      for (const sub of item.items) argsIn.push({ node: sub, parameterName: null });
     } else {
       argsIn.push({ node: item, parameterName: null });
     }
