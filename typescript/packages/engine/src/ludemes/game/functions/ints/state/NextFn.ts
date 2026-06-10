@@ -19,8 +19,11 @@ export class Next extends BaseIntFunction {
 
   /** @java Next.eval(Context) — return context.state().next(); */
   public override eval(context: Context): number {
-    return (context.state as unknown as { next?: number }).next
-      ?? (context.state.mover % context.game.numPlayers) + 1;
+    // The engine's state.next is an OVERRIDE slot defaulting 0 (= none); Java's
+    // State.next() is always a real player. 0 means "use natural order".
+    const override = (context.state as unknown as { next?: number }).next ?? 0;
+    if (override > 0) return override;
+    return (context.state.mover % context.game.numPlayers) + 1;
   }
 
   /** @java Next.isStatic() */

@@ -23,8 +23,9 @@ export class Prev extends BaseIntFunction {
   /** @java Prev.eval(Context) — state.prev() (MoverLastTurn handled by trial walk in Java) */
   public override eval(context: Context): number {
     void this.type;
-    return (context.state as unknown as { prev?: number }).prev
-      ?? ((context.state.mover - 2 + context.game.numPlayers) % context.game.numPlayers) + 1;
+    const stored = (context.state as unknown as { prev?: number }).prev ?? 0;
+    if (stored > 0) return stored;
+    return ((context.state.mover - 2 + context.game.numPlayers) % context.game.numPlayers) + 1;
   }
 
   /** @java Prev.isStatic() */
