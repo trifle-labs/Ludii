@@ -976,3 +976,11 @@ REGISTRY_FIRST; (2) remove play1to1's compileNode1to1 fallback + LUDII_BESPOKE p
 removes the harness's bespoke REFERENCE mode; the parity gate is vs recorded Java
 trials (which is the real oracle; the bespoke reference was scaffolding). The *1to1
 substrate classes used by faithful files stay until item-3 re-homing.
+
+## Update 41 — International Draughts 0% → 50% (frozen Move.then in ForEachPiece)
+
+The "pre-existing multi-capture gap" root cause: ForEachPiece pushed its (then …)
+into the FROZEN Move.then array → TypeError as soon as a forEach-Piece carried a
+then (which the registry path had masked). applyPostStateThen recipe applied; one
+trial fully OUTCOME_OK (85 plies), residual = ply-49 divergence in the second trial
+(deep multi-capture/max-captures tie-break — next diagnostic). 18-game canary green.
