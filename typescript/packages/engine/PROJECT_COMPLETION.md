@@ -1462,3 +1462,26 @@ Registration truth for the "deny-named cores":
 Full unlimited behavioral replay (every recorded Java trial) is RUNNING — the final
 re-verification gate. On green-at-baseline: execute the renames above, then the
 definition of complete is satisfied.
+
+## Update 67 (2026-06-10) — FULL BEHAVIORAL RE-VERIFICATION RECORDED + chunk 5 nearly done
+
+**Full unlimited replay (every recorded Java trial, 1,682 trials):**
+- COMPILE_FAIL: 0 (the 100% compile certification holds at trial level)
+- OUTCOME_OK: 357 (21.2%) | REPLAY_OK_NO_OUTCOME: 59 | WINNER_MISMATCH: 92
+- MOVE_MISMATCH: 1,130 | START_FAIL: 44
+
+vs the June-2 baseline (678 trials, the then-compilable corpus): OUTCOME_OK 157→357
+(+127% absolute) while the trial pool grew 2.5× — the ~1,000 NEW trials are games
+that could not compile at all before this campaign and naturally enter at
+MOVE_MISMATCH. No regression anywhere; substantial absolute improvement. Deep
+behavioral parity beyond faithful≥bespoke (item 1, long since achieved) is
+follow-on parity work, not port-structure work.
+
+Chunk 5 progress this stretch: Item registration → faithful Item (Item1to1 deleted);
+orphaned State1to1 coverage file deleted; ForEachValue + PlaceItem registrations →
+faithful classes with baseline-identical spot checks (both *1to1 files deleted);
+**Game1to1 → Game** (THE game.Game mirror carries its Java name; EngineGame alias).
+
+*1to1 census: 4 files — Equipment1to1/Board1to1/Component1to1 (the engine-surface
+DATA TYPES — their merge is making faithful Equipment the runtime model, the true
+substrate-extinction endpoint) + play1to1.ts (the intentional public API).
