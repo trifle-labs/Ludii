@@ -1,6 +1,6 @@
 {
- "faithful": 189,
- "fallback": 31,
+ "faithful": 190,
+ "fallback": 30,
  "total": 220,
  "perGame": [
   {
@@ -315,8 +315,8 @@
   },
   {
    "game": "board/space/line/Bravalath.lud",
-   "status": "THROW",
-   "reason": "terminal Each did not match game.rules.play.moves.Moves"
+   "status": "FAITHFUL",
+   "reason": ""
   },
   {
    "game": "board/space/line/Dala.lud",

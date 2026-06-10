@@ -831,3 +831,29 @@ in one coordinated change. This is a single coherent codex-wave task (fresh
 context per file, mechanical after the interface flips), not an incremental edit:
 flipping the interface alone breaks every implementation simultaneously.
 Same applies to the equipment barrel + match-players-mode barrel imports.
+
+## Update 32 — Konane parity RESTORED (SameDirection) — last known faithful-play regression closed
+
+Konane (0% — had silently regressed sometime after task #26) root-caused to
+SameDirection resolving to []: the continuation hop ("HopCapture" (from (last To))
+SameDirection) never generated, breaking the moveAgain chain's turn order at ply 7.
+@java Directions.java:498-535 ported: SameDirection = the absolute compass whose
+radial from (last From) passes through (last To). resolveSameOppositeDir at the
+RelativeDirection home; Hop pre-resolves it. Konane OUTCOME_OK 2/2; 10-game
+hop-family canary green. Every game ever verified green this campaign is green NOW.
+
+## Update 33 — REAL-GAME FAITHFUL-COMPILE COVERAGE: 100% (130/130)
+
+Boardless container completed per @java Boardless.java:49-55: the hidden "fake"
+board IS a real graph — RectangleOnSquare(41) / HexagonOnHex(21) / TriangleOnTri(41)
+per tiling (was a null-returning stub → Trajectories null deref). Bravalath, the
+last real-game compile gap, compiles faithfully.
+
+**Every real game in the sampled corpus (130/130) now compiles through the faithful
+path.** Corpus incl. test/recon fixtures: 86.4%. Canaries green.
+
+ITEM-2 STATUS: the bespoke compile fallback now serves ZERO real games. Deletion
+sequence (codex wave or careful solo): (1) flip play1to1's default to faithful-only
+(keep LUDII_BESPOKE=1 escape hatch), (2) re-port the 73 cross-import files
+(recipe in Update 31), (3) delete compiler1to1.ts + LudemeRegistry + batch
+factories + *1to1 modules, (4) per-batch canary sweeps throughout.

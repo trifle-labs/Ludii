@@ -11,6 +11,9 @@
  *          the graph except the centre.
  */
 
+import { RectangleOnSquare } from "../../../functions/graph/generators/basis/square/RectangleOnSquare.js";
+import { HexagonOnHex } from "../../../functions/graph/generators/basis/hex/HexagonOnHex.js";
+import { TriangleOnTri } from "../../../functions/graph/generators/basis/tri/TriangleOnTri.js";
 import { Board } from "./Board.js";
 import type { TilingBoardlessType } from "../../../types/board/TilingBoardlessType.js";
 
@@ -76,15 +79,16 @@ function makeBoardlessGraphFn(tiling: TilingBoardlessType, dimension: number | n
             : (tiling === "Hexagonal") ? SIZE_HEX_BOARDLESS
             : SIZE_BOARDLESS;
 
-  return {
-    eval(_context: unknown, _siteType: unknown): unknown {
-      // Deferred: actual boardless graph construction handled by Board1to1 / named-tilings.
-      return null;
-    },
-    gameFlags(_game: unknown): bigint { return 0n; },
-    preprocess(_game: unknown): void { /* no-op */ },
-    // Expose tiling metadata for consumers.
-    tiling,
-    dim,
-  } as unknown as import("./Board.js").GraphFunction;
+  // @java Boardless.java:49-55 — the hidden "fake" board IS a real graph:
+  // RectangleOnSquare(41) / HexagonOnHex(21) / TriangleOnTri(41) per tiling.
+  const inner: import("./Board.js").GraphFunction =
+    tiling === "Square"
+      ? (new RectangleOnSquare(dim, dim, null) as unknown as import("./Board.js").GraphFunction)
+      : tiling === "Hexagonal"
+        ? (new HexagonOnHex(dim) as unknown as import("./Board.js").GraphFunction)
+        : (new TriangleOnTri(dim) as unknown as import("./Board.js").GraphFunction);
+  // Expose tiling metadata for consumers alongside the real generator.
+  (inner as unknown as { tiling?: TilingBoardlessType; dim?: number }).tiling = tiling;
+  (inner as unknown as { tiling?: TilingBoardlessType; dim?: number }).dim = dim;
+  return inner;
 }
