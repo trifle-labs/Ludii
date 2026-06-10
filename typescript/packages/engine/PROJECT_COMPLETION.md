@@ -900,3 +900,23 @@ registry factory's substrate access before replacing it, and MUST run the 16-gam
 canary before commit. Remaining top: state.Var/Who/What/State (state functions),
 region.math.Difference/If/Union, ints.size.Size, math.If, iterator.Level,
 board.RegionSite, intArray.values.Values, moves And/Or.
+
+## Update 37 — Item-2 burn-down: ~22,000 → 2,149 registry wins (90% eliminated), 34 → 22 classes
+
+Ported and registered this wave (each with full canary battery, two regressions
+caught-and-fixed by it):
+- ints.state Who/What/Var/State (+ static constructs — the construct-kind executable
+  is tried FIRST; a missing TS static silently hands the node to the registry: the
+  same gap pattern as Last, now documented as recipe step 0: CHECK reflection for
+  construct-kind executables and mirror them as statics).
+- ints.last.Last static construct (5.5k wins, the worklist's #1) + raw-boolean
+  afterConsequence wrap (J'odu canary regression → fixed).
+- region.math Difference/Union/If (3.4k wins).
+- ints.size.Size (5 construct overloads, transitional delegates to the substrate
+  classes), ints.math.If, ints.iterator.Level (2.6k wins).
+- ints.board.Id/IndexOfComponent (engine piece-table substrate; first attempt with
+  Java array convention broke Tafl → canary caught, substrate-fixed).
+
+Remaining 22 (2,149 wins): RegionSite 513, intArray Values 414, moves And 243 /
+Or 66, Where 192, Score 146, Pips 113, Coord 99, Is-variant residue 66,
+floats.Sub 60, + 12 singles. Same recipe; ~2 more waves of this size to zero.
