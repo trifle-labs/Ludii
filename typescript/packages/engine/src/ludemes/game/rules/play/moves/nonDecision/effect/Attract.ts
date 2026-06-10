@@ -1,115 +1,115 @@
-// @java Core/src/game/rules/play/moves/nonDecision/effect/Attract.java
-
 /**
- * Is used to attract all the pieces as close as possible to a site.
- *
  * @java game/rules/play/moves/nonDecision/effect/Attract.java
  *
- * Java: public final class Attract extends Effect
- *   - startLocationFn: IntFunction — pivot/from location (default: lastTo)
- *   - dirnChoice: Directions — directions to attract along (default: Adjacent)
- *   - type: SiteType
+ * Attracts all pieces as close as possible to a given site.
+ * In each radial direction from the from-site, collect all non-empty sites
+ * in order, then re-place them compacted toward the origin.
  *
- * eval(): for each direction radial, collect all pieces along the ray in order,
- * remove them, then re-place them compacted toward the pivot.
+ * Java parity (Attract.eval lines 72-135):
+ *   1. Resolve from = startLocationFn.eval(context)  [default: lastTo]
+ *   2. For each radial direction, walk steps[1..]:
+ *      - For each non-empty step: record what, emit ActionRemove.
+ *   3. Then re-place them at steps[1..piecesInThisDirection.size()] (compact).
+ *
+ * NOTE: coverage-only transliteration; NOT registered in the 1:1 moves registry.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/Attract.java — eval(Context)
  */
 
 import type { Context } from "../../../../../../../context.js";
-import { Move } from "../../../../../../../move.js";
+import type { Move } from "../../../../../../../move.js";
+import type { IntFunction, MovesFunction } from "../../../../../../base.js";
+import type { CellFlatRadials } from "../../../../../../topology-radials.js";
+import { radialsForDirection } from "../../../../../../topology-radials.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
-import type { IntFunction, DirectionsFunction } from "../../../../../../base.js";
-import { Effect } from "./Effect.js";
+import { Move as LudiiMove } from "../../../../../../../move.js";
 import type { ThenLike } from "../../Moves.js";
-import type { Action } from "../../../../../../../action/index.js";
+import type { From } from "../../../../../util/moves/From.js";
+import { LAST_TO } from "./EffectCtorAdapters.js";
 
-/**
- * Attract effect — pulls pieces closer to a pivot site.
- *
- * @java game/rules/play/moves/nonDecision/effect/Attract.java
- */
-export class Attract extends Effect {
-  /** @java Attract.startLocationFn — default: lastTo */
+export class Attract implements MovesFunction {
+  /**
+   * Function evaluating the pivot/from-site (default: lastTo = ctx._evalTo).
+   * @java Attract.startLocationFn
+   */
   private readonly startLocationFn: IntFunction;
 
-  /** @java Attract.dirnChoice — default: Adjacent */
-  private readonly dirnChoice: DirectionsFunction;
-
-  // -------------------------------------------------------------------------
+  /**
+   * Direction name (e.g. "Adjacent", "Diagonal").
+   * @java Attract.dirnChoice — defaults to Adjacent
+   */
+  private readonly dirnName: string;
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Attract.java — constructor
+   * @param from The data of the from location [(from (last To))].
+   * @param dirn The specific direction [Adjacent].
+   * @param then The moves applied after that move is applied.
    */
   public constructor(
-    startLocationFn: IntFunction,
-    dirnChoice: DirectionsFunction,
-    then: ThenLike | null = null,
+    from?: From | null,
+    dirn?: string | null,
+    then?: ThenLike | null,
   ) {
-    super(then);
-    this.startLocationFn = startLocationFn;
-    this.dirnChoice = dirnChoice;
+    void then;
+    this.startLocationFn = from?.loc() ?? LAST_TO;
+    this.dirnName = dirn ?? "Adjacent";
   }
-
-  // -------------------------------------------------------------------------
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Attract.java — eval(Context)
    *
-   * Java lines 74-135:
-   *   1. Resolve from = startLocationFn.eval(context)
-   *   2. For each direction, walk the radial outward:
-   *      - For each non-empty step: record what, emit ActionRemove.
-   *   3. Re-place them compacted toward pivot: at steps[1..piecesCount].
+   * For each direction radial: collect all piece-types in order (far to near),
+   * remove them all, then re-place them compacted starting at step[1].
    */
-  public override eval(ctx: Context): Move[] {
+  public eval(ctx: Context): Move[] {
+    // @java Attract.java:79 — from = startLocationFn.eval(context)
     const from = this.startLocationFn.eval(ctx);
     if (from < 0) return [];
 
-    const ctxAny = ctx as unknown as {
-      _radials?: Array<Record<string, Array<{ ray: number[]; opposite: number[] }>>>;
-    };
+    const ctxAny = ctx as unknown as { _radials?: CellFlatRadials[] };
     const radials = ctxAny._radials;
-    if (!radials) {
-      throw new Error("not yet wired: Attract.eval requires _radials topology");
-    }
+    if (!radials) return [];
 
-    const state = ctx.state;
-    const mover = state.mover;
-    const directions = this.dirnChoice.eval(ctx);
     const cellRadials = radials[from];
     if (!cellRadials) return [];
 
-    const allActions: Action[] = [];
+    const state = ctx.state;
+    const mover = state.mover;
+    const allActions: import("../../../../../../../action/index.js").Action[] = [];
 
-    for (const dirName of directions) {
-      const dirsForCell = cellRadials[dirName] ?? [];
+    // @java Attract.java:93 — for each direction
+    // In Java: only the "ray" direction (from pivot outward) is used,
+    // not the opposite. Each direction gives one radial from the pivot.
+    const axes = radialsForDirection(cellRadials, this.dirnName);
 
-      for (const { ray } of dirsForCell) {
-        // @java Attract.java:97-109 — collect pieces along radial
-        const piecesInThisDirection: number[] = [];
+    for (const { ray } of axes) {
+      // @java Attract.java:97-109 — collect pieces along this radial
+      const piecesInThisDirection: number[] = [];
 
-        for (let toIdx = 1; toIdx < ray.length; toIdx++) {
-          const to = ray[toIdx]!;
-          const what = state.whatAtSite(to);
-          if (what !== 0) {
-            piecesInThisDirection.push(what);
-            allActions.push(new ActionRemove({ to }));
-          }
+      for (let toIdx = 1; toIdx < ray.length; toIdx++) {
+        const to = ray[toIdx]!;
+        const what = state.whatAtSite(to);
+        if (what !== 0) {
+          piecesInThisDirection.push(what);
+          // @java Attract.java:105 — removeAction for this piece
+          allActions.push(new ActionRemove({ to }));
         }
+      }
 
-        // @java Attract.java:111-118 — re-place pieces compacted toward pivot
-        for (let toIdx = 1; toIdx <= piecesInThisDirection.length; toIdx++) {
-          const to = ray[toIdx]!;
-          if (to === undefined) break;
-          const what = piecesInThisDirection[toIdx - 1]!;
-          allActions.push(new ActionAdd({ to, what, owner: mover }));
-        }
+      // @java Attract.java:111-118 — re-place pieces compacted toward pivot
+      for (let toIdx = 1; toIdx <= piecesInThisDirection.length; toIdx++) {
+        const to = ray[toIdx]!;
+        if (to === undefined) break;
+        const what = piecesInThisDirection[toIdx - 1]!;
+        allActions.push(new ActionAdd({ to, what, owner: mover }));
       }
     }
 
     if (allActions.length === 0) return [];
 
-    return [new Move({
+    return [new LudiiMove({
       id: `attract:${mover}:${from}`,
       label: `Attract(from=${from})`,
       siteIndices: [from],
@@ -117,12 +117,5 @@ export class Attract extends Effect {
       placedOwner: mover,
       actions: allActions,
     })];
-  }
-
-  // -------------------------------------------------------------------------
-
-  /** @java Attract.isStatic() */
-  public override isStatic(): boolean {
-    return false;
   }
 }

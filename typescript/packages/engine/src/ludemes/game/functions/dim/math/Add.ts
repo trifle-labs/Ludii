@@ -1,5 +1,5 @@
 /**
- * Add1to1.ts
+ * Add.ts
  * @java game/functions/dim/math/Add.java
  *
  * Adds two or more dim values.

@@ -196,7 +196,7 @@ import { ForEachSite as C192 } from "../../../ludemes/game/rules/start/forEach/s
 import { ForEachPlayer as C193 } from "../../../ludemes/game/rules/start/forEach/player/ForEachPlayer.js";
 import { Set as C194 } from "../../../ludemes/game/rules/start/deductionPuzzle/Set.js";
 import { SetCountStart as C195 } from "../../../ludemes/game/rules/start/SetCountStart.js";
-import { Deal1to1 as C196 } from "../../../ludemes/game/rules/start/Deal.js";
+import { Deal as C196 } from "../../../ludemes/game/rules/start/Deal.js";
 import { PlaceSites as C197 } from "../../../ludemes/game/rules/start/PlaceSites.js";
 import { Start as C198 } from "../../../ludemes/game/rules/start/Start.js";
 import { PlaceHandCount as C199 } from "../../../ludemes/game/rules/start/PlaceHandCount.js";
@@ -250,7 +250,7 @@ import { Append as C246 } from "../../../ludemes/game/rules/play/moves/nonDecisi
 import { AllCombinations as C247 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/AllCombinations.js";
 import { Or as C248 } from "../../../ludemes/game/rules/play/moves/nonDecision/operators/logical/Or.js";
 import { Trigger as C249 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Trigger.js";
-import { Push1to1 as C250 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Push1to1.js";
+import { Push as C250 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Push.js";
 import { Apply as C251 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Apply.js";
 import { Sow as C252 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Sow.js";
 import { Effect as C253 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Effect.js";
@@ -258,7 +258,7 @@ import { FromToFaithful as C254 } from "../../../ludemes/game/rules/play/moves/n
 import { Surround as C255 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Surround.js";
 import { Note as C256 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Note.js";
 import { Roll as C257 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Roll.js";
-import { Attract1to1 as C258 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Attract1to1.js";
+import { Attract as C258 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Attract.js";
 import { HopFaithful as C259 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/HopFaithful.js";
 import { Select as C260 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Select.js";
 import { ShootFaithful as C261 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/ShootFaithful.js";
@@ -269,7 +269,7 @@ import { InterveneFaithful as C265 } from "../../../ludemes/game/rules/play/move
 import { RemoveFaithful as C266 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/RemoveFaithful.js";
 import { Vote as C267 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Vote.js";
 import { CustodialFaithful as C268 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/CustodialFaithful.js";
-import { Directional1to1 as C269 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Directional1to1.js";
+import { Directional as C269 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Directional.js";
 import { StepFaithful as C270 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/StepFaithful.js";
 import { AddFaithful as C271 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/AddFaithful.js";
 import { Then as C272 } from "../../../ludemes/game/rules/play/moves/nonDecision/effect/Then.js";
@@ -516,7 +516,7 @@ import { Values as C516 } from "../../../ludemes/game/functions/intArray/values/
 import { Rotations as C517 } from "../../../ludemes/game/functions/intArray/state/Rotations.js";
 import { If1to1 as C518 } from "../../../ludemes/game/functions/intArray/math/If1to1.js";
 import { Results as C519 } from "../../../ludemes/game/functions/intArray/math/Results.js";
-import { Intersection1to1 as C520 } from "../../../ludemes/game/functions/intArray/math/Intersection1to1.js";
+import { Intersection as C520 } from "../../../ludemes/game/functions/intArray/math/Intersection.js";
 import { Difference1to1 as C521 } from "../../../ludemes/game/functions/intArray/math/Difference1to1.js";
 import { Union1to1 as C522 } from "../../../ludemes/game/functions/intArray/math/Union1to1.js";
 import { SizesGroup as C523 } from "../../../ludemes/game/functions/intArray/sizes/group/SizesGroup.js";
@@ -613,7 +613,7 @@ import { CountVertices as C613 } from "../../../ludemes/game/functions/ints1to1/
 import { CountSizeBiggestLine as C614 } from "../../../ludemes/game/functions/ints/count/sizeBiggestLine/CountSizeBiggestLine.js";
 import { ValuePiece as C615 } from "../../../ludemes/game/functions/ints/value/piece/ValuePiece.js";
 import { Mover as C616 } from "../../../ludemes/game/functions/ints1to1/state/State1to1.js";
-import { Add1to1 as C617 } from "../../../ludemes/game/functions/ints1to1/math/Math1to1.js";
+import { Add as C617 } from "../../../ludemes/game/functions/ints1to1/math/Math1to1.js";
 import { PowCaret as C618 } from "../../../ludemes/game/functions/ints1to1/math/PowCaret.js";
 import { From as C619 } from "../../../ludemes/game/functions/ints1to1/iterator/Iterator1to1.js";
 import { SizeGroup as C620 } from "../../../ludemes/game/functions/ints1to1/size/Size.js";

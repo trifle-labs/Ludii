@@ -1,5 +1,5 @@
 /**
- * Intersection1to1.ts
+ * Intersection.ts
  * @java game/functions/intArray/math/Intersection.java
  *
  * (intersection <a1> <a2>) or (intersection {<a1> ...}) — elements common to all arrays.
@@ -10,7 +10,7 @@ import type { IntArrayFunction } from "../../../../base.js";
 import { isList } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 
-export class Intersection1to1 implements IntArrayFunction {
+export class Intersection implements IntArrayFunction {
   /** @java game/functions/intArray/math/Intersection.java — eval(Context) */
   constructor(private readonly arrays: IntArrayFunction[]) {}
 

@@ -29,7 +29,7 @@ function isIntFunction(value: unknown): value is IntFunction {
 // ---------------------------------------------------------------------------
 // Add  (alias "+")
 // ---------------------------------------------------------------------------
-export class Add1to1 implements IntFunction {
+export class Add implements IntFunction {
   private readonly fns: readonly IntFunction[] | null;
   private readonly arrayFn: { eval(ctx: Context): readonly number[] } | null;
 

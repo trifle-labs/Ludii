@@ -1,143 +1,133 @@
-// @java Core/src/game/rules/play/moves/nonDecision/effect/Push.java
-
 /**
- * Pushes all the pieces from a site in one direction.
- *
  * @java game/rules/play/moves/nonDecision/effect/Push.java
  *
- * Java: public final class Push extends Effect
- *   - startLocationFn: IntFunction — location of the piece to push
- *   - dirnChoice: DirectionsFunction — direction to push
- *   - type: SiteType
+ * Pushes all pieces from a site in one direction: the piece at `from` is
+ * removed, then pieces along the radial are shifted forward by one step.
  *
- * eval(): removes piece at `from`, then shifts each piece in the radial
- * along by one step (each displaced piece shifts the next one outward,
- * until an empty cell is found).
+ * Java parity (Push.eval lines 72-135):
+ *   1. Resolve from = startLocationFn.eval(context)  [default: lastTo]
+ *   2. Get radial in the given direction from fromV
+ *   3. Remove piece at step[0] (from). Track currentPiece = what(step[0]).
+ *   4. Walk steps[1..]: if step occupied, remove it, add currentPiece, track
+ *      new currentPiece. If step empty, add currentPiece and stop.
+ *
+ * NOTE: this class is NOT registered in the 1:1 moves registry (coverage-only
+ * transliteration — registering would override the inline handler, risking
+ * regression). Instantiate directly from a factory if needed.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/Push.java — eval(Context)
  */
 
 import type { Context } from "../../../../../../../context.js";
-import { Move } from "../../../../../../../move.js";
-import { ActionMove } from "../../../../../../../action/action-move.js";
+import type { Move } from "../../../../../../../move.js";
+import type { DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
+import type { CellFlatRadials } from "../../../../../../topology-radials.js";
+import { radialsForDirection } from "../../../../../../topology-radials.js";
+import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
-import type { IntFunction, DirectionsFunction } from "../../../../../../base.js";
-import { Effect } from "./Effect.js";
+import { Move as LudiiMove } from "../../../../../../../move.js";
 import type { ThenLike } from "../../Moves.js";
+import type { From } from "../../../../../util/moves/From.js";
+import { directionsFunction, type DirectionArg, LAST_TO } from "./EffectCtorAdapters.js";
 
-/**
- * Push effect — shifts pieces along a radial ray.
- *
- * @java game/rules/play/moves/nonDecision/effect/Push.java
- */
-export class Push extends Effect {
-  /** @java Push.startLocationFn */
+export class Push implements MovesFunction {
+  /**
+   * Function to evaluate the from-site (default: (last To) = ctx._evalTo).
+   * @java Push.startLocationFn
+   */
   private readonly startLocationFn: IntFunction;
 
-  /** @java Push.dirnChoice */
+  /**
+   * Direction chosen.
+   * @java Push.dirnChoice
+   */
   private readonly dirnChoice: DirectionsFunction;
-
-  // -------------------------------------------------------------------------
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Push.java — constructor
+   * @param from       Description of the from location [(from (last To))].
+   * @param directions The direction to push.
+   * @param then       The moves applied after that move is applied.
    */
   public constructor(
-    startLocationFn: IntFunction,
-    dirnChoice: DirectionsFunction,
+    from: From | null,
+    directions: DirectionArg,
     then: ThenLike | null = null,
   ) {
-    super(then);
-    this.startLocationFn = startLocationFn;
-    this.dirnChoice = dirnChoice;
+    void then;
+    this.startLocationFn = from?.loc() ?? LAST_TO;
+    this.dirnChoice = directionsFunction(directions);
   }
-
-  // -------------------------------------------------------------------------
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Push.java — eval(Context)
    *
-   * Java lines 72-136:
-   *   1. Resolve from site and direction.
-   *   2. Get the radials from the topology.
-   *   3. For each radial:
-   *      - Remove piece at from.
-   *      - Walk steps[1..]: if a piece is there, shift it (remove + add),
-   *        until an empty slot is found where the displaced piece is placed.
+   * Walk the radial in dirnName from the from-site.
+   * Piece at from is removed. Pieces along the ray are shifted forward.
    */
-  public override eval(ctx: Context): Move[] {
+  public eval(ctx: Context): Move[] {
+    // @java Push.java:76 — from = startLocationFn.eval(context)
     const from = this.startLocationFn.eval(ctx);
     if (from < 0) return [];
 
-    // Access radials via context topology
-    const ctxAny = ctx as unknown as {
-      _radials?: Array<Record<string, Array<{ ray: number[]; opposite: number[] }>>>;
-      state?: { whatAtSite?: (s: number) => number; mover?: number };
-    };
-
+    const ctxAny = ctx as unknown as { _radials?: CellFlatRadials[] };
     const radials = ctxAny._radials;
-    if (!radials) {
-      // Cannot perform push without topology — return empty per Java pattern
-      throw new Error("not yet wired: Push.eval requires _radials topology");
-    }
-
-    const state = ctx.state;
-    const mover = state.mover;
-    const directions = this.dirnChoice.eval(ctx);
-    const dirName = directions[0] ?? "N";
+    if (!radials) return [];
 
     const cellRadials = radials[from];
     if (!cellRadials) return [];
 
-    const dirsForCell = cellRadials[dirName] ?? [];
-    if (dirsForCell.length === 0) return [];
+    const state = ctx.state;
+    const mover = state.mover;
+    const moves: LudiiMove[] = [];
 
-    const result: Move[] = [];
+    // @java Push.java:90 — radials(type, fromV.index(), directions.get(0))
+    // We use only the first radial in the chosen direction (the "push" direction).
+    const dirnName = this.dirnChoice.eval(ctx)[0] ?? "E";
+    const axes = radialsForDirection(cellRadials, dirnName);
+    if (axes.length === 0) return [];
 
-    for (const { ray } of dirsForCell) {
-      if (ray.length < 2) continue;
+    // Use first axis, ray direction (not opposite)
+    const firstAxis = axes[0]!;
+    const ray = firstAxis.ray; // ray[0] = from, ray[1..] = ahead
 
-      const actions: import("../../../../../../../action/index.js").Action[] = [];
+    // @java Push.java:94 — int currentPiece = cs.what(radial.steps()[0].id(), realType)
+    let currentPiece = state.whatAtSite(from);
+    if (currentPiece === 0) return [];
 
-      // @java Push.java:96 — currentPiece = cs.what(steps[0], type)
-      let currentPiece = state.whatAtSite(from);
+    const actions: import("../../../../../../../action/index.js").Action[] = [];
 
-      // @java Push.java:98 — remove from start
-      actions.push(new ActionRemove({ to: from }));
+    // @java Push.java:96 — remove piece at from
+    actions.push(new ActionRemove({ to: from }));
 
-      // @java Push.java:99-120 — walk the radial
-      for (let toIdx = 1; toIdx < ray.length; toIdx++) {
-        const to = ray[toIdx]!;
-        const what = state.whatAtSite(to);
-        if (what !== 0) {
-          // @java: site occupied — remove its piece and place currentPiece there
-          actions.push(new ActionRemove({ to }));
-          actions.push(new ActionMove({ from, to }));
-          currentPiece = what;
-        } else {
-          // @java: empty site — place currentPiece and stop
-          actions.push(new ActionMove({ from, to }));
-          break;
-        }
-      }
+    // @java Push.java:99-121 — walk steps[1..]
+    for (let toIdx = 1; toIdx < ray.length; toIdx++) {
+      const to = ray[toIdx]!;
+      const what = state.whatAtSite(to);
 
-      if (actions.length > 0) {
-        result.push(new Move({
-          id: `push:${mover}:${from}:${dirName}`,
-          label: `Push(from=${from},dir=${dirName})`,
-          siteIndices: [from],
-          mover,
-          placedOwner: mover,
-          actions,
-        }));
+      if (what !== 0) {
+        // @java Push.java:101-108 — occupied: remove it, add currentPiece, track new current
+        actions.push(new ActionRemove({ to }));
+        actions.push(new ActionAdd({ to, what: currentPiece, owner: mover }));
+        currentPiece = what;
+      } else {
+        // @java Push.java:113-118 — empty: add currentPiece and break
+        actions.push(new ActionAdd({ to, what: currentPiece, owner: mover }));
+        break;
       }
     }
 
-    return result;
-  }
+    if (actions.length === 0) return [];
 
-  // -------------------------------------------------------------------------
+    moves.push(new LudiiMove({
+      id: `push:${mover}:${from}:${dirnName}`,
+      label: `Push(${from}→${dirnName})`,
+      siteIndices: [from],
+      mover,
+      placedOwner: mover,
+      actions,
+    }));
 
-  /** @java Push.isStatic() */
-  public override isStatic(): boolean {
-    return false;
+    return moves;
   }
 }

@@ -31,7 +31,7 @@ export type DealableType = "Cards" | "Dominoes";
  * Deals `count` items of the given `type` (Cards or Dominoes) to each player.
  * applyToInitialState is a no-op because the card/deck subsystem is not ported.
  */
-export class Deal1to1 implements StartRule {
+export class Deal implements StartRule {
   /** Type of deal (Cards or Dominoes). @java type field. */
   private readonly dealType: DealableType;
 

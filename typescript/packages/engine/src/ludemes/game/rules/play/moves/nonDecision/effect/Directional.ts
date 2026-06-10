@@ -1,158 +1,162 @@
-// @java Core/src/game/rules/play/moves/nonDecision/effect/Directional.java
-
 /**
- * Is used to apply an effect to all the pieces in a direction from a location.
- *
  * @java game/rules/play/moves/nonDecision/effect/Directional.java
  *
- * Java: public final class Directional extends Effect
- *   - startLocationFn: IntFunction — pivot/from location (default: lastTo)
- *   - targetRule: BooleanFunction — condition on pieces to capture (default: isEnemy)
- *   - effect: Moves — effect to apply on each target
- *   - dirnChoice: DirectionsFunction | null — direction to use
+ * Applies an effect to all pieces along a direction from a location that
+ * satisfy the targetRule. The effect is chained for each qualifying site.
  *
- * eval(): for each direction from the pivot, walks the radial outward and
- * applies `effect` to each consecutive site satisfying `targetRule` until
- * a non-target site is encountered.
+ * Java parity (Directional.eval lines 97-146):
+ *   1. Resolve from = startLocationFn.eval(context)  [default: lastTo]
+ *   2. Resolve directions (from dirnChoice or from lastFrom→lastTo)
+ *   3. For each direction, walk radial steps[1..]:
+ *      - For each step matching isTarget: set context.to(step), apply effect
+ *      - Stop when a step does NOT match
  *
- * Used for example in Fanorona.
+ * In the 1:1 path, "applying an effect" means generating ActionRemove moves
+ * for each matching "to" site. The default targetEffect is Remove(to).
+ * We mirror Java's behavior: for each qualifying site, set _evalTo and generate
+ * the sub-effect. Because MoveUtilities.chainRuleCrossProduct is not ported,
+ * we flatten to independent ActionRemove per qualifying site as one composite move.
+ *
+ * NOTE: coverage-only transliteration; NOT registered in the 1:1 moves registry.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/Directional.java — eval(Context)
  */
 
 import type { Context } from "../../../../../../../context.js";
-import { Move } from "../../../../../../../move.js";
+import type { Move } from "../../../../../../../move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
-import { Effect } from "./Effect.js";
-import type { ThenLike } from "../../Moves.js";
-import type { Action } from "../../../../../../../action/index.js";
+import type { CellFlatRadials } from "../../../../../../topology-radials.js";
+import { radialsForDirection } from "../../../../../../topology-radials.js";
+import { ActionRemove } from "../../../../../../../action/action-remove.js";
+import { Move as LudiiMove } from "../../../../../../../move.js";
+import type { From } from "../../../../../util/moves/From.js";
+import type { To } from "../../../../../util/moves/To.js";
+import type { Then } from "./Then.js";
+import { directionsFunction, directionName, LAST_TO } from "./EffectCtorAdapters.js";
+import type { DirectionArg } from "./EffectCtorAdapters.js";
 
 /**
- * Directional effect — capture in a ray direction.
- *
- * @java game/rules/play/moves/nonDecision/effect/Directional.java
+ * Default target rule: site at _evalTo is occupied by an enemy.
+ * @java game/functions/booleans/is/player/IsEnemy — default in Directional
  */
-export class Directional extends Effect {
-  /** @java Directional.startLocationFn */
+class IsEnemyTo implements BooleanFunction {
+  public eval(ctx: Context): boolean {
+    const to = ctx._evalTo;
+    if (to < 0) return false;
+    const who = ctx.state.cells[to] ?? 0;
+    const mover = ctx.state.mover;
+    return who !== 0 && who !== mover;
+  }
+}
+
+const DEFAULT_TARGET_RULE = new IsEnemyTo();
+
+export class Directional implements MovesFunction {
+  /**
+   * Function evaluating the from-site (default: lastTo = _evalTo).
+   * @java Directional.startLocationFn
+   */
   private readonly startLocationFn: IntFunction;
 
-  /** @java Directional.targetRule */
+  /**
+   * The condition on each "to" site along the ray.
+   * Default: isEnemy at (to).
+   * @java Directional.targetRule
+   */
   private readonly targetRule: BooleanFunction;
 
-  /** @java Directional.effect */
-  private readonly effect: MovesFunction;
+  /**
+   * Direction name (e.g. "Orthogonal", "E").
+   * @java Directional.dirnChoice — defaults to lastFrom→lastTo direction in Java,
+   *   here we default to "Adjacent" when not specified.
+   */
+  private readonly dirnName: string;
 
-  /** @java Directional.dirnChoice — null means "from lastFrom to lastTo" direction */
+  /** @java Directional.dirnChoice */
   private readonly dirnChoice: DirectionsFunction | null;
-
-  // -------------------------------------------------------------------------
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Directional.java — constructor
+   * Java signature:
+   *   Directional(@Opt From from, @Opt Direction directions,
+   *               @Opt To to, @Opt Then then)
    */
-  public constructor(opts: {
-    startLocationFn: IntFunction;
-    targetRule: BooleanFunction;
-    effect: MovesFunction;
-    dirnChoice?: DirectionsFunction | null;
-    then?: ThenLike | null;
-  }) {
-    super(opts.then ?? null);
-    this.startLocationFn = opts.startLocationFn;
-    this.targetRule = opts.targetRule;
-    this.effect = opts.effect;
-    this.dirnChoice = opts.dirnChoice ?? null;
+  public constructor(
+    from?: From | null,
+    directions?: DirectionArg,
+    to?: To | null,
+    then?: Then | null,
+  ) {
+    void then;
+    this.startLocationFn = from?.loc() ?? LAST_TO;
+    this.dirnChoice = directions == null ? null : directionsFunction(directions);
+    this.dirnName = directions == null ? "Adjacent" : directionName(typeof directions === "string" ? directions : this.dirnChoice);
+    this.targetRule = to?.cond() ?? DEFAULT_TARGET_RULE;
   }
-
-  // -------------------------------------------------------------------------
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Directional.java — eval(Context)
    *
-   * Java lines 96-146:
-   *   1. Resolve from = startLocationFn.eval(context).
-   *   2. Get directions (from dirnChoice or from lastFrom→lastTo).
-   *   3. For each direction, walk radial:
-   *      - For each site satisfying targetRule: apply effect.
-   *      - Break on first non-target site.
+   * For each radial direction from from-site: walk sites, apply effect (remove)
+   * to each consecutive site satisfying targetRule, stop on first non-matching.
    */
-  public override eval(ctx: Context): Move[] {
+  public eval(ctx: Context): Move[] {
+    // @java Directional.java:100 — from = startLocationFn.eval(context)
     const from = this.startLocationFn.eval(ctx);
     if (from < 0) return [];
 
-    const ctxAny = ctx as unknown as {
-      _radials?: Array<Record<string, Array<{ ray: number[]; opposite: number[] }>>>;
-    };
+    const ctxAny = ctx as unknown as { _radials?: CellFlatRadials[] };
     const radials = ctxAny._radials;
-    if (!radials) {
-      throw new Error("not yet wired: Directional.eval requires _radials topology");
-    }
-
-    const state = ctx.state;
-    const mover = state.mover;
-
-    const origFrom = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
-    const origTo = (ctx as unknown as { _evalTo?: number })._evalTo ?? -1;
-
-    // @java: get directions
-    let directions: string[];
-    if (this.dirnChoice !== null) {
-      directions = this.dirnChoice.eval(ctx);
-    } else {
-      // @java Directional.java:110-113: use Directions from lastFrom→lastTo
-      // In TS we use all available directions as approximation
-      const cellRadials = radials[from];
-      directions = cellRadials ? Object.keys(cellRadials) : [];
-    }
+    if (!radials) return [];
 
     const cellRadials = radials[from];
     if (!cellRadials) return [];
 
-    const result: Move[] = [];
+    const state = ctx.state;
+    const mover = state.mover;
+    const removeTargets: number[] = [];
 
-    for (const dirName of directions) {
-      const dirsForCell = cellRadials[dirName] ?? [];
-      for (const { ray } of dirsForCell) {
-        // @java Directional.java:121-135: walk radial
-        for (let i = 1; i < ray.length; i++) {
-          const locUnderThreat = ray[i]!;
+    const origFrom = ctx._evalFrom;
+    const origTo = ctx._evalTo;
 
-          // @java: isTarget check
-          if (!this.isTarget(ctx, locUnderThreat)) break;
+    // @java Directional.java:115-143 — for each direction's radials
+    const dirnNames = this.dirnChoice?.eval(ctx) ?? [this.dirnName];
 
-          // @java Directional.java:127-134: apply effect
-          (ctx as unknown as { _evalFrom?: number })._evalFrom = -1; // OFF
-          (ctx as unknown as { _evalTo?: number })._evalTo = locUnderThreat;
-          const effMoves = this.effect.eval(ctx);
-          for (const em of effMoves) {
-            result.push(new Move({
-              id: `directional:${mover}:${from}:${locUnderThreat}`,
-              label: `Directional(from=${from},to=${locUnderThreat})`,
-              siteIndices: [from, locUnderThreat],
-              mover,
-              placedOwner: mover,
-              actions: [...em.actions] as Action[],
-            }));
+    for (const dirnName of dirnNames) {
+      const axes = radialsForDirection(cellRadials, dirnName);
+
+      for (const { ray, opposite } of axes) {
+        for (const rayToWalk of [ray, opposite]) {
+          // @java Directional.java:122-134 — walk steps[1..]
+          for (let i = 1; i < rayToWalk.length; i++) {
+            const to = rayToWalk[i]!;
+            // @java Directional.java:123 — isTarget(context, locUnderThreat)
+            ctx._evalTo = to;
+            ctx._evalFrom = from;
+            if (!this.targetRule.eval(ctx)) break; // stop on first non-match
+
+            // @java Directional.java:126-131 — apply effect (default: remove to)
+            removeTargets.push(to);
           }
         }
       }
     }
 
-    // Restore
-    (ctx as unknown as { _evalFrom?: number })._evalFrom = origFrom;
-    (ctx as unknown as { _evalTo?: number })._evalTo = origTo;
+    ctx._evalFrom = origFrom;
+    ctx._evalTo = origTo;
 
-    // Store Moves in computed moves (coverage deferred)
-    return result;
-  }
+    if (removeTargets.length === 0) return [];
 
-  private isTarget(ctx: Context, location: number): boolean {
-    (ctx as unknown as { _evalTo?: number })._evalTo = location;
-    return this.targetRule.eval(ctx);
-  }
+    // Build one composite move with all ActionRemove actions
+    const actions = removeTargets.map(to => new ActionRemove({ to }));
 
-  // -------------------------------------------------------------------------
-
-  /** @java Directional.isStatic() — not static (depends on board state) */
-  public override isStatic(): boolean {
-    return false;
+    return [new LudiiMove({
+      id: `directional:${mover}:${from}:${this.dirnName}`,
+      label: `Directional(from=${from}, dir=${this.dirnName})`,
+      siteIndices: [from, ...removeTargets],
+      mover,
+      placedOwner: mover,
+      actions,
+    })];
   }
 }
