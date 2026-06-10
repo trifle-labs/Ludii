@@ -805,11 +805,6 @@ export class Game1to1 implements Game {
     // resolve on the start-rule bridge context exactly as they do in play.
     (ctx as unknown as { _trajectories?: unknown })._trajectories = this.equipment.board.trajectories;
     (ctx as unknown as { _radials?: unknown })._radials = this.equipment.board.radials;
-    // Raw initial-state arrays for migrated eval(Context) start rules. Java
-    // mutates ContainerState through actions (ActionSetCount etc.); until State
-    // convergence lands, migrated rules write these arrays directly — the same
-    // arrays Game1to1.start() builds the initial State from.
-    (ctx as unknown as { _startArrays?: unknown })._startArrays = { cells, whats, countAt, stateAt, valueAt, scores, amounts };
     // @java other/state/container/ContainerState.java — the MUTATION facade for
     // start rules (STATE CONVERGENCE chunk 3). Java start rules apply actions that
     // call ContainerState.setSite(...); converted rules speak this API instead of
@@ -835,6 +830,8 @@ export class Game1to1 implements Game {
       /** @java ContainerState.who(site) — LIVE read (the per-rule bridge State
        * snapshots the arrays at construction; intra-rule reads need the live view). */
       who: (site: number): number => (site >= 0 && site < cells.length ? cells[site]! : 0),
+      /** Total number of sites (board + hands). */
+      size: cells.length,
       /** @java ContainerState.what(site) — LIVE read. */
       what: (site: number): number => {
         if (site < 0 || site >= cells.length) return 0;

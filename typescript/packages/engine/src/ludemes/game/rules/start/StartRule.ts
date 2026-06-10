@@ -23,7 +23,7 @@ export interface StartRule {
    *
    * Migrated rules implement THIS — the Java signature. The bridge context
    * (Game1to1.applyStartRule) carries placePieces, the board trajectories and
-   * the raw start arrays (ctx._startArrays) until State convergence.
+   * the ContainerState mutation facade (ctx._startState) until State convergence.
    */
   eval(context: Context): void;
 

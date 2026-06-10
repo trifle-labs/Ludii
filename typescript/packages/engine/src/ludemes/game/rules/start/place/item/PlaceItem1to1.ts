@@ -172,20 +172,16 @@ export class PlaceItem1to1 implements StartRule {
    *
    * Deferred: deduction-puzzle path, container-based (non-hand), stacking.
    */
-  /** @java PlaceItem.eval(Context) — bridge arrays + facade equipment. */
+  /** @java PlaceItem.eval(Context) — bridge ContainerState facade + equipment. */
   public eval(ctx: Context): void {
-    const a = (ctx as unknown as {
-      _startArrays?: { cells: number[]; whats: number[]; countAt: number[]; stateAt: number[]; valueAt: number[] };
-    })._startArrays;
-    if (!a) return;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; who(site: number): number; what(site: number): number; size: number } })._startState;
+    if (!cs) return;
     const g = ctx.game as unknown as { equipment: Equipment1to1; numPlayers: number };
-    this.applyImpl(a.cells, a.whats, a.countAt, g.equipment, g.numPlayers, ctx);
+    this.applyImpl(cs, g.equipment, g.numPlayers, ctx);
   }
 
   private applyImpl(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
+    cs: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; who(site: number): number; what(site: number): number; size: number },
     equipment: Equipment1to1,
     numPlayers: number,
     ctx: Context,
@@ -200,7 +196,7 @@ export class PlaceItem1to1 implements StartRule {
       this.coords !== null ||
       this.countsFn !== null
     ) {
-      this.evalFill(cells, whats, countAt, equipment, numPlayers, fakeCtx);
+      this.evalFill(cs, equipment, fakeCtx);
       return;
     }
 
@@ -221,14 +217,13 @@ export class PlaceItem1to1 implements StartRule {
         const nameOnly = this.item.replace(/\d+$/, "");
         for (let p = 1; p <= numPlayers; p++) {
           const handSite = equipment.handSiteFor(p, 0);
-          if (handSite < 0 || handSite >= cells.length) continue;
+          if (handSite < 0 || handSite >= cs.size) continue;
           const piece = equipment.pieces.find(
             (pi: Piece) => pi.owner === p && pi.name.toLowerCase() === nameOnly.toLowerCase(),
           );
           if (piece === undefined) continue;
-          cells[handSite] = p;
-          whats[handSite] = piece.index;
-          countAt[handSite] = count;
+          // @java Start.placePieces -> ContainerState.setSite(...)
+          cs.setSite(handSite, p, piece.index, count, -1, -1);
         }
         return;
       }
@@ -253,15 +248,13 @@ export class PlaceItem1to1 implements StartRule {
       }
     }
 
-    if (site < 0 || site >= cells.length) return;
+    if (site < 0 || site >= cs.size) return;
 
     const piece = resolveComponent(this.item, equipment);
     if (piece === null) return;
 
     // Java: Start.placePieces(context, site, what, count, state, rotation, value, false, type)
-    cells[site] = piece.owner;
-    whats[site] = piece.index;
-    countAt[site] = count;
+    cs.setSite(site, piece.owner, piece.index, count, -1, -1);
   }
 
   /**
@@ -270,11 +263,8 @@ export class PlaceItem1to1 implements StartRule {
    * Region/multi-site placement — mirrors Java evalFill without container path.
    */
   private evalFill(
-    cells: number[],
-    whats: number[],
-    countAt: number[],
+    cs: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; who(site: number): number; what(site: number): number; size: number },
     equipment: Equipment1to1,
-    numPlayers: number,
     fakeCtx: Context,
   ): void {
     const piece = resolveComponent(this.item, equipment);
@@ -289,12 +279,9 @@ export class PlaceItem1to1 implements StartRule {
       for (const coordinate of this.coords) {
         // Java: TopologyElement element = SiteFinder.find(context.board(), coordinate, type)
         const site = algebraicToSite(coordinate, equipment.board.width, equipment.board.height);
-        if (site < 0) continue;
-        if (site >= cells.length) continue;
+        if (site < 0 || site >= cs.size) continue;
         // Java: Start.placePieces(context, element.index(), what, count, ...)
-        cells[site] = piece.owner;
-        whats[site] = piece.index;
-        countAt[site] = count;
+        cs.setSite(site, piece.owner, piece.index, count, -1, -1);
       }
       return;
     }
@@ -309,16 +296,14 @@ export class PlaceItem1to1 implements StartRule {
       }
       for (let k = 0; k < sites.length; k++) {
         const loc = sites[k]!;
-        if (loc < 0 || loc >= cells.length) continue;
+        if (loc < 0 || loc >= cs.size) continue;
         // Java: countsFn.length == 0 ? countFn.eval(context) : countsFn[k].eval(context)
         const countsFn = this.countsFn ?? [];
         const c =
           countsFn.length === 0
             ? count
             : this.evalInt(countsFn[k] ?? countsFn[countsFn.length - 1]!, fakeCtx, count);
-        cells[loc] = piece.owner;
-        whats[loc] = piece.index;
-        countAt[loc] = c;
+        cs.setSite(loc, piece.owner, piece.index, c, -1, -1);
       }
       return;
     }
@@ -332,15 +317,13 @@ export class PlaceItem1to1 implements StartRule {
         } catch {
           continue;
         }
-        if (loc < 0 || loc >= cells.length) continue;
+        if (loc < 0 || loc >= cs.size) continue;
         const countsFn = this.countsFn ?? [];
         const c =
           countsFn.length === 0
             ? count
             : this.evalInt(countsFn[k] ?? countsFn[countsFn.length - 1]!, fakeCtx, count);
-        cells[loc] = piece.owner;
-        whats[loc] = piece.index;
-        countAt[loc] = c;
+        cs.setSite(loc, piece.owner, piece.index, c, -1, -1);
       }
     }
   }
