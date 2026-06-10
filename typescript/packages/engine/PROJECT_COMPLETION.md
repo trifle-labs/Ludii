@@ -1166,3 +1166,16 @@ The correct script: build (class→target, file→target) pairs together, apply
 deny-list, rewrite class refs + import specifiers + paths in one pass, tsc-gate,
 battery-gate, commit per ~50-file chunk. Engineered next session / codex wave
 (mechanical, zero behavior).
+
+## Update 53 — Re-homing executed: 235 → 88 *1to1 files
+
+Engineered sweep v2 (deny-list, src-root exclusion, atomic class+path maps):
+- Chunk 1: 157 collision-free class renames + 100 file moves — tsc clean FIRST
+  pass, 24-game battery green.
+- Chunks 2-3: 47 fully-orphaned *1to1 files cascade-deleted (every export
+  unreferenced — substrate superseded by this campaign's faithful ports:
+  Count1to1, ForEachSite/Player1to1, CanMove1to1, Values1to1, Seq/Append/Note/
+  And/Or1to1, …).
+The remaining 88 are LIVE substrate with name collisions against faithful classes
+(the merge-analysis set: deny-list names like Game1to1/State1to1/Array1to1 +
+genuine duplicate pairs needing case-by-case consolidation).
