@@ -1147,3 +1147,22 @@ With the bespoke layer extinct, item 3's residue is precisely:
 Items 1 and 2 of the definition of complete: DONE. Item 3: the registration layer,
 dead callbacks, shims, orphans = all deleted; dedup recipe proven; remaining = the
 three campaigns above (each sized, designed, and battery-gated).
+
+## Update 52 — Re-homing rename: first automation attempt reverted; engineering notes
+
+A blind 159-class collision-free rename + file-move sweep broke three ways
+(all caught by tsc before any commit; hard-reset to the extinction commit):
+1. **Reserved/global names**: Array1to1→Array shadows the JS global; Game1to1→Game
+   collides with imported Java-mirror Game types. The rename map needs a deny-list
+   (Array, Map, Set, String, Number, Boolean, Object, Function, Symbol, Error,
+   Game, State, Event, Range, …) — those classes keep a qualifier or get aliased
+   imports.
+2. **API names**: play1to1.ts matched the file-rename pattern — the public entry
+   is NOT a transitional name; exclude src-root files.
+3. **Path/class consistency**: class renames and file moves must be computed as ONE
+   map applied atomically (text replace of class names rewrote import PATHS for
+   files that then didn't move, and vice versa).
+The correct script: build (class→target, file→target) pairs together, apply
+deny-list, rewrite class refs + import specifiers + paths in one pass, tsc-gate,
+battery-gate, commit per ~50-file chunk. Engineered next session / codex wave
+(mechanical, zero behavior).
