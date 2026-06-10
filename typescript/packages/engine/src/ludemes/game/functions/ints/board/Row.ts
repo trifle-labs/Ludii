@@ -35,7 +35,9 @@ export class Row extends BaseIntFunction {
    * @param type The graph element type [default SiteType of the board].
    * @java Row(SiteType, IntFunction)
    */
-  public constructor(of: JavaIntFunction, type: SiteType | null = null) {
+  // @java Row(@Opt SiteType type, @Name IntFunction of) — params must match
+  // the Java slot order (see Column.ts).
+  public constructor(type: SiteType | null, of: JavaIntFunction) {
     super();
     this.site = of;
     this.type = type;

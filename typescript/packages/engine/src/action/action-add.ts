@@ -68,13 +68,11 @@ export class ActionAdd extends BaseAction {
 
   public constructor(options: ActionAddOptions) {
     super();
-    if (!Number.isInteger(options.to) || options.to < 0) {
-      throw new RangeError(`ActionAdd.to must be a non-negative integer.`);
-    }
-    if (!Number.isInteger(options.what) || options.what < 1) {
-      throw new RangeError(
-        `ActionAdd.what must be a positive integer (1-based owner).`,
-      );
+    // @java ActionAdd.java — Java actions never validate in the constructor;
+    // a generation-time Add with what<=0 or to<0 (Loop Xiangqi probes piece
+    // ids before any capture exists) applies as a no-op instead of throwing.
+    if (!Number.isInteger(options.to)) {
+      throw new RangeError(`ActionAdd.to must be an integer.`);
     }
     this.toIndex = options.to;
     this.whatIndex = options.what;
@@ -89,6 +87,7 @@ export class ActionAdd extends BaseAction {
   }
 
   public override apply(state: State): State {
+    if (this.toIndex < 0 || this.whatIndex < 1) return state;
     if (this.onStack) {
       let next = state
         .withStackPush(this.toIndex, this.ownerIndex)

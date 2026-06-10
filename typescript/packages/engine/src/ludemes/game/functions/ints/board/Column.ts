@@ -37,7 +37,10 @@ export class Column extends BaseIntFunction {
    * @param of   The site to check.
    * @java Column(SiteType, IntFunction)
    */
-  public constructor(of: JavaIntFunction, type: SiteType | null = null) {
+  // @java Column(@Opt SiteType type, @Name IntFunction of) — the compiler
+  // binds args in JAVA slot order (type first); the TS params must match or
+  // `of` lands in the type slot and site stays null (MiniXiangqi threw).
+  public constructor(type: SiteType | null, of: JavaIntFunction) {
     super();
     this.site = of;
     this.type = type;

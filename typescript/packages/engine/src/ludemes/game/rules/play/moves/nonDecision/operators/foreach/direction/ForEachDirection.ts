@@ -158,8 +158,13 @@ export class ForEachDirection extends Effect {
       containerId?(): number[];
     };
 
-    // Resolve the site type
-    const realType = this.siteType ?? topologyCtx.game?.()?.board?.()?.defaultSite?.() ?? "Cell";
+    // Resolve the site type. The ENGINE context exposes `game` as a PROPERTY —
+    // `?.()` only guards null, not non-functions, and threw on xiangqi games.
+    const gameFn = (topologyCtx as { game?: unknown }).game;
+    const realType = this.siteType
+      ?? (typeof gameFn === "function" ? (gameFn as () => { board?: () => { defaultSite?: () => string } })()?.board?.()?.defaultSite?.() : undefined)
+      ?? ((context as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.())
+      ?? "Cell";
 
     // Get from / to / between from context eval scratch
     const contextFrom = topologyCtx.from?.() ?? ctxAny._evalFrom ?? OFF;
@@ -185,13 +190,28 @@ export class ForEachDirection extends Effect {
       // @java Determine if we need to find newDirection (contextTo != UNDEFINED)
       let newDirection: string | null = null;
       if (contextTo !== OFF && contextTo !== -1) {
-        const directionsSupported = topology.supportedDirections(realType);
+        // Engine Topology surfaces directions as plain strings; Java wraps
+        // them in DirectionFacing (toAbsolute()). Accept both shapes; the
+        // engine path resolves the heading via trajectories.step(site, dir).
+        const supported = (typeof (topology as { supportedDirections?: unknown }).supportedDirections === "function"
+          ? topology.supportedDirections(realType)
+          : ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]) as Array<{ toAbsolute(): string } | string>;
+        const trajForStep = topology.trajectories() as unknown as {
+          steps?: (t: string | null, f: number, t2: string | null, d: string) => Array<{ to(): { id(): number } }>;
+          step?: (site: number, dir: string) => number;
+        };
         outer:
-        for (const direction of directionsSupported) {
-          const absoluteDirection = direction.toAbsolute();
-          const steps = topology.trajectories().steps(realType, contextFrom, realType, absoluteDirection);
-          for (const step of steps) {
-            if (step.to().id() === contextTo) {
+        for (const direction of supported) {
+          const absoluteDirection = typeof direction === "string" ? direction : direction.toAbsolute();
+          if (typeof trajForStep.steps === "function") {
+            for (const step of trajForStep.steps(realType, contextFrom, realType, absoluteDirection)) {
+              if (step.to().id() === contextTo) {
+                newDirection = absoluteDirection;
+                break outer;
+              }
+            }
+          } else if (typeof trajForStep.step === "function") {
+            if (trajForStep.step(contextFrom, absoluteDirection) === contextTo) {
               newDirection = absoluteDirection;
               break outer;
             }
@@ -205,7 +225,17 @@ export class ForEachDirection extends Effect {
 
       for (const direction of directions) {
         // @java final List<Radial> radials = graph.trajectories().radials(type, fromV.index(), direction);
-        const radials = topology.trajectories().radials(this.siteType, fromV.index(), direction);
+        // Engine Trajectories exposes radialsByName(site, dir) → number[][];
+        // adapt to the Java Radial shape when radials() is absent.
+        const trajAny = topology.trajectories() as unknown as {
+          radials?: (type: string | null, fromIdx: number, dir: string) => Array<{ steps(): Array<{ id(): number }> }>;
+          radialsByName?: (site: number, dir: string) => number[][];
+        };
+        const radials = typeof trajAny.radials === "function"
+          ? trajAny.radials(this.siteType, fromV.index(), direction)
+          : (trajAny.radialsByName?.(fromV.index(), direction) ?? []).map((path) => ({
+              steps: () => path.map((site) => ({ id: () => site })),
+            }));
 
         for (const radial of radials) {
           const steps = radial.steps();

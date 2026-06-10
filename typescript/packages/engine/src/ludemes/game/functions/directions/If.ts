@@ -31,9 +31,17 @@ export class If implements DirectionsFunction {
     directionFunctionOk: DirectionsFunction,
     directionFunctionNotOk: DirectionsFunction,
   ) {
+    // The compiler hands these slots raw direction tokens (Janggi:
+    // `(if (...) Forward (directions {...}))` binds the bare ident) — wrap
+    // strings/arrays so eval() works. @java Directions(AbsoluteDirection)
+    const wrapD = (d: DirectionsFunction | string | readonly string[]): DirectionsFunction => {
+      if (typeof d === "string") return { eval: () => [d] } as DirectionsFunction;
+      if (Array.isArray(d)) return { eval: () => [...d] } as DirectionsFunction;
+      return d as DirectionsFunction;
+    };
     this.condition = condition;
-    this.directionFunctionOk = directionFunctionOk;
-    this.directionFunctionNotOk = directionFunctionNotOk;
+    this.directionFunctionOk = wrapD(directionFunctionOk);
+    this.directionFunctionNotOk = wrapD(directionFunctionNotOk);
   }
 
   /**
