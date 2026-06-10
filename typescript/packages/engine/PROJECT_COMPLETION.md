@@ -1194,3 +1194,20 @@ entire sweep; every chunk battery-gated. The remaining 67 files split:
   consumed by effect ctors — fold into the faithful From/To/Between util classes.
 This is the precise remaining surface of item 3 alongside the StartRule
 eval(Context) migration, State convergence, and the 9 exotic compile singles.
+
+## Update 55 (2026-06-10) — merge-set burn-down: 67→18 files, 50→10 classes, zero 1to1 dirs
+
+Eleven battery-gated commits resolved the bulk of the duplicate-pair merge set:
+- **Dead-write discovery**: JAVA_TS_CTORS had 5 double-registered keys (Map.set = last wins) — Was1to1/Forget1to1/PlayersTeam1to1 registrations were shadowed dead writes; removed, classes excised.
+- **Dead-twin recipe**: for same-package pairs, the UNREGISTERED twin was dead in every resolved case (Attract, Directional, Push, Die, IsEven-construct, Score/Payoff data classes, equipment barrel cluster of 13 files, directions Union/Difference/If, logical If1to1, IsLine bridge, 14 Float classes). Deleted dead twin, promoted registered mirror to the @java name.
+- **Homonym renames** (different Java packages sharing a simple name): Add/Deal/Intersection/Union/Difference/If(intArray.math), SetHidden/SetTeam(start.set), AllDifferent(all.sites), Mode, Die. ctors imports are all aliased (`as C###`) so renames are conflict-free there.
+- **Folds**: corner-sites delegates inlined into faithful SitesConcave/ConvexCorners; dim/math classes now extend BaseDimFunction (Java truth), DimConstant1to1 dissolved; Range1to1 type alias dissolved into RangeFunction; SizeGroup/SizeStack/SizeArray split to their @java homes.
+- **Directory re-homing COMPLETE**: all 23 *1to1 directories renamed/dissolved to Java package paths (booleans/is/* 15 dirs, math, all, no, was, count, state, floats, ints1to1 tree).
+- **Tooling fix**: orphan detection now path-RESOLVES imports (stem matching had false-kept 3-same-name files and false-deleted nothing — tsc gates both ways).
+
+Remaining (the genuinely-coupled core): 10 classes / 18 files —
+- State-convergence cores: Game1to1, State1to1, Equipment1to1, Board1to1(equipment), Player1to1, Piece1to1 (+ Component1to1/Item1to1/Decision1to1 bases)
+- Deny-named: Array1to1 (global Array), Move1to1 (substrate Move object — Java coexists via packages; needs import-alias treatment)
+- StartRule-migration pairs: ForEachValue1to1, PlaceItem1to1 (both live: construct path uses faithful, reflection path uses 1to1; ctor shapes differ — merge belongs to the StartRule eval(Context) migration)
+- Multi-class ints hosts at proper ints/ paths now, file names still 1to1: Math1to1.ts, Board1to1.ts, State1to1.ts, Iterator1to1.ts, CountSimpleExtra1to1.ts
+- play1to1.ts (public API, stays)
