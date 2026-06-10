@@ -326,11 +326,33 @@ function spliceGluedParams(node: LudNode, args: readonly (readonly LudNode[])[])
   return { kind: "ident", name, range: node.range };
 }
 
+/** @java Expander textual substitution also reaches INSIDE string tokens —
+ * Mutant Y^3's "Y3Board#1" becomes "Y3Board2"/"Y3Board3" (the lud comments call
+ * it "undocumented syntax: argument inserted into text") and then expands as a
+ * bare-string define call. */
+function spliceGluedParamsInString(node: LudNode, args: readonly (readonly LudNode[])[]): LudNode {
+  if (!isString(node) || !/#\d+/.test(node.value)) return node;
+  let changed = false;
+  const value = node.value.replace(/#(\d+)/g, (whole, d: string) => {
+    const arg = args[Number.parseInt(d, 10) - 1]?.[0];
+    if (!arg) return whole;
+    const text = isIdent(arg) ? arg.name
+      : (arg as { kind?: string }).kind === "number" ? String((arg as { value: number }).value)
+      : isString(arg) ? arg.value : null;
+    if (text === null) return whole;
+    changed = true;
+    return text;
+  });
+  if (!changed) return node;
+  return { kind: "string", value, range: node.range };
+}
+
 
 /** True when the define body still contains `#k` placeholders (needs call args). */
 function defineBodyHasParams(entry: DefineEntry): boolean {
   const walk = (n: LudNode): boolean => {
     if (isIdent(n) && /#\d+/.test(n.name)) return true;
+    if (isString(n) && /#\d+/.test(n.value)) return true;
     if (isList(n)) return n.items.some(walk);
     return false;
   };
@@ -338,6 +360,7 @@ function defineBodyHasParams(entry: DefineEntry): boolean {
 }
 
 function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNode {
+  if (isString(node)) return spliceGluedParamsInString(node, args);
   if (isIdent(node)) {
     node = spliceGluedParams(node, args) as typeof node;
     if (!isIdent(node)) return node;
@@ -362,7 +385,9 @@ function substitute(node: LudNode, args: readonly (readonly LudNode[])[]): LudNo
   let changed = false;
   const out: LudNode[] = [];
   for (const rawItem of node.items) {
-    const item = isIdent(rawItem) ? spliceGluedParams(rawItem, args) : rawItem;
+    const item = isIdent(rawItem) ? spliceGluedParams(rawItem, args)
+      : isString(rawItem) ? spliceGluedParamsInString(rawItem, args)
+      : rawItem;
     if (item !== rawItem) changed = true;
     if (isIdent(item)) {
       const m = /^#(\d+)$/.exec(item.name);
