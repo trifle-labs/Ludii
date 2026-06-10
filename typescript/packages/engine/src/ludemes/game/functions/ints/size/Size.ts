@@ -21,29 +21,35 @@ export class Size extends BaseIntFunction {
   private constructor() { super(); }
 
   /** @java Size.construct(SizeArrayType, IntArrayFunction array) */
-  public static constructArray(_sizeType: string, array: unknown): BaseIntFunction {
+  public static constructArray(_sizeType: string, array: unknown): BaseIntFunction | null {
+    // @java type-driven overload resolution — gate each clause on its enum.
+    if (_sizeType !== "Array") return null;
     return new SizeArray(array as never) as unknown as BaseIntFunction;
   }
 
   /** @java Size.construct(SizeTerritoryType, SiteType, @Or RoleType, @Or Player, AbsoluteDirection) */
-  public static constructTerritory(_sizeType: string, type: unknown, role: unknown, player: unknown, direction: unknown = null): BaseIntFunction {
+  public static constructTerritory(_sizeType: string, type: unknown, role: unknown, player: unknown, direction: unknown = null): BaseIntFunction | null {
+    if (_sizeType !== "Territory") return null;
     return new SizeTerritory(type as never, role as never, player as never, direction as never) as unknown as BaseIntFunction;
   }
 
   /** @java Size.construct(SizeSiteType Stack, SiteType, in@Or, at@Or) */
-  public static constructSite(_sizeType: string, _type: unknown, _inRegion: unknown, at: unknown = null): BaseIntFunction {
+  public static constructSite(_sizeType: string, _type: unknown, _inRegion: unknown, at: unknown = null): BaseIntFunction | null {
+    if (_sizeType !== "Stack") return null;
     const atFn = (at as JavaIntFunction | null) ?? new LastTo();
     return new SizeStack(atFn as never) as unknown as BaseIntFunction;
   }
 
   /** @java Size.construct(SizeLargePieceType, SiteType, in@Or, at@Or) */
-  public static constructLargePiece(_sizeType: string, _type: unknown, inRegion: unknown, at: unknown = null): BaseIntFunction {
+  public static constructLargePiece(_sizeType: string, _type: unknown, inRegion: unknown, at: unknown = null): BaseIntFunction | null {
+    if (_sizeType !== "LargePiece") return null;
     // Exported SizeLargePiece ctor is (type, atFn, inFn) — the Java order.
     return new SizeLargePiece(_type as never, (at ?? null) as never, (inRegion ?? null) as never) as unknown as BaseIntFunction;
   }
 
   /** @java Size.construct(SizeGroupType, SiteType, at@Name, Direction, If@Name) */
-  public static constructGroup(_sizeType: string, _type: unknown, at: unknown, directions: unknown = null, _If: unknown = null): BaseIntFunction {
+  public static constructGroup(_sizeType: string, _type: unknown, at: unknown, directions: unknown = null, _If: unknown = null): BaseIntFunction | null {
+    if (_sizeType !== "Group") return null;
     const dir = typeof directions === "string" ? directions : "Adjacent";
     return new SizeGroup(at as never, dir) as unknown as BaseIntFunction;
   }
