@@ -47,7 +47,7 @@ import { State } from "../state.js";
 import { Trial } from "../trial.js";
 
 import type { Equipment1to1 } from "./game/equipment/Equipment1to1.js";
-import { Mode1to1 } from "./game/mode/Mode1to1.js";
+import { Mode } from "./game/mode/Mode.js";
 import { GamePlayers } from "./game/players/GamePlayers.js";
 import type { Rules } from "./game/rules/Rules.js";
 import type { Phase } from "./game/rules/phase/Phase.js";
@@ -237,7 +237,7 @@ export class Game1to1 implements Game {
   /** Players record. @java Game.players */
   private readonly playersRecord: GamePlayers;
   /** Mode record. @java Game.mode */
-  private readonly modeRecord: Mode1to1;
+  private readonly modeRecord: Mode;
   /** Equipment (board + pieces + hands). */
   public readonly equipment: GameEquipmentSurface;
   /** Rules (play + end + optional phases). */
@@ -292,7 +292,7 @@ export class Game1to1 implements Game {
   public constructor(
     name: string,
     players: GamePlayers | null,
-    mode: Mode1to1 | null,
+    mode: Mode | null,
     equipment: GameEquipmentSurface,
     rules: Rules,
   ) {
@@ -301,13 +301,13 @@ export class Game1to1 implements Game {
     this.playersRecord = players ?? GamePlayers.fromCount(2);
     this.numPlayers = this.playersRecord.count();
     if (this.numPlayers === 0) {
-      this.modeRecord = new Mode1to1("Simulation");
+      this.modeRecord = new Mode("Simulation");
     } else if (this.numPlayers === 1) {
-      this.modeRecord = new Mode1to1("Alternating");
+      this.modeRecord = new Mode("Alternating");
     } else if (mode !== null && mode !== undefined) {
       this.modeRecord = mode;
     } else {
-      this.modeRecord = new Mode1to1("Alternating");
+      this.modeRecord = new Mode("Alternating");
     }
     prepareFaithfulEquipment(equipment, this.playersRecord);
     this.equipment = equipment;
@@ -353,7 +353,7 @@ export class Game1to1 implements Game {
   /**
    * @java Game.mode()
    */
-  public mode(): Mode1to1 {
+  public mode(): Mode {
     return this.modeRecord;
   }
 

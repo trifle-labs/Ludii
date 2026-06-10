@@ -15,7 +15,7 @@
 import type { Play } from "../play/Play.js";
 import type { End } from "../end/End.js";
 import type { NextPhase } from "./NextPhase.js";
-import type { Mode1to1 } from "../../mode/Mode1to1.js";
+import type { Mode } from "../../mode/Mode.js";
 import type { Playout } from "../../../other/playout/Playout.js";
 import type { RoleTypeFull } from "../../types/play/RoleType.js";
 
@@ -39,7 +39,7 @@ export class Phase {
    */
   public readonly ownerPlayerId: number;
   /** Mode for this phase. @java Phase.mode() */
-  private readonly modeValue: Mode1to1 | null;
+  private readonly modeValue: Mode | null;
   /** Playout implementation to use inside this phase. @java Phase.playout() */
   private playoutValue: Playout | null;
 
@@ -49,7 +49,7 @@ export class Phase {
   public constructor(
     name: string,
     role: PhaseRoleType | null | undefined,
-    mode: Mode1to1 | null | undefined,
+    mode: Mode | null | undefined,
     play: Play,
     end?: End | null,
     nextPhase?: NextPhase | null,
@@ -70,7 +70,7 @@ export class Phase {
   }
 
   /** @java Phase.mode() */
-  public mode(): Mode1to1 | null {
+  public mode(): Mode | null {
     return this.modeValue;
   }
 

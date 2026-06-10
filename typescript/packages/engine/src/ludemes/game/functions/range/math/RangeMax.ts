@@ -9,13 +9,13 @@
 
 import type { Context } from "../../../../../context.js";
 import type { EvalScratch, IntFunction } from "../../../../base.js";
-import type { RangeFunction1to1, RangeResult } from "../Range1to1.js";
+import type { RangeFunction, RangeResult } from "../RangeFunction.js";
 import { IntConstant } from "../../ints/IntConstant.js";
 
 /** Java Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
 
-export class RangeMax implements RangeFunction1to1 {
+export class RangeMax implements RangeFunction {
   public readonly minFn: IntFunction;
   public readonly maxFn: IntFunction;
 

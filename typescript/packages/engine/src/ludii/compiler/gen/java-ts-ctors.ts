@@ -155,7 +155,7 @@ import { WeaklyCachingGameLoader as C151 } from "../../../ludemes/other/WeaklyCa
 import { GameLoader as C152 } from "../../../ludemes/other/GameLoader.js";
 import { ThinkingThread as C153 } from "../../../ludemes/other/ThinkingThread.js";
 import { EmitFixture as C154 } from "../../../ludemes/parity/EmitFixture.js";
-import { Mode1to1 as C155 } from "../../../ludemes/game/mode/Mode1to1.js";
+import { Mode as C155 } from "../../../ludemes/game/mode/Mode.js";
 import { Player1to1 as C156 } from "../../../ludemes/game/util/moves/Player1to1.js";
 import { From as C157 } from "../../../ludemes/game/util/moves/From.js";
 import { Piece1to1 as C158 } from "../../../ludemes/game/util/moves/Piece1to1.js";

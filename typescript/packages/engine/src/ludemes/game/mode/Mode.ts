@@ -1,5 +1,5 @@
 /**
- * Mode1to1.ts
+ * Mode.ts
  *
  * @java game/mode/Mode.java
  *
@@ -15,7 +15,7 @@ import type { ModeType } from "../types/play/ModeType.js";
  * Describes the mode of play.
  * @java game/mode/Mode.java
  */
-export class Mode1to1 {
+export class Mode {
   /**
    * The control type.
    * @java Mode.mode

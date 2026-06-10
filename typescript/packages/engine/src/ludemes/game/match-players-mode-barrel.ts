@@ -23,4 +23,4 @@ export * from "./players/GamePlayer.js";
 export * from "./players/GamePlayers.js";
 
 // mode
-export * from "./mode/Mode1to1.js";
+export * from "./mode/Mode.js";

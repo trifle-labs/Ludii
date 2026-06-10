@@ -34,7 +34,7 @@ import type {
   MovesFunction,
   RegionFunction,
 } from "../../../../../base.js";
-import type { RangeFunction1to1 } from "../../../../functions/range/Range1to1.js";
+import type { RangeFunction } from "../../../../functions/range/RangeFunction.js";
 import type { From } from "../../../../util/moves/From.js";
 import type { Piece1to1 } from "../../../../util/moves/Piece1to1.js";
 import type { Player1to1 } from "../../../../util/moves/Player1to1.js";
@@ -418,7 +418,7 @@ export class Move1to1 extends Decision1to1 {
     moveType: string,
     who: Player1to1 | null,
     role: string | null,
-    range: RangeFunction1to1,
+    range: RangeFunction,
     then: Then | null
   ): MovesFunction {
     switch (moveType) {
@@ -462,13 +462,13 @@ export class Move1to1 extends Decision1to1 {
 
 class BetDecision1to1 implements MovesFunction {
   private readonly playerFn: IntFunction;
-  private readonly range: RangeFunction1to1;
+  private readonly range: RangeFunction;
   private readonly thenMoves: MovesFunction | null;
 
   public constructor(
     who: Player1to1 | null,
     role: string | null,
-    range: RangeFunction1to1,
+    range: RangeFunction,
     then: Then | null
   ) {
     const numNonNull = (who !== null ? 1 : 0) + (role !== null ? 1 : 0);
