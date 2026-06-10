@@ -76,13 +76,14 @@ export function play1to1(source: string, opts?: Play1to1Options): Game1to1 {
   // reference mode); it and the silent fallback die with the bespoke deletion.
   // LUDII_ARGCOMPILER stays honored for explicit-faithful callers.
   if (!process.env.LUDII_BESPOKE) {
-    try {
-      argCompiler ??= new ArgCompiler();
-      const game = argCompiler.compile<Game1to1>(gameNode, ["game.Game"]);
-      if (game != null) return game;
-    } catch {
-      /* fall through to the dispatcher */
-    }
+    // ITEM-2 DELETION (step 2): no silent bespoke fallback — a faithful compile
+    // failure SURFACES (the burn-down drove real-game failures to zero; remaining
+    // throws are recon/test placeholders). LUDII_BESPOKE=1 keeps the explicit
+    // reference dispatcher alive only until step 3 deletes compiler1to1.
+    argCompiler ??= new ArgCompiler();
+    const game = argCompiler.compile<Game1to1>(gameNode, ["game.Game"]);
+    if (game == null) throw new Error("play1to1: faithful compile returned null");
+    return game;
   }
   return compileNode1to1(gameNode);
 }

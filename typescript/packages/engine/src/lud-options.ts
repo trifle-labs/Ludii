@@ -354,16 +354,15 @@ function identOrNumber(
     return { kind: "number", value: Number.parseFloat(text), range };
   }
   // Java substitutes option values TEXTUALLY and re-lexes, so a labeled value like
-  // `numSides:6` becomes TWO tokens (`numSides:` ident + `6` number) — exactly how
-  // the same text lexes inline. Mirror that here (Bravalath's <numSides:6>).
-  const labeled = text.match(/^([A-Za-z][A-Za-z0-9_]*:)(-?\d+(?:\.\d+)?)$/);
+  // `numSides:6` or `exact:True` becomes TWO tokens (`label:` ident + value) — exactly
+  // how the same text lexes inline (Bravalath's <numSides:6>, Gomoku's <exact:True>).
+  const labeled = text.match(/^([A-Za-z][A-Za-z0-9_]*:)(-?\d+(?:\.\d+)?|[A-Za-z][A-Za-z0-9_]*)$/);
   if (labeled) {
-    return [
-      { kind: "ident", name: labeled[1]!, range },
-      /\./.test(labeled[2]!)
-        ? { kind: "number", value: Number.parseFloat(labeled[2]!), range }
-        : { kind: "number", value: Number.parseInt(labeled[2]!, 10), range },
-    ];
+    const value = labeled[2]!;
+    const valueNode: LudIdent | LudNumber = /^-?\d/.test(value)
+      ? { kind: "number", value: /\./.test(value) ? Number.parseFloat(value) : Number.parseInt(value, 10), range }
+      : { kind: "ident", name: value, range };
+    return [{ kind: "ident", name: labeled[1]!, range }, valueNode];
   }
   return { kind: "ident", name: text, range };
 }
