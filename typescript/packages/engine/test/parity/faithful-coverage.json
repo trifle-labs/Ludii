@@ -715,8 +715,8 @@
   },
   {
    "game": "reconstruction/pending/board/hunt/Machanan.lud",
-   "status": "FALLBACK_EQUIP",
-   "reason": "equip=Equipment1to1"
+   "status": "THROW",
+   "reason": "cannot instantiate game.equipment.Equipment: constructor threw (At least a board has to be"
   },
   {
    "game": "reconstruction/pending/board/hunt/Smasandyutakankarikrida (Large Triangles).lud",
@@ -765,8 +765,8 @@
   },
   {
    "game": "reconstruction/pending/board/war/leaping/diagonal/Kokonag'n.lud",
-   "status": "FALLBACK_EQUIP",
-   "reason": "equip=Equipment1to1"
+   "status": "THROW",
+   "reason": "cannot instantiate game.equipment.Equipment: constructor threw (At least a board has to be"
   },
   {
    "game": "reconstruction/pending/board/war/other/Khreibga.lud",
@@ -775,8 +775,8 @@
   },
   {
    "game": "reconstruction/pending/board/war/other/Sitta.lud",
-   "status": "FALLBACK_EQUIP",
-   "reason": "equip=Equipment1to1"
+   "status": "THROW",
+   "reason": "cannot instantiate game.equipment.Equipment: constructor threw (At least a board has to be"
   },
   {
    "game": "reconstruction/pending/board/war/replacement/checkmate/shogi/Heian Sho Shogi.lud",

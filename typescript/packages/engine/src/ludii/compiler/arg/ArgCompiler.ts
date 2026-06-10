@@ -1094,12 +1094,18 @@ export class ArgCompiler {
   }
 
   private instantiateRegistry(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
-    const result = this.instantiateRegistryInner(info, env);
-    // Trace registry WINS (non-null) — the true bespoke-factory dependency of the
-    // faithful path (item-2 deletion worklist). Attempts that return null are probes.
-    if (result !== null && result !== undefined && process.env["LUDII_TRACE_REGISTRY"])
-      console.error("[registry]", info.className, "|", this.lastDivergence?.slice(0, 90) ?? "");
-    return result;
+    // ITEM-2 DELETION (step 1): the bespoke registry fallback is RETIRED. The
+    // burn-down drove its real-game dependencies to zero (PROJECT_COMPLETION
+    // Updates 34-40); the only remaining hits were 3 reconstruction/pending
+    // placeholder files. instantiateRegistryInner and the batch factories are
+    // deleted with compiler1to1 in step 3.
+    if (process.env["LUDII_LEGACY_REGISTRY"]) {
+      const result = this.instantiateRegistryInner(info, env);
+      if (result !== null && result !== undefined && process.env["LUDII_TRACE_REGISTRY"])
+        console.error("[registry]", info.className, "|", this.lastDivergence?.slice(0, 90) ?? "");
+      return result;
+    }
+    return null;
   }
 
   private instantiateRegistryInner(info: InstantiationInfo, env: ArgCompilerEnv): unknown | null {
