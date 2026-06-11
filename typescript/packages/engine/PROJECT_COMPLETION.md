@@ -1961,3 +1961,4 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 116 (2026-06-11) — MeasureGraph angle-clustered labels in Topology.getElement
 - Ported clusterByDimension (reference-line distances, margin 0.6*unit, theta search rows 0–60°/cols +90–120°, faithful overwriting error accumulator) + setCoordinateLabels into a memoized Topology lookup that PRECEDES element.label(). HeXentafl ply 0→7 (start coords now hit Java's sites); battery green (32) — square/rect boards cluster to identical labels.
 - HeXentafl residual at ply 7 (from=21 missing among 34): next probe. Also retest Brusky chess START_FAILs ("coord F1") with the new lookup.
+- Update 116 addendum: HeXentafl trial-0 plies 0-6 verified IDENTICAL (P2 sites {9,22,27,31} match recorded moves exactly); the ply-7 mismatch is from TRIAL 1 (the probe must use RandomTrial_1). Re-probe trial 1 with /tmp/hex7.mjs pattern next turn.
