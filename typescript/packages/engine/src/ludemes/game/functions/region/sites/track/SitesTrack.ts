@@ -170,6 +170,7 @@ export class SitesTrack extends BaseRegionFunction {
     } else {
       const from = this.fromFn !== null ? this.fromFn.eval(ctx) : UNDEFINED;
       const to = this.toFn !== null ? this.toFn.eval(ctx) : UNDEFINED;
+      if (process.env.TRACE_SITESTRACK) console.error(`[sitesTrack] from=${from} to=${to}`);
 
       // @java SitesTrack.java:132 — get fromIndex
       let fromIndex = UNDEFINED;

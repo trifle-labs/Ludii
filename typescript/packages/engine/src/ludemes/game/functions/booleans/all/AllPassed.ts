@@ -1,5 +1,6 @@
 // @java Core/src/game/functions/booleans/all/simple/AllPassed.java
 
+import { compileFlags } from "../../../../../ludii/compiler/compile-flags.js";
 import type { Context } from "../../../../../context.js";
 import type { BooleanFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
@@ -10,6 +11,11 @@ import type { LudNode } from "@ludii/typescript-language";
  * @java game/functions/booleans/all/simple/AllPassed.java
  */
 export class AllPassed implements BooleanFunction {
+  /** @java AllPassed.gameFlags() = GameType.NotAllPass. */
+  public constructor() {
+    compileFlags.usesExplicitPass = true;
+  }
+
   /**
    * @java AllPassed.eval(Context):
    *   trial.moveNumber() >= players.count() && context.allPass()

@@ -8,6 +8,7 @@ import type { MovesFunction } from "../../../../../../base.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionPass } from "../../../../../../../action/action-pass.js";
 import { applyPostStateThen } from "./Then.js";
+import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
 
 /**
  * (pass) — an explicit pass move.
@@ -19,6 +20,9 @@ export class Pass implements MovesFunction {
 
   public constructor(then: unknown = null) {
     this.thenClause = then ?? null;
+    // @java Pass.gameFlags() |= GameType.NotAllPass — an explicit pass move
+    // disables the engine's all-pass-draw fallback.
+    compileFlags.usesExplicitPass = true;
   }
 
   public eval(ctx: Context): Move[] {
