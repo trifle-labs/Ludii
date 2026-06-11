@@ -126,6 +126,7 @@ export class MaxMoves implements MovesFunction {
   private _getReplayCount(ctx: Context, count: number, withValue: boolean): number {
     // Java: if prev != mover or trial over, stop recursing.
     const state = ctx.state as unknown as { mover: number; prev: number };
+    if (process.env.TRACE_REPLAYCOUNT) console.error(`[grc] count=${count} prev=${state.prev} mover=${state.mover}${state.prev !== state.mover ? " STOP" : ""}`);
     if (state.prev !== state.mover) return count;
     if (ctx.trial.over) return count;
 
@@ -161,6 +162,7 @@ export class MaxMoves implements MovesFunction {
           }
         }
         replayCounts[i] = this._getReplayCount(newCtx, count + numCaptureWithValue, withValue);
+        if (process.env.TRACE_REPLAYCOUNT) console.error(`[grc]  nm=${nm.from()}>${nm.to()} val=${numCaptureWithValue} -> ${replayCounts[i]}`);
       }
     }
 
