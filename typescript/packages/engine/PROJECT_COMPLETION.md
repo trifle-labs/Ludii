@@ -2100,3 +2100,7 @@ ForEachDie eval) + detailed harness action dumps:
 - Six-part port (see commit): ActionMoveStacking whole-stack relocation, homogeneous-stack top-pops, per-level ForEachPiece scan + top:True, stack-top Promote, TopLevel via real stacks, Move.betweenNonDecision + (last Between) + (sites Next) rotation fallback. Matcher gained a victim-Move-pair tier.
 - war/leaping residue now: Seesaw Draughts (0/2, non-stack mechanism), Awithlaknan/Kolowis/Solomon/Spoing/Throngs/Pasang/Crand/Fetach (custom-graph vertex boards), Dum Blas.
 - Battery 38/38, units 194/0.
+
+## Update 151 (2026-06-11) — war/leaping at 65.9% OK + 13.3% full-replay after stacking
+- Family re-sweep post-stacking: 149/226 OUTCOME_OK (was 131 at session start), 30 REPLAY_OK_NO_OUTCOME, 42 MM, 5 WM.
+- Next seams in order: (a) Seesaw Draughts — RememberValue/ForgetValue + StackMove numLevel=1 sub-stack action + (size Stack at:) + (sites Direction distance:) + (sites Between from:to:); (b) custom-graph vertex boards (Awithlaknan/Kolowis merge-poly, Solomon splitCrossings, Spoing pyramidal, Throngs/Terhuchu-like tri removals, Pasang add-edges, Crand/Fetach added-edge direction naming); (c) WINNER_MISMATCH quintet; (d) REPLAY_OK_NO_OUTCOME cap raises.
