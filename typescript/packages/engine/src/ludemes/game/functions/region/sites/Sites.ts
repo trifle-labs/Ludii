@@ -600,7 +600,10 @@ export class Sites extends BaseRegionFunction {
             const dist = Math.max(1, distance?.eval(ctx) ?? 1);
             const dirNames = directionNames(directions, ctx);
             const dynType = typeof type === "string" ? type.toLowerCase() : null;
-            const include = includeSelf?.eval(ctx) ?? false;
+            // includeSelf:True arrives as a raw boolean (Atomic Chess explosion)
+            const include = typeof (includeSelf as unknown) === "boolean"
+              ? (includeSelf as unknown as boolean)
+              : includeSelf?.eval(ctx) ?? false;
             const seen = new Set<number>();
             const out: number[] = [];
 
