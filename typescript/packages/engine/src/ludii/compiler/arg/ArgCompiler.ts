@@ -1675,6 +1675,7 @@ function roleIntFunction(role: string): { eval(ctx: unknown): number } {
   return {
     eval(ctx: unknown): number {
       const c = ctx as { state: { mover: number }; game: { numPlayers: number } };
+      if (role === "Player") return (ctx as { _evalPlayer?: number })._evalPlayer ?? c.state.mover;
       if (role === "Mover") return c.state.mover;
       if (role === "Next") return (c.state.mover % c.game.numPlayers) + 1;
       if (role === "Prev") return ((c.state.mover - 2 + c.game.numPlayers) % c.game.numPlayers) + 1;

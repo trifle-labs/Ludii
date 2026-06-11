@@ -1286,6 +1286,11 @@ function resolveIntFn(player: unknown): IntFunction {
  * @java RoleType.toIntFunction(RoleType)
  */
 function resolveRoleIntFn(role: string): IntFunction {
+  // @java RoleType.Player — the player iterated by (forEach Player …); the
+  // engine carries it in _evalPlayer (Bao Kiswahili's end
+  // (forEach Player if:("NoPiecesInInner" Player) …) read owner -1, the
+  // region came back empty and the vacuous all-Sites ended the game at ply 1).
+  if (role === "Player") return { eval(ctx: Context & EvalScratch) { return (ctx as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover; } };
   if (role === "Mover") return { eval(ctx: Context & EvalScratch) { return ctx.state.mover; } };
   if (role === "Next") return {
     eval(ctx: Context & EvalScratch) {
