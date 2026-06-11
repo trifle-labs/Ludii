@@ -1829,3 +1829,13 @@ ForEachDie eval) + detailed harness action dumps:
 - RoleType.Player resolves via ctx._evalPlayer in the Sites role resolvers — (forEach Player if:("NoPiecesInInner" Player)) ends had ended Bao-family games at ply 1 (vacuous all-Sites on an empty region). Bao Kiswahili (East Africa) 2/2; sow WM pool 42→23.
 - Stalemated flag = generation-time cache (@java Game.java:2948), mutated in place by Game.moves; eager per-apply recompute removed (it sampled a hypothetical roll and flagged dice games). NoMoves(Next) unchanged (own temp check).
 - OPEN MYSTERY (Java-side experiment needed): Cab e Quinal/Julbahar/Mughrabieh/Nama draw early via (and (no Moves P1) (no Moves P2)); both recorded forced-passes appear to set both Java flags true by source reading (NoMoves reads the cache for P1/P2; no clearStalemates callers), yet Java played 394 plies. Suspects: trial recording flow, ruleset options, or an unspotted flag clear.
+
+## Update 91 (2026-06-11) — Four geometry/condition seams: IsConnected dirs, Column/Row defaultSite, CountSteps relation, LoS duck-types
+- IsConnected honors its Direction argument (@java dirnChoice): (is Connected All Mover) = 8-connectivity incl. diagonals; the TS flood always used board adjacency. Crossway 2/2; connection subfamily 31/86 (was 22).
+- Column/Row/Ahead/PhaseFn realType defaults to context.board().defaultSite(), NOT "Cell" (@java Column.java). On use:Vertex boards (Trianon (square 5) use:Vertex) (column of:(last To)) read CELL geometry (width 4) and returned the wrong column — (sites Row/Column (row/column of:(last To))) line-ends never fired. Trianon ends correctly.
+- CountSteps honors RelationType (@java GameType.StepAllDistance): relation All counts diagonal steps as 1. Pente + Keryo-Pente 2/2 — diagonal custodial pair captures were silently skipped (boards diverged ~100 plies before the visible MOVE_MISMATCH: Java re-Adds onto a site TS still thought occupied).
+- SitesLineOfSight: typeof-guard cs.container/cs.what (engine ctx duck-typing rule) — every piece with a (sites LineOfSight ...) to-region generated ZERO moves ("cs.container is not a function" swallowed per-move). Neutreeko 2/2.
+- line subfamily 207/292 (70.9%); space family 332/678 (49.0%, was 308); war family 158/383 (41.3%).
+- Battery now 32 games (Crossway added); 194/47 units; 4 commits.
+- Probe-methodology note: game.apply(ctx, m) RETURNS the new context — always `ctx = game.apply(ctx, m)` in probes (a discarded return looks like a silent no-op apply).
+- NEXT: line MM pool 69 (flat 2-per-game: Boop seq/repel, Complica, Gobblet stacks…), space WM 66, leaping residue, sow/race clusters, ViewController demo renderer.
