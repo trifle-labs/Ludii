@@ -2202,3 +2202,6 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 ## Update 171 (2026-06-11) — war/leaping at 69.0% OK + 13.3% full-replay post-Fenix
 - 156/226 OUTCOME_OK (was 131 at session start, 149 pre-Fenix). 35 MM, 5 WM, 30 capped.
 - Queue unchanged: Chameleons, Seesaw, custom-graph boards, Dum Blas, cap raises.
+
+## Update 172 (2026-06-11) — Chameleons unblocked: named-region lookup fixed
+- (sites "Name") case-mismatch + owner-0 bug fixed (commit above). Chameleons starts correctly; frontiers plies 3/8 — next layer is the SwitchColours machinery: (seq {...}) sequential effects, (set State at:...) per-site states, the "SwitchColour" remove+add+setState rotation, and the recorded DOUBLE SetState per capture move ([SetState:state=2],[SetState:state=1]). Probe with TRACE_THEN at the failing plies; check Seq.ts wiring and SetState action support first.
