@@ -2031,3 +2031,6 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 132 (2026-06-11) — Interface stack-count rendering SHIPPED
 - CellView.count (engine cellAt surfaces piles: count>1 or pure count-pits); the canvas renderer draws pile sizes on discs (precedence over piece glyphs, matching Java's stacked-site count display). Closes the Update-99 stack-rendering polish item. Engine 194/47, browser-player 18/18, spot replays green; Chrome screenshot regenerated.
 - Remaining interface polish (optional, per Update 99): per-game piece glyphs (ViewController piece styles). Queue otherwise: dual-SiteType state (Update 104), line/blocking pools, TEAMS/cards.
+
+## Update 133 (2026-06-11) — Dual-SiteType FOUNDATION merged
+- State.typedSites channels + accessors; start pipeline routes explicit non-play-type placements; PlaceItem multi-ctor type binding fixed (Java's signature has no container slot). Guerrilla's Cell counters now exist ({20,27,29,34,36,43} on the Cell channel). NEXT LAYER: readers/movers — forEach Piece scanning typed channels (piece's type from its moves' SiteType), Step/Slide on cell adjacency (topology cells + their own radials), (sites Occupied by:P on:Cell), (remove Cell (site)), (sites Incident Vertex of:Cell at:) — then Guerrilla + Alice Chess verify. Spot battery green; committed.
