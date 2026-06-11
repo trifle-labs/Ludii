@@ -457,6 +457,10 @@ export class Game implements Game {
     const cells = new Array<number>(totalSites).fill(0);
     const whats = new Array<number>(totalSites).fill(0);
     const countAt = new Array<number>(totalSites).fill(0);
+    // Dual-SiteType staging (@java per-type ContainerStates): start placements
+    // whose explicit type differs from the play type (Guerrilla Checkers'
+    // Cell pieces on a Vertex-play board) land here, keyed by type name.
+    const typedStaging = new Map<string, { who: number[]; what: number[]; count: number[] }>();
     // Per-site state and value arrays (from state:N / value:N in place rules).
     // @java ActionAdd.apply() — setStateAt / setValueAt on the initial container state.
     const stateAt = new Array<number>(totalSites).fill(0);
@@ -487,7 +491,7 @@ export class Game implements Game {
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden);
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging);
     }
 
     // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
@@ -532,6 +536,7 @@ export class Game implements Game {
       valueAt: hasNonZeroValue ? valueAt : undefined,
       scores: hasNonZeroScores ? scores : undefined,
       amounts: hasNonZeroAmounts ? amounts : undefined,
+      typedSites: typedStaging.size > 0 ? typedStaging : undefined,
     });
 
     // Apply remembered-value start rules (from (set RememberValue "name" <region>)).
@@ -963,6 +968,7 @@ export class Game implements Game {
     amounts?: number[],
     startRemembered?: Map<string, number[]>,
     startHidden?: Map<string, boolean>,
+    typedStaging?: Map<string, { who: number[]; what: number[]; count: number[] }>,
   ): void {
     const evalRule = rule as { eval?: (ctx: Context) => void };
     if (typeof evalRule.eval !== "function") return;
@@ -1040,7 +1046,21 @@ export class Game implements Game {
         return w !== 0 ? w : (cells[site] ?? 0);
       },
     };
+    const playType = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+    const playTypeName = typeof playType === "function" ? playType() : playType ?? null;
     ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
+      // @java per-type ContainerStates: an EXPLICIT type differing from the
+      // play type routes to the typed channel (Guerrilla Checkers places
+      // "Counter" pieces on Cells of a Vertex-play board).
+      if (_type && playTypeName && _type !== playTypeName && typedStaging) {
+        const component = this.equipment.componentAt(what);
+        const ownerT = component?.owner ?? 0;
+        let ch = typedStaging.get(_type);
+        if (!ch) { ch = { who: [], what: [], count: [] }; typedStaging.set(_type, ch); }
+        while (ch.who.length <= site) { ch.who.push(0); ch.what.push(0); ch.count.push(0); }
+        ch.who[site] = ownerT; ch.what[site] = what; ch.count[site] = count;
+        return;
+      }
       if (site < 0 || site >= cells.length) return;
       const component = this.equipment.componentAt(what);
       const owner = component?.owner ?? 0;

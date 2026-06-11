@@ -126,6 +126,12 @@ export interface StateOptions {
   /** @java ContainerState.stateCell(die site) — rolled faces; UseDie does NOT clear these. */
   readonly diceRolledFaces?: readonly number[];
   /**
+   * Dual-SiteType channels (@java per-type ContainerStates): pieces living on
+   * a NON-play element type (Guerrilla Checkers: vertex play, Cell pieces).
+   * Keyed by SiteType name; arrays indexed by that type's element id.
+   */
+  readonly typedSites?: ReadonlyMap<string, { who: readonly number[]; what: readonly number[]; count: readonly number[] }>;
+  /**
    * Java parity: per-player stalemated flag (State.stalemated). Set true when a
    * player's play rules yield no legal move (so a forced pass is played). Read
    * by `(no Moves <player>)` / `(no Moves Mover)` end conditions — these read
@@ -244,6 +250,9 @@ export class State {
    * persists after ActionUseDie zeroes State.currentDice.
    */
   public readonly diceRolledFaces: readonly number[];
+
+  /** Dual-SiteType channels. See {@link StateOptions.typedSites}. */
+  public readonly typedSites: ReadonlyMap<string, { who: readonly number[]; what: readonly number[]; count: readonly number[] }>;
   public readonly stalemated: readonly boolean[];
   /** Java parity: `State.storedState`. See {@link StateOptions.storedState}. */
   public readonly storedState: number;
@@ -366,6 +375,7 @@ export class State {
     this.diceAllEqual = options.diceAllEqual ?? false;
     this.diceValues = Object.freeze([...(options.diceValues ?? [])]);
     this.diceRolledFaces = Object.freeze([...(options.diceRolledFaces ?? [])]);
+    this.typedSites = options.typedSites ?? new Map();
     // NOT frozen: the stalemated flags are a CACHE mutated in place by real
     // move generation (@java Game.java:2948 setStalemated), like Java's
     // mutable State field. Value identity of the State excludes them.
@@ -484,6 +494,34 @@ export class State {
    * single-component-per-player case where placement set the owner but not an
    * explicit component. Removal actions clear `whats`, so no stale value leaks.
    */
+  /** @java ContainerState.who(site, type) — non-play-type channel reader. */
+  public whoTyped(type: string, site: number): number {
+    return this.typedSites.get(type)?.who[site] ?? 0;
+  }
+  /** @java ContainerState.what(site, type). */
+  public whatTyped(type: string, site: number): number {
+    return this.typedSites.get(type)?.what[site] ?? 0;
+  }
+  /** @java ContainerState.count(site, type). */
+  public countTyped(type: string, site: number): number {
+    return this.typedSites.get(type)?.count[site] ?? 0;
+  }
+  /** Write a non-play-type site (@java cs.setSite on the typed container). */
+  public withTypedSite(type: string, site: number, who: number, what: number, count: number): State {
+    const cur = this.typedSites.get(type);
+    const size = Math.max(site + 1, cur?.who.length ?? 0);
+    const grow = (arr: readonly number[] | undefined): number[] => {
+      const out = new Array<number>(size).fill(0);
+      if (arr) for (let i = 0; i < arr.length; i += 1) out[i] = arr[i]!;
+      return out;
+    };
+    const who2 = grow(cur?.who); const what2 = grow(cur?.what); const count2 = grow(cur?.count);
+    who2[site] = who; what2[site] = what; count2[site] = count;
+    const next = new Map(this.typedSites);
+    next.set(type, { who: who2, what: what2, count: count2 });
+    return this.with({ typedSites: next });
+  }
+
   public whatAtSite(siteIndex: number): number {
     if (siteIndex < 0 || siteIndex >= this.cells.length) return 0;
     const w = this.whats[siteIndex] ?? 0;
@@ -1157,6 +1195,7 @@ export class State {
         diceAllEqual: patch.diceAllEqual ?? this.diceAllEqual,
         diceValues: patch.diceValues ?? this.diceValues,
         diceRolledFaces: patch.diceRolledFaces ?? this.diceRolledFaces,
+        typedSites: patch.typedSites ?? this.typedSites,
         stalemated: patch.stalemated ?? this.stalemated,
         storedState: patch.storedState ?? this.storedState,
         sitesToRemove: patch.sitesToRemove ?? this.sitesToRemove,

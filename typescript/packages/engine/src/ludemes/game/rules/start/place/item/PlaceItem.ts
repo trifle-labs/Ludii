@@ -191,6 +191,13 @@ export class PlaceItem {
     this.container = container ?? null;
     this.coord = coordList === null ? coord ?? null : null;
     this.type = typeAsLocs === null ? type ?? null : null;
+    // @java the multi-site ctor (item, @Opt SiteType, locs, region, coords, …)
+    // has NO container slot — a positional call shifts the SiteType into our
+    // container param ((place "Counter2" Cell {"E3" …})). Reclaim it.
+    if (this.type === null && (container === "Cell" || container === "Vertex" || container === "Edge")) {
+      this.type = container;
+      this.container = null;
+    }
 
     if (typeAsLocs !== null || coordList !== null || locs !== undefined || region !== undefined || coords !== undefined || counts !== undefined) {
       // Fill-region constructor — mirrors Java's second constructor
