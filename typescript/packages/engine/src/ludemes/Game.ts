@@ -445,6 +445,23 @@ export class Game implements Game {
     return this.modeRecord;
   }
 
+  /** @java Game.voteStringsTable — registry of vote/proposition strings. */
+  private readonly _voteStringsTable: string[] = [];
+
+  /**
+   * @java Game.registerVoteString — returns the int index of a vote string,
+   * registering it on first sight. Crucial that registered indices are >= 0:
+   * (is Decided "End") compares state.isDecided() (UNDEFINED=-1 until a vote
+   * resolves) against this index; a -1 index made every mancala agree-to-end
+   * rule fire on move 1 (Oware and ~70 two_rows kin ended as instant draws).
+   */
+  public registerVoteString(voteString: string): number {
+    const existing = this._voteStringsTable.indexOf(voteString);
+    if (existing >= 0) return existing;
+    this._voteStringsTable.push(voteString);
+    return this._voteStringsTable.length - 1;
+  }
+
   /**
    * @java game/Game.java — start(context)
    *

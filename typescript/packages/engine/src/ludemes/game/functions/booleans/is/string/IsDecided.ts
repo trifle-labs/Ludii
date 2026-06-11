@@ -41,7 +41,19 @@ export class IsDecided extends BaseBooleanFunction {
    * Returns true if context.state().isDecided() == decisionInt.
    */
   public override eval(context: Context): boolean {
-    // Java: return context.state().isDecided() == decisionInt;
+    // @java IsDecided.eval — context.state().isDecided() == decisionInt.
+    // The compiler runs no preprocess pass, so register the vote string
+    // LAZILY here (Game.registerVoteString returns a >= 0 index). Without
+    // this the decisionInt stayed UNDEFINED(-1) and matched the default
+    // isDecided()=-1, firing every mancala agree-to-end rule on move 1.
+    if (this.decisionInt === UNDEFINED) {
+      const g = context.game as unknown as { registerVoteString?: (s: string) => number };
+      if (typeof g.registerVoteString === "function") {
+        this.decisionInt = g.registerVoteString(this.decision);
+      }
+    }
+    // @java State.isDecided defaults to Constants.UNDEFINED until a vote
+    // resolves; an absent accessor means no decision has been made.
     const state = context.state as unknown as { isDecided?: () => number };
     const decided = typeof state.isDecided === "function" ? state.isDecided() : UNDEFINED;
     return decided === this.decisionInt;
