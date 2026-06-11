@@ -386,6 +386,12 @@ export class Topology {
         : ["Cell", "Vertex", "Edge"];
     for (const realType of types) {
       const elements = this.getGraphElements(realType);
+      // @java MeasureGraph labels take precedence (computed below); banded
+      // element.label() values only match when clustering yields no hit.
+      const clusteredFirst = this.clusteredLabelLookup(realType, elements);
+      const cfHit = clusteredFirst?.get(coord.toUpperCase());
+      if (cfHit !== undefined) return cfHit;
+
       for (const element of elements) {
         if (element.label() === coord) return element;
       }
@@ -394,6 +400,13 @@ export class Topology {
       // labels are colLetter(row-banded x) + (y-band index + 1) computed on
       // the FINAL geometry. Rotated boards (HeXentafl's (rotate 90 (hex 4)))
       // get labels from these bands, not from unrotated axes.
+      // @java MeasureGraph.measureSituation → setCoordinateLabels: labels come
+      // from best-fit-angle row/column clustering (rotated hexes pick theta=60°
+      // rows), falling back to centroid banding only on duplicate labels.
+      const clustered = this.clusteredLabelLookup(realType, elements);
+      const chit = clustered?.get(coord.toUpperCase());
+      if (chit !== undefined) return chit;
+
       const banded = this.bandedLabelLookup(realType, elements);
       const hit = banded.get(coord.toUpperCase());
       if (hit !== undefined) return hit;
@@ -413,6 +426,83 @@ export class Topology {
       }
     }
     return null;
+  }
+
+  private _clusteredLabels = new Map<string, Map<string, TopologyElement> | null>();
+
+  /**
+   * @java MeasureGraph.clusterByDimension — distance-to-reference-line
+   * clustering with margin 0.6*unit; Row tries theta 0..60° (step 15°),
+   * Column tries bestRowTheta + 90..120°. Returns null when labels collide
+   * (Java sets duplicateCoordinates and Topology bands instead).
+   */
+  private clusteredLabelLookup(
+    realType: SiteType,
+    elements: readonly TopologyElement[],
+  ): Map<string, TopologyElement> | null {
+    const cached = this._clusteredLabels.get(realType);
+    if (cached !== undefined) return cached;
+    if (elements.length === 0) { this._clusteredLabels.set(realType, null); return null; }
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const e of elements) {
+      const c = e.centroid3D();
+      if (c.x() < minX) minX = c.x(); if (c.x() > maxX) maxX = c.x();
+      if (c.y() < minY) minY = c.y(); if (c.y() > maxY) maxY = c.y();
+    }
+    const W = Math.max(maxX - minX, 1e-9), H = Math.max(maxY - minY, 1e-9);
+    const unit = (W + H) / 2 / Math.sqrt(elements.length);
+    const margin = 0.6 * unit;
+    const cluster = (kind: "Row" | "Column", theta: number): { buckets: number[]; error: number } => {
+      let ax: number, ay: number;
+      if (kind === "Row") { ax = minX + W / 2; ay = minY - H; }
+      else { ax = minX - W; ay = minY + H / 2; }
+      const bx = ax + W * Math.cos(theta), by = ay + W * Math.sin(theta);
+      const dx = bx - ax, dy = by - ay, len = Math.hypot(dx, dy);
+      const rank = elements.map((e, n) => {
+        const c = e.centroid3D();
+        return { n, score: Math.abs((c.y() - ay) * dx - (c.x() - ax) * dy) / len };
+      }).sort((a, b) => a.score - b.score);
+      const buckets: number[] = new Array(elements.length).fill(-1);
+      const groups: { sum: number; cnt: number; items: number[] }[] = [];
+      let g: { sum: number; cnt: number; items: number[] } | null = null;
+      for (const it of rank) {
+        if (g === null || Math.abs(it.score - g.sum / g.cnt) > margin) {
+          g = { sum: 0, cnt: 0, items: [] };
+          groups.push(g);
+        }
+        g.sum += it.score; g.cnt += 1; g.items.push(it.n);
+      }
+      let error = 0;
+      groups.forEach((grp, bid) => {
+        let acc = 0;
+        const mean = grp.sum / grp.cnt;
+        for (const n of grp.items) buckets[n] = bid;
+        for (const it of rank) if (grp.items.includes(it.n)) acc = (mean - it.score) ** 2;
+        error += acc / grp.cnt;
+      });
+      error += 0.01 * groups.length;
+      return { buckets, error };
+    };
+    let bestRow = cluster("Row", 0); let bestRowTheta = 0;
+    for (let a = 0; a <= 60; a += 15) {
+      const t = (a / 180) * Math.PI;
+      const r = cluster("Row", t);
+      if (r.error < bestRow.error) { bestRow = r; bestRowTheta = t; if (r.error < 0.01) break; }
+    }
+    let bestCol = cluster("Column", bestRowTheta + Math.PI / 2);
+    for (let a = 90; a <= 120; a += 15) {
+      const t = bestRowTheta + (a / 180) * Math.PI;
+      const r = cluster("Column", t);
+      if (r.error < bestCol.error) { bestCol = r; if (r.error < 0.01) break; }
+    }
+    const map = new Map<string, TopologyElement>();
+    for (let n = 0; n < elements.length; n += 1) {
+      const label = `${columnLabel(bestCol.buckets[n]!)}${bestRow.buckets[n]! + 1}`;
+      if (map.has(label)) { this._clusteredLabels.set(realType, null); return null; }
+      map.set(label, elements[n]!);
+    }
+    this._clusteredLabels.set(realType, map);
+    return map;
   }
 
   private _bandedLabels = new Map<string, Map<string, TopologyElement>>();
