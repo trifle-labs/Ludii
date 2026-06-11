@@ -260,6 +260,9 @@ export class ForEachPiece extends Operator {
         const state = context.state;
 
         context._evalFrom = location;
+        // Dual-SiteType: tag the iterated position's element type so the
+        // piece's move ludemes route radial lookups through the right view.
+        (context as unknown as { _evalFromType?: string | null })._evalFromType = loc.siteType();
         (context as unknown as { setLevel?(l: number): void }).setLevel?.(level);
         (context as unknown as { _evalLevel?: number })._evalLevel = level;
 
@@ -314,6 +317,7 @@ export class ForEachPiece extends Operator {
 
         // @java context.setFrom(origFrom); context.setLevel(origLevel);
         context._evalFrom = origFrom;
+        (context as unknown as { _evalFromType?: string | null })._evalFromType = null;
         (context as unknown as { setLevel?(l: number): void }).setLevel?.(origLevel);
         (context as unknown as { _evalLevel?: number })._evalLevel = origLevel;
 

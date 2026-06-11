@@ -73,8 +73,28 @@ export class Trajectories {
   /** Graph-vertex ids flagged as board corners (Java measureCorners). */
   private readonly cornerVertexIds: readonly number[];
 
+  private readonly srcGraph: Graph;
+  private altViews?: Map<string, Trajectories>;
+
+  /**
+   * The same board graph viewed with a DIFFERENT play type (@java per-type
+   * topology accessors): dual-SiteType games move pieces on the non-play
+   * elements (Guerrilla Checkers' Cell counters on a Vertex board).
+   */
+  public viewOf(kind: SiteKind): Trajectories {
+    if (kind === (this.playType as unknown as SiteKind)) return this;
+    this.altViews ??= new Map();
+    let v = this.altViews.get(kind as unknown as string);
+    if (!v) {
+      v = new Trajectories(this.srcGraph, kind);
+      this.altViews.set(kind as unknown as string, v);
+    }
+    return v;
+  }
+
   public constructor(graph: Graph, kind: SiteKind) {
     this.kind = kind;
+    this.srcGraph = graph;
     this.core = new TrajectoriesCore(graph);
     this.playType =
       kind === "Vertex"
