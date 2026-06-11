@@ -82,9 +82,14 @@ export class FromTo implements MovesFunction {
     this.levelTo = opts.levelTo ?? null;
     this.regionFrom = opts.regionFrom ?? null;
     this.regionTo = opts.regionTo ?? null;
-    this.fromCondition = opts.fromCondition ?? null;
-    this.moveRule = opts.moveRule ?? null;
-    this.captureRule = opts.captureRule ?? null;
+    // Raw-literal trap: lud True/False reach these BooleanFunction slots raw
+    // (Pachih's (fromTo ... if:True) threw `this.moveRule.eval is not a
+    // function` at ply 0). Wrap with the standard typeof guard.
+    const wrapBoolFn = (b: unknown): BooleanFunction | null =>
+      typeof b === "boolean" ? ({ eval: () => b } as BooleanFunction) : ((b as BooleanFunction | null) ?? null);
+    this.fromCondition = wrapBoolFn(opts.fromCondition);
+    this.moveRule = wrapBoolFn(opts.moveRule);
+    this.captureRule = wrapBoolFn(opts.captureRule);
     this.captureEffect = opts.captureEffect ?? null;
     this.stack = opts.stack ?? false;
     this.copy = opts.copy ?? { eval: () => false };

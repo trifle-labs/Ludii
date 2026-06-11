@@ -69,7 +69,12 @@ export class ForEachDie extends NonDecision {
     // @java rule = (If == null) ? new BooleanConstant(true) : If;
     this.rule = If ?? constBoolFn(true);
     // @java this.combined = (combined == null) ? new BooleanConstant(false) : combined;
-    this.combined = combined ?? constBoolFn(false);
+    // combined:True arrives RAW from the lud (typeof guard — XII Scripta's
+    // (forEach Die combined:True ...) threw `this.combined.eval is not a
+    // function` at ply 0).
+    this.combined = typeof (combined as unknown) === "boolean"
+      ? constBoolFn(combined as unknown as boolean)
+      : (combined ?? constBoolFn(false));
     // @java replayDoubleFn = (replayDouble == null) ? new BooleanConstant(false) : replayDouble;
     this.replayDoubleFn = typeof (replayDouble as unknown) === "boolean"
       ? { eval: () => replayDouble as unknown as boolean }
