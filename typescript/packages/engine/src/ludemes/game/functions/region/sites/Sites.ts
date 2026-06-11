@@ -612,7 +612,7 @@ export class Sites extends BaseRegionFunction {
    */
   public static constructAround(
     regionType: SitesAroundType,
-    _typeLoc: string | null,
+    typeLoc: string | null,
     where: IntFunction | null,
     regionWhere: RegionFunction | null,
     type: unknown,
@@ -651,7 +651,7 @@ export class Sites extends BaseRegionFunction {
             for (const s of sourceSites) {
               if (s < 0) continue;
               if (include) add(s);
-              for (const n of aroundSites(ctx, s, dist, dirNames)) add(n);
+              for (const n of aroundSites(ctx, s, dist, dirNames, typeLoc)) add(n);
             }
 
             const filtered = dynType === null ? out : out.filter((site) => dynamicRegionAccepts(ctx, site, dynType));
@@ -1344,14 +1344,24 @@ function directionNames(directions: unknown, ctx: Context & EvalScratch): string
   return ["Adjacent"];
 }
 
-function aroundSites(ctx: Context & EvalScratch, site: number, distance: number, directions: readonly string[]): number[] {
-  const traj = (ctx as unknown as {
+function aroundSites(ctx: Context & EvalScratch, site: number, distance: number, directions: readonly string[], typeLoc: string | null = null): number[] {
+  const baseTraj = (ctx as unknown as {
     _trajectories?: {
       group(site: number, name: string): number[];
       steps(site: number, name: string): number[];
       ray(site: number, name: string): number[];
+      viewOf?(kind: string): unknown;
     } | null;
   })._trajectories;
+  // @java SitesAround with an explicit SiteType expands on THAT type's
+  // adjacency ((sites Around Cell (from) Diagonal) on a Vertex-play board —
+  // Guerrilla's COIN capture probe). Gate on a typed channel existing so
+  // single-type games never re-route.
+  const playT = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? null;
+  const hasChannel = typeLoc !== null && (ctx.state as unknown as { typedSites?: ReadonlyMap<string, unknown> }).typedSites?.has?.(typeLoc) === true;
+  const traj = typeLoc && playT && typeLoc !== playT && hasChannel && baseTraj?.viewOf
+    ? (baseTraj.viewOf(typeLoc) as typeof baseTraj)
+    : baseTraj;
   if (traj) {
     const out = new Set<number>();
     // @java SitesAround.java:97 — (directions == null) ? AbsoluteDirection.Adjacent
