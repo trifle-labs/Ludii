@@ -2063,3 +2063,6 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 142 (2026-06-11) — Dual-SiteType: typed Remove/Occupied/FromTo-stamp merged
 - ActionRemove routes explicit types to typed channels; Remove ludeme threads its type; FromTo stamps declared from-types on relocations; SitesOccupied scans the typed channel when siteType set. Guerrilla 40/46→41/49. RESIDUAL: cell 25 still occupied at ply 41 (Java's surrounded-counter capture removed it) — verify the COMPILED SitesOccupied's on:-param actually lands in siteType (suspect a ctor-slot shift like PlaceItem's; dump the compiled instance fields), and the all-Sites Incident gate. Then Guerrilla/Alice verify.
+
+## Update 143 (2026-06-11) — on:-binding fixed; sweep consequence next
+- Compiled SitesOccupied now carries siteType=Cell (named on: read in the intercept). Surround condition VERIFIED in our state (cell 25's vertices {37,28,29,38} all who=1) yet the sweep's (forEach Site <filtered-region> (remove Cell (site))) consequence doesn't emit at apply — next probe: findAll the compiled ForEachSite in the P1 phase thens, eval its region in the post-ply-19 ctx (expect [25]), then trace why the deferred consequence drops it (possibly the forEach Site CONSEQUENCE wrapper vs region-if compile, or the remove's (site) binding).
