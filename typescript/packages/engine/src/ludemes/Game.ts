@@ -867,8 +867,13 @@ export class Game implements Game {
       // @java ludeme-game.ts — advanced = phased.withMover(nextMover).withNext(0)
       advanced = advanced.withNext(0);
       if (nextMover !== newState.mover) {
-        // @java Game.java:3200 — bump numTurn when player changes
-        advanced = advanced.withNewTurn();
+        // @java Game.java:3207 reinitNumTurnSamePlayer() — new turn: bump
+        // numTurn, reset the same-player move counter.
+        advanced = advanced.withNewTurn().withNumTurnSamePlayer(0);
+      } else {
+        // @java Game.java:3205 incrementNumTurnSamePlayer() — same player
+        // moves again ((count MovesThisTurn) reads this).
+        advanced = advanced.withNumTurnSamePlayer(advanced.numTurnSamePlayer + 1);
       }
       // Increment counter (Java: state.incrCounter())
       advanced = advanced.withCounter(advanced.counter + 1);
