@@ -2027,3 +2027,7 @@ ForEachDie eval) + detailed harness action dumps:
 - War: 168 OK + 64 RONO /375 (62%; was 225 combined). Hunt: 88 OK + 31 RONO /152 (78%). The matcher's deferred-remove + lookahead tiers lifted ambiguous-capture games as predicted.
 - END-OF-DAY STANDINGS (OK+full-replay): hunt 78%, line 71%, war 62%, four_rows 56%, space 51%, sow 41%. Day total: 83 commits, 16 games individually cleared (incl. the full tafl genre + Fanorona), 6 structural ports merged (pit what-channel, coordinate labels, convex-hull corners, Fanorona axis/rays, visited timing, matcher fidelity), Java oracle operational, interface geometry renderer Chrome-verified.
 - QUEUE: dual-SiteType state (Update 104 — Guerrilla Checkers/Alice Chess), line/blocking flat pools, TEAMS/cards subsystems, interface stack-count rendering.
+
+## Update 132 (2026-06-11) — Interface stack-count rendering SHIPPED
+- CellView.count (engine cellAt surfaces piles: count>1 or pure count-pits); the canvas renderer draws pile sizes on discs (precedence over piece glyphs, matching Java's stacked-site count display). Closes the Update-99 stack-rendering polish item. Engine 194/47, browser-player 18/18, spot replays green; Chrome screenshot regenerated.
+- Remaining interface polish (optional, per Update 99): per-game piece glyphs (ViewController piece styles). Queue otherwise: dual-SiteType state (Update 104), line/blocking pools, TEAMS/cards.
