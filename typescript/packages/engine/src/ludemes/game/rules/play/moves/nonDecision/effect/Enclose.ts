@@ -119,12 +119,17 @@ export class Enclose implements MovesFunction {
       _siteType?: string;
     };
 
-    const topology = ctxAny.topology;
+    // Engine ctx duck-typing: topology is a FUNCTION on the engine context.
+    const topoRaw = ctxAny.topology as unknown;
+    const topology = (typeof topoRaw === "function" ? (topoRaw as () => Topology).call(ctx) : topoRaw) as Topology | undefined;
     if (!topology) {
       throw new Error("not yet wired: Enclose requires topology on Context");
     }
 
-    const realType = this.type ?? ctxAny._siteType ?? "Cell";
+    // @java realType = (type == null) ? context.board().defaultSite() : type
+    const realType = this.type ?? ctxAny._siteType
+      ?? (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.()
+      ?? "Cell";
     const graphElements = topology.getGraphElements(realType);
     if (from >= graphElements.length) return [];
 
@@ -140,10 +145,20 @@ export class Enclose implements MovesFunction {
 
     const aroundTarget: number[] = [];
     const trajectories = topology.trajectories();
+    // Engine trajectories expose steps(site, dir) / group(site, name); the
+    // Java-style 4-arg steps(type, site, type, dir) silently returns [] there
+    // (NoGo's NoCapture filter never saw any neighbours).
+    const engTraj = (ctx as unknown as { _trajectories?: { group?(site: number, name: string): number[] } })._trajectories;
+    const stepsOf = (site: number, direction: string): number[] => {
+      if (engTraj && typeof engTraj.group === "function") return engTraj.group(site, direction);
+      const javaSteps = (trajectories as unknown as { steps?: (...args: unknown[]) => Array<{ to: { id(): number } }> }).steps;
+      if (typeof javaSteps === "function" && javaSteps.length >= 4) {
+        return (javaSteps.call(trajectories, realType, site, realType, direction) ?? []).map((st) => st.to.id());
+      }
+      return [];
+    };
     for (const direction of this.directionNames(ctx)) {
-      const steps = trajectories.steps(realType, from, realType, direction);
-      for (const step of steps) {
-        const between = step.to.id();
+      for (const between of stepsOf(from, direction)) {
         if (!aroundTarget.includes(between)) {
           if (isTarget(between)) {
             aroundTarget.push(between);
@@ -178,10 +193,7 @@ export class Enclose implements MovesFunction {
       while (i < enclosedGroupList.length) {
         const site = enclosedGroupList[i]!;
         for (const direction of this.directionNames(ctx)) {
-          const siteSteps = trajectories.steps(realType, site, realType, direction);
-
-          for (const step of siteSteps) {
-            const between = step.to.id();
+          for (const between of stepsOf(site, direction)) {
             if (enclosedGroup[between]) continue;
 
             if (isTarget(between)) {
@@ -207,9 +219,7 @@ export class Enclose implements MovesFunction {
       // @java Enclose.java:237-258 — check for liberties in the full group
       for (const siteGroup of enclosedGroupList) {
         for (const direction of this.directionNames(ctx)) {
-          const groupSteps = trajectories.steps(realType, siteGroup, realType, direction);
-          for (const step of groupSteps) {
-            const to = step.to.id();
+          for (const to of stepsOf(siteGroup, direction)) {
             if (!enclosedGroup[to] && cs.whatAtSite(to) === 0) {
               // Liberty — this group is not fully enclosed
               continue aroundTargetLoop;
