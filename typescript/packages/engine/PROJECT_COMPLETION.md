@@ -2230,3 +2230,7 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 
 ## Update 179 (2026-06-11) — T'OKI CLEARED 2/2
 - Replacement-landing count reset (commit above). Remaining war/leaping: Laram Wali, Xarajlt trial 2, Terhuchu (Small), lines/ graph boards (Crand, Solomon, Pasang, Spoing, Throngs), WM trials, caps.
+
+## Update 180 (2026-06-11) — war/leaping at 88.9% OUTCOME_OK (MOVE_CAP=5000)
+- 201/226 OK, ZERO capped, 16 MM + 9 WM remaining. Xarajlt 2/2 (trial 2 was merely >600 moves — the default cap masks long-game results; ALWAYS re-check 'failures' with MOVE_CAP=5000 before debugging).
+- Session arc for this family: 58% -> 88.9%. Remaining 25 trials: lines/ graph boards (Crand, Solomon, Pasang, Spoing, Throngs ×2 each), Laram Wali (CrossBoard centre-expand placement zone), Terhuchu (Small), + 9 WM (end-condition diffs on long trials — diff the final plies' end evaluations vs oracle).
