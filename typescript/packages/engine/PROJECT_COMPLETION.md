@@ -2285,3 +2285,6 @@ Genuine-or-suspect defects in the ORIGINAL Java, found via oracle work. TS stays
 4. SUSPECT — plain stacking push drops the mover's piece VALUE (top level 0; oracle s28=[1,0]). TS: action-move.ts stacking-plain-push branch comment.
 5. MINOR — MeasureGraph label error accumulator overwritten not accumulated (preserved in Topology label port).
 All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@java" + "oracle" to locate them when executing Task #42.
+
+## Update 191 (2026-06-11) — Solomon board lives (3 graph-compile fixes); adjacency diff next
+- Commit above. Solomon residual: our split-star adjacency is OVER-connected vs Java (ply-0 legal: ours 11 moves {+2>9,3>6,3>7,4>9} vs oracle 7) — diff the post-splitCrossings edge lists (TS /tmp/graphops2.mjs vs a jshell Graph dump of edges) and the renumber ordering; suspect splitCrossings creating extra edges at crossing points or findVertex tolerance. Crand/Pasang still 0/2 (re-probe AFTER Solomon's adjacency is exact — same add-edges pipeline).
