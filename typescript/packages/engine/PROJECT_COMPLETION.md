@@ -2259,3 +2259,13 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 
 ## Update 187 (2026-06-11) — sow START_FAILs structurally fixed (PlaceItem counts normalization)
 - All five four_rows games start correctly now; their residual is the sow-select layer: at ply 2 rec '1>1' select missing, we offer only '0>0' — the pit-iteration condition (probably (forEach Site (sites Mover ...) if:(> (count at:(site)) N) (move Select ...)) or track-based nextSite logic) generates one pit only. Probe /tmp/ch-probe.mjs + read Chiana's play rule.
+
+## Update 188 (2026-06-11) — PROACTIVE STUB/APPROXIMATION AUDIT (user-directed)
+ENGINE-SCOPE INVENTORY (grep -riE "not yet ported|known approximation|approximat" src/ludemes src/eval src/action):
+A. EMPTY-REGION STUBS in Sites.ts (silent [] — same class as the SitesDirection/SitesBetween wins):
+   1. SitesLineOfPlay (dominoes), 2. SitesPlayable (unfaithful), 3. SitesSupport (3D — Spoing's pyramidal board!), 4. SitesWinning, 5. SitesDistance.
+B. DOCUMENTED APPROXIMATIONS:
+   6. Append (compound-action merge), 7. ForEachTeam/ForEachValue/ForEachPlayer then-chaining "approximated at generation level", 8. Mesh board ≈ rectangle, 9. Celtic board ≈ rectangle (BOTH are real graph generators in Java — likely behind some lines/ MMs), 10. corner-sites Cell-corner approximation, 11. trajectories edge/face steps not ported (Edge-play games).
+C. Seq comment now STALE (fixed Update 173) — clean up when touched.
+PLAN: fix A1-A5 (cheap, silent-failure class) → B8/B9 + splitCrossings/CrossBoard/pyramidal generators (the remaining war/leaping MM set!) → B6/B7 as games demand.
+CAVEAT (for the record): the audit finds KNOWN gaps; the nastiest defects this session (count-merge piles, flush order, two source-vs-binary divergences) carried NO comments — trial-driven verification remains the ground truth; the audit just front-loads the cheap finds.

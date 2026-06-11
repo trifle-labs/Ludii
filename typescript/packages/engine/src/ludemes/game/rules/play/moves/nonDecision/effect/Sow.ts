@@ -187,6 +187,7 @@ export class Sow extends Effect {
       ?? -1;
     if (start < 0) return [];
     const count = this.countFn?.eval(ctx) ?? ctx.state.count(start);
+    if (process.env.TRACE_SOW) console.error(`[sow] start=${start} count=${count}`);
     if (count <= 0) return [];
     const numPerHoleDefault = () => this.numPerHoleFn?.eval(ctx) ?? 1;
 
