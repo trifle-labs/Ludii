@@ -878,6 +878,14 @@ export class ArgCompiler {
     }
     const ofArg = parsed.argsIn.find((arg) => arg.parameterName === "of")?.node;
     const ofRelation = ofArg && isIdent(ofArg) ? ofArg.name : "Adjacent";
+    // @java Directions(... @Name Boolean bySite) — bySite:True resolves over
+    // the FROM-ELEMENT's own supported directions (element.supported*
+    // Directions()), not the topology union: Game of Solomon's vertex 10 has
+    // no W-pointing edge, so Leftward never resolves to W there even though
+    // other edges elsewhere point W (the global set fed the phantom
+    // [10,9,8] hop ray).
+    const bySiteArg = parsed.argsIn.find((arg) => arg.parameterName === "bysite")?.node;
+    const bySite = !!(bySiteArg && isIdent(bySiteArg) && bySiteArg.name.toLowerCase() === "true");
     if (process.env.TRACE_DIRREL) console.error("[dirrel] compiled", relNames.join(","), "of:", ofRelation);
     this.resolveTrace.push({ token: head, cls: "game.functions.directions.Directions" });
     type TopoLike = {
@@ -894,8 +902,17 @@ export class ArgCompiler {
         const c = ctx as CtxLike;
         const topo = c.topology?.();
         const playType = c.board().defaultSite?.() ?? "Cell";
-        const raw = topo?.supportedDirections?.(ofRelation, playType);
-        if (process.env.TRACE_DIRREL) console.error("[dirrel] eval of:", ofRelation, "playType:", playType, "supported:", raw?.length ?? "none");
+        let raw = topo?.supportedDirections?.(ofRelation, playType);
+        if (bySite) {
+          const from = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
+          const els = (topo as unknown as { getGraphElements?: (t: string) => Array<{ supportedAdjacentDirections?: () => Array<{ toAbsolute?: () => string } | string>; supportedDirections?: () => Array<{ toAbsolute?: () => string } | string> }> })?.getGraphElements?.(playType);
+          const el = from >= 0 ? els?.[from] : undefined;
+          const perSite = ofRelation === "Adjacent"
+            ? el?.supportedAdjacentDirections?.()
+            : el?.supportedDirections?.();
+          if (perSite && perSite.length > 0) raw = perSite;
+        }
+        if (process.env.TRACE_DIRREL) console.error("[dirrel] eval of:", ofRelation, "bySite:", bySite, "playType:", playType, "supported:", raw?.length ?? "none");
         const supported = raw && raw.length > 0
           ? raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
           : undefined;

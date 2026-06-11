@@ -351,6 +351,16 @@ export function resolveRelativeDir(
       default: break;
     }
     switch (dn) {
+      // @java RelativeDirection.Forward/Backward/Rightward/Leftward —
+      // "add baseDirn.<dir>() IF SUPPORTED" (no ring walk): an unsupported
+      // heading yields NOTHING. The compass8 fallthrough below emitted W for
+      // Leftward regardless, and Game of Solomon's bySite hop walked the
+      // phantom diagonal-chain W-ray [10,9,8].
+      case "forward": case "backward": case "rightward": case "leftward": {
+        const off = dn === "forward" ? 0 : dn === "backward" ? 8 : dn === "rightward" ? 4 : 12;
+        const name = COMPASS16_CW[((facingDir * 2) + off) % 16]!;
+        return supportedDirs.includes(name) ? name : [];
+      }
       // @java Forwards: leftward().right() .. rightward() exclusive
       case "forwards": return coneDirections(facingDir, supportedDirs, -3, 4);
       // @java Backwards: opposite().leftward().right() .. opposite().rightward()
