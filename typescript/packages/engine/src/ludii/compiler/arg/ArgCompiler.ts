@@ -742,7 +742,14 @@ export class ArgCompiler {
         null, null,
         (componentNames && componentNames.length > 0 ? componentNames : null) as never,
         null,
-        (node.items[2] && isIdent(node.items[2]) && ["Cell","Vertex","Edge"].includes(node.items[2].name) ? node.items[2].name : null) as never,
+        (((): string | null => {
+          // @java @Name SiteType on — the named on:Cell form (Guerrilla's
+          // surrounded-counter sweep); fall back to a bare positional type.
+          const onNode = parsed.argsIn.find((arg) => arg.parameterName === "on")?.node;
+          if (onNode && isIdent(onNode) && ["Cell", "Vertex", "Edge"].includes(onNode.name)) return onNode.name;
+          if (node.items[2] && isIdent(node.items[2]) && ["Cell", "Vertex", "Edge"].includes(node.items[2].name)) return node.items[2].name;
+          return null;
+        })()) as never,
       );
     }
     if (variantName === "hand") {
