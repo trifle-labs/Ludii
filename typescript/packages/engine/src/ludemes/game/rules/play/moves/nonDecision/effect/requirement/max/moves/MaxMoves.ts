@@ -85,12 +85,14 @@ export class MaxMoves implements MovesFunction {
       if (!withValue) {
         replayCount[i] = this._getReplayCount(newCtx, 1, withValue);
       } else {
-        // @java MaxMoves.java:91-104 — sum the board VALUE of each removed
-        // piece (cs.value(site, level, type)), read from the PRE-move context.
+        // @java MaxMoves.java:91-104 — the OUTER eval sums the PER-LEVEL
+        // value cs.value(site, LEVEL, type); NonApplied removes carry
+        // levelTo=0 (oracle javap + action dump).
         let numCaptureWithValue = 0;
         for (const action of m.actions) {
           if (action.actionType() === "Remove") {
-            numCaptureWithValue += ctx.state.valueAtSite(action.to());
+            const lvl = (action as { levelTo?: () => number }).levelTo?.() ?? 0;
+            numCaptureWithValue += ctx.state.valueAtLevel(action.to(), lvl >= 0 ? lvl : 0);
           }
         }
         replayCount[i] = this._getReplayCount(newCtx, numCaptureWithValue, withValue);
@@ -153,12 +155,15 @@ export class MaxMoves implements MovesFunction {
       if (!withValue) {
         replayCounts[i] = this._getReplayCount(newCtx, count + 1, withValue);
       } else {
-        // @java MaxMoves.java:160-172 — value of the piece at the removed
-        // site, read from contextCopy (pre-application of nm).
+        // @java getReplayCount (RUNNING BINARY, javap-verified) — the
+        // RECURSION reads the TWO-ARG cs.value(site, type) = TOP-of-stack
+        // value; a stacked victim whose top was pushed valueless scores 0
+        // here. This asymmetry vs the outer per-level read is what ranks
+        // Fenix's 47>65 chain (6) above 47>29 (4) — replica-confirmed.
         let numCaptureWithValue = 0;
         for (const action of nm.actions) {
           if (action.actionType() === "Remove") {
-            numCaptureWithValue += ctx.state.valueAtSite(action.to());
+            numCaptureWithValue += ctx.state.valueTop(action.to());
           }
         }
         replayCounts[i] = this._getReplayCount(newCtx, count + numCaptureWithValue, withValue);

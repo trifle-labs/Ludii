@@ -121,6 +121,14 @@ export interface StateOptions {
   /** @java GameType.Stacking — compiled-tree flag; plain moves PUSH levels. */
   readonly stackingGame?: boolean;
   /**
+   * Per-level piece values, parallel to {@link stacks}. Java's plain stacking
+   * push (addItemGeneric) does NOT carry the moving piece's value — the new
+   * top level gets 0 (oracle: Fenix general s28=[1,0]) — while whole-stack
+   * moves DO carry each level's value. MaxMoves' two valuation reads
+   * (per-level in eval, top-of-stack in getReplayCount) consume this.
+   */
+  readonly valueStacks?: readonly (readonly number[])[];
+  /**
    * Java parity: `State.numTurn` (the field, returned by `state.numTurn()` and
    * read by `(count Turns)`). It is initialised to **1** (not 0) and is bumped
    * by `reinitNumTurnSamePlayer()` whenever a *new* turn begins — i.e. when the
@@ -267,6 +275,8 @@ export class State {
   public readonly ownedEntries?: readonly OwnedEntry[];
   /** @java GameType.Stacking; see {@link StateOptions.stackingGame}. */
   public readonly stackingGame: boolean;
+  /** Per-level values; see {@link StateOptions.valueStacks}. */
+  public readonly valueStacks?: readonly (readonly number[])[];
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
   public readonly numTurn: number;
   /** Java parity: `State.numTurnSamePlayer`. */
@@ -427,6 +437,7 @@ export class State {
     this.prev = options.prev ?? 0;
     this.ownedEntries = options.ownedEntries;
     this.stackingGame = options.stackingGame ?? false;
+    this.valueStacks = options.valueStacks;
     this.numTurn = options.numTurn ?? 1;
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
@@ -1031,6 +1042,30 @@ export class State {
     return this.with({ ownedEntries: next });
   }
 
+  /**
+   * @java ContainerState.value(site, level, type) — per-level piece value.
+   * Unmaterialized sites: level 0 carries the flat valueAt; higher levels 0.
+   */
+  public valueAtLevel(site: number, level: number): number {
+    const vs = this.valueStacks?.[site];
+    if (vs !== undefined && vs.length > 0) return vs[level] ?? 0;
+    return level === 0 ? this.valueAtSite(site) : 0;
+  }
+
+  /** @java ContainerState.value(site, type) — TOP-of-stack value. */
+  public valueTop(site: number): number {
+    const vs = this.valueStacks?.[site];
+    if (vs !== undefined && vs.length > 0) return vs[vs.length - 1] ?? 0;
+    return this.valueAtSite(site);
+  }
+
+  /** Replace one site's per-level value column (maintenance helper). */
+  public withValueStackRow(site: number, row: readonly number[]): State {
+    const next = (this.valueStacks ?? this.stacks.map(() => [] as number[])).map((r) => [...r]);
+    next[site] = [...row];
+    return this.with({ valueStacks: next });
+  }
+
   /** Level-less site wipe of the registry (flat ActionRemove). */
   public withOwnedSiteCleared(site: number): State {
     if (this.ownedEntries === undefined) return this;
@@ -1361,6 +1396,7 @@ export class State {
         prev: patch.prev ?? this.prev,
         ownedEntries: patch.ownedEntries ?? this.ownedEntries,
         stackingGame: patch.stackingGame ?? this.stackingGame,
+        valueStacks: patch.valueStacks ?? this.valueStacks,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:
           patch.numTurnSamePlayer ?? this.numTurnSamePlayer,

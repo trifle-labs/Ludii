@@ -148,9 +148,17 @@ export class ActionMove extends BaseAction {
         s2 = s2.withOwnedRemoveAll(fromOwners[i]!, fromWhats[i]!, this.fromIndex);
       }
       const baseLevelTo = s2.stackSize(this.toIndex);
+      // @java ActionMoveStacking carries each level's VALUE to the landing
+      // levels (previousValueFrom round-trip); plain pushes do not.
+      const fromValues: number[] = [];
+      for (let i = 0; i < fromOwners.length; i++) fromValues.push(state.valueAtLevel(this.fromIndex, i));
+      const toRowBase: number[] = [];
+      for (let l = 0; l < baseLevelTo; l++) toRowBase.push(s2.valueAtLevel(this.toIndex, l));
       for (let i = 0; i < fromOwners.length; i++) {
         s2 = s2.withStackPush(this.toIndex, fromOwners[i]!, fromWhats[i]!);
       }
+      s2 = s2.withValueStackRow(this.toIndex, [...toRowBase, ...fromValues]);
+      s2 = s2.withValueStackRow(this.fromIndex, []);
       // @java ActionMoveStacking.java:349-360 — ...then add at the landing
       // levels [sizeTo - moved, sizeTo).
       for (let i = 0; i < fromOwners.length; i++) {
@@ -264,7 +272,14 @@ export class ActionMove extends BaseAction {
       if (popped.stackSize(this.fromIndex) === 0 && popped.countAtSite(this.fromIndex) > 0) {
         popped = popped.withCountAt(this.fromIndex, 0);
       }
+      const topValue = state.valueAtLevel(this.fromIndex, topLevel);
+      const fromRow: number[] = [];
+      for (let l = 0; l < topLevel; l++) fromRow.push(state.valueAtLevel(this.fromIndex, l));
+      const toBase: number[] = [];
+      for (let l = 0; l < popped.stackSize(this.toIndex); l++) toBase.push(popped.valueAtLevel(this.toIndex, l));
       let pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
+      pushed = pushed.withValueStackRow(this.fromIndex, fromRow);
+      pushed = pushed.withValueStackRow(this.toIndex, [...toBase, topValue]);
       pushed = pushed.withOwnedAdd(topOwner, topWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
       return this.maintainTracks(pushed, topWhat);
     }
@@ -299,7 +314,13 @@ export class ActionMove extends BaseAction {
       // Vacate from COMPLETELY (stacks/whatStacks/cells/whats/count) — a
       // manual cell clear leaves a ghost stacks[] level at the old site.
       s2 = s2.withStackRemoveAll(this.fromIndex);
+      const toBaseV: number[] = [];
+      for (let l = 0; l < s2.stackSize(this.toIndex); l++) toBaseV.push(s2.valueAtLevel(this.toIndex, l));
       s2 = s2.withStackPush(this.toIndex, mOwner, mWhat);
+      // @java addItemGeneric — the plain push does NOT carry the mover's
+      // value; the new top level reads 0 (oracle: Fenix s28=[1,0]).
+      s2 = s2.withValueStackRow(this.toIndex, [...toBaseV, 0]);
+      s2 = s2.withValueStackRow(this.fromIndex, []);
       s2 = s2.withOwnedAdd(mOwner, mWhat, this.toIndex, s2.stackSize(this.toIndex) - 1);
       return this.maintainTracks(s2, mWhat);
     }
