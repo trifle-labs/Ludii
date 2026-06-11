@@ -2114,3 +2114,7 @@ ForEachDie eval) + detailed harness action dumps:
 - (sites Side) on Cell boards now runs Java's run-classification on the perimeter CELL ring (angle-ordered); vertex-inheritance had over-included touching cells (phantom promotion at HexDame cell 1). Java oracle jshell dump confirmed SE={0,5,11,18,26}/SW={26,35,43,50,56} exact.
 - Known benign residual: Java also tags single-corner runs (S={26}); ours leaves pure-corner sides empty — no game in the battery reads them; revisit if a (sites Side S) hexhex game fails.
 - Orthogonal cluster residue: Fenix, Cage, Dama (Kenya), Chameleons (each 0/2, separate seams). Then Seesaw, custom-graph vertex boards.
+
+## Update 154 (2026-06-11) — Dama (Kenya) 2/2: OppositeDirection in (difference ...)
+- Difference.expand resolves SameDirection/OppositeDirection via resolveSameOppositeDir (@java Directions.java:498-535). Kenya's king no-reverse rule restored.
+- Fenix/Cage still 0/2 (separate seams — probe next). Then Chameleons (SetState tiles), Seesaw (sub-stack), custom-graph vertex boards.
