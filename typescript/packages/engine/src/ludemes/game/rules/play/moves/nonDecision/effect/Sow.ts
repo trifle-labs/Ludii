@@ -159,14 +159,21 @@ export class Sow extends Effect {
     this.ownerFn = owner ?? null;
     this.includeSelf = includeSelf ?? true;
     // compileTerminal hands lud literal True/False as a raw boolean — wrap
-    // (engine rule: BooleanFunction slots must be eval-able).
-    this.origin = typeof origin === "boolean" ? { eval: () => origin } : origin ?? null;
-    this.skipFn = skipIf ?? null;
-    this.captureRule = If ?? null;
+    // every BooleanFunction slot (engine rule: must be eval-able). The
+    // capture+backtracking branch only runs once a sow triggers a capture
+    // (last seed makes 2/3 on the opponent's row), so a raw `backtracking:
+    // True` lurked unevaluated until then — Oware's first capturing sow threw
+    // `this.backtracking.eval is not a function`, the (then (sow)) was caught
+    // and discarded, and the whole move applied as a no-op (~120 mancala).
+    const wrapBool = (b: BooleanFunction | boolean | null): BooleanFunction | null =>
+      typeof b === "boolean" ? { eval: () => b } : (b ?? null);
+    this.origin = wrapBool(origin as BooleanFunction | boolean | null);
+    this.skipFn = wrapBool(skipIf as BooleanFunction | boolean | null);
+    this.captureRule = wrapBool(If as BooleanFunction | boolean | null);
     this.captureEffect = apply ?? null;
     this.sowEffect = sowEffect ?? null;
-    this.backtracking = backtracking ?? null;
-    this.forward = forward ?? null;
+    this.backtracking = wrapBool(backtracking as BooleanFunction | boolean | null);
+    this.forward = wrapBool(forward as BooleanFunction | boolean | null);
   }
 
   // -------------------------------------------------------------------------

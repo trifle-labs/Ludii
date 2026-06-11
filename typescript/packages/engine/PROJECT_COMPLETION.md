@@ -2373,3 +2373,10 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
 - FIX: Game.registerVoteString(s) added (faithful voteStringsTable, returns >= 0 index); IsDecided.eval registers its vote string LAZILY on first eval and reads isDecided() defaulting to -1. Now (is Decided "End") = (-1 === 0) = false until a vote actually resolves. (IsProposed already returned false on an absent propositions() — only IsDecided had the bug.)
 - two_rows now 120/268 OUTCOME_OK (turn-passing unblocked family-wide; games play past ply 1 instead of instant-draw). A SEPARATE sow divergence remains (Oware diverges at ply 3) — next target.
 - Battery 62/62 OUTCOME_OK, units 194/0 — read before commit.
+
+## Update 208 (2026-06-11) — Sow raw-boolean trap: backtracking:True threw, discarding capturing sows (~mancala family)
+- After Update 207 unblocked turn-passing, mancala games still MM'd: Oware diverged at ply 3 (first sow that triggers a CAPTURE), where our move applied as a complete no-op (O3 == O2).
+- ROOT (raw-literal trap #11): `(sow ... backtracking:True)` arrives as a RAW boolean `true`, not a BooleanFunction. The capture+backtracking branch (`this.backtracking.eval(evalCtx)`) only runs once a sow actually captures (last seed makes 2 or 3 on the opponent's row), so the raw value lurked unevaluated through the non-capturing opening plies. The first capturing sow threw `this.backtracking.eval is not a function`; evalDeferredThens caught it (Java never throws there) and discarded the ENTIRE (then (sow)) — the seeds never landed.
+- FIX: wrap every BooleanFunction slot in the Sow ctor (origin/skipIf/captureRule/backtracking/forward) with the typeof-boolean -> {eval:()=>b} pattern (origin already did; the rest didn't).
+- Oware 2/2 OUTCOME_OK (ply 247/158). Full sow family now 269/426 OUTCOME_OK (was 238 at this window's first sweep; +31 from Updates 207+208 combined). Baseline was 52.1% -> now 63.1%.
+- Battery green (Crand = 600-cap artifact, passes at MOVE_CAP=5000), units 194/0 — read before commit.
