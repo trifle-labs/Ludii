@@ -246,7 +246,24 @@ export class ForEachPiece extends Operator {
         const location = loc.site();
         if (location < minIndex || location >= maxIndex) continue;
 
-        const level = loc.level();
+        let level = loc.level();
+        // @java Owned positions are PER-LEVEL (each piece knows the level it
+        // sits at). Our Owned doesn't track levels, so a stack commander
+        // (Bashni [P2,P1], mover's piece at level 1) reports level 0 and the
+        // top filter below rejected every stack. Recover the topmost level
+        // actually holding this component for this player.
+        {
+          const st = context.state;
+          const ownerStack = st.stacks[location] ?? [];
+          if (ownerStack.length > 1 && level === 0) {
+            const whatStack = st.whatStacks[location] ?? [];
+            for (let lvl = ownerStack.length - 1; lvl >= 0; lvl--) {
+              const o = ownerStack[lvl] ?? 0;
+              const w = whatStack[lvl] ?? o;
+              if (w === componentId && (allPlayers || o === specificPlayer)) { level = lvl; break; }
+            }
+          }
+        }
 
         // @java if (top) { final BaseContainerStateStacking css = ...; if (css.sizeStack(location, realType) != (level + 1)) continue; }
         if (top && cs) {
@@ -428,6 +445,28 @@ function scanPositions(
   const boardSites = (context.game as unknown as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites
     ?? state.cells.length;
   for (let site = 0; site < boardSites; site++) {
+    // @java Owned positions carry the LEVEL each piece sits at. A per-level
+    // stack (Bashni [P2,P1]) holds the mover's commander at the TOP level —
+    // reporting level 0 made the top:True filter (sizeStack != level+1)
+    // reject every stack. Emit one position per matching level.
+    const ownerStack = state.stacks[site] ?? [];
+    const whatStack = state.whatStacks[site] ?? [];
+    if (ownerStack.length > 1 || whatStack.length > 1) {
+      const size = Math.max(ownerStack.length, whatStack.length);
+      for (let lvl = 0; lvl < size; lvl++) {
+        const owner = ownerStack[lvl] ?? 0;
+        if (!allPlayers && owner !== specificPlayer) continue;
+        const what = whatStack[lvl] ?? owner;
+        if (what !== componentId) continue;
+        const level = lvl;
+        out.push({
+          site: () => site,
+          level: () => level,
+          siteType: () => realType,
+        });
+      }
+      continue;
+    }
     const owner = state.who(site);
     if (!allPlayers && owner !== specificPlayer) continue;
     const what = state.what(site);

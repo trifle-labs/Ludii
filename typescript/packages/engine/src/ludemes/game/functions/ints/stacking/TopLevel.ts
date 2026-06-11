@@ -31,14 +31,19 @@ export class TopLevel extends BaseIntFunction {
    * else cs.sizeStack(loc, realType) - 1.
    */
   public override eval(context: Context): number {
-    const game = context.game as unknown as { isStacking?: () => boolean; _isStacking?: boolean };
-    const stacking = game.isStacking?.() ?? game._isStacking ?? false;
-    if (!stacking) return 0;
+    // @java TopLevel.eval — if (!context.game().isStacking()) return 0; else
+    // cs.sizeStack(loc, realType) - 1. Our Game carries no Stacking flag, so
+    // gate on the REAL per-level stack instead: a flat piece or a count-pile
+    // (mancala/backgammon, stacks[loc].length <= 1) reports level 0, exactly
+    // Java's non-stacking early return; a genuine stack (Bashni [P2,P1])
+    // reports its top level. The old code probed sizeStack/stackAt, neither
+    // of which exists with that shape on State — TopLevel always returned 0
+    // and IsUnpromoted (level:(topLevel ...)) misrouted commanders to the
+    // king branch.
     const loc = this.locn.eval(context);
-    if (loc === UNDEFINED) return 0;
-    const state = context.state as unknown as { sizeStack?: (site: number, type?: string | null) => number; stackAt?: (site: number) => unknown[] };
-    const size = state.sizeStack?.(loc, this.type) ?? (state.stackAt?.(loc) as unknown[] | undefined)?.length ?? 0;
-    return size > 0 ? size - 1 : 0;
+    if (loc === UNDEFINED || loc < 0) return 0;
+    const size = (context.state as unknown as { stacks: readonly (readonly number[])[] }).stacks[loc]?.length ?? 0;
+    return size > 1 ? size - 1 : 0;
   }
 
   /** @java TopLevel.isStatic() */

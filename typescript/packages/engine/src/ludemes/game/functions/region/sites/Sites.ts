@@ -1319,9 +1319,17 @@ function resolveRoleIntFn(role: string): IntFunction {
   // region came back empty and the vacuous all-Sites ended the game at ply 1).
   if (role === "Player") return { eval(ctx: Context & EvalScratch) { return (ctx as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover; } };
   if (role === "Mover") return { eval(ctx: Context & EvalScratch) { return ctx.state.mover; } };
+  // @java State.next() — a maintained value ((mover % players) + 1 unless a
+  // SetNextPlayer overrode it). Our state.next is a transient override channel
+  // cleared to 0 after each advance; `0 ?? mover` returned PLAYER 0, so
+  // (sites Next) was empty mid-chain and Bashni's PromoteIfReach fell into its
+  // else-branch (ReplayIfCanMove) instead of promoting.
   if (role === "Next") return {
     eval(ctx: Context & EvalScratch) {
-      return (ctx.state as unknown as { next?: number }).next ?? ctx.state.mover;
+      const nx = (ctx.state as unknown as { next?: number }).next ?? 0;
+      if (nx > 0) return nx;
+      const np = (ctx.game as unknown as { numPlayers?: number }).numPlayers ?? 2;
+      return (ctx.state.mover % np) + 1;
     }
   };
   if (role === "P1") return constIntFn(1);

@@ -222,9 +222,10 @@ export class Hop extends Effect {
     to: number,
     mover: number,
     actions: Action[],
+    betweens: readonly number[] = [],
   ): Move {
     const tag = this._fromTypeTag;
-    const moveAction = new ActionMove(tag ? { from, to, fromType: tag as never, toType: tag as never } : { from, to });
+    const moveAction = new ActionMove(tag ? { from, to, fromType: tag as never, toType: tag as never, stack: this.stack } : { from, to, stack: this.stack });
     moveAction.setDecision(true);
     actions.push(moveAction);
     return new Move({
@@ -234,6 +235,10 @@ export class Hop extends Effect {
       mover,
       placedOwner: mover,
       actions,
+      // @java Hop.java — move.betweenNonDecision().add(between) per hurdle;
+      // Bashni's continuation gate (not (is In (between) (last Between)))
+      // reads these off the last move.
+      betweenSites: betweens,
     });
   }
 
@@ -366,7 +371,7 @@ export class Hop extends Effect {
               actions.push(a);
             }
                         }
-                        result.push(this.buildMove("stop", from, afterHurdleTo, mover, actions));
+                        result.push(this.buildMove("stop", from, afterHurdleTo, mover, actions, hurdleLocs.slice(0, hurdleLocs.length - fromMinHurdle)));
                       }
                     }
                     break;
@@ -399,7 +404,7 @@ export class Hop extends Effect {
             }
                     }
 
-                    result.push(this.buildMove("jump", from, afterHurdleTo, mover, actions));
+                    result.push(this.buildMove("jump", from, afterHurdleTo, mover, actions, hurdleLocs.slice(0, hurdleLocs.length - fromMinHurdle)));
                   }
 
                   // @java: check distance limit

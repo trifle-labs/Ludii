@@ -651,6 +651,30 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     if (best && !tied) return best;
   }
 
+  // Disambiguate stack captures by their NON-DECISION Move actions: a Bashni
+  // capture relocates the VICTIM's top piece with a plain Move ([Move:from=54,
+  // to=45] before the attacker's stack move) — no Remove is recorded, so the
+  // Remove tier above is blind. Two candidates sharing from/to but jumping
+  // different hurdles differ exactly in these victim pairs.
+  {
+    const recPairs = recMove.actions
+      .filter((a) => a.actionType === 'Move' && a.fields.get('decision') !== 'true')
+      .map((a) => `${a.fields.get('from')}>${a.fields.get('to')}`)
+      .sort();
+    if (recPairs.length > 0) {
+      const pairsOf = (cand) => cand.actions
+        .filter((a) => a.actionType() === 'Move' && !(a.isDecision?.() ?? false))
+        .map((a) => `${a.from?.() ?? ''}>${a.to?.() ?? ''}`)
+        .sort();
+      const byPairs = candidates.filter((cand) => {
+        const cp = pairsOf(cand);
+        return cp.length === recPairs.length && cp.every((v, i) => v === recPairs[i]);
+      });
+      if (byPairs.length > 0 && byPairs.length < candidates.length) candidates = byPairs;
+      if (candidates.length === 1) return candidates[0];
+    }
+  }
+
   // Disambiguate by player-value consequences. Two or-branches can emit an
   // IDENTICAL decision (Garanguet ply 260: double-play and lower-die both
   // bear off 23->23) whose deferred thens differ only in (set Value Mover …);
@@ -878,6 +902,7 @@ function replayTrial(trialPath) {
     }
 
     let matched = chooseMatch(tsMoves, recMove, ctx, game, nextRecMove);
+    if (process.env.CHOICE_TRACE && matched) console.error("[pick]", plyIndex ?? "?", `${matched.from()}>${matched.to()}`, matched.actions.map(a=>a.actionType()+"("+(a.from?.()??"")+">"+(a.to?.()??"")+")").join(","));
 
     // Auto-roll: Java's `(do (roll) next:#1)` pattern embeds dice-roll actions
     // INTO each movement move (SetStateAndUpdateDice/SetDiceAllEqual), so the

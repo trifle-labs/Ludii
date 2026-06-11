@@ -79,6 +79,8 @@ export interface MoveInit {
    */
   readonly fromNonDecisionSite?: number;
   readonly toNonDecisionSite?: number;
+  /** @java Move.betweenNonDecision() — hurdle sites of a hop (LastBetween). */
+  readonly betweenSites?: readonly number[];
 }
 
 export class Move {
@@ -100,6 +102,8 @@ export class Move {
   public readonly toSite?: number;
   public readonly fromNonDecisionSite?: number;
   public readonly toNonDecisionSite?: number;
+  /** @java Move.betweenNonDecision(). */
+  public readonly betweenSites: readonly number[];
 
   public constructor(init: MoveInit) {
     // A move must touch a site OR carry an action. State-setting moves
@@ -131,6 +135,12 @@ export class Move {
     this.toSite = init.toSite;
     this.fromNonDecisionSite = init.fromNonDecisionSite;
     this.toNonDecisionSite = init.toNonDecisionSite;
+    this.betweenSites = Object.freeze(init.betweenSites ? [...init.betweenSites] : []);
+  }
+
+  /** @java Move.betweenNonDecision() — read by (last Between). */
+  public betweenNonDecision(): readonly number[] {
+    return this.betweenSites;
   }
 
   public applyTo(state: State, rng?: SeededRng): State {
@@ -267,6 +277,7 @@ export class Move {
       toSite: this.toSite,
       fromNonDecisionSite: this.fromNonDecisionSite,
       toNonDecisionSite: this.toNonDecisionSite,
+      betweenSites: this.betweenSites,
     });
   }
 
@@ -294,6 +305,7 @@ export class Move {
       toSite: this.toSite,
       fromNonDecisionSite: this.fromNonDecisionSite,
       toNonDecisionSite: this.toNonDecisionSite,
+      betweenSites: this.betweenSites,
     });
   }
 
@@ -324,6 +336,7 @@ export class Move {
       toSite: this.toSite,
       fromNonDecisionSite: this.fromNonDecisionSite,
       toNonDecisionSite: this.toNonDecisionSite,
+      betweenSites: this.betweenSites,
     });
   }
 

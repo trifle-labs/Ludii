@@ -935,6 +935,36 @@ export class State {
     return this.with({ cells: nextCells, stacks: nextStacks, whats: nextWhats });
   }
 
+  /**
+   * Java parity: `ContainerStateStacks.removeStackGeneric` + `addToEmpty` —
+   * clears every level at the site (owner stack, what stack, visible top).
+   * Used by the whole-stack ActionMove (@java ActionMoveStacking.java:346).
+   */
+  public withStackRemoveAll(siteIndex: number): State {
+    if (siteIndex < 0 || siteIndex >= this.cells.length) {
+      throw new RangeError(
+        `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
+      );
+    }
+    const nextStacks = this.stacks.map((s) => [...s]);
+    nextStacks[siteIndex] = [];
+    const nextWhatStacks = this.whatStacks.map((s) => [...s]);
+    nextWhatStacks[siteIndex] = [];
+    const nextCells = [...this.cells];
+    nextCells[siteIndex] = 0;
+    const nextWhats = [...this.whats];
+    nextWhats[siteIndex] = 0;
+    const nextCounts = [...this.countAt];
+    nextCounts[siteIndex] = 0;
+    return this.with({
+      cells: nextCells,
+      stacks: nextStacks,
+      whatStacks: nextWhatStacks,
+      whats: nextWhats,
+      countAt: nextCounts,
+    });
+  }
+
   // ---- Per-site value / state / rotation / count -----------------------
 
   public stateAtSite(siteIndex: number): number {

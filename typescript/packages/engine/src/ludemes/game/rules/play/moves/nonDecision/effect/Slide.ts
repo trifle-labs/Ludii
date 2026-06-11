@@ -261,7 +261,7 @@ export class Slide implements MovesFunction {
     radial: Radial,
   ): LudiiMove {
     const actions: import("../../../../../../../action/index.js").Action[] = [
-      new ActionMove({ from, to }),
+      new ActionMove({ from, to, stack: this.stack }),
     ];
     actions[0]!.setDecision(true);
 
@@ -388,7 +388,7 @@ export class Slide implements MovesFunction {
 
   private trackMove(ctx: Context, from: number, to: number, mover: number): LudiiMove {
     const actions: import("../../../../../../../action/index.js").Action[] = [
-      new ActionMove({ from, to }),
+      new ActionMove({ from, to, stack: this.stack }),
     ];
     actions[0]!.setDecision(true);
     if (this.sideEffect != null) {

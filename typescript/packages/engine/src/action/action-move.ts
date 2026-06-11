@@ -57,6 +57,12 @@ export interface ActionMoveOptions {
    * so clearing happens before the new footprint is laid.
    */
   readonly clearFootprint?: readonly number[];
+  /**
+   * Whole-stack relocation (@java other/action/move/move/ActionMoveStacking,
+   * dispatched by ActionMove.construct when `stack=true`): every level of the
+   * from-stack lands on top of the to-stack in order; `from` is cleared.
+   */
+  readonly stack?: boolean;
 }
 
 export class ActionMove extends BaseAction {
@@ -76,6 +82,7 @@ export class ActionMove extends BaseAction {
   private readonly seedOwnerValue: number;
   private readonly footprint: readonly number[];
   private readonly clearFootprint: readonly number[];
+  private readonly stackMove: boolean;
 
   public constructor(options: ActionMoveOptions) {
     super();
@@ -98,6 +105,7 @@ export class ActionMove extends BaseAction {
     this.seedOwnerValue = options.seedOwner ?? 0;
     this.footprint = options.footprint ?? [];
     this.clearFootprint = options.clearFootprint ?? [];
+    this.stackMove = options.stack ?? false;
   }
 
   public override apply(state: State): State {
@@ -112,6 +120,30 @@ export class ActionMove extends BaseAction {
       if (who === 0 && what === 0) return state;
       let s2 = state.withTypedSite(t, this.fromIndex, 0, 0, 0);
       s2 = s2.withTypedSite(t, this.toIndex, who, what, Math.max(count, 1));
+      return s2;
+    }
+    // @java ActionMoveStacking.java:316-347 — stack=true: append every level
+    // of the from-stack (bottom -> top) onto the to-stack, then clear from
+    // (removeStackGeneric + addToEmpty). A flat single piece counts as a
+    // one-level stack (its owner/what read from the flat channels).
+    if (this.stackMove && this.fromIndex !== this.toIndex) {
+      const size = state.stackSize(this.fromIndex);
+      if (size === 0) return state;
+      const fromOwners: number[] = [];
+      const fromWhats: number[] = [];
+      const ownerStack = state.stacks[this.fromIndex] ?? [];
+      const whatStack = state.whatStacks[this.fromIndex] ?? [];
+      for (let lvl = 0; lvl < size; lvl++) {
+        const owner = ownerStack[lvl] ?? state.cellAt(this.fromIndex).owner;
+        if (owner <= 0) continue;
+        fromOwners.push(owner);
+        fromWhats.push(whatStack[lvl] ?? (ownerStack.length > 0 ? owner : state.whatAtSite(this.fromIndex)));
+      }
+      let s2 = state;
+      for (let i = 0; i < fromOwners.length; i++) {
+        s2 = s2.withStackPush(this.toIndex, fromOwners[i]!, fromWhats[i]!);
+      }
+      s2 = s2.withStackRemoveAll(this.fromIndex);
       return s2;
     }
     if (this.footprint.length > 0 || this.clearFootprint.length > 0) {
@@ -196,10 +228,15 @@ export class ActionMove extends BaseAction {
     // pile count and erase the buried pieces' identities).
     const fromWhatStack = state.whatStacks[this.fromIndex];
     const toWhatStack = state.whatStacks[this.toIndex];
+    // A HOMOGENEOUS per-level stack (Bashni [P2,P2]: owner == what at every
+    // level) never materialises whatStacks, but a plain Move off it must
+    // still pop the TOP piece only — the flat branch below wipes the site.
+    const fromOwnerStackLen = state.stacks[this.fromIndex]?.length ?? 0;
     if (
       this.fromIndex !== this.toIndex &&
       ((fromWhatStack !== undefined && fromWhatStack.length > 0) ||
-        (toWhatStack !== undefined && toWhatStack.length > 0))
+        (toWhatStack !== undefined && toWhatStack.length > 0) ||
+        fromOwnerStackLen > 1)
     ) {
       const topLevel = state.stackSize(this.fromIndex) - 1;
       const topOwner = state.stackAt(this.fromIndex, topLevel);

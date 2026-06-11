@@ -259,7 +259,7 @@ export class Step extends Effect {
           actions.push(a);
         }
       }
-      const moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never } : { from, to });
+      const moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never, stack: this.stack } : { from, to, stack: this.stack });
       moveAction.setDecision(true);
       actions.push(moveAction);
 
@@ -334,7 +334,7 @@ export class Step extends Effect {
           actions.push(a);
         }
         }
-        const moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never } : { from, to });
+        const moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never, stack: this.stack } : { from, to, stack: this.stack });
         moveAction.setDecision(true);
         actions.push(moveAction);
 

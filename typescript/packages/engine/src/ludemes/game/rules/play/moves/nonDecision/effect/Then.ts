@@ -142,6 +142,7 @@ export function evalDeferredThens(
         if (process.env["LUDII_DEBUG_THEN"]) console.error("[then threw]", (e as Error).stack?.split("\n").slice(0, 4).join(" | "));
         continue;
       }
+      if (process.env["TRACE_THEN"]) console.error("[then] depth", depth, "lastTo", m.to(), "->", thenMoves.map(t => t.actions.map(a => a.actionType()).join("+") + (t.moveAgain ? "(again)" : "")).join(" | ") || "(none)");
       for (const tm of thenMoves) {
         // @java Move.then() consequences are NOT decision actions — the
         // decision stays the primary move's own action.

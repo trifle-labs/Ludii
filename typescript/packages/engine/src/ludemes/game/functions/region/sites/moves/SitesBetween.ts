@@ -54,7 +54,7 @@ export class SitesBetween extends BaseRegionFunction {
 		// generatedMoves is a Move[] or { moves(): MoveLike[] }
 		let moveList: MoveLike[];
 		if (Array.isArray(generatedMoves)) {
-			moveList = generatedMoves as MoveLike[];
+			moveList = generatedMoves as unknown as MoveLike[];
 		} else {
 			const movesObj = generatedMoves as unknown as { moves?: () => MoveLike[] };
 			moveList = movesObj.moves?.() ?? [];
