@@ -848,6 +848,7 @@ export class ArgCompiler {
     expectedTypes: readonly JavaType[],
   ): unknown | null {
     if (normalise(head) !== "directions") return null;
+    if (process.env.TRACE_DIRREL) console.error("[dirrel] candidate-head, expected:", expectedTypes.map(e=>e.name+"/"+e.dims).join(" "));
     if (!expectedTypes.some((expected) => expected.dims === 0 &&
       (expected.name === "game.functions.directions.DirectionsFunction" ||
        expected.name === "game.util.directions.Direction" ||
@@ -861,7 +862,8 @@ export class ArgCompiler {
     ]);
     const parsed = parseNodeArgs(node);
     // Relative names: a single ident or a curly list of idents, positional.
-    const positional = parsed.argsIn.filter((arg) => arg.parameterName === undefined);
+    const positional = parsed.argsIn.filter((arg) => arg.parameterName == null);
+    if (process.env.TRACE_DIRREL) console.error("[dirrel] positional:", positional.length, positional.map(a=>{const n=a.node as {name?:string;delimiter?:string;items?:unknown[]}; return n.name ?? `${n.delimiter}[${n.items?.length}]`;}).join(" "));
     if (positional.length !== 1) return null;
     const dirNode = positional[0]!.node;
     let relNames: string[];
@@ -876,6 +878,7 @@ export class ArgCompiler {
     }
     const ofArg = parsed.argsIn.find((arg) => arg.parameterName === "of")?.node;
     const ofRelation = ofArg && isIdent(ofArg) ? ofArg.name : "Adjacent";
+    if (process.env.TRACE_DIRREL) console.error("[dirrel] compiled", relNames.join(","), "of:", ofRelation);
     this.resolveTrace.push({ token: head, cls: "game.functions.directions.Directions" });
     type TopoLike = {
       supportedDirections?: (rel: string, t: string) => Array<{ toAbsolute?: () => string } | string>;
@@ -892,6 +895,7 @@ export class ArgCompiler {
         const topo = c.topology?.();
         const playType = c.board().defaultSite?.() ?? "Cell";
         const raw = topo?.supportedDirections?.(ofRelation, playType);
+        if (process.env.TRACE_DIRREL) console.error("[dirrel] eval of:", ofRelation, "playType:", playType, "supported:", raw?.length ?? "none");
         const supported = raw && raw.length > 0
           ? raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
           : undefined;

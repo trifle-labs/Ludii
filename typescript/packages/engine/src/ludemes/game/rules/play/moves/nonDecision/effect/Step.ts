@@ -36,7 +36,12 @@ import type { Action } from "../../../../../../../action/index.js";
 // direction names this board actually supports (rotated hex: ENE/WNW/...).
 function supportedDirNames(ctx: unknown): string[] | undefined {
   const topo = (ctx as { topology?: () => { supportedDirections?: (rel: string, t: string) => Array<{ toAbsolute?: () => string } | string> } }).topology?.();
-  const raw = topo?.supportedDirections?.("Adjacent", "Cell");
+  // @java topology.supportedDirections(RelationType.Adjacent, GRAPHTYPE) —
+  // the PLAY type, not Cell: a vertex-play rectangle is 4-way adjacent while
+  // its cells are 8-way; the hardcoded "Cell" made FR/FL resolve to NE/NW
+  // (Xarajlt's {Forward FR FL} must walk to E/W on a diagonal-less board).
+  const playType = (ctx as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? "Cell";
+  const raw = topo?.supportedDirections?.("Adjacent", playType);
   if (!raw || raw.length === 0) return undefined;
   return raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0);
 }
