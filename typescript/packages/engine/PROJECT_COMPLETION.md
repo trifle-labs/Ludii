@@ -2309,3 +2309,7 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
 ## Update 196 (2026-06-11) — Solomon 1/2: bySite + supported-gated singulars landed
 - Commit above (oracle radial dumps at v10 were decisive: Adjacent excludes [10,9,8]; W *is* [10,9,8]; no W edge exists → Java's bySite resolution never queries W).
 - Trial 2 frontier: probe next (same probe pattern). Then re-probe Crand/Pasang (their add-edges boards now build; failures may share the singular-relatives gap just fixed).
+
+## Update 197 (2026-06-11) — SOLOMON CLEARED 2/2; Terhuchu proper<->Small FLIP under singulars
+- CountPieces name filter (commit above) finished Solomon. Terhuchu (Small) NEWLY 2/2.
+- REGRESSION (bisected, pre-exists the CountPieces change): Terhuchu PROPER 2/2 -> 0/2 (ply 1, rec 24>19 again) under the supported-gated singulars commit — the gate kills a Rightward/Leftward resolution its larger board relied on. PROBE: at ply 1 dump (a) the direction 24->19 geometrically, (b) our resolved dir names for the step/hop arm at 24 with/without the singular gate, (c) ORACLE Java's supported-Adjacent name set + per-element at 24 (jshell topo.supportedDirections + element.supported*) — the discrepancy is in NAME QUANTIZATION (our includes() needs Java's DirectionFacing-equality semantics, possibly nearest-wind matching rather than exact string). Fix must keep Solomon (gate) AND Terhuchu (resolution) — test BOTH variants of BOTH games.
