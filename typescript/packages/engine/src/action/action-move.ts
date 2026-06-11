@@ -236,10 +236,16 @@ export class ActionMove extends BaseAction {
     // The owner must be a real player: a *neutral* piece (owner 0) moving to an
     // empty cell (cells == 0) would otherwise spuriously match `0 === 0` and
     // "stack" onto the empty square (L Game's Dots), corrupting the count.
+    // @java ActionMoveTopPiece.java:432-434 — the accumulation key is the
+    // COMPONENT (csTo.what(to) == what && count > 0 → count+1), not the owner:
+    // Shared mancala seeds (owner 0) landing on an occupied pit must raise the
+    // pile (Kisolo's capture fromTo dropped the relocated seed otherwise).
     if (
       this.fromIndex !== this.toIndex &&
-      movingOwner !== 0 &&
-      state.who(this.toIndex) === movingOwner
+      ((movingOwner !== 0 && state.who(this.toIndex) === movingOwner) ||
+        ((state.whatAtSite(this.toIndex) === movingWhat ||
+          state.whatAtSite(this.toIndex) === 0) &&
+          state.countAtSite(this.toIndex) > 0))
     ) {
       const destHeight = Math.max(state.countAtSite(this.toIndex), 1);
       next = next.withCell(this.toIndex, movingOwner);
