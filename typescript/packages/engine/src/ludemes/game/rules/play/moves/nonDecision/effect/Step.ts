@@ -138,7 +138,9 @@ export class Step extends Effect {
     // that type's adjacency — use the alternate trajectories VIEW as a local
     // (never mutate ctx._trajectories; a leak corrupts later evaluations).
     const baseTraj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
-    const fromTypeTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? null;
+    const playTypeName = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? null;
+    const rawTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? null;
+    const fromTypeTag = rawTag && playTypeName && rawTag !== playTypeName ? rawTag : null;
     const traj = fromTypeTag && baseTraj && typeof (baseTraj as unknown as { viewOf?: unknown }).viewOf === "function"
       ? (baseTraj as unknown as { viewOf(k: string): Trajectories }).viewOf(fromTypeTag)
       : baseTraj;

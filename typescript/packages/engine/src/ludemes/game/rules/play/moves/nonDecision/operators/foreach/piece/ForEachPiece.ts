@@ -260,9 +260,11 @@ export class ForEachPiece extends Operator {
         const state = context.state;
 
         context._evalFrom = location;
-        // Dual-SiteType: tag the iterated position's element type so the
-        // piece's move ludemes route radial lookups through the right view.
-        (context as unknown as { _evalFromType?: string | null })._evalFromType = loc.siteType();
+        // Dual-SiteType: tag ONLY typed-channel positions (the play-array
+        // scan's realType can default to "Cell" on Vertex boards and must
+        // not re-route normal pieces' adjacency).
+        (context as unknown as { _evalFromType?: string | null })._evalFromType =
+          (loc as { typedChannel?(): boolean }).typedChannel?.() ? loc.siteType() : null;
         (context as unknown as { setLevel?(l: number): void }).setLevel?.(level);
         (context as unknown as { _evalLevel?: number })._evalLevel = level;
 
@@ -451,7 +453,8 @@ function scanPositions(
           site: () => site,
           level: () => 0,
           siteType: () => chType,
-        });
+          typedChannel: () => true,
+        } as { site(): number; level(): number; siteType(): string; typedChannel?(): boolean });
       }
     }
   }

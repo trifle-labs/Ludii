@@ -148,7 +148,9 @@ export class Hop extends Effect {
     // Dual-SiteType: route through the iterated position's element-type view
     // (local only — never mutate ctx._trajectories).
     const baseTrajH = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
-    const fromTypeTagH = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? null;
+    const playTypeNameH = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? null;
+    const rawTagH = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? null;
+    const fromTypeTagH = rawTagH && playTypeNameH && rawTagH !== playTypeNameH ? rawTagH : null;
     const traj = fromTypeTagH && baseTrajH && typeof (baseTrajH as unknown as { viewOf?: unknown }).viewOf === "function"
       ? (baseTrajH as unknown as { viewOf(k: string): Trajectories }).viewOf(fromTypeTagH)
       : baseTrajH;
