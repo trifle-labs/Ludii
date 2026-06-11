@@ -73,13 +73,23 @@ export class SitesEquipmentRegion extends BaseRegionFunction {
       const seen = new Set<number>();
       let matchedName = false;
       for (const [regionName, byOwner] of named) {
-        // @java region.name().contains(name) — substring match ("" matches all)
-        if (!regionName.includes(needle)) continue;
+        // @java region.name().contains(name) — substring match ("" matches
+        // all). Compare case-insensitively on BOTH sides: the needle was
+        // lowercased while map keys keep their lud casing, so Chameleons'
+        // (sites "RedTiles") matched nothing and the start rule placed
+        // zero pieces.
+        if (!regionName.toLowerCase().includes(needle)) continue;
         matchedName = true;
-        const fn = byOwner.get(who);
-        if (!fn) continue;
-        for (const s of fn.eval(ctx)) {
-          if (!seen.has(s)) { seen.add(s); result.push(s); }
+        // No player qualifier ((sites "RedTiles")) → union the name's
+        // regions across ALL owners (@java preprocess collects per-owner;
+        // a bare-name lookup has no owner to key on).
+        const owners = this.index !== null ? [who] : [...byOwner.keys()];
+        for (const ow of owners) {
+          const fn = byOwner.get(ow);
+          if (!fn) continue;
+          for (const s of fn.eval(ctx)) {
+            if (!seen.has(s)) { seen.add(s); result.push(s); }
+          }
         }
       }
       if (matchedName || this.name !== "") return result;
