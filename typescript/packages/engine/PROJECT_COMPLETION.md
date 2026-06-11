@@ -1896,3 +1896,8 @@ ForEachDie eval) + detailed harness action dumps:
 - Two engine-wide fixes: (1) FromTo countFn evaluates with FROM bound (@java FromTo.java:189-196) — count:(count at:(from)) hand-collections were silent no-ops; (2) IsNext reads state.next (@java IsNext.java) with <=0 fallback to mover rotation — it had computed mover+1 always, so moveAgain relays broke every (is Next ...) phase-transition/condition (Chisolo advanced phases mid-relay and locked the wrong sow direction).
 - Chisolo 2/2. BATTERY NOW 33 GAMES (Garanguet added). Both fixes cascade widely: is Next appears in scores of luds (phase transitions, end conditions); count at:(from) in sow/race collections.
 - NEXT: re-sweep sow/race/space to measure cascades; remaining queue per Updates 96-100.
+
+## Update 102 (2026-06-11) — Cascade sweeps + ActionMove count-pit accumulation
+- Post-IsNext/count-binding sweeps: sow 137 OK + 23 RONO /426 (was 92+11 — +57 trials); space 348 (WM 67→61); race 111 (long tables trials need PER_TRIAL_MS≥120s).
+- ActionMove: landing on a pure count pit (what=0,count>0) or same-what site accumulates count (@java ActionMoveTopPiece.java:432-434) — Kisolo's capture fromTo had dropped the relocated seed. Kisolo 18→38; trial 0 residual at ply 30 (tsMoveCount=2 = relay-end seam).
+- NOTE: our pit modeling is INCONSISTENT (some pits what=0 count-only, site 16 had what=2/who=2 from earlier overwrites) — a future faithful remodel should set what=Seed(1) on all seeded pits like Java ContainerState.
