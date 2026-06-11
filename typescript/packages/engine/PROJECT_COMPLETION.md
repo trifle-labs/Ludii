@@ -1938,3 +1938,7 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 111 (2026-06-11) — Kisolo (Lali) cleared: raw-boolean origin
 - The Lali ply-1 seam was the documented raw-boolean trap: origin:True reached Sow as literal true; this.origin?.eval threw inside the deferred then and the sow silently emitted nothing (the harness saw Select-only moves and the turn always passed). Wrapped in the ctor; Lali 2/2 full replays (RONO at cap). Battery green; committed.
 - Raw-boolean wrap inventory now: IfBool, Hop, Slide, ForEachDirection rule/betweenRule, ForEachDie.replayDouble, SitesAround includeSelf, Sow.origin. AUDIT remaining @Name BooleanFunction slots when symptoms match (silent no-op consequences).
+
+## Update 112 (2026-06-11) — SitesCentre play-type fix: hunt family 77%
+- SitesCentre's graph path hardcoded Cell elements (@java graph.centre(realType) uses the PLAY type) — on use:Vertex wheel/cross boards the nearest FACE id leaked out as a vertex site (Gioco dell'Orso's bear started at 12, Java hub 0). Now uses Trajectories' cached play-type els with centroid()/pt-tolerant coordinates.
+- HUNT family: 88 OK + 29 RONO /152 = 77% (was 80+21=66% this morning; the centre fix moved tiger/leopard placement games). Gioco dell'Orso 2/2 full replays. Battery green (32); units 194/47.
