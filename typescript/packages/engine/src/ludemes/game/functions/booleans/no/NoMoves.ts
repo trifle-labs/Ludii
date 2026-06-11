@@ -105,9 +105,16 @@ export class NoMoves implements BooleanFunction {
 
     // For Mover, P1, P2, ...: read the cached stalemated flag.
     let playerId: number;
-    switch (this.role) {
+    switch (this.role as string) {
       case "Mover":
         playerId = state.mover;
+        break;
+      case "Player":
+        // @java RoleType.Player — the (forEach Player ...) iteration player
+        // (context.player()); the P<n> fallthrough read the MOVER and
+        // Damas' (forEach Player if:(no Moves Player) (result Player Loss))
+        // end resolved the wrong loser.
+        playerId = (ctx as unknown as { _evalPlayer?: number })._evalPlayer ?? state.mover;
         break;
       default: {
         // P1, P2, etc.
