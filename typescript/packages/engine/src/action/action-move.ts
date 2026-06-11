@@ -222,16 +222,7 @@ export class ActionMove extends BaseAction {
       const movedWhat = state.whats[this.fromIndex] ?? 0;
       const toNew = Math.max(0, s.countAtSite(this.toIndex) + n);
       s = s.withCountAt(this.toIndex, toNew);
-      // @java the count-move places OWNED pieces (cs.setSite who = component
-      // owner): T'oki's (move (from (handSite Mover)) ... count:2) must leave
-      // who=mover on the pile or (forEach Piece) never iterates it. Mancala
-      // seeds ("Seed", Shared — no trailing owner digit) stay who=0.
-      const inferredOwner = this.seedOwnerValue > 0
-        ? this.seedOwnerValue
-        : (movedWhat > 0
-          ? (Number((state.componentLabels[movedWhat] ?? "").match(/(\d+)$/)?.[1] ?? 0) || 0)
-          : 0);
-      const toOwner = toNew > 0 ? inferredOwner : 0;
+      const toOwner = toNew > 0 ? this.seedOwnerValue : 0;
       if ((s.cells[this.toIndex] ?? 0) !== toOwner) {
         s = s.withCell(this.toIndex, toOwner);
       }

@@ -172,7 +172,21 @@ export class FromTo implements MovesFunction {
           const count = this.countFn.eval(ctx);
           ctx._evalFrom = savedFrom;
           ctx._evalTo = savedTo;
-          moveAction = new ActionMove({ from, to, count, transferCount: true });
+          // @java the count-move places OWNED pieces (cs.setSite who =
+          // component owner). A HAND-sourced placement (T'oki's (move (from
+          // (handSite Mover)) (to (sites Empty)) count:2)) must stamp the
+          // mover's ownership on the pile or (forEach Piece) never iterates
+          // it; pit-to-pit sows/transfers keep the neutral-pit model (Hus).
+          const boardSites = (ctx.game as unknown as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? Number.MAX_SAFE_INTEGER;
+          let seedOwner = 0;
+          if (from >= boardSites) {
+            const movedWhat = ctx.state.whats[from] ?? 0;
+            const label = (ctx.state.componentLabels[movedWhat] ?? "");
+            seedOwner = Number(label.match(/(\d+)$/)?.[1] ?? 0) || 0;
+          }
+          moveAction = seedOwner > 0
+            ? new ActionMove({ from, to, count, transferCount: true, seedOwner })
+            : new ActionMove({ from, to, count, transferCount: true });
         } else {
           // Dual-SiteType: stamp the declared type so application routes
           // through the typed channel (gated downstream on channel existence).
