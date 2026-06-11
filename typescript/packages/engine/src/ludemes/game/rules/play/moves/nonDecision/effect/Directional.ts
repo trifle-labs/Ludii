@@ -122,7 +122,28 @@ export class Directional implements MovesFunction {
     // @java Directional.java:115-143 — for each direction's radials
     const dirnNames = this.dirnChoice?.eval(ctx) ?? [this.dirnName];
 
+    // @java Directional.java:115 — radials are DIRECTED (the named direction
+    // only, never its opposite). The engine trajectories resolve names against
+    // the real geometry; the flat-radials axis table misbinds names on lattice
+    // boards (Fanorona's removal walked the SW diagonal instead of E and the
+    // opposite ray besides).
+    const engTraj = (ctx as unknown as { _trajectories?: { radialsByName?(site: number, dir: string): number[][] } })._trajectories;
+
     for (const dirnName of dirnNames) {
+      const directed: readonly (readonly number[])[] | null =
+        engTraj?.radialsByName ? engTraj.radialsByName(from, dirnName) : null;
+      if (directed && directed.length > 0) {
+        for (const rayToWalk of directed) {
+          for (let i = 1; i < rayToWalk.length; i++) {
+            const to = rayToWalk[i]!;
+            ctx._evalTo = to;
+            ctx._evalFrom = from;
+            if (!this.targetRule.eval(ctx)) break;
+            removeTargets.push(to);
+          }
+        }
+        continue;
+      }
       const axes = radialsForDirection(cellRadials, dirnName);
 
       for (const { ray, opposite } of axes) {
