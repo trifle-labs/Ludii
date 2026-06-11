@@ -307,6 +307,27 @@ export class State {
     positions(pid: number): Array<Array<{ site(): number; level(): number; siteType(): string }>>;
     mapCompIndex(pid: number, compId: number): number;
   } {
+    // @java FullOwned — once the registry is live (stacking game), positions
+    // come from it VERBATIM, stale ghosts included (Fenix's recorded moves
+    // are generated from one).
+    const entries = this.ownedEntries;
+    if (entries !== undefined) {
+      return {
+        positions: (pid: number) => {
+          const byComp: Array<Array<{ site(): number; level(): number; siteType(): string }>> = [];
+          for (const e of entries) {
+            if (e.pid !== pid) continue;
+            (byComp[e.comp] ??= []).push({
+              site: () => e.site,
+              level: () => e.level,
+              siteType: () => "Cell",
+            });
+          }
+          return byComp;
+        },
+        mapCompIndex: (_pid: number, compId: number) => compId,
+      };
+    }
     const cells = this.cells;
     const whats = this.whats;
     return {
@@ -1003,6 +1024,12 @@ export class State {
       if (e.site === site && e.level > level) next[i] = { ...e, level: e.level - 1 };
     }
     return this.with({ ownedEntries: next });
+  }
+
+  /** Level-less site wipe of the registry (flat ActionRemove). */
+  public withOwnedSiteCleared(site: number): State {
+    if (this.ownedEntries === undefined) return this;
+    return this.with({ ownedEntries: this.ownedEntries.filter((e) => e.site !== site) });
   }
 
   /** @java FullOwned.remove(pid, comp, site, type) — level-less: all entries of (pid,comp) at site. */

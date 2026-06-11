@@ -38,6 +38,14 @@ export class ActionPromote extends BaseAction {
     // (whats) so `(forEach Piece "Name")` dispatch recognises the new type
     // (e.g. a draughts man promoted to a flying king).
     let s2 = state.withCell(this.toIndex, this.whoValue).withWhatAt(this.toIndex, this.whatValue);
+    // @java ActionPromote: owned remove(old comp at top level) + add(new).
+    if (s2.ownedEntries !== undefined) {
+      const lvl = Math.max(0, (s2.stacks[this.toIndex]?.length ?? 1) - 1);
+      const oldWhat = state.whatAtSiteLevel(this.toIndex, lvl) || state.whatAtSite(this.toIndex);
+      const oldOwner = (state.stacks[this.toIndex]?.length ?? 0) > 0 ? state.stackAt(this.toIndex, lvl) : state.who(this.toIndex);
+      s2 = s2.withOwnedRemoveLevel(oldOwner, oldWhat, this.toIndex, lvl);
+      s2 = s2.withOwnedAdd(this.whoValue > 0 ? this.whoValue : oldOwner, this.whatValue, this.toIndex, lvl);
+    }
     // @java ActionPromote on a stacking container promotes the TOP level
     // (cs.setSite(..., level)) — refresh the per-level what column too, or a
     // promoted commander (Bashni CounterStar) is invisible to the per-level

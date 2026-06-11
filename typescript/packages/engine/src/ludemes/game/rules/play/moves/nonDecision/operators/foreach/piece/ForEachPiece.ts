@@ -255,7 +255,9 @@ export class ForEachPiece extends Operator {
         {
           const st = context.state;
           const ownerStack = st.stacks[location] ?? [];
-          if (ownerStack.length > 1 && level === 0) {
+          // Registry-backed positions carry REAL levels (ghosts included) —
+          // never second-guess them.
+          if ((st as { ownedEntries?: unknown }).ownedEntries === undefined && ownerStack.length > 1 && level === 0) {
             const whatStack = st.whatStacks[location] ?? [];
             for (let lvl = ownerStack.length - 1; lvl >= 0; lvl--) {
               const o = ownerStack[lvl] ?? 0;

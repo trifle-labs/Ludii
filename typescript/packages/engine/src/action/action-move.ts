@@ -139,9 +139,22 @@ export class ActionMove extends BaseAction {
         fromOwners.push(owner);
         fromWhats.push(whatStack[lvl] ?? (ownerStack.length > 0 ? owner : state.whatAtSite(this.fromIndex)));
       }
-      let s2 = state;
+      // @java OwnedFactory — the level-aware FullOwned registry exists for
+      // stacking games; materialize it the moment the game starts stacking.
+      let s2 = state.withOwnedMaterialized();
+      // @java ActionMoveStacking.java:333-344 — owned: level-less remove of
+      // every moved (owner, what) at from...
+      for (let i = 0; i < fromOwners.length; i++) {
+        s2 = s2.withOwnedRemoveAll(fromOwners[i]!, fromWhats[i]!, this.fromIndex);
+      }
+      const baseLevelTo = s2.stackSize(this.toIndex);
       for (let i = 0; i < fromOwners.length; i++) {
         s2 = s2.withStackPush(this.toIndex, fromOwners[i]!, fromWhats[i]!);
+      }
+      // @java ActionMoveStacking.java:349-360 — ...then add at the landing
+      // levels [sizeTo - moved, sizeTo).
+      for (let i = 0; i < fromOwners.length; i++) {
+        s2 = s2.withOwnedAdd(fromOwners[i]!, fromWhats[i]!, this.toIndex, baseLevelTo + i);
       }
       s2 = s2.withStackRemoveAll(this.fromIndex);
       return s2;
@@ -242,9 +255,25 @@ export class ActionMove extends BaseAction {
       const topOwner = state.stackAt(this.fromIndex, topLevel);
       const topWhat = state.whatAtSiteLevel(this.fromIndex, topLevel);
       if (topOwner === 0) return state;
-      const popped = state.withStackPop(this.fromIndex);
-      const pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
+      // @java ActionMoveTopPiece (stacking): owned remove at the from-top
+      // level, add at the to-top level after the push.
+      let popped = state.withOwnedRemoveLevel(topOwner, topWhat, this.fromIndex, topLevel);
+      popped = popped.withStackPop(this.fromIndex);
+      let pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
+      pushed = pushed.withOwnedAdd(topOwner, topWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
       return this.maintainTracks(pushed, topWhat);
+    }
+    // @java ActionMoveTopPiece (non-stacking): owned remove at from, add at
+    // to — only live once the registry is materialized (stacking game);
+    // fromTo victim relocations between flat sites must keep it in sync.
+    if (state.ownedEntries !== undefined && this.fromIndex !== this.toIndex) {
+      const mOwner = state.cellAt(this.fromIndex).owner;
+      const mWhat = state.whatAtSite(this.fromIndex);
+      if (mOwner > 0) {
+        state = state.withOwnedSiteCleared(this.fromIndex);
+        state = state.withOwnedSiteCleared(this.toIndex);
+        state = state.withOwnedAdd(mOwner, mWhat || mOwner, this.toIndex, 0);
+      }
     }
     const movingOwner = state.cellAt(this.fromIndex).owner;
     // Preserve the moving piece's component identity (Java: ContainerState

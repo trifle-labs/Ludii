@@ -92,6 +92,8 @@ export class ActionAdd extends BaseAction {
       let next = state
         .withStackPush(this.toIndex, this.ownerIndex)
         .withWhatAt(this.toIndex, this.whatIndex);
+      // @java ActionAdd (stacking): owned().add at the new top level.
+      next = next.withOwnedAdd(this.ownerIndex, this.whatIndex, this.toIndex, next.stackSize(this.toIndex) - 1);
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
         next = next.withStateAt(this.toIndex, this.stateValue);
       }

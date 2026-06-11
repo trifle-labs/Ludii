@@ -722,10 +722,37 @@ export class Game implements Game {
       const turningOver = !appliedMove.moveAgain && !(setNextActEarly !== undefined && setNextActEarly.who() === mover);
       if (turningOver && newState.sitesToRemove.length > 0) {
         if (process.env.TRACE_FLUSH) console.error(`[flush] sitesToRemove=${JSON.stringify([...newState.sitesToRemove])} ply=${(globalThis as Record<string, unknown>).__PLY}`);
-        // Remove all deferred capture sites.
-        for (const site of newState.sitesToRemove) {
-          if (!newState.isEmptySite(site)) {
-            newState = new ActionRemove({ to: site }).apply(newState);
+        if (newState.ownedEntries !== undefined) {
+          // @java Move.java:549-575 (stacking branch) — count queue entries
+          // per site, clamp to the CURRENT stack size, then apply level
+          // removes top-down. The clamp + FullOwned's decrement loop is what
+          // strands Java's stale owned ghosts (Fenix) — port verbatim.
+          const counts = new Map<number, number>();
+          for (const site of newState.sitesToRemove) counts.set(site, (counts.get(site) ?? 0) + 1);
+          for (const [site, queued] of [...counts.entries()].sort((a, b) => a[0] - b[0])) {
+            const numToRemove = Math.min(queued, newState.stackSize(site));
+            for (let level = numToRemove - 1; level >= 0; level--) {
+              const sz = newState.stacks[site]?.length ?? 0;
+              const flatOccupied = sz === 0 && newState.who(site) > 0;
+              if (level >= sz && !(flatOccupied && level === 0)) continue; // @java cs.remove -> 0
+              const own = sz > 0 ? newState.stackAt(site, level) : newState.who(site);
+              const wht = sz > 0 ? newState.whatAtSiteLevel(site, level) : newState.whatAtSite(site);
+              if (own <= 0) continue;
+              newState = newState.withOwnedRemoveLevel(own, wht, site, level);
+              if (sz > 0) {
+                newState = newState.withStackPop(site, level);
+              } else {
+                newState = newState.withCell(site, 0).withWhatAt(site, 0);
+                if (newState.countAtSite(site) > 0) newState = newState.withCountAt(site, 0);
+              }
+            }
+          }
+        } else {
+          // Remove all deferred capture sites.
+          for (const site of newState.sitesToRemove) {
+            if (!newState.isEmptySite(site)) {
+              newState = new ActionRemove({ to: site }).apply(newState);
+            }
           }
         }
         newState = newState.withClearedSitesToRemove();

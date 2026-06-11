@@ -69,9 +69,25 @@ export class ActionRemove extends BaseAction {
     if (this.explicitTyped && state.typedSites.has(this.siteType)) {
       return state.withTypedSite(this.siteType, this.toIndex, 0, 0, 0);
     }
+    // @java ActionRemoveTopPiece (stacking branch): pop the TOP level and
+    // update the FullOwned registry at that level. Only live once the game
+    // materialized the registry (per-level stacks exist).
+    if (state.ownedEntries !== undefined && (state.stacks[this.toIndex]?.length ?? 0) > 1) {
+      const lvl = (state.stacks[this.toIndex]?.length ?? 1) - 1;
+      const own = state.stackAt(this.toIndex, lvl);
+      const wht = state.whatAtSiteLevel(this.toIndex, lvl);
+      let nx = state.withOwnedRemoveLevel(own, wht, this.toIndex, lvl);
+      nx = nx.withStackPop(this.toIndex);
+      return nx;
+    }
     // The removed piece's component id, read before the site is cleared, so the
     // track-index structure can drop it (Java ActionRemoveTopPiece: `pieceIdx`).
     const removedWhat = state.whatAtSite(this.toIndex);
+    // Registry maintenance for the flat clear (@java owned().remove(owner,
+    // pieceIdx, to, type) — level-less).
+    if (state.ownedEntries !== undefined) {
+      state = state.withOwnedSiteCleared(this.toIndex);
+    }
     // Removing from a multi-piece pile (Java: a stacked site, e.g. Bagh goat
     // stacks) leaves the remainder in place; only when the count is exhausted
     // does the site become empty. Plain single pieces (count 0/1) are cleared.
