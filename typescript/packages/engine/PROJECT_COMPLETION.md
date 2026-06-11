@@ -2213,3 +2213,7 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 ## Update 174 (2026-06-11) — SEESAW DRAUGHTS CLEARED 2/2 (war/leaping/diagonal COMPLETE)
 - Four ports (commit above): SitesDirection, SitesBetween (both ex-stubs; use DIRECTED radialsByName — distinct dedupes opposites!), FromTo stack-move routing, ForgetValueAll live-state read.
 - war/leaping/diagonal subfamily is now FULLY CLEARED (every diagonal game 2/2). Remaining war/leaping: custom-graph lines/ boards (Awithlaknan, Kolowis, Solomon, Spoing, Throngs, Pasang, Crand, Fetach), orthogonal Cage + Dum Blas, caps. NOTE 'experimental/Seesaw' in sweeps is a DIFFERENT game (filter overlap).
+
+## Update 175 (2026-06-11) — war/leaping at 74.3% OK + 14.6% full-replay
+- 168/226 OUTCOME_OK (58% at session start -> 65.9% -> 69% -> 74.3%). MM down to 20 (was 60). The SitesDirection/SitesBetween ports cleared more than Seesaw (several lines/ games consumed them).
+- Remaining MM (~20): custom-graph lines/ boards + Cage/Dum Blas; WM 5; 33 capped trials (MOVE_CAP=5000 re-run candidates).
