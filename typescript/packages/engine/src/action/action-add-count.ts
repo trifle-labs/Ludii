@@ -19,11 +19,15 @@ export class ActionAddCount extends BaseAction {
   private readonly delta: number;
   private readonly seedOwner: number;
 
-  public constructor(toIndex: number, delta: number, seedOwner: number) {
+  /** @java the seed component carried by the sow (pits keep what while count>0). */
+  private readonly seedWhat: number;
+
+  public constructor(toIndex: number, delta: number, seedOwner: number, seedWhat = 0) {
     super();
     this.toIndex = toIndex;
     this.delta = delta;
     this.seedOwner = seedOwner;
+    this.seedWhat = seedWhat;
   }
 
   public override apply(state: State): State {
@@ -36,6 +40,13 @@ export class ActionAddCount extends BaseAction {
     }
     if (next === 0 && s.whatAtSite(this.toIndex) !== 0) {
       s = s.withWhatAt(this.toIndex, 0);
+    }
+    // @java pits hold the Seed component while seeded (SetCount.java:79 stamps
+    // it at start; sow drops keep it) — stamp on a what-less pit gaining seeds.
+    // Raw whats check: whatAtSite falls back to the cells owner, which the
+    // seedOwner stamping above just wrote.
+    if (next > 0 && this.seedWhat > 0 && (s.whats[this.toIndex] ?? 0) === 0) {
+      s = s.withWhatAt(this.toIndex, this.seedWhat);
     }
     // When a site is emptied (count → 0), Java's container `remove()` (called by
     // ActionMoveN.apply, ActionMoveN.java:276-277, when count drops ≤ 0) resets

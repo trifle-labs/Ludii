@@ -213,6 +213,8 @@ export class Sow extends Effect {
 
     const elems = track.elems();
     const actions: Action[] = [];
+    // @java pits carry the Seed component while seeded — propagate it with the sow.
+    const seedWhat = ctx.state.whatAtSite(start) > 0 ? ctx.state.whatAtSite(start) : 0;
 
     let numSeedSowed = 0;
     let lastTo = start;
@@ -238,7 +240,7 @@ export class Sow extends Effect {
       const numPerHole = numPerHoleDefault();
       while (numDone !== numPerHole) {
         if (numSeedSowed < count) {
-          actions.push(new ActionAddCount(start, 1, mover));
+          actions.push(new ActionAddCount(start, 1, mover, seedWhat));
           lastTo = start;
         }
         numDone++;
@@ -291,7 +293,7 @@ export class Sow extends Effect {
 
         while (numDone !== numPerHole) {
           if (numSeedSowed < count) {
-            actions.push(new ActionAddCount(to, 1, mover));
+            actions.push(new ActionAddCount(to, 1, mover, seedWhat));
             lastTo = to;
           }
           numDone++;
@@ -304,7 +306,7 @@ export class Sow extends Effect {
     }
 
     // @java Sow.java:291 — add the move
-    const finalActions: Action[] = [new ActionAddCount(start, -count, mover), ...actions];
+    const finalActions: Action[] = [new ActionAddCount(start, -count, mover, seedWhat), ...actions];
     let moveAgain = false;
     (ctx as unknown as { _evalTo?: number })._evalTo = lastTo;
     let rollingState = applyActions(ctx, finalActions);

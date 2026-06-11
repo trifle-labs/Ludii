@@ -38,13 +38,17 @@ export class SetCountStart implements StartRule {
     if (!cs) return;
     const sites = this.evalSites(ctx);
     const count = this.countFn.eval(ctx);
-    // NOTE: do NOT set whats[site] for mancala (count-based) seeding.
-    // In mancala, emptiness is determined by countAt=0, not by whats.
-    // @java ContainerState.isEmpty(site) for mancala returns count(site)==0
+    // @java SetCount.java:79 — what = the LAST component's index; pits hold
+    // that component (Seed) while seeded, so ActionMove's same-what
+    // accumulation test works on capture transfers (Kisolo compound capture).
+    // Emptiness stays count-based (@java mancala isEmpty = count==0; the
+    // AddCount drain clears what when count reaches 0).
     void this.type;
+    const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number }> } }).equipment?.pieces;
+    const what = pieces && pieces.length > 0 ? pieces[pieces.length - 1]!.index : -1;
     for (const site of sites) {
-      // @java ActionSetCount -> ContainerState.setSite(site, UNDEF, UNDEF, count, ...)
-      cs.setSite(site, -1, -1, count, -1, -1);
+      // @java ActionSetCount(type, loc, what, count) -> cs.setSite(site, UNDEF, what, count, ...)
+      cs.setSite(site, -1, count > 0 ? what : -1, count, -1, -1);
     }
   }
 
