@@ -620,14 +620,43 @@ function chooseMatch(tsMoves, recMove, ctx, game) {
   if (recRemoves.size > 0) {
     let best = null;
     let bestScore = 0;
+    let tied = false;
     for (const cand of candidates) {
       const cs = tsMoveRemoveSites(cand);
       let score = 0;
       for (const s of recRemoves) if (cs.has(s)) score += 1;
       for (const s of cs) if (!recRemoves.has(s)) score -= 1;
-      if (score > bestScore) { bestScore = score; best = cand; }
+      if (score > bestScore) { bestScore = score; best = cand; tied = false; }
+      else if (score === bestScore && best !== null) tied = true;
     }
-    if (best) return best;
+    // A tie (Garanguet: both or-branches bear off the same piece) carries no
+    // signal — fall through to the value-consequence tier instead of picking
+    // the first candidate.
+    if (best && !tied) return best;
+  }
+
+  // Disambiguate by player-value consequences. Two or-branches can emit an
+  // IDENTICAL decision (Garanguet ply 260: double-play and lower-die both
+  // bear off 23->23) whose deferred thens differ only in (set Value Mover …);
+  // those only materialize at APPLY time, so hypothetically apply each
+  // candidate (game.apply returns a fresh ctx) and prefer the one whose
+  // resulting per-player values match the recorded SetValueOfPlayer actions
+  // (or, when none are recorded, leave the values untouched).
+  const recSetValues = recMove.actions
+    .filter((a) => a.actionType === 'SetValueOfPlayer')
+    .map((a) => [Number(a.fields.get('player')), Number(a.fields.get('value'))]);
+  {
+    const before = ctx.state.valuesPlayer ?? [];
+    const expected = [...before];
+    for (const [p2, v] of recSetValues) if (Number.isFinite(p2) && p2 < expected.length) expected[p2] = v;
+    const byValues = candidates.filter((cand) => {
+      try {
+        const after = game.apply(ctx, cand)?.state?.valuesPlayer ?? [];
+        return expected.every((v, i) => (after[i] ?? -1) === v);
+      } catch { return false; }
+    });
+    if (byValues.length > 0 && byValues.length < candidates.length) candidates = byValues;
+    if (candidates.length === 1) return candidates[0];
   }
 
   const recDelta = recordedCountDelta(recMove);
