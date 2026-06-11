@@ -11,8 +11,23 @@ import { isList } from "@ludii/typescript-language";
 import type { LudNode, LudList } from "@ludii/typescript-language";
 
 export class Intersection implements IntArrayFunction {
-  /** @java game/functions/intArray/math/Intersection.java — eval(Context) */
-  constructor(private readonly arrays: IntArrayFunction[]) {}
+  private readonly arrays: IntArrayFunction[];
+
+  /**
+   * @java Intersection has TWO ctors — Intersection(array1, array2) and
+   * Intersection(IntArrayFunction[]). The reflection compiler invokes the
+   * 2-arg form for `(intersection A B)`; our array-only ctor collapsed it to
+   * a single non-array operand (same bug as Union). Normalize both forms.
+   */
+  constructor(arraysOrFirst: IntArrayFunction[] | IntArrayFunction, second?: IntArrayFunction) {
+    if (second !== undefined) {
+      this.arrays = [arraysOrFirst as IntArrayFunction, second];
+    } else if (Array.isArray(arraysOrFirst)) {
+      this.arrays = arraysOrFirst;
+    } else {
+      this.arrays = [arraysOrFirst];
+    }
+  }
 
   public eval(ctx: Context): number[] {
     // @java Intersection.java:73-108

@@ -88,21 +88,68 @@ export class NoPieces implements BooleanFunction {
       }
     }
 
-    // Check board cells for player's pieces.
-    const cells = state.cells;
+    // @java NoPieces.eval — idPlayers from the role (All = {0..n}, incl the
+    // neutral owner 0); a count-only mancala seed (who=0, count>0) is a
+    // genuine piece, so (no Pieces All in:(sites P1)) on a full row is FALSE.
+    // The previous owner-only scan (cells[i]===playerId) ignored count-based
+    // seeds AND the `in:` region, so Bosh's row-1 sweep fired on move 0.
     const game = ctx.game as unknown as Game;
-    const boardSize = game.equipment.board.numSites;
-
-    for (let i = 0; i < boardSize; i++) {
-      if ((cells[i] ?? 0) === playerId) return false;
+    const numPlayersN = ctx.game.numPlayers;
+    const idPlayers: Set<number> = new Set();
+    if (this.role === "All") {
+      for (let pid = 0; pid <= numPlayersN; pid++) idPlayers.add(pid);
+    } else {
+      idPlayers.add(playerId);
     }
 
-    // Check hand sites for remaining pieces.
-    const handSite = game.equipment.handSiteFor(playerId, 0);
-    if (handSite >= 0 && handSite < cells.length) {
-      const count = state.countAt[handSite] ?? 0;
-      if (count > 0) return false;
-      if ((cells[handSite] ?? 0) === playerId) return false;
+    // @java component-name filter (only when a name is given).
+    let allowedWhats: Set<number> | null = null;
+    if (this.name !== null) {
+      const pieces = (game.equipment as unknown as { pieces?: readonly { index: number; name: string }[] })?.pieces ?? [];
+      allowedWhats = new Set(pieces.filter((pc) => pc.name.includes(this.name!)).map((pc) => pc.index));
+    }
+
+    // @java the `in:` region restricts the scan; absent => whole board.
+    const cells = state.cells;
+    const boardSize = game.equipment.board.numSites;
+    const whereSites = this.whereFn !== null
+      ? this.whereFn.eval(ctx as never)
+      : null;
+    const scan = whereSites ?? Array.from({ length: boardSize }, (_, i) => i);
+
+    for (const site of scan) {
+      if (site < 0 || site >= cells.length) continue;
+      const stackRow = state.stacks[site];
+      if (stackRow !== undefined && stackRow.length > 0) {
+        const whatRow = state.whatStacks[site] ?? [];
+        for (let lvl = 0; lvl < stackRow.length; lvl++) {
+          const who = stackRow[lvl] ?? 0;
+          if (!idPlayers.has(who)) continue;
+          if (allowedWhats !== null && !allowedWhats.has(whatRow[lvl] ?? 0)) continue;
+          return false;
+        }
+        continue;
+      }
+      // Flat site: a piece is present when count>0 or what>0 (a count-only
+      // mancala seed has who=0 and is matched by the All neutral id).
+      const occupied = (state.countAt[site] ?? 0) > 0 || (state.whats[site] ?? 0) > 0;
+      if (!occupied) continue;
+      const who = cells[site] ?? 0;
+      if (!idPlayers.has(who)) continue;
+      if (allowedWhats !== null && !allowedWhats.has(state.whats[site] ?? 0)) continue;
+      return false;
+    }
+
+    // @java hand sites are scanned too (unless an explicit `in:` excludes them).
+    if (whereSites === null) {
+      for (const pid of idPlayers) {
+        if (pid <= 0) continue;
+        const handSite = game.equipment.handSiteFor(pid, 0);
+        if (handSite >= 0 && handSite < cells.length) {
+          if ((state.countAt[handSite] ?? 0) > 0) return false;
+          if ((cells[handSite] ?? 0) === pid) return false;
+        }
+      }
     }
 
     return true;

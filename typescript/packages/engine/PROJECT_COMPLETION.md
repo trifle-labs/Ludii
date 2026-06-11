@@ -2389,3 +2389,11 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
   3. FORCED PASS detection (Ako Okwe, Awagagae, Baqura): Java inserts Pass:decision=true,forced=true when the mover is stalemated; we over-generate. Often downstream of (2)/grand-slam rules.
   4. Early sow-variant divergences (Deka ply 6, Bechi ply 18 uses RememberValue HolesSowed).
 - four_rows (15 MM) and three_rows (8 MM) likely share subsets of the above.
+
+## Update 210 (2026-06-11) — Union/Intersection 2-arg ctor + NoPieces region/count scan (Bosh 2/2)
+- Chasing Bosh (relay mancala, diverged ply 0 with a catastrophic 40-seeds-into-2-holes pile) uncovered THREE bugs, two of them broad:
+  1. NoPieces.eval REWRITE (@java NoPieces.eval): honored neither the `in:(region)` filter NOR count-based occupancy — it scanned the whole board for cells whose OWNER == player. Mancala seeds are `(set Count N)` (who=0, what=0, count>0), so (no Pieces All in:(sites P1)) returned true on a full row, firing Bosh's "OneRowIsEmpty" board-sweep on move 0. Now: idPlayers from role (All={0..n}, incl neutral), scan whereSites (or board+hands), a site counts when count>0/what>0/stack and owner ∈ idPlayers; component-name filter honored.
+  2. Union 2-arg ctor (@java Union(array1,array2) + Union(IntArrayFunction[])): we had only the array form, so the reflection compiler's 2-arg call for `(union A B)` collapsed to a single non-array operand and `arrays[0].eval` threw — the caught throw silently dropped the whole skipIf/region. This is a VERY common ludeme; every `(union A B)` (2 positional args) was broken. Ctor now normalizes both forms.
+  3. Intersection (intArray) had the identical 2-ctor gap — fixed the same way.
+- Bosh 2/2 OUTCOME_OK (ply 71/109). sow family 269 -> 277/426 OUTCOME_OK. Battery green, units 194/0 — read before commit.
+- NOTE: the Union/Intersection 2-arg fix likely helps games well beyond sow (any `(union A B)`/`(intersection A B)` form) — worth a broad re-sweep next session.
