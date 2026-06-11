@@ -2095,3 +2095,8 @@ ForEachDie eval) + detailed harness action dumps:
 - La Dama + Terhuchu 2/2: computeRelation from trajectories steps (vertex diagonals existed only in radials, not element.diagonal()); (directions {...} of:All) relative form intercept; Difference expands to absolute before subtracting.
 - Remaining lines/: Awithlaknan Mosona, Kolowis (merge/repeat/poly vertex graphs — adjacency differs), Game of Solomon (splitCrossings), Spoing (pyramidal), Throngs (remove tri), Pasang (add edges on removed square), Crand/Fetach (added-edge direction naming on square+edges boards).
 - Battery green throughout; units 194/0.
+
+## Update 150 (2026-06-11) — STACKING SUBSYSTEM COMPLETE: Bashni & Lasca 2/2
+- Six-part port (see commit): ActionMoveStacking whole-stack relocation, homogeneous-stack top-pops, per-level ForEachPiece scan + top:True, stack-top Promote, TopLevel via real stacks, Move.betweenNonDecision + (last Between) + (sites Next) rotation fallback. Matcher gained a victim-Move-pair tier.
+- war/leaping residue now: Seesaw Draughts (0/2, non-stack mechanism), Awithlaknan/Kolowis/Solomon/Spoing/Throngs/Pasang/Crand/Fetach (custom-graph vertex boards), Dum Blas.
+- Battery 38/38, units 194/0.
