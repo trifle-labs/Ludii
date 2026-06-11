@@ -1806,3 +1806,12 @@ ForEachDie eval) + detailed harness action dumps:
 - Cascades from the own-then + drops fixes: CHESS 2/2, Kyoto Shogi 2/2; Atomic Chess 2/2 after wrapping raw includeSelf boolean in SitesAround (threw at APPLY inside the deferred explosion effect).
 - 19 games at 2/2 OUTCOME_OK: Backgammon, Dubblets, Baralie, Ashtapada, 20 Squares, J'odu, Cram, Domineering, Blue Nile, Hex, Tabu Y, Y, Chaturanga, Chandaraki, Minishogi, Shogi, Kyoto Shogi, Chess, Atomic Chess. Battery now 30 games (Chess added).
 - chess subfamily: 10 OK / 19 MM / 10 SF (was 0 OK / 48 MM at family start). Residuals: Alice ply 18, Seireigi 35, Dice Shogi 9 (dice+shogi hybrid), Xiangqi 40, MiniXiangqi 78, START_FAIL 10 (Brusky non-square coords, Chex iterable).
+
+## Update 87 (2026-06-11) — BROWSER MILESTONE: the faithful engine runs in Chrome
+- The browser/interface verification pass (REQUIRED by the goal) is DONE for the engine+compiler+embed layer:
+  * Compiler artifacts (ludeme-reflection.json 754KB, java-grammar 57KB) EMBEDDED as generated modules (gen/reflection-data.ts, gen/grammar-data.ts); overrides are data (reflectionJson/grammarText), zero fs in the compiler.
+  * ~20 ported Mining/AI tooling classes' static fs/path/https imports → browser-safe lazy shim (node-shim/fs-lazy.ts). Static audit: all 1,719 modules of the demo graph resolve with NO node builtins / NO unresolved bare imports.
+  * browser-player migrated to play1to1 (bespoke imports removed); 18/18 tests; demo/index.html has an import map for unbundled static serving.
+  * VERIFIED IN HEADLESS CHROME: the demo loads, the faithful compiler compiles Hex .lud IN-BROWSER, board renders, moves/undo/reset wired (screenshot /tmp/ludii-demo.png; serve `python3 -m http.server` from typescript/packages, open /browser-player/demo/index.html).
+- State.cellAt label = component at site (Game.componentLabels 1-indexed by component id).
+- Remaining interface work: the demo renderer is a generic cell-strip (no board geometry layout); the richer ViewController port (board styles) exists under src/ludii/ViewController but is not wired to the demo.
