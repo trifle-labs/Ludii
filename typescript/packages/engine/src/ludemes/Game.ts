@@ -733,12 +733,21 @@ export class Game implements Game {
           for (const site of newState.sitesToRemove) counts.set(site, (counts.get(site) ?? 0) + 1);
           for (const [site, queued] of [...counts.entries()].sort((a, b) => a[0] - b[0])) {
             const numToRemove = Math.min(queued, newState.stackSize(site));
-            for (let level = numToRemove - 1; level >= 0; level--) {
+            // ORACLE-EMPIRICAL (Update 169): the RUNNING binary applies the
+            // level removes ASCENDING (ghost signature: board [2,2]->[] with
+            // owned L0 surviving); Core/src reads descending — trust javap/
+            // observables over source.
+            for (let level = 0; level < numToRemove; level++) {
               const sz = newState.stacks[site]?.length ?? 0;
               const flatOccupied = sz === 0 && newState.who(site) > 0;
-              if (level >= sz && !(flatOccupied && level === 0)) continue; // @java cs.remove -> 0
-              const own = sz > 0 ? newState.stackAt(site, level) : newState.who(site);
-              const wht = sz > 0 ? newState.whatAtSiteLevel(site, level) : newState.whatAtSite(site);
+              if (sz === 0 && !(flatOccupied && level === 0)) continue;
+              // @java cs.remove CLAMPS an out-of-range level to the top (the
+              // ascending pass shrinks the stack under the recorded levels;
+              // the board still empties — only Owned, matching by ORIGINAL
+              // level, strands the ghost). Skipping here left a live piece.
+              const readLvl = level < sz ? level : Math.max(0, sz - 1);
+              const own = sz > 0 ? newState.stackAt(site, readLvl) : newState.who(site);
+              const wht = sz > 0 ? newState.whatAtSiteLevel(site, readLvl) : newState.whatAtSite(site);
               if (own <= 0) continue;
               newState = newState.withOwnedRemoveLevel(own, wht, site, level);
               if (sz > 0) {
