@@ -12,6 +12,7 @@ import type { Context } from "../../../../../../../context.js";
 import type { IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
 import { applyPostStateThen, type Then } from "./Then.js";
+import { ActionRemoveNonApplied } from "../../../../../../../action/action-remove-non-applied.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 
@@ -101,14 +102,22 @@ export class Remove implements MovesFunction {
 
       const actions: import("../../../../../../../action/index.js").Action[] = [];
 
-      // @java Remove.java:139 — primary ActionRemove
-      const actionRemove = new ActionRemove(this.type ? { to: loc, type: this.type as never } : { to: loc });
-      actions.push(actionRemove);
+      // @java ActionRemove.construct(realType, loc, level, applied) —
+      // applied=false dispatches to ActionRemoveNonApplied: the piece stays
+      // on the board, the site joins state.sitesToRemove, and the step-1b
+      // end-of-turn flush removes it for real. Mid-chain the pending piece
+      // still BLOCKS hop paths (Frisian king chains).
+      const mkRemove = () => applyNow
+        ? new ActionRemove(this.type ? { to: loc, type: this.type as never } : { to: loc })
+        : new ActionRemoveNonApplied(loc);
+
+      // @java Remove.java:139 — primary remove action
+      actions.push(mkRemove());
 
       // @java Remove.java:144-149 — additional removes for count > 1
       let remaining = count - 1;
       while (remaining > 0) {
-        actions.push(new ActionRemove(this.type ? { to: loc, type: this.type as never } : { to: loc }));
+        actions.push(mkRemove());
         remaining--;
       }
 

@@ -867,6 +867,9 @@ export class Game implements Game {
       } else {
         nextMover = (newState.mover % this.numPlayers) + 1;
       }
+      // @java Game.java:3200 — state.setPrev(mover) before mover advances.
+      // (value Player Prev) / MaxMoves' prev==mover replay check read this.
+      advanced = advanced.withPrev(newState.mover);
       advanced = advanced.withMover(nextMover);
       // Always clear state.next after consumption.
       // @java ludeme-game.ts — advanced = phased.withMover(nextMover).withNext(0)
@@ -891,6 +894,8 @@ export class Game implements Game {
       // Increment counter (Java: state.incrCounter())
       advanced = advanced.withCounter(advanced.counter + 1);
     } else {
+      // @java Game.java:3112-3114 — !context.active(): state.setPrev(mover).
+      advanced = advanced.withPrev(newState.mover);
       // Still increment counter even when over.
       advanced = advanced.withCounter(advanced.counter + 1);
     }

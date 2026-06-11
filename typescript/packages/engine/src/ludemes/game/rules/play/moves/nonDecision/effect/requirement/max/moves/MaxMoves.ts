@@ -14,8 +14,7 @@
  * NOTE: coverage-only transliteration; not registered in the 1:1 moves registry.
  */
 
-import { Context } from "../../../../../../../../../../context.js";
-import { applyMoveWithThens } from "../../../Then.js";
+import type { Context } from "../../../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../../../move.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../../../base.js";
 
@@ -77,9 +76,10 @@ export class MaxMoves implements MovesFunction {
 
     for (let i = 0; i < movesToEval.length; i++) {
       const m = movesToEval[i]!;
-      // @java Move.apply — simulated application includes then() consequences
-      const newState = applyMoveWithThens(ctx, m);
-      const newCtx = new Context(ctx.game, newState, ctx.trial, ctx.rng);
+      // @java MaxMoves.java:84-85 — TempContext + game.apply: the FULL apply
+      // (consequences, prev stamp, mover advance) so getReplayCount's
+      // prev==mover moveAgain check sees the post-move turn state.
+      const newCtx = ctx.game.apply(ctx, m) as Context;
       evalledMoves.push(m);
 
       if (!withValue) {
@@ -146,9 +146,8 @@ export class MaxMoves implements MovesFunction {
 
     for (let i = 0; i < legalMoves.length; i++) {
       const nm = legalMoves[i]!;
-      // @java Move.apply — simulated application includes then() consequences
-      const newState = applyMoveWithThens(ctx, nm);
-      const newCtx = new Context(ctx.game, newState, ctx.trial, ctx.rng);
+      // @java MaxMoves.java:148-149 — TempContext + game.apply (see above).
+      const newCtx = ctx.game.apply(ctx, nm) as Context;
 
       if (!withValue) {
         replayCounts[i] = this._getReplayCount(newCtx, count + 1, withValue);

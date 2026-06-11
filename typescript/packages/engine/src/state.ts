@@ -98,6 +98,8 @@ export interface StateOptions {
   readonly trumpSuit?: number;
   /** Next-mover override (Java: State.next). */
   readonly next?: number;
+  /** Java parity: `State.prev` — the previous mover (setPrev in Game.apply). */
+  readonly prev?: number;
   /**
    * Java parity: `State.numTurn` (the field, returned by `state.numTurn()` and
    * read by `(count Turns)`). It is initialised to **1** (not 0) and is bumped
@@ -239,6 +241,8 @@ export class State {
   public readonly remembered: ReadonlyMap<string, readonly number[]>;
   public readonly trumpSuit: number;
   public readonly next: number;
+  /** Java parity: `State.prev` (init 0; @java State.java:737 setPrev). */
+  public readonly prev: number;
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
   public readonly numTurn: number;
   /** Java parity: `State.numTurnSamePlayer`. */
@@ -375,6 +379,7 @@ export class State {
       : Object.freeze(new Map<string, readonly number[]>());
     this.trumpSuit = options.trumpSuit ?? 0;
     this.next = options.next ?? 0;
+    this.prev = options.prev ?? 0;
     this.numTurn = options.numTurn ?? 1;
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
@@ -1023,6 +1028,11 @@ export class State {
   public withNext(value: number): State {
     return this.with({ next: value });
   }
+
+  /** @java State.setPrev(who) — stamped by Game.apply before mover advances. */
+  public withPrev(value: number): State {
+    return this.with({ prev: value });
+  }
   /**
    * Java parity: `State.reinitNumTurnSamePlayer()` — begin a new turn, bumping
    * `numTurn` by one. Called when the player to move differs from the player
@@ -1206,6 +1216,7 @@ export class State {
         remembered: patch.remembered ?? this.remembered,
         trumpSuit: patch.trumpSuit ?? this.trumpSuit,
         next: patch.next ?? this.next,
+        prev: patch.prev ?? this.prev,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:
           patch.numTurnSamePlayer ?? this.numTurnSamePlayer,
