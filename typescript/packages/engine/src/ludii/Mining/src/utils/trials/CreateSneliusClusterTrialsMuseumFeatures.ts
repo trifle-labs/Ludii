@@ -1,6 +1,6 @@
 // @java Mining/src/utils/trials/CreateSneliusClusterTrialsMuseumFeatures.java
 
-import * as fs from "fs";
+import { fs } from "../../../../node-shim/fs-lazy.js";
 import { GameLoader } from "../../../../../ludemes/other/GameLoader.js";
 import { StringRoutines } from "../../../../Common/src/main/StringRoutines.js";
 import { UnixPrintWriter } from "../../../../Common/src/main/UnixPrintWriter.js";

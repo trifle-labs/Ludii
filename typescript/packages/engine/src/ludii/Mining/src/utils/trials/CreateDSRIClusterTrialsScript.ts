@@ -1,7 +1,7 @@
 // @java Mining/src/utils/trials/CreateDSRIClusterTrialsScript.java
 
-import * as fs from "fs";
-import * as path from "path";
+import { fs } from "../../../../node-shim/fs-lazy.js";
+import { path } from "../../../../node-shim/fs-lazy.js";
 import { GameLoader } from "../../../../../ludemes/other/GameLoader.js";
 import { FileHandling } from "../../../../Common/src/main/FileHandling.js";
 import { StringRoutines } from "../../../../Common/src/main/StringRoutines.js";

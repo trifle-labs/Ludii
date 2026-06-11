@@ -1,6 +1,6 @@
 // @java Mining/src/cluster/GenerateClusters.java
 
-import * as fs from "fs";
+import { fs } from "../../../node-shim/fs-lazy.js";
 
 /**
  * Generate the clusters based on the coordinates obtained with Sklearn.

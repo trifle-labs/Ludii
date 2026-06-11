@@ -1,6 +1,6 @@
 // @java Mining/src/ludemeplexDetection/DatabaseFunctions.java
 
-import * as fs from "fs";
+import { fs } from "../../../node-shim/fs-lazy.js";
 import { LudemeInfo } from "../../../Common/src/main/grammar/LudemeInfo.js";
 import { Call } from "../../../Common/src/main/grammar/Call.js";
 import { GameLoader, type IGame } from "../../../../ludemes/other/GameLoader.js";

@@ -1,7 +1,7 @@
 // @java Mining/src/utils/concepts/db/ExportDbCsvConcepts.java
 
-import * as fs from "fs";
-import * as path from "path";
+import { fs } from "../../../../../node-shim/fs-lazy.js";
+import { path } from "../../../../../node-shim/fs-lazy.js";
 import { Concept, conceptId, conceptType, conceptDataType, conceptComputationType, conceptPurposes, conceptIsLeaf, conceptDescription, conceptTaxonomy } from "../../../../../../ludemes/other/concept/Concept.js";
 import { ConceptType } from "../../../../../../ludemes/other/concept/ConceptType.js";
 import { ConceptDataType, conceptDataTypeId } from "../../../../../../ludemes/other/concept/ConceptDataType.js";

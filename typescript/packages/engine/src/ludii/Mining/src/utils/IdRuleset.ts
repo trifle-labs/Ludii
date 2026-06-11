@@ -1,7 +1,7 @@
 // @java Mining/src/utils/IdRuleset.java
 
-import * as fs from "fs";
-import * as path from "path";
+import { fs } from "../../../node-shim/fs-lazy.js";
+import { path } from "../../../node-shim/fs-lazy.js";
 
 /**
  * To get the id from the db for a game object compiled with a ruleset.

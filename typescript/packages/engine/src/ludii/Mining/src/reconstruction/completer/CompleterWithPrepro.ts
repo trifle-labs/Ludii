@@ -1,7 +1,7 @@
 // @java Mining/src/reconstruction/completer/CompleterWithPrepro.java
 
-import * as fs from "fs";
-import * as path from "path";
+import { fs } from "../../../../node-shim/fs-lazy.js";
+import { path } from "../../../../node-shim/fs-lazy.js";
 import { Completion } from "../../../../Language/src/completer/Completion.js";
 import { StringRoutines } from "../../../../Common/src/main/StringRoutines.js";
 import { FVector } from "../../../../Common/src/main/collections/FVector.js";

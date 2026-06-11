@@ -1,6 +1,6 @@
 // @java Mining/src/reconstruction/ReconstructionGenerator.java
 
-import * as fs from "fs";
+import { fs } from "../../../node-shim/fs-lazy.js";
 import { Completion } from "../../../Language/src/completer/Completion.js";
 import { StringRoutines } from "../../../Common/src/main/StringRoutines.js";
 import { UnixPrintWriter } from "../../../Common/src/main/UnixPrintWriter.js";

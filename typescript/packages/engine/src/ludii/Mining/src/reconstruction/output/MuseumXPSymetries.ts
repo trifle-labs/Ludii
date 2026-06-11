@@ -1,7 +1,7 @@
 // @java Mining/src/reconstruction/output/MuseumXPSymetries.java
 
-import * as fs from "fs";
-import * as path from "path";
+import { fs } from "../../../../node-shim/fs-lazy.js";
+import { path } from "../../../../node-shim/fs-lazy.js";
 import { UnixPrintWriter } from "../../../../Common/src/main/UnixPrintWriter.js";
 
 // Escape-hatch: Trial, Context, Game, GameLoader, MatchRecord, Edge, Utils not yet ported

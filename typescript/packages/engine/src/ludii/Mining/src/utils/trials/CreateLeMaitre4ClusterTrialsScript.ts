@@ -1,6 +1,6 @@
 // @java Mining/src/utils/trials/CreateLeMaitre4ClusterTrialsScript.java
 
-import * as fs from "fs";
+import { fs } from "../../../../node-shim/fs-lazy.js";
 import { GameLoader } from "../../../../../ludemes/other/GameLoader.js";
 import { FileHandling } from "../../../../Common/src/main/FileHandling.js";
 import { UnixPrintWriter } from "../../../../Common/src/main/UnixPrintWriter.js";

@@ -1,7 +1,17 @@
 // @java Mining/src/translate/TranslateToSwedish.java
 
-import * as fs from "fs";
-import * as https from "https";
+import { fs } from "../../../node-shim/fs-lazy.js";
+// node:https loaded lazily — a static import breaks the browser module graph.
+// This tooling class only runs under Node; in the browser the import rejects
+// and any use throws clearly.
+let httpsModule: typeof import("node:https") | null = null;
+try { httpsModule = await import("node:https"); } catch { /* browser */ }
+const https = new Proxy({} as typeof import("node:https"), {
+  get(_t, prop) {
+    if (httpsModule === null) throw new Error("node:https is unavailable in the browser (Node-only tooling).");
+    return (httpsModule as unknown as Record<PropertyKey, unknown>)[prop];
+  },
+});
 import { UnixPrintWriter } from "../../../Common/src/main/UnixPrintWriter.js";
 
 /**

@@ -9,8 +9,9 @@ import {
   type LudList,
   type LudNode,
 } from "@ludii/typescript-language";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+// No node:fs imports here: the compiler artifacts are EMBEDDED (gen/
+// reflection-data.ts, gen/grammar-data.ts) so the compiler runs in the
+// browser; tooling passes fresh artifact TEXT via reflectionJson/grammarText.
 import { getBuiltinDefines } from "../../../builtin-defines.js";
 import { ENUM_CONSTANTS } from "../gen/enum-constants.js";
 import { REFLECTION_JSON } from "../gen/reflection-data.js";
@@ -40,8 +41,10 @@ import { Rules } from "../../../ludemes/game/rules/Rules.js";
 import { Play } from "../../../ludemes/game/rules/play/Play.js";
 
 export interface ArgCompilerOptions {
-  readonly reflectionPath?: string;
-  readonly grammarPath?: string;
+  /** Override the embedded reflection snapshot with fresh JSON text. */
+  readonly reflectionJson?: string;
+  /** Override the embedded grammar with fresh EBNF text. */
+  readonly grammarText?: string;
   readonly grammar?: GrammarModel;
 }
 
@@ -115,8 +118,8 @@ export class ArgCompiler {
   public lastDivergence: string | null = null;
 
   public constructor(opts: ArgCompilerOptions = {}) {
-    this.reflection = loadReflection(opts.reflectionPath);
-    this.grammar = opts.grammar ?? loadGrammar(opts.grammarPath);
+    this.reflection = loadReflection(opts.reflectionJson);
+    this.grammar = opts.grammar ?? loadGrammar(opts.grammarText);
 
     for (const [className, meta] of this.reflection) {
       const key = normalise(meta.token);
@@ -1379,21 +1382,22 @@ export function compileGame<T = unknown>(source: string, env: Partial<ArgCompile
   return new ArgCompiler().compileGame<T>(source, env);
 }
 
-export function loadDefaultReflection(path = "tools/parity/ludeme-reflection.json"): ReadonlyMap<string, ReflectionClass> {
-  return loadReflection(path);
+export function loadDefaultReflection(): ReadonlyMap<string, ReflectionClass> {
+  // The embedded snapshot (see gen/reflection-data.ts).
+  return loadReflection();
 }
 
-function loadReflection(path?: string): ReadonlyMap<string, ReflectionClass> {
+function loadReflection(overrideJson?: string): ReadonlyMap<string, ReflectionClass> {
   // Default: the EMBEDDED reflection snapshot (works in the browser and from
-  // any package CWD). An explicit path still reads from disk so tooling can
-  // point at a fresh extract of the Java source of truth.
-  const text = path !== undefined ? readFileSync(resolve(path), "utf8") : REFLECTION_JSON;
+  // any package CWD). Tooling that wants a fresh extract of the Java source
+  // of truth passes the JSON text directly.
+  const text = overrideJson ?? REFLECTION_JSON;
   const raw = JSON.parse(text) as Record<string, ReflectionClass>;
   return new Map(Object.entries(raw));
 }
 
-function loadGrammar(path?: string): GrammarModel {
-  const text = path !== undefined ? readFileSync(resolve(path), "utf8") : GRAMMAR_TEXT;
+function loadGrammar(overrideText?: string): GrammarModel {
+  const text = overrideText ?? GRAMMAR_TEXT;
   return parseEbnfGrammar(text);
 }
 

@@ -1,7 +1,7 @@
 // @java AI/src/utils/ExperimentFileUtils.java
 
-import * as fs from "fs";
-import * as path from "path";
+import { fs } from "../../../node-shim/fs-lazy.js";
+import { path } from "../../../node-shim/fs-lazy.js";
 
 /**
  * Some utilities related to files in experiments

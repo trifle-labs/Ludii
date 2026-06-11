@@ -1,6 +1,6 @@
 // @java Mining/src/contextualiser/ContextualSimilarity.java
 
-import * as fs from "fs";
+import { fs } from "../../../node-shim/fs-lazy.js";
 
 /**
  * @java contextualiser.ContextualSimilarity

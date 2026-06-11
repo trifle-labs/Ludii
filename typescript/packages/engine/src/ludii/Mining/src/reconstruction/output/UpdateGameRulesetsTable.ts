@@ -1,6 +1,6 @@
 // @java Mining/src/reconstruction/output/UpdateGameRulesetsTable.java
 
-import * as fs from "fs";
+import { fs } from "../../../../node-shim/fs-lazy.js";
 import { StringRoutines } from "../../../../Common/src/main/StringRoutines.js";
 import { UnixPrintWriter } from "../../../../Common/src/main/UnixPrintWriter.js";
 import { FileHandling } from "../../../../Common/src/main/FileHandling.js";

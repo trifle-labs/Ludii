@@ -111,6 +111,18 @@
       <div id="board"></div>
     </div>
     <p class="demo-error" id="error" aria-live="polite"></p>
+    <!-- Resolve workspace bare specifiers when served statically (no bundler):
+         serve the typescript/packages directory, e.g.
+         `python3 -m http.server` from typescript/packages, then open
+         /browser-player/demo/index.html -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@ludii/typescript-engine": "/engine/dist/src/index.js",
+          "@ludii/typescript-language": "/language/dist/src/index.js"
+        }
+      }
+    </script>
     <script type="module" src="../dist/src/demo.js"></script>
   </body>
 </html>

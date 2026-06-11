@@ -1,6 +1,6 @@
 // @java Mining/src/reconstruction/preprocessing/ComputeCommonExpectedConcepts.java
 
-import * as fs from "fs";
+import { fs } from "../../../../node-shim/fs-lazy.js";
 import { Concept } from "../../../../../ludemes/other/concept/Concept.js";
 import { FileHandling } from "../../../../Common/src/main/FileHandling.js";
 import { StringRoutines } from "../../../../Common/src/main/StringRoutines.js";

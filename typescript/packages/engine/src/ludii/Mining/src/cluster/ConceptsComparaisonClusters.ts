@@ -1,6 +1,6 @@
 // @java Mining/src/cluster/ConceptsComparaisonClusters.java
 
-import * as fs from "fs";
+import { fs } from "../../../node-shim/fs-lazy.js";
 import { GameLoader, type IGame } from "../../../../ludemes/other/GameLoader.js";
 import { FileHandling } from "../../../Common/src/main/FileHandling.js";
 import { StringRoutines } from "../../../Common/src/main/StringRoutines.js";
