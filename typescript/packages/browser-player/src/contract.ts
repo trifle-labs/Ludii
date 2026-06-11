@@ -7,6 +7,21 @@
  * depends on them.
  */
 
+export interface SitePoint {
+  readonly x: number;
+  readonly y: number;
+}
+
+/**
+ * True board geometry for one play site, in the engine topology's own
+ * coordinate space (@java other/topology/TopologyElement.centroid()).
+ * `polygon` carries the cell's vertex ring when the site is a cell face
+ * (hexagons render as hexagons); vertex-play boards have centroids only.
+ */
+export interface SiteGeometry extends SitePoint {
+  readonly polygon?: readonly SitePoint[];
+}
+
 export interface BrowserGame {
   /** Stable identifier (e.g. "tic-tac-toe"). */
   readonly id: string;
@@ -17,6 +32,12 @@ export interface BrowserGame {
   /** Board dimensions for the renderer (1-cell-per-site grid). */
   readonly width: number;
   readonly height: number;
+  /**
+   * Per-site board geometry from the engine topology. Optional: when absent
+   * (or when the host has no canvas 2D context) the embed falls back to the
+   * generic grid renderer.
+   */
+  readonly siteGeometry?: readonly SiteGeometry[];
 }
 
 export interface CellView {

@@ -49,6 +49,46 @@ class EngineTrial implements BrowserTrial {
   }
 }
 
+
+/**
+ * Per-site board geometry from the engine topology
+ * (@java other/topology/TopologyElement.centroid() and Cell.vertices()).
+ * Returns undefined when the context exposes no coordinate topology so the
+ * embed falls back to the generic grid renderer.
+ */
+function computeSiteGeometry(
+  context: Context,
+): readonly { x: number; y: number; polygon?: readonly { x: number; y: number }[] }[] | undefined {
+  try {
+    const ctxAny = context as unknown as {
+      topology?: () => {
+        getGraphElements(type: string): ReadonlyArray<{
+          centroid(): { x: number; y: number };
+          vertices?: () => ReadonlyArray<{ centroid(): { x: number; y: number } }>;
+        }>;
+      };
+      board?: () => { defaultSite?: () => string };
+    };
+    const topo = ctxAny.topology?.();
+    if (!topo) return undefined;
+    const type = ctxAny.board?.()?.defaultSite?.() ?? "Cell";
+    const elements = topo.getGraphElements(type);
+    if (!Array.isArray(elements) || elements.length === 0) return undefined;
+    const out = elements.map((el) => {
+      const c = el.centroid();
+      const ring = type === "Cell" && typeof el.vertices === "function"
+        ? el.vertices().map((v: { centroid(): { x: number; y: number } }) => v.centroid())
+        : undefined;
+      return ring !== undefined && ring.length >= 3
+        ? { x: c.x, y: c.y, polygon: ring }
+        : { x: c.x, y: c.y };
+    });
+    return out.every((g) => Number.isFinite(g.x) && Number.isFinite(g.y)) ? out : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export class EngineSession implements BrowserGameSession {
   public readonly game: BrowserGame;
   public readonly state: BrowserState;
@@ -66,6 +106,7 @@ export class EngineSession implements BrowserGameSession {
       numPlayers: engineGame.numPlayers,
       width: engineGame.width,
       height: engineGame.height,
+      siteGeometry: computeSiteGeometry(context),
     };
     this.state = new EngineState(context);
     this.trial = new EngineTrial(context);

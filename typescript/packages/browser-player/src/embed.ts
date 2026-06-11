@@ -210,6 +210,9 @@ export class EmbeddedLudii {
   private readonly showUndoRedo: boolean;
   private readonly width: number;
   private readonly height: number;
+  private canvas: HTMLCanvasElement | null = null;
+  private canvas2d: CanvasRenderingContext2D | null = null;
+  private geometry: readonly { x: number; y: number; polygon?: readonly { x: number; y: number }[] }[] | null = null;
 
   public constructor(
     container: HTMLElement | string,
@@ -248,6 +251,26 @@ export class EmbeddedLudii {
       this.handleBoardKeydown(event),
     );
 
+    // Geometry-faithful canvas path: when the engine topology supplies real
+    // site coordinates (it does for square/hex/rotated/mancala boards), draw
+    // the true board instead of the generic grid. Falls back to the grid when
+    // there is no geometry or no 2D context (jsdom test hosts).
+    const geometry = session.game.siteGeometry;
+    if (geometry !== undefined && geometry.length > 0) {
+      const canvas = document.createElement("canvas");
+      const ctx2d = canvas.getContext?.("2d") ?? null;
+      if (ctx2d !== null) {
+        this.canvas = canvas;
+        this.canvas2d = ctx2d;
+        this.geometry = geometry;
+        canvas.style.width = "100%";
+        canvas.style.display = "block";
+        canvas.style.cursor = "pointer";
+        canvas.setAttribute("role", "img");
+        canvas.addEventListener("click", (event) => this.handleCanvasClick(event));
+      }
+    }
+
     this.undoButton = document.createElement("button");
     this.undoButton.type = "button";
     this.undoButton.textContent = "Undo";
@@ -282,7 +305,7 @@ export class EmbeddedLudii {
     actions.className = "ludii-embed__actions";
     actions.append(this.status, buttons);
 
-    main.append(heading, this.board, actions);
+    main.append(heading, this.canvas ?? this.board, actions);
 
     this.historyContainer = document.createElement("aside");
     this.historyContainer.className = "ludii-embed__history";
@@ -345,14 +368,154 @@ export class EmbeddedLudii {
 
   private render(): void {
     this.status.textContent = statusLabel(this.session);
-    this.board.replaceChildren(
-      ...Array.from({ length: this.session.state.siteCount }, (_, index) =>
-        this.renderCell(index),
-      ),
-    );
+    if (this.canvas2d !== null) {
+      this.renderCanvas();
+    } else {
+      this.board.replaceChildren(
+        ...Array.from({ length: this.session.state.siteCount }, (_, index) =>
+          this.renderCell(index),
+        ),
+      );
+    }
     this.renderHistory();
     this.undoButton.disabled = this.liveSession.trial.entries.length === 0;
     this.redoButton.disabled = this.redoStack.length === 0;
+  }
+
+  /** Board-space → canvas-space transform shared by render and hit-testing. */
+  private canvasTransform(cssWidth: number, cssHeight: number): {
+    sx: (x: number) => number; sy: (y: number) => number; r: number;
+  } {
+    const geo = this.geometry ?? [];
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const g of geo) {
+      const pts = g.polygon ?? [g];
+      for (const pt of pts) {
+        if (pt.x < minX) minX = pt.x;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.y < minY) minY = pt.y;
+        if (pt.y > maxY) maxY = pt.y;
+      }
+    }
+    const spanX = Math.max(maxX - minX, 1e-9);
+    const spanY = Math.max(maxY - minY, 1e-9);
+    const pad = 14;
+    const scale = Math.min((cssWidth - 2 * pad) / spanX, (cssHeight - 2 * pad) / spanY);
+    const ox = (cssWidth - spanX * scale) / 2;
+    const oy = (cssHeight - spanY * scale) / 2;
+    // Board y grows upward; canvas y grows downward — flip.
+    const sx = (x: number): number => ox + (x - minX) * scale;
+    const sy = (y: number): number => cssHeight - (oy + (y - minY) * scale);
+    // Piece radius: half the smallest distance between site centres.
+    let minD = Infinity;
+    for (let i = 0; i < geo.length; i += 1) {
+      for (let j = i + 1; j < geo.length; j += 1) {
+        const gi = geo[i]!; const gj = geo[j]!;
+        const d = Math.hypot(gi.x - gj.x, gi.y - gj.y);
+        if (d > 1e-9 && d < minD) minD = d;
+      }
+    }
+    const r = Number.isFinite(minD) ? (minD * scale) * 0.42 : 16;
+    return { sx, sy, r };
+  }
+
+  private renderCanvas(): void {
+    const canvas = this.canvas;
+    const g2 = this.canvas2d;
+    const geo = this.geometry;
+    if (canvas === null || g2 === null || geo === null) return;
+    const cssWidth = canvas.clientWidth > 0 ? canvas.clientWidth : 480;
+    const aspect = 1;
+    const cssHeight = Math.round(cssWidth * aspect);
+    const dpr = (globalThis as { devicePixelRatio?: number }).devicePixelRatio ?? 1;
+    canvas.width = Math.round(cssWidth * dpr);
+    canvas.height = Math.round(cssHeight * dpr);
+    canvas.style.height = `${cssHeight}px`;
+    g2.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g2.clearRect(0, 0, cssWidth, cssHeight);
+    const { sx, sy, r } = this.canvasTransform(cssWidth, cssHeight);
+
+    const isLiveView = this.visibleMoves === this.liveSession.trial.entries.length;
+    const PLAYER_FILL = ["", "#1f2328", "#ffffff", "#c5443c", "#3b7bd4"];
+    const PLAYER_EDGE = ["", "#1f2328", "#6e7781", "#8c2a24", "#274f86"];
+
+    for (let i = 0; i < geo.length; i += 1) {
+      const site = geo[i]!;
+      if (site.polygon !== undefined) {
+        g2.beginPath();
+        for (let k = 0; k < site.polygon.length; k += 1) {
+          const pt = site.polygon[k]!;
+          if (k === 0) g2.moveTo(sx(pt.x), sy(pt.y));
+          else g2.lineTo(sx(pt.x), sy(pt.y));
+        }
+        g2.closePath();
+        g2.fillStyle = "#f3ead8";
+        g2.fill();
+        g2.strokeStyle = "#8c959f";
+        g2.lineWidth = 1;
+        g2.stroke();
+      } else {
+        g2.beginPath();
+        g2.arc(sx(site.x), sy(site.y), Math.max(3, r * 0.18), 0, Math.PI * 2);
+        g2.fillStyle = "#8c959f";
+        g2.fill();
+      }
+    }
+    // Highlight playable sites, then pieces on top.
+    for (let i = 0; i < geo.length; i += 1) {
+      const site = geo[i]!;
+      const view = this.session.state.cellAt(i);
+      const cx = sx(site.x);
+      const cy = sy(site.y);
+      if (view.owner > 0) {
+        g2.beginPath();
+        g2.arc(cx, cy, r, 0, Math.PI * 2);
+        g2.fillStyle = PLAYER_FILL[view.owner] ?? "#7a5ea8";
+        g2.fill();
+        g2.strokeStyle = PLAYER_EDGE[view.owner] ?? "#4d3a70";
+        g2.lineWidth = 1.5;
+        g2.stroke();
+        if (view.componentLabel !== undefined && r >= 9) {
+          g2.fillStyle = view.owner === 2 ? "#1f2328" : "#ffffff";
+          g2.font = `${Math.max(8, Math.round(r * 0.7))}px system-ui, sans-serif`;
+          g2.textAlign = "center";
+          g2.textBaseline = "middle";
+          g2.fillText(view.componentLabel.slice(0, 2), cx, cy);
+        }
+      } else if (isLiveView && this.session.legalMovesAtSite(i).length > 0) {
+        g2.beginPath();
+        g2.arc(cx, cy, Math.max(2.5, r * 0.22), 0, Math.PI * 2);
+        g2.fillStyle = "rgba(9,105,218,0.55)";
+        g2.fill();
+      }
+    }
+  }
+
+  private handleCanvasClick(event: MouseEvent): void {
+    const canvas = this.canvas;
+    const geo = this.geometry;
+    if (canvas === null || geo === null) return;
+    if (this.visibleMoves !== this.liveSession.trial.entries.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const px = event.clientX - rect.left;
+    const py = event.clientY - rect.top;
+    const { sx, sy } = this.canvasTransform(rect.width, rect.height);
+    let bestSite = -1;
+    let bestD = Infinity;
+    for (let i = 0; i < geo.length; i += 1) {
+      const site = geo[i]!;
+      const d = Math.hypot(sx(site.x) - px, sy(site.y) - py);
+      if (d < bestD) { bestD = d; bestSite = i; }
+    }
+    if (bestSite < 0) return;
+    const legal = this.session.legalMovesAtSite(bestSite);
+    const first = legal[0];
+    if (first === undefined) return;
+    this.liveSession = this.liveSession.apply(first.id);
+    this.session = this.liveSession;
+    this.visibleMoves = this.liveSession.trial.entries.length;
+    this.redoStack.length = 0;
+    this.render();
   }
 
   private renderCell(siteIndex: number): HTMLButtonElement {
