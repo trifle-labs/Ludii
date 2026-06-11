@@ -2118,3 +2118,7 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 154 (2026-06-11) — Dama (Kenya) 2/2: OppositeDirection in (difference ...)
 - Difference.expand resolves SameDirection/OppositeDirection via resolveSameOppositeDir (@java Directions.java:498-535). Kenya's king no-reverse rule restored.
 - Fenix/Cage still 0/2 (separate seams — probe next). Then Chameleons (SetState tiles), Seesaw (sub-stack), custom-graph vertex boards.
+
+## Update 155 (2026-06-11) — Fenix scoped: per-level stack removes
+- Fenix ply 78 (trial 0): recorded capture 62>44 carries [Remove:53,level=0],[Remove:53,level=1] + TWO NonApplied markers — the WHOLE enemy stack dies, one Remove per level (@java ActionRemoveLevel / Remove count = sizeStack). Our capture arm generates nothing at 62 (steps only) — likely the remove-consequence (apply (remove (between) count:(size Stack at:(between)) at:EndOfTurn)) or similar; check Fenix.lud's capture define first, then teach Remove.ts level-aware EndOfTurn queueing (sitesToRemove must hold one entry PER LEVEL; flush removes top-down).
+- Cage 0/2 unprobed. Chameleons: SetState-on-capture tiles. Seesaw: RememberValue + StackMove numLevel.
