@@ -2276,3 +2276,12 @@ CAVEAT (for the record): the audit finds KNOWN gaps; the nastiest defects this s
   - A1 SitesLineOfPlay (@java sites/simple/SitesLineOfPlay.java — dominoes; check trial corpus for domino games first).
   - A2 SitesPlayable (@java sites/simple/SitesPlayable.java), A4 SitesWinning (@java sites/player/SitesWinning.java — calls game.moves + end eval per move; moderate).
   - B items per Update 188 (Mesh/Celtic generators next — direct war/leaping MM impact).
+
+## Update 190 (2026-06-11) — UPSTREAM JAVA BUG CATALOGUE (user directive; Task #42)
+Genuine-or-suspect defects in the ORIGINAL Java, found via oracle work. TS stays BUG-COMPATIBLE until the end-of-campaign upstream round-trip (fix Java -> re-record trials -> drop the TS bug-compat paths -> re-verify), which doubles as the dependency-sync system test.
+1. CLEAR BUG — FullOwned stale ghosts (FullOwned.java:220-256 + flush clamp): captured pieces' Owned entries survive and generate legal moves for nonexistent pieces (Fenix oracle: ghost born replica ply 16 (trial 0)/38 (trial 1); drives recorded moves at plies 78/55). TS bug-compat sites: state.ts withOwnedRemoveLevel decrement loop; Game.ts flush clamp comment block.
+2. VERIFY — Move.java flush order: source descending vs ascending-matching observables. javap Move.class to settle; if the binary is stale, note that a Java recompile would CHANGE trial-recorded behavior.
+3. SUSPECT — MaxMoves eval (3-arg value) vs getReplayCount (2-arg value) asymmetry: in source, decides rankings; looks unintentional. TS: MaxMoves.ts comments cite both reads.
+4. SUSPECT — plain stacking push drops the mover's piece VALUE (top level 0; oracle s28=[1,0]). TS: action-move.ts stacking-plain-push branch comment.
+5. MINOR — MeasureGraph label error accumulator overwritten not accumulated (preserved in Topology label port).
+All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@java" + "oracle" to locate them when executing Task #42.
