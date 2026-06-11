@@ -2242,3 +2242,6 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 
 ## Update 182 (2026-06-11) — WM mechanism fixed: Dama (Italy) + Kharberg 2/2
 - IsPrev/NoMoves/IsThreatened prev-semantics trio (commit above). Damas 1/2, Coc-Inbert 0/2 remain (probe their WM plies next — may be a second mechanism); Meurimueng/Ratti-Chitti-Bakri (very long trials) re-check with MOVE_CAP=5000 after.
+
+## Update 183 (2026-06-11) — Coc-Inbert 2/2 ((no Pieces Player) role fix)
+- WM residue: Damas 1/2 (probe its remaining trial), Meurimueng ×2 + Ratti-Chitti-Bakri ×2 (very long; re-probe mechanisms — likely also Player-role or counter-limit ends). Then lines/ graph boards + Laram Wali + Terhuchu (Small) and the war/leaping finish line is in sight.
