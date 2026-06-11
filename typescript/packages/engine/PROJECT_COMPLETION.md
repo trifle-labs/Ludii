@@ -2380,3 +2380,12 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
 - FIX: wrap every BooleanFunction slot in the Sow ctor (origin/skipIf/captureRule/backtracking/forward) with the typeof-boolean -> {eval:()=>b} pattern (origin already did; the rest didn't).
 - Oware 2/2 OUTCOME_OK (ply 247/158). Full sow family now 269/426 OUTCOME_OK (was 238 at this window's first sweep; +31 from Updates 207+208 combined). Baseline was 52.1% -> now 63.1%.
 - Battery green (Crand = 600-cap artifact, passes at MOVE_CAP=5000), units 194/0 — read before commit.
+
+## Update 209 (2026-06-11) — Session consolidation + sow long-tail target map
+- This window's net: war/leaping ~220/226; sow 52.1% -> 63.1% (269/426). 8 commits (Updates 201-208), battery green throughout, units 194/0.
+- Remaining sow failures are a LONG TAIL of game-specific mechanics (NOT another single shared bug). Triaged targets for next session:
+  1. RELAY / MULTI-LAP sow (Bosh, Daramuti — diverge ply 1): sow with `(then (sow apply:(... (moveAgain))))` and "PlayFromNextHole" = (sites {("NextHoleFrom" (last To afterConsequence:True) 1)}). Bosh's ply-0 piles all 40 seeds into phantom sites 10,11 — its track "0,E,N,W" on a mancalaBoard 2 5 (store:None) resolves OFF the 0-9 track in our engine. Suspect: track geometry for this board shape OR `(last To afterConsequence:True)` unsupported. Owned-holes remembered values verified correct ([0-9]).
+  2. REMEMBERED sow-position tracking (Adi — ply 85 forced-pass mismatch): `("PossibleSowFrom")` gates legal from-holes via (values Remembered "P1SowFrom"/"P2SowFrom"), maintained by per-move forget/remember over (sites Track from:(last From) to:("NextHole" ...)). Our forget/remember of these diverges -> we offer moves Java forbids (Java emits Pass:forced=true).
+  3. FORCED PASS detection (Ako Okwe, Awagagae, Baqura): Java inserts Pass:decision=true,forced=true when the mover is stalemated; we over-generate. Often downstream of (2)/grand-slam rules.
+  4. Early sow-variant divergences (Deka ply 6, Bechi ply 18 uses RememberValue HolesSowed).
+- four_rows (15 MM) and three_rows (8 MM) likely share subsets of the above.
