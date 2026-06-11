@@ -354,9 +354,10 @@ export class State {
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
     this.diceValues = Object.freeze([...(options.diceValues ?? [])]);
-    this.stalemated = Object.freeze(
-      fillBoolSlot(options.stalemated, numPlayers + 1),
-    );
+    // NOT frozen: the stalemated flags are a CACHE mutated in place by real
+    // move generation (@java Game.java:2948 setStalemated), like Java's
+    // mutable State field. Value identity of the State excludes them.
+    this.stalemated = fillBoolSlot(options.stalemated, numPlayers + 1);
     this.storedState = options.storedState ?? 0;
     this.sitesToRemove = Object.freeze([...(options.sitesToRemove ?? [])]);
     this.visited = options.visited

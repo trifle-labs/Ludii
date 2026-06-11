@@ -607,6 +607,18 @@ export class Game implements Game {
     const movesGen = this.getPlayForMover(ctx);
     const generated: Move[] = [...movesGen.moves.eval(ctx)];
 
+    // @java Game.java:2948 — context.state().setStalemated(mover,
+    // legalMoves.moves().isEmpty()): the stalemated flag is a CACHE written
+    // during REAL move generation (with the real roll), read by
+    // (no Moves <player>). Eagerly recomputing it per-apply with a
+    // hypothetical roll flagged dice games stalemated whenever the sampled
+    // roll had no moves (Cab e Quinal drew at ply 4). Mutate in place —
+    // cache semantics, like Java.
+    {
+      const flags = ctx.state.stalemated as boolean[];
+      flags[ctx.state.mover] = generated.length === 0;
+    }
+
     // @java game/Game.java:2855 — Swap.apply(context, legalMoves)
     // @java game/rules/meta/Swap.java:apply — fires when usesSwapRule() &&
     //   trial.moveNumber() == game.players().count() - 1 (i.e. P2's first move).
@@ -865,12 +877,10 @@ export class Game implements Game {
       advanced = advanced.withCounter(advanced.counter + 1);
     }
 
-    // Step 7: Update stalemated flag for the new mover.
-    // @java Game.java — computeStalemated: called after advancing the mover
-    // so that (no Moves Next) can read the correct cached value.
-    if (!over) {
-      advanced = this.computeStalemated(advanced, evalCtx);
-    }
+    // Step 7 (removed): Java does NOT eagerly compute the new mover's
+    // stalemated flag on apply — the flag is a cache written by real move
+    // generation (Game.java:2948; see Game.moves above). NoMoves(Next)
+    // computes its own temporary check (@java NoMoves.java autoFail path).
 
     // Step 8: Record move in trial.
     const finalWinner = over ? winner : -1;
