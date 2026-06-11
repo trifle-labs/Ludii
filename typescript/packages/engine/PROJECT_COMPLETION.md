@@ -1915,3 +1915,7 @@ ForEachDie eval) + detailed harness action dumps:
 - The Update-103 remodel is IMPLEMENTED and parked on branch `pit-remodel-wip` (one commit atop Update 104): SetCountStart stamps what=last-component, ActionAddCount carries seedWhat (raw-whats stamp — NOTE whatAtSite falls back to the cells owner, which masked the stamp until read raw), Sow propagates the start pit's component.
 - RESULT: Kisolo deepens ply 30/38 → 219/360 (next seam there: a recorded Pass our 1 candidate doesn't match — round-end pass mechanics). REGRESSION: Bao Kiswahili (EA) trial 0 ply 29 — recorded hand placement 33→20 missing from our 2 candidates (hand-site emptiness/what reads affected by the stamp). Battery rule kept it off ts-port.
 - NEXT: on the branch, diff Bao EA ply-29 candidate generation vs ts-port (the from=33 hand move's gating condition — probably (is Occupied (handSite ...)) or what-at-hand reads); fix, battery, then merge.
+
+## Update 106 (2026-06-11) — PIT REMODEL MERGED (Kisolo 219/360, Bao EA 2/2)
+- The Update-103 remodel is on ts-port: SetCountStart stamps what=last-component (@java SetCount.java:79), ActionAddCount carries seedWhat (raw-whats stamp), Sow propagates the start pit's component, and ActionMove's transferCount drain clears the component on count→0 (@java csFrom.remove) with the receiving pit inheriting it — the Bao EA ghost-what regression is fixed.
+- Kisolo plies 30/38 → 219/360 (next: recorded round-end Pass our relay doesn't offer). Battery green (32); units 194/47.
