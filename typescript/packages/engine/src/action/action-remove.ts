@@ -43,6 +43,8 @@ export class ActionRemove extends BaseAction {
   private readonly countValue: number;
   private level: number;
   private readonly siteType: SiteType;
+  /** True when the constructor received an explicit site type. */
+  private readonly explicitTyped: boolean = false;
   private readonly clearAll: boolean;
 
   public constructor(options: ActionRemoveOptions) {
@@ -54,10 +56,17 @@ export class ActionRemove extends BaseAction {
     this.countValue = options.count ?? 1;
     this.level = options.level ?? ACTION_UNDEFINED;
     this.siteType = options.type ?? "Cell";
+    this.explicitTyped = options.type !== undefined;
     this.clearAll = options.clearAll ?? false;
   }
 
   public override apply(state: State): State {
+    // Dual-SiteType (@java cs.remove(site, type)): an explicitly typed remove
+    // with a typed channel clears THAT channel (Guerrilla's surrounded-cell
+    // capture (remove Cell (site)) on a Vertex-play board).
+    if (this.explicitTyped && state.typedSites.has(this.siteType)) {
+      return state.withTypedSite(this.siteType, this.toIndex, 0, 0, 0);
+    }
     // The removed piece's component id, read before the site is cleared, so the
     // track-index structure can drop it (Java ActionRemoveTopPiece: `pieceIdx`).
     const removedWhat = state.whatAtSite(this.toIndex);

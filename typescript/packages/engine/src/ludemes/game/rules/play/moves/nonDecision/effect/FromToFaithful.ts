@@ -20,6 +20,7 @@ export class FromToFaithful extends FromTo {
     void mover;
     super({
       locFrom: fromLoc(from),
+      declaredFromType: from?.type?.() ?? null,
       levelFrom: fromLevel(from),
       countFn: count,
       locTo: toLoc(to),

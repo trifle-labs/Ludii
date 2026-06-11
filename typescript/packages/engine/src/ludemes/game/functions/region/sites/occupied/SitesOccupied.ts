@@ -121,6 +121,21 @@ export class SitesOccupied extends BaseRegionFunction {
 
     const whoId = this.who.eval(ctx);
 
+    // Dual-SiteType (@java cs scan per type): an explicit on:Cell with a
+    // typed channel scans THAT channel (Guerrilla's surrounded-counter sweep
+    // (sites Occupied by:P2 on:Cell) on a Vertex-play board).
+    if (this.siteType !== null) {
+      const typed = (ctx.state as unknown as { typedSites?: ReadonlyMap<string, { who: readonly number[] }> }).typedSites;
+      const ch = typed?.get(this.siteType);
+      if (ch) {
+        const out: number[] = [];
+        for (let i = 0; i < ch.who.length; i += 1) {
+          if ((ch.who[i] ?? 0) === whoId && whoId > 0) out.push(i);
+        }
+        return out;
+      }
+    }
+
     // @java SitesOccupied — container:"Hand" restricts the scan to the
     // player's HAND sites (Shogi drops: (sites Occupied by:Mover
     // container:"Hand" components:{...})); without this the scan covered the

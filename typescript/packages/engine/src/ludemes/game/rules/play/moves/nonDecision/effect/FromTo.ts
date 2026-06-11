@@ -28,6 +28,9 @@ export class FromTo implements MovesFunction {
   private readonly levelFrom: IntFunction | null;
   /** @java FromTo.countFn */
   private readonly countFn: IntFunction | null;
+
+  /** @java From.type() — explicit (from Cell ...) declaration. */
+  private readonly declaredFromType: string | null;
   /** @java FromTo.locTo */
   private readonly locTo: IntFunction;
   /** @java FromTo.levelTo */
@@ -58,6 +61,7 @@ export class FromTo implements MovesFunction {
     locFrom?: IntFunction | null;
     levelFrom?: IntFunction | null;
     countFn?: IntFunction | null;
+    declaredFromType?: string | null;
     locTo: IntFunction;
     levelTo?: IntFunction | null;
     regionFrom?: RegionFunction | null;
@@ -73,6 +77,7 @@ export class FromTo implements MovesFunction {
     this.locFrom = opts.locFrom ?? null;
     this.levelFrom = opts.levelFrom ?? null;
     this.countFn = opts.countFn ?? null;
+    this.declaredFromType = opts.declaredFromType ?? null;
     this.locTo = opts.locTo;
     this.levelTo = opts.levelTo ?? null;
     this.regionFrom = opts.regionFrom ?? null;
@@ -162,7 +167,12 @@ export class FromTo implements MovesFunction {
           ctx._evalTo = savedTo;
           moveAction = new ActionMove({ from, to, count, transferCount: true });
         } else {
-          moveAction = new ActionMove({ from, to });
+          // Dual-SiteType: stamp the declared type so application routes
+          // through the typed channel (gated downstream on channel existence).
+          const dt = this.declaredFromType;
+          moveAction = dt
+            ? new ActionMove({ from, to, fromType: dt as never, toType: dt as never })
+            : new ActionMove({ from, to });
         }
         actions.push(moveAction);
 
