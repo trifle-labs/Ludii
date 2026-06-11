@@ -179,19 +179,6 @@ export class Step extends Effect {
           }));
         }
         if (!GROUP_DIRS.has(dir.toLowerCase())) return [];
-        // GROUP dirs with no named radials (irregular graphs — split stars,
-        // merged polys — whose radial buckets only carry compass names):
-        // use the engine's RELATION STEPS, one single-step ray per
-        // neighbour. The flat geometric fallback below links collinear but
-        // NON-ADJACENT vertices (Game of Solomon: phantom steps 2>9/3>6
-        // straight through the hexagram's interior).
-        const site0 = cellRadials.axes[0]?.ray[0] ?? -1;
-        if (site0 >= 0) {
-          const groupSteps = traj.steps(site0, dir);
-          if (groupSteps.length > 0) {
-            return groupSteps.map((n) => ({ ray: [site0, n] as const, opposite: [site0] as const }));
-          }
-        }
       }
       return radialsForDirection(cellRadials, dir);
     };
