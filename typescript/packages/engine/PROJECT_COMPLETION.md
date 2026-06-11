@@ -2256,3 +2256,6 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 ## Update 186 (2026-06-11) — sow family at 52.1% (was 41%): next campaign target
 - 222/426 OK at cap-5000. The session's shared fixes (+11 pts) carried over without sow-specific work. Remaining: 159 MM (sowing/capture mechanics — start with the highest-multiplicity games in the MM list), 20 WM, 10 START_FAIL (probe those first — likely a start-rule gap shared across a sub-family), 15 capped.
 - NEXT SESSION ORDER: (1) sow START_FAILs; (2) sow MM top offenders; (3) war/leaping lines/ graph generators (compare each generator output to jshell Graph dumps); (4) hunt/line/space/four_rows re-sweeps at cap-5000 (their old numbers predate ~15 shared subsystem fixes).
+
+## Update 187 (2026-06-11) — sow START_FAILs structurally fixed (PlaceItem counts normalization)
+- All five four_rows games start correctly now; their residual is the sow-select layer: at ply 2 rec '1>1' select missing, we offer only '0>0' — the pit-iteration condition (probably (forEach Site (sites Mover ...) if:(> (count at:(site)) N) (move Select ...)) or track-based nextSite logic) generates one pit only. Probe /tmp/ch-probe.mjs + read Chiana's play rule.
