@@ -78,8 +78,13 @@ export class Custodial extends Effect {
     super(opts.then ?? null);
     this.startLocationFn = opts.startLocationFn;
     this.dirnChoice = opts.dirnChoice ?? "Adjacent";
-    this.minimum = opts.minimum;
-    this.limit = opts.limit;
+    // Raw-literal trap: compileTerminal can hand (min/max N) ranges as raw
+    // numbers — wrap so .eval works (Hnefatafl (between (max 1)) silently
+    // killed the whole capture then).
+    const wrapInt = (v: unknown): IntFunction =>
+      typeof v === "number" ? ({ eval: () => v } as IntFunction) : (v as IntFunction);
+    this.minimum = wrapInt(opts.minimum);
+    this.limit = wrapInt(opts.limit);
     this.targetRule = opts.targetRule;
     this.friendRule = opts.friendRule;
     this.targetEffect = opts.targetEffect;
