@@ -399,9 +399,19 @@ export class Topology {
       // diverged the whole game from ply 1.
       if (clusteredFirst !== null && clusteredFirst !== undefined && clusteredFirst.size > 0) continue;
 
+      let anyRealLabel = false;
       for (const element of elements) {
-        if (element.label() === coord) return element;
+        const lbl = element.label();
+        if (lbl !== "" && lbl != null) anyRealLabel = true;
+        if (lbl === coord) return element;
       }
+      // @java SiteFinder.find matches the ACTUAL computed labels only: when
+      // the elements carry labels (computeCoordinates ran), an unmatched
+      // coord is NULL and the caller skips it. The banded/centroid
+      // synthesizers below invented labels for sparse boards — Terhuchu's
+      // "G6" (col G exists, row 6 exists, but no vertex at their meet) was
+      // banded onto element 19 (real label "L10"), planting the phantom.
+      if (anyRealLabel) continue;
 
       // @java Topology.computeRows/computeColumns + computeCoordinates —
       // labels are colLetter(row-banded x) + (y-band index + 1) computed on
@@ -505,7 +515,11 @@ export class Topology {
     const map = new Map<string, TopologyElement>();
     for (let n = 0; n < elements.length; n += 1) {
       const label = `${columnLabel(bestCol.buckets[n]!)}${bestRow.buckets[n]! + 1}`;
-      if (map.has(label)) { this._clusteredLabels.set(realType, null); return null; }
+      if (map.has(label)) {
+        if (process.env.TRACE_CLUSTER) console.error(`[cluster] COLLISION ${label} at el ${n} (prev ${(map.get(label) as { index(): number }).index()}); rowErr=${bestRow.error.toFixed(4)} colErr=${bestCol.error.toFixed(4)}`);
+        this._clusteredLabels.set(realType, null);
+        return null;
+      }
       map.set(label, elements[n]!);
     }
     this._clusteredLabels.set(realType, map);
