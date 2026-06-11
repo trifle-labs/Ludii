@@ -929,7 +929,11 @@ export class Game implements Game {
     const src = context as Context1to1;
     src._radials = src._radials ?? this.equipment.board.radials;
     src._trajectories = src._trajectories ?? this.equipment.board.trajectories;
-    const { state, extraActions, moveAgain } = evalDeferredThens(context, postState, move);
+    // @java the applied move's endpoints are VISITED before its consequences
+    // evaluate (oracle-proven on Fanorona: the chain probe's (not (is Visited
+    // (to))) sees {from, to}; the turn-pass reInit later clears them).
+    const preVisited = postState.withVisited(move.from(), move.to());
+    const { state, extraActions, moveAgain } = evalDeferredThens(context, preVisited, move);
     if (extraActions.length === 0 && moveAgain === move.moveAgain) return { state, move };
     return { state, move: move.withConsequence(extraActions as Action[], moveAgain) };
   }
