@@ -1815,3 +1815,8 @@ ForEachDie eval) + detailed harness action dumps:
   * VERIFIED IN HEADLESS CHROME: the demo loads, the faithful compiler compiles Hex .lud IN-BROWSER, board renders, moves/undo/reset wired (screenshot /tmp/ludii-demo.png; serve `python3 -m http.server` from typescript/packages, open /browser-player/demo/index.html).
 - State.cellAt label = component at site (Game.componentLabels 1-indexed by component id).
 - Remaining interface work: the demo renderer is a generic cell-strip (no board geometry layout); the richer ViewController port (board styles) exists under src/ludii/ViewController but is not wired to the demo.
+
+## Update 88 (2026-06-11) — Id(Next/Prev) fix + global standings checkpoint
+- Id(name, Next/Prev) treats state.next/prev <= 0 as unset (@java Id.java via context.state().next(); the engine clears next after consumption and `0 ?? x` does not fall back) — every draughts capture hurdle ("IsPieceAt" "Counter" Next (between)) had failed. Dama (Italy) trial 1 OUTCOME_OK; CASCADES EVERYWHERE.
+- GLOBAL STANDINGS (full sweeps, PER_TRIAL_MS=8000): race 99/362 (27.3%, was 63), sow 101/426 (23.7%, was 68), hunt 80/152 (52.6%, was 67), space 308/678 (45.4%), war 148/356 (41.6%, leaping subfamily 124/226). TOTAL ≈ 736 OUTCOME_OK across the five families (~37%, up from ~25%).
+- Leaping residuals: Bashni (stacked draughts), Damas/Dum Blas (orthogonal), Frisian (orthogonal captures), Guerrilla Checkers (n=47?), Lasca (stacks).
