@@ -2053,3 +2053,6 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 139 (2026-06-11) — Dual-SiteType layer 5: typed emptiness
 - IsEmpty with an explicit type reads the typed channel (gated on existence). Guerrilla ply 23/26→39/45. NEXT: the same explicit-type routing for IsOccupied/Who/What reads, typed Remove application (COIN's RemoveHoppedEnemyOnVertex removes VERTEX pieces from a Cell move — cross-type; P1's surrounded-cell capture removes CELL pieces via (remove Cell (site))), then full Guerrilla/Alice verify.
+
+## Update 140 (2026-06-11) — Guerrilla ply-39: chain-probe residual mapped
+- After ply-38's capture our state is EXACT (cell channel + vertex removal correct) but the nested chain probe ((remove (site) (then (if (can Move "CaptureJump") (moveAgain))))) returns false → mover passes (Java relays). Step now carries declared (from Cell) types into typed routing (committed; not sufficient). NEXT: dump the CaptureJump define + eval its Step in the ply-38 postCtx — suspect the SameTurn (from)=lastTo resolution (lastTo=36 is a CELL id but the probe context lacks the type tag for the FROM-mover-piece lookup: what(36) reads vertex arrays → no piece → zero candidates) — i.e. the from-occupancy check needs typed Who/What reads (the named remaining layer). Also typed Remove application for P1's surrounded-cell captures still pending.
