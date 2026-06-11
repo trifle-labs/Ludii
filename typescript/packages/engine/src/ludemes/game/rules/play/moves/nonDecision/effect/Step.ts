@@ -187,8 +187,18 @@ export class Step extends Effect {
         const site0 = cellRadials.axes[0]?.ray[0] ?? -1;
         if (site0 >= 0 && typeof (traj as { radialsByName?: unknown }).radialsByName === "function") {
           const chained = (traj as unknown as { radialsByName(s: number, d: string): number[][] }).radialsByName(site0, dir);
-          if (chained.length > 0) {
-            return chained.map((ray) => ({ ray, opposite: [ray[0] ?? -1] as const }));
+          // UNION with single-step relation rays: a degree-1 spoke that lies
+          // on no chained line vanishes from radialsByName alone (Terhuchu
+          // proper lost its plain S step at vertex 24 while Solomon's
+          // phantoms stayed dead — both need this exact set).
+          const covered = new Set<number>();
+          for (const ray of chained) if (ray[1] !== undefined) covered.add(ray[1]);
+          const singles = traj.steps(site0, dir)
+            .filter((n) => !covered.has(n))
+            .map((n) => [site0, n]);
+          const all = [...chained, ...singles];
+          if (all.length > 0) {
+            return all.map((ray) => ({ ray, opposite: [ray[0] ?? -1] as const }));
           }
         }
       }
