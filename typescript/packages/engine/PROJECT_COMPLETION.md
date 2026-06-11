@@ -2060,3 +2060,6 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 141 (2026-06-11) — FromTo typed source; chain fires
 - The probe mystery resolved: FromTo's hasSource read play arrays only; with typed acceptance the CaptureJump generates ([27] exactly as manual verification predicted). Guerrilla 39/45→40/46 — each chain link now needs FromTo's APPLICATION typed (stamp the declared From type on its ActionMove like Step/Hop; FromToFaithful has from.type()). Then the surrounded-cell Remove (type Cell) routing. The pattern is established; remaining edits are mechanical.
+
+## Update 142 (2026-06-11) — Dual-SiteType: typed Remove/Occupied/FromTo-stamp merged
+- ActionRemove routes explicit types to typed channels; Remove ludeme threads its type; FromTo stamps declared from-types on relocations; SitesOccupied scans the typed channel when siteType set. Guerrilla 40/46→41/49. RESIDUAL: cell 25 still occupied at ply 41 (Java's surrounded-counter capture removed it) — verify the COMPILED SitesOccupied's on:-param actually lands in siteType (suspect a ctor-slot shift like PlaceItem's; dump the compiled instance fields), and the all-Sites Incident gate. Then Guerrilla/Alice verify.
