@@ -52,7 +52,10 @@ export class MaxMoves implements MovesFunction {
     thenMoves?: MovesFunction | null,
   ) {
     this.moves = moves;
-    this.withValueFn = withValue ?? { eval: () => false };
+    // Raw-literal rule: withValue:True reaches us as a raw boolean.
+    this.withValueFn = typeof (withValue as unknown) === "boolean"
+      ? { eval: () => withValue as unknown as boolean }
+      : withValue ?? { eval: () => false };
     this.thenMoves = thenMoves ?? null;
   }
 
