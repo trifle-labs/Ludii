@@ -432,5 +432,24 @@ function scanPositions(
       siteType: () => realType,
     });
   }
+  // @java per-type ContainerStates — pieces living on a NON-play element type
+  // (Guerrilla Checkers' Cell counters on a Vertex-play board) are tracked in
+  // State.typedSites; scan those channels too, tagging each hit with its type.
+  const typed = (state as unknown as { typedSites?: ReadonlyMap<string, { who: readonly number[]; what: readonly number[] }> }).typedSites;
+  if (typed) {
+    for (const [chType, ch] of typed) {
+      if (chType === realType) continue;
+      for (let site = 0; site < ch.who.length; site++) {
+        const owner = ch.who[site] ?? 0;
+        if (!allPlayers && owner !== specificPlayer) continue;
+        if ((ch.what[site] ?? 0) !== componentId) continue;
+        out.push({
+          site: () => site,
+          level: () => 0,
+          siteType: () => chType,
+        });
+      }
+    }
+  }
   return out;
 }
