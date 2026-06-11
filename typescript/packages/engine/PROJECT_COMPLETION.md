@@ -2249,3 +2249,6 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 ## Update 184 (2026-06-11) — ALL war/leaping WINNER_MISMATCHES CLEARED (9/9 trials)
 - (no Moves Player) role fix (commit above) finished the set: Damas, Meurimueng ×2, Ratti-Chitti ×2 + earlier Dama (Italy), Kharberg, Coc-Inbert.
 - war/leaping remaining MM ONLY: Crand, Game of Solomon, Pasang, Spoing, Throngs (lines/ graph generators), Laram Wali (CrossBoard zone), Terhuchu (Small). Family estimated ~94% — run the cap-5000 sweep to confirm, then the graph-board campaign.
+
+## Update 185 (2026-06-11) — war/leaping at 92.9% OUTCOME_OK, ZERO WM, ZERO capped
+- 210/226 OK. The only failures left are 16 MM across 8 games: Crand, Game of Solomon, Pasang, Spoing, Throngs (lines/ graph generators), Laram Wali (CrossBoard), Terhuchu (Small), experimental/Seesaw (separate game, matches filter). Session arc 58% -> 92.9%.
