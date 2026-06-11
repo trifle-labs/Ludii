@@ -2066,3 +2066,8 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 143 (2026-06-11) — on:-binding fixed; sweep consequence next
 - Compiled SitesOccupied now carries siteType=Cell (named on: read in the intercept). Surround condition VERIFIED in our state (cell 25's vertices {37,28,29,38} all who=1) yet the sweep's (forEach Site <filtered-region> (remove Cell (site))) consequence doesn't emit at apply — next probe: findAll the compiled ForEachSite in the P1 phase thens, eval its region in the post-ply-19 ctx (expect [25]), then trace why the deferred consequence drops it (possibly the forEach Site CONSEQUENCE wrapper vs region-if compile, or the remove's (site) binding).
+
+## Update 144 (2026-06-11) — GUERRILLA CHECKERS 2/2: DUAL-SITETYPE SUBSYSTEM COMPLETE
+- The final gate: Remove.eval's skip-empty read play arrays only (@java cs.what(loc, type)); with the typed consult, the surrounded-counter sweep fires and BOTH Guerrilla trials replay to OUTCOME_OK. The subsystem (Update 104) is done: 13 increments — typed channels, placement routing + PlaceItem ctor reclaim, piece iteration, viewOf adjacency, Step/Hop/FromTo typed application + stamps, ActionRemove routing, IsEmpty/SitesOccupied/hasSource/Remove-gate typed reads, the on:-intercept binding. Every piece @java-annotated and battery-checked (33).
+- Alice Chess (plies 18/53) is a DIFFERENT mechanism (two full boards swapped between, not typed elements — pieces teleport between board copies) — its own scoped item, not dual-SiteType.
+- Remaining queue: line/blocking flat pools, TEAMS/cards, Alice Chess two-board mechanism, piece-glyph polish.
