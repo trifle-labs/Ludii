@@ -1138,7 +1138,17 @@ export class ArgCompiler {
       if (lower === "true" || lower === "false") {
         const value = lower === "true";
         if (expectedTypes.some((type) => type.dims === 0 && type.name === "game.functions.booleans.BooleanFunction")) {
-          return value;
+          // @java BooleanConstants.True/False — Java compiles the lud literal
+          // into a BooleanConstant LUDEME for BooleanFunction slots; returning
+          // the raw boolean made every consumer's `.eval()` throw (the
+          // recurring raw-literal trap: Sow backtracking, ForEachDie combined,
+          // FromTo if:, ...). Existing typeof-boolean guards in ludeme ctors
+          // stay harmless (an object skips them into the eval branch).
+          return {
+            eval: () => value,
+            isStatic: () => true,
+            toString: () => (value ? "true" : "false"),
+          };
         }
         const terminalClasses = ["game.functions.booleans.BooleanConstant", "java.lang.Boolean", "boolean"];
         for (const className of terminalClasses) {
