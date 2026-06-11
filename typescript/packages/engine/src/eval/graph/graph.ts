@@ -372,6 +372,40 @@ export class Graph {
     return id;
   }
 
+  /**
+   * @java Graph.findOrAddVertex(x, y, z) — 3-D-aware dedup: pyramid layers
+   * project onto base coordinates (layer-2 (1,1,2dz) sits exactly above base
+   * (1,1,0)) and must stay distinct vertices.
+   */
+  public findOrAddVertex3D(x: number, y: number, z: number, tol = VERTEX_TOL): number {
+    for (const v of this.vlist) {
+      if (coincident(v.x - x, v.y - y, tol) && Math.abs((v.z ?? 0) - z) < tol) return v.id;
+    }
+    const id = this.vlist.length;
+    this.vlist.push({ id, x, y, z });
+    return id;
+  }
+
+  /**
+   * @java Graph.makeEdges() — join every vertex pair at 3-D distance ~ the
+   * unit (|dist - 1| < 0.05). The pyramidal generator calls this after
+   * stacking layers: a layer vertex at (c+.5, r+.5, 1/sqrt(2)) is exactly
+   * unit distance from its four base supports and its in-layer neighbours.
+   */
+  public makeEdges(): void {
+    for (let a = 0; a < this.vlist.length; a += 1) {
+      const va = this.vlist[a]!;
+      for (let b = a + 1; b < this.vlist.length; b += 1) {
+        const vb = this.vlist[b]!;
+        const dx = va.x - vb.x;
+        const dy = va.y - vb.y;
+        const dz = (va.z ?? 0) - (vb.z ?? 0);
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (Math.abs(dist - 1) < 0.05) this.addEdge(a, b);
+      }
+    }
+  }
+
   /** Find an existing vertex within `tol` of (x, y), else add a new one. */
   public addVertex(x: number, y: number, tol = VERTEX_TOL): number {
     for (const v of this.vlist) {
@@ -604,6 +638,11 @@ export class Graph {
         let cur = s;
         let eOther = listS[ei]!.to;
         let closed = false;
+        // @java Graph.makeFaces:1367-1373 — faces are PLANAR: the walk only
+        // follows edges whose far endpoint shares the start vertex's z
+        // (|dz| < 0.0001). Pyramidal boards stack layers joined by 3-D unit
+        // edges; without this guard the walk wanders between layers.
+        const zStart = this.vlist[s]?.z ?? 0;
         while (vertIds.length <= MAX_FACE_SIDES) {
           const list = adj[cur];
           // @java the m-loop runs m=1..numEdges-1: a degree-1 vertex has no
@@ -611,7 +650,15 @@ export class Graph {
           if (!list || list.length < 2) break;
           const n = indexOf(cur, eOther);
           if (n < 0) break;
-          const next = list[(n + 1) % list.length]!.to;
+          let next = -1;
+          for (let m = 1; m < list.length; m += 1) {
+            const cand = list[(n + m) % list.length]!.to;
+            if (Math.abs((this.vlist[cand]?.z ?? 0) - zStart) < 0.0001) {
+              next = cand;
+              break;
+            }
+          }
+          if (next < 0) break; // no next CW edge on the start plane
           eOther = cur;
           cur = next;
           if (cur === s) {
@@ -853,7 +900,9 @@ export class Graph {
     order.forEach((v, i) => {
       remap[v.id] = i;
     });
-    this.vlist = order.map((v, i) => ({ id: i, x: v.x, y: v.y }));
+    // z rides along (the y*100+x score deliberately ignores it — Java
+    // reorder() scores 2-D; ties stay in insertion order via stable sort).
+    this.vlist = order.map((v, i) => (v.z !== undefined ? { id: i, x: v.x, y: v.y, z: v.z } : { id: i, x: v.x, y: v.y }));
     // Remap endpoints, then reorder edges by midpoint score — Java
     // `reorder(SiteType.Edge)` uses each edge's `pt()` (midpoint) under the same
     // `y*100+x` key. Canonical edge order matters for `use:Edge` site indices

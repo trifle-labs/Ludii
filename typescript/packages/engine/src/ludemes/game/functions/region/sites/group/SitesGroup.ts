@@ -106,12 +106,41 @@ export class SitesGroup extends BaseRegionFunction {
 				while (sitesExplored.length !== groupSites.length) {
 					const site = groupSites[i]!;
 
+					// @java SitesGroup.eval isVisible branch — Span's pyramid
+					// connectivity. isVisible:True arrives as a raw boolean from
+					// the compiler (typeof guard), and per Java the occupied
+					// UPWARD neighbours of `site` are collected once per site.
+					const isVisRaw = this.isVisibleFn as unknown;
+					const isVis = isVisRaw !== null && (typeof isVisRaw === "boolean" ? isVisRaw : (isVisRaw as { eval(c: unknown): boolean }).eval(context)) === true;
+					const topoEls = isVis
+						? (context as unknown as { topology?: () => { getGraphElements(t: string): Array<{ index(): number; centroid3D(): { x(): number; y(): number; z(): number }; neighbours(): Array<{ index(): number; centroid3D(): { x(): number; y(): number; z(): number } }> }> } }).topology?.()?.getGraphElements("Vertex")
+						: undefined;
+					const occupiedUpward = (v: number): number[] => {
+						const el = topoEls?.[v];
+						if (!el) return [];
+						const z = el.centroid3D().z();
+						const out: number[] = [];
+						for (const n of el.neighbours()) {
+							if (n.centroid3D().z() > z + 1e-4) {
+								const w = cs ? cs.what(n.index(), siteType) : 0;
+								if (w !== 0) out.push(n.index());
+							}
+						}
+						return out;
+					};
+					const locnUpwards = isVis ? occupiedUpward(site) : [];
+
 					// Get neighbours in the chosen direction
 					let neighbours: number[];
 					if (traj) {
 						try {
-							const steps = traj.steps(siteType, site, siteType, this.directionName);
-							neighbours = steps.map(step => step.to().id());
+							// Our Trajectories.steps is the 2-arg (site, dir)
+							// form returning site ids (@java the 4-arg overload);
+							// the old 4-arg call bound site="Vertex" and silently
+							// fell back to lattice neighbours — empty groups on
+							// graph boards (Span's pyramid group stuck at one).
+							const steps = (traj as unknown as { steps(s: number, d: string): number[] }).steps(site, this.directionName);
+							neighbours = steps;
 						} catch {
 							neighbours = this.squareNeighbours(context, site);
 						}
@@ -120,6 +149,33 @@ export class SitesGroup extends BaseRegionFunction {
 					}
 
 					for (const to of neighbours) {
+						// @java SitesGroup.eval:~187 — a ball with an occupied
+						// HIGHER-INDEXED vertex at the same (x,y) projection is
+						// fully covered: skip (not visible).
+						if (isVis && topoEls) {
+							const toEl = topoEls[to];
+							if (toEl) {
+								const tx = toEl.centroid3D().x();
+								const ty = toEl.centroid3D().y();
+								let covered = false;
+								for (const other of topoEls) {
+									if (other.index() <= to) continue;
+									const oc = other.centroid3D();
+									if (oc.x() === tx && oc.y() === ty) {
+										const w = cs ? cs.what(other.index(), siteType) : 0;
+										if (w !== 0) { covered = true; break; }
+									}
+								}
+								if (covered) continue;
+							}
+							// @java two or more SHARED occupied upward neighbours
+							// between `site` and `to` block the visible link.
+							const indexUpwards = occupiedUpward(to);
+							let shared = 0;
+							for (const u of indexUpwards) if (locnUpwards.includes(u)) shared += 1;
+							if (shared >= 2) continue;
+						}
+
 						// @java if (groupSites.contains(to)) continue
 						if (groupSites.includes(to)) {
 							continue;

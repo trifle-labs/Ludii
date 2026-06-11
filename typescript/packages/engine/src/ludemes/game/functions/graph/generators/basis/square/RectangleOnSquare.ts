@@ -64,6 +64,27 @@ export class RectangleOnSquare extends Basis {
       }
     }
 
+    // @java RectangleOnSquare.eval:105-133 — pyramidal stacking: layers
+    // 1..rows-1 of shrinking (rows-layer x cols-layer) grids at
+    // (layer*0.5 + col, layer*0.5 + row, layer/sqrt(2)); 3-D unit edges via
+    // makeEdges() (each layer vertex touches its 4 base supports and its
+    // in-layer neighbours). Span/Spire/Shibumi-family boards.
+    if (this.pyramidal) {
+      const dz = 1.0 / Math.sqrt(2);
+      const layers = rows;
+      for (let layer = 1; layer < layers; layer += 1) {
+        const offX = layer * 0.5;
+        const offY = layer * 0.5;
+        const offZ = layer * dz;
+        for (let row = 0; row < rows - layer; row += 1) {
+          for (let col = 0; col < cols - layer; col += 1) {
+            graph.findOrAddVertex3D(offX + col, offY + row, offZ);
+          }
+        }
+      }
+      graph.makeEdges();
+    }
+
     // Handle diagonals @java line 134
     if (this.diagonals !== null) {
       handleDiagonals(graph, 0, rows, 0, cols, this.diagonals);
