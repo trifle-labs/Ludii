@@ -98,9 +98,14 @@ export class ActionRemove extends BaseAction {
     // does the site become empty. Plain single pieces (count 0/1) are cleared.
     // In a flat (non-stacking) game `clearAll` is set: `(remove)` wipes the
     // whole site (mancala pit clear), matching Java's ContainerFlatState.remove.
+    // @java ContainerFlatState.remove (ContainerFlatState.java:740-747) —
+    // setSite(site, 0,0,0,0,0,0): a FLAT remove clears the WHOLE site, count
+    // included (T'oki's line capture wipes a 2-pile with ONE Remove). A
+    // STACKING game's piles (Backgammon points, (place Stack count:N)) go
+    // through ContainerStackingState instead: one piece per remove.
     const pile = state.countAtSite(this.toIndex);
     let next: State;
-    if (!this.clearAll && pile > this.countValue) {
+    if (state.stackingGame && pile > this.countValue) {
       next = state.withCountAt(this.toIndex, pile - this.countValue);
     } else {
       next = state.withCell(this.toIndex, 0).withWhatAt(this.toIndex, 0);

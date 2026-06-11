@@ -539,6 +539,7 @@ export class Game implements Game {
       typedSites: typedStaging.size > 0 ? typedStaging : undefined,
       // @java GameType.Stacking — compiled-tree flag (play1to1 harvest).
       stackingGame: (this as unknown as { usesStacking?: boolean }).usesStacking === true || undefined,
+      stackMovesGame: (this as unknown as { usesStackMoves?: boolean }).usesStackMoves === true || undefined,
     });
 
     // Apply remembered-value start rules (from (set RememberValue "name" <region>)).

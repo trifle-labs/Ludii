@@ -13,6 +13,7 @@
  */
 
 import type { Context } from "../../../../../context.js";
+import { compileFlags } from "../../../../../ludii/compiler/compile-flags.js";
 import type { RegionFunction } from "../../../../base.js";
 import { PlaceItem } from "./item/PlaceItem.js";
 import { PlaceCustomStack } from "./stack/PlaceCustomStack.js";
@@ -165,6 +166,9 @@ export class Place {
     rotation: JavaIntFunction | null,
     value: JavaIntFunction | null,
   ): PlaceMonotonousStack | PlaceCustomStack {
+    // @java GameType.Stacking — (place Stack ...) (Backgammon points):
+    // stacking CONTAINERS (removes pop one piece) without per-level moves.
+    compileFlags.usesStacking = true;
     // Java parity: numNonNull validation omitted (handled at higher level)
     // Java: if (items == null && (locs != null || region != null || coord != null || counts != null))
     if (items === null && (locs !== null || region !== null || coord !== null || counts !== null)) {

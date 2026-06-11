@@ -107,7 +107,7 @@ export class Step extends Effect {
     this.sideEffect = opts.sideEffect ?? null;
     this.stack = opts.stack ?? false;
     // @java gameFlags() |= GameType.Stacking when stack:True.
-    if (this.stack) compileFlags.usesStacking = true;
+    if (this.stack) { compileFlags.usesStacking = true; compileFlags.usesStackMoves = true; }
     this.dirnChoice = opts.dirnChoice;
   }
 

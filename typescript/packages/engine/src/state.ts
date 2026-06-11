@@ -120,6 +120,8 @@ export interface StateOptions {
   readonly ownedEntries?: readonly OwnedEntry[];
   /** @java GameType.Stacking — compiled-tree flag; plain moves PUSH levels. */
   readonly stackingGame?: boolean;
+  /** stack:True MOVE ludemes compiled (per-level plain-move pushes). */
+  readonly stackMovesGame?: boolean;
   /**
    * Per-level piece values, parallel to {@link stacks}. Java's plain stacking
    * push (addItemGeneric) does NOT carry the moving piece's value — the new
@@ -275,6 +277,8 @@ export class State {
   public readonly ownedEntries?: readonly OwnedEntry[];
   /** @java GameType.Stacking; see {@link StateOptions.stackingGame}. */
   public readonly stackingGame: boolean;
+  /** See {@link StateOptions.stackMovesGame}. */
+  public readonly stackMovesGame: boolean;
   /** Per-level values; see {@link StateOptions.valueStacks}. */
   public readonly valueStacks?: readonly (readonly number[])[];
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
@@ -437,6 +441,7 @@ export class State {
     this.prev = options.prev ?? 0;
     this.ownedEntries = options.ownedEntries;
     this.stackingGame = options.stackingGame ?? false;
+    this.stackMovesGame = options.stackMovesGame ?? false;
     this.valueStacks = options.valueStacks;
     this.numTurn = options.numTurn ?? 1;
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
@@ -1414,6 +1419,7 @@ export class State {
         prev: patch.prev ?? this.prev,
         ownedEntries: patch.ownedEntries ?? this.ownedEntries,
         stackingGame: patch.stackingGame ?? this.stackingGame,
+        stackMovesGame: patch.stackMovesGame ?? this.stackMovesGame,
         valueStacks: patch.valueStacks ?? this.valueStacks,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:

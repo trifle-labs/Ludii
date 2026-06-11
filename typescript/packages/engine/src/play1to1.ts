@@ -117,7 +117,8 @@ export function play1to1(source: string, opts?: Play1to1Options): Game {
   resetCompileFlags();
   const game = argCompiler.compile<Game>(gameNode, ["game.Game"]);
   // @java Game.computeGameFlags — harvest the ludeme-tree Stacking flag.
-  (game as unknown as { usesStacking?: boolean }).usesStacking = compileFlags.usesStacking;
+  (game as unknown as { usesStacking?: boolean; usesStackMoves?: boolean }).usesStacking = compileFlags.usesStacking;
+  (game as unknown as { usesStackMoves?: boolean }).usesStackMoves = compileFlags.usesStackMoves;
   if (game == null) throw new Error("play1to1: faithful compile returned null");
   return game;
 }

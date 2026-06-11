@@ -301,7 +301,7 @@ export class ActionMove extends BaseAction {
     // Fenix's setup "generals" as count-piles (stacks=[2], countAt=2),
     // poisoning (size Stack), the Owned registry and capture valuations.
     if (
-      state.stackingGame &&
+      state.stackMovesGame &&
       this.fromIndex !== this.toIndex &&
       !this.transferCount &&
       state.cellAt(this.toIndex).owner > 0 &&
