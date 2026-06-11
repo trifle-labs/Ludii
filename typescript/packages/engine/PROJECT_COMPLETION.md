@@ -2245,3 +2245,7 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 
 ## Update 183 (2026-06-11) — Coc-Inbert 2/2 ((no Pieces Player) role fix)
 - WM residue: Damas 1/2 (probe its remaining trial), Meurimueng ×2 + Ratti-Chitti-Bakri ×2 (very long; re-probe mechanisms — likely also Player-role or counter-limit ends). Then lines/ graph boards + Laram Wali + Terhuchu (Small) and the war/leaping finish line is in sight.
+
+## Update 184 (2026-06-11) — ALL war/leaping WINNER_MISMATCHES CLEARED (9/9 trials)
+- (no Moves Player) role fix (commit above) finished the set: Damas, Meurimueng ×2, Ratti-Chitti ×2 + earlier Dama (Italy), Kharberg, Coc-Inbert.
+- war/leaping remaining MM ONLY: Crand, Game of Solomon, Pasang, Spoing, Throngs (lines/ graph generators), Laram Wali (CrossBoard zone), Terhuchu (Small). Family estimated ~94% — run the cap-5000 sweep to confirm, then the graph-board campaign.
