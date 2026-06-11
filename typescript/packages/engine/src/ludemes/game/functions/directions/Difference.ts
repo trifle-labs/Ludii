@@ -54,8 +54,23 @@ export class Difference implements DirectionsFunction {
       };
       const topo = (ctx as unknown as { topology?: () => TopoLike }).topology?.();
       const playType = (ctx.board() as unknown as { defaultSite?: () => string }).defaultSite?.() ?? "Cell";
+      // @java Difference.convertToAbsolute:146/160 — relation categories
+      // expand via element.supportedDirections(relation), PER-SITE (the
+      // element is the convertToAbsolute argument; callers pass the from
+      // element). The board-global union says Diagonal={NE,SE,SW,NW}
+      // everywhere, but on Crand's vertex board an ADDED edge makes its
+      // step Orthogonal regardless of angle — at site 30 Java's Diagonal
+      // is only {SE,NW}, so (difference Forwards Diagonal) keeps the NE
+      // edge-step 30>40. Global expansion wrongly subtracted it.
+      const from = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
+      type ElLike = { supportedDirections?: (rel?: string) => Array<{ toAbsolute?: () => string } | string> };
+      const el: ElLike | undefined = from >= 0
+        ? (topo as unknown as { getGraphElements?: (t: string) => ElLike[] })?.getGraphElements?.(playType)?.[from]
+        : undefined;
       const supportedOf = (rel: string): string[] | undefined => {
-        const raw = topo?.supportedDirections?.(rel, playType);
+        const raw = el?.supportedDirections
+          ? el.supportedDirections(rel === "All" ? undefined : rel)
+          : topo?.supportedDirections?.(rel, playType);
         if (!raw || raw.length === 0) return undefined;
         return raw
           .map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? ""))

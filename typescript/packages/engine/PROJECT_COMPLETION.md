@@ -2338,3 +2338,9 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
 - Start state now byte-matches the oracle: regions [25,0,1,2,3,4,6,7,8] / [16,17,18,20,21,22,23,24,37] — no 19.
 - lines/Terhuchu 4/4 OUTCOME_OK (proper ply=1159/1006 under MOVE_CAP=5000 — it caps at 600 otherwise; Small 154/239).
 - Regression set green: HeXentafl 2/2, Coyote 2/2, Adugo 2/2, Solomon 2/2. Full canary battery 46/46 OUTCOME_OK (read before commit). Units 194/0.
+
+## Update 203 (2026-06-11) — Crand CLEARED 2/2: Difference expands relation categories PER-SITE
+- Crand ply 0: Java legal = 30>40 31>40 32>40; ours was 31>40 only. Oracle dump of per-site supportedDirections proved Java treats ADDED graph edges as ORTHOGONAL-relation steps regardless of angle (site 30: Orthogonal=[N,NE,E,S,SW,W], Diagonal=[SE,NW]; centre 40: Diagonal=[]). Our topology already matched Java exactly — the defect was Difference.ts expanding `Diagonal` from the BOARD-GLOBAL union {NE,SE,SW,NW} instead of Java's per-element element.supportedDirections(relation) (Difference.java convertToAbsolute, element argument).
+- FIX: Difference.eval resolves relation categories via getGraphElements(playType)[ctx._evalFrom].supportedDirections(rel) when a from-site is bound, falling back to the global union. (difference Forwards Diagonal) now keeps the NE/NW edge-steps into the centre.
+- Crand 2/2 OUTCOME_OK (ply 1707/969, MOVE_CAP=5000). war/leaping family at 216/226 (95.6%); residual: Pasang, Spoing (3D SitesSupport), Throngs (deprioritized), Laram Wali (CrossBoard zone), experimental/Seesaw.
+- Full battery 68/68 OUTCOME_OK (incl. Terhuchu 4/4, HeXentafl/Coyote/Adugo/Solomon), units 194/0 — read before commit.
