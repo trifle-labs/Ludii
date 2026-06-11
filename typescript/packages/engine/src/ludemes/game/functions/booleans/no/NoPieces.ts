@@ -66,12 +66,19 @@ export class NoPieces implements BooleanFunction {
     let playerId = this.whoFn.eval(ctx);
 
     if (this.role !== null) {
-      switch (this.role) {
+      switch (this.role as string) {
         case "Mover":
           playerId = state.mover;
           break;
         case "Next":
           playerId = (state.mover % numPlayers) + 1;
+          break;
+        case "Player":
+          // @java RoleType.Player — the (forEach Player ...) iteration
+          // player (context.player()); falling into the P<n> parse made
+          // (no Pieces Player) read the MOVER and Coc-Inbert's misère end
+          // never fired.
+          playerId = (ctx as unknown as { _evalPlayer?: number })._evalPlayer ?? state.mover;
           break;
         default: {
           const n = parseInt((this.role as string).slice(1), 10);
