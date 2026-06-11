@@ -2050,3 +2050,6 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 138 (2026-06-11) — Dual-SiteType layer 4: typed move application
 - ActionMove routes explicitly-typed same-type relocations through withTypedSite (explicit flag from options.fromType presence; gated on the channel existing — empty typedSites games unaffected). Step/Hop stamp the tag via per-eval fields. Guerrilla ply 11→23/26. Battery+Fanorona green; committed. NEXT: typed Remove application + (sites Occupied on:Cell)/(sites Incident ...) reads, then Guerrilla/Alice verify.
+
+## Update 139 (2026-06-11) — Dual-SiteType layer 5: typed emptiness
+- IsEmpty with an explicit type reads the typed channel (gated on existence). Guerrilla ply 23/26→39/45. NEXT: the same explicit-type routing for IsOccupied/Who/What reads, typed Remove application (COIN's RemoveHoppedEnemyOnVertex removes VERTEX pieces from a Cell move — cross-type; P1's surrounded-cell capture removes CELL pieces via (remove Cell (site))), then full Guerrilla/Alice verify.
