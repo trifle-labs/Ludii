@@ -971,6 +971,18 @@ export class State {
         : target.length - 1;
     if (removeAt >= 0) target.splice(removeAt, 1);
     nextStacks[siteIndex] = target;
+    // Per-level VALUES shift with the pop (Java cs.remove splices the value
+    // column too) — leaving them desyncs MaxMoves' top-of-stack reads.
+    let nextValueStacks: (readonly number[])[] | undefined;
+    {
+      const vs = this.valueStacks?.[siteIndex];
+      if (vs !== undefined && vs.length > 0 && removeAt >= 0) {
+        const copy = (this.valueStacks ?? []).map((r) => [...r]);
+        if (removeAt < (copy[siteIndex]?.length ?? 0)) copy[siteIndex]!.splice(removeAt, 1);
+        else copy[siteIndex] = copy[siteIndex]!.slice(0, -1);
+        nextValueStacks = copy;
+      }
+    }
     const nextCells = [...this.cells];
     nextCells[siteIndex] = target[target.length - 1] ?? 0;
     const existing = this.whatStacks[siteIndex];
@@ -986,11 +998,17 @@ export class State {
         stacks: nextStacks,
         whatStacks: nextWhatStacks,
         whats: nextWhats,
+        ...(nextValueStacks !== undefined ? { valueStacks: nextValueStacks } : {}),
       });
     }
     const nextWhats = [...this.whats];
     nextWhats[siteIndex] = target.length > 0 ? (target[target.length - 1] ?? 0) : 0;
-    return this.with({ cells: nextCells, stacks: nextStacks, whats: nextWhats });
+    return this.with({
+      cells: nextCells,
+      stacks: nextStacks,
+      whats: nextWhats,
+      ...(nextValueStacks !== undefined ? { valueStacks: nextValueStacks } : {}),
+    });
   }
 
   /**
