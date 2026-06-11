@@ -1974,3 +1974,7 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 119 (2026-06-11) — Ahead SameDirection fixed (3 stacked gaps); Fanorona residual
 - (ahead X SameDirection/OppositeDirection): raw-string dirnChoice (raw-literal rule #8), Java-arity radials no-op, and unnamed lattice diagonals — all three fixed via direct ray-walk (find ray origin→target, step distance further). Evals verified: ahead(23,Same)=14, ahead(32,Opp)=41 on the alquerque lattice.
 - Fanorona ply-1 residual: tsMoveCount 2→3 but recorded Select(32→23) still missing — next probe: list the 3 generated moves and trace why piece-at-32's Select drops (forEach Piece iteration or the Around region). Spot battery green; committed.
+
+## Update 120 (2026-06-11) — Visited-set wiring + Fanorona residual
+- Game.apply now maintains State.visited (@java Game.java:3183-3193: clear on turn pass, visit applied endpoints on relay) — the channel existed but was never written; (not (is Visited (to))) gates Fanorona/draughts chains. Spot battery green (relay canaries).
+- Fanorona ply-1 residual NARROWED: with visited + the Ahead fixes, our ply-0 apply STILL moveAgains (Java passes to P2; offers shrank 3→1). The canMove(CaptureAgainIn) hypothetical inside the ply-0 then finds a continuation Java doesn't — next probe: eval the CaptureAgainIn or-branches in the ply-0 post-ctx (lastTo=22) and dump which to-candidate passes; check the Ahead from/to bindings INSIDE the canMove probe (the hypothetical's _evalFrom/_evalTo may be the OUTER move's, making SameDirection resolve the wrong axis).
