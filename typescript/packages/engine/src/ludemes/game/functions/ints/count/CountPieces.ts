@@ -82,6 +82,20 @@ export class CountPieces implements IntFunction {
     }
 
     const pid = this.whoFn.eval(ctx);
+    // @java CountPieces — the optional component-name filter selects the
+    // matching components ((count Pieces P1 "DoubleCounter")). It was
+    // IGNORED: Game of Solomon's two-kings draw fired with zero kings on
+    // the board. Label match: "DoubleCounter1" starts with "DoubleCounter"
+    // (and NOT with "Counter" — prefix match is owner-digit tolerant and
+    // name-exact).
+    const labels = ctx.state.componentLabels;
+    const whats = ctx.state.whats;
+    const whatStacks = ctx.state.whatStacks;
+    const nameMatches = (what: number): boolean => {
+      if (this.pieceName == null) return true;
+      const label = labels[what] ?? "";
+      return label === this.pieceName || (label.startsWith(this.pieceName) && /^\d+$/.test(label.slice(this.pieceName.length)));
+    };
     let n = 0;
     for (let i = 0; i < totalN; i++) {
       if (allowedSites && !allowedSites.has(i)) continue;
@@ -90,19 +104,21 @@ export class CountPieces implements IntFunction {
         // @java CountPieces: for stacking games, iterates all levels via cs.sizeStack(site)
         const stack = stacks[i];
         if (stack && stack.length > 0) {
-          for (const owner of stack) {
-            if (owner === pid) n++;
+          for (let lvl = 0; lvl < stack.length; lvl++) {
+            const owner = stack[lvl];
+            const what = whatStacks[i]?.[lvl] ?? (lvl === stack.length - 1 ? (whats[i] || owner!) : owner!);
+            if (owner === pid && nameMatches(what)) n++;
           }
         } else {
           // Non-stacking or non-materialized: use cells + countAt
-          if (cells[i] === pid) {
+          if (cells[i] === pid && nameMatches(whats[i] || pid)) {
             const c = countAt[i] ?? 0;
             n += c > 0 ? c : 1;
           }
         }
       } else {
         // Hand slot: countAt[i] pieces if owned by pid
-        if (cells[i] === pid) {
+        if (cells[i] === pid && nameMatches(whats[i] || pid)) {
           n += countAt[i] ?? 0;
         }
       }
