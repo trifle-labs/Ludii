@@ -2040,3 +2040,6 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 135 (2026-06-11) — Dual-SiteType layer 3 groundwork (viewOf + type tags)
 - Trajectories.viewOf(kind): memoized alternate-type view of the same board graph. ForEachPiece sets ctx._evalFromType per iterated position (cleared on restore). REMAINING (layer 3 completion): thread the typed view through Step/Hop/Slide as a LOCAL (the direction helpers take traj as a parameter — do NOT mutate ctx._trajectories; a leak corrupts later evals — first attempt reverted for exactly this), then typed ActionMove/Remove application (route via withTypedSite by action siteType) and typed Occupied/Incident reads; verify Guerrilla (recorded ply-2 cell step 34→41) and Alice Chess.
+
+## Update 136 (2026-06-11) — Dual-SiteType layer 3: typed adjacency LIVE
+- Step/Hop consume Trajectories.viewOf(fromType) as locals. Guerrilla: COIN moves on cell diagonals, trials ply 2→11. Residual: recorded ply-11 P2 from=41 exceeds the 36-cell channel — investigate Java's per-type site numbering in trial records (Cell ids may be globally offset after vertices, or the move is another mechanism); also remaining: typed ActionMove/Remove application + typed Occupied/Incident reads. Spot battery green; committed.
