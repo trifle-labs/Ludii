@@ -38,9 +38,16 @@ export class IsThreatened extends BaseBooleanFunction {
           ? (context.game as unknown as { numPlayers(): number }).numPlayers()
           : Number((context.game as unknown as { numPlayers?: number }).numPlayers ?? 2);
       const originalMover = context.state.mover;
+      const originalPrev = (context.state as unknown as { prev: number }).prev;
       for (let enemy = 1; enemy <= numPlayers; enemy += 1) {
         if (enemy === owner) continue;
         (context.state as unknown as { mover: number }).mover = enemy;
+        // The hypothetical enemy turn is a FRESH turn: prev must not equal
+        // the temp mover or "SameTurn" play dispatch routes the threat
+        // simulation into chain/promote branches (Chess: king-steps were
+        // check-filtered against phantom promote "threats" once IsPrev read
+        // the real state.prev channel).
+        (context.state as unknown as { prev: number }).prev = originalMover === enemy ? 0 : originalMover;
         try {
           const moves = this.specificMoves?.eval(context) ?? context.game.moves(context);
           for (const move of moves) {
@@ -49,6 +56,7 @@ export class IsThreatened extends BaseBooleanFunction {
           }
         } finally {
           (context.state as unknown as { mover: number }).mover = originalMover;
+          (context.state as unknown as { prev: number }).prev = originalPrev;
         }
       }
     } finally {

@@ -41,14 +41,23 @@ export class IsPrev implements BooleanFunction {
    * state.prev which is the mover of the ply BEFORE the current one.
    */
   public eval(ctx: Context): boolean {
-    const moves = ctx.trial.moves;
-    if (moves.length === 0) return false;
-    // When in a then-consequence context (_thenContextDepth > 0), the current
-    // move has been added to the trial — the "previous" mover is moves[last-1].
-    const inThen = (ctx as unknown as { _thenContextDepth?: number })._thenContextDepth ?? 0;
-    const prevIdx = inThen > 0 ? moves.length - 2 : moves.length - 1;
-    if (prevIdx < 0) return false;
-    const prev = moves[prevIdx]!.mover;
+    // @java IsPrev.java — who.eval(context) == context.state().prev().
+    // state.prev is the REAL maintained channel (@java State.setPrev in
+    // Game.apply, ported Update 149) — stamped AFTER the end-rules evaluate,
+    // so during an end-eval (NoMoves(Next) temp context) it still holds the
+    // PREVIOUS turn's mover. The old trial-derived read returned the just-
+    // applied move's mover there, flipping "SameTurn" true inside
+    // (no Moves Next) and ending Dama (Italy) mid-chain (WM at ply 10).
+    const prev = (ctx.state as unknown as { prev?: number }).prev ?? 0;
+    if (prev <= 0) {
+      // Pre-first-advance fallback (start rules / ply 0 then-contexts).
+      const moves = ctx.trial.moves;
+      if (moves.length === 0) return false;
+      const inThen = (ctx as unknown as { _thenContextDepth?: number })._thenContextDepth ?? 0;
+      const prevIdx = inThen > 0 ? moves.length - 2 : moves.length - 1;
+      if (prevIdx < 0) return false;
+      return this.who.eval(ctx) === moves[prevIdx]!.mover;
+    }
     return this.who.eval(ctx) === prev;
   }
 }

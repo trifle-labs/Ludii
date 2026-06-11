@@ -65,7 +65,15 @@ export class NoMoves implements BooleanFunction {
         if (!game || !game.equipment) return state.stalemated[nextPlayer] === true;
 
         // Build a temp context for the next player.
-        const nextState = state.withMover(nextPlayer);
+        // @java NoMoves.java:77-81 — context.setMoverAndImpliedPrevAndNext(
+        // state.next()); state.setPrev(currentMover): the temp context's
+        // PREV is the player who just moved, so "SameTurn" dispatch sees
+        // prev==mover exactly when the chain continues (Dama (Italy) ended
+        // mid-game without this: the temp prev kept the stale stamp and the
+        // play rule entered the wrong branch).
+        const nextState = state.withMover(nextPlayer)
+          .withPrev(state.mover)
+          .withNext((nextPlayer % numPlayers) + 1);
         const tempCtx = new ContextClass(
           ctx.game,
           nextState,
