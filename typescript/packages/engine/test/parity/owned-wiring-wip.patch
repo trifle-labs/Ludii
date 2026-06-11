@@ -1,0 +1,180 @@
+diff --git a/typescript/packages/engine/src/action/action-move.ts b/typescript/packages/engine/src/action/action-move.ts
+index bfab872e55..f350b240f6 100644
+--- a/typescript/packages/engine/src/action/action-move.ts
++++ b/typescript/packages/engine/src/action/action-move.ts
+@@ -139,10 +139,23 @@ export class ActionMove extends BaseAction {
+         fromOwners.push(owner);
+         fromWhats.push(whatStack[lvl] ?? (ownerStack.length > 0 ? owner : state.whatAtSite(this.fromIndex)));
+       }
+-      let s2 = state;
++      // @java OwnedFactory — the level-aware FullOwned registry exists for
++      // stacking games; materialize it the moment the game starts stacking.
++      let s2 = state.withOwnedMaterialized();
++      // @java ActionMoveStacking.java:333-344 — owned: level-less remove of
++      // every moved (owner, what) at from...
++      for (let i = 0; i < fromOwners.length; i++) {
++        s2 = s2.withOwnedRemoveAll(fromOwners[i]!, fromWhats[i]!, this.fromIndex);
++      }
++      const baseLevelTo = s2.stackSize(this.toIndex);
+       for (let i = 0; i < fromOwners.length; i++) {
+         s2 = s2.withStackPush(this.toIndex, fromOwners[i]!, fromWhats[i]!);
+       }
++      // @java ActionMoveStacking.java:349-360 — ...then add at the landing
++      // levels [sizeTo - moved, sizeTo).
++      for (let i = 0; i < fromOwners.length; i++) {
++        s2 = s2.withOwnedAdd(fromOwners[i]!, fromWhats[i]!, this.toIndex, baseLevelTo + i);
++      }
+       s2 = s2.withStackRemoveAll(this.fromIndex);
+       return s2;
+     }
+@@ -242,8 +255,12 @@ export class ActionMove extends BaseAction {
+       const topOwner = state.stackAt(this.fromIndex, topLevel);
+       const topWhat = state.whatAtSiteLevel(this.fromIndex, topLevel);
+       if (topOwner === 0) return state;
+-      const popped = state.withStackPop(this.fromIndex);
+-      const pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
++      // @java ActionMoveTopPiece (stacking): owned remove at the from-top
++      // level, add at the to-top level after the push.
++      let popped = state.withOwnedRemoveLevel(topOwner, topWhat, this.fromIndex, topLevel);
++      popped = popped.withStackPop(this.fromIndex);
++      let pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
++      pushed = pushed.withOwnedAdd(topOwner, topWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
+       return this.maintainTracks(pushed, topWhat);
+     }
+     const movingOwner = state.cellAt(this.fromIndex).owner;
+diff --git a/typescript/packages/engine/src/action/action-remove.ts b/typescript/packages/engine/src/action/action-remove.ts
+index 32896a5d0d..da66330119 100644
+--- a/typescript/packages/engine/src/action/action-remove.ts
++++ b/typescript/packages/engine/src/action/action-remove.ts
+@@ -69,9 +69,25 @@ export class ActionRemove extends BaseAction {
+     if (this.explicitTyped && state.typedSites.has(this.siteType)) {
+       return state.withTypedSite(this.siteType, this.toIndex, 0, 0, 0);
+     }
++    // @java ActionRemoveTopPiece (stacking branch): pop the TOP level and
++    // update the FullOwned registry at that level. Only live once the game
++    // materialized the registry (per-level stacks exist).
++    if (state.ownedEntries !== undefined && (state.stacks[this.toIndex]?.length ?? 0) > 1) {
++      const lvl = (state.stacks[this.toIndex]?.length ?? 1) - 1;
++      const own = state.stackAt(this.toIndex, lvl);
++      const wht = state.whatAtSiteLevel(this.toIndex, lvl);
++      let nx = state.withOwnedRemoveLevel(own, wht, this.toIndex, lvl);
++      nx = nx.withStackPop(this.toIndex);
++      return nx;
++    }
+     // The removed piece's component id, read before the site is cleared, so the
+     // track-index structure can drop it (Java ActionRemoveTopPiece: `pieceIdx`).
+     const removedWhat = state.whatAtSite(this.toIndex);
++    // Registry maintenance for the flat clear (@java owned().remove(owner,
++    // pieceIdx, to, type) — level-less).
++    if (state.ownedEntries !== undefined) {
++      state = state.withOwnedSiteCleared(this.toIndex);
++    }
+     // Removing from a multi-piece pile (Java: a stacked site, e.g. Bagh goat
+     // stacks) leaves the remainder in place; only when the count is exhausted
+     // does the site become empty. Plain single pieces (count 0/1) are cleared.
+diff --git a/typescript/packages/engine/src/ludemes/Game.ts b/typescript/packages/engine/src/ludemes/Game.ts
+index 911aaae903..0248832395 100644
+--- a/typescript/packages/engine/src/ludemes/Game.ts
++++ b/typescript/packages/engine/src/ludemes/Game.ts
+@@ -722,10 +722,37 @@ export class Game implements Game {
+       const turningOver = !appliedMove.moveAgain && !(setNextActEarly !== undefined && setNextActEarly.who() === mover);
+       if (turningOver && newState.sitesToRemove.length > 0) {
+         if (process.env.TRACE_FLUSH) console.error(`[flush] sitesToRemove=${JSON.stringify([...newState.sitesToRemove])} ply=${(globalThis as Record<string, unknown>).__PLY}`);
+-        // Remove all deferred capture sites.
+-        for (const site of newState.sitesToRemove) {
+-          if (!newState.isEmptySite(site)) {
+-            newState = new ActionRemove({ to: site }).apply(newState);
++        if (newState.ownedEntries !== undefined) {
++          // @java Move.java:549-575 (stacking branch) — count queue entries
++          // per site, clamp to the CURRENT stack size, then apply level
++          // removes top-down. The clamp + FullOwned's decrement loop is what
++          // strands Java's stale owned ghosts (Fenix) — port verbatim.
++          const counts = new Map<number, number>();
++          for (const site of newState.sitesToRemove) counts.set(site, (counts.get(site) ?? 0) + 1);
++          for (const [site, queued] of [...counts.entries()].sort((a, b) => a[0] - b[0])) {
++            const numToRemove = Math.min(queued, newState.stackSize(site));
++            for (let level = numToRemove - 1; level >= 0; level--) {
++              const sz = newState.stacks[site]?.length ?? 0;
++              const flatOccupied = sz === 0 && newState.who(site) > 0;
++              if (level >= sz && !(flatOccupied && level === 0)) continue; // @java cs.remove -> 0
++              const own = sz > 0 ? newState.stackAt(site, level) : newState.who(site);
++              const wht = sz > 0 ? newState.whatAtSiteLevel(site, level) : newState.whatAtSite(site);
++              if (own <= 0) continue;
++              newState = newState.withOwnedRemoveLevel(own, wht, site, level);
++              if (sz > 0) {
++                newState = newState.withStackPop(site, level);
++              } else {
++                newState = newState.withCell(site, 0).withWhatAt(site, 0);
++                if (newState.countAtSite(site) > 0) newState = newState.withCountAt(site, 0);
++              }
++            }
++          }
++        } else {
++          // Remove all deferred capture sites.
++          for (const site of newState.sitesToRemove) {
++            if (!newState.isEmptySite(site)) {
++              newState = new ActionRemove({ to: site }).apply(newState);
++            }
+           }
+         }
+         newState = newState.withClearedSitesToRemove();
+diff --git a/typescript/packages/engine/src/ludemes/game/rules/play/moves/nonDecision/operators/foreach/piece/ForEachPiece.ts b/typescript/packages/engine/src/ludemes/game/rules/play/moves/nonDecision/operators/foreach/piece/ForEachPiece.ts
+index ad65f0d8ff..1c6e939521 100644
+--- a/typescript/packages/engine/src/ludemes/game/rules/play/moves/nonDecision/operators/foreach/piece/ForEachPiece.ts
++++ b/typescript/packages/engine/src/ludemes/game/rules/play/moves/nonDecision/operators/foreach/piece/ForEachPiece.ts
+@@ -255,7 +255,9 @@ export class ForEachPiece extends Operator {
+         {
+           const st = context.state;
+           const ownerStack = st.stacks[location] ?? [];
+-          if (ownerStack.length > 1 && level === 0) {
++          // Registry-backed positions carry REAL levels (ghosts included) —
++          // never second-guess them.
++          if ((st as { ownedEntries?: unknown }).ownedEntries === undefined && ownerStack.length > 1 && level === 0) {
+             const whatStack = st.whatStacks[location] ?? [];
+             for (let lvl = ownerStack.length - 1; lvl >= 0; lvl--) {
+               const o = ownerStack[lvl] ?? 0;
+diff --git a/typescript/packages/engine/src/state.ts b/typescript/packages/engine/src/state.ts
+index 2e717232c4..46eb3dbea0 100644
+--- a/typescript/packages/engine/src/state.ts
++++ b/typescript/packages/engine/src/state.ts
+@@ -307,6 +307,27 @@ export class State {
+     positions(pid: number): Array<Array<{ site(): number; level(): number; siteType(): string }>>;
+     mapCompIndex(pid: number, compId: number): number;
+   } {
++    // @java FullOwned — once the registry is live (stacking game), positions
++    // come from it VERBATIM, stale ghosts included (Fenix's recorded moves
++    // are generated from one).
++    const entries = this.ownedEntries;
++    if (entries !== undefined) {
++      return {
++        positions: (pid: number) => {
++          const byComp: Array<Array<{ site(): number; level(): number; siteType(): string }>> = [];
++          for (const e of entries) {
++            if (e.pid !== pid) continue;
++            (byComp[e.comp] ??= []).push({
++              site: () => e.site,
++              level: () => e.level,
++              siteType: () => "Cell",
++            });
++          }
++          return byComp;
++        },
++        mapCompIndex: (_pid: number, compId: number) => compId,
++      };
++    }
+     const cells = this.cells;
+     const whats = this.whats;
+     return {
+@@ -1005,6 +1026,12 @@ export class State {
+     return this.with({ ownedEntries: next });
+   }
+ 
++  /** Level-less site wipe of the registry (flat ActionRemove). */
++  public withOwnedSiteCleared(site: number): State {
++    if (this.ownedEntries === undefined) return this;
++    return this.with({ ownedEntries: this.ownedEntries.filter((e) => e.site !== site) });
++  }
++
+   /** @java FullOwned.remove(pid, comp, site, type) — level-less: all entries of (pid,comp) at site. */
+   public withOwnedRemoveAll(pid: number, comp: number, site: number): State {
+     if (this.ownedEntries === undefined) return this;

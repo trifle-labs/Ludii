@@ -2144,3 +2144,8 @@ IMPLEMENTATION (TS):
   c. Game.apply step-1b flush: replace per-entry pops with the Java loop from (2) for stacking sites (keep current path when no per-level stacks anywhere).
   d. ForEachPiece: when state.ownedEntries defined, positions come from it (site+level per entry, including ghosts); else existing scan.
   e. Tests: Fenix 2/2 expected; battery MUST include Bashni/Lasca (stack games now consuming the registry); units.
+
+## Update 159 (2026-06-11) — Owned wiring v1 REGRESSED (Bashni 1/2, Lasca 0/2) — parked as patch, green restored
+- Steps (b)-(d) drafted and SAVED at test/parity/owned-wiring-wip.patch (180 lines: ActionMove stack+pop owned blocks, ActionRemove top/flat blocks, Game.apply Java flush loop, registry-backed State.owned getter, ForEachPiece recovery gate). Applying it: Fenix still 0/2, Bashni 2/2→1/2, Lasca 2/2→0/2 — the registry-backed positions diverge from the live scan for the WORKING games, i.e. some action path doesn't maintain entries (suspects, in order: (1) FromTo victim moves route through which ActionMove branch? the flat branch has NO owned updates in the patch — victims relocating between flat sites after materialization leave stale/missing entries; (2) ActionAdd/Promote not wired; (3) withStackPop(level) mid-stack pops in the new flush vs whatStacks sync).
+- NEXT WINDOW RECIPE: git apply test/parity/owned-wiring-wip.patch; add flat-branch owned maintenance to ActionMove (remove-at-from level 0 + add-at-to), wire ActionAdd + ActionPromote owned blocks; then per-ply diff Bashni trial-0 registry vs live scan (assert equal at every ply — they must match for ghost-free games) — fix until assert holds, then Fenix.
+- Working tree restored to green (Bashni/Lasca 2/2 re-verified, tsc clean).
