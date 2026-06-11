@@ -84,18 +84,28 @@ export class SitesCentre extends BaseRegionFunction {
  * @java Topology.centre(SiteType) — sites with minimum distance to board centroid.
  */
 function graphCentreSites(traj: Trajectories): number[] {
-  const core = (traj as unknown as {
-    core?: { topo?: { elements?(type: string): Array<{ id: number; centroid?(): { x: number; y: number } }> } }
-  }).core;
-  const elements = core?.topo?.elements?.("Cell");
+  const trajAny = traj as unknown as {
+    core?: { topo?: { elements?(type: string): Array<{ id: number; centroid?(): { x: number; y: number } }> } };
+    playType?: string;
+  };
+  const core = trajAny.core;
+  // @java graph.centre(realType) — the PLAY type's elements, not Cell:
+  // on a use:Vertex wheel board (Gioco dell'Orso) the Cell list is the faces
+  // and their nearest-centroid id leaked out as a vertex site (bear at 12,
+  // Java places it at the hub vertex 0). Trajectories caches the play-type
+  // element list as `els`.
+  const elements = (trajAny as unknown as { els?: Array<{ id: number; centroid?(): { x: number; y: number }; pt?: { x: number; y: number } }> }).els
+    ?? core?.topo?.elements?.("Cell");
   if (!elements || elements.length === 0) return [];
 
+  const coordOf = (el: { centroid?(): { x: number; y: number }; pt?: { x: number; y: number } }):
+    { x: number; y: number } | undefined => el.centroid?.() ?? el.pt;
   // Compute board centroid
   let sumX = 0;
   let sumY = 0;
   let count = 0;
   for (const el of elements) {
-    const c = el.centroid?.();
+    const c = coordOf(el);
     if (c) { sumX += c.x; sumY += c.y; count++; }
   }
   if (count === 0) return [];
@@ -105,7 +115,7 @@ function graphCentreSites(traj: Trajectories): number[] {
   // Find min distance to centroid
   let minDist = Infinity;
   for (const el of elements) {
-    const c = el.centroid?.();
+    const c = coordOf(el);
     if (c) {
       const d = Math.hypot(c.x - cx, c.y - cy);
       if (d < minDist) minDist = d;
@@ -114,7 +124,7 @@ function graphCentreSites(traj: Trajectories): number[] {
   const tol = 0.001;
   return elements
     .filter((el) => {
-      const c = el.centroid?.();
+      const c = coordOf(el);
       return c !== undefined && Math.abs(Math.hypot(c.x - cx, c.y - cy) - minDist) < tol;
     })
     .map((el) => el.id)
