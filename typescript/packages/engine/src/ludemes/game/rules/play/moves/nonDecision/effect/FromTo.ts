@@ -109,9 +109,17 @@ export class FromTo implements MovesFunction {
 
       // @java FromTo.java:186-187 — check source occupancy. Mancala captures
       // use count:N on seed pits, which have counts but no component `what`.
-      const hasSource = this.countFn !== null
+      let hasSource = this.countFn !== null
         ? ctx.state.count(from) > 0
         : ctx.state.what(from) > 0;
+      // Dual-SiteType (@java cs.what(from, type)): a piece on a typed channel
+      // (Guerrilla's Cell counters) is a valid source too.
+      if (!hasSource) {
+        const typed = (ctx.state as unknown as { typedSites?: ReadonlyMap<string, { what: readonly number[]; count: readonly number[] }> }).typedSites;
+        if (typed) for (const ch of typed.values()) {
+          if ((ch.what[from] ?? 0) > 0 || (ch.count[from] ?? 0) > 0) { hasSource = true; break; }
+        }
+      }
       if (!hasSource) continue;
 
       ctx._evalFrom = from;
