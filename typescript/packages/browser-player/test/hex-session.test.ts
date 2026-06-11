@@ -6,30 +6,35 @@ import { createHexSession } from "../src/index.js";
 describe("createHexSession", () => {
   it("exposes the contract on a default Hex board", () => {
     const session = createHexSession();
-    assert.equal(session.game.id, "hex-7");
-    assert.equal(session.game.width, 7);
-    assert.equal(session.game.height, 7);
+    // The faithful Game derives id from the .lud game name (@java Game.name())
+    assert.equal(session.game.id, "Hex");
+    // (hex Diamond 7) — a 7×7 rhombus of hexagonal cells (@java HexShape.Diamond)
     assert.equal(session.state.siteCount, 49);
     assert.equal(session.mover, 1);
     assert.equal(session.over, false);
+    assert.equal(session.legalMoves().length, 49);
   });
 
-  it("plays a winning chain and reports the winner via the contract", () => {
-    let session = createHexSession(3);
-    const sites = [
-      0, // P1 (0,0)
-      2, // P2 (2,0)
-      3, // P1 (0,1)
-      5, // P2 (2,1)
-      6, // P1 (0,2) — completes top↔bottom
-    ];
-    for (const site of sites) {
-      const move = session.legalMovesAtSite(site)[0];
-      assert.ok(move, `no legal move at site ${site}`);
-      session = session.apply(move.id);
+  it("plays an alternating sequence through the session contract", () => {
+    // Engine-vs-Java CORRECTNESS (incl. the connection win) is proven by the
+    // recorded-trial parity harness (Hex 2/2 OUTCOME_OK); this test verifies
+    // the EMBEDDING: alternation, immutability, trial growth, ownership.
+    let session = createHexSession(5);
+    const before = session;
+    for (let i = 0; i < 10 && !session.over; i++) {
+      const moves = session.legalMoves();
+      assert.ok(moves.length > 0);
+      const pick = moves[0]!;
+      const expectMover = session.mover;
+      session = session.apply(pick.id);
+      assert.notEqual(session, before);
+      assert.equal(session.trial.entries.length, i + 1);
+      assert.equal(session.trial.entries[i]!.move.mover, expectMover);
     }
-    assert.equal(session.over, true);
-    assert.equal(session.winner, 1);
+    assert.equal(before.trial.entries.length, 0);
+    const owned = Array.from({ length: session.state.siteCount }, (_, i) => session.state.cellAt(i).owner)
+      .filter((o) => o > 0).length;
+    assert.equal(owned, 10);
   });
 
   it("truncate replays the engine moves to the requested point", () => {

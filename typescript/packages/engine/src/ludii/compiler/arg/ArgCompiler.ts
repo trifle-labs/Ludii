@@ -13,6 +13,8 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { getBuiltinDefines } from "../../../builtin-defines.js";
 import { ENUM_CONSTANTS } from "../gen/enum-constants.js";
+import { REFLECTION_JSON } from "../gen/reflection-data.js";
+import { GRAMMAR_TEXT } from "../gen/grammar-data.js";
 import { expandDefines } from "../../../lud-defines.js";
 import { applyOptions } from "../../../lud-options.js";
 import {
@@ -1381,13 +1383,18 @@ export function loadDefaultReflection(path = "tools/parity/ludeme-reflection.jso
   return loadReflection(path);
 }
 
-function loadReflection(path = "tools/parity/ludeme-reflection.json"): ReadonlyMap<string, ReflectionClass> {
-  const raw = JSON.parse(readFileSync(resolve(path), "utf8")) as Record<string, ReflectionClass>;
+function loadReflection(path?: string): ReadonlyMap<string, ReflectionClass> {
+  // Default: the EMBEDDED reflection snapshot (works in the browser and from
+  // any package CWD). An explicit path still reads from disk so tooling can
+  // point at a fresh extract of the Java source of truth.
+  const text = path !== undefined ? readFileSync(resolve(path), "utf8") : REFLECTION_JSON;
+  const raw = JSON.parse(text) as Record<string, ReflectionClass>;
   return new Map(Object.entries(raw));
 }
 
-function loadGrammar(path = "tools/parity/java-grammar-current.txt"): GrammarModel {
-  return parseEbnfGrammar(readFileSync(resolve(path), "utf8"));
+function loadGrammar(path?: string): GrammarModel {
+  const text = path !== undefined ? readFileSync(resolve(path), "utf8") : GRAMMAR_TEXT;
+  return parseEbnfGrammar(text);
 }
 
 function parseNodeArgs(node: LudList): ParsedArgs {

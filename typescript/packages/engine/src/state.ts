@@ -622,7 +622,11 @@ export class State {
     if (owner === 0) {
       return { owner: 0 };
     }
-    const label = this.componentLabels[owner - 1];
+    // @java the label comes from the COMPONENT at the site
+    // (components()[what].name()), not from the owner index. componentLabels
+    // is 1-indexed by component id (Game.componentLabels).
+    const what = this.whats[siteIndex] ?? 0;
+    const label = what > 0 ? this.componentLabels[what] : this.componentLabels[owner];
     return label === undefined ? { owner } : { owner, componentLabel: label };
   }
 

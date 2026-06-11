@@ -29,7 +29,8 @@ describe("createSessionFromLud", () => {
     const first = session.legalMovesAtSite(0)[0];
     assert.ok(first);
     const after = session.apply(first.id);
-    assert.equal(after.state.cellAt(0).componentLabel, "X");
+    // @java Game.componentLabels — `${component.name()}${owner}`
+    assert.equal(after.state.cellAt(0).componentLabel, "X1");
   });
 
   it("propagates compile errors when the source is malformed", () => {

@@ -1170,8 +1170,22 @@ export function boardSides(ctx: Context, dirName: string): number[] {
 
   // Graph centroid over the ring vertices.
   const sideVertexIds = new Set<number>();
-  for (const ring of rings) {
-    if (ring.length === 0) continue;
+  for (const rawRing of rings) {
+    if (rawRing.length === 0) continue;
+    // Normalize the ring to CCW winding BEFORE scoring — the corner detector
+    // reverses its local copy when the area is negative and returns indices
+    // into the REVERSED ring; walking runs against the original order
+    // misplaced every corner (hex Diamond sides fragmented at the tips).
+    const ring = [...rawRing];
+    {
+      let area = 0;
+      for (let i = 0; i < ring.length; i++) {
+        const [ax, ay] = ring[i]!;
+        const [bx, by] = ring[(i + 1) % ring.length]!;
+        area += ax * by - bx * ay;
+      }
+      if (area < 0) ring.reverse();
+    }
     let cx = 0; let cy = 0;
     for (const [x, y] of ring) { cx += x; cy += y; }
     cx /= ring.length; cy /= ring.length;

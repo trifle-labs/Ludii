@@ -6,7 +6,8 @@ import { createTicTacToeSession } from "../src/index.js";
 describe("EngineSession (tic-tac-toe adapter)", () => {
   it("exposes the engine via the BrowserGameSession contract", () => {
     const session = createTicTacToeSession();
-    assert.equal(session.game.id, "tic-tac-toe");
+    // The faithful Game derives id from the .lud game name (@java Game.name())
+    assert.equal(session.game.id, "Tic-Tac-Toe");
     assert.equal(session.game.numPlayers, 2);
     assert.equal(session.game.width, 3);
     assert.equal(session.game.height, 3);
