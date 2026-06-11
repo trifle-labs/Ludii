@@ -251,11 +251,42 @@ const COMPASS_IDX: Record<string, number> = {
  *
  * @java game/util/directions/RelativeDirection.java
  */
+const COMPASS16_CW = [
+  "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+  "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
+] as const;
+
+/**
+ * @java RelativeDirection.Forwards/Backwards/Rightwards/Leftwards.directions —
+ * walk the full compass clockwise from just past one cone edge up to (but not
+ * including) the other, keeping the directions the topology supports.
+ * facingDir is in 45-degree units (0=N..7=NW); cone edges are ±90°.
+ */
+function coneDirections(
+  facingDir: number,
+  supported: readonly string[],
+  startOffset16: number,
+  endOffset16: number,
+): string[] {
+  const facing16 = (facingDir * 2) % 16;
+  const supportedSet = new Set(supported);
+  const out: string[] = [];
+  let idx = (facing16 + startOffset16 + 16) % 16;
+  const end = (facing16 + endOffset16 + 16) % 16;
+  while (idx !== end) {
+    const name = COMPASS16_CW[idx]!;
+    if (supportedSet.has(name)) out.push(name);
+    idx = (idx + 1) % 16;
+  }
+  return out;
+}
+
 export function resolveRelativeDir(
   dirName: string,
   mover: number,
   playerDirs?: Map<number, number>,
   facingOverride?: number,
+  supportedDirs?: readonly string[],
 ): string | string[] | null {
   // Determine the mover's facing direction (in 45°-units: 0=N … 7=NW).
   // @java Component.getDirn() — a piece's OWN declared facing overrides its
@@ -276,6 +307,22 @@ export function resolveRelativeDir(
     facingDir = (mover === 1) ? 0 : 4;
   }
   const dn = dirName.toLowerCase();
+  // @java Directions.convertToAbsolute — group relative directions resolve
+  // against the topology's supported directions (rotated hex boards name them
+  // ENE/WNW/…, not the 8-wind compass; Dodo's Forwards cone is {WNW,N,ENE}).
+  if (supportedDirs && supportedDirs.length > 0) {
+    switch (dn) {
+      // @java Forwards: leftward().right() .. rightward() exclusive
+      case "forwards": return coneDirections(facingDir, supportedDirs, -3, 4);
+      // @java Backwards: opposite().leftward().right() .. opposite().rightward()
+      case "backwards": return coneDirections((facingDir + 4) % 8, supportedDirs, -3, 4);
+      // @java Rightwards: right() .. opposite() exclusive
+      case "rightwards": return coneDirections(facingDir, supportedDirs, 1, 8);
+      // @java Leftwards: opposite().right() .. baseDirn exclusive
+      case "leftwards": return coneDirections((facingDir + 4) % 8, supportedDirs, 1, 8);
+      default: break;
+    }
+  }
   switch (dn) {
     // GROUP directions (3 compass headings in the forward half-plane).
     // @java RelativeDirection.Forwards (with 's') = forward half-plane = 3 compass dirs.

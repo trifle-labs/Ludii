@@ -17,6 +17,16 @@ import { ActionMove } from "../../../../../../../action/action-move.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 
+// @java topology.supportedDirections(RelationType.Adjacent, graphType) — the
+// direction names this board actually supports (rotated hex: ENE/WNW/...).
+function supportedDirNames(ctx: unknown): string[] | undefined {
+  const topo = (ctx as { topology?: () => { supportedDirections?: (rel: string, t: string) => Array<{ toAbsolute?: () => string } | string> } }).topology?.();
+  const raw = topo?.supportedDirections?.("Adjacent", "Cell");
+  if (!raw || raw.length === 0) return undefined;
+  return raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0);
+}
+
+
 const OFF = -1;
 const UNDEFINED_CONST = -2;
 const MAX_DISTANCE = 1000;
@@ -179,7 +189,7 @@ export class Slide implements MovesFunction {
         const tok = what > 0 ? compFacing[what] : undefined;
         if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
       }
-      const relative = resolveRelativeDir(this.dirnName, mover, playerDirs, facingOverride);
+      const relative = resolveRelativeDir(this.dirnName, mover, playerDirs, facingOverride, supportedDirNames(ctx));
       if (Array.isArray(relative)) effDirNames = relative;
       else if (relative !== null) effDirNames = [relative];
     }

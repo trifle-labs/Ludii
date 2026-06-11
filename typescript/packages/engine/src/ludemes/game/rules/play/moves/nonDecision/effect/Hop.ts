@@ -35,6 +35,16 @@ import { resolveRelativeDir, isSingleDir, resolveSameOppositeDir } from "../../.
 import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
 
+// @java topology.supportedDirections(RelationType.Adjacent, graphType) — the
+// direction names this board actually supports (rotated hex: ENE/WNW/...).
+function supportedDirNames(ctx: unknown): string[] | undefined {
+  const topo = (ctx as { topology?: () => { supportedDirections?: (rel: string, t: string) => Array<{ toAbsolute?: () => string } | string> } }).topology?.();
+  const raw = topo?.supportedDirections?.("Adjacent", "Cell");
+  if (!raw || raw.length === 0) return undefined;
+  return raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0);
+}
+
+
 /**
  * Hop effect — piece hops over a hurdle.
  *
@@ -175,7 +185,7 @@ export class Hop extends Effect {
         if (resolved === null) continue;
         dirName = resolved;
       }
-      const relative = resolveRelativeDir(dirName, mover, playerDirs);
+      const relative = resolveRelativeDir(dirName, mover, playerDirs, undefined, supportedDirNames(ctx));
       if (Array.isArray(relative)) {
         for (const dir of relative) {
           for (const { ray } of axesForDir(dir)) pushRay(ray);

@@ -31,6 +31,16 @@ import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
 
+// @java topology.supportedDirections(RelationType.Adjacent, graphType) — the
+// direction names this board actually supports (rotated hex: ENE/WNW/...).
+function supportedDirNames(ctx: unknown): string[] | undefined {
+  const topo = (ctx as { topology?: () => { supportedDirections?: (rel: string, t: string) => Array<{ toAbsolute?: () => string } | string> } }).topology?.();
+  const raw = topo?.supportedDirections?.("Adjacent", "Cell");
+  if (!raw || raw.length === 0) return undefined;
+  return raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0);
+}
+
+
 /**
  * Step effect — single-step move to adjacent cell.
  *
@@ -151,7 +161,7 @@ export class Step extends Effect {
     };
 
     for (const dirName of directions) {
-      const relative = resolveRelativeDir(dirName, mover, playerDirs, facingOverride);
+      const relative = resolveRelativeDir(dirName, mover, playerDirs, facingOverride, supportedDirNames(ctx));
       if (Array.isArray(relative)) {
         // Forwards/Backwards group → forward ray of each resolved compass heading.
         for (const d of relative) for (const { ray } of axesForDir(d)) pushRay(ray);
