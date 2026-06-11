@@ -144,6 +144,9 @@ export class Custodial extends Effect {
     }
     const result: Move[] = [];
 
+    if (process.env.TRACE_CUSTODIAL) {
+      console.error(`[custodial] from=${from} min=${minPathLength} max=${maxPathLength} dirs=${directions.length} mover=${mover}`);
+    }
     if (maxPathLength === 1 && minPathLength < 2) {
       this.shortSandwich(ctx, result, mover, directions);
     } else if (maxPathLength > 1 && minPathLength <= maxPathLength) {
@@ -183,6 +186,7 @@ export class Custodial extends Effect {
     directions: readonly (readonly number[])[],
   ): void {
     for (const dir of directions) {
+      if (process.env.TRACE_CUSTODIAL) console.error(`[custodial.short] dir=${JSON.stringify(dir.slice(0,3))} target=${dir.length >= 3 ? this.isTarget(ctx, dir[1]!) : "short"} friend=${dir.length >= 3 ? this.isFriend(ctx, dir[2]!) : "-"}`);
       if (dir.length < 3) continue;
       const between = dir[1]!;
       if (!this.isTarget(ctx, between)) continue;

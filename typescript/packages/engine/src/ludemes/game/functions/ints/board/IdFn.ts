@@ -90,7 +90,11 @@ export class Id extends BaseIntFunction {
     const playerId = roleIndex(this.who, context);
     if (playerId === OFF) return OFF;
     for (const p of piecesOf(context)) {
-      if (p.name.includes(this.nameComponent) && p.owner === playerId) return p.index;
+      // @java components are registered name+owner ("Thrall2"); our pieces
+      // store the bare name — match either surface (Hnefatafl's
+      // ("IsPieceAt" "Thrall2" Next) custodial target never matched).
+      if ((p.name.includes(this.nameComponent) ||
+           `${p.name}${p.owner}`.includes(this.nameComponent)) && p.owner === playerId) return p.index;
     }
     return -1;
   }
