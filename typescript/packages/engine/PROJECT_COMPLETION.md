@@ -1848,3 +1848,9 @@ ForEachDie eval) + detailed harness action dumps:
 - four_rows subfamily 46 OK + 8 RONO /130 (was 37+5). Remaining MM (Chisolo ply 7, Kisolo, Isolo…): phase/var-heavy multi-track sowing — per-game work.
 - Probe rule reaffirmed: ctx = game.apply(ctx, m) — apply returns a NEW context.
 - 3 commits this update (Enclose, cones, Bottom/Top). Battery green (32) at each.
+
+## Update 93 (2026-06-11) — (count MovesThisTurn) was always 0
+- Game.apply now maintains State.numTurnSamePlayer (@java Game.java:3204-3207: increment when prev==mover, reset on turn change). The field existed but was never written, so (count MovesThisTurn) returned 0 everywhere — any same-turn scheduling comparing it ((CanStillLowerDie), UpdateCounterDoublePlay's (< (count MovesThisTurn) 4)) diverged.
+- Garanguet ply 2→138 / 4→11. Race family 109/362 OK. Battery green (32); 194/47 units; committed.
+- OPEN (Garanguet ply 11, trial 1): after three recorded UseDie plies TS dice remain [3,0,3] (one die never zeroed) → ReplayNotAllDiceUsed keeps mover 1 while Java rolls for P2. Suspect: our applied move's ActionUseDie die-index differs from Java's when equal-valued dice exist, or a UseDie hit an already-zero die. Trace with TRACE_DICE + recorded UseDie site (26/27/28 = die idx 0/1/2).
+- NEXT QUEUE (unchanged otherwise): four_rows multi-track sowing (Chisolo ply 7), line/blocking flat MM pools, leaping residue, sow/race clusters, ViewController demo renderer, Cab e Quinal stalemate mystery, Chatrang TEAMS, cards/hidden-data.
