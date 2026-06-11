@@ -2217,3 +2217,6 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 ## Update 175 (2026-06-11) — war/leaping at 74.3% OK + 14.6% full-replay
 - 168/226 OUTCOME_OK (58% at session start -> 65.9% -> 69% -> 74.3%). MM down to 20 (was 60). The SitesDirection/SitesBetween ports cleared more than Seesaw (several lines/ games consumed them).
 - Remaining MM (~20): custom-graph lines/ boards + Cage/Dum Blas; WM 5; 33 capped trials (MOVE_CAP=5000 re-run candidates).
+
+## Update 176 (2026-06-11) — Play-type supported dirs + of: intercept live; Xarajlt 1/2
+- Commit above.残り: Xarajlt trial 2, T'oki, Laram Wali (probe individually — placement-phase suspicions), Terhuchu (Small), lines/ graph boards (Crand, Solomon, Pasang, Spoing, Throngs), WM 5, caps.
