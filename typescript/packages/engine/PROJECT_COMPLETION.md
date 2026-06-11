@@ -1796,3 +1796,8 @@ ForEachDie eval) + detailed harness action dumps:
 - SitesOccupied honors container:"Hand" + components:{names} (@java SitesOccupied; the compile intercept now parses the named args; the class resolves the mover's hand range via equipment.hands + game.sitesFrom). Shogi's drop clause had scanned the BOARD: 2350 moves/ply, minutes per moves() — BOTH the over-generation and the family-sweep hang were this one bug. Shogi ply-0 = exactly the 30-move opening in 77ms.
 - Side-effect actions are never decisions (@java chainRuleWithAction decision=false) — cleared at every collection site in Step/Hop/Leap/Slide/FromTo. Shogi captures (Add-to-hand + Move) had reported from()=the hand site and never matched. Shogi now replays to ply 73 / past-budget.
 - Shogi residual ply 73 (rec 66→76); trial 2 needs >60s budget (long game). Check Loop Xiangqi against the same drops fix next.
+
+## Update 85 (2026-06-11) — SHOGI 2/2 OUTCOME_OK + Minishogi 2/2
+- Minishogi 2/2: SitesOccupied singular component:"Name" parsed by the intercept + component-name filter on BOARD scans (OnePawnPerColumn counted all pieces → pawn drops restricted to empty columns).
+- Shogi 2/2 (~400-ply games, PER_TRIAL_MS=240000): ForEachDirection attaches its OWN then (Keima carries "CanPromote"; the promotion-decline Pass never appeared). OWN-THEN ATTACHMENT now done in: ForEachDie, Or, And, ForEachDirection. AUDIT REMAINING Moves operators for the same gap when promotion/replay seams appear (Priority? Append? ForEachSite/Piece use applyPostStateThen already).
+- 16 games at 2/2: + Minishogi, Shogi. Battery extended to 29 games (Minishogi added).
