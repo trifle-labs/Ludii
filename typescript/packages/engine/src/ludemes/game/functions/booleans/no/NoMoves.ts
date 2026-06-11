@@ -88,6 +88,7 @@ export class NoMoves implements BooleanFunction {
             : game.rules.play;
 
         const moves = playRules.moves.eval(tempCtx);
+        if (process.env.TRACE_NOMOVES) console.error(`[nomoves] next=${nextPlayer} prev=${(nextState as {prev?:number}).prev} got=${moves.length}`, moves.slice(0,5).map((m) => `${m.from()}>${m.to()}`).join(" "));
         return moves.length === 0;
       } finally {
         _noMovesNextActive = false;
