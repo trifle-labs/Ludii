@@ -27,9 +27,13 @@ export class CountSteps implements IntFunction {
   /** @java CountSteps.region2 — the target region */
   private readonly region2Fn: RegionFunction;
 
-  public constructor(site1Fn: IntFunction, region2Fn: RegionFunction) {
+  /** @java CountSteps.relation — BFS adjacency relation (default Adjacent). */
+  private readonly relation: string;
+
+  public constructor(site1Fn: IntFunction, region2Fn: RegionFunction, relation: string | null = null) {
     this.site1Fn = site1Fn;
     this.region2Fn = region2Fn;
+    this.relation = relation ?? "Adjacent";
   }
 
   /**
@@ -68,7 +72,9 @@ export class CountSteps implements IntFunction {
 
       let neighbours: number[];
       if (traj) {
-        neighbours = traj.group(s, "Adjacent");
+        // @java GameType.Step<relation>Distance — the distance table is built
+        // with the declared relation (All includes diagonals).
+        neighbours = traj.group(s, this.relation);
       } else {
         const W = g.equipment.board.width;
         const H = g.equipment.board.height;
@@ -79,6 +85,12 @@ export class CountSteps implements IntFunction {
         if (col < W - 1) neighbours.push(s + 1);
         if (row > 0) neighbours.push(s - W);
         if (row < H - 1) neighbours.push(s + W);
+        if (this.relation === "All" || this.relation === "Diagonal") {
+          if (col > 0 && row > 0) neighbours.push(s - W - 1);
+          if (col < W - 1 && row > 0) neighbours.push(s - W + 1);
+          if (col > 0 && row < H - 1) neighbours.push(s + W - 1);
+          if (col < W - 1 && row < H - 1) neighbours.push(s + W + 1);
+        }
       }
 
       for (const nb of neighbours) {

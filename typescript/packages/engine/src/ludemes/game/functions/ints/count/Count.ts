@@ -399,7 +399,13 @@ export class Count extends BaseIntFunction {
   public static constructSteps(countType: unknown, _type: unknown, _relation: unknown, _stepMove: unknown, _newRotation: unknown, site1: unknown, site2: unknown, region2: unknown): JavaIntFunction {
     switch (countType) {
       case "Steps":
-        return asJavaReturn(new CountSteps(asLeanInt(site1), region2 !== null && region2 !== undefined ? asRegion(region2) : singleSiteRegion(site2)));
+        // @java CountSteps(@Opt SiteType, @Opt RelationType relation, ...) — relation
+        // selects the distance-table adjacency (Keryo-Pente: All incl. diagonals).
+        return asJavaReturn(new CountSteps(
+          asLeanInt(site1),
+          region2 !== null && region2 !== undefined ? asRegion(region2) : singleSiteRegion(site2),
+          typeof _relation === "string" ? _relation : (_relation as { name?: string } | null)?.name ?? null,
+        ));
       default:
         throw new Error("Count(): A CountStepsType is not implemented.");
     }
