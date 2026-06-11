@@ -134,7 +134,14 @@ export class Step extends Effect {
         if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
       }
     }
-    const traj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
+    // Dual-SiteType: a piece iterated on a NON-play element type moves on
+    // that type's adjacency — use the alternate trajectories VIEW as a local
+    // (never mutate ctx._trajectories; a leak corrupts later evaluations).
+    const baseTraj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
+    const fromTypeTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? null;
+    const traj = fromTypeTag && baseTraj && typeof (baseTraj as unknown as { viewOf?: unknown }).viewOf === "function"
+      ? (baseTraj as unknown as { viewOf(k: string): Trajectories }).viewOf(fromTypeTag)
+      : baseTraj;
 
     const out: number[] = [];
     const seen = new Set<number>();

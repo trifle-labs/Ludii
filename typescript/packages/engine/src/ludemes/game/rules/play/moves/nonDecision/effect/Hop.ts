@@ -145,7 +145,13 @@ export class Hop extends Effect {
     const directions = this.dirnChoice.eval(ctx);
     const mover = ctx.state.mover;
     const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
-    const traj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
+    // Dual-SiteType: route through the iterated position's element-type view
+    // (local only — never mutate ctx._trajectories).
+    const baseTrajH = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
+    const fromTypeTagH = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? null;
+    const traj = fromTypeTagH && baseTrajH && typeof (baseTrajH as unknown as { viewOf?: unknown }).viewOf === "function"
+      ? (baseTrajH as unknown as { viewOf(k: string): Trajectories }).viewOf(fromTypeTagH)
+      : baseTrajH;
 
     const GROUP_DIRS = new Set(["adjacent", "orthogonal", "diagonal", "all"]);
     const axesForDir = (dir: string): readonly { ray: readonly number[]; opposite: readonly number[] }[] => {
