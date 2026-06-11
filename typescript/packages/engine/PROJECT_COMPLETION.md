@@ -2132,3 +2132,15 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 157 (2026-06-11) — Cage triaged: custom-graph bucket
 - Cage ply 7 is a plain step (123>110) on a cube-surface board our graph builds with different adjacency — joins the custom-graph queue (Awithlaknan, Kolowis, Solomon, Spoing, Throngs, Pasang, Crand, Fetach, Cage).
 - ACTIVE QUEUE ordERED: (1) Owned registry port (Fenix + any stale-ghost stack game, Update 156 recipe); (2) Chameleons SetState tiles; (3) Seesaw RememberValue/StackMove; (4) custom-graph boards (probe each board generator vs Java oracle Graph dumps — splitCrossings, pyramidal, merge/repeat/poly, add-edges direction naming); (5) REPLAY_OK_NO_OUTCOME cap raises; (6) other families re-sweep.
+
+## Update 158 (2026-06-11) — Owned registry: COMPLETE IMPLEMENTATION PLAN (oracle-verified mechanism)
+ORACLE FACTS (jshell, /tmp/fenix.jsh): P1 ghost entry (site 62, level 0) born at replica ply 16 and never dies; at ply 78 ForEachPiece generates the recorded 62>44 from it. Mechanism (all verbatim-portable):
+  1. FullOwned.remove(pid,comp,site,LEVEL,type) (@java FullOwned.java:220-256): delete entries matching (site,level); then DECREMENT the level of every entry at the same site with level > removed (all players/comps).
+  2. End-of-turn flush (@java Move.java:544-575, stacking branch): count queue entries per site; numToRemove = min(queued, CURRENT sizeStack); apply ActionRemove.construct(type, site, level, true) for level = numToRemove-1 DOWN TO 0 (each → ActionRemoveLevel since level != UNDEFINED), PREPENDING to the action list. Ghost forms when queued > current stack (a queued piece already removed earlier): clamp shrinks the loop, the decrement loop shifts a surviving entry into an already-cleared level.
+  3. ActionRemoveLevel.apply (@java ActionRemoveLevel.java:193-218): pieceIdx = cs.remove(state, to, level); owned update ONLY if pieceIdx > 0.
+IMPLEMENTATION (TS):
+  a. State: `ownedEntries?: readonly {pid:number; comp:number; site:number; level:number}[]` — undefined until materialized; materialize via live scan at the FIRST withStackPush that makes a stack (len>1) [Java OwnedFactory picks FullOwned only for stacking games — same discrimination]. Helpers: ownedAdd/ownedRemoveLevel (with decrement loop)/ownedRemoveAll(site,comp).
+  b. Actions to wire (each mirrors its Java apply() owned block): ActionMove flat+pop+stack branches (@java ActionMoveTopPiece/ActionMoveStacking owned blocks), ActionAdd, ActionRemove (top: remove at sizeStack-1 level), new level-aware remove path for the flush, ActionPromote (comp swap at top level).
+  c. Game.apply step-1b flush: replace per-entry pops with the Java loop from (2) for stacking sites (keep current path when no per-level stacks anywhere).
+  d. ForEachPiece: when state.ownedEntries defined, positions come from it (site+level per entry, including ghosts); else existing scan.
+  e. Tests: Fenix 2/2 expected; battery MUST include Bashni/Lasca (stack games now consuming the registry); units.
