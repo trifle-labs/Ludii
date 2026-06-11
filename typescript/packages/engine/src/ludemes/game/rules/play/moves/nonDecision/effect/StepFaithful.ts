@@ -21,6 +21,7 @@ export class StepFaithful extends Step {
   ) {
     super({
       startLocationFn: fromLoc(from),
+      declaredFromType: from?.type?.() ?? null,
       fromCondition: fromCond(from),
       startRegionFn: fromRegion(from),
       levelFromFn: fromLevel(from),

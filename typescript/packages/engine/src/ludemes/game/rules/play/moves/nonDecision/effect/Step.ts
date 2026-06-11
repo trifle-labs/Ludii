@@ -76,8 +76,12 @@ export class Step extends Effect {
   /**
    * @java game/rules/play/moves/nonDecision/effect/Step.java — constructor
    */
+  /** @java From.type() — explicit (from Cell) declaration. */
+  private readonly declaredFromType: string | null = null;
+
   public constructor(opts: {
     startLocationFn: IntFunction;
+    declaredFromType?: string | null;
     fromCondition?: BooleanFunction | null;
     startRegionFn?: RegionFunction | null;
     levelFromFn?: IntFunction | null;
@@ -89,6 +93,7 @@ export class Step extends Effect {
   }) {
     super(opts.then ?? null);
     this.startLocationFn = opts.startLocationFn;
+    this.declaredFromType = opts.declaredFromType ?? null;
     this.fromCondition = opts.fromCondition ?? null;
     this.startRegionFn = opts.startRegionFn ?? null;
     this.levelFromFn = opts.levelFromFn ?? null;
@@ -139,7 +144,7 @@ export class Step extends Effect {
     // (never mutate ctx._trajectories; a leak corrupts later evaluations).
     const baseTraj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
     const playTypeName = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? null;
-    const rawTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? null;
+    const rawTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? this.declaredFromType;
     const fromTypeTag = rawTag && playTypeName && rawTag !== playTypeName ? rawTag : null;
     this._fromTypeTag = fromTypeTag;
     const traj = fromTypeTag && baseTraj && typeof (baseTraj as unknown as { viewOf?: unknown }).viewOf === "function"
