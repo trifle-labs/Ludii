@@ -2078,3 +2078,6 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 146 (2026-06-11) — Sequence-capture reconciled; ID restored
 - The at:EndOfTurn subsystem ALREADY existed (ActionRemoveNonApplied + State.sitesToRemove + step-1b pre-end flush); the session's parallel channel collided with the legacy SitesToClear stub (state.toClear?.() invoked the new Set → TypeError → ID generated zero moves). All parallel pieces reverted; SitesToClear now reads sitesToRemove (the faithful semantics). ID 2/2, Guerrilla 2/2 held, spot battery green (12).
 - LESSON (audit list): before building a "missing" subsystem, grep for its Java names (sitesToRemove found ActionRemoveNonApplied immediately). Frisian's residual = long-hop generation (44→62 missing at ply 2) — separate item.
+
+## Update 147 (2026-06-11) — Frisian: withValue wrapped; capture-arm probe next
+- Raw-literal #9 (MaxMoves withValue) wrapped. Residual: the or{} capture arms yield zero at ply 2 (44→62 over 53 missing; the diagonal arm is ID's own define) — eval the compiled arms directly at the position; suspect Frisian's (do ... ifAfterwards:(is In (last To) (sites Phase 0))) wrapper (Phase-0 = dark squares; our (sites Phase 0) on the 10x10) or the wrapper-arg plumbing (#2 then-slot).
