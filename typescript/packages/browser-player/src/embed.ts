@@ -467,20 +467,25 @@ export class EmbeddedLudii {
       const view = this.session.state.cellAt(i);
       const cx = sx(site.x);
       const cy = sy(site.y);
-      if (view.owner > 0) {
+      if (view.owner > 0 || (view.count ?? 0) > 0) {
         g2.beginPath();
         g2.arc(cx, cy, r, 0, Math.PI * 2);
-        g2.fillStyle = PLAYER_FILL[view.owner] ?? "#7a5ea8";
+        g2.fillStyle = PLAYER_FILL[view.owner] ?? "#c9b27c";
         g2.fill();
-        g2.strokeStyle = PLAYER_EDGE[view.owner] ?? "#4d3a70";
+        g2.strokeStyle = PLAYER_EDGE[view.owner] ?? "#8a7340";
         g2.lineWidth = 1.5;
         g2.stroke();
-        if (view.componentLabel !== undefined && r >= 9) {
+        // Pile size (mancala seed pits, tables points) takes precedence over
+        // the piece glyph — Java's view draws the count on stacked sites.
+        const text = (view.count ?? 0) > 1
+          ? String(view.count)
+          : view.componentLabel !== undefined ? view.componentLabel.slice(0, 2) : null;
+        if (text !== null && r >= 9) {
           g2.fillStyle = view.owner === 2 ? "#1f2328" : "#ffffff";
           g2.font = `${Math.max(8, Math.round(r * 0.7))}px system-ui, sans-serif`;
           g2.textAlign = "center";
           g2.textBaseline = "middle";
-          g2.fillText(view.componentLabel.slice(0, 2), cx, cy);
+          g2.fillText(text, cx, cy);
         }
       } else if (isLiveView && this.session.legalMovesAtSite(i).length > 0) {
         g2.beginPath();

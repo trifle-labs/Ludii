@@ -16,6 +16,8 @@
 export interface CellView {
   readonly owner: number;
   readonly componentLabel?: string;
+  /** Pile size when > 1 (mancala pits, tables points). */
+  readonly count?: number;
 }
 
 /**
@@ -630,7 +632,8 @@ export class State {
       return { owner: 0 };
     }
     const owner = this.cells[siteIndex] ?? 0;
-    if (owner === 0) {
+    const count = this.countAt[siteIndex] ?? 0;
+    if (owner === 0 && count === 0) {
       return { owner: 0 };
     }
     // @java the label comes from the COMPONENT at the site
@@ -638,7 +641,12 @@ export class State {
     // is 1-indexed by component id (Game.componentLabels).
     const what = this.whats[siteIndex] ?? 0;
     const label = what > 0 ? this.componentLabels[what] : this.componentLabels[owner];
-    return label === undefined ? { owner } : { owner, componentLabel: label };
+    // Mancala pits / piles: surface the pile size so the interface can render
+    // seed counts (tables points likewise stack same-owner pieces).
+    const view: { owner: number; componentLabel?: string; count?: number } = { owner };
+    if (label !== undefined) view.componentLabel = label;
+    if (count > 1 || (count === 1 && what === 0 && owner === 0)) view.count = count;
+    return view;
   }
 
   public get siteCount(): number {

@@ -45,6 +45,8 @@ export interface CellView {
   readonly owner: number;
   /** Optional component label (e.g. piece name) for UI rendering. */
   readonly componentLabel?: string;
+  /** Pile size when > 1 (mancala seed pits, tables points). */
+  readonly count?: number;
 }
 
 export interface BrowserState {
