@@ -199,8 +199,10 @@ export class Sow extends Effect {
       : boardTracks(ctx);
 
     for (const t of tracks) {
+      // @java Sow.java:182-183 — ownerless lookup is EXACT (equals); the
+      // owner-filtered lookup is substring (contains).
       if (this.trackName === null ||
-          (owner === -1 && t.name().includes(this.trackName)) ||
+          (owner === -1 && t.name() === this.trackName) ||
           (owner !== -1 && t.owner() === owner && t.name().includes(this.trackName))) {
         track = t;
         break;
