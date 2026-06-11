@@ -1099,6 +1099,7 @@ export class Game implements Game {
     const playType = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
     const playTypeName = typeof playType === "function" ? playType() : playType ?? null;
     ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
+      if (process.env.TRACE_PLACE && site === 19) console.error("[place] site 19 what", what, new Error().stack?.split("\n").slice(2,5).join(" | "));
       // @java per-type ContainerStates: an EXPLICIT type differing from the
       // play type routes to the typed channel (Guerrilla Checkers places
       // "Counter" pieces on Cells of a Vertex-play board).
@@ -1175,6 +1176,7 @@ export class Game implements Game {
       placeItem.countsFn == null
     ) {
       const sites = placeItem.siteId.eval(ctx);
+      if (process.env.TRACE_PLACE) console.error("[place] region", (placeItem.siteId as object)?.constructor?.name, "->", JSON.stringify(sites));
       if (Array.isArray(sites)) {
         const component = this.componentByName(placeItem.item);
         if (component !== null) {

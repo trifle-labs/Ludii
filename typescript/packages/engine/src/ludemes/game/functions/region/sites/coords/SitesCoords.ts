@@ -119,7 +119,13 @@ export class SitesCoords extends BaseRegionFunction {
           if (sameCoord(vertex.label?.(), coord)) return vertex.index?.() ?? -1;
         }
       }
+      // @java SiteFinder.find — an unmatched coord on a labeled topology is
+      // NULL and the placement is SKIPPED. The algebraic fallback below
+      // synthesized row*W+col for labels the board doesn't have (Terhuchu's
+      // "G6": no such vertex in Java; ours planted a phantom at site 19).
+      if (topo?.getElement) return -1;
     }
+    if (process.env.TRACE_COORDS) console.error("[coords] fallback for", coord, "noTopoPath", true);
     // Fallback: algebraic conversion (A=col, digit=row)
     const W = ctxAny.game?.equipment?.board?.width ?? ctxAny.game?.width ?? 0;
     const H = ctxAny.game?.equipment?.board?.height ?? ctxAny.game?.height ?? 0;

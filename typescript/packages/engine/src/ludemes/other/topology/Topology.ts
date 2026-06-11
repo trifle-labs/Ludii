@@ -391,6 +391,13 @@ export class Topology {
       const clusteredFirst = this.clusteredLabelLookup(realType, elements);
       const cfHit = clusteredFirst?.get(coord.toUpperCase());
       if (cfHit !== undefined) return cfHit;
+      // @java MeasureGraph labels are AUTHORITATIVE once clustering succeeds:
+      // a coord absent from the map resolves to NOTHING (Java skips the
+      // placement). The banded/centroid fallbacks below synthesized matches
+      // for nonexistent labels — Terhuchu's "G6" (no such vertex in Java)
+      // centroid-parsed to (6,5) = site 19, planting a phantom piece that
+      // diverged the whole game from ply 1.
+      if (clusteredFirst !== null && clusteredFirst !== undefined && clusteredFirst.size > 0) continue;
 
       for (const element of elements) {
         if (element.label() === coord) return element;
