@@ -741,6 +741,12 @@ export class Game implements Game {
               newState = newState.withOwnedRemoveLevel(own, wht, site, level);
               if (sz > 0) {
                 newState = newState.withStackPop(site, level);
+                // @java cs.remove maintains the site count; withStackPop
+                // doesn't — a start-placed countAt=1 would survive the pop
+                // and keep (is Empty) false forever (Fenix ghost count).
+                if (newState.stackSize(site) === 0 && newState.countAtSite(site) > 0) {
+                  newState = newState.withCountAt(site, 0);
+                }
               } else {
                 newState = newState.withCell(site, 0).withWhatAt(site, 0);
                 if (newState.countAtSite(site) > 0) newState = newState.withCountAt(site, 0);

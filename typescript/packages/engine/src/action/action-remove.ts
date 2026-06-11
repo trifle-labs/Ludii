@@ -78,6 +78,11 @@ export class ActionRemove extends BaseAction {
       const wht = state.whatAtSiteLevel(this.toIndex, lvl);
       let nx = state.withOwnedRemoveLevel(own, wht, this.toIndex, lvl);
       nx = nx.withStackPop(this.toIndex);
+      // @java cs.remove maintains the count channel; clear it when the pop
+      // empties the site (see Game.apply flush note).
+      if (nx.stackSize(this.toIndex) === 0 && nx.countAtSite(this.toIndex) > 0) {
+        nx = nx.withCountAt(this.toIndex, 0);
+      }
       return nx;
     }
     // The removed piece's component id, read before the site is cleared, so the
