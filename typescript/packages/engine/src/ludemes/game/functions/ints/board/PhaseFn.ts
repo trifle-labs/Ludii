@@ -31,7 +31,11 @@ export class Phase extends BaseIntFunction {
     if (index < 0) return -1;
     const topology = (context as unknown as { topology?: () => { getGraphElements(t: string): Array<{ phase(): number }> } }).topology?.();
     if (topology) {
-      const elements = topology.getGraphElements(this.type ?? "Cell");
+      // @java realType = (type == null) ? context.board().defaultSite() : type
+      const realType = this.type
+        ?? (context as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.()
+        ?? "Cell";
+      const elements = topology.getGraphElements(realType);
       const ph = elements[index]?.phase?.();
       if (ph !== undefined) return ph;
     }

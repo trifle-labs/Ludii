@@ -120,7 +120,10 @@ export class Ahead extends BaseIntFunction {
     };
 
     const topology = ctxAny.topology?.();
-    const realType = this.type ?? "Cell";
+    // @java realType = (type == null) ? context.board().defaultSite() : type
+    const realType = this.type
+      ?? (context as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.()
+      ?? "Cell";
 
     // Determine direction name
     let directionName: string | null = null;

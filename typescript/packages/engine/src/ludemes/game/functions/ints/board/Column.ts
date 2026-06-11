@@ -70,7 +70,10 @@ export class Column extends BaseIntFunction {
     }).topology?.();
 
     if (topology) {
-      const realType = this.type ?? "Cell";
+      // @java realType = (type == null) ? context.board().defaultSite() : type
+      const realType = this.type
+        ?? (context as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.()
+        ?? "Cell";
       const elements = topology.getGraphElements(realType);
       if (index >= elements.length) return OFF;
       return elements[index]!.col();
