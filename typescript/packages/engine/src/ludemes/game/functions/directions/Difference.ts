@@ -3,7 +3,7 @@
 import type { Context } from "../../../../context.js";
 import type { DirectionsFunction } from "../../../base.js";
 import { directionsFunction } from "../../rules/play/moves/nonDecision/effect/EffectCtorAdapters.js";
-import { resolveRelativeDir } from "../../util/directions/RelativeDirection.js";
+import { resolveRelativeDir, resolveSameOppositeDir } from "../../util/directions/RelativeDirection.js";
 
 /**
  * Returns the difference of two direction sets (directions in the original
@@ -66,6 +66,19 @@ export class Difference implements DirectionsFunction {
       const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
       for (const n of names) {
         const lower = n.toLowerCase();
+        // @java Directions.convertToAbsolute SameDirection/OppositeDirection —
+        // the absolute heading of (last From)->(last To) (or its reverse).
+        // Unresolved, (difference Orthogonal OppositeDirection) subtracted
+        // nothing and Dama (Kenya)'s king chained straight back up its own
+        // line (Java forbids reversing).
+        if (lower === "samedirection" || lower === "oppositedirection") {
+          const r = resolveSameOppositeDir(
+            ctx as unknown as Parameters<typeof resolveSameOppositeDir>[0],
+            lower === "oppositedirection",
+          );
+          if (r !== null) out.push(r);
+          continue;
+        }
         if (lower === "adjacent" || lower === "orthogonal" || lower === "diagonal" || lower === "all") {
           // Category → the topology's absolute names for that relation.
           const cat = supportedOf(lower === "all" ? "All" : n) ?? [];
