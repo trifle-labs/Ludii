@@ -982,12 +982,62 @@ export class Sites extends BaseRegionFunction {
   ): RegionFunction {
     const rt = regionType as unknown as string;
     switch (rt) {
-      case "Distance":
-        // @java return new SitesDistance(elementType, relation, stepMove, newRotation, from, distance);
-        // SitesDistance not yet ported in non-1to1 path
+      case "Distance": {
+        // @java SitesDistance.java:95-133 (stepMove == null path) — BFS
+        // distances over the relation adjacency from `from`; collect sites
+        // whose distance lies in [min, max] of the distance Range (a plain
+        // IntFunction distance means min == max). The stepMove variant
+        // (custom walk) is not ported yet and yields [].
+        const relName = typeof _relation === "string" ? _relation : "Adjacent";
+        const fromFn = _from;
+        const distanceArg = _distance as
+          | { min?: (c: unknown) => number; max?: (c: unknown) => number; eval?: (c: unknown) => number }
+          | number
+          | null;
+        const stepMove = _stepMove;
         return new (class extends BaseRegionFunction {
-          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+          override eval(ctx: Context & EvalScratch): number[] {
+            if (stepMove != null) return [];
+            const from = fromFn.eval(ctx);
+            if (from < 0) return [];
+            let minD: number;
+            let maxD: number;
+            if (typeof distanceArg === "number") {
+              minD = maxD = distanceArg;
+            } else if (distanceArg && typeof distanceArg.min === "function" && typeof distanceArg.max === "function") {
+              minD = distanceArg.min(ctx);
+              maxD = distanceArg.max(ctx);
+            } else if (distanceArg && typeof distanceArg.eval === "function") {
+              minD = maxD = distanceArg.eval(ctx);
+            } else {
+              return [];
+            }
+            if (minD < 0) return [];
+            const traj = (ctx as unknown as { _trajectories?: { steps(site: number, dir: string): number[] } })._trajectories;
+            if (!traj) return [];
+            // BFS over the relation steps (@java element.sitesAtDistance()
+            // is the same BFS precomputed).
+            const dist = new Map<number, number>([[from, 0]]);
+            let frontier = [from];
+            const out: number[] = [];
+            for (let d = 1; d <= maxD && frontier.length > 0; d++) {
+              const next: number[] = [];
+              for (const s2 of frontier) {
+                for (const n of traj.steps(s2, relName)) {
+                  if (!dist.has(n)) {
+                    dist.set(n, d);
+                    next.push(n);
+                    if (d >= minD) out.push(n);
+                  }
+                }
+              }
+              frontier = next;
+            }
+            if (minD === 0) out.unshift(from);
+            return out;
+          }
         })();
+      }
       default:
         throw new Error(`Sites(): A SitesDistanceType is not implemented: ${regionType}`);
     }
