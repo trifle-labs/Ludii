@@ -2088,3 +2088,10 @@ ForEachDie eval) + detailed harness action dumps:
 - Frisian 2/2 (110/96-ply full replays). Battery 33/33, units 194/0.
 - NOTE: unit baseline runner is `npm test` (node:test); vitest is NOT configured for this package.
 - Next: leaping residue (Bashni, Lasca stacks, Seesaw, Awithlaknan Mosona, Crand, Dama (Alquerque), Fetach) — re-sweep war/leaping first since MaxMoves was genre-wide broken.
+
+## Update 149 (2026-06-11) — war/leaping burn-down: prev channel, NonApplied removes, vertex diagonals
+- Dama (Alquerque) 2/2 (huff family unlocked): State.prev channel (@java setPrev) — ValuePlayer Prev had been falling back to mover; MaxMoves recursion now uses full game.apply (TempContext parity).
+- Frisian held 2/2 through the deep fix: (remove ... at:EndOfTurn) now emits ActionRemoveNonApplied (piece blocks paths until step-1b flush); immediate removal had allowed phantom king continuations (62>80 count 30 vs Java 62>26).
+- La Dama + Terhuchu 2/2: computeRelation from trajectories steps (vertex diagonals existed only in radials, not element.diagonal()); (directions {...} of:All) relative form intercept; Difference expands to absolute before subtracting.
+- Remaining lines/: Awithlaknan Mosona, Kolowis (merge/repeat/poly vertex graphs — adjacency differs), Game of Solomon (splitCrossings), Spoing (pyramidal), Throngs (remove tri), Pasang (add edges on removed square), Crand/Fetach (added-edge direction naming on square+edges boards).
+- Battery green throughout; units 194/0.
