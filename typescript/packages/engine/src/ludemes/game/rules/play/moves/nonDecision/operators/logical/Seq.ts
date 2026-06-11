@@ -13,6 +13,7 @@ import type { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import { Effect } from "../../effect/Effect.js";
+import { applyMoveWithThens } from "../../effect/Then.js";
 
 /**
  * Applies a sequence of moves one by one.
@@ -69,19 +70,34 @@ export class Seq extends Effect {
     // @java if (moves.length == 0) return result;
     if (this._seqMoves.length === 0) return result;
 
-    // @java Context tempContext = new TempContext(context);
-    // TS approximation: TempContext not available; use the same context.
-    // @java for (int i = 0; i < moves.length; i++) {
+    // @java Context tempContext = new TempContext(context) — each sub-move
+    // APPLIES to the fork before the next evaluates: Chameleons' SwitchColour
+    // reads (state at:X) that the previous seq step just wrote ((set State
+    // at:(last To) 2) then (= (state at:site) 0) must see the 2, else the
+    // conversion branch fires spuriously).
+    let tempState = context.state;
+    const Ctor = context.constructor as new (...a: unknown[]) => Context;
+    type Scratch = {
+      _radials?: unknown; _trajectories?: unknown;
+      _evalFrom?: number; _evalTo?: number; _evalSite?: number; _evalBetween?: number;
+    };
+    const src = context as Context & Scratch;
     for (let i = 0; i < this._seqMoves.length; i++) {
-      // @java final Moves movesToApply = moves[i];
       const movesToApply = this._seqMoves[i]!;
-      // @java for (final Move m : movesToApply.eval(tempContext).moves()) {
-      //   final Move appliedMove = (Move) m.apply(tempContext, true);
-      //   result.moves().add(appliedMove);
-      // }
-      // TS: collect without applying (TempContext deferred).
-      const generatedMoves = movesToApply.eval(context);
-      for (const m of generatedMoves) result.push(m);
+      const tempCtx = new Ctor(context.game, tempState, context.trial, context.rng) as Context & Scratch;
+      tempCtx._radials = src._radials;
+      tempCtx._trajectories = src._trajectories;
+      tempCtx._evalFrom = src._evalFrom;
+      tempCtx._evalTo = src._evalTo;
+      tempCtx._evalSite = src._evalSite;
+      tempCtx._evalBetween = src._evalBetween;
+      // @java for (final Move m : movesToApply.eval(tempContext).moves())
+      //         result.moves().add((Move) m.apply(tempContext, true));
+      const generatedMoves = movesToApply.eval(tempCtx);
+      for (const m of generatedMoves) {
+        tempState = applyMoveWithThens(tempCtx, m, tempState) as typeof tempState;
+        result.push(m);
+      }
     }
 
     // @java (then chaining commented out in Java source as well)
