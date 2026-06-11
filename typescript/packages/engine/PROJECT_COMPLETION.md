@@ -2252,3 +2252,7 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 
 ## Update 185 (2026-06-11) — war/leaping at 92.9% OUTCOME_OK, ZERO WM, ZERO capped
 - 210/226 OK. The only failures left are 16 MM across 8 games: Crand, Game of Solomon, Pasang, Spoing, Throngs (lines/ graph generators), Laram Wali (CrossBoard), Terhuchu (Small), experimental/Seesaw (separate game, matches filter). Session arc 58% -> 92.9%.
+
+## Update 186 (2026-06-11) — sow family at 52.1% (was 41%): next campaign target
+- 222/426 OK at cap-5000. The session's shared fixes (+11 pts) carried over without sow-specific work. Remaining: 159 MM (sowing/capture mechanics — start with the highest-multiplicity games in the MM list), 20 WM, 10 START_FAIL (probe those first — likely a start-rule gap shared across a sub-family), 15 capped.
+- NEXT SESSION ORDER: (1) sow START_FAILs; (2) sow MM top offenders; (3) war/leaping lines/ graph generators (compare each generator output to jshell Graph dumps); (4) hunt/line/space/four_rows re-sweeps at cap-5000 (their old numbers predate ~15 shared subsystem fixes).
