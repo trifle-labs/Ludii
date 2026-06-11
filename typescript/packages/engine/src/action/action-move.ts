@@ -143,11 +143,22 @@ export class ActionMove extends BaseAction {
       if ((s.cells[this.fromIndex] ?? 0) !== fromOwner) {
         s = s.withCell(this.fromIndex, fromOwner);
       }
+      // A drained pit loses its Seed component (@java csFrom.remove on count 0)
+      // — pits now carry what while seeded; a ghost what would keep
+      // (is Occupied …) true on an empty pit (Bao EA relay).
+      if (fromNew === 0 && (s.whats[this.fromIndex] ?? 0) !== 0) {
+        s = s.withWhatAt(this.fromIndex, 0);
+      }
+      // The receiving pit holds the component while seeded.
+      const movedWhat = state.whats[this.fromIndex] ?? 0;
       const toNew = Math.max(0, s.countAtSite(this.toIndex) + n);
       s = s.withCountAt(this.toIndex, toNew);
       const toOwner = toNew > 0 ? this.seedOwnerValue : 0;
       if ((s.cells[this.toIndex] ?? 0) !== toOwner) {
         s = s.withCell(this.toIndex, toOwner);
+      }
+      if (toNew > 0 && movedWhat > 0 && (s.whats[this.toIndex] ?? 0) === 0) {
+        s = s.withWhatAt(this.toIndex, movedWhat);
       }
       return s;
     }
