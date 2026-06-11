@@ -2220,3 +2220,7 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 
 ## Update 176 (2026-06-11) — Play-type supported dirs + of: intercept live; Xarajlt 1/2
 - Commit above.残り: Xarajlt trial 2, T'oki, Laram Wali (probe individually — placement-phase suspicions), Terhuchu (Small), lines/ graph boards (Crand, Solomon, Pasang, Spoing, Throngs), WM 5, caps.
+
+## Update 177 (2026-06-11) — T'oki piles own their pieces; battery-filter pitfalls noted
+- Hand-sourced count placements stamp ownership (FromTo, hand-gated). T'oki ply 2 -> 15/23 frontiers (next: probe ply 15 — rec 7>2 vertical move missing among 22; suspect the multi-hurdle line-hop arm ((range 1 (count Rows)) between with (to) allowing outer-edge enemy landing) or pile-aware step semantics).
+- BATTERY NOTE: "Hus (Damara)" with parens no longer matches (use four_rows/Hus + MOVE_CAP=5000; 3 OK + 1 WM pre-existing). Filters with parens/apostrophes need care.
