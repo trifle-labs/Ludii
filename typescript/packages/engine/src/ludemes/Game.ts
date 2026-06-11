@@ -875,6 +875,9 @@ export class Game implements Game {
         // moves again ((count MovesThisTurn) reads this).
         advanced = advanced.withNumTurnSamePlayer(advanced.numTurnSamePlayer + 1);
       }
+      if (process.env.TRACE_TURNCNT) {
+        console.error(`[turncnt] ply=${(globalThis as Record<string, unknown>).__PLY} mover=${newState.mover} next=${nextMover} cnt=${advanced.numTurnSamePlayer}`);
+      }
       // Increment counter (Java: state.incrCounter())
       advanced = advanced.withCounter(advanced.counter + 1);
     } else {
