@@ -2081,3 +2081,10 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 147 (2026-06-11) — Frisian: withValue wrapped; capture-arm probe next
 - Raw-literal #9 (MaxMoves withValue) wrapped. Residual: the or{} capture arms yield zero at ply 2 (44→62 over 53 missing; the diagonal arm is ID's own define) — eval the compiled arms directly at the position; suspect Frisian's (do ... ifAfterwards:(is In (last To) (sites Phase 0))) wrapper (Phase-0 = dark squares; our (sites Phase 0) on the 10x10) or the wrapper-arg plumbing (#2 then-slot).
+
+## Update 148 (2026-06-11) — Frisian Draughts CLEARED 2/2: MaxMoves value semantics
+- Root cause (after the raw-literal wrap proved insufficient): MaxMoves withValue summed `action.value()` (UNDEFINED=-1) instead of Java's `cs.value(site)` board lookup — every capture scored -1 < max=0 and was dropped, so the priority fell through to plain steps. Second Java deviation: `getReplayCount` early-returned `count` on empty legal moves where Java returns max-of-children (0); also our synthetic forced-pass must read as Java's empty list.
+- Bisect method that found it: stripped-play lud variants (or-only → capture arm works; max-wrapped → vanishes) + TRACE_MAXMOVES env probe showing `in: 44>62, out: (none), counts: [-1]`.
+- Frisian 2/2 (110/96-ply full replays). Battery 33/33, units 194/0.
+- NOTE: unit baseline runner is `npm test` (node:test); vitest is NOT configured for this package.
+- Next: leaping residue (Bashni, Lasca stacks, Seesaw, Awithlaknan Mosona, Crand, Dama (Alquerque), Fetach) — re-sweep war/leaping first since MaxMoves was genre-wide broken.
