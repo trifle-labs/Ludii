@@ -158,7 +158,9 @@ export class Sow extends Effect {
     this.trackName = trackName ?? null;
     this.ownerFn = owner ?? null;
     this.includeSelf = includeSelf ?? true;
-    this.origin = origin ?? null;
+    // compileTerminal hands lud literal True/False as a raw boolean — wrap
+    // (engine rule: BooleanFunction slots must be eval-able).
+    this.origin = typeof origin === "boolean" ? { eval: () => origin } : origin ?? null;
     this.skipFn = skipIf ?? null;
     this.captureRule = If ?? null;
     this.captureEffect = apply ?? null;
