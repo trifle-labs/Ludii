@@ -870,10 +870,15 @@ export class Game implements Game {
         // @java Game.java:3207 reinitNumTurnSamePlayer() — new turn: bump
         // numTurn, reset the same-player move counter.
         advanced = advanced.withNewTurn().withNumTurnSamePlayer(0);
+        // @java Game.java:3183-3186 — turn passes: clear the visited scratch.
+        advanced = advanced.withVisitedCleared();
       } else {
         // @java Game.java:3205 incrementNumTurnSamePlayer() — same player
         // moves again ((count MovesThisTurn) reads this).
         advanced = advanced.withNumTurnSamePlayer(advanced.numTurnSamePlayer + 1);
+        // @java Game.java:3188-3193 — relay continues: visit the applied
+        // move's endpoints ((not (is Visited (to))) gates Fanorona chains).
+        advanced = advanced.withVisited(appliedMove.from(), appliedMove.to());
       }
       if (process.env.TRACE_TURNCNT) {
         console.error(`[turncnt] ply=${(globalThis as Record<string, unknown>).__PLY} mover=${newState.mover} next=${nextMover} cnt=${advanced.numTurnSamePlayer}`);
