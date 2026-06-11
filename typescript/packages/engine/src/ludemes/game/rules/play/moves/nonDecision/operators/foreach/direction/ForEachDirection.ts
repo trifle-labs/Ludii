@@ -11,6 +11,7 @@
  */
 
 import type { Context } from "../../../../../../../../../context.js";
+import { applyPostStateThen } from "../../../effect/Then.js";
 import { resolveRelativeDir } from "../../../../../../../util/directions/RelativeDirection.js";
 import { Move } from "../../../../../../../../../move.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
@@ -326,6 +327,12 @@ export class ForEachDirection extends Effect {
       if (topologyCtx.setFrom) topologyCtx.setFrom(origFrom);
       else ctxAny._evalFrom = origFrom;
 
+      // @java ForEachDirection — the ludeme's own (then …) is added to every
+      // generated move's then() list (Shogi's Keima carries "CanPromote").
+      {
+        const ownThen = this.then();
+        if (ownThen !== null) return returnMoves.map((m) => applyPostStateThen(ownThen, context, m));
+      }
       return returnMoves;
     }
 
@@ -403,6 +410,11 @@ export class ForEachDirection extends Effect {
     ctxAny._evalBetween = savedBetween;
     ctxAny._evalFrom = savedFrom;
 
+    // @java ForEachDirection — own (then …) on the fallback path too.
+    {
+      const ownThen = this.then();
+      if (ownThen !== null) return returnMoves.map((m) => applyPostStateThen(ownThen, context, m));
+    }
     return returnMoves;
   }
 
