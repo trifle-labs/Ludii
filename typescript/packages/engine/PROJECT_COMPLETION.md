@@ -1934,3 +1934,7 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 110 (2026-06-11) — Kisolo (Lali) ply-1 scoped
 - Start counts + coords resolve correctly (A4→24, G1→6; rows 1-2 seeded 4 each). Recorded ply 1 is P1's RELAY continuation; our ply-0 sow ended the turn. Recorded ply-1 actions begin Select(8), Move(8→8) — the first counter sows into the ORIGIN hole ("first counter being sown into the hole from which the counters were picked up" per the ruleset text) — check whether the lud's sow carries origin:True and whether our Sow.ts origin handling (ActionAddCount(start, 1, ...)) fires for it; if the lud lacks origin:, Java's sow semantics for this shape need reading (@java Sow.java origin param). Likely a one-line origin-flag plumbing gap.
+
+## Update 111 (2026-06-11) — Kisolo (Lali) cleared: raw-boolean origin
+- The Lali ply-1 seam was the documented raw-boolean trap: origin:True reached Sow as literal true; this.origin?.eval threw inside the deferred then and the sow silently emitted nothing (the harness saw Select-only moves and the turn always passed). Wrapped in the ctor; Lali 2/2 full replays (RONO at cap). Battery green; committed.
+- Raw-boolean wrap inventory now: IfBool, Hop, Slide, ForEachDirection rule/betweenRule, ForEachDie.replayDouble, SitesAround includeSelf, Sow.origin. AUDIT remaining @Name BooleanFunction slots when symptoms match (silent no-op consequences).
