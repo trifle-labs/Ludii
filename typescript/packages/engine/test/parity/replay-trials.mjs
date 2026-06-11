@@ -566,7 +566,7 @@ function tsMovePromotionPiece(move) {
  * throws. Keeps the harness honest for ambiguous-from sow games rather than
  * blaming the engine for a coin-flip the harness lost.
  */
-function chooseMatch(tsMoves, recMove, ctx, game) {
+function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
   let candidates = candidateMatches(tsMoves, recMove);
   if (candidates.length <= 1) return candidates[0] ?? findMatchingMove(tsMoves, recMove);
 
@@ -621,8 +621,24 @@ function chooseMatch(tsMoves, recMove, ctx, game) {
     let best = null;
     let bestScore = 0;
     let tied = false;
+    // Captures may be DEFERRED thens (not in cand.actions at generation) —
+    // when the action scan sees nothing, diff the hypothetically applied
+    // occupancy instead (Fanorona's approach/withdrawal variants).
+    const removesOf = (cand) => {
+      const direct = tsMoveRemoveSites(cand);
+      if (direct.size > 0) return direct;
+      try {
+        const after = game.apply(ctx, cand).state;
+        const gone = new Set();
+        const n = ctx.state.cells?.length ?? 0;
+        for (let i = 0; i < n; i += 1) {
+          if (ctx.state.who(i) > 0 && after.who(i) === 0 && i !== cand.from()) gone.add(i);
+        }
+        return gone;
+      } catch { return direct; }
+    };
     for (const cand of candidates) {
-      const cs = tsMoveRemoveSites(cand);
+      const cs = removesOf(cand);
       let score = 0;
       for (const s of recRemoves) if (cs.has(s)) score += 1;
       for (const s of cs) if (!recRemoves.has(s)) score -= 1;
@@ -656,6 +672,23 @@ function chooseMatch(tsMoves, recMove, ctx, game) {
       } catch { return false; }
     });
     if (byValues.length > 0 && byValues.length < candidates.length) candidates = byValues;
+    if (candidates.length === 1) return candidates[0];
+  }
+
+  // One-ply LOOKAHEAD tie-breaker: variants tying on every observable of THIS
+  // ply (Fanorona's two 20→21 captures both removing {19}) can still differ in
+  // their consequences (the chain probe's moveAgain); the recorded trial is
+  // ground truth, so prefer the candidate whose applied state keeps the NEXT
+  // recorded move matchable.
+  if (candidates.length > 1 && nextRecMove) {
+    const keep = candidates.filter((cand) => {
+      try {
+        const nctx = game.apply(ctx, cand);
+        const nmoves = game.moves(nctx);
+        return findMatchingMove(nmoves, nextRecMove) !== null;
+      } catch { return false; }
+    });
+    if (keep.length > 0 && keep.length < candidates.length) candidates = keep;
     if (candidates.length === 1) return candidates[0];
   }
 
@@ -767,7 +800,11 @@ function replayTrial(trialPath) {
   const moveCap = Math.min(gameMoves.length, PER_TRIAL_MOVE_CAP);
   const trialDeadline = Date.now() + PER_TRIAL_MS;
 
-  for (const recMove of gameMoves.slice(0, moveCap)) {
+  let __recIdx = -1;
+  const __capped = gameMoves.slice(0, moveCap);
+  for (const recMove of __capped) {
+    __recIdx += 1;
+    const nextRecMove = __capped[__recIdx + 1] ?? null;
     if (game.over(ctx)) break;
     if (Date.now() > trialDeadline) {
       return {
@@ -840,7 +877,7 @@ function replayTrial(trialPath) {
       console.error(`=== END DEBUG ===\n`);
     }
 
-    let matched = chooseMatch(tsMoves, recMove, ctx, game);
+    let matched = chooseMatch(tsMoves, recMove, ctx, game, nextRecMove);
 
     // Auto-roll: Java's `(do (roll) next:#1)` pattern embeds dice-roll actions
     // INTO each movement move (SetStateAndUpdateDice/SetDiceAllEqual), so the
