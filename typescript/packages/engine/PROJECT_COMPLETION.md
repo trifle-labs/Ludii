@@ -2128,3 +2128,7 @@ ForEachDie eval) + detailed harness action dumps:
 - To clear Fenix (and likely other stack games with level-removes): port the Owned registry faithfully — including the staleness — and make ForEachPiece consume it before falling back to scans (TS already prefers state.owned when present; the gap is add/remove bookkeeping parity in actions: ActionMove/StackMove/RemoveLevel/Promote per their Java apply() owned updates).
 - Per-level EndOfTurn removes (count:(size Stack)) appear to work in the replica (state matched oracle through 78) — keep.
 - Cage probe next; then Chameleons (SetState), Seesaw (RememberValue/StackMove numLevel), custom-graph boards.
+
+## Update 157 (2026-06-11) — Cage triaged: custom-graph bucket
+- Cage ply 7 is a plain step (123>110) on a cube-surface board our graph builds with different adjacency — joins the custom-graph queue (Awithlaknan, Kolowis, Solomon, Spoing, Throngs, Pasang, Crand, Fetach, Cage).
+- ACTIVE QUEUE ordERED: (1) Owned registry port (Fenix + any stale-ghost stack game, Update 156 recipe); (2) Chameleons SetState tiles; (3) Seesaw RememberValue/StackMove; (4) custom-graph boards (probe each board generator vs Java oracle Graph dumps — splitCrossings, pyramidal, merge/repeat/poly, add-edges direction naming); (5) REPLAY_OK_NO_OUTCOME cap raises; (6) other families re-sweep.
