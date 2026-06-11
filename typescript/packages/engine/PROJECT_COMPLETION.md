@@ -1801,3 +1801,8 @@ ForEachDie eval) + detailed harness action dumps:
 - Minishogi 2/2: SitesOccupied singular component:"Name" parsed by the intercept + component-name filter on BOARD scans (OnePawnPerColumn counted all pieces → pawn drops restricted to empty columns).
 - Shogi 2/2 (~400-ply games, PER_TRIAL_MS=240000): ForEachDirection attaches its OWN then (Keima carries "CanPromote"; the promotion-decline Pass never appeared). OWN-THEN ATTACHMENT now done in: ForEachDie, Or, And, ForEachDirection. AUDIT REMAINING Moves operators for the same gap when promotion/replay seams appear (Priority? Append? ForEachSite/Piece use applyPostStateThen already).
 - 16 games at 2/2: + Minishogi, Shogi. Battery extended to 29 games (Minishogi added).
+
+## Update 86 (2026-06-11) — Chess + Kyoto Shogi + Atomic Chess 2/2
+- Cascades from the own-then + drops fixes: CHESS 2/2, Kyoto Shogi 2/2; Atomic Chess 2/2 after wrapping raw includeSelf boolean in SitesAround (threw at APPLY inside the deferred explosion effect).
+- 19 games at 2/2 OUTCOME_OK: Backgammon, Dubblets, Baralie, Ashtapada, 20 Squares, J'odu, Cram, Domineering, Blue Nile, Hex, Tabu Y, Y, Chaturanga, Chandaraki, Minishogi, Shogi, Kyoto Shogi, Chess, Atomic Chess. Battery now 30 games (Chess added).
+- chess subfamily: 10 OK / 19 MM / 10 SF (was 0 OK / 48 MM at family start). Residuals: Alice ply 18, Seireigi 35, Dice Shogi 9 (dice+shogi hybrid), Xiangqi 40, MiniXiangqi 78, START_FAIL 10 (Brusky non-square coords, Chex iterable).
