@@ -1820,3 +1820,7 @@ ForEachDie eval) + detailed harness action dumps:
 - Id(name, Next/Prev) treats state.next/prev <= 0 as unset (@java Id.java via context.state().next(); the engine clears next after consumption and `0 ?? x` does not fall back) — every draughts capture hurdle ("IsPieceAt" "Counter" Next (between)) had failed. Dama (Italy) trial 1 OUTCOME_OK; CASCADES EVERYWHERE.
 - GLOBAL STANDINGS (full sweeps, PER_TRIAL_MS=8000): race 99/362 (27.3%, was 63), sow 101/426 (23.7%, was 68), hunt 80/152 (52.6%, was 67), space 308/678 (45.4%), war 148/356 (41.6%, leaping subfamily 124/226). TOTAL ≈ 736 OUTCOME_OK across the five families (~37%, up from ~25%).
 - Leaping residuals: Bashni (stacked draughts), Damas/Dum Blas (orthogonal), Frisian (orthogonal captures), Guerrilla Checkers (n=47?), Lasca (stacks).
+
+## Update 89 (2026-06-11) — Huff machinery fixed ((sites Pending) + constructContext gate)
+- (sites Pending) had compiled to SitesContext (the zero-arg overload won arity-relaxed dispatch with surplus args) and eval'd [] — every huffing draughts variant's (remove (sites Pending)) was a no-op, boards diverged silently on the first declined capture. constructContext now rejects non-null args; the Pending clause reads the engine State.pending Set (@java pendingValues()).
+- Also this stretch: Id(name, Next/Prev) unset-next fix (Update 88) — both are BROAD cascade fixes.
