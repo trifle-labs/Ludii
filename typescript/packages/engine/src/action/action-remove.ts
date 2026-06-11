@@ -23,6 +23,8 @@ export interface ActionRemoveOptions {
   readonly count?: number;
   /** Stack level (defaults to `Constants.UNDEFINED`, i.e. top piece). */
   readonly level?: number;
+  /** @java Remove at:EndOfTurn — queue in sitesToRemove instead of applying. */
+  readonly endOfTurn?: boolean;
   readonly type?: SiteType;
   /**
    * Java parity: in a non-stacking game (`Game.isStacking() == false`)
@@ -45,6 +47,8 @@ export class ActionRemove extends BaseAction {
   private readonly siteType: SiteType;
   /** True when the constructor received an explicit site type. */
   private readonly explicitTyped: boolean = false;
+  /** @java Remove when=EndOfTurn — queue instead of applying. */
+  private readonly deferToEndOfTurn: boolean = false;
   private readonly clearAll: boolean;
 
   public constructor(options: ActionRemoveOptions) {
@@ -57,10 +61,17 @@ export class ActionRemove extends BaseAction {
     this.level = options.level ?? ACTION_UNDEFINED;
     this.siteType = options.type ?? "Cell";
     this.explicitTyped = options.type !== undefined;
+    this.deferToEndOfTurn = options.endOfTurn ?? false;
     this.clearAll = options.clearAll ?? false;
   }
 
   public override apply(state: State): State {
+    // @java Remove.java applyNow=false (at:EndOfTurn): captured pieces STAY on
+    // the board until the turn ends (Frisian sequence captures — captured men
+    // still block hops); the site is queued in sitesToRemove.
+    if (this.deferToEndOfTurn) {
+      return state.withToClear(this.toIndex);
+    }
     // Dual-SiteType (@java cs.remove(site, type)): an explicitly typed remove
     // with a typed channel clears THAT channel (Guerrilla's surrounded-cell
     // capture (remove Cell (site)) on a Vertex-play board).

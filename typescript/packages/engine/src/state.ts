@@ -131,6 +131,8 @@ export interface StateOptions {
    * Keyed by SiteType name; arrays indexed by that type's element id.
    */
   readonly typedSites?: ReadonlyMap<string, { who: readonly number[]; what: readonly number[]; count: readonly number[] }>;
+  /** @java State.sitesToRemove() — EndOfTurn-queued capture sites (Frisian). */
+  readonly toClear?: ReadonlySet<number>;
   /**
    * Java parity: per-player stalemated flag (State.stalemated). Set true when a
    * player's play rules yield no legal move (so a forced pass is played). Read
@@ -253,6 +255,9 @@ export class State {
 
   /** Dual-SiteType channels. See {@link StateOptions.typedSites}. */
   public readonly typedSites: ReadonlyMap<string, { who: readonly number[]; what: readonly number[]; count: readonly number[] }>;
+
+  /** @java State.sitesToRemove(). See {@link StateOptions.toClear}. */
+  public readonly toClear: ReadonlySet<number>;
   public readonly stalemated: readonly boolean[];
   /** Java parity: `State.storedState`. See {@link StateOptions.storedState}. */
   public readonly storedState: number;
@@ -376,6 +381,7 @@ export class State {
     this.diceValues = Object.freeze([...(options.diceValues ?? [])]);
     this.diceRolledFaces = Object.freeze([...(options.diceRolledFaces ?? [])]);
     this.typedSites = options.typedSites ?? new Map();
+    this.toClear = options.toClear ?? new Set();
     // NOT frozen: the stalemated flags are a CACHE mutated in place by real
     // move generation (@java Game.java:2948 setStalemated), like Java's
     // mutable State field. Value identity of the State excludes them.
@@ -1048,6 +1054,17 @@ export class State {
     return this.withDiceValues(values).with({ diceRolledFaces: [...values] });
   }
 
+  /** @java sitesToRemove().add — queue an EndOfTurn capture. */
+  public withToClear(site: number): State {
+    if (this.toClear.has(site)) return this;
+    const next = new Set(this.toClear); next.add(site);
+    return this.with({ toClear: next });
+  }
+  /** @java sitesToRemove().clear(). */
+  public withToClearEmptied(): State {
+    return this.toClear.size === 0 ? this : this.with({ toClear: new Set() });
+  }
+
   /** Replace the persistent rolled-faces channel only. */
   public withDiceRolledFaces(faces: readonly number[]): State {
     return this.with({ diceRolledFaces: [...faces] });
@@ -1196,6 +1213,7 @@ export class State {
         diceValues: patch.diceValues ?? this.diceValues,
         diceRolledFaces: patch.diceRolledFaces ?? this.diceRolledFaces,
         typedSites: patch.typedSites ?? this.typedSites,
+        toClear: patch.toClear ?? this.toClear,
         stalemated: patch.stalemated ?? this.stalemated,
         storedState: patch.storedState ?? this.storedState,
         sitesToRemove: patch.sitesToRemove ?? this.sitesToRemove,

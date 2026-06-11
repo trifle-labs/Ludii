@@ -102,13 +102,13 @@ export class Remove implements MovesFunction {
       const actions: import("../../../../../../../action/index.js").Action[] = [];
 
       // @java Remove.java:139 — primary ActionRemove
-      const actionRemove = new ActionRemove(this.type ? { to: loc, type: this.type as never } : { to: loc });
+      const actionRemove = new ActionRemove({ to: loc, ...(this.type ? { type: this.type as never } : {}), ...(applyNow ? {} : { endOfTurn: true }) });
       actions.push(actionRemove);
 
       // @java Remove.java:144-149 — additional removes for count > 1
       let remaining = count - 1;
       while (remaining > 0) {
-        actions.push(new ActionRemove(this.type ? { to: loc, type: this.type as never } : { to: loc }));
+        actions.push(new ActionRemove({ to: loc, ...(this.type ? { type: this.type as never } : {}), ...(applyNow ? {} : { endOfTurn: true }) }));
         remaining--;
       }
 
