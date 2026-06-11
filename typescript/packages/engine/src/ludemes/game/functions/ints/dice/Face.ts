@@ -60,6 +60,11 @@ export class Face extends BaseIntFunction {
         for (const dice of game.handDice()) {
           const base = sitesFrom[dice.index()] ?? -1;
           if (base >= 0 && loc >= base && loc < base + dice.numLocs()) {
+            // @java Face.eval — component.getFaces()[cs.stateCell(loc)]: the
+            // ROLLED face, which persists after UseDie zeroes currentDice
+            // (Garanguet's TwoDiceEqualLastLower reads faces mid-turn).
+            const faces = (st as { diceRolledFaces?: readonly number[] }).diceRolledFaces;
+            if (faces && faces.length > 0) return faces[loc - base] ?? OFF;
             return st.diceValues[loc - base] ?? OFF;
           }
         }

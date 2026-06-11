@@ -43,7 +43,10 @@ export class ActionUpdateDice extends BaseAction {
       }
       const next = [...state.diceValues];
       next[this.siteIndex] = this.dieValue;
-      return state.withDiceValues(next);
+      // Re-arm updates the die's shown face too (@java cs.setSite state).
+      const faces = [...(state.diceRolledFaces.length ? state.diceRolledFaces : state.diceValues)];
+      faces[this.siteIndex] = this.dieValue;
+      return state.withDiceValues(next).withDiceRolledFaces(faces);
     }
     // Two effects in Java: update the site's state AND roll the dice
     // container. The MVE folds it onto the `stateAt` channel; the

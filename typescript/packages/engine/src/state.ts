@@ -121,6 +121,8 @@ export interface StateOptions {
    * `Container.dice[i]` in Java; size = number of dice in the equipment.
    */
   readonly diceValues?: readonly number[];
+  /** @java ContainerState.stateCell(die site) — rolled faces; UseDie does NOT clear these. */
+  readonly diceRolledFaces?: readonly number[];
   /**
    * Java parity: per-player stalemated flag (State.stalemated). Set true when a
    * player's play rules yield no legal move (so a forced pass is played). Read
@@ -233,6 +235,13 @@ export class State {
   public readonly numTurnSamePlayer: number;
   public readonly diceAllEqual: boolean;
   public readonly diceValues: readonly number[];
+
+  /**
+   * The faces showing on each die from the LAST ROLL. @java (face site) reads
+   * the die site's container state (set by SetStateAndUpdateDice), which
+   * persists after ActionUseDie zeroes State.currentDice.
+   */
+  public readonly diceRolledFaces: readonly number[];
   public readonly stalemated: readonly boolean[];
   /** Java parity: `State.storedState`. See {@link StateOptions.storedState}. */
   public readonly storedState: number;
@@ -354,6 +363,7 @@ export class State {
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
     this.diceValues = Object.freeze([...(options.diceValues ?? [])]);
+    this.diceRolledFaces = Object.freeze([...(options.diceRolledFaces ?? [])]);
     // NOT frozen: the stalemated flags are a CACHE mutated in place by real
     // move generation (@java Game.java:2948 setStalemated), like Java's
     // mutable State field. Value identity of the State excludes them.
@@ -984,6 +994,19 @@ export class State {
     });
   }
 
+  /**
+   * A fresh roll: sets the consumable values AND the persistent rolled faces.
+   * @java ActionUpdateDice — cs.setSite(state=faceIndex) + state.currentDice.
+   */
+  public withDiceRoll(values: readonly number[]): State {
+    return this.withDiceValues(values).with({ diceRolledFaces: [...values] });
+  }
+
+  /** Replace the persistent rolled-faces channel only. */
+  public withDiceRolledFaces(faces: readonly number[]): State {
+    return this.with({ diceRolledFaces: [...faces] });
+  }
+
   // ---- Pending sites ---------------------------------------------------
 
   public isPending(siteIndex: number): boolean {
@@ -1125,6 +1148,7 @@ export class State {
           patch.numTurnSamePlayer ?? this.numTurnSamePlayer,
         diceAllEqual: patch.diceAllEqual ?? this.diceAllEqual,
         diceValues: patch.diceValues ?? this.diceValues,
+        diceRolledFaces: patch.diceRolledFaces ?? this.diceRolledFaces,
         stalemated: patch.stalemated ?? this.stalemated,
         storedState: patch.storedState ?? this.storedState,
         sitesToRemove: patch.sitesToRemove ?? this.sitesToRemove,

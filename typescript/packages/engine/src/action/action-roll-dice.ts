@@ -29,7 +29,9 @@ export class ActionRollDice extends BaseAction {
       const idx = rng ? rng.nextInt(f.length) : 0;
       return f[idx] ?? 0;
     });
-    return state.withDiceValues(rolled);
+    // @java a roll also writes each die site's state (the face) — (face site)
+    // reads that channel and it persists through UseDie.
+    return state.withDiceRoll(rolled);
   }
 
   public override actionType(): ActionType {
