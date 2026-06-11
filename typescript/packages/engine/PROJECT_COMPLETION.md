@@ -1931,3 +1931,6 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 109 (2026-06-11) — KISOLO CLEARED: bespoke Select crutch removed
 - The ply-219 stray offer was NOT the define expander (verified correct end-to-end on the real file: options+defines produce the single-element trackSite region) — it was Select.eval's legacy lastSown-push (a pre-faithful crutch adding the last-sown hole to the from-set on sow relays). Removed; Java's Select iterates exactly the compiled region. Kisolo trial 0 OUTCOME_OK, trial 1 full replay (cap). Battery green (32); units 194/47.
 - Kisolo (Lali) fails separately at ply 1 (option-variant start); next in the four_rows pool.
+
+## Update 110 (2026-06-11) — Kisolo (Lali) ply-1 scoped
+- Start counts + coords resolve correctly (A4→24, G1→6; rows 1-2 seeded 4 each). Recorded ply 1 is P1's RELAY continuation; our ply-0 sow ended the turn. Recorded ply-1 actions begin Select(8), Move(8→8) — the first counter sows into the ORIGIN hole ("first counter being sown into the hole from which the counters were picked up" per the ruleset text) — check whether the lud's sow carries origin:True and whether our Sow.ts origin handling (ActionAddCount(start, 1, ...)) fires for it; if the lud lacks origin:, Java's sow semantics for this shape need reading (@java Sow.java origin param). Likely a one-line origin-flag plumbing gap.
