@@ -30,6 +30,13 @@ export class IsEmpty implements BooleanFunction {
   public eval(ctx: Context): boolean {
     const site = this.siteFn.eval(ctx);
     if (site < 0) return false;
+    // @java cs.isEmpty(site, type) — an EXPLICIT type with a typed channel
+    // reads that channel (Guerrilla's (is Empty Cell (to)) on a Vertex board).
+    if (this.type !== null) {
+      const typed = (ctx.state as unknown as { typedSites?: ReadonlyMap<string, { who: readonly number[]; count: readonly number[] }> }).typedSites;
+      const ch = typed?.get(this.type);
+      if (ch) return (ch.who[site] ?? 0) === 0 && (ch.count[site] ?? 0) === 0;
+    }
     return ctx.state.isEmptySite(site);
   }
 }
