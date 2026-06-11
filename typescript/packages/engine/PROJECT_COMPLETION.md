@@ -2074,3 +2074,7 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 145 (2026-06-11) — SEQUENCE-CAPTURE SUBSYSTEM merged (Update 127 redeemed)
 - The at:EndOfTurn machinery is in: queued removes (pieces stay until turn end), (sites ToClear), turn-pass flush. Frisian residual: ply-2 recorded 44→62 missing from generation — the long-hop itself (Hop All with between min/max range on the 10x10; decode the geometry: 44→62 path/jumped square, likely a flying-man double-distance or our Hop range handling). Spot battery green; committed.
+
+## Update 146 (2026-06-11) — Sequence-capture reconciled; ID restored
+- The at:EndOfTurn subsystem ALREADY existed (ActionRemoveNonApplied + State.sitesToRemove + step-1b pre-end flush); the session's parallel channel collided with the legacy SitesToClear stub (state.toClear?.() invoked the new Set → TypeError → ID generated zero moves). All parallel pieces reverted; SitesToClear now reads sitesToRemove (the faithful semantics). ID 2/2, Guerrilla 2/2 held, spot battery green (12).
+- LESSON (audit list): before building a "missing" subsystem, grep for its Java names (sitesToRemove found ActionRemoveNonApplied immediately). Frisian's residual = long-hop generation (44→62 missing at ply 2) — separate item.
