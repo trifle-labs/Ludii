@@ -206,14 +206,21 @@ export class PlaceItem {
       this.region = region ?? null;
       this.coords = coords ?? coordList ?? null;
 
+      // Raw-literal rule: counts:{4} elements reach us as raw NUMBERS —
+      // wrap each as an IntConstant (@java the grammar compiles them to
+      // IntFunction[]); .eval on a raw number threw and the whole start
+      // rule died (Chiana wa Kunja & the four_rows counts:{N} family).
+      const wrapInt = (v: unknown): JavaIntFunction =>
+        typeof v === "number" ? intConstant(v) : (v as JavaIntFunction);
+      const countsWrapped = counts == null ? null : counts.map(wrapInt);
       // Java: countFn = (counts == null) ? new IntConstant(1) : counts[0];
-      this.countFn = (counts == null || counts.length === 0) ? intConstant(1) : (counts[0] ?? intConstant(1));
+      this.countFn = (countsWrapped == null || countsWrapped.length === 0) ? intConstant(1) : (countsWrapped[0] ?? intConstant(1));
 
       // Java: if (counts == null) countsFn = new IntFunction[0]; else ...
-      if (counts == null) {
+      if (countsWrapped == null) {
         this.countsFn = [];
       } else {
-        this.countsFn = counts.slice();
+        this.countsFn = countsWrapped.slice();
       }
     } else {
       // Single-site constructor — mirrors Java's first constructor
@@ -224,7 +231,20 @@ export class PlaceItem {
       this.countsFn = null;
 
       // Java: countFn = (count == null) ? new IntConstant(1) : count;
-      this.countFn = count ?? intConstant(1);
+      // Slot-shift + raw-literal guards: counts:{4} can land HERE as a raw
+      // array (and bare numbers as raw numbers) depending on which Java
+      // ctor the reflection matched.
+      const rawCount: unknown = count;
+      if (Array.isArray(rawCount)) {
+        const first: unknown = rawCount[0];
+        this.countFn = typeof first === "number" ? intConstant(first) : ((first as JavaIntFunction) ?? intConstant(1));
+        // countsFn stays null: the single-site fast path (Game.applyStartRule)
+        // broadcasts countFn over the (possibly region-valued) siteId.
+      } else if (typeof rawCount === "number") {
+        this.countFn = intConstant(rawCount);
+      } else {
+        this.countFn = (rawCount as JavaIntFunction | null | undefined) ?? intConstant(1);
+      }
     }
 
     // Java: stateFn = (state == null) ? new IntConstant(Constants.OFF) : state;
