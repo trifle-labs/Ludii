@@ -72,6 +72,8 @@ export class SitesBottom extends BaseRegionFunction {
 
 function twoRowMancalaBottom(board: {
   numSites: number;
+  width?: number;
+  height?: number;
   tracks?: () => readonly unknown[];
   getTracks?: () => readonly unknown[];
   getStoreType?: () => string;
@@ -80,11 +82,18 @@ function twoRowMancalaBottom(board: {
     ? board.tracks()
     : (typeof board.getTracks === "function" ? board.getTracks() : []);
   if (tracks.length === 0 || board.numSites < 4 || board.numSites % 2 !== 0) return null;
+  // @java graph.bottom(realType) — the FIRST row only. Four-row mancalas
+  // (Hus: 4x12, store:None) have width holes per row, not numSites/2.
+  const holesPerRow = board.width && board.height && board.width * board.height === board.numSites
+    ? board.width
+    : board.numSites / 2;
   if (board.getStoreType?.() === "None") {
-    const holes = board.numSites / 2;
-    return Array.from({ length: holes }, (_, index) => index);
+    return Array.from({ length: holesPerRow }, (_, index) => index);
   }
-  const holes = (board.numSites - 2) / 2;
+  // With stores the x-extent includes both stores, so derive holes-per-row
+  // from the hole count and the row count (height).
+  const rows = board.height && board.height >= 2 ? board.height : 2;
+  const holes = (board.numSites - 2) / rows;
   if (!Number.isInteger(holes) || holes < 1) return null;
   return Array.from({ length: holes }, (_, index) => index + 1);
 }
