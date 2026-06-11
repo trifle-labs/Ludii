@@ -2,6 +2,7 @@
 
 import type { Context } from "../../../../context.js";
 import type { DirectionsFunction } from "../../../base.js";
+import { directionsFunction } from "../../rules/play/moves/nonDecision/effect/EffectCtorAdapters.js";
 import type { AbsoluteDirection } from "../../../../eval/graph/trajectory/absolute-direction.js";
 import type { TopologyElement, RelationType, DirectionFacing } from "../../../other/topology/TopologyElement.js";
 import type { SiteType } from "../../../other/topology/TopologyElement.js";
@@ -26,8 +27,9 @@ export class Union implements DirectionsFunction {
    * @java Union(Direction directions, Direction directionsToAdd)
    */
   public constructor(directionSet1: DirectionsFunction, directionSet2: DirectionsFunction) {
-    this.directionSet1 = directionSet1;
-    this.directionSet2 = directionSet2;
+    // @java Union.java — directions.directionsFunctions(); coerce raw enums.
+    this.directionSet1 = directionsFunction(directionSet1 as never);
+    this.directionSet2 = directionsFunction(directionSet2 as never);
   }
 
   /**

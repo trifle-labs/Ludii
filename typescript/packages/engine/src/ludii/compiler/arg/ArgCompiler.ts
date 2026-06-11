@@ -1,4 +1,5 @@
 import { SitesEquipmentRegion } from "../../../ludemes/game/functions/region/sites/player/SitesEquipmentRegion.js";
+import { resolveRelativeDir } from "../../../ludemes/game/util/directions/RelativeDirection.js";
 import {
   isIdent,
   isList,
@@ -257,6 +258,9 @@ export class ArgCompiler {
 
     const preferredDirectionsFromTo = this.compilePreferredDirectionsFromTo(node, head, expectedTypes, env);
     if (preferredDirectionsFromTo !== null) return preferredDirectionsFromTo;
+
+    const preferredDirectionsRelative = this.compilePreferredDirectionsRelative(node, head, expectedTypes);
+    if (preferredDirectionsRelative !== null) return preferredDirectionsRelative;
 
     const preferred = this.compilePreferredTokenClass(node, head, expectedTypes, env);
     if (preferred !== null) return preferred;
@@ -825,6 +829,80 @@ export class ArgCompiler {
           sx === 0 && sy < 0 ? "S" : sx < 0 && sy < 0 ? "SW" :
           sx < 0 && sy === 0 ? "W" : "NW";
         return [name];
+      },
+    };
+  }
+
+  /**
+   * @java Directions(RelativeDirection[, of:RelationType, bySite:Boolean]) —
+   * Directions.java:148-203 + convertToAbsolute:452-471: relative direction
+   * names resolve to ABSOLUTE compass names over the topology's supported
+   * directions for the `of:` relation (default Adjacent). The generic path
+   * mis-binds this overload onto the static-names ctor, dropping `of:` —
+   * La Dama's (directions {Rightward Leftward Forwards} of:All) lost its
+   * diagonal forward steps.
+   */
+  private compilePreferredDirectionsRelative(
+    node: LudList,
+    head: string,
+    expectedTypes: readonly JavaType[],
+  ): unknown | null {
+    if (normalise(head) !== "directions") return null;
+    if (!expectedTypes.some((expected) => expected.dims === 0 &&
+      (expected.name === "game.functions.directions.DirectionsFunction" ||
+       expected.name === "game.util.directions.Direction" ||
+       expected.name === "game.functions.directions.Directions"))) return null;
+    const RELATIVE_NAMES = new Set([
+      "Forward", "Backward", "Rightward", "Leftward",
+      "Forwards", "Backwards", "Rightwards", "Leftwards",
+      "FL", "FLL", "FLLL", "FR", "FRR", "FRRR",
+      "BL", "BLL", "BLLL", "BR", "BRR", "BRRR",
+      "SameDirection", "OppositeDirection",
+    ]);
+    const parsed = parseNodeArgs(node);
+    // Relative names: a single ident or a curly list of idents, positional.
+    const positional = parsed.argsIn.filter((arg) => arg.parameterName === undefined);
+    if (positional.length !== 1) return null;
+    const dirNode = positional[0]!.node;
+    let relNames: string[];
+    if (isIdent(dirNode) && RELATIVE_NAMES.has(dirNode.name)) {
+      relNames = [dirNode.name];
+    } else if (isList(dirNode) && dirNode.delimiter === "curly" &&
+        dirNode.items.length > 0 &&
+        dirNode.items.every((item) => isIdent(item) && RELATIVE_NAMES.has(item.name))) {
+      relNames = dirNode.items.map((item) => (item as { name: string }).name);
+    } else {
+      return null;
+    }
+    const ofArg = parsed.argsIn.find((arg) => arg.parameterName === "of")?.node;
+    const ofRelation = ofArg && isIdent(ofArg) ? ofArg.name : "Adjacent";
+    this.resolveTrace.push({ token: head, cls: "game.functions.directions.Directions" });
+    type TopoLike = {
+      supportedDirections?: (rel: string, t: string) => Array<{ toAbsolute?: () => string } | string>;
+    };
+    type CtxLike = {
+      state: { mover: number };
+      game: { _playerDirs?: Map<number, number> };
+      board(): { defaultSite?: () => string };
+      topology?: () => TopoLike;
+    };
+    return {
+      eval(ctx: unknown): string[] {
+        const c = ctx as CtxLike;
+        const topo = c.topology?.();
+        const playType = c.board().defaultSite?.() ?? "Cell";
+        const raw = topo?.supportedDirections?.(ofRelation, playType);
+        const supported = raw && raw.length > 0
+          ? raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
+          : undefined;
+        const out: string[] = [];
+        const seen = new Set<string>();
+        for (const n of relNames) {
+          const resolved = resolveRelativeDir(n, c.state.mover, c.game._playerDirs, undefined, supported);
+          const names = Array.isArray(resolved) ? resolved : [resolved ?? n];
+          for (const nm of names) if (!seen.has(nm)) { seen.add(nm); out.push(nm); }
+        }
+        return out;
       },
     };
   }

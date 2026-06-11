@@ -2,6 +2,8 @@
 
 import type { Context } from "../../../../context.js";
 import type { DirectionsFunction } from "../../../base.js";
+import { directionsFunction } from "../../rules/play/moves/nonDecision/effect/EffectCtorAdapters.js";
+import { resolveRelativeDir } from "../../util/directions/RelativeDirection.js";
 
 /**
  * Returns the difference of two direction sets (directions in the original
@@ -28,8 +30,11 @@ export class Difference implements DirectionsFunction {
     originalDirection: DirectionsFunction,
     removedDirection: DirectionsFunction,
   ) {
-    this.originalDirection = originalDirection;
-    this.removedDirection = removedDirection;
+    // @java Difference.java:44-45 — directions.directionsFunctions(): bare
+    // direction enums ((difference Forwards Diagonal)) arrive as raw strings
+    // from the reflection compiler; coerce like every other Direction slot.
+    this.originalDirection = directionsFunction(originalDirection as never);
+    this.removedDirection = directionsFunction(removedDirection as never);
   }
 
   /**
@@ -37,9 +42,44 @@ export class Difference implements DirectionsFunction {
    * @java Difference.convertToAbsolute — originalAfterConv minus removedAfterConv.
    */
   public eval(ctx: Context): string[] {
-    const origNames = this.originalDirection.eval(ctx);
-    const remNames = this.removedDirection.eval(ctx);
-    const removeSet = new Set<string>(remNames);
+    // @java Difference.convertToAbsolute — BOTH sets expand to absolute
+    // compass names first (originalAfterConv minus removedAfterConv), else
+    // ["Forwards"] minus ["Diagonal"] subtracts nothing and the consumer
+    // keeps the diagonal forward steps (Crand/Fetach (difference Forwards
+    // Diagonal)).
+    const expand = (names: readonly string[]): string[] => {
+      const out: string[] = [];
+      type TopoLike = {
+        supportedDirections?: (rel: string, t: string) => Array<{ toAbsolute?: () => string } | string>;
+      };
+      const topo = (ctx as unknown as { topology?: () => TopoLike }).topology?.();
+      const playType = (ctx.board() as unknown as { defaultSite?: () => string }).defaultSite?.() ?? "Cell";
+      const supportedOf = (rel: string): string[] | undefined => {
+        const raw = topo?.supportedDirections?.(rel, playType);
+        if (!raw || raw.length === 0) return undefined;
+        return raw
+          .map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? ""))
+          .filter((n) => n.length > 0);
+      };
+      const supported = supportedOf("Adjacent");
+      const mover = ctx.state.mover;
+      const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+      for (const n of names) {
+        const lower = n.toLowerCase();
+        if (lower === "adjacent" || lower === "orthogonal" || lower === "diagonal" || lower === "all") {
+          // Category → the topology's absolute names for that relation.
+          const cat = supportedOf(lower === "all" ? "All" : n) ?? [];
+          out.push(...cat);
+          continue;
+        }
+        const resolved = resolveRelativeDir(n, mover, playerDirs, undefined, supported);
+        if (Array.isArray(resolved)) out.push(...resolved);
+        else out.push(resolved ?? n);
+      }
+      return out;
+    };
+    const origNames = expand(this.originalDirection.eval(ctx));
+    const removeSet = new Set<string>(expand(this.removedDirection.eval(ctx)));
     const result: string[] = [];
     const seen = new Set<string>();
     for (const n of origNames) {

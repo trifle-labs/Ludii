@@ -665,6 +665,42 @@ export class Topology {
       clearArray(element.off());
     }
 
+    // @java Topology.java:2075-2114 — relations come from the trajectories'
+    // per-relation steps (trajectories.steps(type, idx, type, dir)). The
+    // geometric fallback below misses vertex DIAGONALS entirely (square-
+    // vertex boards: supportedDirections(All) lacked NE/SE/SW/NW, so La
+    // Dama's (directions Forwards of:All) lost its diagonal steps).
+    {
+      const trajRoot = this._trajectories as
+        | { viewOf?: (kind: string) => unknown }
+        | null;
+      let view: { steps?: (site: number, dir: string) => number[] } | undefined;
+      try {
+        view = trajRoot?.viewOf?.(type) as typeof view;
+      } catch {
+        view = undefined;
+      }
+      if (view && typeof view.steps === "function") {
+        const fill: Array<[string, (el: TopologyElement) => TopologyElement[]]> = [
+          ["All", (el) => el.neighbours()],
+          ["Adjacent", (el) => el.adjacent()],
+          ["Orthogonal", (el) => el.orthogonal()],
+          ["Diagonal", (el) => el.diagonal()],
+          ["OffDiagonal", (el) => el.off()],
+        ];
+        for (const element of elements) {
+          const idx = element.index();
+          for (const [dir, listOf] of fill) {
+            for (const to of view.steps!(idx, dir)) {
+              const target = elements[to];
+              if (target) addUnique(listOf(element), target);
+            }
+          }
+        }
+        return;
+      }
+    }
+
     if (type === "Cell") {
       for (let i = 0; i < this._cells.length; i += 1) {
         const a = this._cells[i]!;
