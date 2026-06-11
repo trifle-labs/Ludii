@@ -2224,3 +2224,6 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 ## Update 177 (2026-06-11) — T'oki piles own their pieces; battery-filter pitfalls noted
 - Hand-sourced count placements stamp ownership (FromTo, hand-gated). T'oki ply 2 -> 15/23 frontiers (next: probe ply 15 — rec 7>2 vertical move missing among 22; suspect the multi-hurdle line-hop arm ((range 1 (count Rows)) between with (to) allowing outer-edge enemy landing) or pile-aware step semantics).
 - BATTERY NOTE: "Hus (Damara)" with parens no longer matches (use four_rows/Hus + MOVE_CAP=5000; 3 OK + 1 WM pre-existing). Filters with parens/apostrophes need care.
+
+## Update 178 (2026-06-11) — Flat removes Java-exact; Stacking flags two-grade; T'oki at 95/51
+- Commit above. T'oki next: ply 95 (rec 0>1, tsMoveCount=3 — endgame, likely the outer-edge-landing hop arm (to (and (is In (to) (sites Outer)) IsEnemyAt)) or line-hop multi-hurdle); ply 51 (rec 5>10 among 17).
