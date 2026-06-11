@@ -123,7 +123,12 @@ export class Sites extends BaseRegionFunction {
    * @java Sites.construct() → SitesContext
    * @example (sites)
    */
-  public static constructContext(): RegionFunction {
+  public static constructContext(...args: unknown[]): RegionFunction {
+    // @java Sites.construct() — the zero-arg overload. Arity-relaxed construct
+    // dispatch also offers it surplus args; only the truly argument-free call
+    // is this clause ((sites Pending) had fallen through to SitesContext and
+    // the Damas huff's (remove (sites Pending)) removed nothing).
+    if (args.some((a) => a !== null && a !== undefined)) return null as unknown as RegionFunction;
     return new SitesContext();
   }
 
@@ -240,12 +245,13 @@ export class Sites extends BaseRegionFunction {
       case "Top":
         return new SitesTop(elementType);
       case "Pending":
+        // @java SitesPending — context.state().pendingValues(); the engine
+        // State keeps the set as the `pending` property.
         return new (class extends BaseRegionFunction {
           override eval(ctx: Context & EvalScratch): number[] {
-            const sites = (ctx as unknown as {
-              state?: { pendingSites?(): number[] }
-            }).state?.pendingSites?.();
-            return sites ?? [];
+            const st = ctx.state as unknown as { pendingSites?(): number[]; pending?: ReadonlySet<number> };
+            if (typeof st.pendingSites === "function") return st.pendingSites();
+            return st.pending ? [...st.pending].filter((s) => s >= 0) : [];
           }
         })();
       case "Playable":
