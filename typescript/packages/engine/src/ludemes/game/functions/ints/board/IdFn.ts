@@ -41,8 +41,19 @@ function roleIndex(who: string, ctx: Context): number {
     }
     case "Shared": case "All": case "Each": return ctx.game.numPlayers + 1;
     case "Mover": return ctx.state.mover;
-    case "Next": return (ctx.state as unknown as { next?: number }).next ?? (ctx.state.mover % ctx.game.numPlayers) + 1;
-    case "Prev": return (ctx.state as unknown as { prev?: number }).prev ?? ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+    case "Next": {
+      // @java context.state().next() — Java keeps next as the upcoming
+      // player; the engine CLEARS state.next to 0 after consumption, and
+      // `0 ?? fallback` does not fall back. Treat <=0 as unset
+      // (Dama (Italy): (id "Counter" Next) resolved owner 0 and every
+      // capture's hurdle rule failed).
+      const n = (ctx.state as unknown as { next?: number }).next;
+      return n !== undefined && n > 0 ? n : (ctx.state.mover % ctx.game.numPlayers) + 1;
+    }
+    case "Prev": {
+      const pv = (ctx.state as unknown as { prev?: number }).prev;
+      return pv !== undefined && pv > 0 ? pv : ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+    }
     default: return OFF;
   }
 }
