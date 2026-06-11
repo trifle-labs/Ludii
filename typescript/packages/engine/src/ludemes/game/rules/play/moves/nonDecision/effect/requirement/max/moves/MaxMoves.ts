@@ -70,6 +70,7 @@ export class MaxMoves implements MovesFunction {
   public eval(ctx: Context): Move[] {
     const returnMoves: Move[] = [];
     const movesToEval = this.moves.eval(ctx);
+    if (process.env.TRACE_MAXMOVES) console.error("[MaxMoves] in:", movesToEval.map(m => `${m.from()}>${m.to()}`).join(" ") || "(none)");
     const withValue = this.withValueFn.eval(ctx);
     const replayCount: number[] = new Array(movesToEval.length).fill(0);
     const evalledMoves: Move[] = [];
@@ -84,11 +85,12 @@ export class MaxMoves implements MovesFunction {
       if (!withValue) {
         replayCount[i] = this._getReplayCount(newCtx, 1, withValue);
       } else {
-        // Java parity: numCaptureWithValue computed from move actions.
+        // @java MaxMoves.java:91-104 — sum the board VALUE of each removed
+        // piece (cs.value(site, level, type)), read from the PRE-move context.
         let numCaptureWithValue = 0;
         for (const action of m.actions) {
           if (action.actionType() === "Remove") {
-            numCaptureWithValue += action.value();
+            numCaptureWithValue += ctx.state.valueAtSite(action.to());
           }
         }
         replayCount[i] = this._getReplayCount(newCtx, numCaptureWithValue, withValue);
@@ -108,6 +110,7 @@ export class MaxMoves implements MovesFunction {
       }
     }
 
+    if (process.env.TRACE_MAXMOVES) console.error("[MaxMoves] out:", returnMoves.map(m => `${m.from()}>${m.to()}`).join(" ") || "(none)", "counts:", JSON.stringify(replayCount));
     return returnMoves;
   }
 
@@ -127,8 +130,17 @@ export class MaxMoves implements MovesFunction {
     if (ctx.trial.over) return count;
 
     // Java: contextCopy.game().moves(contextCopy)
-    const legalMoves = this.moves.eval(ctx);
-    if (legalMoves.length === 0) return count;
+    // @java MaxMoves.java:143 — contextCopy.game().moves(contextCopy); no
+    // empty-list early return: Java falls through to max-of-children (0).
+    // Our Game.moves injects a synthetic forced-pass when the play rule
+    // yields nothing (Java returns the empty Moves there) — treat that
+    // single-pass result as Java's empty list.
+    let legalMoves = ctx.game.moves(ctx) as readonly Move[];
+    if (
+      legalMoves.length === 1 &&
+      legalMoves[0]!.actions.length === 1 &&
+      legalMoves[0]!.actions[0]!.actionType() === "Pass"
+    ) legalMoves = [];
 
     const replayCounts: number[] = new Array(legalMoves.length).fill(0);
 
@@ -141,10 +153,12 @@ export class MaxMoves implements MovesFunction {
       if (!withValue) {
         replayCounts[i] = this._getReplayCount(newCtx, count + 1, withValue);
       } else {
+        // @java MaxMoves.java:160-172 — value of the piece at the removed
+        // site, read from contextCopy (pre-application of nm).
         let numCaptureWithValue = 0;
         for (const action of nm.actions) {
           if (action.actionType() === "Remove") {
-            numCaptureWithValue += action.value();
+            numCaptureWithValue += ctx.state.valueAtSite(action.to());
           }
         }
         replayCounts[i] = this._getReplayCount(newCtx, count + numCaptureWithValue, withValue);
