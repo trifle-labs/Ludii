@@ -1966,3 +1966,7 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 117 (2026-06-11) — HEXENTAFL 2/2: convex-hull corners — tafl genre COMPLETE
 - (sites Corners) hardcoded 4 rectangle extremes; hexhex boards have 6 (recorded setup ground truth). Convex hull of play-site centroids (monotone chain, strict turns) is rotation-invariant: 4 on rectangles, 6 on hexhexes. HeXentafl 2/2 — every tafl variant in the corpus now passes (Tablut, Brandub, Hnefatafl, Alea Evangelii, ArdRi, Tawlbwrdd, HeXentafl). Battery extended to 33 (Hnefatafl); units 194/47.
+
+## Update 118 (2026-06-11) — war refresh + Fanorona scoped
+- War family: 164 OK + 61 RONO /375 post-tafl (MM pool 108, flat 2-per-game: Awithlaknakwe, Bizingo, Castello, Khamousiyya, Ludus Latrunculorum ply-37, Sabou'iyya, Shantarad).
+- Fanorona ply-1 (P2's first move): adjacency at 32 verified correct (8 neighbors incl. diagonal 23); recorded capture Select(32→23)+2 Removes missing from our 2 candidates. Since captures are mandatory, the miss means our APPROACH-capture detection for the 32→23 diagonal yields no removes: suspect the (directions SameDirection) radial walk beyond `to` on the alquerque lattice (diagonal radials through strong points — resolveSameOppositeDir / radialsByName with the move's direction). NEXT: dump the compiled capture branch for from=32, eval its between region with _evalFrom=32/_evalTo=23, and trace which radial lookup returns empty.
