@@ -311,6 +311,45 @@ export function resolveRelativeDir(
   // against the topology's supported directions (rotated hex boards name them
   // ENE/WNW/…, not the 8-wind compass; Dodo's Forwards cone is {WNW,N,ENE}).
   if (supportedDirs && supportedDirs.length > 0) {
+    // @java RelativeDirection.FL/FR/BL/BR.directions(baseDirn, supported) —
+    // walk the 16-wind ring in 22.5° steps from just past the base heading
+    // until a SUPPORTED direction appears (rotated hex boards name their
+    // winds ENE/WNW/…, so the flat compass8 FL/FR below finds nothing:
+    // HexDame's P2 {Forward FL FR} steps lost both diagonals).
+    const walk16 = (start16: number, step: number): string | null => {
+      const supportedSet = new Set(supportedDirs);
+      let idx = ((start16 % 16) + 16) % 16;
+      for (let i = 0; i < 16; i++) {
+        const name = COMPASS16_CW[idx]!;
+        if (supportedSet.has(name)) return name;
+        idx = (idx + step + 16) % 16;
+      }
+      return null;
+    };
+    const facing16 = (facingDir * 2) % 16;
+    switch (dn) {
+      case "forwardleft": case "fl": {
+        const r = walk16(facing16 - 1, -1);
+        if (r !== null) return r;
+        break;
+      }
+      case "forwardright": case "fr": {
+        const r = walk16(facing16 + 1, +1);
+        if (r !== null) return r;
+        break;
+      }
+      case "backwardleft": case "bl": {
+        const r = walk16(facing16 + 8 - 1, -1);
+        if (r !== null) return r;
+        break;
+      }
+      case "backwardright": case "br": {
+        const r = walk16(facing16 + 8 + 1, +1);
+        if (r !== null) return r;
+        break;
+      }
+      default: break;
+    }
     switch (dn) {
       // @java Forwards: leftward().right() .. rightward() exclusive
       case "forwards": return coneDirections(facingDir, supportedDirs, -3, 4);
