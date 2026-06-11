@@ -70,6 +70,8 @@ export class ActionMove extends BaseAction {
   private readonly valueValue: number;
   private readonly siteTypeFrom: SiteType;
   private readonly siteTypeTo: SiteType;
+  /** True when the constructor received an explicit site type. */
+  private readonly explicitTyped: boolean = false;
   private readonly transferCount: boolean;
   private readonly seedOwnerValue: number;
   private readonly footprint: readonly number[];
@@ -91,6 +93,7 @@ export class ActionMove extends BaseAction {
     this.valueValue = options.value ?? ACTION_OFF;
     this.siteTypeFrom = options.fromType ?? "Cell";
     this.siteTypeTo = options.toType ?? options.fromType ?? "Cell";
+    this.explicitTyped = options.fromType !== undefined;
     this.transferCount = options.transferCount ?? false;
     this.seedOwnerValue = options.seedOwner ?? 0;
     this.footprint = options.footprint ?? [];
@@ -98,6 +101,19 @@ export class ActionMove extends BaseAction {
   }
 
   public override apply(state: State): State {
+    // Dual-SiteType (@java per-type ContainerStates): an explicitly typed
+    // move whose type has a typed channel operates there (Guerrilla COIN
+    // counters stepping on Cells of a Vertex-play board).
+    if (this.explicitTyped && state.typedSites.has(this.siteTypeFrom) && this.siteTypeFrom === this.siteTypeTo) {
+      const t = this.siteTypeFrom;
+      const who = state.whoTyped(t, this.fromIndex);
+      const what = state.whatTyped(t, this.fromIndex);
+      const count = state.countTyped(t, this.fromIndex);
+      if (who === 0 && what === 0) return state;
+      let s2 = state.withTypedSite(t, this.fromIndex, 0, 0, 0);
+      s2 = s2.withTypedSite(t, this.toIndex, who, what, Math.max(count, 1));
+      return s2;
+    }
     if (this.footprint.length > 0 || this.clearFootprint.length > 0) {
       // Large-piece relocation (Java: ActionMove → applyLargePiece). Read the
       // piece off its anchor, vacate every cell it currently covers, then lay

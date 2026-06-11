@@ -154,6 +154,7 @@ export class Hop extends Effect {
     const traj = fromTypeTagH && baseTrajH && typeof (baseTrajH as unknown as { viewOf?: unknown }).viewOf === "function"
       ? (baseTrajH as unknown as { viewOf(k: string): Trajectories }).viewOf(fromTypeTagH)
       : baseTrajH;
+    this._fromTypeTag = fromTypeTagH;
 
     const GROUP_DIRS = new Set(["adjacent", "orthogonal", "diagonal", "all"]);
     const axesForDir = (dir: string): readonly { ray: readonly number[]; opposite: readonly number[] }[] => {
@@ -212,6 +213,9 @@ export class Hop extends Effect {
     return out;
   }
 
+  /** Dual-SiteType tag captured per-eval for buildMove (typed-channel hops). */
+  private _fromTypeTag: string | null = null;
+
   private buildMove(
     kind: string,
     from: number,
@@ -219,7 +223,8 @@ export class Hop extends Effect {
     mover: number,
     actions: Action[],
   ): Move {
-    const moveAction = new ActionMove({ from, to });
+    const tag = this._fromTypeTag;
+    const moveAction = new ActionMove(tag ? { from, to, fromType: tag as never, toType: tag as never } : { from, to });
     moveAction.setDecision(true);
     actions.push(moveAction);
     return new Move({

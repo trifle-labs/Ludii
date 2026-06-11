@@ -141,6 +141,7 @@ export class Step extends Effect {
     const playTypeName = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? null;
     const rawTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? null;
     const fromTypeTag = rawTag && playTypeName && rawTag !== playTypeName ? rawTag : null;
+    this._fromTypeTag = fromTypeTag;
     const traj = fromTypeTag && baseTraj && typeof (baseTraj as unknown as { viewOf?: unknown }).viewOf === "function"
       ? (baseTraj as unknown as { viewOf(k: string): Trajectories }).viewOf(fromTypeTag)
       : baseTraj;
@@ -196,6 +197,9 @@ export class Step extends Effect {
    *   Otherwise: eval single from-site.
    *     For each direction step, check rule, emit ActionMove.
    */
+  /** Dual-SiteType tag captured per-eval (typed-channel steps). */
+  private _fromTypeTag: string | null = null;
+
   public override eval(ctx: Context): Move[] {
     if (this.startRegionFn !== null) return this.evalRegion(ctx);
 
@@ -250,7 +254,7 @@ export class Step extends Effect {
           actions.push(a);
         }
       }
-      const moveAction = new ActionMove({ from, to });
+      const moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never } : { from, to });
       moveAction.setDecision(true);
       actions.push(moveAction);
 
@@ -325,7 +329,7 @@ export class Step extends Effect {
           actions.push(a);
         }
         }
-        const moveAction = new ActionMove({ from, to });
+        const moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never } : { from, to });
         moveAction.setDecision(true);
         actions.push(moveAction);
 
