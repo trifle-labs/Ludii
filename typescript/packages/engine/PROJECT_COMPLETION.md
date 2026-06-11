@@ -2198,3 +2198,7 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 ## Update 170 (2026-06-11) — FENIX CLEARED 2/2: the Owned-ghost pipeline is complete
 - Final fixes: ascending flush order (binary-verified) + cs.remove level clamp. Full chain documented in the commit. Battery 14/14, units 194/0.
 - war/leaping remaining: Chameleons (SetState tiles), Seesaw (RememberValue/StackMove numLevel), custom-graph boards (Cage, Awithlaknan, Kolowis, Solomon, Spoing, Throngs, Pasang, Crand, Fetach), Dum Blas, plus REPLAY_OK_NO_OUTCOME caps. Re-sweep the family next to refresh the standing (expect ~70%+).
+
+## Update 171 (2026-06-11) — war/leaping at 69.0% OK + 13.3% full-replay post-Fenix
+- 156/226 OUTCOME_OK (was 131 at session start, 149 pre-Fenix). 35 MM, 5 WM, 30 capped.
+- Queue unchanged: Chameleons, Seesaw, custom-graph boards, Dum Blas, cap raises.
