@@ -737,6 +737,12 @@ export class ArgCompiler {
       if ((componentNames === null || componentNames.length === 0) && componentNode && isString(componentNode)) {
         componentNames = [(componentNode as { value: string }).value];
       }
+      // @java @Opt @Name Boolean top [True] — the intercept dropped it, so
+      // top:False (Seesaw's buried-Hex scan) silently behaved as top:True.
+      const topNode = parsed.argsIn.find((arg) => arg.parameterName === "top")?.node;
+      const topVal = topNode && isIdent(topNode) && ["true", "false"].includes(topNode.name.toLowerCase())
+        ? topNode.name.toLowerCase() === "true"
+        : null;
       return Sites.constructOccupied(
         "Occupied" as never,
         byFn as never,
@@ -745,7 +751,7 @@ export class ArgCompiler {
         containerName as never,
         null, null,
         (componentNames && componentNames.length > 0 ? componentNames : null) as never,
-        null,
+        topVal as never,
         (((): string | null => {
           // @java @Name SiteType on — the named on:Cell form (Guerrilla's
           // surrounded-counter sweep); fall back to a bare positional type.

@@ -235,11 +235,25 @@ export class SitesOccupied extends BaseRegionFunction {
     } else {
       // @java default — specific player (whoId)
       for (let i = 0; i < boardN; i++) {
+        const stack = stacks[i];
+        // @java top:False on stacks — the owned positions cover EVERY level:
+        // the site qualifies when ANY level matches owner AND component
+        // (Seesaw's (sites Occupied by:Mover component:"Hex" top:False)
+        // finds the Hex buried under the Disc at level 0).
+        if (!this.top && stack && stack.length > 1) {
+          const whatRow = ctx.state.whatStacks[i];
+          for (let lvl = 0; lvl < stack.length; lvl += 1) {
+            if ((stack[lvl] ?? 0) === whoId && whatOk(whatRow?.[lvl] ?? 0)) {
+              sitesOccupied.push(i);
+              break;
+            }
+          }
+          continue;
+        }
         // @java stacking: if top=true, check only top of stack
         let owner: number;
-        if (this.top && stacks[i] && (stacks[i]?.length ?? 0) > 0) {
+        if (this.top && stack && (stack.length ?? 0) > 0) {
           // @java ContainerStateStacks.who(site, type) at top
-          const stack = stacks[i]!;
           owner = stack[stack.length - 1] ?? 0;
         } else {
           owner = cells[i] ?? 0;

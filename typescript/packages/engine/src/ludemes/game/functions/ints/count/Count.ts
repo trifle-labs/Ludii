@@ -246,8 +246,20 @@ export class Count extends BaseIntFunction {
     }
 
     switch (countType) {
-      case "Stack":
-        return asJavaReturn(new CountStack(at !== null && at !== undefined ? asLeanInt(at) : firstSiteFn(to)));
+      case "Stack": {
+        // @java CountStack(stackDirection, type, to, If, stop) — the per-level
+        // if:/stop: walk (Seesaw's "StackSize" counts only the Discs of a
+        // stack); previously If/stop/direction were discarded.
+        const regionFn = at !== null && at !== undefined
+          ? asLeanInt(at)
+          : { eval: (ctx: unknown) => (to as { eval(c: unknown): number[] }).eval(ctx) };
+        return asJavaReturn(new CountStack(
+          regionFn as never,
+          (_If ?? null) as never,
+          (_stop ?? null) as never,
+          (typeof _stackDirection === "string" ? _stackDirection : null) as never,
+        ));
+      }
       default:
         throw new Error("Count(): A CountStackType is not implemented.");
     }

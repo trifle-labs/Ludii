@@ -65,6 +65,7 @@ import type { SitesOccupiedType } from "./SitesOccupiedType.js";
 import type { SitesPlayerType } from "./SitesPlayerType.js";
 import type { SitesPieceType } from "./SitesPieceType.js";
 import type { SitesSimpleType } from "./SitesSimpleType.js";
+import { resolveRelativeDir } from "../../../util/directions/RelativeDirection.js";
 
 /** Internal type alias for topology accessor shape. */
 type TopologyLike = {
@@ -630,6 +631,7 @@ export class Sites extends BaseRegionFunction {
               : regionWhere !== null
                 ? regionWhere.eval(ctx)
                 : [];
+            if (process.env.TRACE_AROUND) { const rw = regionWhere as unknown as { role?: unknown; top?: unknown; componentNames?: unknown; component?: { constructor?: { name?: string } }; who?: { eval(c: unknown): number } }; console.error("[around] where:", where?.constructor?.name ?? null, "regionWhere:", regionWhere?.constructor?.name ?? null, "cfg:", JSON.stringify({ role: rw?.role, top: rw?.top, names: rw?.componentNames, comp: rw?.component?.constructor?.name, who: rw?.who ? rw.who.eval(ctx) : null }), "sources:", JSON.stringify(sourceSites).slice(0,80)); }
             const dist = Math.max(1, distance?.eval(ctx) ?? 1);
             const dirNames = directionNames(directions, ctx);
             const dynType = typeof type === "string" ? type.toLowerCase() : null;
@@ -996,8 +998,51 @@ export class Sites extends BaseRegionFunction {
           | null;
         const stepMove = _stepMove;
         return new (class extends BaseRegionFunction {
+          // @java SitesDistance.stepMove(context, realType, from, goRule,
+          // component, facingDirection, rotation) — resolve the step's
+          // directions from the walk site, take one relation step per
+          // direction, keep targets passing goRule (the step's to-condition)
+          // with (to) bound.
+          private stepNeighbours(ctx: Context & EvalScratch, site: number): number[] {
+            const sm = stepMove as unknown as {
+              dirnChoice?: { eval(c: Context): string[] };
+              rule?: { eval(c: Context): boolean } | null;
+            };
+            const traj = (ctx as unknown as { _trajectories?: { steps(s: number, d: string): number[] } })._trajectories;
+            if (!traj || !sm.dirnChoice) return [];
+            const origFrom = ctx._evalFrom;
+            const origTo = ctx._evalTo;
+            ctx._evalFrom = site;
+            const mover = ctx.state.mover;
+            const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+            const topo = (ctx as unknown as { topology?: () => { supportedDirections?: (rel: string, t: string) => Array<{ toAbsolute?: () => string } | string> } }).topology?.();
+            const playType = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? "Cell";
+            const rawSupported = topo?.supportedDirections?.("Adjacent", playType);
+            const supported = rawSupported && rawSupported.length > 0
+              ? rawSupported.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
+              : undefined;
+            const out: number[] = [];
+            const seen = new Set<number>();
+            for (const dirName of sm.dirnChoice.eval(ctx)) {
+              const rel = resolveRelativeDir(dirName, mover, playerDirs, undefined, supported);
+              const names = Array.isArray(rel) ? rel : [rel ?? dirName];
+              for (const d of names) {
+                for (const to of traj.steps(site, d)) {
+                  if (seen.has(to)) continue;
+                  ctx._evalTo = to;
+                  if (sm.rule == null || sm.rule.eval(ctx)) {
+                    seen.add(to);
+                    out.push(to);
+                  }
+                }
+              }
+            }
+            ctx._evalFrom = origFrom;
+            ctx._evalTo = origTo;
+            return out;
+          }
+
           override eval(ctx: Context & EvalScratch): number[] {
-            if (stepMove != null) return [];
             const from = fromFn.eval(ctx);
             if (from < 0) return [];
             let minD: number;
@@ -1013,6 +1058,32 @@ export class Sites extends BaseRegionFunction {
               return [];
             }
             if (minD < 0) return [];
+            if (stepMove != null) {
+              // @java SitesDistance.java:140-215 — BFS over the custom step
+              // move: frontier expands by stepNeighbours; sites at depth in
+              // [minD, maxD] are returned (Seesaw's "EmptyInRange" walks
+              // (step Forwards (to if:empty)) up to (var) steps).
+              const sitesToReturn: number[] = [];
+              const checked = new Set<number>([from]);
+              let curr = this.stepNeighbours(ctx, from).filter((t) => !checked.has(t));
+              for (const t of curr) checked.add(t);
+              let numSteps = 1;
+              if (numSteps >= minD) for (const t of curr) if (!sitesToReturn.includes(t)) sitesToReturn.push(t);
+              while (curr.length > 0 && numSteps < maxD) {
+                const nextList: number[] = [];
+                for (const site of curr) {
+                  for (const to of this.stepNeighbours(ctx, site)) {
+                    if (!checked.has(to) && !nextList.includes(to)) nextList.push(to);
+                  }
+                }
+                for (const t of curr) checked.add(t);
+                curr = nextList;
+                for (const t of nextList) checked.add(t);
+                numSteps += 1;
+                if (numSteps >= minD) for (const t of nextList) if (!sitesToReturn.includes(t)) sitesToReturn.push(t);
+              }
+              return sitesToReturn;
+            }
             const traj = (ctx as unknown as { _trajectories?: { steps(site: number, dir: string): number[] } })._trajectories;
             if (!traj) return [];
             // BFS over the relation steps (@java element.sitesAtDistance()

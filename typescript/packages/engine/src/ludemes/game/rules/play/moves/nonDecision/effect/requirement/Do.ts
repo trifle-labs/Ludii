@@ -94,6 +94,14 @@ export class Do implements MovesFunction {
         const aug = newCtx as Context & { _radials?: unknown; _trajectories?: unknown };
         aug._radials = src._radials;
         aug._trajectories = src._trajectories;
+        // @java TempContext copies the EVAL CONTEXT too (from/to/level/...):
+        // ForEachPiece binds (from) before evaluating Do, and `next` reads it
+        // (Seesaw's Step: count:("StackSize" (from)) / from:(from) returned
+        // -1-bound zeros without the copy).
+        for (const k of ["_evalFrom", "_evalTo", "_evalBetween", "_evalLevel", "_evalPlayer", "_evalSite", "_evalValue", "_evalRegion", "_evalHint", "_evalEdge", "_evalFromType", "_evalPips", "_evalTeam", "_evalTrack"]) {
+          const v = (src as unknown as Record<string, unknown>)[k];
+          if (v !== undefined) (aug as unknown as Record<string, unknown>)[k] = v;
+        }
       }
       const priorMoves = this.prior.eval(ctx);
       const nextMoves = this.next.eval(newCtx);

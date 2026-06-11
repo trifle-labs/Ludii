@@ -154,12 +154,23 @@ export class FromTo implements MovesFunction {
         const actions: import("../../../../../../../action/index.js").Action[] = [];
         let moveAction: ActionMove;
         if (this.stack) {
-          // @java Move.java (generic move) with stack:True + count:N — the
-          // recorded action is StackMove numLevel=N; Seesaw's count is
-          // always (size Stack at:(from)), i.e. the WHOLE stack relocates.
-          // The countFn must NOT fall into the mancala transferCount path
-          // (state.count(from)=0 on plain pieces killed every capture).
-          moveAction = new ActionMove({ from, to, stack: true });
+          // @java FromTo.java:346-360 — stackingGame||stack with a count is an
+          // ActionSubStackMove(numLevel=count): only the TOP `count` levels
+          // relocate (Seesaw's (move ... count:("StackSize" (from)) stack:True)
+          // records "StackMove numLevel=1"). Without a count the WHOLE stack
+          // moves. The countFn must NOT fall into the mancala transferCount
+          // path (state.count(from)=0 on plain pieces killed every capture).
+          let numLevel: number | undefined;
+          if (this.countFn !== null) {
+            const savedFrom = ctx._evalFrom;
+            const savedTo = ctx._evalTo;
+            ctx._evalFrom = from;
+            ctx._evalTo = origTo;
+            numLevel = this.countFn.eval(ctx);
+            ctx._evalFrom = savedFrom;
+            ctx._evalTo = savedTo;
+          }
+          moveAction = new ActionMove({ from, to, stack: true, numLevel });
         } else if (this.countFn !== null) {
           // @java FromTo.java:189-196 — count evaluates with FROM bound
           // (context.setFrom(from) before countFn.eval): Chisolo's

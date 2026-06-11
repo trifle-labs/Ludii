@@ -461,6 +461,12 @@ export class Game implements Game {
     // whose explicit type differs from the play type (Guerrilla Checkers'
     // Cell pieces on a Vertex-play board) land here, keyed by type name.
     const typedStaging = new Map<string, { who: number[]; what: number[]; count: number[] }>();
+    // @java Start.placePieces(onStack=true) is a repeated ActionAdd(onStacking):
+    // each (place Stack ...) on an already-stacked site PUSHES a new level
+    // (Seesaw starts Hex+Disc as a two-piece custom stack). Levels beyond the
+    // first stage here and replay as stack pushes after State construction;
+    // the first level keeps the flat path (count-based monotonous stacks).
+    const stackedStaging = new Map<number, Array<{ what: number; owner: number; count: number; state: number; value: number }>>();
     // Per-site state and value arrays (from state:N / value:N in place rules).
     // @java ActionAdd.apply() — setStateAt / setValueAt on the initial container state.
     const stateAt = new Array<number>(totalSites).fill(0);
@@ -491,7 +497,7 @@ export class Game implements Game {
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging);
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging, stackedStaging);
     }
 
     // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
@@ -541,6 +547,21 @@ export class Game implements Game {
       stackingGame: (this as unknown as { usesStacking?: boolean }).usesStacking === true || undefined,
       stackMovesGame: (this as unknown as { usesStackMoves?: boolean }).usesStackMoves === true || undefined,
     });
+
+    // @java ActionAdd.apply (onStacking) — replay staged level-2+ start
+    // placements as stack pushes (withStackPush backfills level 0 from the
+    // flat write; withOwnedAdd no-ops until the owned registry materializes).
+    for (const [site, levels] of stackedStaging) {
+      for (let li = 1; li < levels.length; li += 1) {
+        const lv = levels[li]!;
+        if (lv.owner < 1) continue;
+        for (let c = 0; c < Math.max(1, lv.count); c += 1) {
+          state = state.withStackPush(site, lv.owner, lv.what);
+          state = state.withOwnedAdd(lv.owner, lv.what, site, state.stackSize(site) - 1);
+          if (lv.state !== UNDEFINED) state = state.withStateAt(site, lv.state);
+        }
+      }
+    }
 
     // Apply remembered-value start rules (from (set RememberValue "name" <region>)).
     // @java game/rules/start/set/remember/SetRememberValue.java — eval() calls ActionRememberValue.apply()
@@ -1019,6 +1040,7 @@ export class Game implements Game {
     startRemembered?: Map<string, number[]>,
     startHidden?: Map<string, boolean>,
     typedStaging?: Map<string, { who: number[]; what: number[]; count: number[] }>,
+    stackedStaging?: Map<number, Array<{ what: number; owner: number; count: number; state: number; value: number }>>,
   ): void {
     const evalRule = rule as { eval?: (ctx: Context) => void };
     if (typeof evalRule.eval !== "function") return;
@@ -1115,6 +1137,25 @@ export class Game implements Game {
       if (site < 0 || site >= cells.length) return;
       const component = this.equipment.componentAt(what);
       const owner = component?.owner ?? 0;
+      if (_onStack && stackedStaging) {
+        const levels = stackedStaging.get(site);
+        if (levels && levels.length > 0) {
+          const last = levels[levels.length - 1]!;
+          // @java PlaceMonotonousStack calls placePieces `count` times with
+          // the SAME (what, owner) — a homogeneous pile carried by countAt,
+          // NOT extra stack levels (Backgammon's 5-checker points). Only a
+          // DIFFERENT component/owner at the same site is a genuine new
+          // level (PlaceCustomStack's Hex-then-Disc — Seesaw).
+          if (last.what === what && last.owner === owner) {
+            // monotonous repeat: fall through to the flat overwrite below.
+          } else {
+            levels.push({ what, owner, count, state: stateValue, value });
+            return;
+          }
+        } else {
+          stackedStaging.set(site, [{ what, owner, count, state: stateValue, value }]);
+        }
+      }
       cells[site] = owner;
       whats[site] = what;
       countAt[site] = count;

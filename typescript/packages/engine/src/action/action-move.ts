@@ -63,6 +63,12 @@ export interface ActionMoveOptions {
    * from-stack lands on top of the to-stack in order; `from` is cleared.
    */
   readonly stack?: boolean;
+  /**
+   * @java ActionSubStackMove.numLevel — move only the TOP numLevel levels of
+   * the from-stack (Seesaw's (move ... count:N stack:True) records
+   * "StackMove numLevel=N"). Undefined = whole stack.
+   */
+  readonly numLevel?: number;
 }
 
 export class ActionMove extends BaseAction {
@@ -83,6 +89,7 @@ export class ActionMove extends BaseAction {
   private readonly footprint: readonly number[];
   private readonly clearFootprint: readonly number[];
   private readonly stackMove: boolean;
+  private readonly numLevel: number | undefined;
 
   public constructor(options: ActionMoveOptions) {
     super();
@@ -106,6 +113,7 @@ export class ActionMove extends BaseAction {
     this.footprint = options.footprint ?? [];
     this.clearFootprint = options.clearFootprint ?? [];
     this.stackMove = options.stack ?? false;
+    this.numLevel = options.numLevel;
   }
 
   public override apply(state: State): State {
@@ -129,6 +137,41 @@ export class ActionMove extends BaseAction {
     if (this.stackMove && this.fromIndex !== this.toIndex) {
       const size = state.stackSize(this.fromIndex);
       if (size === 0) return state;
+      // @java ActionSubStackMove.apply — a partial move pops the TOP
+      // numLevel levels (owned removed per popped top), then pushes them
+      // onto `to` preserving their relative order; `sizeStackA < numLevel`
+      // is a no-op. Values ride along per level.
+      if (this.numLevel !== undefined && this.numLevel < size) {
+        if (this.numLevel <= 0 || size < this.numLevel) return state;
+        const n = this.numLevel;
+        let s2 = state.withOwnedMaterialized();
+        const movedOwners: number[] = [];
+        const movedWhats: number[] = [];
+        const movedValues: number[] = [];
+        for (let i = 0; i < n; i++) {
+          const topLevel = s2.stackSize(this.fromIndex) - 1;
+          const owners = s2.stacks[this.fromIndex] ?? [];
+          const whatsRow = s2.whatStacks[this.fromIndex] ?? [];
+          const owner = owners[topLevel] ?? s2.cellAt(this.fromIndex).owner;
+          const what = whatsRow[topLevel] ?? s2.whatAtSite(this.fromIndex);
+          movedOwners.push(owner);
+          movedWhats.push(what);
+          movedValues.push(s2.valueAtLevel(this.fromIndex, topLevel));
+          s2 = s2.withOwnedRemoveLevel(owner, what, this.fromIndex, topLevel);
+          s2 = s2.withStackPop(this.fromIndex, topLevel);
+        }
+        const baseLevelTo = s2.stackSize(this.toIndex);
+        const toRowBase: number[] = [];
+        for (let l = 0; l < baseLevelTo; l++) toRowBase.push(s2.valueAtLevel(this.toIndex, l));
+        // @java push collected-top-first levels in REVERSE — original order.
+        for (let i = movedOwners.length - 1; i >= 0; i--) {
+          if (movedOwners[i]! <= 0) continue;
+          s2 = s2.withStackPush(this.toIndex, movedOwners[i]!, movedWhats[i]!);
+          s2 = s2.withOwnedAdd(movedOwners[i]!, movedWhats[i]!, this.toIndex, s2.stackSize(this.toIndex) - 1);
+        }
+        s2 = s2.withValueStackRow(this.toIndex, [...toRowBase, ...[...movedValues].reverse()]);
+        return s2;
+      }
       const fromOwners: number[] = [];
       const fromWhats: number[] = [];
       const ownerStack = state.stacks[this.fromIndex] ?? [];
