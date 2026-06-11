@@ -165,21 +165,9 @@ export class Hop extends Effect {
     this._fromTypeTag = fromTypeTagH;
 
     const GROUP_DIRS = new Set(["adjacent", "orthogonal", "diagonal", "all"]);
-    // Adjacent-relation neighbours of `from` — used to reject compass-named
-    // rays whose FIRST STEP is a diagonal face-chain on irregular graphs
-    // (Solomon: the "W" bucket at vertex 10 is [10,9,8] though 9-10 is no
-    // edge; Java's per-element supported-direction resolution never queries
-    // it). Square/hex boards: every compass ray's first step IS adjacent,
-    // so this filter is a no-op there.
-    const adjacentFirst = traj ? new Set(traj.steps(from, "Adjacent")) : null;
     const axesForDir = (dir: string): readonly { ray: readonly number[]; opposite: readonly number[] }[] => {
       if (traj) {
-        let distinct = traj.distinctRadialsByName(from, dir);
-        if (!GROUP_DIRS.has(dir.toLowerCase()) && adjacentFirst && distinct.length > 0) {
-          distinct = distinct.filter((radial) =>
-            (radial.ray[1] === undefined || adjacentFirst.has(radial.ray[1])) &&
-            ((radial.opposites[0]?.[1]) === undefined || adjacentFirst.has(radial.opposites[0]![1]!)));
-        }
+        const distinct = traj.distinctRadialsByName(from, dir);
         if (distinct.length > 0) {
           return distinct.map((radial) => ({
             ray: radial.ray,
