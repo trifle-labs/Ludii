@@ -2269,3 +2269,10 @@ B. DOCUMENTED APPROXIMATIONS:
 C. Seq comment now STALE (fixed Update 173) — clean up when touched.
 PLAN: fix A1-A5 (cheap, silent-failure class) → B8/B9 + splitCrossings/CrossBoard/pyramidal generators (the remaining war/leaping MM set!) → B6/B7 as games demand.
 CAVEAT (for the record): the audit finds KNOWN gaps; the nastiest defects this session (count-merge piles, flush order, two source-vs-binary divergences) carried NO comments — trial-driven verification remains the ground truth; the audit just front-loads the cheap finds.
+
+## Update 189 (2026-06-11) — Audit fixes round 1: SitesDistance ported
+- A5 done (commit above). Remaining audit items with Java refs + effort:
+  - A3 SitesSupport (@java sites/index/SitesSupport.java — needs the 3D U*/D* direction model in trajectories; Spoing's pyramidal board depends on the same model: ONE port unlocks both).
+  - A1 SitesLineOfPlay (@java sites/simple/SitesLineOfPlay.java — dominoes; check trial corpus for domino games first).
+  - A2 SitesPlayable (@java sites/simple/SitesPlayable.java), A4 SitesWinning (@java sites/player/SitesWinning.java — calls game.moves + end eval per move; moderate).
+  - B items per Update 188 (Mesh/Celtic generators next — direct war/leaping MM impact).
