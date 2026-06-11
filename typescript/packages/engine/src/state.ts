@@ -33,6 +33,14 @@ export interface ContainerStateView {
   readonly size: number;
 }
 
+/** @java other/location/FullLocation — one owned-piece record. */
+export interface OwnedEntry {
+  readonly pid: number;
+  readonly comp: number;
+  readonly site: number;
+  readonly level: number;
+}
+
 export interface StateOptions {
   readonly scores?: readonly number[];
   readonly valuesPlayer?: readonly number[];
@@ -100,6 +108,16 @@ export interface StateOptions {
   readonly next?: number;
   /** Java parity: `State.prev` — the previous mover (setPrev in Game.apply). */
   readonly prev?: number;
+  /**
+   * @java other/state/owned/FullOwned — the maintained per-piece position
+   * registry (pid, component, site, level). `undefined` until the game grows
+   * its first per-level stack (Java's OwnedFactory only picks the level-aware
+   * FullOwned for stacking games); the lazy `owned` scan serves flat games.
+   * Once materialized, actions maintain it Java-faithfully INCLUDING the
+   * stale-ghost semantics (FullOwned.java:220-256 decrement loop) that
+   * Fenix's recorded trials depend on.
+   */
+  readonly ownedEntries?: readonly OwnedEntry[];
   /**
    * Java parity: `State.numTurn` (the field, returned by `state.numTurn()` and
    * read by `(count Turns)`). It is initialised to **1** (not 0) and is bumped
@@ -243,6 +261,8 @@ export class State {
   public readonly next: number;
   /** Java parity: `State.prev` (init 0; @java State.java:737 setPrev). */
   public readonly prev: number;
+  /** @java FullOwned registry; see {@link StateOptions.ownedEntries}. */
+  public readonly ownedEntries?: readonly OwnedEntry[];
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
   public readonly numTurn: number;
   /** Java parity: `State.numTurnSamePlayer`. */
@@ -380,6 +400,7 @@ export class State {
     this.trumpSuit = options.trumpSuit ?? 0;
     this.next = options.next ?? 0;
     this.prev = options.prev ?? 0;
+    this.ownedEntries = options.ownedEntries;
     this.numTurn = options.numTurn ?? 1;
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
@@ -936,6 +957,65 @@ export class State {
   }
 
   /**
+   * Materialize the FullOwned registry from the live board (level-aware).
+   * @java OwnedFactory.createOwned — called once when stacking begins.
+   */
+  public withOwnedMaterialized(): State {
+    if (this.ownedEntries !== undefined) return this;
+    const entries: OwnedEntry[] = [];
+    for (let site = 0; site < this.cells.length; site++) {
+      const ownerStack = this.stacks[site] ?? [];
+      const whatStack = this.whatStacks[site] ?? [];
+      if (ownerStack.length > 0) {
+        for (let lvl = 0; lvl < ownerStack.length; lvl++) {
+          const pid = ownerStack[lvl] ?? 0;
+          if (pid > 0) entries.push({ pid, comp: whatStack[lvl] ?? pid, site, level: lvl });
+        }
+      } else if ((this.cells[site] ?? 0) > 0) {
+        entries.push({ pid: this.cells[site]!, comp: this.whats[site] || this.cells[site]!, site, level: 0 });
+      }
+    }
+    return this.with({ ownedEntries: entries });
+  }
+
+  /** @java FullOwned.add(pid, comp, site, level, type). */
+  public withOwnedAdd(pid: number, comp: number, site: number, level: number): State {
+    if (this.ownedEntries === undefined) return this;
+    return this.with({ ownedEntries: [...this.ownedEntries, { pid, comp, site, level }] });
+  }
+
+  /**
+   * @java FullOwned.remove(pid, comp, site, LEVEL, type) — FullOwned.java:
+   * 220-256: delete entries of (pid, comp) matching (site, level), then
+   * DECREMENT the level of EVERY entry (all players/components) at the same
+   * site with level > removed. The decrement-after-clamp interplay is what
+   * leaves Java's stale ghosts; port verbatim.
+   */
+  public withOwnedRemoveLevel(pid: number, comp: number, site: number, level: number): State {
+    if (this.ownedEntries === undefined) return this;
+    const next: OwnedEntry[] = [];
+    for (const e of this.ownedEntries) {
+      if (e.pid === pid && e.comp === comp && e.site === site && e.level === level) continue;
+      next.push(e);
+    }
+    for (let i = 0; i < next.length; i++) {
+      const e = next[i]!;
+      if (e.site === site && e.level > level) next[i] = { ...e, level: e.level - 1 };
+    }
+    return this.with({ ownedEntries: next });
+  }
+
+  /** @java FullOwned.remove(pid, comp, site, type) — level-less: all entries of (pid,comp) at site. */
+  public withOwnedRemoveAll(pid: number, comp: number, site: number): State {
+    if (this.ownedEntries === undefined) return this;
+    return this.with({
+      ownedEntries: this.ownedEntries.filter(
+        (e) => !(e.pid === pid && e.comp === comp && e.site === site),
+      ),
+    });
+  }
+
+  /**
    * Java parity: `ContainerStateStacks.removeStackGeneric` + `addToEmpty` —
    * clears every level at the site (owner stack, what stack, visible top).
    * Used by the whole-stack ActionMove (@java ActionMoveStacking.java:346).
@@ -1247,6 +1327,7 @@ export class State {
         trumpSuit: patch.trumpSuit ?? this.trumpSuit,
         next: patch.next ?? this.next,
         prev: patch.prev ?? this.prev,
+        ownedEntries: patch.ownedEntries ?? this.ownedEntries,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:
           patch.numTurnSamePlayer ?? this.numTurnSamePlayer,
