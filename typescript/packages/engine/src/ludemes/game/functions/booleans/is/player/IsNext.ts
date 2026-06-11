@@ -32,7 +32,14 @@ export class IsNext implements BooleanFunction {
    *   who.eval(context) == context.state().next()
    */
   public eval(ctx: Context): boolean {
-    const next = (ctx.state.mover % ctx.game.numPlayers) + 1;
+    // @java who.eval(context) == context.state().next() — next is whatever
+    // the applied move's SetNextPlayer wrote (a moveAgain relay keeps it at
+    // the mover; Chisolo's (nextPhase Mover (not (is Next Mover)) ...) relies
+    // on that to NOT advance mid-relay). The engine clears state.next to 0
+    // after consumption; treat <=0 as unset and fall back to the default
+    // rotation (mover % players + 1), Java's steady-state next.
+    const rawNext = (ctx.state as unknown as { next?: number }).next ?? 0;
+    const next = rawNext > 0 ? rawNext : (ctx.state.mover % ctx.game.numPlayers) + 1;
     return this.who.eval(ctx) === next;
   }
 }

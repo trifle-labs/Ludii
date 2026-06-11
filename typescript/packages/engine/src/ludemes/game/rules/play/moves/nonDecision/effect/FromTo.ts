@@ -141,9 +141,13 @@ export class FromTo implements MovesFunction {
         const actions: import("../../../../../../../action/index.js").Action[] = [];
         let moveAction: ActionMove;
         if (this.countFn !== null) {
+          // @java FromTo.java:189-196 — count evaluates with FROM bound
+          // (context.setFrom(from) before countFn.eval): Chisolo's
+          // count:(count at:(from)) hand-collection read count 0 with the
+          // outer (-1) binding and the capture became a silent no-op.
           const savedFrom = ctx._evalFrom;
           const savedTo = ctx._evalTo;
-          ctx._evalFrom = origFrom;
+          ctx._evalFrom = from;
           ctx._evalTo = origTo;
           const count = this.countFn.eval(ctx);
           ctx._evalFrom = savedFrom;
