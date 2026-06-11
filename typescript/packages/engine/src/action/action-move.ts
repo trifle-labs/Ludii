@@ -410,6 +410,12 @@ export class ActionMove extends BaseAction {
     //   csTo.setSite(context.state(), to, who, what, 1, ...)
     if (this.fromIndex !== this.toIndex && (state.countAt[this.toIndex] ?? 0) === 0) {
       next = next.withCountAt(this.toIndex, 1);
+    } else if (this.fromIndex !== this.toIndex && (state.countAt[this.toIndex] ?? 0) > 1) {
+      // @java ActionMoveTopPiece.java:439 csTo.setSite(..., 1, ...) — a
+      // REPLACEMENT landing (different component: T'oki's outer-edge hop
+      // capturing an enemy pile) resets the count to the single attacker;
+      // keeping the victim's pile count left a phantom 2-pile.
+      next = next.withCountAt(this.toIndex, 1);
     }
     next = this.applyDestAttrs(next, destState, destRotation, destValue);
     next = this.transferHidden(next, state, fromCount <= 1);
