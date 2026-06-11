@@ -2205,3 +2205,7 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 
 ## Update 172 (2026-06-11) — Chameleons unblocked: named-region lookup fixed
 - (sites "Name") case-mismatch + owner-0 bug fixed (commit above). Chameleons starts correctly; frontiers plies 3/8 — next layer is the SwitchColours machinery: (seq {...}) sequential effects, (set State at:...) per-site states, the "SwitchColour" remove+add+setState rotation, and the recorded DOUBLE SetState per capture move ([SetState:state=2],[SetState:state=1]). Probe with TRACE_THEN at the failing plies; check Seq.ts wiring and SetState action support first.
+
+## Update 173 (2026-06-11) — CHAMELEONS CLEARED 2/2: faithful Seq + named regions
+- Two fixes: named-region lookup (Update 172) and Seq's TempContext chaining (commit above; the old port carried a documented 'approximation' comment — those comments are a good audit trail to grep for more latent gaps: rg 'approximation|known approximation|deferred' src).
+- war/leaping queue: Seesaw (RememberValue/StackMove numLevel), custom-graph boards x9, Dum Blas, caps.
