@@ -73,6 +73,7 @@ export class Add extends BaseGraphFunction {
   /** @java Add.eval(Context, SiteType) */
   public override eval(siteType: string): Graph {
     const graph = this.graphFn != null ? this.graphFn.eval(siteType) : new Graph();
+    if (process.env.TRACE_GRAPHADD) console.error("[graphadd] base", graph.vertices.length, "verts; vertices:", this.vertices.length, "edgesByCoord:", this.edgesByCoord?.length ?? "?", "edgesByIndex:", this.edgesByIndex?.length ?? "?");
 
     // Add vertices by coordinate
     const newVerts: number[] = [];
@@ -157,9 +158,17 @@ export class Add extends BaseGraphFunction {
 }
 
 function evalFloatFn(fn: FloatFunction | undefined): number {
-  return fn == null ? 0 : fn.eval({} as Parameters<FloatFunction["eval"]>[0]);
+  if (fn == null) return 0;
+  // Raw-literal rule: lud numeric literals arrive as raw numbers.
+  if (typeof (fn as unknown) === "number") return fn as unknown as number;
+  return fn.eval({} as Parameters<FloatFunction["eval"]>[0]);
 }
 
 function evalDimFn(fn: DimFunction | undefined): number {
-  return fn == null ? 0 : fn.eval();
+  if (fn == null) return 0;
+  // Raw-literal rule: edges:{{0 5} ...} pairs arrive as raw numbers — .eval
+  // threw, the throw was swallowed upstream, and the whole board came up
+  // EMPTY (Game of Solomon / Crand / Pasang add-edges pipelines).
+  if (typeof (fn as unknown) === "number") return fn as unknown as number;
+  return fn.eval();
 }

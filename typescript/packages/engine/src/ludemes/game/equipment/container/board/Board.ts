@@ -371,7 +371,15 @@ export class Board extends Container {
     topology.setPerimeter(perimVertices.length > 0 ? [{ vertices: perimVertices }] : []);
     topology.setTrajectories(this.trajectories);
     topology.setNumEdges(regularFaceEdgeCount(graphFaces));
-    this.setNumSites(topology.cells().length);
+    // Play-site count, not face count: a faceless vertex graph (Game of
+    // Solomon's split star) has zero cells and numSites=0 killed every
+    // downstream consumer (FEP bounds, hand detection, region scans). Java
+    // consumers read per-type sizes; our numSites contract is the PLAY type
+    // (matches the trajectories path above).
+    const playType = (this as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+    const pt = typeof playType === "function" ? playType.call(this) : (playType ?? "Cell");
+    const playEls = topology.getGraphElements(pt as never).length;
+    this.setNumSites(playEls > 0 ? playEls : topology.cells().length);
   }
 
   /**

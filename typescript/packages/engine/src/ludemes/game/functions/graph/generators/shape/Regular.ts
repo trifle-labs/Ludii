@@ -15,9 +15,23 @@ export class Regular extends BaseGraphFunction {
   private readonly numSides: number;
   private readonly isStar: boolean;
 
-  /** @java Regular(ShapeStarType star, DimFunction numSides) */
-  constructor(numSides: number, star?: ShapeStarType) {
+  /** @java Regular(ShapeStarType star, DimFunction numSides) — STAR IS THE
+   * FIRST PARAM; the reflection compiler binds positionally per the Java
+   * signature, so (regular Star 6) delivered "Star" into the old numSides
+   * slot (NaN sides -> empty graph -> Game of Solomon had ZERO board sites).
+   * Accept both orders defensively. */
+  constructor(a: number | ShapeStarType | null, b?: number | ShapeStarType) {
     super();
+    // Args may be raw numbers OR DimFunction objects ({eval(): number}).
+    const dimOf = (v: unknown): number | null => {
+      if (typeof v === "number") return v;
+      const f = v as { eval?: () => number } | null;
+      return f && typeof f.eval === "function" ? f.eval() : null;
+    };
+    const aN = dimOf(a);
+    const bN = dimOf(b);
+    const numSides = aN ?? bN ?? NaN;
+    const star = aN !== null ? b : a;
     this._dim = [numSides];
     this.numSides = numSides;
     this.isStar = star != null;
