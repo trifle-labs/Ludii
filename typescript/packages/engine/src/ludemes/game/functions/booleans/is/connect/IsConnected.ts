@@ -37,6 +37,40 @@ function adjacentSites(board: BoardLike, site: number): number[] {
   return [...out];
 }
 
+/**
+ * Neighbours in the named direction group via the board trajectories
+ * (@java IsConnected dirnChoice.convertToAbsolute + radials): All = the
+ * 8 compass headings, Orthogonal = 4, Diagonal = 4 diagonals.
+ */
+function directionalNeighbours(ctx: Context, site: number, dirName: string): number[] {
+  const groups: Record<string, readonly string[]> = {
+    All: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+    Adjacent: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+    Orthogonal: ["N", "E", "S", "W"],
+    Diagonal: ["NE", "SE", "SW", "NW"],
+  };
+  const dirs = groups[dirName] ?? [dirName];
+  const traj = (ctx as unknown as { _trajectories?: { step(site: number, dir: string): number } | null })._trajectories;
+  const board = (ctx.game as unknown as { equipment?: { board?: { width: number; height: number } } }).equipment?.board;
+  const W = board?.width ?? 0;
+  const H = board?.height ?? 0;
+  const out: number[] = [];
+  for (const d of dirs) {
+    let n = -1;
+    if (traj && typeof traj.step === "function") n = traj.step(site, d);
+    else if (W > 0) {
+      const col = site % W;
+      const row = Math.floor(site / W);
+      const dc = d.includes("E") ? 1 : d.includes("W") ? -1 : 0;
+      const dr = d.includes("N") ? 1 : d.includes("S") ? -1 : 0;
+      const nc = col + dc; const nr = row + dr;
+      n = nc >= 0 && nc < W && nr >= 0 && nr < H ? nr * W + nc : -1;
+    }
+    if (n >= 0) out.push(n);
+  }
+  return out;
+}
+
 function playerConnectionRegions(ctx: Context, pid: number): number[][] {
   const equipment = (ctx.game as unknown as {
     equipment?: {
@@ -113,16 +147,21 @@ export class IsConnected implements BooleanFunction {
   /** @java IsConnected.number — minimum number of regions to connect. */
   private readonly numberFn: { eval(ctx: unknown): number } | number | null;
 
+  /** @java IsConnected.dirnChoice — flood connectivity (null = board adjacency). */
+  private readonly dirName: string | null;
+
   public constructor(
     regions: readonly RegionFunction[] | null,
     role: string | null,
     regionType: string | null = null,
     numberFn: { eval(ctx: unknown): number } | number | null = null,
+    dirName: string | null = null,
   ) {
     this.regions = regions;
     this.role = role ?? "Mover";
     this.regionType = regionType;
     this.numberFn = numberFn;
+    this.dirName = dirName;
   }
 
   /** @java IsConnected.eval(Context) — flood the mover's group, require every target touched. */
@@ -166,7 +205,9 @@ export class IsConnected implements BooleanFunction {
         for (let i = 0; i < targetSets.length; i += 1) {
           if (targetSets[i]!.has(site)) touched.add(i);
         }
-        for (const next of adjacentSites(board, site)) {
+        for (const next of this.dirName !== null
+          ? directionalNeighbours(ctx, site, this.dirName)
+          : adjacentSites(board, site)) {
           if (!seen.has(next) && owned.has(next)) {
             seen.add(next);
             stack.push(next);

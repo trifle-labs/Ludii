@@ -410,7 +410,12 @@ export class Is extends BaseBooleanFunction {
       // number of regions to connect — IsConnected.java staticRegions/number.
       const regionType = typeof _regionType === "string" ? _regionType : null;
       const numberFn = _number as { eval(ctx: unknown): number } | number | null;
-      return new IsConnected(regions, role, regionType, numberFn ?? null);
+      // @java the Direction param selects the flood connectivity
+      // (Crossway: (is Connected All Mover) — 8-connectivity incl. diagonals).
+      const dirName = typeof _directions === "string"
+        ? _directions
+        : (_directions as { name?: string } | null)?.name ?? null;
+      return new IsConnected(regions, role, regionType, numberFn ?? null, dirName);
     }
     throw new Error("Is(): A ported IsConnectType variant is not implemented.");
   }
