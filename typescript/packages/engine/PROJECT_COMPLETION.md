@@ -1824,3 +1824,8 @@ ForEachDie eval) + detailed harness action dumps:
 ## Update 89 (2026-06-11) — Huff machinery fixed ((sites Pending) + constructContext gate)
 - (sites Pending) had compiled to SitesContext (the zero-arg overload won arity-relaxed dispatch with surplus args) and eval'd [] — every huffing draughts variant's (remove (sites Pending)) was a no-op, boards diverged silently on the first declined capture. constructContext now rejects non-null args; the Pending clause reads the engine State.pending Set (@java pendingValues()).
 - Also this stretch: Id(name, Next/Prev) unset-next fix (Update 88) — both are BROAD cascade fixes.
+
+## Update 90 (2026-06-11) — Player role + stalemated cache semantics
+- RoleType.Player resolves via ctx._evalPlayer in the Sites role resolvers — (forEach Player if:("NoPiecesInInner" Player)) ends had ended Bao-family games at ply 1 (vacuous all-Sites on an empty region). Bao Kiswahili (East Africa) 2/2; sow WM pool 42→23.
+- Stalemated flag = generation-time cache (@java Game.java:2948), mutated in place by Game.moves; eager per-apply recompute removed (it sampled a hypothetical roll and flagged dice games). NoMoves(Next) unchanged (own temp check).
+- OPEN MYSTERY (Java-side experiment needed): Cab e Quinal/Julbahar/Mughrabieh/Nama draw early via (and (no Moves P1) (no Moves P2)); both recorded forced-passes appear to set both Java flags true by source reading (NoMoves reads the cache for P1/P2; no clearStalemates callers), yet Java played 394 plies. Suspects: trial recording flow, ruleset options, or an unspotted flag clear.
