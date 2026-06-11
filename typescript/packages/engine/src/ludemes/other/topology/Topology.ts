@@ -390,6 +390,14 @@ export class Topology {
         if (element.label() === coord) return element;
       }
 
+      // @java Topology.computeRows/computeColumns + computeCoordinates —
+      // labels are colLetter(row-banded x) + (y-band index + 1) computed on
+      // the FINAL geometry. Rotated boards (HeXentafl's (rotate 90 (hex 4)))
+      // get labels from these bands, not from unrotated axes.
+      const banded = this.bandedLabelLookup(realType, elements);
+      const hit = banded.get(coord.toUpperCase());
+      if (hit !== undefined) return hit;
+
       const parsed = parseAlgebraicCoord(coord);
       if (parsed === null) continue;
       const targetX = parsed.col + (realType === "Cell" ? 0.5 : 0);
@@ -405,6 +413,40 @@ export class Topology {
       }
     }
     return null;
+  }
+
+  private _bandedLabels = new Map<string, Map<string, TopologyElement>>();
+
+  /**
+   * Java-style banded coordinate labels for a site type, memoized.
+   * @java Topology.computeRows (distinct y centroids, tolerance .001, sorted)
+   * + computeColumns (x likewise) + computeCoordinates (label = colLetter +
+   * (row+1)).
+   */
+  private bandedLabelLookup(
+    realType: SiteType,
+    elements: readonly TopologyElement[],
+  ): Map<string, TopologyElement> {
+    const cached = this._bandedLabels.get(realType);
+    if (cached !== undefined) return cached;
+    const tol = 0.001;
+    const band = (vals: number[]): number[] => {
+      const out: number[] = [];
+      for (const v of vals) if (!out.some((b) => Math.abs(b - v) < tol)) out.push(v);
+      return out.sort((a, b) => a - b);
+    };
+    const ys = band(elements.map((e) => e.centroid3D().y()));
+    const xs = band(elements.map((e) => e.centroid3D().x()));
+    const map = new Map<string, TopologyElement>();
+    for (const e of elements) {
+      const c = e.centroid3D();
+      const row = ys.findIndex((y) => Math.abs(y - c.y()) < tol);
+      const col = xs.findIndex((x) => Math.abs(x - c.x()) < tol);
+      if (row < 0 || col < 0) continue;
+      map.set(`${columnLabel(col)}${row + 1}`, e);
+    }
+    this._bandedLabels.set(realType, map);
+    return map;
   }
 
   /** @java Topology#numSites(SiteType) */
