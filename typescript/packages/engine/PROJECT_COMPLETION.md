@@ -2350,3 +2350,8 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
 - FIX (eval/graph/graph.ts makeFaces): face-list construction now ports Java's walk verbatim (vertIds=[start]; first step leaves along the edge AFTER edgeStart in rotation; degree-1 vertices kill the walk; close on return to start; clockwise + containsFace + MAX_FACE_SIDES). Perimeter-ring computation keeps the previous half-edge cycle enumeration (it never fed face ids).
 - Laram Wali 2/2 OUTCOME_OK (ply 346/462). war/leaping now 218/226 (96.5%); residual: Pasang, Spoing, Throngs, experimental/Seesaw.
 - Full battery 68/68 OUTCOME_OK + units 194/0 (read before commit; Crand re-verified 2/2 at MOVE_CAP=5000).
+
+## Update 205 (2026-06-11) — Pasang CLEARED 2/2: ForEachPiece roleToIntFunction missing "Shared"
+- Pasang ply 1: P2 generated only the synthetic pass. Pieces are (piece "Marker" Shared) — owner numPlayers+1 = 3 — but ForEachPiece's roleToIntFunction had no "Shared" case and defaulted to Mover (2), so buildCompIndices matched nothing. @java RoleType.Shared = numPlayers+1.
+- Pasang 2/2 OUTCOME_OK (ply 124/112). war/leaping 220/226 (97.3%); residual: Spoing (3D SitesSupport), Throngs (deprioritized), Seesaw (orthogonal — trial labeled experimental/Seesaw).
+- Battery 70/70 OUTCOME_OK, units 194/0 (read before commit).

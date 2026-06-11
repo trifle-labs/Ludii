@@ -396,6 +396,10 @@ function roleToIntFunction(role: RoleTypeStr): IntFunction {
         case "Prev": return (ctx.state as unknown as { prev?: number }).prev ?? ctx.state.mover;
         case "All": return ctx.game.numPlayers + 1; // convention: all-players sentinel
         case "Each": return ctx.game.numPlayers + 1;
+        // @java RoleType.Shared — the shared player id is numPlayers+1
+        // (Pasang's (forEach Piece Shared): pieces owned by 3 in a 2-player
+        // game; the Mover default matched nothing and P2 had only a pass).
+        case "Shared": return ctx.game.numPlayers + 1;
         default: return ctx.state.mover;
       }
     }
