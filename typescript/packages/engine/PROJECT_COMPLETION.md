@@ -2227,3 +2227,6 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 
 ## Update 178 (2026-06-11) — Flat removes Java-exact; Stacking flags two-grade; T'oki at 95/51
 - Commit above. T'oki next: ply 95 (rec 0>1, tsMoveCount=3 — endgame, likely the outer-edge-landing hop arm (to (and (is In (to) (sites Outer)) IsEnemyAt)) or line-hop multi-hurdle); ply 51 (rec 5>10 among 17).
+
+## Update 179 (2026-06-11) — T'OKI CLEARED 2/2
+- Replacement-landing count reset (commit above). Remaining war/leaping: Laram Wali, Xarajlt trial 2, Terhuchu (Small), lines/ graph boards (Crand, Solomon, Pasang, Spoing, Throngs), WM trials, caps.
