@@ -100,7 +100,11 @@ export class SitesLineOfSight extends BaseRegionFunction {
 		}).containerState?.(containerIndex);
 
 		// @java if (cs.container().index() > 0) return new Region(sitesLineOfSight.toArray())
-		if (cs && cs.container().index() > 0) {
+		// Engine ctx duck-typing: container may be absent or a property.
+		const containerOf = cs && typeof (cs as { container?: unknown }).container === "function"
+			? cs.container()
+			: null;
+		if (containerOf && typeof containerOf.index === "function" && containerOf.index() > 0) {
 			return sitesLineOfSight;
 		}
 
@@ -123,7 +127,9 @@ export class SitesLineOfSight extends BaseRegionFunction {
 					let prevTo: number = -1;
 					for (let toIdx = 1; toIdx < radialSites.length; toIdx++) {
 						const to: number = radialSites[toIdx]!;
-						const what: number = cs ? cs.what(to, realType) : context.state.who(to);
+						const what: number = cs && typeof (cs as { what?: unknown }).what === "function"
+							? cs.what(to, realType)
+							: context.state.whatAtSite?.(to) ?? context.state.who(to);
 						this.applyLoSSwitch(to, what, prevTo, toIdx, radialSites.length, sitesLineOfSight);
 						if (what !== 0) break;
 						prevTo = to;
@@ -137,7 +143,9 @@ export class SitesLineOfSight extends BaseRegionFunction {
 					let prevTo: number = -1;
 					for (let toIdx = 1; toIdx < radial.steps.length; toIdx++) {
 						const to: number = radial.steps[toIdx]!.id;
-						const what: number = cs ? cs.what(to, realType) : context.state.who(to);
+						const what: number = cs && typeof (cs as { what?: unknown }).what === "function"
+							? cs.what(to, realType)
+							: context.state.whatAtSite?.(to) ?? context.state.who(to);
 						this.applyLoSSwitch(to, what, prevTo, toIdx, radial.steps.length, sitesLineOfSight);
 						if (what !== 0) break;
 						prevTo = to;
