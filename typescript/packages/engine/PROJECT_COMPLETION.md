@@ -2209,3 +2209,7 @@ ORACLE DATA (all scripts in /tmp: fenix-val.jsh, fenix-counts.jsh, FenixNoMax.lu
 ## Update 173 (2026-06-11) — CHAMELEONS CLEARED 2/2: faithful Seq + named regions
 - Two fixes: named-region lookup (Update 172) and Seq's TempContext chaining (commit above; the old port carried a documented 'approximation' comment — those comments are a good audit trail to grep for more latent gaps: rg 'approximation|known approximation|deferred' src).
 - war/leaping queue: Seesaw (RememberValue/StackMove numLevel), custom-graph boards x9, Dum Blas, caps.
+
+## Update 174 (2026-06-11) — SEESAW DRAUGHTS CLEARED 2/2 (war/leaping/diagonal COMPLETE)
+- Four ports (commit above): SitesDirection, SitesBetween (both ex-stubs; use DIRECTED radialsByName — distinct dedupes opposites!), FromTo stack-move routing, ForgetValueAll live-state read.
+- war/leaping/diagonal subfamily is now FULLY CLEARED (every diagonal game 2/2). Remaining war/leaping: custom-graph lines/ boards (Awithlaknan, Kolowis, Solomon, Spoing, Throngs, Pasang, Crand, Fetach), orthogonal Cage + Dum Blas, caps. NOTE 'experimental/Seesaw' in sweeps is a DIFFERENT game (filter overlap).
