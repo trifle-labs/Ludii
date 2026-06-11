@@ -86,8 +86,14 @@ export class Remove implements MovesFunction {
     for (const loc of locs) {
       if (loc < 0) continue;
 
-      // @java Remove.java:127-129 — skip empty sites
-      const what = ctx.state.what(loc);
+      // @java Remove.java:127-129 — skip empty sites. Dual-SiteType: an
+      // explicitly typed remove consults its channel (@java cs.what(loc, type)).
+      let what = ctx.state.what(loc);
+      if (what <= 0 && this.type !== null) {
+        const typed = (ctx.state as unknown as { typedSites?: ReadonlyMap<string, { what: readonly number[]; count: readonly number[] }> }).typedSites;
+        const ch = typed?.get(this.type);
+        if (ch) what = (ch.what[loc] ?? 0) > 0 ? ch.what[loc]! : ((ch.count[loc] ?? 0) > 0 ? 1 : 0);
+      }
       if (what <= 0) continue;
 
       // @java Remove.java:131 — applyNow = when != EndOfTurn
