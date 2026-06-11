@@ -145,17 +145,16 @@ export class Ahead extends BaseIntFunction {
           trial?: { lastMove?: () => { fromNonDecision?: () => number; toNonDecision?: () => number } | null };
         };
 
-        // @java Directions.convertToAbsolute case SameDirection/Opposite —
-        // the axis is the LAST MOVE's (new LastFrom(null)/LastTo eval), NOT
-        // the candidate's bindings. Verified against the Java engine on
-        // Fanorona: post-21→22, ALL of P2's legal captures (20→21, 30→21,
-        // 32→23 + withdrawal dup) resolve on the 21→22 axis (who(24)=P1),
-        // and the ply-0 chain probe rejects 22→21 (ahead(21,E)=22 friend).
+        // @java Ahead.java (verbatim): from = context.from()==UNDEFINED
+        // ? trial.lastMove().fromNonDecision() : context.from() — the BOUND
+        // CONTEXT from/to first (candidate axis during Select iteration,
+        // confirmed by the Java oracle's multi-axis ply-3 legal set), the
+        // trial's last move only as fallback.
+        let from = context._evalFrom;
+        let to   = context._evalTo;
         const lm = ctxFT.trial?.lastMove?.();
-        let from = lm?.fromNonDecision?.() ?? UNDEFINED;
-        let to   = lm?.toNonDecision?.() ?? UNDEFINED;
-        if (from === UNDEFINED) from = context._evalFrom;
-        if (to === UNDEFINED) to = context._evalTo;
+        if (from === UNDEFINED || from < 0) from = lm?.fromNonDecision?.() ?? UNDEFINED;
+        if (to === UNDEFINED || to < 0) to = lm?.toNonDecision?.() ?? UNDEFINED;
 
         // Engine trajectories expose radialsByName(site, dir) — the Java-style
         // 4-arg radials() silently returns nothing there (the Enclose lesson);
