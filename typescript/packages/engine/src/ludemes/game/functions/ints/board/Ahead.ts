@@ -128,8 +128,13 @@ export class Ahead extends BaseIntFunction {
     // Determine direction name
     let directionName: string | null = null;
 
-    // Check for SameDirection / OppositeDirection relative directions
-    const relDirs = this.dirnChoice.getRelativeDirections?.();
+    // Check for SameDirection / OppositeDirection relative directions.
+    // The compiler can hand the direction as a RAW STRING (raw-literal rule):
+    // (ahead (to) SameDirection) reaches us with dirnChoice === "SameDirection".
+    const rawDir = typeof (this.dirnChoice as unknown) === "string" ? (this.dirnChoice as unknown as string) : null;
+    const relDirs = rawDir === "SameDirection" || rawDir === "OppositeDirection"
+      ? [rawDir]
+      : this.dirnChoice.getRelativeDirections?.();
     if (relDirs && relDirs.length > 0) {
       const relDir = relDirs[0]!;
       if (relDir === "OppositeDirection" || relDir === "SameDirection") {
@@ -152,7 +157,29 @@ export class Ahead extends BaseIntFunction {
           to = lm?.toNonDecision?.() ?? UNDEFINED;
         }
 
-        if (topology) {
+        // Engine trajectories expose radialsByName(site, dir) — the Java-style
+        // 4-arg radials() silently returns nothing there (the Enclose lesson);
+        // Fanorona's (ahead (to) SameDirection) then degraded to the site
+        // itself and approach captures vanished.
+        const engTraj = (context as unknown as { _trajectories?: { radialsByName?(site: number, dir: string): number[][] } })._trajectories;
+        if (engTraj?.radialsByName && from >= 0 && to >= 0) {
+          // Walk the rays themselves (@java radials in the from→to direction
+          // continue past `to`): find the ray from `origin` containing
+          // `target`, then step `distance` further along it from the queried
+          // site. Lattice boards (Fanorona's alquerque) have unnamed diagonal
+          // rays, so name-based detection cannot work there.
+          const origin = relDir === "SameDirection" ? from : to;
+          const target = relDir === "SameDirection" ? to   : from;
+          for (const ray of engTraj.radialsByName(origin, "Adjacent")) {
+            for (let k = 1; k < ray.length; k += 1) {
+              if (ray[k] === target) {
+                const si = ray.indexOf(site);
+                if (si >= 0) return ray[si + distance] ?? site;
+              }
+            }
+          }
+        }
+        if (directionName === null && topology) {
           // Java: iterate supportedDirections, check radials for from→to (SameDirection)
           // or to→from (OppositeDirection) links
           const supported = topology.supportedDirections(realType);
@@ -200,6 +227,13 @@ export class Ahead extends BaseIntFunction {
     if (directionName === null) return site;
 
     // Java: walk radials from site in the found direction for `distance` steps
+    const engTraj2 = (context as unknown as { _trajectories?: { radialsByName?(site: number, dir: string): number[][] } })._trajectories;
+    if (engTraj2?.radialsByName) {
+      for (const ray of engTraj2.radialsByName(site, directionName)) {
+        if (ray.length > distance) return ray[distance]!;
+      }
+      return site;
+    }
     if (topology) {
       const radialList = topology.trajectories().radials(realType, site, directionName);
       for (const radial of radialList) {
