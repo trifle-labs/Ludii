@@ -559,21 +559,23 @@ export class Graph {
     this.perimeterRings = outerRings.map((r) => [...r]);
     this.perimeterVerts = [...new Set(outerRings.flat())];
 
-    // Java caps face detection at MAX_FACE_SIDES (Graph.makeFaces): the
-    // traversal loop runs `while (vertIds.size() <= 32)`, so any cycle needing
-    // more than 32 vertices to close never closes and is never recorded as a
-    // face. This drops big spiral/perimeter channels (e.g. the 62-sided face in
-    // race/escape Kawade Kelia, 46-sided in Panchi) that are not cells in Java.
+    // @java Graph.makeFaces:1328-1422 — faces are discovered VERTEX-major:
+    // for each vertex in id order, for each of its edges in ascending-angle
+    // order, walk taking the next edge in rotation ((n+m) % numEdges) at
+    // every vertex until the cycle closes back at the start; record the
+    // polygon when it is clockwise (negative shoelace, MathRoutines
+    // .clockwise) and unseen. Face ids follow THIS discovery order — the
+    // recorded trials index cells of merged boards by it (Laram Wali's
+    // cross interleaves arm/bar cells at the junctions; our previous
+    // edge-major enumeration numbered those pairs the other way around).
+    // The cap: the walk runs `while (vertIds.size() <= 32)`, so any cycle
+    // needing more than MAX_FACE_SIDES vertices never closes and is never
+    // a face (drops the 62-sided channel in Kawade Kelia, 46 in Panchi).
     const MAX_FACE_SIDES = 32;
     const seen = new Set<string>();
-    for (let i = 0; i < cycles.length; i += 1) {
-      const cyc = cycles[i] as number[];
-      if (cyc.length > MAX_FACE_SIDES) continue; // @java Graph.MAX_FACE_SIDES
-      // Clockwise (negative-area) cycles are component outer boundaries, not
-      // bounded faces — this also excludes every per-component perimeter ring.
-      if ((areas[i] as number) <= 0) continue; // keep CCW bounded faces only
+    const addFace = (cyc: readonly number[]): void => {
       const key = [...cyc].sort((a, b) => a - b).join(",");
-      if (seen.has(key)) continue;
+      if (seen.has(key)) return; // @java Graph.containsFace
       seen.add(key);
       let cx = 0;
       let cy = 0;
@@ -586,10 +588,50 @@ export class Graph {
       }
       this.flist.push({
         id: this.flist.length,
-        vertices: cyc,
+        vertices: [...cyc],
         cx: cx / cyc.length,
         cy: cy / cyc.length,
       });
+    };
+    for (let s = 0; s < this.vlist.length; s += 1) {
+      const listS = adj[s];
+      if (!listS || listS.length === 0) continue;
+      for (let ei = 0; ei < listS.length; ei += 1) {
+        // @java the walk state is (vert, edge); `eOther` is the edge's other
+        // endpoint. The first step leaves vertexStart along the edge AFTER
+        // edgeStart in rotation, not edgeStart itself (m starts at 1).
+        const vertIds: number[] = [s];
+        let cur = s;
+        let eOther = listS[ei]!.to;
+        let closed = false;
+        while (vertIds.length <= MAX_FACE_SIDES) {
+          const list = adj[cur];
+          // @java the m-loop runs m=1..numEdges-1: a degree-1 vertex has no
+          // next edge in rotation and the walk dies.
+          if (!list || list.length < 2) break;
+          const n = indexOf(cur, eOther);
+          if (n < 0) break;
+          const next = list[(n + 1) % list.length]!.to;
+          eOther = cur;
+          cur = next;
+          if (cur === s) {
+            closed = true;
+            break;
+          }
+          if (vertIds.includes(cur)) break; // self-intersection without closure
+          vertIds.push(cur);
+        }
+        if (closed && vertIds.length >= 3) {
+          // @java MathRoutines.clockwise(poly) — negative shoelace area.
+          let area = 0;
+          for (let i = 0; i < vertIds.length; i += 1) {
+            const p = this.vlist[vertIds[i] as number];
+            const q = this.vlist[vertIds[(i + 1) % vertIds.length] as number];
+            if (p && q) area += p.x * q.y - q.x * p.y;
+          }
+          if (area / 2 < 0) addFace(vertIds);
+        }
+      }
     }
   }
 
