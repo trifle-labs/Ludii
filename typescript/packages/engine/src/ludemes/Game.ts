@@ -877,15 +877,6 @@ export class Game implements Game {
         advanced = advanced.withNewTurn().withNumTurnSamePlayer(0);
         // @java Game.java:3183-3186 — turn passes: clear the visited scratch.
         advanced = advanced.withVisitedCleared();
-        // @java Move.java:544-580 — sequence-capture flush: EndOfTurn-queued
-        // captures materialize when the turn ends (Frisian: captured men
-        // blocked hops until now).
-        if (advanced.toClear.size > 0) {
-          for (const siteToClear of advanced.toClear) {
-            advanced = advanced.withCell(siteToClear, 0).withWhatAt(siteToClear, 0).withCountAt(siteToClear, 0);
-          }
-          advanced = advanced.withToClearEmptied();
-        }
       } else {
         // @java Game.java:3205 incrementNumTurnSamePlayer() — same player
         // moves again ((count MovesThisTurn) reads this).
