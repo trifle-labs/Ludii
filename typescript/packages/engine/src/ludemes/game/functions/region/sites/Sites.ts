@@ -265,11 +265,8 @@ export class Sites extends BaseRegionFunction {
         // @java SitesToClear — context.state().sitesToRemove()
         return new (class extends BaseRegionFunction {
           override eval(ctx: Context & EvalScratch): number[] {
-
-            const sites = (ctx as unknown as {
-              state?: { toClear?(): number[] }
-            }).state?.toClear?.();
-            return sites ?? [];
+            const str = (ctx.state as unknown as { sitesToRemove?: readonly number[] }).sitesToRemove;
+            return str ? [...str] : [];
           }
         })();
       case "Top":
