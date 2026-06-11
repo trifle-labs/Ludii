@@ -1839,3 +1839,12 @@ ForEachDie eval) + detailed harness action dumps:
 - Battery now 32 games (Crossway added); 194/47 units; 4 commits.
 - Probe-methodology note: game.apply(ctx, m) RETURNS the new context — always `ctx = game.apply(ctx, m)` in probes (a discarded return looks like a silent no-op apply).
 - NEXT: line MM pool 69 (flat 2-per-game: Boop seq/repel, Complica, Gobblet stacks…), space WM 66, leaping residue, sow/race clusters, ViewController demo renderer.
+
+## Update 92 (2026-06-11) — Enclose adapter, direction cones, four-row mancala geometry
+- Enclose: engine-trajectories adapter (steps(site,dir)/group(site,name); the Java-style 4-arg steps() silently returned []) + defaultSite realType. NoGo 2/2 — its ifAfterwards NoCapture filter had passed vacuously all game. Cascade: space family 347/678 (51.2%) crossing 50%.
+- Group relative directions (Forwards/Backwards/Rightwards/Leftwards) now do the Java 16-wind cone walk filtered by topology.supportedDirections (@java RelativeDirection.directions); the 8-wind hardcode matched only N on the rotated hex(4) board. Dodo 2/2 (1 forward step per piece → 3). Wired into Step/Slide/Hop.
+- sites Bottom/Top on mancala boards = FIRST/LAST ROW (@java graph.bottom/top), not numSites/2: Hus (Damara) start seeded every hole with 2 (Java leaves most inner-row holes empty since Inner=difference(Track,Bottom) was []). store boards derive holes-per-row as (numSites-2)/height — board.width includes the stores (first attempt used width and broke Kalah/J'odu; battery caught it, commit amended).
+- Hus (Damara) 2/2 OUTCOME_OK at MOVE_CAP=5000. HARNESS ARTIFACT: default cap 600 moves classifies fully-replaying long trials (Hus: 2,889 plies, TurnLimit draw at numTurn 2500 = 1250×2 @java checkMaxTurns) as REPLAY_OK_NO_OUTCOME "Hit move cap". Engine's step-4b limit logic verified correct end-to-end.
+- four_rows subfamily 46 OK + 8 RONO /130 (was 37+5). Remaining MM (Chisolo ply 7, Kisolo, Isolo…): phase/var-heavy multi-track sowing — per-game work.
+- Probe rule reaffirmed: ctx = game.apply(ctx, m) — apply returns a NEW context.
+- 3 commits this update (Enclose, cones, Bottom/Top). Battery green (32) at each.
