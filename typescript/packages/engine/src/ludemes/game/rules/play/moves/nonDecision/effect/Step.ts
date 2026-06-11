@@ -20,6 +20,7 @@
  */
 
 import type { Context } from "../../../../../../../context.js";
+import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
 import { radialsForDirection, type CellFlatRadials } from "../../../../../../topology-radials.js";
 import type { Trajectories } from "../../../../../../../eval/graph/trajectories.js";
 import { resolveRelativeDir, isSingleDir } from "../../../../../util/directions/RelativeDirection.js";
@@ -100,6 +101,8 @@ export class Step extends Effect {
     this.rule = opts.rule;
     this.sideEffect = opts.sideEffect ?? null;
     this.stack = opts.stack ?? false;
+    // @java gameFlags() |= GameType.Stacking when stack:True.
+    if (this.stack) compileFlags.usesStacking = true;
     this.dirnChoice = opts.dirnChoice;
   }
 

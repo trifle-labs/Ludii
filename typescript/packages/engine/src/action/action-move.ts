@@ -259,6 +259,11 @@ export class ActionMove extends BaseAction {
       // level, add at the to-top level after the push.
       let popped = state.withOwnedRemoveLevel(topOwner, topWhat, this.fromIndex, topLevel);
       popped = popped.withStackPop(this.fromIndex);
+      // @java cs maintains the count channel; clear residue when the pop
+      // empties the site (same fix as the flush/ActionRemove paths).
+      if (popped.stackSize(this.fromIndex) === 0 && popped.countAtSite(this.fromIndex) > 0) {
+        popped = popped.withCountAt(this.fromIndex, 0);
+      }
       let pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
       pushed = pushed.withOwnedAdd(topOwner, topWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
       return this.maintainTracks(pushed, topWhat);
@@ -274,6 +279,29 @@ export class ActionMove extends BaseAction {
         state = state.withOwnedSiteCleared(this.toIndex);
         state = state.withOwnedAdd(mOwner, mWhat || mOwner, this.toIndex, 0);
       }
+    }
+    // @java GameType.Stacking — in a stacking game a plain move landing on an
+    // OCCUPIED site pushes a level (ActionMoveTopPiece on a stacking
+    // container); the count-merge below is flat-game semantics and built
+    // Fenix's setup "generals" as count-piles (stacks=[2], countAt=2),
+    // poisoning (size Stack), the Owned registry and capture valuations.
+    if (
+      state.stackingGame &&
+      this.fromIndex !== this.toIndex &&
+      !this.transferCount &&
+      state.cellAt(this.toIndex).owner > 0 &&
+      state.cellAt(this.fromIndex).owner > 0
+    ) {
+      const mOwner = state.cellAt(this.fromIndex).owner;
+      const mWhat = state.whatAtSite(this.fromIndex) || mOwner;
+      let s2 = state.withOwnedMaterialized();
+      s2 = s2.withOwnedSiteCleared(this.fromIndex);
+      // Vacate from COMPLETELY (stacks/whatStacks/cells/whats/count) — a
+      // manual cell clear leaves a ghost stacks[] level at the old site.
+      s2 = s2.withStackRemoveAll(this.fromIndex);
+      s2 = s2.withStackPush(this.toIndex, mOwner, mWhat);
+      s2 = s2.withOwnedAdd(mOwner, mWhat, this.toIndex, s2.stackSize(this.toIndex) - 1);
+      return this.maintainTracks(s2, mWhat);
     }
     const movingOwner = state.cellAt(this.fromIndex).owner;
     // Preserve the moving piece's component identity (Java: ContainerState

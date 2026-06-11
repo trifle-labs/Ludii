@@ -118,6 +118,8 @@ export interface StateOptions {
    * Fenix's recorded trials depend on.
    */
   readonly ownedEntries?: readonly OwnedEntry[];
+  /** @java GameType.Stacking — compiled-tree flag; plain moves PUSH levels. */
+  readonly stackingGame?: boolean;
   /**
    * Java parity: `State.numTurn` (the field, returned by `state.numTurn()` and
    * read by `(count Turns)`). It is initialised to **1** (not 0) and is bumped
@@ -263,6 +265,8 @@ export class State {
   public readonly prev: number;
   /** @java FullOwned registry; see {@link StateOptions.ownedEntries}. */
   public readonly ownedEntries?: readonly OwnedEntry[];
+  /** @java GameType.Stacking; see {@link StateOptions.stackingGame}. */
+  public readonly stackingGame: boolean;
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
   public readonly numTurn: number;
   /** Java parity: `State.numTurnSamePlayer`. */
@@ -422,6 +426,7 @@ export class State {
     this.next = options.next ?? 0;
     this.prev = options.prev ?? 0;
     this.ownedEntries = options.ownedEntries;
+    this.stackingGame = options.stackingGame ?? false;
     this.numTurn = options.numTurn ?? 1;
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
@@ -1355,6 +1360,7 @@ export class State {
         next: patch.next ?? this.next,
         prev: patch.prev ?? this.prev,
         ownedEntries: patch.ownedEntries ?? this.ownedEntries,
+        stackingGame: patch.stackingGame ?? this.stackingGame,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:
           patch.numTurnSamePlayer ?? this.numTurnSamePlayer,

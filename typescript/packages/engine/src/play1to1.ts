@@ -26,6 +26,7 @@ import {
   parseLud,
 } from "@ludii/typescript-language";
 import { getBuiltinDefines } from "./builtin-defines.js";
+import { compileFlags, resetCompileFlags } from "./ludii/compiler/compile-flags.js";
 import { expandDefines } from "./lud-defines.js";
 import { applyOptions, collectDefaultOptions } from "./lud-options.js";
 import { expandRanges, expandSiteRanges } from "./lud-ranges.js";
@@ -113,7 +114,10 @@ export function play1to1(source: string, opts?: Play1to1Options): Game {
   // ITEM-2 DELETION (step 3): the faithful ArgCompiler IS the engine. The bespoke
   // dispatcher (compiler1to1) is deleted; compile failures surface.
   argCompiler ??= new ArgCompiler();
+  resetCompileFlags();
   const game = argCompiler.compile<Game>(gameNode, ["game.Game"]);
+  // @java Game.computeGameFlags — harvest the ludeme-tree Stacking flag.
+  (game as unknown as { usesStacking?: boolean }).usesStacking = compileFlags.usesStacking;
   if (game == null) throw new Error("play1to1: faithful compile returned null");
   return game;
 }

@@ -24,6 +24,7 @@
  */
 
 import type { Context } from "../../../../../../../context.js";
+import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
 import { radialsForDirection, type CellFlatRadials } from "../../../../../../topology-radials.js";
 import type { Trajectories } from "../../../../../../../eval/graph/trajectories.js";
 import { Move } from "../../../../../../../move.js";
@@ -130,6 +131,8 @@ export class Hop extends Effect {
     this.sideEffect = opts.sideEffect ?? null;
     this.fromCondition = wrapB(opts.fromCondition ?? null);
     this.stack = opts.stack ?? false;
+    // @java gameFlags() |= GameType.Stacking when stack:True.
+    if (this.stack) compileFlags.usesStacking = true;
   }
 
   // -------------------------------------------------------------------------

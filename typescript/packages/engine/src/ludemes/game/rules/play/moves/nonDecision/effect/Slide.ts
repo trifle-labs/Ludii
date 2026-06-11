@@ -9,6 +9,7 @@
  */
 
 import type { Context } from "../../../../../../../context.js";
+import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
 import { resolveRelativeDir } from "../../../../../util/directions/RelativeDirection.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
@@ -128,6 +129,8 @@ export class Slide implements MovesFunction {
     this.dirnName = opts.dirnName ?? "Adjacent";
     this.trackName = opts.trackName ?? null;
     this.stack = opts.stack ?? false;
+    // @java gameFlags() |= GameType.Stacking when stack:True.
+    if (this.stack) compileFlags.usesStacking = true;
     this.thenClause = opts.then ?? null;
   }
 
