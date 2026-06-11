@@ -2022,3 +2022,8 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 130 (2026-06-11) — FANORONA 2/2: matcher sees deferred removes + one-ply lookahead
 - chooseMatch upgrades: Remove tier diffs hypothetically-applied occupancy (deferred-then captures invisible to the action scan); final lookahead keeps candidates whose applied state can match the NEXT recorded move. Fanorona 2/2 OUTCOME_OK — the full chain: verbatim Ahead axis, directed-ray Directional, visited-before-consequences, matcher fidelity. Battery green (33). The hunt/leaping/war families with approach/withdrawal-style ambiguous captures should also benefit — re-sweep next.
+
+## Update 131 (2026-06-11) — Post-Fanorona sweeps: war 62%, hunt 78%
+- War: 168 OK + 64 RONO /375 (62%; was 225 combined). Hunt: 88 OK + 31 RONO /152 (78%). The matcher's deferred-remove + lookahead tiers lifted ambiguous-capture games as predicted.
+- END-OF-DAY STANDINGS (OK+full-replay): hunt 78%, line 71%, war 62%, four_rows 56%, space 51%, sow 41%. Day total: 83 commits, 16 games individually cleared (incl. the full tafl genre + Fanorona), 6 structural ports merged (pit what-channel, coordinate labels, convex-hull corners, Fanorona axis/rays, visited timing, matcher fidelity), Java oracle operational, interface geometry renderer Chrome-verified.
+- QUEUE: dual-SiteType state (Update 104 — Guerrilla Checkers/Alice Chess), line/blocking flat pools, TEAMS/cards subsystems, interface stack-count rendering.
