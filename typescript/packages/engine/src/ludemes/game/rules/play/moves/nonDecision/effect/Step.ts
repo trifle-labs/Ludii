@@ -179,6 +179,18 @@ export class Step extends Effect {
           }));
         }
         if (!GROUP_DIRS.has(dir.toLowerCase())) return [];
+        // GROUP dirs with empty distinct buckets (irregular graphs): use the
+        // engine's CHAINED radialsByName — true graph lines, multi-step rays
+        // (Solomon: [[10,17],[10,5],[10,7,4,0],[10,12,16,18]]). The flat
+        // geometric path below links collinear NON-ADJACENT vertices
+        // (Solomon phantom 2>9). Directed rays: no opposite re-push.
+        const site0 = cellRadials.axes[0]?.ray[0] ?? -1;
+        if (site0 >= 0 && typeof (traj as { radialsByName?: unknown }).radialsByName === "function") {
+          const chained = (traj as unknown as { radialsByName(s: number, d: string): number[][] }).radialsByName(site0, dir);
+          if (chained.length > 0) {
+            return chained.map((ray) => ({ ray, opposite: [ray[0] ?? -1] as const }));
+          }
+        }
       }
       return radialsForDirection(cellRadials, dir);
     };
