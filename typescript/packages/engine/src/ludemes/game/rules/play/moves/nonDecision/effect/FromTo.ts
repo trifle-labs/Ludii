@@ -114,7 +114,7 @@ export class FromTo implements MovesFunction {
 
       // @java FromTo.java:186-187 — check source occupancy. Mancala captures
       // use count:N on seed pits, which have counts but no component `what`.
-      let hasSource = this.countFn !== null
+      let hasSource = this.countFn !== null && !this.stack
         ? ctx.state.count(from) > 0
         : ctx.state.what(from) > 0;
       // Dual-SiteType (@java cs.what(from, type)): a piece on a typed channel
@@ -153,7 +153,14 @@ export class FromTo implements MovesFunction {
         // Build the primary move action
         const actions: import("../../../../../../../action/index.js").Action[] = [];
         let moveAction: ActionMove;
-        if (this.countFn !== null) {
+        if (this.stack) {
+          // @java Move.java (generic move) with stack:True + count:N — the
+          // recorded action is StackMove numLevel=N; Seesaw's count is
+          // always (size Stack at:(from)), i.e. the WHOLE stack relocates.
+          // The countFn must NOT fall into the mancala transferCount path
+          // (state.count(from)=0 on plain pieces killed every capture).
+          moveAction = new ActionMove({ from, to, stack: true });
+        } else if (this.countFn !== null) {
           // @java FromTo.java:189-196 — count evaluates with FROM bound
           // (context.setFrom(from) before countFn.eval): Chisolo's
           // count:(count at:(from)) hand-collection read count 0 with the

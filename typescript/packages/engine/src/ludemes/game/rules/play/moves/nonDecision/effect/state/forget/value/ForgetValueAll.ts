@@ -40,15 +40,16 @@ export class ForgetValueAll implements MovesFunction {
     const actions: import("../../../../../../../../../../action/index.js").Action[] = [];
     const mover = ctx.state.mover;
 
-    // Access remembering values from state
-    const stateAny = ctx.state as unknown as {
-      rememberingValues?: number[];
-      mapRememberingValues?: Map<string, number[]>;
-    };
+    // The live State keeps remembered values in `remembered`
+    // (ReadonlyMap<string, number[]>; "" = the unnamed list) — the old
+    // rememberingValues/mapRememberingValues reads matched nothing and
+    // (forget Value All) produced ZERO moves (Seesaw's capture-flush `do`
+    // chain died with it).
+    const remembered = (ctx.state as unknown as { remembered?: ReadonlyMap<string, readonly number[]> }).remembered;
 
     if (this.name != null) {
       // @java ForgetValueAll.java:59-69 — named map only
-      const rememberingValue = stateAny.mapRememberingValues?.get(this.name);
+      const rememberingValue = remembered?.get(this.name);
       if (rememberingValue) {
         for (const value of rememberingValue) {
           actions.push(new ActionForgetValue(this.name, value));
@@ -56,19 +57,10 @@ export class ForgetValueAll implements MovesFunction {
       }
     } else {
       // @java ForgetValueAll.java:73-99 — forget unnamed and all named
-      const rememberingValue = stateAny.rememberingValues;
-      if (rememberingValue) {
-        for (const value of rememberingValue) {
-          actions.push(new ActionForgetValue("", value));
-        }
-      }
-
-      if (stateAny.mapRememberingValues) {
-        for (const [key, vals] of stateAny.mapRememberingValues.entries()) {
-          if (vals) {
-            for (const value of vals) {
-              actions.push(new ActionForgetValue(key, value));
-            }
+      if (remembered) {
+        for (const [key, vals] of remembered.entries()) {
+          for (const value of vals) {
+            actions.push(new ActionForgetValue(key, value));
           }
         }
       }

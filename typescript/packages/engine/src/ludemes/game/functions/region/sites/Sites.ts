@@ -686,12 +686,64 @@ export class Sites extends BaseRegionFunction {
   ): RegionFunction {
     const rt = regionType as unknown as string;
     switch (rt) {
-      case "Between":
-        // @java return new SitesBetween(directions, type, from, fromIncluded, to, toIncluded, cond);
-        // The between-two-sites class is not yet ported in non-1to1 path
+      case "Between": {
+        // @java SitesBetween.java:91-169 — find the radial from `from`
+        // containing `to`; collect sites strictly between (walking back from
+        // to-1 to 1), plus from/to when their included flags hold; the
+        // between condition (default true) filters with (between) bound.
+        const fromFn = _from;
+        const toFn = _to;
+        const directions = _directions;
+        const fromIncludedFn = _fromIncluded;
+        const toIncludedFn = _toIncluded;
+        const condFn = _cond;
+        const asBool2 = (f: BooleanFunction | null, ctx: Context & EvalScratch, dflt: boolean): boolean => {
+          if (f === null || f === undefined) return dflt;
+          if (typeof (f as unknown) === "boolean") return f as unknown as boolean;
+          return f.eval(ctx);
+        };
         return new (class extends BaseRegionFunction {
-          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+          override eval(ctx: Context & EvalScratch): number[] {
+            const from = fromFn.eval(ctx);
+            if (from < 0) return [];
+            const to = toFn.eval(ctx);
+            if (to < 0) return [];
+            const traj = (ctx as unknown as { _trajectories?: { radialsByName(site: number, dir: string): number[][] } })._trajectories;
+            if (!traj) return [];
+            const origFrom = ctx._evalFrom;
+            const origTo = ctx._evalTo;
+            const origBetween = (ctx as { _evalBetween?: number })._evalBetween;
+            ctx._evalFrom = from;
+            ctx._evalTo = to;
+            const sites: number[] = [];
+            if (asBool2(fromIncludedFn, ctx, false)) sites.push(from);
+            if (asBool2(toIncludedFn, ctx, false)) sites.push(to);
+            const dirNames = directionNames(directions ?? null, ctx);
+            let toFound = false;
+            for (const dn of dirNames) {
+              for (const ray of traj.radialsByName(from, dn)) {
+                for (let toIdx = 1; toIdx < ray.length; toIdx++) {
+                  if (ray[toIdx] === to) {
+                    for (let b = toIdx - 1; b >= 1; b--) {
+                      const between = ray[b]!;
+                      (ctx as { _evalBetween?: number })._evalBetween = between;
+                      if (asBool2(condFn, ctx, true)) sites.push(between);
+                    }
+                    toFound = true;
+                    break;
+                  }
+                }
+                if (toFound) break;
+              }
+              if (toFound) break;
+            }
+            ctx._evalFrom = origFrom;
+            ctx._evalTo = origTo;
+            (ctx as { _evalBetween?: number })._evalBetween = origBetween;
+            return sites;
+          }
         })();
+      }
       default:
         throw new Error(`Sites(): A SitesBetweenType is not implemented: ${regionType}`);
     }
@@ -854,12 +906,62 @@ export class Sites extends BaseRegionFunction {
   ): RegionFunction {
     const rt = regionType as unknown as string;
     switch (rt) {
-      case "Direction":
-        // @java return new SitesDirection(from, From, directions, included, stop, stopIncluded, distance, type);
-        // SitesDirection not yet ported in non-1to1 path
+      case "Direction": {
+        // @java SitesDirection.java:106-156 — for each origin, walk each
+        // resolved direction's radials up to `distance` steps; stopRule
+        // (default false) halts the ray (stopIncluded adds the halt site);
+        // included (default false) adds the origin itself.
+        const fromFn = _from;
+        const fromRegion = _From;
+        const directions = _directions;
+        const includedFn = _included;
+        const stopFn = _stop;
+        const stopIncludedFn = _stopIncluded;
+        const distanceFn = _distance;
+        const asBool = (f: BooleanFunction | null, ctx: Context & EvalScratch, dflt: boolean): boolean => {
+          if (f === null || f === undefined) return dflt;
+          if (typeof (f as unknown) === "boolean") return f as unknown as boolean;
+          return f.eval(ctx);
+        };
         return new (class extends BaseRegionFunction {
-          override eval(_ctx: Context & EvalScratch): number[] { return []; }
+          override eval(ctx: Context & EvalScratch): number[] {
+            const origins: number[] = fromRegion !== null
+              ? fromRegion.eval(ctx)
+              : [fromFn !== null ? fromFn.eval(ctx) : (ctx._evalFrom ?? -1)];
+            const distance = distanceFn !== null
+              ? (typeof (distanceFn as unknown) === "number" ? distanceFn as unknown as number : distanceFn.eval(ctx))
+              : Number.MAX_SAFE_INTEGER;
+            const traj = (ctx as unknown as { _trajectories?: { radialsByName(site: number, dir: string): number[][] } })._trajectories;
+            if (!traj) return [];
+            const dirNames = directionNames(directions ?? null, ctx);
+            const out: number[] = [];
+            const seen = new Set<number>();
+            const add = (site2: number): void => { if (!seen.has(site2)) { seen.add(site2); out.push(site2); } };
+            const oldTo = ctx._evalTo;
+            for (const loc of origins) {
+              if (loc < 0) continue;
+              if (asBool(includedFn, ctx, false)) add(loc);
+              for (const dn of dirNames) {
+                for (const ray of traj.radialsByName(loc, dn)) {
+                  // ray[0] is the origin; walk 1..distance inclusive.
+                  const limit = Math.min(ray.length, distance + 1);
+                  for (let toIdx = 1; toIdx < limit; toIdx++) {
+                    const to = ray[toIdx]!;
+                    ctx._evalTo = to;
+                    if (asBool(stopFn, ctx, false)) {
+                      if (asBool(stopIncludedFn, ctx, false)) add(to);
+                      break;
+                    }
+                    add(to);
+                  }
+                }
+              }
+            }
+            ctx._evalTo = oldTo;
+            return out;
+          }
         })();
+      }
       default:
         throw new Error(`Sites(): A SitesDirectionType is not implemented: ${regionType}`);
     }
