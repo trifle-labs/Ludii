@@ -131,19 +131,11 @@ export class Select extends Effect {
    *   4. If regionTo: for each to-site, check conditionTo, emit ActionSelect(site, to).
    */
   public override eval(ctx: Context): Move[] {
+    // @java Select.eval iterates EXACTLY the compiled from-region. (A legacy
+    // TS crutch pushed the last-sown hole into the set during sow relays; it
+    // made Kisolo's empty pending-relay region {23} sprout the occupied
+    // LastHole 24 and offer a move where Java force-passes.)
     const sites = sitesArray(this.region.eval(ctx));
-    const lastMove = ctx.trial.lastMove();
-    if (
-      lastMove !== null &&
-      lastMove !== undefined &&
-      lastMove.moveAgain &&
-      lastMove.actions.some((action) => action.constructor.name === "ActionAddCount")
-    ) {
-      const lastSown = lastMove.toAfterSubsequents();
-      const maps = (ctx.game as unknown as { _maps?: Map<string, Map<number, number>> })._maps;
-      const store = maps?.get("__default__")?.get(ctx.state.mover) ?? -1;
-      if (lastSown >= 0 && lastSown !== store && !sites.includes(lastSown)) sites.push(lastSown);
-    }
     const mover = ctx.state.mover;
 
     const origTo = (ctx as unknown as { _evalTo?: number })._evalTo ?? -1;
