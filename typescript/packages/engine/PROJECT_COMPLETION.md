@@ -2043,3 +2043,7 @@ ForEachDie eval) + detailed harness action dumps:
 
 ## Update 136 (2026-06-11) — Dual-SiteType layer 3: typed adjacency LIVE
 - Step/Hop consume Trajectories.viewOf(fromType) as locals. Guerrilla: COIN moves on cell diagonals, trials ply 2→11. Residual: recorded ply-11 P2 from=41 exceeds the 36-cell channel — investigate Java's per-type site numbering in trial records (Cell ids may be globally offset after vertices, or the move is another mechanism); also remaining: typed ActionMove/Remove application + typed Occupied/Incident reads. Spot battery green; committed.
+
+## Update 137 (2026-06-11) — Layer 3 hardened: typed tags scoped to typed channels
+- Regression caught and fixed: tagging every ForEachPiece position re-routed normal vertex pieces through the Cell view (Fanorona ply-29 divergence); only typed-channel hits tag now, plus a play-type gate in Step/Hop. Fanorona 2/2 again; Guerrilla holds ply 11. LESSON for the audit list: scanPositions' realType defaults to "Cell" — verify its source per call.
+- Guerrilla residual: recorded ply-11 P2 from=41 (exceeds the 36-cell channel) — decode the trial's per-type numbering (Java prints typeFrom/typeTo per action; 41 may be a Vertex-indexed Cell reference or a separate mechanism). Then typed ActionMove/Remove + Occupied/Incident reads.
