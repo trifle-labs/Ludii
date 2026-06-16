@@ -26,14 +26,21 @@ export class Mul extends BaseIntFunction {
    * Both Java ctors funnel into the array form, exactly like Java's
    * `array = new IntArrayConstant(new IntFunction[]{ valueA, valueB })`.
    */
-  public constructor(a: JavaIntFunction | IntArrayLike, b: JavaIntFunction | null = null) {
+  public constructor(a: JavaIntFunction | IntArrayLike | null = null, b: JavaIntFunction | null = null) {
     super();
-    if (b !== null) {
+    // @java Mul has two ctors — Mul(valueA, valueB) and Mul(IntArrayFunction).
+    // Both funnel into the array form. The reflection compiler may place a lone
+    // (sizes …)/array argument in EITHER slot (it arrived as Mul(null, array) for
+    // `(* (sizes Group Mover))`), so treat null/undefined in a slot as absent and
+    // use the array form whenever fewer than two real operands are present.
+    const aPresent = a != null;
+    const bPresent = b != null;
+    if (aPresent && bPresent) {
       const valueA = a as JavaIntFunction;
       const valueB = b;
       this.array = { eval: (ctx: Context) => [valueA.eval(ctx), valueB.eval(ctx)] };
     } else {
-      this.array = a as IntArrayLike;
+      this.array = (aPresent ? a : b) as IntArrayLike;
     }
   }
 

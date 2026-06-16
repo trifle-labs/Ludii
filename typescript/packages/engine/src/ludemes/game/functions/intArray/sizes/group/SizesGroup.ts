@@ -81,11 +81,29 @@ export class SizesGroup extends BaseIntArrayFunction {
     super();
     this.siteType = siteType;
     this.directions = directions;
-    this.whoFn = whoFn;
-    this.minFn = minFn;
+    // @java minFn = (min == null) ? new IntConstant(0) : min
+    this.minFn = (minFn == null || typeof (minFn as unknown as { eval?: unknown }).eval !== "function")
+      ? { eval: () => 0 }
+      : minFn;
     this.condition = condition;
-    this.allPieces = allPieces;
     this.isVisibleFn = isVisibleFn;
+    // @java whoFn = (of != null) ? of : RoleType.toIntFunction(role). The
+    // reflection compiler delivers a bare role (e.g. Mover) as a RAW string in
+    // the whoFn slot, not an IntFunction — coerce it (the raw-literal trap). A
+    // missing role / All / Shared means all-pieces mode.
+    let resolvedAllPieces = allPieces;
+    let resolvedWho: IntFunction = whoFn;
+    if (whoFn == null || typeof (whoFn as unknown as { eval?: unknown }).eval !== "function") {
+      const roleName = whoFn == null ? null : String(whoFn);
+      if (roleName == null || roleName === "All" || roleName === "Shared") {
+        resolvedAllPieces = true;
+        resolvedWho = { eval: () => ALL_WHO };
+      } else {
+        resolvedWho = roleToIntFunction(roleName);
+      }
+    }
+    this.whoFn = resolvedWho;
+    this.allPieces = resolvedAllPieces;
   }
 
   /**
@@ -300,4 +318,25 @@ export class SizesGroup extends BaseIntArrayFunction {
   public override toString(): string {
     return "Groups()";
   }
+}
+
+/**
+ * @java RoleType.toIntFunction — resolve a role name to a player-id function.
+ * Mirrors the canonical helper used by SetScore et al.
+ */
+function roleToIntFunction(role: string): IntFunction {
+  if (/^P\d+$/.test(role)) {
+    const pid = Number(role.slice(1));
+    return { eval: () => pid };
+  }
+  if (role === "Neutral") return { eval: () => 0 };
+  return {
+    eval: (ctx) => {
+      if (role === "Mover") return ctx.state.mover;
+      if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (role === "Player") return (ctx as unknown as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover;
+      return 0;
+    },
+  };
 }
