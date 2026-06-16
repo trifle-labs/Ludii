@@ -38,6 +38,8 @@ export class AddScore implements MovesFunction {
   private readonly players: readonly IntFunction[];
   private readonly roles: readonly AddScoreRole[] | null;
   private readonly scores: readonly IntFunction[];
+  /** @java Effect.then — consequence applied after the score is added. */
+  private readonly thenClause: Then | null = null;
 
   public constructor(
     playerOrPlayers: AddScorePlayerArg,
@@ -45,7 +47,7 @@ export class AddScore implements MovesFunction {
     scoreOrScores: AddScoreScoreArg,
     then?: Then | null,
   ) {
-    void then;
+    this.thenClause = then ?? null;
 
     const arrayOverload =
       Array.isArray(playerOrPlayers) ||
@@ -94,6 +96,12 @@ export class AddScore implements MovesFunction {
 
       for (const pid of pids) {
         const action = new ActionSetScore({ player: pid, score: delta, add: true });
+        const deferredThens = this.thenClause != null
+          ? [{ eval: (c: Context): IMove[] => {
+              const r = (this.thenClause as unknown as { moves(): { eval(c: Context): IMove[] | { moves(): IMove[] } } }).moves().eval(c);
+              return Array.isArray(r) ? r : r.moves();
+            } }]
+          : [];
         const m = new Move({
           id: `addScore:${pid}:${delta}`,
           label: `AddScore`,
@@ -101,6 +109,7 @@ export class AddScore implements MovesFunction {
           mover,
           placedOwner: mover,
           actions: [action],
+          deferredThens,
         });
         result.push(m);
       }

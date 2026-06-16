@@ -2605,3 +2605,7 @@ DEFERRED MULTI-PART SUBSYSTEMS (each well-mapped, ~3-10 games): flips (Reversi/R
 ## Update 243 (2026-06-11) — SetVar applies its (then ...) + dropped-then audit
 - SetVar had `void then;` (dropped its consequence). Wired as a deferredThen (faithful — Java SetVar extends Effect). No regression (Oware/Pasang/Fanorona/Tablut/Chess/Seesaw/T'oki/NMM all green), units 194/0.
 - AUDIT: grep found 6 ludemes that discard their then with `void then;`: Push, Attract, Claim, Directional, AddScore, SetVar (now fixed). All are dropped-consequence bugs (Java's Effect always applies then). The other 5 are the SAME fix (deferredThen wiring) but each has a distinct eval shape (AddScore builds its move in a loop) needing individual verification — flagged as a focused follow-up. The earlier Append + play-SetScore drops (Updates 229, 242) were the same class.
+
+## Update 244 (2026-06-11) — AddScore applies its (then ...) consequence (was 'void then')
+- AddScore.eval discarded its then clause (`void then;`). Wired as a deferredThen on each generated score move (Java AddScore extends Effect — the then always runs). No regression (Oware/Reversi/Tablut/Chess/Pasang/Backgammon/Fanorona green), units 194/0.
+- Dropped-then ledger: Append (229), play-SetScore (242), SetVar (243), AddScore (244) now FIXED. Remaining same-class drops: Push, Attract, Directional (single-move effects, less common) and Claim (a stub) — lower priority, distinct eval shapes, flagged for follow-up.
