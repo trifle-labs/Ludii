@@ -370,6 +370,11 @@ function boolFn(value: BooleanFunction | boolean | null, fallback: boolean): Boo
 
 function roleOwner(role: string | null, ctx: Context): number | null {
   if (role === null || role === "All" || role === "Each") return null;
+  // @java RoleType.Player — the player iterated by (forEach Player …), carried
+  // in _evalPlayer. Without this, (is Line N Player) fell through to the pivot's
+  // single component, so a line of MIXED-size same-owner pieces (Gobblet's
+  // small/medium/large) was not recognised and the game never ended.
+  if (role === "Player") return (ctx as unknown as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover;
   if (role === "Mover") return ctx.state.mover;
   if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
   if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
