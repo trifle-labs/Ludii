@@ -136,8 +136,8 @@ export class SitesIncident extends BaseRegionFunction {
 		switch (this.resultType) {
 		case "Cell": {
 			// @java for (Edge edge : cell.edges()) for (Cell cell2 : edge.cells()) if (cell2.index() != cell.index()) result.add(cell2.index())
-			for (const edge of cell.edges) {
-				for (const cell2 of edge.cells) {
+			for (const edge of (cell.edges ?? [])) {
+				for (const cell2 of (edge.cells ?? [])) {
 					if (cell2.id !== index) {
 						result.push(cell2.id);
 					}
@@ -147,7 +147,7 @@ export class SitesIncident extends BaseRegionFunction {
 		}
 		case "Edge":
 			// @java for (Edge edge : cell.edges()) result.add(edge.index())
-			for (const edge of cell.edges) {
+			for (const edge of (cell.edges ?? [])) {
 				// Find edge index from topo.edgeEls
 				for (let ei = 0; ei < topo.edgeEls.length; ei++) {
 					const e = topo.edgeEls[ei]!;
@@ -214,7 +214,7 @@ export class SitesIncident extends BaseRegionFunction {
 		}
 		case "Cell":
 			// @java for (Cell face : edge.cells()) result.add(face.index())
-			for (const face of edge.cells) {
+			for (const face of (edge.cells ?? [])) {
 				result.push(face.id);
 			}
 			break;
@@ -242,13 +242,13 @@ export class SitesIncident extends BaseRegionFunction {
 		switch (this.resultType) {
 		case "Cell":
 			// @java for (Cell cell : vertex.cells()) result.add(cell.index())
-			for (const cell of vertex.cells) {
+			for (const cell of (vertex.cells ?? [])) {
 				result.push(cell.id);
 			}
 			break;
 		case "Edge":
 			// @java for (Edge edge : vertex.edges()) result.add(edge.index())
-			for (const edge of vertex.edges) {
+			for (const edge of (vertex.edges ?? [])) {
 				const ei = topo.edgeEls.findIndex(e => e.va.id === edge.va.id && e.vb.id === edge.vb.id);
 				if (ei !== -1) result.push(ei);
 			}
@@ -256,8 +256,8 @@ export class SitesIncident extends BaseRegionFunction {
 		case "Vertex":
 			// @java for (Edge edge : vertex.edges()) for (Cell vertex2 : edge.cells()) if (vertex2.index() != vertex.index()) result.add(vertex2.index())
 			// Note: Java's code appears to use edge.cells() for Vertex result which is unusual — faithful port below
-			for (const edge of vertex.edges) {
-				for (const cell of edge.cells) {
+			for (const edge of (vertex.edges ?? [])) {
+				for (const cell of (edge.cells ?? [])) {
 					if (cell.id !== index) result.push(cell.id);
 				}
 			}

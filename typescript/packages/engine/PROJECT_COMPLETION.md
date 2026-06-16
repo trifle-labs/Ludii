@@ -2576,3 +2576,8 @@ DEFERRED MULTI-PART SUBSYSTEMS (each well-mapped, ~3-10 games): flips (Reversi/R
 - PlaceRandom.eval threw `context.containerId is not a function` at start (the start-rule context lacks the containerId/containerState escape hatches), START_FAILing every (place Random) game. Guard: containerId?.() with cid-0 fallback; containerState?.() falling back to ctx.state occupancy.
 - Hermit 2/2 (ply 46/52). Banqi, Competitive 2048, Quantum Leap, Shut Off His Lights now START (residual ply-0 MM = their own move-gen, separate). Battery green, units 194/0.
 - SESSION running total: ~37 games cleared 2/2 across 9 subsystems/clusters. The crash-class START_FAILs (Region .sites(), PlaceRandom containerId) are now guarded.
+
+## Update 238 (2026-06-11) — Corpus crash scan (18/1150 throw); SitesIncident guards
+- Scanned all 1150 board games: only 18 throw at start/move-gen. Clusters: [6] (match ...) multi-game files (Bul +5 — match/subgame subsystem, deferred); [2] edge.cells not iterable; [2] Union ctor arity (Throngs, deprioritized 30k-line); singletons (Chex PlaceRandom ctor mis-dispatch, Pagade 16-player components, Coil/Bug/SupplyChains escape-hatch).
+- FIXED (crash-class): SitesIncident.evalCell/evalEdge/evalVertex iterated edge.cells/cell.edges/vertex.cells which are undefined on graph boards lacking edge<->cell incidence -> guarded with `?? []`. Triple Tangle + Nodal Chess now START + generate moves (residual MM = our topology doesn't populate edge->cell incidence, a separate completeness gap). Battery green (Span/Hex/Havannah unaffected), units 194/0.
+- The remaining throwers are distinct subsystems (match games, topology incidence completeness, ctor dispatch) — each documented.
