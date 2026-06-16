@@ -372,8 +372,19 @@ export class Count extends BaseIntFunction {
    */
   public static constructGroups(countType: unknown, _type: unknown, _directions: unknown, _throughAny: unknown, If: unknown, min: unknown, _isVisible: unknown): JavaIntFunction {
     switch (countType) {
-      case "Groups":
-        return asJavaReturn(new CountGroups(asBool(If), asLeanInt(min, ZERO_INT)));
+      case "Groups": {
+        // @java CountGroups dirnChoice — the connection direction (default
+        // Adjacent). Arrives from the compiler as a {name} direction token,
+        // mirroring Sites.constructGroup. (count Groups Orthogonal …) needs it.
+        // @java CountGroups dirnChoice default Adjacent. The Direction token
+        // arrives from the reflection compiler RAW: a bare enum like Orthogonal
+        // is a plain string, not a {name} object (the raw-literal trap).
+        const dirName: string =
+          typeof _directions === "string"
+            ? _directions
+            : (_directions as { name?: string } | null)?.name ?? "Adjacent";
+        return asJavaReturn(new CountGroups(asBool(If), asLeanInt(min, ZERO_INT), dirName));
+      }
       case "SizeBiggestGroup":
         return asJavaReturn(new CountSizeBiggestGroup(asBool(If)));
       default:

@@ -809,7 +809,12 @@ export class Sites extends BaseRegionFunction {
           : From !== null
             ? { eval(ctx: Context & EvalScratch): number[] { return From.eval(ctx); } }
             : { eval(_ctx: Context & EvalScratch): number[] { return []; } };
-        const dirName: string = (_directions as { name?: string } | null)?.name ?? "Adjacent";
+        // Direction token may arrive RAW as a bare-enum string (e.g. Orthogonal)
+        // or as a {name} object; coerce both (see Count.constructGroups).
+        const dirName: string =
+          typeof _directions === "string"
+            ? _directions
+            : (_directions as { name?: string } | null)?.name ?? "Adjacent";
         return new SitesGroup(startFn, condition, dirName, isVisible);
       }
       default:

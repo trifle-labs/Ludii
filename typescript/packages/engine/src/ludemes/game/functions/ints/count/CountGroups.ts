@@ -24,10 +24,18 @@ export class CountGroups implements IntFunction {
   private readonly condition: BooleanFunction | null;
   /** @java CountGroups.minFn — minimum group size (default 0) */
   private readonly minFn: IntFunction;
+  /**
+   * @java CountGroups.dirnChoice — the connection direction; Java defaults to
+   * Adjacent. (count Groups Orthogonal …) MUST walk only orthogonal steps; the
+   * old hardcoded "Adjacent" merged diagonally-touching pieces on square boards,
+   * under-counting groups so (= 1 (count Groups …)) won prematurely (Groups).
+   */
+  private readonly directionName: string;
 
-  public constructor(condition: BooleanFunction | null, minFn: IntFunction) {
+  public constructor(condition: BooleanFunction | null, minFn: IntFunction, directionName: string = "Adjacent") {
     this.condition = condition;
     this.minFn = minFn;
+    this.directionName = directionName;
   }
 
   /**
@@ -74,7 +82,8 @@ export class CountGroups implements IntFunction {
         const s = groupSites[i]!;
         let neighbours: number[];
         if (traj) {
-          neighbours = traj.group(s, "Adjacent");
+          // @java dirnChoice.convertToAbsolute(...) → trajectories().steps(...)
+          neighbours = traj.group(s, this.directionName);
         } else {
           const W = g.equipment.board.width;
           const H = g.equipment.board.height;
