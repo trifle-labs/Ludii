@@ -96,6 +96,15 @@ export class Flip implements MovesFunction {
     const fc = ctx as unknown as FlipContext;
     const moves: LudiiMove[] = [];
 
+    // @java Flip.java:137-139 — the (then …) must apply AFTER the flip's state
+    // change. Defer it so a custodial/condition inside (e.g. Minefield's
+    // (flip (last To) (then ("ReverseBoundedPieces")))) reads the POST-flip
+    // state. Evaluating it eagerly here saw the pre-flip state and captured the
+    // wrong cells.
+    const deferredThens = this.thenClause !== null
+      ? [{ eval: (c: Context): Move[] => this.thenClause!.eval(c) }]
+      : [];
+
     const loc = this.locFn.eval(ctx);
 
     // @java Flip.java:73-76 — return empty if loc == OFF
@@ -202,6 +211,7 @@ export class Flip implements MovesFunction {
         mover,
         placedOwner: mover,
         actions: allActions,
+        deferredThens,
       });
       moves.push(builtMove);
     } else if (stackSize === 1) {
@@ -226,15 +236,9 @@ export class Flip implements MovesFunction {
         mover,
         placedOwner: mover,
         actions: [action],
+        deferredThens,
       });
       moves.push(m);
-    }
-
-    // @java Flip.java:137-139 — then clause
-    if (this.thenClause !== null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      const thenActions = thenMoves.flatMap(tm => [...tm.actions]);
-      return moves.map(m => m.withConsequence(thenActions, false));
     }
 
     return moves;
