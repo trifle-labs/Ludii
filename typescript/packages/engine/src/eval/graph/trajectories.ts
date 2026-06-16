@@ -234,8 +234,47 @@ export class Trajectories {
    * iterates `topology.trajectories().steps(type, from, type, dir)` in full.
    * This is what makes `Step Rotational` reach all of In/Out/CW/CCW.
    */
-  public steps(site: number, dir: string): number[] {
-    const d = directionByName(dir);
+  public steps(site: number, dir: string): number[];
+  /**
+   * @java Topology.trajectories().steps(type, fromIdx, toType, dir) — the
+   * Java-shaped 4-arg overload returning Step objects (`.to().id()`). Many
+   * ported ludemes (SitesSupport, CountSitesPlatformBelow, SitesLoop, All,
+   * ForEachDirection, SizeTerritory) call this signature; the 2-arg-only
+   * version silently dropped the extra args (dir became a number →
+   * directionByName failed → []), so those features degraded to no-ops.
+   */
+  public steps(
+    fromType: string | null,
+    fromIdx: number,
+    toType: string | null,
+    dir: string,
+  ): Array<{ to(): { id(): number } }>;
+  public steps(
+    a: number | string | null,
+    b: string | number,
+    c?: string | null,
+    d?: string,
+  ): number[] | Array<{ to(): { id(): number } }> {
+    // 4-arg Java-shaped form: (type, fromIdx, toType, dirName)
+    if (d !== undefined) {
+      const fromIdx = b as number;
+      const dirEnum = directionByName(d);
+      if (dirEnum === undefined) return [];
+      return this.core
+        .stepsToTypeInDirection(this.playType, fromIdx, this.playType, dirEnum)
+        .map((s) => {
+          const id = s.to.id;
+          return { to: () => ({ id: () => id }) };
+        });
+    }
+    const site = a as number;
+    const dir = b as string;
+    const dRes = directionByName(dir);
+    if (dRes === undefined) return [];
+    return this.stepsTwoArg(site, dRes);
+  }
+
+  private stepsTwoArg(site: number, d: ReturnType<typeof directionByName>): number[] {
     if (d === undefined) return [];
     return this.core
       .stepsToTypeInDirection(this.playType, site, this.playType, d)
