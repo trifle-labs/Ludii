@@ -85,6 +85,18 @@ export class Append extends NonDecision {
       for (const a of m.actions) allActions.push(a);
     }
 
+    // @java Append.eval: `if (then() != null) newMove.then().add(then().moves())`.
+    // The compound move carries the (then ...) consequence — Reversi's
+    // (append "ReverseBoundedPieces" (then (set Score ...))) sets each
+    // player's score from (sites State N) AFTER the flips apply; dropping it
+    // left scores at 0 and byScore picked the wrong/no winner.
+    const thenClause = this.then();
+    const deferredThens = thenClause != null
+      ? [{ eval: (c: Context): Move[] => {
+          const r = (thenClause.moves() as unknown as { eval(c: Context): Move[] | { moves(): Move[] } }).eval(c);
+          return Array.isArray(r) ? r : r.moves();
+        } }]
+      : [];
     const newMove = new Move({
       id: `append:${mover}:${firstMove.id}`,
       label: `Append(${firstMove.label})`,
@@ -92,6 +104,7 @@ export class Append extends NonDecision {
       mover,
       placedOwner: mover,
       actions: allActions,
+      deferredThens,
     });
 
     return [newMove];

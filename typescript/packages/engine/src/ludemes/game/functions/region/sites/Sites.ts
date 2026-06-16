@@ -449,8 +449,16 @@ export class Sites extends BaseRegionFunction {
             const state = ctx.state;
             const n = state.cells.length;
             const result: number[] = [];
+            // @java SitesState — site local state == val. state.stateValue(i)
+            // is the accessor; `stateAt` is the raw array field (not callable),
+            // so the old stateAt?.(i) threw `stateAt is not a function`,
+            // aborting (count Sites in:(sites State N)) — Reversi's per-move
+            // score-setting then never ran and byScore saw 0/0.
+            const sv = (state as unknown as { stateValue?(i: number): number; stateAt?: readonly number[] });
             for (let i = 0; i < n; i++) {
-              const s = (state as unknown as { stateAt?(i: number): number }).stateAt?.(i);
+              const s = typeof sv.stateValue === "function"
+                ? sv.stateValue(i)
+                : (Array.isArray(sv.stateAt) ? (sv.stateAt[i] ?? 0) : 0);
               if (s === val) result.push(i);
             }
             return result;

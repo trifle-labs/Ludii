@@ -2525,3 +2525,10 @@ DEFERRED MULTI-PART SUBSYSTEMS (each well-mapped, ~3-10 games): flips (Reversi/R
   1. Equipment plain-object piece surface dropped the flips data — added `flips` field + `getFlips()` accessor (Reversi Disc now reports {flipA:1,flipB:2}).
   2. Flip.eval read stackSize from cs.sizeStack, which returns 0 for a FLAT (non-stacked) occupied site (stacks row empty) even when what>0 — so neither flip branch fired. @java cs.sizeStack returns 1 for an occupied non-stacking site; fall back to (what(loc)>0 ? 1 : 0).
 - Reversi now plays the FULL game (ply 62/63) with correct custodial flip moves — residual is WINNER_MISMATCH (the byScore/(sites State N) end-count), a separate score-eval issue. Rolit still MM ply 0 (distinct start/rule). Battery green, units 194/0.
+
+## Update 229 (2026-06-11) — Reversi + MacBeth 2/2: SitesState accessor + Append then-clause
+- After the flip mechanic worked, Reversi was WINNER_MISMATCH because scores stayed [0,0,0]. TWO more bugs in the per-move scoring then:
+  1. SitesState ((sites State N)) called state.stateAt?.(i) — but `stateAt` is the raw ARRAY field, not a method, so it threw `stateAt is not a function`, aborting (count Sites in:(sites State N)). Use state.stateValue(i) (array fallback).
+  2. Append DROPPED its (then ...) consequence entirely (@java newMove.then().add(then().moves())) — so (append "ReverseBoundedPieces" (then (set Score ...))) never set scores. Attach as a deferredThen; handle the eval()->Move[] shape (not MovesLike).
+- Reversi 2/2 (scores [0,19,45] match recorded), MacBeth 2/2 (bonus — same Append-then scoring). Rolit advanced ply 0 -> 60 (late residual). Custodial/chess/Quarto/Span canaries green, units 194/0.
+- The flips subsystem (Updates 228-229) is now COMPLETE for the Reversi family; SitesState + Append-then are broadly used (any (sites State) region; any (append ... (then ...))).
