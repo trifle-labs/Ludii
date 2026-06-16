@@ -2561,3 +2561,9 @@ DEFERRED MULTI-PART SUBSYSTEMS (each well-mapped, ~3-10 games): flips (Reversi/R
   3. SitesPlayable boardless branch (Update 233): empty + adjacent to a placed piece.
 - CLEARED 2/2: Andantino (ply 36/15), CustAndantino, Plotto, Bravalath. Ringo still MM ply 3 (boardless Square + rings, distinct), Trax MM ply 1, Chex START_FAIL (distinct). Battery green (no regression — (sites Playable) users are all boardless), units 194/0.
 - The boardless subsystem is now functional for the hex-tiling line games.
+
+## Update 235 (2026-06-11) — Turn summary: boardless + MaxDistance subsystems; largeStack deferred (regression risk)
+- THIS TURN cleared: Reversi, MacBeth (flips) + Andantino, CustAndantino, Plotto, Bravalath (boardless) = 6 games; advanced the whole race family deeply (MaxDistance recursion: Nard ply 0->199).
+- largeStack mancala (O An Quan/Laomuzhu/Ceelkoqyuqkoqiji/Yucebao) INVESTIGATED + DEFERRED: largeStack:True pits store as a flat count (stacks=[3], count=5) not a true 5-level stack; the sow moves individual levels via (from ... level:N). Making pits true multi-level Seed stacks needs the non-lazy whatStacks model that regresses Bashni-class stacking draughts (noted Update 206). Deferred to avoid regressing ~20 verified stacking games; needs a careful per-level state model that preserves them.
+- SESSION CUMULATIVE: ~34 games cleared 2/2; 8 subsystems completed/advanced (flips, 3D pyramidal, fox-geese facing, MaxDistance per-turn recursion, two_rows mancala family, shared-hand, boardless, SitesState/Append scoring). Updated standings: territory 54%+, line 80%+, hunt 85%, war ~89%, sow 67%, race/escape 45%+ (advancing), group 27%, blocking ~66%.
+- REMAINING (each documented with entry point): largeStack mancala (state model + regression-safe), race per-variant track/bear-off, group bespoke scoring, is-Pattern (Teeko), Ringo/Trax/Chex boardless variants, per-game territory scoring. Task #42 (upstream round-trip) = end-of-campaign.
