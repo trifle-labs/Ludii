@@ -29,6 +29,12 @@ export class ForEachGroup extends Effect {
   /** @java ForEachGroup.dirnChoice — directions function */
   private readonly dirnChoice: unknown;
 
+  /**
+   * @java ForEachGroup.dirnChoice — resolved to a category name; default
+   * Adjacent. The Direction token arrives RAW (string "Orthogonal" or {name}).
+   */
+  private readonly directionName: string;
+
   /** @java ForEachGroup.movesToApply */
   private readonly movesToApply: MovesFunction;
 
@@ -58,6 +64,10 @@ export class ForEachGroup extends Effect {
     // dirnChoice = (directions != null) ? directions.directionsFunctions()
     //              : new Directions(AbsoluteDirection.Adjacent, null)
     this.dirnChoice = directions;
+    this.directionName =
+      typeof directions === "string"
+        ? directions
+        : (directions as { name?: string } | null)?.name ?? "Adjacent";
   }
 
   /**
@@ -73,10 +83,18 @@ export class ForEachGroup extends Effect {
     // @java context.topology()
     const topology = (context as unknown as { topology(): unknown }).topology?.();
 
+    // @java the SiteType — null means the board's default site (Java resolves
+    // this in preprocess). getGraphElements(null) returns an empty collection
+    // here, so maxIndexElement became 0 and the `site < maxIndexElement` filter
+    // dropped EVERY owned site (sitesToCheck stayed empty → no groups → no
+    // scores). Resolve the default like Difference/Sites do.
+    const resolvedType: string =
+      this.type ?? (context.board() as unknown as { defaultSite?: () => string }).defaultSite?.() ?? "Cell";
+
     // @java context.topology().getGraphElements(type).size()
     const maxIndexElement: number = topology
       ? (topology as unknown as { getGraphElements(t: unknown): { size(): number } })
-          .getGraphElements(this.type)
+          .getGraphElements(resolvedType)
           ?.size() ?? 0
       : (context.state.cells.length);
 
@@ -90,6 +108,34 @@ export class ForEachGroup extends Effect {
 
     const who = context.state.mover;
 
+    // @java context.state().owned().sites(playerId) — all sites with ≥1
+    // component owned by the player. The TS Owned surface exposes positions(pid)
+    // (a Location[][] by component); the union of its site()s IS sites(pid).
+    // (The old code called owned.sites(i), which does not exist on this surface
+    // — it threw, the exception was swallowed upstream, and every then-clause
+    // group scan produced no moves, so group-scoring games never scored.)
+    const owned = (context.state as unknown as {
+      owned?: { positions(pid: number): Array<Array<{ site(): number }>> };
+    }).owned;
+    const ownedSitesOf = (pid: number): number[] => {
+      if (!owned) {
+        const out: number[] = [];
+        for (let site = 0; site < context.state.cells.length; site++) {
+          if (context.state.who(site) === pid && site < maxIndexElement) out.push(site);
+        }
+        return out;
+      }
+      const out: number[] = [];
+      for (const byComp of owned.positions(pid)) {
+        if (!byComp) continue;
+        for (const loc of byComp) {
+          const site = loc.site();
+          if (site < maxIndexElement) out.push(site);
+        }
+      }
+      return out;
+    };
+
     // Build the list of sites to check.
     const sitesToCheck: number[] = [];
 
@@ -98,39 +144,12 @@ export class ForEachGroup extends Effect {
       // @java for (int i = 0; i <= context.game().players().size(); i++)
       const numPlayers = context.game.numPlayers;
       for (let i = 0; i <= numPlayers; i++) {
-        // @java context.state().owned().sites(i)
-        const owned = (context.state as unknown as { owned?: { sites(p: number): number[] } }).owned;
-        if (owned) {
-          const allSites = owned.sites(i);
-          for (let j = 0; j < allSites.length; j++) {
-            const site = allSites[j]!;
-            if (site < maxIndexElement) sitesToCheck.push(site);
-          }
-        } else {
-          // Fallback: scan all cells
-          for (let site = 0; site < context.state.cells.length; site++) {
-            if (context.state.who(site) !== 0 && site < maxIndexElement)
-              sitesToCheck.push(site);
-          }
-        }
+        sitesToCheck.push(...ownedSitesOf(i));
       }
     } else {
       // Without a condition, look at the mover's owned sites.
       // @java for (int j = 0; j < context.state().owned().sites(who).size(); j++)
-      const owned = (context.state as unknown as { owned?: { sites(p: number): number[] } }).owned;
-      if (owned) {
-        const ownedSites = owned.sites(who);
-        for (let j = 0; j < ownedSites.length; j++) {
-          const site = ownedSites[j]!;
-          if (site < maxIndexElement) sitesToCheck.push(site);
-        }
-      } else {
-        // Fallback: scan for mover's cells
-        for (let site = 0; site < context.state.cells.length; site++) {
-          if (context.state.who(site) === who && site < maxIndexElement)
-            sitesToCheck.push(site);
-        }
-      }
+      sitesToCheck.push(...ownedSitesOf(who));
     }
 
     // @java final TIntArrayList sitesChecked = new TIntArrayList();
@@ -149,7 +168,7 @@ export class ForEachGroup extends Effect {
 
       // @java if ((who == cs.who(from, type) && condition == null) || (condition != null && condition.eval(context)))
       const csWhoFrom: number = cs
-        ? (cs as unknown as { who(site: number, type: unknown): number }).who(from, this.type) ?? 0
+        ? (cs as unknown as { who(site: number, type: unknown): number }).who(from, resolvedType) ?? 0
         : context.state.who(from);
 
       if ((who === csWhoFrom && this.condition === null) ||
@@ -166,24 +185,19 @@ export class ForEachGroup extends Effect {
         while (sitesExplored.length !== groupSites.length) {
           const site = groupSites[i]!;
 
-          // @java final TopologyElement siteElement = topology.getGraphElements(type).get(site);
           // @java final List<AbsoluteDirection> directions = dirnChoice.convertToAbsolute(...)
           // @java final List<Step> steps = topology.trajectories().steps(type, siteElement.index(), type, direction)
-          const neighbors: number[] = topology
-            ? (topology as unknown as {
-                trajectories(): {
-                  steps(
-                    type: unknown,
-                    siteIndex: number,
-                    toType: unknown,
-                    dir: unknown,
-                  ): { to(): { id(): number } }[];
-                };
-                getGraphElements(t: unknown): { get(i: number): { index(): number } };
-              })
-                .trajectories()
-                .steps(this.type, site, this.type, "Adjacent")
-                .map((step) => step.to().id())
+          //
+          // The TS topology.trajectories() is the 2-arg Trajectories (group/steps
+          // take (site, dirName)). The previous 4-arg call shifted args so
+          // directionByName saw a number, returned [], and EVERY group collapsed
+          // to a singleton — and dirnChoice was ignored (hardcoded "Adjacent").
+          // Honour the connection direction like CountGroups (default Adjacent).
+          const traj = topology
+            ? (topology as unknown as { trajectories(): { group?(s: number, d: string): number[] } | null }).trajectories()
+            : null;
+          const neighbors: number[] = traj && typeof traj.group === "function"
+            ? traj.group(site, this.directionName)
             : getNeighborsFallback(context, site);
 
           for (const to of neighbors) {
@@ -195,7 +209,7 @@ export class ForEachGroup extends Effect {
 
             // @java if ((condition == null && who == cs.who(to, type)) || (condition != null && condition.eval(context)))
             const csWhoTo: number = cs
-              ? (cs as unknown as { who(site: number, type: unknown): number }).who(to, this.type) ?? 0
+              ? (cs as unknown as { who(site: number, type: unknown): number }).who(to, resolvedType) ?? 0
               : context.state.who(to);
 
             if ((this.condition === null && who === csWhoTo) ||
