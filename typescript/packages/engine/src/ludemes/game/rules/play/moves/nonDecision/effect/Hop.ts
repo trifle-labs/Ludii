@@ -47,7 +47,7 @@ function supportedDirNames(ctx: unknown): string[] | undefined {
   const playType = (ctx as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? "Cell";
   const raw = topo?.supportedDirections?.("Adjacent", playType);
   if (!raw || raw.length === 0) return undefined;
-  return raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0);
+  return raw.map((d) => (d == null ? "" : typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0);
 }
 
 

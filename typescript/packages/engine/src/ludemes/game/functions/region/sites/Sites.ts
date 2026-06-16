@@ -1027,7 +1027,7 @@ export class Sites extends BaseRegionFunction {
             const playType = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? "Cell";
             const rawSupported = topo?.supportedDirections?.("Adjacent", playType);
             const supported = rawSupported && rawSupported.length > 0
-              ? rawSupported.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
+              ? rawSupported.map((d) => (d == null ? "" : typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
               : undefined;
             const out: number[] = [];
             const seen = new Set<number>();

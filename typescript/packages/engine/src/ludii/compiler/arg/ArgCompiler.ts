@@ -929,7 +929,7 @@ export class ArgCompiler {
         }
         if (process.env.TRACE_DIRREL) console.error("[dirrel] eval of:", ofRelation, "bySite:", bySite, "playType:", playType, "supported:", raw?.length ?? "none");
         const supported = raw && raw.length > 0
-          ? raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
+          ? raw.map((d) => (d == null ? "" : typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
           : undefined;
         // @java Component.getDirn() overrides the player facing: a piece
         // declared (piece "Pawn" P2 N ...) faces N even though P2's default

@@ -73,7 +73,7 @@ export class Difference implements DirectionsFunction {
           : topo?.supportedDirections?.(rel, playType);
         if (!raw || raw.length === 0) return undefined;
         return raw
-          .map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? ""))
+          .map((d) => (d == null ? "" : typeof d === "string" ? d : d.toAbsolute?.() ?? ""))
           .filter((n) => n.length > 0);
       };
       const supported = supportedOf("Adjacent");
