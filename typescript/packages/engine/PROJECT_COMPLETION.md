@@ -2472,3 +2472,21 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
 - ("FromHand") = (sites Occupied by:Mover container:(mover)) returned empty: the occupied intercept only honored container:"Hand" (a String name), so container:(mover) (an IntFunction container INDEX) was ignored, the scan hit the board, and found no mover pieces at the start of the placement phase.
 - FIX: route a non-string container node to the hand scan (the existing path scans whoId's hand, which equals the (mover) container in by:Mover container:(mover) — the universal hand-placement idiom). @java container: accepts name OR IntFunction index.
 - Tic-Tac-Chess 2/2 (ply 13/13). Teeko 1/2 (placement now generates; trial 0 residual is the (is Pattern {F R F R F}) win-detector — separate). Canaries green (Shogi/Backgammon hand drops, Quarto/Order&Chaos shared hand), units 194/0.
+
+## Update 222 (2026-06-11) — SESSION CONSOLIDATION (Updates 201-221, 21 commits, 0 regressions shipped)
+GAMES CLEARED 2/2 this session: Terhuchu(proper), Crand, Laram Wali, Pasang, Oware, Adi, Awagagae, Fergen Gobale, Span, Sponnect, Odd, Order and Chaos, Quarto, Tic-Tac-Chess (+ Bosh/Daramuti/Teeko partially advanced). Plus the whole two_rows mancala family lifted ~52% -> 67% by the shared IsDecided/Sow/Union/ForgetValue/min-y fixes.
+
+CROSS-CUTTING FIXES (each helps many games, all faithful @java with battery + units 194/0 verification before every commit):
+- IsDecided -1==-1 vote bug (~70 mancala instant-drew move 1) + Game.registerVoteString
+- Sow raw-bool (backtracking:True discarded capturing sows) -> SYSTEMIC fix: compiler emits BooleanConstant for every BooleanFunction slot (covers Sow/ForEachDie/FromTo and 12 unguarded ludemes)
+- Union/Intersection 2-arg ctor (every (union A B) was silently broken)
+- NoPieces region/count scan (mancala count-only seeds)
+- ForgetValue overload guard (forget Value name (value) wiped whole key)
+- NotAllPass compile flag (explicit Pass disables the all-pass-draw fallback)
+- SitesBottom/Top faithful min/max-y (irregular merged boards)
+- SitesHand Shared player + owner-0 hand; FromTo copy:True -> ActionCopy
+- SitesOccupied container:(IntFunction) -> hand scan (universal hand-placement idiom)
+- 3D PYRAMIDAL board subsystem: Graph.findOrAddVertex3D/makeEdges/z-guarded faces, RectangleOnSquare pyramidal layers, IsFlat, SitesGroup isVisible + the 4-arg-steps lattice-fallback bug (affected EVERY (sites Group) on a graph board)
+- makeFaces vertex-major discovery order; CountStack per-level; SitesDistance stepMove BFS; Do TempContext eval-ctx copy; ForEachPiece/NoMoves Shared role; ActionMove numLevel substack
+
+REMAINING FRONTIERS (well-mapped niche subsystems, each ~3-10 games): race/escape dice-pip mapping (~32 games, 39% OK family); space/group bespoke scoring (22% OK); largeStack mancala (pits-as-stacks: O An Quan/Laomuzhu/Ceelkoqyuqkoqiji/Yucebao); boardless dynamic boards (7 games: Andantino/Ringo); is-Pattern win detector (Teeko); multi-lap relay sow tails; chaturanga checkmate WM. PROCESS: sub-agents (Sonnet) used for mechanical probing/sweeping with HARNESS-based verification (naive from/to probes produce false divergences — Update 217); coordinator (this session) verifies every agent finding and does all reasoning/fixes.
