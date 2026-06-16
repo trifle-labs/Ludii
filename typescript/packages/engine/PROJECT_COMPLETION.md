@@ -2656,3 +2656,6 @@ Root-caused the group-product scoring family via the recorded trial as a Java or
 3. **SizesGroup minFn**: null when min omitted → `minFn.eval` threw. Default to IntConstant(0) (@java minFn = (min==null)?IntConstant(0):min).
 With all three, Spao's scores match Java EXACTLY for all 30 plies (validated against the recorded trial), confirming the 3-D group connectivity + isVisible (Update 252) are correct.
 Result: Spao (WM ply30→OK), Catchup (MM43→OK), Omega (MM59→OK), Product (MM60→OK) all OUTCOME_OK; Sibling MM59→mostly OK; Speedo MM3→MM54 (huge advance). Units 194/0. These bugs only fired on previously-throwing/raw paths, so fix-only (no regression).
+
+## Update 254 (2026-06-11) — Min/Max: same single-arg-slot fix as Mul (math-op bug class closed)
+Min and Max had the identical ctor bug as Mul: a lone array argument delivered in the second slot ran the two-value branch and threw null.eval. Applied the same position-agnostic fix (null/undefined in either slot → single-array form); their empty-array behavior (UNDEFINED) was already faithful. Regression-free: units 194/0, Jeu Militaire/Stairs (min/max users) still OUTCOME_OK. Manifold/Brood remain WM — their shape-vector group scoring is a separate deferred subsystem beyond min/max. (Sub takes two required args, Add uses a separate arrayFn field — neither has this bug.)

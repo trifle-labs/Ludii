@@ -26,14 +26,20 @@ export class Min extends BaseIntFunction {
    * Both Java ctors funnel into the array form, exactly like Java's
    * `array = new IntArrayConstant(new IntFunction[]{ valueA, valueB })`.
    */
-  public constructor(a: JavaIntFunction | IntArrayLike, b: JavaIntFunction | null = null) {
+  public constructor(a: JavaIntFunction | IntArrayLike | null = null, b: JavaIntFunction | null = null) {
     super();
-    if (b !== null) {
+    // @java two ctors (valueA,valueB) and (IntArrayFunction) both funnel into
+    // the array form. The reflection compiler may deliver a lone array arg in
+    // EITHER slot, so treat null/undefined as absent and use the array form
+    // whenever fewer than two real operands are present (see Mul).
+    const aPresent = a != null;
+    const bPresent = b != null;
+    if (aPresent && bPresent) {
       const valueA = a as JavaIntFunction;
       const valueB = b;
       this.array = { eval: (ctx: Context) => [valueA.eval(ctx), valueB.eval(ctx)] };
     } else {
-      this.array = a as IntArrayLike;
+      this.array = (aPresent ? a : b) as IntArrayLike;
     }
   }
 
