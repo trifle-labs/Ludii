@@ -258,7 +258,11 @@ export class SitesOccupied extends BaseRegionFunction {
         } else {
           owner = cells[i] ?? 0;
         }
-        if (owner === whoId) {
+        // @java owned().sites(player) lists OCCUPIED sites of that player. For
+        // whoId 0 (neutral) the cell owner is also 0 on EMPTY sites, so guard on
+        // occupancy — otherwise (sites Occupied by:(player 0)) returns every
+        // empty cell (exposed once (player <fn>) resolves correctly).
+        if (owner === whoId && (whoId > 0 || (whats[i] ?? 0) !== 0)) {
           if (whatOk(whats[i] ?? 0)) {
             sitesOccupied.push(i);
           }

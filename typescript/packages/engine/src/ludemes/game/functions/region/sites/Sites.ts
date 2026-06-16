@@ -1641,12 +1641,22 @@ function isCoordinate(name: string | null | undefined): boolean {
  * @java RoleType.toIntFunction or Player.index()
  */
 function resolveIntFn(player: unknown): IntFunction {
-  const p = player as { index?(): number; eval?(ctx: unknown): number } | null;
+  const p = player as { index?(): unknown; eval?(ctx: unknown): number } | null;
   if (p === null || p === undefined) return constIntFn(-1);
   if (typeof p.eval === "function") return p as IntFunction;
   if (typeof p.index === "function") {
+    // @java game.util.moves.Player.index() returns an IntFunction (NOT a raw
+    // index), so (player (mover)) in a by:/who: slot must evaluate the returned
+    // function — wrapping it directly made eval return the function object
+    // ([object Object]), so by:(player (mover)) matched zero sites (Verge).
     const idx = p.index();
-    return { eval(_ctx: Context & EvalScratch) { return idx; } };
+    if (typeof idx === "number") {
+      return { eval(_ctx: Context & EvalScratch) { return idx; } };
+    }
+    if (idx !== null && typeof (idx as { eval?: unknown }).eval === "function") {
+      return idx as IntFunction;
+    }
+    return { eval(_ctx: Context & EvalScratch) { return idx as unknown as number; } };
   }
   if (typeof p === "number") {
     const idx = p as unknown as number;
