@@ -188,6 +188,12 @@ export class Surround extends Effect {
             mover,
             placedOwner: mover,
             actions: allActions,
+            deferredThens: this.then() != null
+              ? [{ eval: (c: Context): Move[] => {
+                  const r = (this.then()!.moves() as unknown as { eval(c: Context): Move[] | { moves(): Move[] } }).eval(c);
+                  return Array.isArray(r) ? r : r.moves();
+                } }]
+              : [],
           }));
         }
       }
