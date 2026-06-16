@@ -2448,3 +2448,11 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
 - Fergen Gobale's "Home" P1 region baked as [1,2,3,4,5,6] (a contiguous guess) where Java's (sites Bottom) = {0,1,2,6,7,8} (the actual y=0 row of a merged board with central holes at 12,13). The non-faithful twoRowMancalaBottom/Top HEURISTIC (assumes a regular 2-row grid) fired BEFORE the faithful trajectory path.
 - FIX: SitesBottom/SitesTop now try the faithful min-y/max-y trajectory scan FIRST (@java graph.bottom/top == MeasureGraph.measureExtremes min/max-y, tol 0.01); the heuristic is only a no-trajectory fallback. Verified the min-y path AGREES with the heuristic on regular mancalas (Oware/Kalah bottom=[1..6], Bao=[0..7]) so nothing regresses, and is correct on irregular merged boards.
 - Fergen Gobale 2/2 (ply 60/44). sow 275 -> 285/426 OUTCOME_OK (+10 — helps every (sites Top)/(sites Bottom) on a non-grid board). Battery green (Quoridor MM is pre-existing race/reach, not a regression), units 194/0.
+
+## Update 219 (2026-06-11) — Shared hand + copy:True moves (Odd 2/2)
+- Odd ((move (from (sites Hand Shared)) (to (sites Empty)) copy:True) on a (hand Shared size:2)) generated only a pass. THREE bugs:
+  1. SitesHand rejected the Shared player: pid = numPlayers+1 (=3) failed the `pid > numPlayers` validation -> empty hand region. Bound raised to numPlayers+1.
+  2. SitesHand returned only 1 of 2 shared-hand slots: the shared hand is stored owner=0 (neutral convention) but the lookup searched owner===pid(3). Match either (pid===numPlayers+1 && owner===0).
+  3. FromTo ignored copy:True — built a vacating ActionMove, so the first copy emptied the shared hand and the second placement found no source. Now emits ActionCopy (@java FromTo copy -> ActionCopy: source untouched), with then-clause + decision pinning.
+- Odd 2/2 (ply 61/61). Battery green (Dice Shogi WM is pre-existing — verified by stash-revert; regular Shogi unaffected), units 194/0.
+- group family still 18/66 (the cluster fails on diverse bespoke scoring/placement, not one shared bug); Odd was the tractable one.

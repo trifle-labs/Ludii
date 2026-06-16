@@ -14,6 +14,7 @@ import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from
 import type { Move } from "../../../../../../../move.js";
 import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
+import { ActionCopy } from "../../../../../../../action/action-copy.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 
@@ -158,6 +159,30 @@ export class FromTo implements MovesFunction {
         // Build the primary move action
         const actions: import("../../../../../../../action/index.js").Action[] = [];
         let moveAction: ActionMove;
+        // @java FromTo copy:True -> ActionCopy: place a copy of the source at
+        // `to` and leave `from` intact (Odd's (move (from (sites Hand Shared))
+        // (to (sites Empty)) copy:True) — a regular ActionMove vacated the
+        // shared hand, so the second placement found an empty source).
+        const copyOn = (() => { try { return this.copy.eval(ctx); } catch { return false; } })();
+        if (copyOn) {
+          actions.push(new ActionCopy(from, to));
+          const move = new LudiiMove({
+            id: `copy:${mover}:${from}:${to}`,
+            label: `Copy(${from}->${to})`,
+            siteIndices: [from, to],
+            mover,
+            placedOwner: mover,
+            actions,
+            fromSite: from,
+            toSite: to,
+            fromNonDecisionSite: from,
+            toNonDecisionSite: to,
+          });
+          moves.push(this.thenClause != null ? applyPostStateThen(this.thenClause, ctx, move) : move);
+          ctx._evalFrom = origFrom;
+          ctx._evalTo = origTo;
+          continue;
+        }
         if (this.stack) {
           // @java FromTo.java:346-360 — stackingGame||stack with a count is an
           // ActionSubStackMove(numLevel=count): only the TOP `count` levels

@@ -85,8 +85,11 @@ export class SitesHand extends BaseRegionFunction {
       return [];
     }
 
-    // @java SitesHand — validate pid
-    if (pid < 1 || pid > numPlayers) {
+    // @java SitesHand — validate pid. The SHARED hand's owner is numPlayers+1
+    // (RoleType.Shared), so the upper bound must admit it — (sites Hand Shared)
+    // on a (hand Shared) returned [] when pid=3 was rejected as > numPlayers
+    // (Odd's copy-from-shared-hand generated no moves).
+    if (pid < 1 || pid > numPlayers + 1) {
       return [];
     }
 
@@ -95,7 +98,11 @@ export class SitesHand extends BaseRegionFunction {
     if (base === undefined || base < 0) return [];
 
     // @java SitesHand — return all sites in the hand container
-    const hand = g.equipment?.hands?.find?.((hs: { owner: number; size: number }) => hs.owner === pid);
+    // @java the Shared hand is stored with owner 0 (the shared/neutral
+    // convention) even though RoleType.Shared resolves pid = numPlayers+1;
+    // match either so (sites Hand Shared) sees both slots (Odd: size 2).
+    const hand = g.equipment?.hands?.find?.((hs: { owner: number; size: number }) =>
+      hs.owner === pid || (pid === numPlayers + 1 && hs.owner === 0));
     const size = hand?.size ?? 1;
 
     const sites: number[] = [];
