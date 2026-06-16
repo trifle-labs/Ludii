@@ -106,7 +106,11 @@ export class IntArrayFromRegion {
         return [value];
       }
     } else if (this.regionFunction !== null) {
-      return this.regionFunction.eval(context).sites();
+      // Our RegionFunction.eval returns a number[] directly; Java's returns a
+      // Region (with .sites()). Handle both (SetHidden over a region —
+      // Geister/Sneakthrough start rules threw `.sites is not a function`).
+      const r = (this.regionFunction as unknown as { eval(c: unknown): number[] | { sites(): number[] } }).eval(context);
+      return Array.isArray(r) ? r : r.sites();
     }
 
     return [];

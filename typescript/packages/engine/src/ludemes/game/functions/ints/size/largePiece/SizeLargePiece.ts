@@ -44,7 +44,9 @@ class IntArrayFromRegion {
       return [];
     }
     if (this.regionFn !== null) {
-      return this.regionFn.eval(context).sites();
+      // RegionFunction.eval returns number[] here (Java returns Region.sites()).
+      const r = (this.regionFn as unknown as { eval(c: unknown): number[] | { sites(): number[] } }).eval(context);
+      return Array.isArray(r) ? r : r.sites();
     }
     return [];
   }
