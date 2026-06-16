@@ -49,6 +49,13 @@ export class SlideFaithful extends Slide {
       betweenEffect: betweenEffect(between),
       sideEffect: toApplyEffect(to),
       dirnName: directionName(typeof directions === "string" ? directions : null),
+      // @java a dynamic DirectionsFunction ((directions Cell from:X to:Y)) is
+      // resolved per-from at eval time rather than collapsed to a static name
+      // (Boop's repel slide depends on the runtime from→to direction).
+      dirnFn: (directions !== null && typeof directions !== "string"
+        && typeof (directions as { eval?: unknown }).eval === "function")
+        ? (directions as { eval(ctx: unknown): string[] })
+        : null,
       trackName: track,
       stack: stack ?? false,
       then,

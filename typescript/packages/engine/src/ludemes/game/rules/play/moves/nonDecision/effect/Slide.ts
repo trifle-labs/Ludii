@@ -88,6 +88,9 @@ export class Slide implements MovesFunction {
   private readonly sideEffect: MovesFunction | null;
   /** @java Slide.dirnChoice */
   private readonly dirnName: string;
+
+  /** @java Slide.dirnChoice when it is a dynamic DirectionsFunction. */
+  private readonly dirnFn: { eval(ctx: Context): string[] } | null;
   /** @java Slide.trackName */
   private readonly trackName: string | null;
   /** @java Slide.stack */
@@ -111,6 +114,9 @@ export class Slide implements MovesFunction {
     betweenEffect?: MovesFunction | null;
     sideEffect?: MovesFunction | null;
     dirnName?: string;
+    /** @java a dynamic DirectionsFunction, e.g. (directions Cell from:X to:Y),
+     * resolved per-from at eval time (Boop's repel slide). */
+    dirnFn?: { eval(ctx: Context): string[] } | null;
     trackName?: string | null;
     stack?: boolean;
     then?: Then | null;
@@ -132,6 +138,7 @@ export class Slide implements MovesFunction {
     this.betweenEffect = opts.betweenEffect ?? null;
     this.sideEffect = opts.sideEffect ?? null;
     this.dirnName = opts.dirnName ?? "Adjacent";
+    this.dirnFn = opts.dirnFn ?? null;
     this.trackName = opts.trackName ?? null;
     this.stack = opts.stack ?? false;
     // @java gameFlags() |= GameType.Stacking when stack:True.
@@ -185,7 +192,13 @@ export class Slide implements MovesFunction {
     // double-step uses Forward, which is N for P1 / S for P2 (or the piece's
     // own declared dirn). Same recipe as Step.
     let effDirNames: string[] = [this.dirnName];
-    {
+    // @java a dynamic (directions Cell from:X to:Y) resolves to ABSOLUTE compass
+    // names from the current from (bound above); use them directly and skip the
+    // mover-facing relative resolution (Boop's repel slide direction).
+    const dynDirs = this.dirnFn ? this.dirnFn.eval(ctx) : null;
+    if (dynDirs && dynDirs.length > 0) {
+      effDirNames = dynDirs;
+    } else {
       const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
       const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
       let facingOverride: number | undefined;
