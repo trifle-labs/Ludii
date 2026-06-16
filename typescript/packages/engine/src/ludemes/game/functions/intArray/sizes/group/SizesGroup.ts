@@ -101,6 +101,44 @@ export class SizesGroup extends BaseIntArrayFunction {
     const cells = ctx.state.cells;
     const n = cells.length;
 
+    // @java isVisibleFn — 3-D (Shibumi pyramid) visibility. A ball is hidden if
+    // a higher-indexed ball sits at the same (x,y); a link between two balls is
+    // blocked when they SHARE >= 2 occupied upward supports. Mirrors SitesGroup.
+    const isVis =
+      this.isVisibleFn !== null &&
+      (this.isVisibleFn as unknown as { eval(c: Context): boolean }).eval(ctx) === true;
+    type El3D = { index(): number; centroid3D(): { x(): number; y(): number; z(): number }; neighbours(): Array<{ index(): number; centroid3D(): { x(): number; y(): number; z(): number } }> };
+    const topoEls: El3D[] | undefined = isVis
+      ? (ctx as unknown as { topology?: () => { getGraphElements(t: string): El3D[] } }).topology?.()?.getGraphElements("Vertex")
+      : undefined;
+    const whatAt = (s: number): number =>
+      (ctx.state as unknown as { whatAtSite?(n: number): number }).whatAtSite?.(s) ?? (ctx.state.whats[s] ?? 0);
+    // @java covered: a higher-indexed occupied vertex at the same (x,y) hides `s`.
+    const isCovered = (s: number): boolean => {
+      if (!isVis || !topoEls) return false;
+      const el = topoEls[s];
+      if (!el) return false;
+      const x = el.centroid3D().x(), y = el.centroid3D().y();
+      for (const o of topoEls) {
+        if (o.index() <= s) continue;
+        const oc = o.centroid3D();
+        if (oc.x() === x && oc.y() === y && whatAt(o.index()) !== 0) return true;
+      }
+      return false;
+    };
+    // @java locnUpwards/indexUpwards — occupied neighbours strictly above.
+    const occupiedUpward = (s: number): number[] => {
+      if (!isVis || !topoEls) return [];
+      const el = topoEls[s];
+      if (!el) return [];
+      const z = el.centroid3D().z();
+      const out: number[] = [];
+      for (const nb of el.neighbours()) {
+        if (nb.centroid3D().z() > z + 1e-4 && whatAt(nb.index()) !== 0) out.push(nb.index());
+      }
+      return out;
+    };
+
     // Collect starting sites.
     const sitesToCheck: number[] = [];
     if (this.allPieces) {
@@ -121,6 +159,9 @@ export class SizesGroup extends BaseIntArrayFunction {
     for (const from of sitesToCheck) {
       if (sitesChecked.has(from)) continue;
 
+      // @java fromCovered — a hidden seed cannot start a visible group.
+      if (isVis && isCovered(from)) continue;
+
       // Check if `from` qualifies.
       ctx._evalFrom = from;
       const fromQualifies = this._qualifies(ctx, from, who);
@@ -134,10 +175,20 @@ export class SizesGroup extends BaseIntArrayFunction {
       while (i < group.length) {
         const site = group[i]!;
         ctx._evalFrom = site;
+        const locnUpwards = isVis ? occupiedUpward(site) : [];
         const neighbours = this._neighbours(ctx, site, n);
 
         for (const to of neighbours) {
           if (explored.has(to)) continue;
+          // @java isVisible: skip covered neighbours and links blocked by >= 2
+          // shared upward supports.
+          if (isVis) {
+            if (isCovered(to)) continue;
+            const indexUpwards = occupiedUpward(to);
+            let shared = 0;
+            for (const u of indexUpwards) if (locnUpwards.includes(u)) shared += 1;
+            if (shared >= 2) continue;
+          }
           ctx._evalTo = to;
           if (this._qualifies(ctx, to, who)) {
             group.push(to);
