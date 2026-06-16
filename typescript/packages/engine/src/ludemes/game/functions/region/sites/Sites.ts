@@ -1816,6 +1816,13 @@ function directionDeltas(direction: string): Array<[number, number]> {
 function dynamicRegionAccepts(ctx: Context & EvalScratch, site: number, type: string): boolean {
   const who = ctx.state.who(site);
   const mover = ctx.state.mover;
+  // @java Empty/NotEmpty test OCCUPANCY, not ownership: a Neutral piece has
+  // owner 0 but a non-zero component, so it is NOT empty. Testing `who` alone
+  // miscounted neutral pieces as empty (Flume's outer Disc0 ring), throwing off
+  // (count … (sites Around … NotEmpty …)) and its (moveAgain) turn structure.
+  const what = (ctx.state as unknown as { what?(s: number): number }).what?.(site)
+    ?? (ctx.state.whats[site] ?? 0);
+  const occupied = who !== 0 || what !== 0;
   switch (type) {
     case "own":
     case "mover":
@@ -1827,9 +1834,9 @@ function dynamicRegionAccepts(ctx: Context & EvalScratch, site: number, type: st
     case "notenemy":
       return who === 0 || who === mover;
     case "empty":
-      return who === 0;
+      return !occupied;
     case "notempty":
-      return who !== 0;
+      return occupied;
     default:
       if (/^p\d+$/.test(type)) return who === Number(type.slice(1));
       return true;
