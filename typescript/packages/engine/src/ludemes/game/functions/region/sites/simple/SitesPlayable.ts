@@ -60,10 +60,33 @@ export class SitesPlayable extends BaseRegionFunction {
       return result;
     }
 
-    // @java SitesPlayable — non-boardless fallback: return all empty board sites
     const g = ctx.game as unknown as Game;
     const boardN = g.equipment ? g.equipment.board.numSites : ctx.state.cells.length;
     const result: number[] = [];
+    // @java boardless: cs.isPlayable(i) — a site is playable when it is empty
+    // AND adjacent to a placed piece (the board grows outward from the played
+    // region). Without this, (sites Playable) was [] on a boardless board (the
+    // pre-allocated off-board cells aren't "empty" yet) and Andantino/Ringo
+    // generated no moves. Falls through to all-empties on a normal board.
+    const board = g.equipment?.board as unknown as { isBoardless?(): boolean } | undefined;
+    if (board?.isBoardless?.()) {
+      const topo = (ctx as unknown as { topology?(): { getGraphElements(t: string): Array<{ index(): number; neighbours(): Array<{ index(): number }> }> } }).topology?.();
+      const playType = (g.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+      const playTypeName = typeof playType === "function" ? playType() : (playType ?? "Cell");
+      const els = topo?.getGraphElements(playTypeName) ?? [];
+      for (let i = 0; i < boardN; i++) {
+        if (!ctx.state.isEmptySite(i)) continue;
+        const el = els[i];
+        if (!el) continue;
+        let adjOccupied = false;
+        for (const nb of el.neighbours()) {
+          if (!ctx.state.isEmptySite(nb.index())) { adjOccupied = true; break; }
+        }
+        if (adjOccupied) result.push(i);
+      }
+      return result;
+    }
+    // @java SitesPlayable — non-boardless fallback: return all empty board sites
     for (let i = 0; i < boardN; i++) {
       if (ctx.state.isEmptySite(i)) result.push(i);
     }
