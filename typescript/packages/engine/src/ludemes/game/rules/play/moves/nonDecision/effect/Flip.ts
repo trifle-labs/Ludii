@@ -101,19 +101,34 @@ export class Flip implements MovesFunction {
     // @java Flip.java:73-76 — return empty if loc == OFF
     if (loc === OFF) return moves;
 
-    // @java Flip.java:78-83 — resolve container id and site type
-    const containerIds = fc.containerId();
-    const cid = loc >= containerIds.length ? 0 : (containerIds[loc] ?? 0);
+    // @java Flip.java:78-83 — resolve container id and site type. The nested
+    // Custodial->Apply->AllCombinations context (and even the main context in
+    // some paths) lacks the containerId()/containerState() escape hatches;
+    // a thrown TypeError there aborts the ENTIRE move list (Reversi/Rolit
+    // generated NO moves at ply 0). Fall back to the single board container
+    // (cid 0) read straight off ctx.state — correct for board-only flip games.
+    const containerIds = typeof fc.containerId === "function" ? fc.containerId() : null;
+    const cid = containerIds ? (loc >= containerIds.length ? 0 : (containerIds[loc] ?? 0)) : 0;
     let realType: string;
     if (cid > 0) {
       realType = "Cell";
     } else if (this.type !== null) {
       realType = this.type;
     } else {
-      realType = fc.board().defaultSite();
+      realType = typeof fc.board === "function" ? fc.board().defaultSite() : "Cell";
     }
 
-    const cs = fc.containerState(cid);
+    const stateAny = ctx.state as unknown as {
+      stacks: readonly (readonly number[])[]; whatStacks: readonly (readonly number[])[];
+      what(s: number): number; stateValue(s: number): number;
+    };
+    const cs = typeof fc.containerState === "function" ? fc.containerState(cid) : {
+      sizeStack: (s: number) => (stateAny.stacks[s]?.length || (stateAny.what(s) > 0 ? 1 : 0)),
+      what: (s: number, lvl: number) => (typeof lvl === "number" ? (stateAny.whatStacks[s]?.[lvl] ?? stateAny.what(s)) : stateAny.what(s)),
+      state: (s: number) => stateAny.stateValue(s),
+      rotation: () => 0,
+      value: () => 0,
+    } as never;
     const stackSize = cs.sizeStack(loc, realType);
     const mover = ctx.state.mover;
 
@@ -149,7 +164,7 @@ export class Flip implements MovesFunction {
 
       // Build add actions in reverse order, applying flip mapping
       const addActions = [];
-      const components = fc.components();
+      const components = typeof fc.components === "function" ? fc.components() : [];
       for (let level = 0; level < stackSize; level++) {
         const what = whats[whats.length - level - 1] ?? 0;
         const value = values[values.length - level - 1] ?? 0;
@@ -191,12 +206,10 @@ export class Flip implements MovesFunction {
 
       if (whatValue === 0) return moves;
 
-      const components = fc.components();
+      const components = typeof fc.components === "function" ? fc.components() : [];
       const component = components[whatValue];
-      if (!component) return moves;
-
-      const flips = component.getFlips();
-      if (flips === null) return moves;
+      const flips = component && typeof component.getFlips === "function" ? component.getFlips() : null;
+      if (flips == null) return moves;
 
       const newState = flips.flipState(currentState);
 
