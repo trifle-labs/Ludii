@@ -2553,3 +2553,11 @@ DEFERRED MULTI-PART SUBSYSTEMS (each well-mapped, ~3-10 games): flips (Reversi/R
 - (sites Playable) returned [] on a boardless board (the pre-allocated off-board cells aren't "empty" in our model), so Andantino/Ringo generated no moves. FIX: when board.isBoardless(), a site is playable iff empty AND adjacent to a placed piece (@java cs.isPlayable — the board grows outward from the played region). Faithful; non-boardless falls through to all-empties; no regression (battery green, units 194/0).
 - BUT the real boardless blocker is BOARD SIZING: Andantino's recorded ply-0 move is to=671, yet our boardless board pre-allocates only 217 cells (max index 216). Java's boardless board is far larger / grows unboundedly. Until our boardless generator matches Java's dimensions (or grows dynamically), (sites Playable) can't reach site 671. This is the boardless dynamic-board subsystem — deferred with this precise entry point (board generation for (boardless <tiling>), sizing vs Java).
 - Also noted (secondary): our boardless hex Cell adjacency is over-connected (cell 108 has 12 neighbours where hex should have 6) — to revisit with the boardless board generator.
+
+## Update 234 (2026-06-11) — Boardless subsystem: 4 games 2/2 (hex size + SitesPlayable wiring)
+- THREE fixes made boardless dynamic boards work:
+  1. SIZE_HEX_BOARDLESS was 9 (217-cell hex) but @java Constants.SIZE_HEX_BOARDLESS = 21 (1261-cell hex). Andantino's recorded move to=671 needs the full board. Fixed to 21.
+  2. (sites Playable) was a `return []` STUB in Sites.ts constructSimple (the SitesPlayable.ts class was dead code). Routed the "Playable" case to the real SitesPlayable (+ siteType ctor param).
+  3. SitesPlayable boardless branch (Update 233): empty + adjacent to a placed piece.
+- CLEARED 2/2: Andantino (ply 36/15), CustAndantino, Plotto, Bravalath. Ringo still MM ply 3 (boardless Square + rings, distinct), Trax MM ply 1, Chex START_FAIL (distinct). Battery green (no regression — (sites Playable) users are all boardless), units 194/0.
+- The boardless subsystem is now functional for the hex-tiling line games.

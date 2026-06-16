@@ -34,8 +34,9 @@ export class SitesPlayable extends BaseRegionFunction {
   /**
    * @java SitesPlayable constructor — nothing to initialise.
    */
-  public constructor() {
+  public constructor(siteType: string | null = null) {
     super();
+    if (siteType) this.siteType = siteType;
   }
 
   /**

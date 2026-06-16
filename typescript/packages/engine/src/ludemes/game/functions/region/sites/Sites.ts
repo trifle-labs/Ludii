@@ -39,6 +39,7 @@ import { SitesHand } from "./player/SitesHand.js";
 import { SitesRandom } from "./random/SitesRandom.js";
 import { SitesBottom } from "./simple/SitesBottom.js";
 import { SitesCentre } from "./simple/SitesCentre.js";
+import { SitesPlayable } from "./simple/SitesPlayable.js";
 import { SitesConcaveCorners } from "./simple/SitesConcaveCorners.js";
 import { SitesConvexCorners } from "./simple/SitesConvexCorners.js";
 import { SitesHint } from "./simple/SitesHint.js";
@@ -283,10 +284,9 @@ export class Sites extends BaseRegionFunction {
           }
         })();
       case "Playable":
-        // @java SitesPlayable — not yet ported faithfully
-        return new (class extends BaseRegionFunction {
-          override eval(_ctx: Context & EvalScratch): number[] { return []; }
-        })();
+        // @java SitesPlayable — the faithful class (boardless playable =
+        // empty + adjacent to a placed piece; normal board = all empties).
+        return new SitesPlayable(elementType);
       case "LastTo":
         return new (class extends BaseRegionFunction {
           override eval(ctx: Context & EvalScratch): number[] {

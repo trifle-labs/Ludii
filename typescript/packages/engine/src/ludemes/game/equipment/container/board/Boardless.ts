@@ -20,10 +20,10 @@ import type { TilingBoardlessType } from "../../../types/board/TilingBoardlessTy
 /**
  * Java constants mirrored:
  * - Constants.SIZE_BOARDLESS = 41 (square boardless dimension)
- * - Constants.SIZE_HEX_BOARDLESS = 9 (hex boardless dimension)
+ * - Constants.SIZE_HEX_BOARDLESS = 21 (hex boardless dimension)
  */
 const SIZE_BOARDLESS = 41;
-const SIZE_HEX_BOARDLESS = 9;
+const SIZE_HEX_BOARDLESS = 21; // @java Constants.SIZE_HEX_BOARDLESS (was wrongly 9 -> 217 cells; Andantino move to=671 needs the full 1261-cell hex)
 
 /**
  * A boardless board — starts empty and expands with each piece placed.
