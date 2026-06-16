@@ -86,7 +86,11 @@ export class IsLine implements BooleanFunction {
     this.throughAnyFn = throughAny;
     this.who = who;
     this.whatFns = whats ?? (what !== null ? [what] : null);
-    this.exactFn = constBool(typeof exact === "boolean" ? exact : false);
+    // @java exact arrives from the compiler as a BooleanConstant (True/False are
+    // wrapped — the raw-literal rule), NOT a raw boolean; boolFn handles both, so
+    // (is Line N … exact:True) is now honoured (was silently defaulting to false,
+    // making exact behave as >=N — Altan/Dala mills over-fired on 4-lines).
+    this.exactFn = boolFn(exact, false);
     this.contiguousFn = boolFn(contiguous, true);
     this.conditionFn = boolFn(If, true);
     this.byLevelFn = boolFn(byLevel, false);
