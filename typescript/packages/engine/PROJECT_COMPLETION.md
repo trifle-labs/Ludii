@@ -2596,3 +2596,8 @@ DEFERRED MULTI-PART SUBSYSTEMS (each well-mapped, ~3-10 games): flips (Reversi/R
 - There and Back START_FAILed: supportedDirNames mapped raw.map(d => d.toAbsolute?.()) where a `raw` element was undefined (d.toAbsolute throws — ?. only guards d.toAbsolute being null, not d itself). Guarded `d == null ? "" : ...` in Step/Hop/Slide/Difference/Sites/ArgCompiler (every supportedDirections().toAbsolute() map). Pure crash-hardening, no behavior change for non-null elements.
 - There and Back now starts (residual MM = move-gen, separate). Direction-heavy canaries (Crand, Dama Kenya, Solomon, Frisian, HexDame, International Draughts, Jeu Militaire) all green — no regression. Battery green, units 194/0.
 - SESSION: ~40 games cleared 2/2; crash class essentially eliminated (remaining throwers are match-games/edge-play/ctor-dispatch subsystems). 12+ subsystems/clusters advanced.
+
+## Update 242 (2026-06-11) — Play SetScore applies its (then ...) consequence (was discarded)
+- The play-move SetScore ctor had `void then;` — it DISCARDED the (then ...) clause that Java's Effect applies after the score is set. Any (set Score P N (then ...)) lost its consequence. Wired the then as a deferredThen (same mechanism as Append/Reversi), evaluating post-apply.
+- This is a genuine faithful bug fix (Java SetScore extends Effect; the then always runs). Battery green (Reversi/Pasang scoring intact), units 194/0.
+- Does NOT alone clear Brood/Manifold (group-size scoring): their (set Score Mover 0 (then (forEach Piece (addScore ... (state at:(from)))))) sits inside a deep forEach-Group then-chain over shape-vector STATES (CountShapesOf / RecordShapeVectorsAsValues) — multi-level then-nesting + shape detection beyond this fix. Documented as the group-scoring frontier.

@@ -49,10 +49,13 @@ export class SetScore implements MovesFunction {
     score: IntFunction,
     then: Then | null = null,
   ) {
-    void then;
+    this.thenClause = then ?? null;
     this.playerFn = player === null ? roleToIntFunction(role) : player.index();
     this.scoreFn = score;
   }
+
+  /** @java Effect.then — the (then ...) consequence on this set-score move. */
+  private readonly thenClause: Then | null;
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/set/player/SetScore.java — eval(Context)
@@ -68,6 +71,17 @@ export class SetScore implements MovesFunction {
     // @java SetScore.java:83 — ActionSetScore(playerId, score, Boolean.FALSE)
     const action = new ActionSetScore({ player: playerId, score, add: false });
 
+    // @java SetScore extends Effect — the (then ...) consequence applies
+    // AFTER the score is set (Brood's (set Score Mover 0 (then (forEach
+    // Piece (addScore ...)))) accumulates the per-piece score; dropping the
+    // then left scores at 0 and byScore picked the wrong winner). Attach as
+    // a deferredThen so it evaluates post-apply.
+    const deferredThens = this.thenClause != null
+      ? [{ eval: (c: Context): LudiiMove[] => {
+          const r = (this.thenClause as unknown as { moves(): { eval(c: Context): LudiiMove[] | { moves(): LudiiMove[] } } }).moves().eval(c);
+          return Array.isArray(r) ? r : r.moves();
+        } }]
+      : [];
     return [new LudiiMove({
       id: `setscore:${mover}:p${playerId}:${score}`,
       label: `SetScore(P${playerId}=${score})`,
@@ -75,6 +89,7 @@ export class SetScore implements MovesFunction {
       mover,
       placedOwner: mover,
       actions: [action],
+      deferredThens,
     })];
   }
 }
