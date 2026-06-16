@@ -188,19 +188,20 @@ export class SizesGroup extends BaseIntArrayFunction {
     const ctxAny = ctx as unknown as Record<string, unknown>;
 
     // Attempt to use topology trajectories (full 1:1 context path).
+    // @java topology.trajectories().steps(type, site, type, direction). The TS
+    // topology.trajectories() is the 2-arg Trajectories (group(site, dirName));
+    // the prior 4-arg call shifted args so directionByName saw a number, returned
+    // [], and EVERY group collapsed to a singleton — wrong (sizes Group) on every
+    // graph board. Use traj.group with the resolved connection direction.
     if (typeof ctxAny["topology"] === "function") {
       try {
         const topology = (ctxAny["topology"] as () => unknown)() as {
-          trajectories(): {
-            steps(type: string, site: number, toType: string, dir: string): Array<{ to(): { id(): number } }>;
-          };
+          trajectories(): { group?(s: number, d: string): number[] } | null;
         };
-        const board = typeof ctxAny["board"] === "function"
-          ? (ctxAny["board"] as () => unknown)() as { defaultSite(): string }
-          : null;
-        const type = this.siteType ?? (board?.defaultSite() ?? "Cell");
-        const steps = topology.trajectories().steps(type, site, type, this.directions);
-        return steps.map(s => s.to().id());
+        const traj = topology.trajectories();
+        if (traj && typeof traj.group === "function") {
+          return traj.group(site, this.directions);
+        }
       } catch {
         // fall through to grid fallback
       }
