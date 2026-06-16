@@ -51,14 +51,16 @@ export class SitesTop extends BaseRegionFunction {
       return this.precomputedRegion;
 
     const board = (ctx.game as unknown as Game).equipment.board;
-    const mancalaTop = twoRowMancalaTop(board);
-    if (mancalaTop !== null) return mancalaTop;
     const traj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? board.trajectories;
     if (traj) {
       const type = this.siteType ?? (board.numSites === traj.numSites ? "Vertex" : "Cell");
       const sites = sitesWithMaxY(traj, type);
       if (sites.length > 0) return sites;
     }
+    // @java SitesTop -> graph.top(type) == max-y elements (faithful primary;
+    // heuristic fallback only when trajectories are unavailable).
+    const mancalaTop = twoRowMancalaTop(board);
+    if (mancalaTop !== null) return mancalaTop;
 
     // Java: final SiteType realType = (type != null) ? type : context.board().defaultSite();
     const realType: string = this.siteType ??

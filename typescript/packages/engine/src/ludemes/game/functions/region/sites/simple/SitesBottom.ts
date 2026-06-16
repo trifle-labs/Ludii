@@ -45,14 +45,21 @@ export class SitesBottom extends BaseRegionFunction {
     // @java SitesBottom — check graph board first
     const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
     const board = (ctx.game as unknown as Game).equipment.board;
-    const mancalaBottom = twoRowMancalaBottom(board);
-    if (mancalaBottom !== null) return mancalaBottom;
+    // @java SitesBottom -> graph.bottom(type) == MeasureGraph.measureExtremes:
+    // the minimum-y elements (tol 0.01). The faithful min-y path is PRIMARY;
+    // it agrees with the regular-mancala heuristic on grid boards (Oware/Kalah
+    // bottom = [1..6]) AND is correct on irregular merged boards where the
+    // heuristic guessed a contiguous range (Fergen Gobale's P1 home is
+    // {0,1,2,6,7,8}, not [1..6]). Heuristic kept only as a no-trajectory
+    // fallback.
     const traj = ctxAny._trajectories ?? board.trajectories;
     if (traj) {
       const type = this.siteType ?? (board.numSites === traj.numSites ? "Vertex" : "Cell");
       const sites = sitesWithMinY(traj, type);
       if (sites.length > 0) return sites;
     }
+    const mancalaBottom = twoRowMancalaBottom(board);
+    if (mancalaBottom !== null) return mancalaBottom;
 
     // @java SitesBottom — square board: bottom row = cells 0..W-1
     const W = board.width;
