@@ -296,10 +296,15 @@ export class PlaceRandom {
           const site = sites[index];
           if (site === undefined) continue;
           const cid = (realType === "Cell" || realType === "Vertex")
-            ? ((context as unknown as { containerId(): number[] }).containerId()?.[site] ?? 0)
+            ? ((context as unknown as { containerId?(): number[] }).containerId?.()?.[site] ?? 0)
             : 0;
-          const cs = (context as unknown as { containerState(cid: number): { what(site: number, type: string): number } }).containerState(cid);
-          if (cs.what(site, realType) !== 0) {
+          // @java container state occupancy check; the start-rule context
+          // lacks the containerState() escape hatch — fall back to ctx.state.
+          const csFn = (context as unknown as { containerState?(cid: number): { what(site: number, type: string): number } }).containerState;
+          const occupied = typeof csFn === "function"
+            ? csFn.call(context, cid).what(site, realType) !== 0
+            : ((context.state as unknown as { what(s: number): number }).what(site) !== 0);
+          if (occupied) {
             sites.splice(index, 1);
           }
         }
@@ -339,10 +344,15 @@ export class PlaceRandom {
           const site = sites[index];
           if (site === undefined) continue;
           const cid = realType === "Cell"
-            ? ((context as unknown as { containerId(): number[] }).containerId()?.[site] ?? 0)
+            ? ((context as unknown as { containerId?(): number[] }).containerId?.()?.[site] ?? 0)
             : 0;
-          const cs = (context as unknown as { containerState(cid: number): { what(site: number, type: string): number } }).containerState(cid);
-          if (cs.what(site, realType) !== 0) {
+          // @java container state occupancy check; the start-rule context
+          // lacks the containerState() escape hatch — fall back to ctx.state.
+          const csFn = (context as unknown as { containerState?(cid: number): { what(site: number, type: string): number } }).containerState;
+          const occupied = typeof csFn === "function"
+            ? csFn.call(context, cid).what(site, realType) !== 0
+            : ((context.state as unknown as { what(s: number): number }).what(site) !== 0);
+          if (occupied) {
             sites.splice(index, 1);
           }
         }

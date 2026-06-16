@@ -2571,3 +2571,8 @@ DEFERRED MULTI-PART SUBSYSTEMS (each well-mapped, ~3-10 games): flips (Reversi/R
 ## Update 236 (2026-06-11) — Region .sites() array-shape guard: Geister + Sneakthrough 2/2 (START_FAIL fixed)
 - Geister & Sneakthrough threw at start: `this.regionFunction.eval(...).sites is not a function`. Our RegionFunction.eval returns a number[] directly, but IntArrayFromRegion (and SizeLargePiece) called `.sites()` on it (Java returns a Region object). Guard both shapes: `Array.isArray(r) ? r : r.sites()`.
 - IntArrayFromRegion feeds (set Hidden <region>), (forEach Site ...), count/sow regions — broadly used. Geister 2/2 (ply 17), Sneakthrough 2/2 (ply 89). Battery green, units 194/0.
+
+## Update 237 (2026-06-11) — PlaceRandom containerId/State guards: Hermit 2/2 (+ several START_FAILs unblocked)
+- PlaceRandom.eval threw `context.containerId is not a function` at start (the start-rule context lacks the containerId/containerState escape hatches), START_FAILing every (place Random) game. Guard: containerId?.() with cid-0 fallback; containerState?.() falling back to ctx.state occupancy.
+- Hermit 2/2 (ply 46/52). Banqi, Competitive 2048, Quantum Leap, Shut Off His Lights now START (residual ply-0 MM = their own move-gen, separate). Battery green, units 194/0.
+- SESSION running total: ~37 games cleared 2/2 across 9 subsystems/clusters. The crash-class START_FAILs (Region .sites(), PlaceRandom containerId) are now guarded.
