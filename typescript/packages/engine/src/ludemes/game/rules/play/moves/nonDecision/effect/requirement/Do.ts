@@ -105,11 +105,12 @@ export class Do implements MovesFunction {
       }
       const priorMoves = this.prior.eval(ctx);
       const nextMoves = this.next.eval(newCtx);
+      const priorActions = priorMoves.flatMap((pm) => [...pm.actions]);
 
       // Prepend prior actions to every next move.
       for (const nm of nextMoves) {
         const prependedActions = [
-          ...priorMoves.flatMap((pm) => [...pm.actions]),
+          ...priorActions,
           ...nm.actions,
         ];
         const merged = new LudiiMove({
@@ -130,6 +131,12 @@ export class Do implements MovesFunction {
           // actions=[SetStateAndUpdateDice..., Move:from=0,to=17,...]]").
           fromSite: nm.fromSite ?? nm.from(),
           toSite: nm.toSite ?? nm.to(),
+          // ...and shift decisionIndex past the prepended prior actions so
+          // decisionAction() resolves to the NEXT move's decision (not the
+          // prior's first action). Without this, (do … next:(move Pass …))
+          // reported isPass()=false — its decision read the prior's SetVar —
+          // so (all Passed) never fired (Goats Wintering never terminated).
+          decisionIndex: priorActions.length + nm.decisionIndex,
         });
         result.push(merged);
       }
