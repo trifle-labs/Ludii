@@ -195,14 +195,20 @@ export class IsLine implements BooleanFunction {
       const distinctRadials = traj.distinctRadialsByName(pivot, this.dirnName);
       for (const { ray, opposites } of distinctRadials) {
         const seenWhats = new Set<number>([state.whatAtSite(pivot)]);
-        let count = this.countFlatRay(ctx, ray, 1, targets, contiguous, seenWhats) + 1;
-        if (useOpposites) {
+        const count = this.countFlatRay(ctx, ray, 1, targets, contiguous, seenWhats) + 1;
+        // @java IsLine.eval — with opposites, the line length is the FULL count
+        // through the pivot (forward + opposite). For exact:True the single
+        // forward ray must NOT short-circuit (a 3-in-a-row that extends to 4 via
+        // the opposite ray is not a line of EXACTLY 3 — Altan/Dala mills on the
+        // Alquerque diagonal). Mirror the square path's else-branch.
+        if (useOpposites && opposites.length > 0) {
           for (const opp of opposites) {
             const oppositeCount = count + this.countFlatRay(ctx, opp, 1, targets, contiguous, seenWhats);
             if (matchesLen(oppositeCount) && throughnum <= seenWhats.size) return true;
           }
+        } else if (matchesLen(count) && throughnum <= seenWhats.size) {
+          return true;
         }
-        if (matchesLen(count)) return true;
       }
       return false;
     }
