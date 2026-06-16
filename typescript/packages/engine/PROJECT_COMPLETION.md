@@ -2609,3 +2609,8 @@ DEFERRED MULTI-PART SUBSYSTEMS (each well-mapped, ~3-10 games): flips (Reversi/R
 ## Update 244 (2026-06-11) — AddScore applies its (then ...) consequence (was 'void then')
 - AddScore.eval discarded its then clause (`void then;`). Wired as a deferredThen on each generated score move (Java AddScore extends Effect — the then always runs). No regression (Oware/Reversi/Tablut/Chess/Pasang/Backgammon/Fanorona green), units 194/0.
 - Dropped-then ledger: Append (229), play-SetScore (242), SetVar (243), AddScore (244) now FIXED. Remaining same-class drops: Push, Attract, Directional (single-move effects, less common) and Claim (a stub) — lower priority, distinct eval shapes, flagged for follow-up.
+
+## Update 245 (2026-06-11) — Dropped-then class CLOSED: Attract/Directional/Push then wired
+- Wired the (then ...) consequence as a deferredThen on Attract, Directional, and Push (the last single-move effects with `void then;`). All 7 dropped-then ludemes now apply their consequence: Append, play-SetScore, SetVar, AddScore, Attract, Directional, Push (Claim is a no-op stub, left). 
+- @java Effect.then — every NonDecision effect applies its then after the move; our ctors had discarded it. Faithful, regression-free (Shobu MM is pre-existing; Tablut/Oware/Chess/Reversi/Span/Fanorona/Backgammon green), units 194/0.
+- This closes a systematic correctness gap affecting any game that attaches a consequence to these effects.

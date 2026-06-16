@@ -52,10 +52,13 @@ export class Attract implements MovesFunction {
     dirn?: string | null,
     then?: ThenLike | null,
   ) {
-    void then;
+    this.thenClause = then ?? null;
     this.startLocationFn = from?.loc() ?? LAST_TO;
     this.dirnName = dirn ?? "Adjacent";
   }
+
+  /** @java Effect.then — consequence applied after this move. */
+  private readonly thenClause: ThenLike | null;
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Attract.java — eval(Context)
@@ -116,6 +119,12 @@ export class Attract implements MovesFunction {
       mover,
       placedOwner: mover,
       actions: allActions,
+      deferredThens: this.thenClause != null
+        ? [{ eval: (c: Context): Move[] => {
+            const r = (this.thenClause!.moves() as unknown as { eval(c: Context): Move[] | { moves(): Move[] } }).eval(c);
+            return Array.isArray(r) ? r : r.moves();
+          } }]
+        : [],
     })];
   }
 }

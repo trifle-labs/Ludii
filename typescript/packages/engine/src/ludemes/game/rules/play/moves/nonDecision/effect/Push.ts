@@ -31,6 +31,9 @@ import type { From } from "../../../../../util/moves/From.js";
 import { directionsFunction, type DirectionArg, LAST_TO } from "./EffectCtorAdapters.js";
 
 export class Push implements MovesFunction {
+  /** @java Effect.then — consequence applied after this move. */
+  private readonly thenClause: ThenLike | null = null;
+
   /**
    * Function to evaluate the from-site (default: (last To) = ctx._evalTo).
    * @java Push.startLocationFn
@@ -54,7 +57,7 @@ export class Push implements MovesFunction {
     directions: DirectionArg,
     then: ThenLike | null = null,
   ) {
-    void then;
+    this.thenClause = then ?? null;
     this.startLocationFn = from?.loc() ?? LAST_TO;
     this.dirnChoice = directionsFunction(directions);
   }
@@ -126,6 +129,12 @@ export class Push implements MovesFunction {
       mover,
       placedOwner: mover,
       actions,
+      deferredThens: this.thenClause != null
+        ? [{ eval: (c: Context): import("../../../../../../../move.js").Move[] => {
+            const r = (this.thenClause!.moves() as unknown as { eval(c: Context): import("../../../../../../../move.js").Move[] | { moves(): import("../../../../../../../move.js").Move[] } }).eval(c);
+            return Array.isArray(r) ? r : r.moves();
+          } }]
+        : [],
     }));
 
     return moves;

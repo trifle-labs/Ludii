@@ -52,6 +52,9 @@ class IsEnemyTo implements BooleanFunction {
 const DEFAULT_TARGET_RULE = new IsEnemyTo();
 
 export class Directional implements MovesFunction {
+  /** @java Effect.then — consequence applied after this move. */
+  private readonly thenClause: Then | null = null;
+
   /**
    * Function evaluating the from-site (default: lastTo = _evalTo).
    * @java Directional.startLocationFn
@@ -87,7 +90,7 @@ export class Directional implements MovesFunction {
     to?: To | null,
     then?: Then | null,
   ) {
-    void then;
+    this.thenClause = then ?? null;
     this.startLocationFn = from?.loc() ?? LAST_TO;
     this.dirnChoice = directions == null ? null : directionsFunction(directions);
     this.dirnName = directions == null ? "Adjacent" : directionName(typeof directions === "string" ? directions : this.dirnChoice);
@@ -178,6 +181,12 @@ export class Directional implements MovesFunction {
       mover,
       placedOwner: mover,
       actions,
+      deferredThens: this.thenClause != null
+        ? [{ eval: (c: Context): import("../../../../../../../move.js").Move[] => {
+            const r = (this.thenClause!.moves() as unknown as { eval(c: Context): import("../../../../../../../move.js").Move[] | { moves(): import("../../../../../../../move.js").Move[] } }).eval(c);
+            return Array.isArray(r) ? r : r.moves();
+          } }]
+        : [],
     })];
   }
 }
