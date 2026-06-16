@@ -47,10 +47,13 @@ export class SetVar implements MovesFunction {
    * @param then     The moves applied after that move is applied.
    */
   public constructor(name?: string | null, valueFn?: IntFunction | null, then?: Then | null) {
-    void then;
+    this.thenClause = then ?? null;
     this.name = name ?? null;
     this.valueFn = valueFn ?? new IntConstant(UNDEFINED);
   }
+
+  /** @java Effect.then — consequence applied after the var is set. */
+  private readonly thenClause: Then | null;
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/set/var/SetVar.java — eval(Context)
@@ -69,6 +72,13 @@ export class SetVar implements MovesFunction {
       action = new ActionSetVar(this.name, value);
     }
 
+    // @java SetVar extends Effect — apply (then ...) after the var is set.
+    const deferredThens = this.thenClause != null
+      ? [{ eval: (c: Context): Move[] => {
+          const r = (this.thenClause as unknown as { moves(): { eval(c: Context): Move[] | { moves(): Move[] } } }).moves().eval(c);
+          return Array.isArray(r) ? r : r.moves();
+        } }]
+      : [];
     return [new LudiiMove({
       id: `setvar:${mover}:${this.name ?? "temp"}:${value}`,
       label: `SetVar(${this.name ?? "temp"}=${value})`,
@@ -76,6 +86,7 @@ export class SetVar implements MovesFunction {
       mover,
       placedOwner: mover,
       actions: [action],
+      deferredThens,
     })];
   }
 }
