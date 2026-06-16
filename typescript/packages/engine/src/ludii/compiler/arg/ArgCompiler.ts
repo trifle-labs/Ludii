@@ -931,10 +931,27 @@ export class ArgCompiler {
         const supported = raw && raw.length > 0
           ? raw.map((d) => (typeof d === "string" ? d : d.toAbsolute?.() ?? "")).filter((n) => n.length > 0)
           : undefined;
+        // @java Component.getDirn() overrides the player facing: a piece
+        // declared (piece "Pawn" P2 N ...) faces N even though P2's default
+        // is S. Without this, (directions {Forwards Rightward Leftward}) on
+        // such a piece resolved against the player default and dropped the
+        // real forward heading (Jeu Militaire & the 7 fox-and-geese games:
+        // P2 tower at site 0 lost its Forwards=N step to site 1).
+        const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+        let facingOverride: number | undefined;
+        {
+          const from = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
+          const compFacing = (c.game as unknown as { equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } } }).equipment?.board?.componentFacing;
+          if (compFacing && from >= 0) {
+            const what = (c.state as unknown as { what?: (s: number) => number }).what?.(from) ?? 0;
+            const tok = what > 0 ? compFacing[what] : undefined;
+            if (tok != null && tok in COMPASS8) facingOverride = COMPASS8[tok];
+          }
+        }
         const out: string[] = [];
         const seen = new Set<string>();
         for (const n of relNames) {
-          const resolved = resolveRelativeDir(n, c.state.mover, c.game._playerDirs, undefined, supported);
+          const resolved = resolveRelativeDir(n, c.state.mover, c.game._playerDirs, facingOverride, supported);
           const names = Array.isArray(resolved) ? resolved : [resolved ?? n];
           for (const nm of names) if (!seen.has(nm)) { seen.add(nm); out.push(nm); }
         }
