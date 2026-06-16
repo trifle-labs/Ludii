@@ -2456,3 +2456,14 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
   3. FromTo ignored copy:True — built a vacating ActionMove, so the first copy emptied the shared hand and the second placement found no source. Now emits ActionCopy (@java FromTo copy -> ActionCopy: source untouched), with then-clause + decision pinning.
 - Odd 2/2 (ply 61/61). Battery green (Dice Shogi WM is pre-existing — verified by stash-revert; regular Shogi unaffected), units 194/0.
 - group family still 18/66 (the cluster fails on diverse bespoke scoring/placement, not one shared bug); Odd was the tractable one.
+
+## Update 220 (2026-06-11) — Bonus wins from the shared-hand fix; current family standings
+- The Update 219 SitesHand-Shared fix cleared TWO more games for free (both use a shared hand the validation had rejected):
+  - Order and Chaos 2/2 (ply 33/30) — (move (from (sites Hand Shared)) ... copy:True).
+  - Quarto 2/2 (ply 24/20) — (move Select (from (difference (sites Hand) (sites Empty)))) over a 16-piece shared hand; SitesHand now returns all 16 slots.
+- CURRENT FAMILY STANDINGS (MOVE_CAP=5000, this build):
+  - sow 285/426 (66.9%) — was 52% at window start
+  - space/line 232/292 (79.5%)
+  - space/group 18/66 (diverse bespoke scoring; Odd cleared)
+  - war ~89%, hunt ~74%, blocking ~66%, territory ~42%, race ~39% (per the earlier sub-agent sweep; race/group are the deep frontiers)
+- Remaining line residuals: Andantino (pass-only, large hex first-move), Teeko (placement->movement phase), Ringo (boardless Square subsystem), Plotto (Copy on a 1300-site board), Pentago/Quixo (rotation/push mechanics) — each a distinct subsystem/mechanic.
