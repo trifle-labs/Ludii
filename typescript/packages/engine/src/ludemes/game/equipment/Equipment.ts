@@ -1059,6 +1059,12 @@ export class Equipment extends BaseLudeme {
       // Add can enumerate footprints. @java Component.walk() / isLargePiece()
       const walkFn = (component as unknown as { walk?: () => readonly (readonly string[])[] | null }).walk;
       const walks = typeof walkFn === "function" ? walkFn.call(component) : null;
+      // @java Component.getFlips() — flip pieces (Reversi/Rolit/Othello "Disc"
+      // with (flips A B)) carry their A<->B state mapping. The plain-object
+      // surface dropped it, so Flip.eval saw getFlips()===undefined and never
+      // flipped. Carry both the value and a getFlips() accessor.
+      const flipsFn = (component as unknown as { getFlips?: () => unknown }).getFlips;
+      const flips = typeof flipsFn === "function" ? flipsFn.call(component) : null;
       pieces.push(Object.freeze({
         name: component.name() ?? "",
         owner: component.owner(),
@@ -1067,6 +1073,8 @@ export class Equipment extends BaseLudeme {
         dirn,
         faces: faces && faces.length > 0 ? Object.freeze([...faces]) : undefined,
         walks: walks && walks.length > 0 ? Object.freeze(walks.map((w) => Object.freeze([...w]))) : undefined,
+        flips: flips ?? undefined,
+        getFlips: () => flips ?? null,
       }));
     }
     return Object.freeze(pieces);

@@ -129,7 +129,12 @@ export class Flip implements MovesFunction {
       rotation: () => 0,
       value: () => 0,
     } as never;
-    const stackSize = cs.sizeStack(loc, realType);
+    // @java cs.sizeStack on a NON-stacking game returns 1 for an occupied
+    // site (the piece sits at level 0); our ContainerState returns the
+    // stacks-array length (0 for a flat site). A flat occupied flip piece
+    // (Reversi/Rolit discs: what>0, empty stacks row) must read as 1 level
+    // or neither flip branch fires.
+    const stackSize = cs.sizeStack(loc, realType) || (ctx.state.what(loc) > 0 ? 1 : 0);
     const mover = ctx.state.mover;
 
     if (stackSize > 1) {
