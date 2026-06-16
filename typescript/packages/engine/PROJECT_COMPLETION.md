@@ -2467,3 +2467,8 @@ All TS bug-compat code paths carry @java + oracle-evidence comments — grep "@j
   - space/group 18/66 (diverse bespoke scoring; Odd cleared)
   - war ~89%, hunt ~74%, blocking ~66%, territory ~42%, race ~39% (per the earlier sub-agent sweep; race/group are the deep frontiers)
 - Remaining line residuals: Andantino (pass-only, large hex first-move), Teeko (placement->movement phase), Ringo (boardless Square subsystem), Plotto (Copy on a 1300-site board), Pentago/Quixo (rotation/push mechanics) — each a distinct subsystem/mechanic.
+
+## Update 221 (2026-06-11) — SitesOccupied container:(IntFunction) — hand-placement phase (Teeko, Tic-Tac-Chess)
+- ("FromHand") = (sites Occupied by:Mover container:(mover)) returned empty: the occupied intercept only honored container:"Hand" (a String name), so container:(mover) (an IntFunction container INDEX) was ignored, the scan hit the board, and found no mover pieces at the start of the placement phase.
+- FIX: route a non-string container node to the hand scan (the existing path scans whoId's hand, which equals the (mover) container in by:Mover container:(mover) — the universal hand-placement idiom). @java container: accepts name OR IntFunction index.
+- Tic-Tac-Chess 2/2 (ply 13/13). Teeko 1/2 (placement now generates; trial 0 residual is the (is Pattern {F R F R F}) win-detector — separate). Canaries green (Shogi/Backgammon hand drops, Quarto/Order&Chaos shared hand), units 194/0.
