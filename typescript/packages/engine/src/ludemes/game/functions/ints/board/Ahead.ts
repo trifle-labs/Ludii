@@ -221,6 +221,15 @@ export class Ahead extends BaseIntFunction {
     }
 
     if (directionName === null) {
+      // @java a lud absolute direction (S/N/NE/...) reaches us as a RAW STRING
+      // (raw-literal trap), not a DirectionsFunction; .name/.convertToAbsolute
+      // are undefined on it. Use it directly. ((ahead (centrePoint) S) placed
+      // nothing — Shi Liu's General + 8 other (ahead ... DIR) start rules.)
+      if (rawDir !== null && rawDir !== "SameDirection" && rawDir !== "OppositeDirection") {
+        directionName = rawDir;
+      }
+    }
+    if (directionName === null) {
       // Standard case: convertToAbsolute
       if (this.dirnChoice.convertToAbsolute && topology) {
         const fromEl = topology.getGraphElements(realType)[site];
