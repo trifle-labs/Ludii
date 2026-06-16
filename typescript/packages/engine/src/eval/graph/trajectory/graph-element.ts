@@ -40,6 +40,8 @@ export class VertexEl implements GElement {
   public readonly siteType = SiteType.Vertex;
   public readonly edges: EdgeEl[] = [];
   public readonly faces: FaceEl[] = [];
+  /** @java Vertex.cells() — the incident cells (faces). */
+  public get cells(): FaceEl[] { return this.faces; }
   private pivotVertex: VertexEl | null = null;
 
   public constructor(
@@ -66,6 +68,8 @@ export class VertexEl implements GElement {
 export class EdgeEl implements GElement {
   public readonly siteType = SiteType.Edge;
   public readonly faces: FaceEl[] = [];
+  /** @java Edge.cells() — the incident cells (faces) bordering this edge. */
+  public get cells(): FaceEl[] { return this.faces; }
 
   public constructor(
     public readonly id: number,
