@@ -143,6 +143,26 @@ export class Enclose implements MovesFunction {
       return this.targetRule.eval(ctx);
     };
 
+    // @java Enclose.java:140 — atLeastAnEmpty = targetRule.concepts(game).get(IsEmpty).
+    // The concept system is not surfaced on the TS BooleanFunction, so compute
+    // the equivalent at runtime: the rule "can match empty" iff isTarget is true
+    // at some empty site (the IsEmpty sub-clause is true for every empty site).
+    // When true, a region is enclosed ONLY if its surrounding boundary forms a
+    // SINGLE connected group — without this, a lone stone "encloses" the whole
+    // board (Mig Mang set state on 288 sites at ply 0).
+    let atLeastAnEmpty = false;
+    {
+      const savedBetween = ctx._evalBetween;
+      for (let s = 0; s < graphElements.length; s++) {
+        if (cs.whatAtSite(s) === 0) {
+          ctx._evalBetween = s;
+          if (this.targetRule.eval(ctx)) atLeastAnEmpty = true;
+          break;
+        }
+      }
+      ctx._evalBetween = savedBetween;
+    }
+
     const aroundTarget: number[] = [];
     const trajectories = topology.trajectories();
     // Engine trajectories expose steps(site, dir) / group(site, name); the
@@ -216,16 +236,47 @@ export class Enclose implements MovesFunction {
         i++;
       }
 
-      // @java Enclose.java:237-258 — check for liberties in the full group
+      // @java Enclose.java:237-258 — check for liberties in the full group and
+      // collect the enclosing boundary.
+      const enclosingGroup: number[] = [];
       for (const siteGroup of enclosedGroupList) {
         for (const direction of this.directionNames(ctx)) {
           for (const to of stepsOf(siteGroup, direction)) {
-            if (!enclosedGroup[to] && cs.whatAtSite(to) === 0) {
-              // Liberty — this group is not fully enclosed
-              continue aroundTargetLoop;
+            if (!enclosedGroup[to] && !enclosingGroup.includes(to)) {
+              // @java atLeastAnEmpty ? isTarget(to) : what(to)==0 — a liberty.
+              if (atLeastAnEmpty ? isTarget(to) : cs.whatAtSite(to) === 0) {
+                continue aroundTargetLoop;
+              }
+              enclosingGroup.push(to);
             }
           }
         }
+      }
+
+      // @java Enclose.java:260-290 — when the enclosed region may contain empty
+      // sites, it is only truly enclosed if the surrounding boundary is a SINGLE
+      // connected group (walk it via All-direction adjacency, consuming the list).
+      if (atLeastAnEmpty && enclosingGroup.length > 0) {
+        let aSingleGroup = true;
+        const ring = [...enclosingGroup];
+        let siteGroup = ring[0]!;
+        while (ring.length !== 1) {
+          let inSameGroup = false;
+          for (const to of stepsOf(siteGroup, "All")) {
+            if (ring.includes(to)) {
+              const idx = ring.indexOf(siteGroup);
+              if (idx >= 0) ring.splice(idx, 1);
+              siteGroup = to;
+              inSameGroup = true;
+              break;
+            }
+          }
+          if (!inSameGroup) {
+            aSingleGroup = false;
+            break;
+          }
+        }
+        if (!aSingleGroup) continue aroundTargetLoop;
       }
 
       // @java Enclose.java:298-304 — group is enclosed, apply effect to each member
