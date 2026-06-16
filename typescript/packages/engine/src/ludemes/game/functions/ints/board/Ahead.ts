@@ -238,6 +238,16 @@ export class Ahead extends BaseIntFunction {
         directionName = dirs[0]!;
       } else if (this.dirnChoice.name) {
         directionName = this.dirnChoice.name;
+      } else if (typeof (this.dirnChoice as { eval?: (c: Context) => string[] }).eval === "function") {
+        // @java a DirectionsFunction without convertToAbsolute (e.g.
+        // (directions Cell from:X to:Y), which resolves a compass name from the
+        // two sites) exposes eval(ctx) → names. Without this, Ahead returned the
+        // site itself, so Boop's (ahead (site) … (directions Cell from:(last To)
+        // to:(site))) treated every diagonal repel as off-board and wrongly
+        // removed the piece instead of sliding it.
+        const names = (this.dirnChoice as { eval: (c: Context) => string[] }).eval(context);
+        if (!names || names.length === 0) return site;
+        directionName = names[0]!;
       } else {
         return site;
       }
