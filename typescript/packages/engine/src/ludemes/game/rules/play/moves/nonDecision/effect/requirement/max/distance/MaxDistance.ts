@@ -148,17 +148,54 @@ export class MaxDistance implements MovesFunction {
    * @java MaxDistance.java:143-190 — recursive distance counting
    * Applies a move to a copy of the context and checks further moves.
    */
+  /**
+   * @java MaxDistance.getDistanceCount — 2-ply (per-turn) lookahead. Apply the
+   * move; if the SAME player still moves (a die remains — backgammon plays
+   * both dice in one turn), recurse over the resulting legal moves accumulating
+   * track distance; otherwise the turn's distance is just this move's. Returns
+   * the MAX total distance any continuation achieves. The newCtx carries
+   * `recursiveCalled` so the nested moves() uses single-move distances (this
+   * method, not eval, drives the recursion — bounding depth to the dice count).
+   * Without this, our eval kept only the single LONGEST move (Nard offered
+   * 1 of ~6) instead of every move on a max-distance turn sequence.
+   */
   private getDistanceCount(
-    _ctx: Context,
-    _track: Track,
-    _mover: number,
-    _m: Move,
+    ctx: Context,
+    track: Track,
+    mover: number,
+    m: Move,
     distance: number,
   ): number {
-    // @java MaxDistance.java:143-190 — TempContext + recursive legal moves
-    // Requires a deep copy of context (TempContext in Java) which is not yet wired in TS.
-    // Fall back to the base distance without recursion.
-    return distance;
+    if ((m as unknown as { isPass?(): boolean }).isPass?.() || m.toNonDecision() === m.fromNonDecision()) {
+      return distance;
+    }
+    const game = (ctx as unknown as { game: { apply(c: Context, mv: Move): Context; moves(c: Context): { length: number; [i: number]: Move } | Move[] } }).game;
+    let newCtx: Context;
+    try {
+      newCtx = game.apply(ctx, m);
+    } catch {
+      return distance;
+    }
+    (newCtx as unknown as { recursiveCalled?: boolean }).recursiveCalled = true;
+    // @java if (mover != newContext.state().mover()) return distance — turn passed.
+    if (mover !== newCtx.state.mover) return distance;
+    const legalRaw = game.moves(newCtx);
+    const legal: Move[] = Array.isArray(legalRaw) ? legalRaw : Array.from({ length: (legalRaw as { length: number }).length }, (_, i) => (legalRaw as { [k: number]: Move })[i]!);
+    const elems = track.elems();
+    let max = 0;
+    for (const nm of legal) {
+      let iFrom = UNDEFINED;
+      let iTo = UNDEFINED;
+      for (let j = 0; j < elems.length; j++) {
+        if (elems[j]!.site === nm.fromNonDecision()) iFrom = j;
+        else if (elems[j]!.site === nm.toNonDecision()) iTo = j;
+        if (iFrom !== UNDEFINED && iTo !== UNDEFINED) break;
+      }
+      const nd = (iFrom === UNDEFINED || iTo === UNDEFINED) ? 0 : Math.abs(iFrom - iTo);
+      const sub = this.getDistanceCount(newCtx, track, mover, nm, distance + nd);
+      if (sub > max) max = sub;
+    }
+    return max;
   }
 
   /**
