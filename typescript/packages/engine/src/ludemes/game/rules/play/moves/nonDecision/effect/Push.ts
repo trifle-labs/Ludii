@@ -104,6 +104,15 @@ export class Push implements MovesFunction {
 
     const actions: import("../../../../../../../action/index.js").Action[] = [];
 
+    // @java Push.java — ActionAdd(realType, to, currentPiece, …): the OWNER of a
+    // shifted piece is the COMPONENT's owner (Disc→P1, Cross→P2, Square→Neutral),
+    // NOT the pusher. Forcing owner=mover turned every pushed neutral Square into
+    // the pusher's piece, so (sites Outer if:(or (is Mover (who at)) (= who 0)))
+    // mis-saw shifted Squares as owned (Quixo's who(2) was the pusher, not 0).
+    const components = ctx.components();
+    const ownerOf = (w: number): number =>
+      (components[w] as { owner?: number } | undefined)?.owner ?? mover;
+
     // @java Push.java:96 — remove piece at from
     actions.push(new ActionRemove({ to: from }));
 
@@ -115,11 +124,11 @@ export class Push implements MovesFunction {
       if (what !== 0) {
         // @java Push.java:101-108 — occupied: remove it, add currentPiece, track new current
         actions.push(new ActionRemove({ to }));
-        actions.push(new ActionAdd({ to, what: currentPiece, owner: mover }));
+        actions.push(new ActionAdd({ to, what: currentPiece, owner: ownerOf(currentPiece) }));
         currentPiece = what;
       } else {
         // @java Push.java:113-118 — empty: add currentPiece and break
-        actions.push(new ActionAdd({ to, what: currentPiece, owner: mover }));
+        actions.push(new ActionAdd({ to, what: currentPiece, owner: ownerOf(currentPiece) }));
         break;
       }
     }
