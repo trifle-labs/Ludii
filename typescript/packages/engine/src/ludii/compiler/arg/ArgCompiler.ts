@@ -727,15 +727,20 @@ export class ArgCompiler {
       // @java container:"Hand"/components:{...} restrict the scan (Shogi drops)
       const containerNode = parsed.argsIn.find((arg) => arg.parameterName === "container")?.node;
       // @java container: accepts a NAME (String -> mapContainer) OR an
-      // IntFunction container INDEX. (sites Occupied by:Mover container:(mover))
-      // (Teeko/Tic-Tac-Chess hand placement) is the mover's hand container —
-      // route the int-function form to the same hand scan (the existing path
-      // scans whoId's hand, which equals the (mover) container here). Without
-      // this the scan hit the board, found no mover pieces at start, and the
-      // placement phase produced no moves.
+      // IntFunction container INDEX. Container index 0 is ALWAYS the board
+      // ((count Pieces in:(sites Occupied by:Mover container:0)) — Boop's
+      // IsFullBoard counts the mover's 8 BOARD pieces): a literal 0 must route
+      // to the board scan (null), NOT the hand. (sites Occupied by:Mover
+      // container:(mover)) (Teeko/Tic-Tac-Chess hand placement) is the mover's
+      // hand container — route the int-function form to the same hand scan (the
+      // existing path scans whoId's hand, which equals the (mover) container
+      // here). Without this the scan hit the board, found no mover pieces at
+      // start, and the placement phase produced no moves.
       const containerName = containerNode && isString(containerNode)
         ? (containerNode as { value: string }).value
-        : (containerNode ? "Hand" : null);
+        : (containerNode && isNumber(containerNode) && Number((containerNode as { value: unknown }).value) === 0
+          ? null
+          : (containerNode ? "Hand" : null));
       const componentsNode = parsed.argsIn.find((arg) => arg.parameterName === "components")?.node;
       let componentNames = componentsNode && isList(componentsNode)
         ? (componentsNode.items as readonly unknown[]).filter((it) => isString(it as never)).map((it) => (it as { value: string }).value)
