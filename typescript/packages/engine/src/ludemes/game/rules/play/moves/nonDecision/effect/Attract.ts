@@ -82,6 +82,16 @@ export class Attract implements MovesFunction {
     const mover = state.mover;
     const allActions: import("../../../../../../../action/index.js").Action[] = [];
 
+    // @java Attract.java — ActionAdd(type, to, what, …) derives the OWNER from
+    // the COMPONENT `what` (no owner arg). Forcing owner=mover turned every
+    // attracted piece into the current player's: in Feed the Ducks, when P1
+    // moved the breadcrumb, all attracted ducks (P1 AND P2) became P1's, so
+    // P1's pieces merged into one group and (= 1 (count Groups …)) fired a false
+    // win. Same class as the Push owner fix (Update 266) — owner from component.
+    const components = ctx.components();
+    const ownerOf = (w: number): number =>
+      (components[w] as { owner?: number } | undefined)?.owner ?? mover;
+
     // @java Attract.java:88-116 — dirnChoice.convertToAbsolute gives EVERY
     // adjacent direction (6 on a hex, 8 on a square), and the loop walks one
     // radial PER DIRECTION. Our `radialsForDirection(…, "Adjacent")` returns the
@@ -112,7 +122,7 @@ export class Attract implements MovesFunction {
           const to = ray[toIdx]!;
           if (to === undefined) break;
           const what = piecesInThisDirection[toIdx - 1]!;
-          allActions.push(new ActionAdd({ to, what, owner: mover }));
+          allActions.push(new ActionAdd({ to, what, owner: ownerOf(what) }));
         }
       }
     }
