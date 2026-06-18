@@ -19,7 +19,11 @@ export class Intersection implements IntArrayFunction {
    * 2-arg form for `(intersection A B)`; our array-only ctor collapsed it to
    * a single non-array operand (same bug as Union). Normalize both forms.
    */
-  constructor(arraysOrFirst: IntArrayFunction[] | IntArrayFunction, second?: IntArrayFunction) {
+  // `= undefined` default (not a bare `?`) so ctor.length===1, matching the
+  // truly-required arity — otherwise the single-list form `(intersection {a b …})`
+  // (one bound arg) fails the compiler's `args < ctor.length` drift check (same
+  // class as the Union fix).
+  constructor(arraysOrFirst: IntArrayFunction[] | IntArrayFunction, second: IntArrayFunction | undefined = undefined) {
     if (second !== undefined) {
       this.arrays = [arraysOrFirst as IntArrayFunction, second];
     } else if (Array.isArray(arraysOrFirst)) {

@@ -20,7 +20,13 @@ export class Union implements IntArrayFunction {
    * single non-array operand (Bosh's skipIf union of two (values Remembered)
    * threw `arrays[0].eval is not a function`). Normalize both forms here.
    */
-  constructor(arraysOrFirst: IntArrayFunction[] | IntArrayFunction, second?: IntArrayFunction) {
+  // `second` carries an explicit `= undefined` default (not a bare `?`): a TS
+  // optional param without a default STILL counts toward JS Function.length, so
+  // `second?: …` made ctor.length===2 and the compiler's `args < ctor.length`
+  // drift check rejected the single-list form `(union {a b c …})` (one bound
+  // arg) — Garrisons' (union {(values Remembered …)…}) failed to COMPILE. The
+  // default makes ctor.length===1, matching the truly-required arity.
+  constructor(arraysOrFirst: IntArrayFunction[] | IntArrayFunction, second: IntArrayFunction | undefined = undefined) {
     if (second !== undefined) {
       this.arrays = [arraysOrFirst as IntArrayFunction, second];
     } else if (Array.isArray(arraysOrFirst)) {
