@@ -69,6 +69,19 @@ export class ActionRemove extends BaseAction {
     if (this.explicitTyped && state.typedSites.has(this.siteType)) {
       return state.withTypedSite(this.siteType, this.toIndex, 0, 0, 0);
     }
+    // @java ActionRemove with an explicit LEVEL on a real stack removes ONLY
+    // that level and shifts the rest down (withStackPop(level)) — NOT the whole
+    // pile. (remove X level:0) trims a full column's bottom (Complica). Gated on
+    // a multi-piece stack so the default level-less remove is unchanged.
+    if (this.level >= 0 && (state.stacks[this.toIndex]?.length ?? 0) > 1) {
+      let nx = state;
+      if (nx.ownedEntries !== undefined) {
+        const own = nx.stackAt(this.toIndex, this.level);
+        const wht = nx.whatAtSiteLevel(this.toIndex, this.level);
+        nx = nx.withOwnedRemoveLevel(own, wht, this.toIndex, this.level);
+      }
+      return nx.withStackPop(this.toIndex, this.level);
+    }
     // @java ActionRemoveTopPiece (stacking branch): pop the TOP level and
     // update the FullOwned registry at that level. Only live once the game
     // materialized the registry (per-level stacks exist).

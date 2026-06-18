@@ -107,8 +107,16 @@ export class Remove implements MovesFunction {
       // on the board, the site joins state.sitesToRemove, and the step-1b
       // end-of-turn flush removes it for real. Mid-chain the pending piece
       // still BLOCKS hop paths (Frisian king chains).
+      // @java ActionRemove carries the LEVEL: (remove X level:0) removes the
+      // BOTTOM of a stack (and shifts the rest down), not the whole pile —
+      // Complica trims a full column by removing level 0. Pass it through.
+      const lvl = this.levelFn != null ? this.levelFn.eval(ctx) : undefined;
       const mkRemove = () => applyNow
-        ? new ActionRemove(this.type ? { to: loc, type: this.type as never } : { to: loc })
+        ? new ActionRemove({
+            to: loc,
+            ...(this.type ? { type: this.type as never } : {}),
+            ...(lvl !== undefined && lvl >= 0 ? { level: lvl } : {}),
+          })
         : new ActionRemoveNonApplied(loc);
 
       // @java Remove.java:139 — primary remove action
