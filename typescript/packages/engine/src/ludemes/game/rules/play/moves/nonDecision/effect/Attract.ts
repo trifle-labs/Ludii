@@ -82,31 +82,38 @@ export class Attract implements MovesFunction {
     const mover = state.mover;
     const allActions: import("../../../../../../../action/index.js").Action[] = [];
 
-    // @java Attract.java:93 — for each direction
-    // In Java: only the "ray" direction (from pivot outward) is used,
-    // not the opposite. Each direction gives one radial from the pivot.
+    // @java Attract.java:88-116 — dirnChoice.convertToAbsolute gives EVERY
+    // adjacent direction (6 on a hex, 8 on a square), and the loop walks one
+    // radial PER DIRECTION. Our `radialsForDirection(…, "Adjacent")` returns the
+    // distinct AXES (3 on hex, 4 on square), each a {ray, opposite} pair — so we
+    // must process BOTH ray and opposite to cover all directions. The original
+    // port walked only `ray`, covering half the directions: ducks on the
+    // opposite-pointing radials were never pulled in (Feed the Ducks left a duck
+    // stranded at cell 0 instead of attracting it toward the breadcrumb).
     const axes = radialsForDirection(cellRadials, this.dirnName);
 
-    for (const { ray } of axes) {
-      // @java Attract.java:97-109 — collect pieces along this radial
-      const piecesInThisDirection: number[] = [];
+    for (const axis of axes) {
+      for (const ray of [axis.ray, axis.opposite]) {
+        // @java Attract.java:97-109 — collect pieces along this radial
+        const piecesInThisDirection: number[] = [];
 
-      for (let toIdx = 1; toIdx < ray.length; toIdx++) {
-        const to = ray[toIdx]!;
-        const what = state.whatAtSite(to);
-        if (what !== 0) {
-          piecesInThisDirection.push(what);
-          // @java Attract.java:105 — removeAction for this piece
-          allActions.push(new ActionRemove({ to }));
+        for (let toIdx = 1; toIdx < ray.length; toIdx++) {
+          const to = ray[toIdx]!;
+          const what = state.whatAtSite(to);
+          if (what !== 0) {
+            piecesInThisDirection.push(what);
+            // @java Attract.java:105 — removeAction for this piece
+            allActions.push(new ActionRemove({ to }));
+          }
         }
-      }
 
-      // @java Attract.java:111-118 — re-place pieces compacted toward pivot
-      for (let toIdx = 1; toIdx <= piecesInThisDirection.length; toIdx++) {
-        const to = ray[toIdx]!;
-        if (to === undefined) break;
-        const what = piecesInThisDirection[toIdx - 1]!;
-        allActions.push(new ActionAdd({ to, what, owner: mover }));
+        // @java Attract.java:111-118 — re-place pieces compacted toward pivot
+        for (let toIdx = 1; toIdx <= piecesInThisDirection.length; toIdx++) {
+          const to = ray[toIdx]!;
+          if (to === undefined) break;
+          const what = piecesInThisDirection[toIdx - 1]!;
+          allActions.push(new ActionAdd({ to, what, owner: mover }));
+        }
       }
     }
 
