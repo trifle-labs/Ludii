@@ -820,7 +820,32 @@ export class Game implements Game {
     // Step 2: Build eval context with the move recorded.
     // Set _evalTo so IsLine's (through: LastTo) resolves to the placed site.
     const evalTrial = context.trial.withMove(appliedMove, false, -1);
-    const evalCtx = new Context(this, newState, evalTrial, context.rng) as Context1to1;
+    // @java Game.java — the end rule is evaluated with state.next() ALREADY at
+    // the upcoming mover (setMoverAndImpliedPrevAndNext). Our State otherwise
+    // carries next=0 until Step 6 advances, so RoleType.Next / the (next) ludeme
+    // resolved to 0 inside the end rule: the chaturanga/shatranj Checkmate def's
+    //   (can Move (do (forEach Piece Next) ifAfterwards:(not ("IsInCheck" K Next))))
+    // iterated player 0 (no pieces) → no escape → a FALSE checkmate fired the
+    // instant the opponent was in check (Saxun/Shatranj at-Tamma/Tepong/Krida/
+    // Rumi Shatranj ended mid-game instead of playing on). Stamp the implied next
+    // onto the END-EVAL state ONLY, mirroring Step 6's nextMover.
+    //
+    // DICE GUARD: skip this for games with hand dice. There the end rule's
+    // opponent move generation (forEach Piece Next) consumes RNG during
+    // GENERATION (a separate latent issue), which would desync the recorded die
+    // roll on the next ply (Shatranj al-Mustatila is a dice shatranj). Leaving
+    // next=0 for dice games preserves their prior behaviour exactly — no
+    // regression — until the RNG-during-generation bug is fixed in its own pass.
+    let endEvalState = newState;
+    if (this.handDice().length === 0 && !(newState.next && newState.next > 0)) {
+      const endSetNext = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
+      const endNextOverride = endSetNext ? endSetNext.who() : 0;
+      const endImpliedNext = appliedMove.moveAgain
+        ? newState.mover
+        : (endNextOverride > 0 ? endNextOverride : (newState.mover % this.numPlayers) + 1);
+      endEvalState = newState.withNext(endImpliedNext);
+    }
+    const evalCtx = new Context(this, endEvalState, evalTrial, context.rng) as Context1to1;
     evalCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;
     evalCtx._trajectories = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
     evalCtx._evalTo = appliedMove.to();
