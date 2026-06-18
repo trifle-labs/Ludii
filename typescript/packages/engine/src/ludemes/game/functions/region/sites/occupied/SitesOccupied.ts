@@ -36,6 +36,19 @@ function roleToIntFunction(role: RoleType | null): IntFunction {
         case "P6": return 6;
         case "P7": return 7;
         case "P8": return 8;
+        // @java RoleType.Neutral → player 0. Without this it returned -1, and
+        // eval's `role === "All" || whoId < 0` catch-all fired BEFORE the
+        // Neutral branch, so (sites Occupied by:Neutral) returned ALL occupied
+        // sites (Feed the Ducks: the single neutral breadcrumb became all 25
+        // pieces → a 600-move explosion). whoId 0 routes to the Neutral branch
+        // (owner===0 && what!=0). NOTE: Shared is intentionally NOT mapped —
+        // Shared pieces carry owner numPlayers+1 (not 0) and the Neutral branch
+        // checks owner===0, so Shared keeps falling to the whoId<0 ("All") path
+        // it already used (Traffic Lights' (sites Occupied by:Shared
+        // component:"Square") — all pieces are Shared, so all-occupied is right
+        // there). Mapping Shared→0 regressed it; a faithful Shared=numPlayers+1
+        // path is a separate change with its own eval branch.
+        case "Neutral": return 0;
         default: return -1;
       }
     }
