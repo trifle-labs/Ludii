@@ -108,9 +108,38 @@ export function buildFlatRadials(width: number, height: number): CellFlatRadials
 export function radialsForDirection(
   radials: CellFlatRadials,
   dirName: string,
+  width?: number,
 ): readonly FlatRadial[] {
   const upper = dirName.toUpperCase();
   const axes = radials.axes;
+
+  // Geometry-based match for a single compass direction. The index-based
+  // lookups below assume axes are ordered [EW, NS, NESW, NWSE] (buildFlatRadials),
+  // but graph-derived _radials (square Cell boards via the trajectory path) store
+  // axes in DISCOVERY order — for the corner site 0, axes[0] is the COLUMN, so
+  // "E" wrongly returned it and a push ran down the wrong line (Quixo/Tara). When
+  // the board width is known, pick the axis whose ray[0]→ray[1] step matches the
+  // requested (dx,dy), orienting via `opposite` when the axis points the other way.
+  const COMPASS: Record<string, [number, number]> = {
+    E: [1, 0], EAST: [1, 0], W: [-1, 0], WEST: [-1, 0],
+    N: [0, 1], NORTH: [0, 1], S: [0, -1], SOUTH: [0, -1],
+    NE: [1, 1], NORTHEAST: [1, 1], NW: [-1, 1], NORTHWEST: [-1, 1],
+    SE: [1, -1], SOUTHEAST: [1, -1], SW: [-1, -1], SOUTHWEST: [-1, -1],
+  };
+  if (width !== undefined && width > 0 && COMPASS[upper]) {
+    const [wantDx, wantDy] = COMPASS[upper]!;
+    for (const axis of axes) {
+      // try the ray, then its opposite, matching the first-step direction
+      for (const cand of [axis, { ray: axis.opposite, opposite: axis.ray }]) {
+        const a = cand.ray[0], b = cand.ray[1];
+        if (a === undefined || b === undefined) continue;
+        const dx = Math.sign((b % width) - (a % width));
+        const dy = Math.sign(Math.floor(b / width) - Math.floor(a / width));
+        if (dx === wantDx && dy === wantDy) return [cand];
+      }
+    }
+    return [];
+  }
 
   // Adjacent = all 8 directions = all 4 axes
   // Orthogonal = N,S,E,W = axes 0 (EW) + 1 (NS)

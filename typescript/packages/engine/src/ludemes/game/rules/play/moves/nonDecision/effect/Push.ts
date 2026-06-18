@@ -87,7 +87,11 @@ export class Push implements MovesFunction {
     // @java Push.java:90 — radials(type, fromV.index(), directions.get(0))
     // We use only the first radial in the chosen direction (the "push" direction).
     const dirnName = this.dirnChoice.eval(ctx)[0] ?? "E";
-    const axes = radialsForDirection(cellRadials, dirnName);
+    // Pass board width so radialsForDirection matches the axis by GEOMETRY (the
+    // graph-derived _radials are not in the assumed [EW,NS,…] order — Quixo's
+    // corner push went down the wrong line).
+    const pushWidth = (ctx.game as unknown as { equipment?: { board?: { width?: number } } }).equipment?.board?.width;
+    const axes = radialsForDirection(cellRadials, dirnName, pushWidth);
     if (axes.length === 0) return [];
 
     // Use first axis, ray direction (not opposite)
