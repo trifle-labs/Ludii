@@ -43,6 +43,7 @@ import { ActionPass } from "../action/action-pass.js";
 import { ActionSwapPlayers } from "../action/action-swap-players.js";
 import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
 import { ActionRemove } from "../action/action-remove.js";
+import { Gravity } from "./game/rules/meta/Gravity.js";
 import type { Action } from "../action/index.js";
 import { evalDeferredThens } from "./game/rules/play/moves/nonDecision/effect/Then.js";
 import { State } from "../state.js";
@@ -289,6 +290,20 @@ export class Game implements Game {
    */
   public readonly usesSwapRule: boolean;
 
+  /**
+   * Whether the game uses the pyramidal-drop gravity meta-rule:
+   * `(meta (gravity))`. When true, after every move any ball that is not
+   * fully supported falls one step `Downward` into an empty support pocket,
+   * repeating until the board is stable (Shibumi family: Spline+, Spought…).
+   *
+   * @java game/rules/meta/Gravity.java — Gravity.apply(context, move)
+   *   appends the drop actions as a `then` of the generated move. Because the
+   *   replay harness matches by the player's DECISION (from/to) and only the
+   *   resulting board state feeds the next ply, applying the same drops
+   *   post-hoc in {@link apply} yields the identical board.
+   */
+  public readonly usesGravity: boolean;
+
   /** Component labels array (index 0 unused, 1-based). */
   private readonly componentLabels: string[];
 
@@ -349,6 +364,10 @@ export class Game implements Game {
     const hasHandDice = equipment.pieces.some(p => /^Die\d*$/.test(p.name));
     this.notAllPass = (portOptions?.notAllPass ?? false) || hasHandDice;
     this.usesSwapRule = portOptions?.usesSwapRule ?? false;
+    // @java Gravity.eval — context.game().metaRules().setGravityType(type).
+    // We detect the meta-rule directly off the compiled rules tree instead of
+    // a portOption: any (meta (gravity …)) enables pyramidal drop in apply().
+    this.usesGravity = (rules.meta?.rules ?? []).some(r => r instanceof Gravity);
     this.width = equipment.board.width;
     this.height = equipment.board.height;
     this.numSites = equipment.board.numSites;
@@ -727,6 +746,54 @@ export class Game implements Game {
    *   7. Update stalemated flag for new mover.
    *   8. Record move in trial.
    */
+  /**
+   * Pyramidal-drop gravity: faithful port of Gravity.apply's inner loop.
+   *
+   * @java game/rules/meta/Gravity.java:81-109 — `do { … } while (pieceDropped)`
+   *   For each occupied Vertex (ascending id), take the first `Downward`
+   *   neighbour that is empty and relocate the ball there (an ActionMove from
+   *   level 0 to level 0); restart the full scan after every single drop.
+   *   The Java loop bounds on topology.vertices().size(); for a vertex board
+   *   that equals the board site count.
+   */
+  private applyPyramidalDrop(
+    state: State,
+    traj: { steps(site: number, dir: string): number[] } | null | undefined,
+  ): State {
+    if (!traj || typeof traj.steps !== "function") return state;
+    const n = this.equipment.board.numSites;
+    let newState = state;
+    let pieceDropped = true;
+    // Guard against pathological cycles (a ball can only ever move strictly
+    // downward, so the board count bounds the total number of drops).
+    let guard = n * n + 1;
+    while (pieceDropped && guard-- > 0) {
+      pieceDropped = false;
+      for (let site = 0; site < n; site++) {
+        if (newState.whatAtSite(site) === 0) continue;
+        // @java steps(Vertex, site, Vertex, Downward) — supports below `site`.
+        const downward = traj.steps(site, "Downward");
+        for (const toSite of downward) {
+          if (toSite < 0 || toSite >= n) continue;
+          if (newState.whatAtSite(toSite) !== 0) continue;
+          // @java ActionMove.construct(Vertex, site, 0, Vertex, toSite, 0, …)
+          // — relocate the whole ball (owner + what + count) one pocket down.
+          const who = newState.who(site);
+          const what = newState.whatAtSite(site);
+          const cnt = newState.countAtSite(site);
+          newState = newState
+            .withCell(site, 0).withWhatAt(site, 0).withCountAt(site, 0)
+            .withCell(toSite, who).withWhatAt(toSite, what)
+            .withCountAt(toSite, cnt > 0 ? cnt : 1);
+          pieceDropped = true;
+          break;
+        }
+        if (pieceDropped) break;
+      }
+    }
+    return newState;
+  }
+
   public apply(context: Context, move: Move): Context {
     if (context.over) {
       throw new Error("Cannot apply a move to a finished game.");
@@ -815,6 +882,15 @@ export class Game implements Game {
       } else if (!turningOver) {
         // Turn continues: keep sitesToRemove for the next hop (it's ToClear)
       }
+    }
+
+    // Step 1c: Pyramidal-drop gravity. After the move's own actions have
+    // settled, any unsupported ball falls one step Downward into an empty
+    // support pocket, repeating until stable.
+    // @java game/rules/meta/Gravity.java — Gravity.apply(context, move)
+    if (this.usesGravity) {
+      const traj = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
+      newState = this.applyPyramidalDrop(newState, traj);
     }
 
     // Step 2: Build eval context with the move recorded.

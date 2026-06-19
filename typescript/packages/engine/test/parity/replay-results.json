@@ -1,11 +1,11 @@
 {
   "summary": {
-    "totalTrials": 2,
+    "totalTrials": 0,
     "elapsed_s": 0,
     "buckets": {
       "COMPILE_FAIL": 0,
       "START_FAIL": 0,
-      "MOVE_MISMATCH": 2,
+      "MOVE_MISMATCH": 0,
       "WINNER_MISMATCH": 0,
       "OUTCOME_OK": 0,
       "REPLAY_OK_NO_OUTCOME": 0
@@ -13,59 +13,8 @@
   },
   "top15FailureReasons": {
     "COMPILE_FAIL": [],
-    "MOVE_MISMATCH": [
-      [
-        "board/race/escape/Ashta-kashte",
-        2
-      ]
-    ]
+    "MOVE_MISMATCH": []
   },
-  "exampleMismatches": [
-    {
-      "game": "board/race/escape/Ashta-kashte",
-      "ply": 2,
-      "recMove": "mover=1,from=49,to=27",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
-      "detail": "No matching TS move"
-    },
-    {
-      "game": "board/race/escape/Ashta-kashte",
-      "ply": 10,
-      "recMove": "mover=1,from=49,to=27",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
-      "detail": "No matching TS move"
-    }
-  ],
-  "perTrial": [
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/race/escape/Ashta-kashte",
-      "ply": 2,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=49,to=27",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/race/escape/Ashta-kashte/RandomTrial_0.txt"
-    },
-    {
-      "bucket": "MOVE_MISMATCH",
-      "game": "board/race/escape/Ashta-kashte",
-      "ply": 10,
-      "detail": "No matching TS move",
-      "recMove": "mover=1,from=49,to=27",
-      "tsMoveCount": 1,
-      "sampleTsMoves": [
-        "mover=1,from=-1,to=-1,isPass=true"
-      ],
-      "trialFile": "../../../Player/res/random_trials/board/race/escape/Ashta-kashte/RandomTrial_1.txt"
-    }
-  ]
+  "exampleMismatches": [],
+  "perTrial": []
 }
