@@ -135,7 +135,7 @@ export class IsConnected implements BooleanFunction {
   /** @java IsConnected.regionsToConnectFn */
   private readonly regions: readonly RegionFunction[] | null;
   /** Role whose connection regions apply when none given explicitly. */
-  private readonly role: string;
+  private readonly role: string | null;
 
   /**
    * @java IsConnected(@Opt IntFunction number, @Opt SiteType type, @Opt @Name IntFunction at,
@@ -158,7 +158,12 @@ export class IsConnected implements BooleanFunction {
     dirName: string | null = null,
   ) {
     this.regions = regions;
-    this.role = role ?? "Mover";
+    // @java IsConnected — when NO role is given, Java leaves playerRegion
+    // UNDEFINED and floods the group of `who = cs.who(lastTo)` (the owner of the
+    // last-placed piece), NOT the mover. Keep null distinct from an explicit
+    // "Mover" so the eval can reproduce that (Pippinzip's ballot: the mover
+    // places the OPPONENT's piece, so the connected group is the opponent's).
+    this.role = role;
     this.regionType = regionType;
     this.numberFn = numberFn;
     this.dirName = dirName;
@@ -167,7 +172,18 @@ export class IsConnected implements BooleanFunction {
   /** @java IsConnected.eval(Context) — flood the mover's group, require every target touched. */
   public eval(ctx: Context): boolean {
     const r = this.role;
-    const pid = r === "Mover" ? ctx.state.mover
+    // @java when role is null, who = cs.who(lastTo) (owner of the last-placed
+    // piece) — for normal connection games the mover placed their OWN piece so
+    // this equals the mover, but Pippinzip's ballot has the mover place the
+    // opponent's piece, so the group to flood is the opponent's.
+    const lastToOwner = (): number => {
+      const cells = (ctx.state as unknown as { cells?: readonly number[] }).cells;
+      const to = (ctx as unknown as { _evalTo?: number })._evalTo ?? -1;
+      const o = to >= 0 ? (cells?.[to] ?? 0) : 0;
+      return o > 0 ? o : ctx.state.mover;
+    };
+    const pid = r === null ? lastToOwner()
+      : r === "Mover" ? ctx.state.mover
       : r === "Next" ? (ctx.state.mover % ctx.game.numPlayers) + 1
       : r === "Prev" ? ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1
       : /^P\d+$/.test(r) ? Number(r.slice(1)) : ctx.state.mover;
