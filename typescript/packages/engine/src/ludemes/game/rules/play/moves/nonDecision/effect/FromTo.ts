@@ -14,6 +14,7 @@ import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from
 import type { Move } from "../../../../../../../move.js";
 import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
+import { ActionMoveLevelFrom } from "../../../../../../../action/action-move-level.js";
 import { ActionCopy } from "../../../../../../../action/action-copy.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
@@ -158,7 +159,7 @@ export class FromTo implements MovesFunction {
 
         // Build the primary move action
         const actions: import("../../../../../../../action/index.js").Action[] = [];
-        let moveAction: ActionMove;
+        let moveAction: import("../../../../../../../action/index.js").Action;
         // @java FromTo copy:True -> ActionCopy: place a copy of the source at
         // `to` and leave `from` intact (Odd's (move (from (sites Hand Shared))
         // (to (sites Empty)) copy:True) — a regular ActionMove vacated the
@@ -229,12 +230,37 @@ export class FromTo implements MovesFunction {
             ? new ActionMove({ from, to, count, transferCount: true, seedOwner })
             : new ActionMove({ from, to, count, transferCount: true });
         } else {
-          // Dual-SiteType: stamp the declared type so application routes
-          // through the typed channel (gated downstream on channel existence).
-          const dt = this.declaredFromType;
-          moveAction = dt
-            ? new ActionMove({ from, to, fromType: dt as never, toType: dt as never })
-            : new ActionMove({ from, to });
+          // @java FromTo with `(from … level:(level))` removes the piece at THAT
+          // level (ActionMoveLevelFrom → csFrom.remove(state, from, levelFrom)),
+          // not the stack top. The plain ActionMove always pops the top, so a
+          // non-top piece (Gyan Chaupar: P2 at level 0 under P3 at level 1 on a
+          // shared site) relocated the WRONG piece. Route an explicit, in-range
+          // levelFrom through ActionMoveLevelFrom; otherwise (no level / -1) keep
+          // the top-pop ActionMove unchanged.
+          // Only route through ActionMoveLevelFrom when the level is genuinely
+          // NON-TOP (a piece buried under others on a shared site — Gyan
+          // Chaupar's P2 at level 0 under P3). When the level IS the stack top
+          // (or the site is a single piece), the plain top-popping ActionMove is
+          // equivalent and must be kept: it routes through ActionMove's full
+          // count-pile/ownedEntries handling that ActionMoveLevelFrom does not
+          // replicate (narrowing here avoids regressing Ashta-kashte's top-level
+          // level: moves while still fixing Gyan's buried-piece move).
+          const lv = this.levelFrom !== null ? this.levelFrom.eval(ctx) : -1;
+          const fromStackLen = ctx.state.stacks[from]?.length ?? 0;
+          // Require a genuine multi-ENTRY stack (distinct pieces per level), not a
+          // count-backed pile (stacks.length<=1 with countAt>1): ActionMoveLevelFrom's
+          // count-pile branch differs from plain ActionMove's, which Ashta-kashte's
+          // count-backed level: moves rely on. Gyan's buried piece is a true stack.
+          if (lv >= 0 && lv < fromStackLen - 1 && fromStackLen > 1) {
+            moveAction = new ActionMoveLevelFrom(from, lv, to);
+          } else {
+            // Dual-SiteType: stamp the declared type so application routes
+            // through the typed channel (gated downstream on channel existence).
+            const dt = this.declaredFromType;
+            moveAction = dt
+              ? new ActionMove({ from, to, fromType: dt as never, toType: dt as never })
+              : new ActionMove({ from, to });
+          }
         }
         actions.push(moveAction);
 
