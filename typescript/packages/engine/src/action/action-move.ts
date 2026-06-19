@@ -261,6 +261,14 @@ export class ActionMove extends BaseAction {
       if (fromNew === 0 && (s.whats[this.fromIndex] ?? 0) !== 0) {
         s = s.withWhatAt(this.fromIndex, 0);
       }
+      // @java ActionMoveN.apply line 277 — on count→0 Java calls csFrom.remove,
+      // which is setSite(…, 0/*state*/, …): a drained pit also loses its local
+      // state marker. Tuz marks owned "tuz" pits via (set State at:(to) Mover);
+      // when the end-of-round drain empties such a pit its marker must clear so
+      // the next round can sow from it again ((= 0 (state at:site))).
+      if (fromNew === 0 && (s.stateAt[this.fromIndex] ?? 0) !== 0) {
+        s = s.withStateAt(this.fromIndex, 0);
+      }
       // The receiving pit holds the component while seeded.
       const movedWhat = state.whats[this.fromIndex] ?? 0;
       const toNew = Math.max(0, s.countAtSite(this.toIndex) + n);

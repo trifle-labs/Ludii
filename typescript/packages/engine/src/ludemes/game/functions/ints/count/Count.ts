@@ -315,7 +315,7 @@ export class Count extends BaseIntFunction {
     }
 
     if (countType === null || countType === undefined) {
-      return asJavaReturn(new CountNumber(regionFrom(inArg, at)));
+      return asJavaReturn(new CountNumber(regionFrom(inArg, at), typeof type === "string" ? type : null));
     }
 
     const siteFn = at !== null && at !== undefined ? asLeanInt(at) : firstSiteFn(inArg, LAST_TO);

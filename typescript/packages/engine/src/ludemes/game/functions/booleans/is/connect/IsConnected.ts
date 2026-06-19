@@ -50,7 +50,18 @@ function directionalNeighbours(ctx: Context, site: number, dirName: string): num
     Diagonal: ["NE", "SE", "SW", "NW"],
   };
   const dirs = groups[dirName] ?? [dirName];
-  const traj = (ctx as unknown as { _trajectories?: { step(site: number, dir: string): number } | null })._trajectories;
+  const traj = (ctx as unknown as { _trajectories?: { step(site: number, dir: string): number; group?(site: number, dir: string): number[] } | null })._trajectories;
+  // @java IsConnected — the direction is a meta-direction (Diagonal/Orthogonal/
+  // All) resolved against the board's precomputed adjacency, NOT compass names.
+  // On non-square boards (hex diamond: Diagonal Hex) the compass labels
+  // NE/SE/SW/NW don't exist and traj.step returns -1, so connection never
+  // formed. traj.group(site, metaDir) returns the true neighbours for every
+  // board shape; for a square board it equals the compass expansion, so the
+  // square fallback below stays exercised only when group is unavailable/empty.
+  if (traj && typeof traj.group === "function") {
+    const g = traj.group(site, dirName);
+    if (g && g.length > 0) return g.filter((n) => n >= 0);
+  }
   const board = (ctx.game as unknown as { equipment?: { board?: { width: number; height: number } } }).equipment?.board;
   const W = board?.width ?? 0;
   const H = board?.height ?? 0;

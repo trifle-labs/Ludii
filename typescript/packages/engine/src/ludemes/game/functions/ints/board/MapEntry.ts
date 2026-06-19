@@ -89,5 +89,15 @@ function roleKeyFn(role: RoleTypeFull | null): JavaIntFunction {
       eval: (ctx: Context) => (ctx.state as unknown as { prev?: number }).prev ?? ctx.state.mover,
     } as JavaIntFunction;
   }
+  // @java RoleType.Player — inside a (forEach Player …) the iterated player id
+  // is the current evaluation player (ctx._evalPlayer); (mapEntry Player) keys
+  // the map on it. Without this, "Player" fell through to IntConstant(0) and
+  // (mapEntry Player) always looked up key 0 (Uril's win check never fired).
+  if (role === "Player") {
+    return {
+      ...new IntConstant(0),
+      eval: (ctx: Context) => (ctx as unknown as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover,
+    } as JavaIntFunction;
+  }
   return new IntConstant(0) as unknown as JavaIntFunction;
 }

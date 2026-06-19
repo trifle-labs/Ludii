@@ -20,12 +20,23 @@ export class Wedge extends BaseGraphFunction {
   private readonly columns: number;
 
   /** @java Wedge(DimFunction rows, DimFunction columns) */
-  constructor(rows: number, columns?: number) {
+  constructor(
+    rows: number | { eval(): number },
+    columns?: number | { eval(): number } | null,
+  ) {
     super();
-    const cols = columns ?? 3;
-    this._dim = columns != null ? [rows, cols] : [rows];
-    this.rows = rows;
-    this.columns = cols;
+    // The ArgCompiler passes DimConstant objects (declared param type
+    // DimFunction), not raw numbers. They lack valueOf(), so any `+` with one
+    // operand string-concatenates ("1" + DimConstant(4) → "140") and corrupts
+    // the generated vertex/edge ids. Resolve to plain numbers up front so all
+    // arithmetic in eval() is numeric — mirrors Rectangle.construct().
+    const toNum = (v: number | { eval(): number }): number =>
+      typeof v === "number" ? v : v.eval();
+    const rowsNum = toNum(rows);
+    const colsNum = columns != null ? toNum(columns) : 3;
+    this._dim = columns != null ? [rowsNum, colsNum] : [rowsNum];
+    this.rows = rowsNum;
+    this.columns = colsNum;
   }
 
   /** @java Wedge.eval(Context, SiteType) */

@@ -104,10 +104,22 @@ export class CountPieces implements IntFunction {
         // @java CountPieces: for stacking games, iterates all levels via cs.sizeStack(site)
         const stack = stacks[i];
         if (stack && stack.length > 0) {
-          for (let lvl = 0; lvl < stack.length; lvl++) {
-            const owner = stack[lvl];
-            const what = whatStacks[i]?.[lvl] ?? (lvl === stack.length - 1 ? (whats[i] || owner!) : owner!);
-            if (owner === pid && nameMatches(what)) n++;
+          // A compact "grouped" stack (Backgammon/race model: a single owner
+          // token whose pile size lives in countAt — Tourne-Case) collapses N
+          // pieces into one level. A genuine positional stack materialises one
+          // level per piece (stack.length === pile size), so only honour countAt
+          // when a single level stands for more than one counted piece; this
+          // leaves Lasca/Shibumi/LOA positional stacks counting per level.
+          if (stack.length === 1 && (countAt[i] ?? 0) > 1) {
+            const owner = stack[0];
+            const what = whatStacks[i]?.[0] ?? (whats[i] || owner!);
+            if (owner === pid && nameMatches(what)) n += countAt[i]!;
+          } else {
+            for (let lvl = 0; lvl < stack.length; lvl++) {
+              const owner = stack[lvl];
+              const what = whatStacks[i]?.[lvl] ?? (lvl === stack.length - 1 ? (whats[i] || owner!) : owner!);
+              if (owner === pid && nameMatches(what)) n++;
+            }
           }
         } else {
           // Non-stacking or non-materialized: use cells + countAt
