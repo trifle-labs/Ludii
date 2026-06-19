@@ -425,6 +425,30 @@ export class ActionMove extends BaseAction {
     // COMPONENT (csTo.what(to) == what && count > 0 → count+1), not the owner:
     // Shared mancala seeds (owner 0) landing on an occupied pit must raise the
     // pile (Kisolo's capture fromTo dropped the relocated seed otherwise).
+    // @java ActionMoveTopPiece: in a STACKING game (game.isStacking()), moving
+    // onto an occupied site PUSHES a level — it never overwrites. Plakoto's pin:
+    // P2's checker lands on P1's lone checker → P1 stays pinned at level 0, P2
+    // sits at level 1. The flat-replacement path below would WIPE P1. Java gates
+    // this on isStacking(); we use state.stackingGame (set by (place Stack …)).
+    // Backgammon/Portes-family hits are NOT affected: they run an explicit
+    // ("HittingCapture") ActionRemove first, so the destination is already empty
+    // (who==0) and this branch is skipped — only a true land-on-enemy (no prior
+    // removal) pins. Neutral movers (owner 0) and same-owner piles fall through.
+    if (
+      state.stackingGame &&
+      this.fromIndex !== this.toIndex &&
+      movingOwner !== 0 &&
+      state.who(this.toIndex) > 0 &&
+      state.who(this.toIndex) !== movingOwner
+    ) {
+      next = next.withStackPush(
+        this.toIndex,
+        movingOwner,
+        movingWhat !== 0 ? movingWhat : undefined,
+      );
+      next = this.transferHidden(next, state, fromCount <= 1);
+      return this.maintainTracks(next, movingWhat);
+    }
     if (
       this.fromIndex !== this.toIndex &&
       ((movingOwner !== 0 && state.who(this.toIndex) === movingOwner) ||
