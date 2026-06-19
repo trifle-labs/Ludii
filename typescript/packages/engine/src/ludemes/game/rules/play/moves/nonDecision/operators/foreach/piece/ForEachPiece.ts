@@ -400,6 +400,11 @@ function roleToIntFunction(role: RoleTypeStr): IntFunction {
         // (Pasang's (forEach Piece Shared): pieces owned by 3 in a 2-player
         // game; the Mover default matched nothing and P2 had only a pass).
         case "Shared": return ctx.game.numPlayers + 1;
+        // @java RoleType.Neutral → player 0. (forEach Piece Neutral) (Un's
+        // neutral Markers that either player slides) previously fell through to
+        // the mover and iterated the mover's (nonexistent) pieces, generating no
+        // moves. Same Neutral→0 invariant as SitesOccupied/Count/Where.
+        case "Neutral": return 0;
         default: return ctx.state.mover;
       }
     }
