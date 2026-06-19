@@ -96,6 +96,13 @@ export class Keep extends BaseGraphFunction {
       if (a !== undefined && b !== undefined) out.addEdge(a, b);
     }
 
+    // @java Board.java measures the kept graph (graph.makeFaces()) so the
+    // subgraph regains its bounded faces (= Cells). Without this the kept graph
+    // had 0 faces, Board.buildTopology fell back to Vertex play, and the Cell
+    // coordinate placements in the start rules (Go with the Floe's `{"G2" "G7"}`)
+    // found no cells → silently placed nothing → empty board.
+    out.makeFaces();
+
     return out;
   }
 }
