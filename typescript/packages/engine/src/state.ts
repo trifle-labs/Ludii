@@ -931,13 +931,20 @@ export class State {
       baseOwner > 0 && owner !== baseOwner && target.length > 1;
     if (hasWhatStack || wantWhat || materializedCount || heteroOwnerStack) {
       const nextWhatStacks = this.whatStacks.map((s) => [...s]);
-      // Back-fill lower levels from their owners so the layer stays parallel
-      // when materialised lazily mid-stack (Java seeds both arrays from level 0).
-      const prevOwners = this.stacks[siteIndex] ?? [];
+      // Back-fill the lower whatStacks levels from the EXISTING whatStacks
+      // column (component ids), NOT from `stacks` (owner/player ids): a flat
+      // piece placed via a plain ActionMove leaves whatStacks empty while
+      // `stacks` holds the owner, so reading `stacks` wrote the OWNER number into
+      // the component column. Once the upper piece popped, `whats` derived the
+      // owner as the component and (forEach Piece) could no longer identify the
+      // piece (Pachisi-family Ashta-kashte: a piece stacked onto a protected
+      // square then left behind became invisible). prevWhats[idx] is undefined
+      // for an un-materialized flat level → fall back to baseWhat (real component).
+      const prevWhats = this.whatStacks[siteIndex] ?? [];
       const wsTarget = nextWhatStacks[siteIndex] ?? [];
       while (wsTarget.length < target.length - 1) {
         const idx = wsTarget.length;
-        wsTarget.push(prevOwners[idx] ?? (idx < existingCount ? baseWhat : baseOwner));
+        wsTarget.push(prevWhats[idx] ?? (idx < existingCount ? baseWhat : baseOwner));
       }
       wsTarget.push(what ?? owner);
       nextWhatStacks[siteIndex] = wsTarget;

@@ -89,9 +89,17 @@ export class ActionAdd extends BaseAction {
   public override apply(state: State): State {
     if (this.toIndex < 0 || this.whatIndex < 1) return state;
     if (this.onStack) {
-      let next = state
-        .withStackPush(this.toIndex, this.ownerIndex)
-        .withWhatAt(this.toIndex, this.whatIndex);
+      // @java ActionAdd (stacking) calls cs.addItemGeneric(state, to, what, who, …),
+      // pushing the COMPONENT and the OWNER into their parallel stack columns in
+      // one call. Passing `whatIndex` to withStackPush materializes whatStacks[to]
+      // with the component id; omitting it (the old code) back-filled the column
+      // with the OWNER number instead, so a heterogeneous `(place Stack items:{…})`
+      // start (Gyan Chaupar / Es-Sig / Set Dilth' / Siga: Pawn1..4 with distinct
+      // component ids per player) left whatStacks holding owner numbers — once the
+      // upper pieces were popped, (forEach Piece) could not identify the remaining
+      // piece by component and generated no move (forced pass). withStackPush sets
+      // whats[to] from `what` too, so the separate withWhatAt is redundant.
+      let next = state.withStackPush(this.toIndex, this.ownerIndex, this.whatIndex);
       // @java ActionAdd (stacking): owned().add at the new top level.
       next = next.withOwnedAdd(this.ownerIndex, this.whatIndex, this.toIndex, next.stackSize(this.toIndex) - 1);
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
