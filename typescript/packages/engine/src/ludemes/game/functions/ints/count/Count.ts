@@ -421,14 +421,28 @@ export class Count extends BaseIntFunction {
    */
   public static constructSteps(countType: unknown, _type: unknown, _relation: unknown, _stepMove: unknown, _newRotation: unknown, site1: unknown, site2: unknown, region2: unknown): JavaIntFunction {
     switch (countType) {
-      case "Steps":
+      case "Steps": {
         // @java CountSteps(@Opt SiteType, @Opt RelationType relation, ...) — relation
         // selects the distance-table adjacency (Keryo-Pente: All incl. diagonals).
+
+        // @java CountSteps.stepMove.goRule() — when a (step ...) is given, the
+        // BFS must only traverse neighbours satisfying the step's "to" condition
+        // (e.g. only empty cells for `(step (to if:(is Empty (to))))`).
+        // Duck-type check: the TS Step class exposes goRule() after the fix.
+        const stepCondFn: BooleanFunction | null =
+          _stepMove !== null &&
+          _stepMove !== undefined &&
+          typeof (_stepMove as { goRule?: unknown }).goRule === "function"
+            ? (_stepMove as { goRule(): BooleanFunction }).goRule()
+            : null;
+
         return asJavaReturn(new CountSteps(
           asLeanInt(site1),
           region2 !== null && region2 !== undefined ? asRegion(region2) : singleSiteRegion(site2),
           typeof _relation === "string" ? _relation : (_relation as { name?: string } | null)?.name ?? null,
+          stepCondFn,
         ));
+      }
       default:
         throw new Error("Count(): A CountStepsType is not implemented.");
     }

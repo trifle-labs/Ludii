@@ -8,14 +8,13 @@
  * Java eval (stepMove == null path — most common case):
  *   min(distancesToOtherSite[site1][s] for s in region2)
  *
- * The stepMove path requires a full Step move generator which is not available
- * in the 1:1 context, so only the distance-table / BFS path is ported.
+ * Java eval (stepMove != null path):
+ *   BFS that only traverses sites satisfying stepMove.goRule() — e.g. only
+ *   through empty cells when stepMove has (to if:(is Empty (to))).
  */
 
 import type { Context } from "../../../../../context.js";
-import type { IntFunction, RegionFunction } from "../../../../base.js";
-import type { LudNode } from "@ludii/typescript-language";
-import type { LudList } from "@ludii/typescript-language";
+import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../base.js";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Game } from "../../../../Game.js";
 
@@ -30,16 +29,35 @@ export class CountSteps implements IntFunction {
   /** @java CountSteps.relation — BFS adjacency relation (default Adjacent). */
   private readonly relation: string;
 
-  public constructor(site1Fn: IntFunction, region2Fn: RegionFunction, relation: string | null = null) {
+  /**
+   * @java CountSteps.stepMove.goRule() — optional step condition.
+   * When non-null, the BFS only traverses neighbours where this condition
+   * evaluates to true (with _evalTo set to the candidate neighbour and
+   * _evalFrom set to the current BFS site, mirroring CountSteps.java's
+   * stepMove() helper which calls context.setFrom/setTo before goRule.eval).
+   */
+  private readonly stepConditionFn: BooleanFunction | null;
+
+  public constructor(
+    site1Fn: IntFunction,
+    region2Fn: RegionFunction,
+    relation: string | null = null,
+    stepConditionFn: BooleanFunction | null = null,
+  ) {
     this.site1Fn = site1Fn;
     this.region2Fn = region2Fn;
     this.relation = relation ?? "Adjacent";
+    this.stepConditionFn = stepConditionFn;
   }
 
   /**
    * @java game/functions/ints/count/steps/CountSteps.java — eval(Context)
    * BFS from site1, find min steps to any site in region2.
-   * Mirrors the non-stepMove path: context.board().topology().distancesToOtherSite(realType)[site1][target]
+   *
+   * When stepConditionFn is null: mirrors the non-stepMove path using the
+   * topology distance table / simple BFS.
+   * When stepConditionFn is non-null: mirrors the stepMove path — BFS only
+   * through neighbours where the step condition is satisfied (e.g. empty cells).
    */
   public eval(ctx: Context): number {
     const site1 = this.site1Fn.eval(ctx);
@@ -63,6 +81,10 @@ export class CountSteps implements IntFunction {
     dist[site1] = 0;
     const queue: number[] = [site1];
     let minDist = INFINITY;
+
+    // Save context eval variables so we can temporarily set them for step-condition checks.
+    const origEvalTo = ctx._evalTo;
+    const origEvalFrom = ctx._evalFrom;
 
     let head = 0;
     while (head < queue.length) {
@@ -96,6 +118,18 @@ export class CountSteps implements IntFunction {
       for (const nb of neighbours) {
         if (nb < 0 || nb >= boardN) continue;
         if (dist[nb] !== -1) continue;
+
+        // @java CountSteps.java — stepMove path: evaluate goRule at the
+        // candidate `to` site (with from=s, to=nb) before queueing.
+        // Only empty cells (or whatever the step condition specifies) are
+        // traversable. Mirrors CountSteps.java stepMove() helper lines 356-391.
+        if (this.stepConditionFn !== null) {
+          ctx._evalFrom = s;
+          ctx._evalTo = nb;
+          const allowed = this.stepConditionFn.eval(ctx);
+          if (!allowed) continue;
+        }
+
         dist[nb] = d + 1;
         if (targets.has(nb) && dist[nb]! < minDist) {
           minDist = dist[nb]!;
@@ -103,6 +137,10 @@ export class CountSteps implements IntFunction {
         if (dist[nb]! < minDist) queue.push(nb);
       }
     }
+
+    // Restore context eval variables.
+    ctx._evalTo = origEvalTo;
+    ctx._evalFrom = origEvalFrom;
 
     return minDist === INFINITY ? INFINITY : minDist;
   }

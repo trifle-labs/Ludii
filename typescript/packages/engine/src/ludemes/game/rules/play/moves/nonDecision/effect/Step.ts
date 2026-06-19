@@ -394,4 +394,13 @@ export class Step extends Effect {
   public override isStatic(): boolean {
     return false;
   }
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/Step.java — goRule()
+   * Returns the rule telling us what we are allowed to step into.
+   * Used by CountSteps BFS to filter traversable neighbours.
+   */
+  public goRule(): BooleanFunction {
+    return this.rule;
+  }
 }
