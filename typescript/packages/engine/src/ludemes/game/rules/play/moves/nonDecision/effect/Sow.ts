@@ -221,6 +221,19 @@ export class Sow extends Effect {
 
     if (track === null) return [];
 
+    // @java Sow.java applies its walk on a TempContext, so its eval-scratch
+    // mutations (lastTo/from/value) never leak back to the CALLER's context.
+    // Our Sow mutates the shared `ctx` directly; without restoring, a nested
+    // `(sow …)` inside an `(and { … (sow …) … (set State at:(to)) … })` left
+    // `_evalTo` pointing at the inner sow's last hole, so the sibling
+    // `(set State at:(to))` / `(set Var …)` fired on the WRONG site (Deka and
+    // the two-row mancala family mis-marked "covered" holes). Snapshot here and
+    // restore in the finally below.
+    const _sowSavedFrom = (ctx as unknown as { _evalFrom?: number })._evalFrom;
+    const _sowSavedTo = (ctx as unknown as { _evalTo?: number })._evalTo;
+    const _sowSavedVal = (ctx as unknown as { _evalValue?: number })._evalValue;
+    try {
+
     const elems = track.elems();
     const actions: Action[] = [];
     // @java pits carry the Seed component while seeded — propagate it with the sow.
@@ -387,6 +400,13 @@ export class Sow extends Effect {
       fromNonDecisionSite: start,
       toNonDecisionSite: lastTo,
     })];
+    } finally {
+      // Restore the caller's eval-scratch so a sibling expression in the same
+      // `(and …)` sees the ORIGINAL (to)/(from), not the inner sow's last hole.
+      (ctx as unknown as { _evalFrom?: number })._evalFrom = _sowSavedFrom;
+      (ctx as unknown as { _evalTo?: number })._evalTo = _sowSavedTo;
+      (ctx as unknown as { _evalValue?: number })._evalValue = _sowSavedVal;
+    }
   }
 
   // -------------------------------------------------------------------------
