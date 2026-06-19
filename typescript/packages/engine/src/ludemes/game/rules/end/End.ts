@@ -44,6 +44,15 @@ export class End {
       const result = rule.eval(ctx);
       if (result !== null) return result;
     }
+    // @java game/rules/end/End.java:113 — the implicit all-pass draw lives
+    // INSIDE End.eval, so it only fires when a governing End exists (the
+    // current phase's end, or the global end). A phase with no (end …) — e.g.
+    // BetweenRounds, which only has (nextPhase (all Passed) …) — never reaches
+    // here, so its all-pass triggers a phase transition, not a spurious draw.
+    const notAllPass = (ctx.game as unknown as { notAllPass?: boolean }).notAllPass ?? false;
+    if (!notAllPass && ctx.allPass()) {
+      return { over: true, winner: 0 };
+    }
     return null;
   }
 }

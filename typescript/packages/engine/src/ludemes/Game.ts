@@ -1016,13 +1016,10 @@ export class Game implements Game {
       }
     }
 
-    // Step 4: All-pass draw.
-    // @java game/Game.java:End.eval — only fires if requiresAllPass() (i.e. no explicit (move Pass))
-    // @java game/rules/play/moves/nonDecision/effect/Pass.java — sets GameType.NotAllPass flag
-    if (!over && !this.notAllPass && this.allPassed(evalTrial)) {
-      over = true;
-      winner = 0; // draw
-    }
+    // Step 4: All-pass draw is now handled faithfully INSIDE End.eval
+    // (End.ts — @java End.java:113); firing it here unconditionally drew
+    // phases that have no (end …) but a (nextPhase (all Passed) …) transition.
+    void this.allPassed;
 
     // Step 4b: Turn/move limits.
     // @java game/Game.java:3075,3764 — checkMaxTurns(context): the game ends as a
