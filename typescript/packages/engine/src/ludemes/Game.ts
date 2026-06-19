@@ -48,6 +48,7 @@ import type { Action } from "../action/index.js";
 import { evalDeferredThens } from "./game/rules/play/moves/nonDecision/effect/Then.js";
 import { State } from "../state.js";
 import { Trial } from "../trial.js";
+import { buildTrackLocToIndex, buildInitialOnTrackIndices } from "../on-track-indices.js";
 
 import type { EquipmentSurface } from "./game/equipment/EquipmentSurface.js";
 import { Mode } from "./game/mode/Mode.js";
@@ -451,6 +452,19 @@ export class Game implements Game {
   }
 
   /**
+   * @java Game.java:930 — `(gameFlags & GameType.InternalLoopInTrack) != 0L`
+   * True when any board track has an internal loop (Pachisi / Ludo / Barjis /
+   * Kints family): a track where the same site appears at two different ring
+   * positions, so `(trackSite Move …)` must use `OnTrackIndices` to
+   * disambiguate which ring-iteration the piece is currently on.
+   */
+  public hasInternalLoopInTrack(): boolean {
+    const rawTracks = this.equipment.board.getTracks?.() ?? [];
+    return (rawTracks as unknown as Array<{ hasInternalLoop?: () => boolean }>)
+      .some(t => t.hasInternalLoop?.() === true);
+  }
+
+  /**
    * @java Game.players()
    */
   public players(): GamePlayers {
@@ -621,6 +635,48 @@ export class Game implements Game {
         if (pid >= 0 && pid < this.numPlayers + 1 && site >= 0 && site < totalSites) {
           state = state.withHidden(pid, site, val);
         }
+      }
+    }
+
+    // @java State.java:496 — OnTrackIndices allocated only when the game has an
+    // internal-loop track (Pachisi / Ludo / Barjis / Kints family). Java sets
+    // GameType.InternalLoopInTrack in Game.create() when any track reports
+    // hasInternalLoop(), then State.<init>:496 conditionally news up the
+    // OnTrackIndices. Here we initialise after start rules so whats[] is final.
+    if (this.hasInternalLoopInTrack()) {
+      const rawTracks = this.equipment.board.getTracks?.() ?? [];
+      type TrackLike = {
+        hasInternalLoop(): boolean;
+        elems(): Array<{ site: number }> | null;
+        trackIdx(): number;
+        islooped(): boolean;
+        name(): string;
+        owner(): number;
+      };
+      const mancalaTracks = (rawTracks as unknown as TrackLike[]).map(t => ({
+        name: t.name(),
+        sites: (t.elems() ?? []).map(e => e.site),
+        loop: t.islooped(),
+        owner: t.owner(),
+        trackIdx: t.trackIdx(),
+        internalLoop: t.hasInternalLoop(),
+      }));
+      const tli = buildTrackLocToIndex(mancalaTracks);
+      if (tli !== undefined) {
+        // @java ActionAdd.java onTrackIndices block — scans ALL container sites
+        // (board + hands + off-board start piles) because Pachisi-family tracks
+        // begin at sites beyond board.numSites (e.g. Kints site 46 is the
+        // player-1 start pile, still the first track element). Use totalSites
+        // rather than board.numSites so those start-pile pieces are counted.
+        const oti = buildInitialOnTrackIndices(
+          mancalaTracks,
+          tli,
+          this.componentLabels.length,
+          (site) => whats[site] ?? 0,
+          (site) => countAt[site] ?? 0,
+          this.equipment.totalSites,
+        );
+        state = state.withTrackIndices(oti, tli);
       }
     }
 

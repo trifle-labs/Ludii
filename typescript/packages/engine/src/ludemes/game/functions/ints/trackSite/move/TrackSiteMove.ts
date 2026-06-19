@@ -46,9 +46,6 @@ interface CtxWithTracks {
   };
   containerId(): number[];
   containerState(cid: number): ContainerStateAny;
-  state(): {
-    onTrackIndices(): OnTrackIndicesAny;
-  };
 }
 
 interface ContainerStateAny {
@@ -56,16 +53,6 @@ interface ContainerStateAny {
   sizeStack(loc: number, siteType: unknown): number;
   who(loc: number, lvl: number, siteType: unknown): number;
   what(loc: number, lvl: number, siteType: unknown): number;
-}
-
-interface OnTrackIndicesAny {
-  locToIndex(trackIdx: number, loc: number): TIntArrayListAny;
-  whats(trackIdx: number, what: number, index: number): number;
-}
-
-interface TIntArrayListAny {
-  size(): number;
-  getQuick(i: number): number;
 }
 
 /**
@@ -225,36 +212,38 @@ export class TrackSiteMove extends BaseIntFunction {
           return OFF;
 
         // We get the component on the current location.
-        const containerId = ctxAny.containerId();
-        const cs = ctxAny.containerState(containerId[currentLoc]!);
-        const defaultSite = ctxAny.board().defaultSite();
-        let what = cs.what(currentLoc, defaultSite);
+        // @java TrackSiteMove.java:147-163 — ContainerState.what / sizeStack / who.
+        // In the 1:1 port, context.state exposes these directly without going
+        // through the Java containerId[] → ContainerState indirection.
+        let what = context.state.whatAtSite(currentLoc);
 
         // For stacking game, we get a piece owned by the owner of the track.
-        const sizeStack = cs.sizeStack(currentLoc, defaultSite);
+        // @java TrackSiteMove.java:153-163
+        const sizeStack = context.state.stackSize(currentLoc);
         for (let lvl = 0; lvl < sizeStack; lvl++) {
-          const who = (cs as unknown as { who(loc: number, lvl: number, siteType: unknown): number })
-            .who(currentLoc, lvl, defaultSite);
+          const who = context.state.stackAt(currentLoc, lvl);
           if (who === playerId) {
-            what = (cs as unknown as { what(loc: number, lvl: number, siteType: unknown): number })
-              .what(currentLoc, lvl, defaultSite);
+            what = context.state.whatAtSiteLevel(currentLoc, lvl);
             break;
           }
         }
 
         // We get the current index on the track according to the onTrackIndices structure.
+        // @java TrackSiteMove.java:165-179 — OnTrackIndices.locToIndex / .whats lookup.
+        // `context.state` is a TS property (not a method), as are `onTrackIndices` /
+        // `trackLocToIndex` on State — access them as properties, not with `()`.
         if (what !== 0) {
-          const onTrackIndices = ctxAny.state().onTrackIndices();
-          const trackIdx = track.trackIdx();
-          const locsToIndex = onTrackIndices.locToIndex(trackIdx, currentLoc);
-
-          for (let j = 0; j < locsToIndex.size(); j++) {
-            const index = locsToIndex.getQuick(j);
-            const count = onTrackIndices.whats(trackIdx, what, index);
-
-            if (count > 0) {
-              i = index;
-              break;
+          const oti = context.state.onTrackIndices;
+          const loc = context.state.trackLocToIndex;
+          if (oti !== undefined && loc !== undefined) {
+            const trackIdx = track.trackIdx();
+            const locsToIndex = loc[trackIdx]?.get(currentLoc) ?? [];
+            for (const index of locsToIndex) {
+              const count = oti[trackIdx]?.[what]?.[index] ?? 0;
+              if (count > 0) {
+                i = index;
+                break;
+              }
             }
           }
         } else {
