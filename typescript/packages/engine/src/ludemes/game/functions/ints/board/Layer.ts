@@ -60,11 +60,16 @@ export class Layer extends BaseIntFunction {
       return OFF;
 
     // Java: final SiteType realType = (type != null) ? type : context.game().board().defaultSite();
+    // The board lives at game.equipment.board, NOT game.board() — `context.game.board`
+    // is undefined, so the old `game?.board?.()` silently fell back to "Cell",
+    // making `(layer of:…)` return -1 on a use:Vertex board (the whole Shibumi
+    // family: Spava/Spline/Pylos/…) — the line-length end rules never fired and
+    // the game never ended (winner -1). Use Context.board() (the Context's own
+    // facade), which resolves the real play-site type.
     const realType: SiteType = this.type !== null
       ? this.type
-      : (context as unknown as {
-          game?: { board?: () => { defaultSite(): SiteType } };
-        }).game?.board?.().defaultSite() ?? "Cell";
+      : ((context as unknown as { board?: () => { defaultSite(): SiteType } })
+          .board?.().defaultSite() ?? "Cell");
 
     // Java: context.topology().getGraphElements(realType).get(index).layer()
     const topology = (context as unknown as {
