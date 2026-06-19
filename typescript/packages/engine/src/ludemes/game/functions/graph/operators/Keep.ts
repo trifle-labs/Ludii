@@ -28,17 +28,39 @@ function polyContains(
 }
 
 /** Inflate polygon outward from centroid. @java Polygon.inflate */
+// @java main.math.Polygon.inflate(amount) — adjusts each vertex along the
+// AVERAGE of its two adjacent edge directions (not radially from the centroid).
+// For a CCW polygon both edge vectors point inward, so inflate(0.1) actually
+// DEFLATES — the old centroid-radial version EXPANDED instead, so Go-with-the-
+// Floe's (keep (poly …)) diamond kept 60 cells instead of Java's 52, giving a
+// completely different board topology and site numbering.
 function inflate(
   poly: ReadonlyArray<readonly [number, number]>,
   amount: number,
 ): ReadonlyArray<readonly [number, number]> {
-  let cx = 0, cy = 0;
-  for (const [x, y] of poly) { cx += x; cy += y; }
-  cx /= poly.length; cy /= poly.length;
-  return poly.map(([x, y]) => {
-    const dx = x - cx, dy = y - cy;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    return [x + (dx / len) * amount, y + (dy / len) * amount] as const;
+  const n = poly.length;
+  // @java MathRoutines.clockwise(a,b,c): (b.x-a.x)(c.y-a.y) − (c.x-a.x)(b.y-a.y) < EPSILON.
+  const EPSILON = 0.0000001;
+  const clockwise = (a: readonly [number, number], b: readonly [number, number], c: readonly [number, number]): boolean =>
+    (b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1]) < EPSILON;
+  const adjustments: Array<readonly [number, number]> = [];
+  for (let i = 0; i < n; i++) {
+    const ptA = poly[i]!, ptB = poly[(i + 1) % n]!, ptC = poly[(i + 2) % n]!;
+    // @java Vector(p,q) = q − p.
+    const [vecIn, vecOut] = clockwise(ptA, ptB, ptC)
+      ? [[ptB[0] - ptA[0], ptB[1] - ptA[1]], [ptB[0] - ptC[0], ptB[1] - ptC[1]]] // Vector(ptA,ptB), Vector(ptC,ptB)
+      : [[ptA[0] - ptB[0], ptA[1] - ptB[1]], [ptC[0] - ptB[0], ptC[1] - ptB[1]]]; // Vector(ptB,ptA), Vector(ptB,ptC)
+    const liIn = Math.hypot(vecIn[0]!, vecIn[1]!) || 1;
+    const liOut = Math.hypot(vecOut[0]!, vecOut[1]!) || 1;
+    adjustments.push([
+      (vecIn[0]! / liIn * amount + vecOut[0]! / liOut * amount) * 0.5,
+      (vecIn[1]! / liIn * amount + vecOut[1]! / liOut * amount) * 0.5,
+    ]);
+  }
+  // @java the adjustment for point n is the one computed when n was ptB (i=n-1).
+  return poly.map(([x, y], i) => {
+    const adj = adjustments[(i - 1 + n) % n]!;
+    return [x + adj[0]!, y + adj[1]!] as const;
   });
 }
 
