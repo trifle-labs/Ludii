@@ -13,6 +13,7 @@ import type { BooleanFunction, MovesFunction } from "../../../../../../../../bas
 import { BaseMoves } from "../../../../BaseMoves.js";
 import { Effect } from "../../../effect/Effect.js";
 import type { ThenLike } from "../../../../Moves.js";
+import { applyPostStateThen } from "../../../effect/Then.js";
 
 /** OFF constant matching Java's Constants.OFF = -1 */
 const OFF = -1;
@@ -251,21 +252,18 @@ export class ForEachGroup extends Effect {
       (context as unknown as { setRegion(r: unknown): void }).setRegion?.(origRegion);
     }
 
-    // @java if (then() != null) for each move add then moves
-    if (this.then() !== null) {
-      const thenMoves = this.then()!.moves();
-      for (const m of moves.moves()) {
-        // @java moves.moves().get(j).then().add(then().moves())
-        const mThen = (m as unknown as { then?: Move[] }).then;
-        if (Array.isArray(mThen)) {
-          const thenArr = (thenMoves as unknown as { eval?(ctx: Context): Move[]; moves?(): Move[] });
-          if (typeof thenArr.eval === "function") {
-            mThen.push(...thenArr.eval(context));
-          } else if (typeof thenArr.moves === "function") {
-            mThen.push(...thenArr.moves());
-          }
-        }
-      }
+    // @java if (then() != null) for each move add then moves.
+    // Java evaluates the then AFTER the move applies — applyPostStateThen bakes
+    // the post-state consequence actions in. The old code pushed into the FROZEN
+    // Move.then array, which throws ("object is not extensible") the instant a
+    // forEach-Group carries a then; evalDeferredThens silently swallows the
+    // error, so the consequence (e.g. Manifold's per-group shape scoring:
+    // (forEach Group … (then (… (set Score …))))) was DROPPED — every piece's
+    // state stayed 0 and the game tied instead of producing the real winner.
+    // Same recipe as the ForEachPiece fix.
+    const thenClause = this.then();
+    if (thenClause !== null) {
+      return moves.moves().map((m) => applyPostStateThen(thenClause, context, m));
     }
 
     return moves.moves();
