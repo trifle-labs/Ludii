@@ -11,6 +11,7 @@ import type { Context } from "../../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../../move.js";
 import type { IntArrayFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { Effect } from "../../../../nonDecision/effect/Effect.js";
+import { applyPostStateThen } from "../../../../nonDecision/effect/Then.js";
 import type { ThenLike } from "../../../../Moves.js";
 
 /**
@@ -70,7 +71,8 @@ export class ForEachValue extends Effect {
     if (
       generatorOrThen !== null &&
       generatorOrThen !== undefined &&
-      typeof (generatorOrThen as MovesFunction).eval === "function"
+      typeof (generatorOrThen as MovesFunction).eval === "function" &&
+      typeof (generatorOrThen as { moves?: unknown }).moves !== "function"
     ) {
       // (IntFunction min, IntFunction max, Moves generator, Then? then)
       super(then ?? null);
@@ -128,12 +130,13 @@ export class ForEachValue extends Effect {
       }
     }
 
-    // @java if (then() != null) for (j ...) moves.moves().get(j).then().add(then().moves());
-    // NOTE: In this TS port, Move.then is readonly; then-chaining approximated at generation level.
-
     // @java context.setValue(savedValue);
     ctx.setValue(savedValue);
 
+    const ownThen = this.then();
+    if (ownThen !== null && moves.length > 0) {
+      return moves.map((m) => applyPostStateThen(ownThen, context, m));
+    }
     return moves;
   }
 

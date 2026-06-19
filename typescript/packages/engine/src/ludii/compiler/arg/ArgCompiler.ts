@@ -1,4 +1,5 @@
 import { SitesEquipmentRegion } from "../../../ludemes/game/functions/region/sites/player/SitesEquipmentRegion.js";
+import { SitesContext } from "../../../ludemes/game/functions/region/sites/context/SitesContext.js";
 import { resolveRelativeDir } from "../../../ludemes/game/util/directions/RelativeDirection.js";
 import {
   isIdent,
@@ -672,7 +673,21 @@ export class ArgCompiler {
   ): unknown | null {
     if (normalise(head) !== "sites") return null;
     const variant = node.items[1];
-    if (!variant || !isIdent(variant)) return null;
+    if (!variant || !isIdent(variant)) {
+      // @java bare `(sites)` (no variant) = SitesContext — the ITERATION region
+      // set by forEach Group/Value bodies. The generic reflection path resolved
+      // it to SitesEquipmentRegion (which returns []), so `(regionSite (sites) 0)`
+      // was -1 and Manifold/Brood's per-group shape scoring (KeySite=-1) collapsed
+      // every score to 0 (a tie instead of the real winner).
+      if (node.items.length === 1) {
+        const metaCtx = this.reflection.get("game.functions.region.sites.context.SitesContext");
+        if (metaCtx && expectedTypes.some((expected) => isAssignable(metaCtx, expected.name))) {
+          this.resolveTrace.push({ token: head, cls: "game.functions.region.sites.context.SitesContext" });
+          return new SitesContext();
+        }
+      }
+      return null;
+    }
     const variantName = normalise(variant.name);
     if (
       variantName !== "empty" &&

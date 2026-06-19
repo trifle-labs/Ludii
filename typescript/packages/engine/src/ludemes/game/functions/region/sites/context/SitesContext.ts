@@ -40,6 +40,9 @@ export class SitesContext extends BaseRegionFunction {
       const r = ctxAny.region();
       if (r != null) {
         if (Array.isArray(r)) return r;
+        const sitesField = (r as { sites?: unknown }).sites;
+        if (Array.isArray(sitesField)) return sitesField as number[];
+        if (typeof sitesField === "function") return (sitesField as () => number[])();
         // RegionFunction with eval
         const rf = r as RegionFunction;
         if (typeof rf.eval === "function") return rf.eval(ctx);
