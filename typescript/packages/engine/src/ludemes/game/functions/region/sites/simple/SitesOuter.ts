@@ -78,6 +78,18 @@ export class SitesOuter extends BaseRegionFunction {
       if (outerEls && outerEls.length > 0) {
         return [...outerEls];
       }
+      // @java topology.outer(type): the TRUE graph perimeter (boundary sites of
+      // the actual board graph). The rectangular fallback below fabricates a
+      // W×H grid border, which is WRONG for merged/concentric/irregular boards
+      // (hunt games: Shui Yen Ho-Shang / Juroku Musashi / Shi Liu Kan place P1
+      // on `(sites Outer)` — the fake border put pieces on non-perimeter sites).
+      // perimeterSites() returns the graph boundary for ALL board shapes (for a
+      // plain rectangle it equals the border row/col, so square games are
+      // unchanged).
+      if (typeof (traj as unknown as { perimeterSites?: () => number[] }).perimeterSites === "function") {
+        const peri = (traj as unknown as { perimeterSites(): number[] }).perimeterSites();
+        if (peri.length > 0) return peri;
+      }
     }
 
     // @java SitesOuter — square board: perimeter cells
