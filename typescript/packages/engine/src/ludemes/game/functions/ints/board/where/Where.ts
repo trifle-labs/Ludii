@@ -104,6 +104,11 @@ function wherePlayerFn(indexPlayer: unknown, role: unknown): never {
       if (r === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
       if (r === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
       if (typeof r === "string" && /^P\d+$/.test(r)) return Number(r.slice(1));
+      // @java RoleType.Neutral / RoleType.Shared → player 0. Without this,
+      // `(where "Ghoula" Neutral)` fell through to the mover and located the
+      // wrong piece, firing Es-Sig's GhoulaPhaseDone ~498 plies early (false
+      // (byScore) end with all-zero scores → wrong/tie winner).
+      if (r === "Neutral" || r === "Shared") return 0;
       return ctx.state.mover;
     },
   } as never;
