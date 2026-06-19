@@ -18,6 +18,7 @@ import { ActionMoveLevelFrom } from "../../../../../../../action/action-move-lev
 import { ActionCopy } from "../../../../../../../action/action-copy.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+import { Add as AddEffect } from "./Add.js";
 
 /** OFF constant matching Java's Constants.OFF = -1 */
 const OFF = -1;
@@ -141,6 +142,41 @@ export class FromTo implements MovesFunction {
       const sitesTo: number[] = (this.regionTo != null)
         ? this.regionTo.eval(ctx)
         : [this.locTo.eval(ctx)];
+
+      // @java FromTo.evalLargePiece: when `from` holds a LARGE tile piece (walks),
+      // a board→board move must lay the tile's whole footprint at `to` for each
+      // valid (anchor, rotation), not just transfer the anchor cell. Mirrors
+      // Add.ts's large-piece path. Without this a pentomino move filled only the
+      // anchor (Pentomino's (no Moves) end never fired; the L-tile in L Game).
+      const lpWhat = ctx.state.whatAtSite(from);
+      const largePiece = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number; walks?: readonly (readonly string[])[] }> } })
+        .equipment?.pieces?.find((p) => p.index === lpWhat && p.walks && p.walks.length > 0);
+      if (largePiece?.walks) {
+        const walks = largePiece.walks;
+        const nbPossibleStates = walks.length * 4;
+        for (const to of sitesTo) {
+          if (to <= OFF) continue;
+          for (let st = 0; st < nbPossibleStates; st++) {
+            const locs = AddEffect.locsLargePiece(ctx, to, st, walks);
+            if (locs.length === 0) continue;
+            if (locs.some((loc) => !ctx.state.isEmptySite(loc))) continue;
+            const action = new ActionMove({ from, to, state: st, footprint: locs });
+            const move = new LudiiMove({
+              id: `move:${mover}:${from}:${to}:${st}`,
+              label: `Move(${from}->${to},r${st})`,
+              siteIndices: [from, to],
+              mover,
+              placedOwner: mover,
+              actions: [action],
+              fromSite: from,
+              toSite: to,
+            });
+            moves.push(this.thenClause != null ? applyPostStateThen(this.thenClause, ctx, move) : move);
+          }
+        }
+        ctx._evalFrom = origFrom;
+        continue;
+      }
 
       ctx._evalFrom = origFrom;
 

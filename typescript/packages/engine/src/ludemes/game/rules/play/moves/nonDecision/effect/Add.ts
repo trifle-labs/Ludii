@@ -99,7 +99,9 @@ export class Add implements MovesFunction {
    * indexWalk = state / 4; F steps move along the current direction, R/L
    * rotate it; a step off the board invalidates the whole walk.
    */
-  private static locsLargePiece(
+  // Public so FromTo (board→board tile moves: Pentomino/L Game) can reuse the
+  // exact same footprint computation as (add …) placements.
+  public static locsLargePiece(
     ctx: Context,
     from: number,
     state: number,
