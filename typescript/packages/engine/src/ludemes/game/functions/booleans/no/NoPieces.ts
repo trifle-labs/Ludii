@@ -98,6 +98,18 @@ export class NoPieces implements BooleanFunction {
     const idPlayers: Set<number> = new Set();
     if (this.role === "All") {
       for (let pid = 0; pid <= numPlayersN; pid++) idPlayers.add(pid);
+    } else if ((this.role as string) === "TeamMover" || (this.role as string) === "TeamNext") {
+      // @java Id.java — RoleType.TeamMover → state.getTeam(mover); NoPieces
+      // expands a team role to ALL its members. (no Pieces TeamMover) is true
+      // only when the whole team has no pieces (Nebakuthana: P2/P4 own no board
+      // pieces, so the naive mover-only scan ended the game prematurely).
+      const baseP = (this.role as string) === "TeamMover" ? state.mover : (state.mover % numPlayersN) + 1;
+      const team = game.teamOf?.[baseP] ?? 0;
+      if (team > 0) {
+        for (let p = 1; p <= numPlayersN; p++) if (game.teamOf[p] === team) idPlayers.add(p);
+      } else {
+        idPlayers.add(baseP);
+      }
     } else {
       idPlayers.add(playerId);
     }

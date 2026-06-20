@@ -43,7 +43,20 @@ export class SetTeam implements StartRule {
    * TS-deferred: team membership not accessible via applyToInitialState interface.
    */
   public eval(_ctx: Context): void {
-    // Deferred until State convergence: team membership is not yet part of the engine State.
+    // Team membership is harvested statically at Game construction (Game.teamOf)
+    // by scanning the SetTeam start rules — these `(set Team …)` rules are fixed
+    // at game start. eval/applyToInitialState remain no-ops on the array-only
+    // start interface; the harvest reads team()/players() directly.
     void this.teamId;
+  }
+
+  /** @java SetTeam.teamId — the 1-based team index. */
+  public team(): number {
+    return this.teamId;
+  }
+
+  /** @java SetTeam.players — the 1-based player ids on this team. */
+  public players(): readonly number[] {
+    return this.playerIds;
   }
 }

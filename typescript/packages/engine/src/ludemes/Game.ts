@@ -44,6 +44,7 @@ import { ActionSwapPlayers } from "../action/action-swap-players.js";
 import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
 import { ActionRemove } from "../action/action-remove.js";
 import { Gravity } from "./game/rules/meta/Gravity.js";
+import { SetTeam } from "./game/rules/start/set/players/SetTeam.js";
 import type { Action } from "../action/index.js";
 import { evalDeferredThens } from "./game/rules/play/moves/nonDecision/effect/Then.js";
 import { State } from "../state.js";
@@ -305,6 +306,15 @@ export class Game implements Game {
    */
   public readonly usesGravity: boolean;
 
+  /**
+   * Team membership: `teamOf[pid]` is the 1-based team index of player `pid`,
+   * or 0 if the player is on no team. Harvested from the `(set Team …)` start
+   * rules (which fix membership at game start). Used to resolve RoleType.Team*
+   * (TeamMover/TeamNext) in end/no-pieces rules.
+   * @java other/state/State.java — getTeam(pid) / ActionAddPlayerToTeam
+   */
+  public readonly teamOf: readonly number[];
+
   /** Component labels array (index 0 unused, 1-based). */
   private readonly componentLabels: string[];
 
@@ -369,6 +379,17 @@ export class Game implements Game {
     // We detect the meta-rule directly off the compiled rules tree instead of
     // a portOption: any (meta (gravity …)) enables pyramidal drop in apply().
     this.usesGravity = (rules.meta?.rules ?? []).some(r => r instanceof Gravity);
+    // @java SetTeam.eval — ActionAddPlayerToTeam(teamId, pid). Harvest the
+    // static team membership from the (set Team …) start rules.
+    {
+      const teams: number[] = [];
+      for (const sr of this.startRules) {
+        if (sr instanceof SetTeam) {
+          for (const pid of sr.players()) teams[pid] = sr.team();
+        }
+      }
+      this.teamOf = teams;
+    }
     this.width = equipment.board.width;
     this.height = equipment.board.height;
     this.numSites = equipment.board.numSites;

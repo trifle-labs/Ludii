@@ -71,6 +71,26 @@ export class If implements EndRuleFunction {
     const who = this.defaultResult.resolveWho(mover, n, ctx);
     const resultType = this.defaultResult.result;
 
+    // @java End.java:139 — a Team* result role ranks the WHOLE team, not a
+    // single player. (result TeamMover Win) gives every team member rank 1 and
+    // the others the next rank; the reported winner is the lowest member pid
+    // (Java sets the trial status to the lowest winning pid). Nebakuthana's
+    // team win was previously credited to the mover alone (wrong winner).
+    const whoRole = String((this.defaultResult as unknown as { who?: unknown }).who ?? "");
+    if (whoRole.includes("Team") && resultType === "Win") {
+      const baseP = whoRole === "TeamNext" ? (mover % n) + 1 : mover;
+      const teamOf = (ctx.game as unknown as { teamOf?: readonly number[] }).teamOf ?? [];
+      const team = teamOf[baseP] ?? 0;
+      const members: number[] = [];
+      if (team > 0) {
+        for (let p = 1; p <= n; p++) if (teamOf[p] === team) members.push(p);
+      }
+      if (members.length === 0) members.push(baseP);
+      const ranking = new Array<number>(n + 1).fill(0);
+      for (let p = 1; p <= n; p++) ranking[p] = members.includes(p) ? 1.0 : members.length + 1;
+      return { winner: members[0]!, over: true, ranking };
+    }
+
     // Build rankings array: [0, rank_p1, rank_p2, ...]
     // Java parity: winner gets 1.0, loser gets numPlayers+1 rank (worst),
     // draw gives all players (numPlayers+1)/2.
