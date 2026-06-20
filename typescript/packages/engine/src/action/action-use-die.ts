@@ -25,7 +25,11 @@ export class ActionUseDie extends BaseAction {
     }
     const next = [...state.diceValues];
     next[this.dieIndex] = 0;
-    return state.withDiceValues(next);
+    // Consuming a die must NOT change the "all dice equal" flag — Java's
+    // ActionUseDie only zeroes the die value; isDiceAllEqual stays as the roll
+    // set it (ActionSetDiceAllEqual) until the next roll. withDiceValues
+    // recomputes the flag from the now-zeroed array, so restore it.
+    return state.withDiceValues(next).withDiceAllEqual(state.diceAllEqual);
   }
   public override actionType(): ActionType {
     return ActionUseDie.TYPE;
