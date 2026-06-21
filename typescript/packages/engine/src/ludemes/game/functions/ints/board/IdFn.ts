@@ -29,15 +29,40 @@ function containersOf(ctx: Context): ComponentLike[] {
   return eq?.containers?.() ?? [];
 }
 
-/** @java Id.eval — the role switch for the name==null form. */
-function roleIndex(who: string, ctx: Context): number {
+/**
+ * Canonical faithful port of `Id.eval`'s role→index switch (the `name==null`
+ * form). This is the SINGLE source of truth for resolving a RoleType to a
+ * player/owner index; other ludemes that need exactly this resolution should
+ * import {@link roleToPlayerId} rather than re-deriving their own (the latter
+ * is how "Player"/"TeamMover"/"Neutral" ended up missing in file after file).
+ *
+ * NOTE: this is the OWNER-INDEX resolution. Call sites with deliberately
+ * different semantics (e.g. a count context where `Shared`/`Neutral` mean the
+ * shared owner 0, or set-membership expansion of `All`) are NOT the same
+ * function and must keep their own faithful mapping.
+ *
+ * @java game/functions/ints/board/Id.java:73-127
+ */
+export function roleToPlayerId(who: string | null, ctx: Context): number {
+  if (who === null) return OFF;
+  // @java if (who == RoleType.Player) return context.player();
+  if (who === "Player") {
+    return (ctx as Context & { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover;
+  }
   if (who === "Neutral") return 0;
   const pm = who.match(/^P(\d+)$/) ?? who.match(/^Team(\d+)$/);
   if (pm) return Number(pm[1]);
   switch (who) {
-    case "TeamMover": {
-      const st = ctx.state as unknown as { getTeam?: (p: number) => number; valuePlayer?: (p: number) => number };
-      return st.getTeam?.(ctx.state.mover) ?? st.valuePlayer?.(ctx.state.mover) ?? OFF;
+    case "TeamMover":
+    case "TeamNext": {
+      // @java case TeamMover: return context.state().getTeam(context.state().mover())
+      // — getTeam returns teams[pid], or UNDEFINED (-1) when no teams. We
+      // harvest static team membership into Game.teamOf (see Game ctor).
+      const teamOf = (ctx.game as unknown as { teamOf?: readonly number[] }).teamOf ?? [];
+      const base = who === "TeamNext"
+        ? ((ctx.state as unknown as { next?: number }).next || (ctx.state.mover % ctx.game.numPlayers) + 1)
+        : ctx.state.mover;
+      return teamOf[base] ?? OFF;
     }
     case "Shared": case "All": case "Each": return ctx.game.numPlayers + 1;
     case "Mover": return ctx.state.mover;
@@ -56,6 +81,11 @@ function roleIndex(who: string, ctx: Context): number {
     }
     default: return OFF;
   }
+}
+
+/** @java Id.eval — the role switch for the name==null form. */
+function roleIndex(who: string, ctx: Context): number {
+  return roleToPlayerId(who, ctx);
 }
 
 export class Id extends BaseIntFunction {
