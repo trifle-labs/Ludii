@@ -39,6 +39,7 @@
 import { Context } from "../context.js";
 import type { Game as EngineGame } from "../game.js";
 import { Move } from "../move.js";
+import { SeededRng } from "../rng.js";
 import { ActionPass } from "../action/action-pass.js";
 import { ActionSwapPlayers } from "../action/action-swap-players.js";
 import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
@@ -522,7 +523,7 @@ export class Game implements Game {
    * Returns the initial Context for a new game. Applies start rules to
    * set up the initial board position.
    */
-  public start(): Context {
+  public start(startRng?: SeededRng): Context {
     // Use totalSites to include hand slots in the state.
     const totalSites = this.equipment.totalSites;
     const cells = new Array<number>(totalSites).fill(0);
@@ -568,7 +569,7 @@ export class Game implements Game {
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging, stackedStaging);
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging, stackedStaging, startRng);
     }
 
     // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
@@ -1233,6 +1234,7 @@ export class Game implements Game {
     startHidden?: Map<string, boolean>,
     typedStaging?: Map<string, { who: number[]; what: number[]; count: number[] }>,
     stackedStaging?: Map<number, Array<{ what: number; owner: number; count: number; state: number; value: number }>>,
+    rng?: SeededRng,
   ): void {
     const evalRule = rule as { eval?: (ctx: Context) => void };
     if (typeof evalRule.eval !== "function") return;
@@ -1245,7 +1247,7 @@ export class Game implements Game {
       valueAt,
     });
     const trial = new Trial([], false, -1);
-    const ctx = new Context(this.startGameFacade(), state, trial) as Context & {
+    const ctx = new Context(this.startGameFacade(), state, trial, rng) as Context & {
       placePieces?: (
         site: number,
         what: number,

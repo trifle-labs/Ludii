@@ -43,7 +43,11 @@ export class SetCountStart implements StartRule {
     // accumulation test works on capture transfers (Kisolo compound capture).
     // Emptiness stays count-based (@java mancala isEmpty = count==0; the
     // AddCount drain clears what when count reaches 0).
-    void this.type;
+    //
+    // @java type — SiteType (Cell/Vertex/Edge). Not used in TS because
+    // site indices from regionFn/siteFn are already absolute (all site types
+    // share a flat index space in the TS state arrays). The setSite() bridge
+    // does not take a type parameter.
     const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number }> } }).equipment?.pieces;
     const what = pieces && pieces.length > 0 ? pieces[pieces.length - 1]!.index : -1;
     for (const site of sites) {
