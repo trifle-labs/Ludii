@@ -16,12 +16,24 @@ export class Spiral extends BaseGraphFunction {
   private readonly clockwise: boolean;
 
   /** @java Spiral(DimFunction turns, DimFunction sites, Boolean clockwise) */
-  constructor(turns: number, sites: number, clockwise?: boolean) {
+  constructor(
+    turns: number | { eval(): number },
+    sites: number | { eval(): number },
+    clockwise?: boolean,
+  ) {
     super();
+    // The ArgCompiler passes DimConstant objects (declared param type
+    // DimFunction), not raw numbers — resolve them up front so arithmetic in
+    // eval() is numeric (the same latent bug fixed in Wedge: a DimConstant in
+    // a `+` string-concatenates). Mirrors Regular.construct.
+    const toNum = (v: number | { eval(): number }): number =>
+      typeof v === "number" ? v : v.eval();
+    const turnsNum = toNum(turns);
+    const sitesNum = toNum(sites);
     const cw = clockwise ?? true;
-    this._dim = [turns, sites, cw ? 1 : 0];
-    this.numTurns = turns;
-    this.numSites = sites;
+    this._dim = [turnsNum, sitesNum, cw ? 1 : 0];
+    this.numTurns = turnsNum;
+    this.numSites = sitesNum;
     this.clockwise = cw;
   }
 
