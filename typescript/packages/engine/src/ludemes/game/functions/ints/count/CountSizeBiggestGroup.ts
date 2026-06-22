@@ -65,14 +65,30 @@ export class CountSizeBiggestGroup implements IntFunction {
 
     const origTo = ctx._evalTo;
 
+    // @java CountSizeBiggestGroup.java:142-153,176-186 — isVisible filter.
+    // When (isVisible:True), a piece that is COVERED by another piece directly
+    // above it (an occupied Upward neighbour — Java's centroid3D same-(x,y),
+    // higher-index check / AbsoluteDirection.Upward step) is not counted: only
+    // the visible top of each pyramidal column contributes (Spaiji's end rule
+    // compares the biggest *visible* group). On a flat board steps(_,Upward)
+    // is empty, so this is a no-op and isVisible-less games are unaffected.
+    const isVisActive = this.isVisibleFn !== null && this.isVisibleFn.eval(ctx);
+    const covered = (site: number): boolean => {
+      if (!isVisActive || !traj || typeof traj.steps !== "function") return false;
+      for (const up of traj.steps(site, "Upward")) {
+        if (up >= 0 && !ctx.state.isEmptySite(up)) return true;
+      }
+      return false;
+    };
+
     // Collect seeds: sites where condition holds
     const sitesToCheck: number[] = [];
     for (let site = 0; site < boardN; site++) {
       if (this.condition !== null) {
         ctx._evalTo = site;
-        if (this.condition.eval(ctx)) sitesToCheck.push(site);
+        if (this.condition.eval(ctx) && !covered(site)) sitesToCheck.push(site);
       } else {
-        if ((cells[site] ?? 0) !== 0) sitesToCheck.push(site);
+        if ((cells[site] ?? 0) !== 0 && !covered(site)) sitesToCheck.push(site);
       }
     }
 
@@ -121,6 +137,9 @@ export class CountSizeBiggestGroup implements IntFunction {
           } else {
             if ((cells[nb] ?? 0) === 0) continue;
           }
+          // @java covered pieces (occupied Upward neighbour) are not part of
+          // the visible group.
+          if (covered(nb)) continue;
           visited[nb] = 1;
           groupSites.push(nb);
         }
