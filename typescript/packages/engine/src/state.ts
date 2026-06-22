@@ -1036,7 +1036,17 @@ export class State {
       if (ownerStack.length > 0) {
         for (let lvl = 0; lvl < ownerStack.length; lvl++) {
           const pid = ownerStack[lvl] ?? 0;
-          if (pid > 0) entries.push({ pid, comp: whatStack[lvl] ?? pid, site, level: lvl });
+          // When the level has no explicit whatStack entry (e.g. a hand piece
+          // initialised as stacks[s]=[owner], whatStack[]=[]), fall back to the
+          // site's component index whats[site] — NOT the owner pid. Using pid as
+          // comp made owned.positions(comp) key on the player index, so
+          // ForEachPiece never found hand pieces whose global comp != pid
+          // (Nama's marker entering from hand). Mirrors the flat branch below.
+          if (pid > 0) {
+            const rawComp = whatStack[lvl];
+            const comp = (rawComp !== undefined && rawComp !== 0) ? rawComp : (this.whats[site] || pid);
+            entries.push({ pid, comp, site, level: lvl });
+          }
         }
       } else if ((this.cells[site] ?? 0) > 0) {
         entries.push({ pid: this.cells[site]!, comp: this.whats[site] || this.cells[site]!, site, level: 0 });
