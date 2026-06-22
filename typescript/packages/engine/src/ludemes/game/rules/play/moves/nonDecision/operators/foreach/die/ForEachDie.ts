@@ -324,6 +324,12 @@ export class ForEachDie extends NonDecision {
       const dieValue1 = dieValues[0] ?? 0;
       const dieValue2 = dieValues[1] ?? 0;
       if (dieValue1 !== 0 && dieValue2 !== 0) {
+        // @java context.setPipCount(...) — set the combined pip value so the
+        // sub-move's (count Pips)/steps see the SUM. setPipCount is not a real
+        // method here, so the ?.() silently no-opped and _evalPips (the scratch
+        // (count Pips) reads) stayed at the last single die — every combined
+        // move then stepped the wrong distance (XII Scripta to=7 not to=8).
+        (context as unknown as { _evalPips?: number })._evalPips = dieValue1 + dieValue2;
         (context as unknown as { setPipCount?(v: number): void }).setPipCount?.(dieValue1 + dieValue2);
         if (this.rule.eval(context)) {
           const computedMoves = this.subMoves.eval(context);
@@ -353,6 +359,7 @@ export class ForEachDie extends NonDecision {
       const dieValue2 = dieValues[1] ?? 0;
       const dieValue3 = dieValues[2] ?? 0;
       if (dieValue1 !== 0 && dieValue2 !== 0 && dieValue3 !== 0) {
+        (context as unknown as { _evalPips?: number })._evalPips = dieValue1 + dieValue2 + dieValue3;
         (context as unknown as { setPipCount?(v: number): void }).setPipCount?.(dieValue1 + dieValue2 + dieValue3);
         if (this.rule.eval(context)) {
           const computedMoves = this.subMoves.eval(context);
@@ -383,6 +390,7 @@ export class ForEachDie extends NonDecision {
           const d1 = dieValues[i] ?? 0;
           const d2 = dieValues[j] ?? 0;
           if (d1 !== 0 && d2 !== 0) {
+            (context as unknown as { _evalPips?: number })._evalPips = d1 + d2;
             (context as unknown as { setPipCount?(v: number): void }).setPipCount?.(d1 + d2);
             if (this.rule.eval(context)) {
               const computedMoves = this.subMoves.eval(context);
