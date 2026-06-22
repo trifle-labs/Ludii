@@ -37,17 +37,24 @@ export class CountSteps implements IntFunction {
    * stepMove() helper which calls context.setFrom/setTo before goRule.eval).
    */
   private readonly stepConditionFn: BooleanFunction | null;
+  /**
+   * @java type — SiteType; flat-state substrate, see pattern #5.
+   * Stored but eval behaviour is substrate-independent in the flat state.
+   */
+  private readonly siteType: string | null;
 
   public constructor(
     site1Fn: IntFunction,
     region2Fn: RegionFunction,
     relation: string | null = null,
     stepConditionFn: BooleanFunction | null = null,
+    siteType: string | null = null,
   ) {
     this.site1Fn = site1Fn;
     this.region2Fn = region2Fn;
     this.relation = relation ?? "Adjacent";
     this.stepConditionFn = stepConditionFn;
+    this.siteType = siteType;
   }
 
   /**

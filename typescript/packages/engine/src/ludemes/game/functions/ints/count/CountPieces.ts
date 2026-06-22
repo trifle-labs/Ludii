@@ -7,7 +7,7 @@
  */
 
 import type { Context } from "../../../../../context.js";
-import type { IntFunction, RegionFunction } from "../../../../base.js";
+import type { IntFunction, RegionFunction, BooleanFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import { isIdent } from "@ludii/typescript-language";
@@ -22,17 +22,32 @@ export class CountPieces implements IntFunction {
   private readonly pieceName: string | null;
   /** @java CountPieces.role — used to distinguish "All" from specific player */
   private readonly isAll: boolean;
+  /**
+   * @java CountPieces.If — condition checked per site before counting.
+   * Java: context.setSite(site) then If.eval(context).
+   * TS: ctx._evalSite = site (Java context.site() → TS ctx._evalSite).
+   */
+  private readonly ifCondition: BooleanFunction | null;
+  /**
+   * @java type — SiteType; flat-state substrate, see pattern #5.
+   * Stored but eval behaviour is substrate-independent in the flat state.
+   */
+  private readonly siteType: string | null;
 
   public constructor(
     whoFn: IntFunction,
     whereFn: RegionFunction | null,
     pieceName: string | null,
     isAll: boolean,
+    ifCondition: BooleanFunction | null = null,
+    siteType: string | null = null,
   ) {
     this.whoFn = whoFn;
     this.whereFn = whereFn;
     this.pieceName = pieceName;
     this.isAll = isAll;
+    this.ifCondition = ifCondition;
+    this.siteType = siteType;
   }
 
   /**
@@ -40,6 +55,7 @@ export class CountPieces implements IntFunction {
    * Counts pieces on board sites + hand slots.
    * For stacking games: counts all pieces across all stack levels.
    * @java CountPieces.java — for stacking games, iterates cs.sizeStack(site) levels.
+   * @java If — evaluated after context.setSite(site) (TS: ctx._evalSite = site).
    */
   public eval(ctx: Context): number {
     const cells = ctx.state.cells;
@@ -48,6 +64,9 @@ export class CountPieces implements IntFunction {
     const g = ctx.game as unknown as Game;
     const boardN = g.equipment ? g.equipment.board.numSites : cells.length;
     const totalN = cells.length;
+
+    // Save context cursors — we set _evalSite per counted site (Java: context.setSite(site))
+    const origSite = ctx._evalSite;
 
     // Resolve optional region filter
     let allowedSites: Set<number> | null = null;
@@ -62,6 +81,11 @@ export class CountPieces implements IntFunction {
       let total = 0;
       for (let i = 0; i < totalN; i++) {
         if (allowedSites && !allowedSites.has(i)) continue;
+        // @java CountPieces.If — context.setSite(site) then If.eval(context)
+        if (this.ifCondition !== null) {
+          ctx._evalSite = i;
+          if (!this.ifCondition.eval(ctx)) continue;
+        }
         if (i < boardN) {
           const stack = stacks[i];
           if (stack && stack.length > 0) {
@@ -78,6 +102,7 @@ export class CountPieces implements IntFunction {
           else if ((cells[i] ?? 0) !== 0) total++;
         }
       }
+      ctx._evalSite = origSite;
       return total;
     }
 
@@ -99,6 +124,13 @@ export class CountPieces implements IntFunction {
     let n = 0;
     for (let i = 0; i < totalN; i++) {
       if (allowedSites && !allowedSites.has(i)) continue;
+      // @java CountPieces.If — context.setSite(site) then If.eval(context)
+      // Java also sets context.setLevel(level) for stacking games; TS has no
+      // _evalLevel so level-dependent If conditions are best-effort only.
+      if (this.ifCondition !== null) {
+        ctx._evalSite = i;
+        if (!this.ifCondition.eval(ctx)) continue;
+      }
       if (i < boardN) {
         // Board site: count all stack levels owned by pid
         // @java CountPieces: for stacking games, iterates all levels via cs.sizeStack(site)
@@ -135,6 +167,7 @@ export class CountPieces implements IntFunction {
         }
       }
     }
+    ctx._evalSite = origSite;
     return n;
   }
 }

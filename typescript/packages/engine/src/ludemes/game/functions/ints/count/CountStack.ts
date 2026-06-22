@@ -25,17 +25,24 @@ export class CountStack implements IntFunction {
   private readonly stopCondition: BooleanFunction | null;
   /** @java CountStack.stackDirection — [FromBottom]. */
   private readonly stackDirection: string;
+  /**
+   * @java type — SiteType; flat-state substrate, see pattern #5.
+   * Stored but eval behaviour is substrate-independent in the flat state.
+   */
+  private readonly siteType: string | null;
 
   public constructor(
     regionFn: { eval(ctx: Context): number | number[] },
     condition: BooleanFunction | null = null,
     stopCondition: BooleanFunction | null = null,
     stackDirection: string | null = null,
+    siteType: string | null = null,
   ) {
     this.regionFn = regionFn;
     this.condition = condition;
     this.stopCondition = stopCondition;
     this.stackDirection = stackDirection ?? "FromBottom";
+    this.siteType = siteType;
   }
 
   /**

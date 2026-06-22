@@ -22,9 +22,34 @@ import type { EvalScratch } from "../../../../base.js";
 export class CountSizeBiggestGroup implements IntFunction {
   /** @java CountSizeBiggestGroup.condition — default IsOccupied */
   private readonly condition: BooleanFunction | null;
+  /**
+   * @java CountSizeBiggestGroup.dirnChoice — direction for BFS connectivity.
+   * Java default: AbsoluteDirection.Adjacent.
+   * Previously hardcoded to "Adjacent"; now threaded from Count.constructGroups.
+   */
+  private readonly direction: string;
+  /**
+   * @java CountSizeBiggestGroup.isVisibleFn — visibility filter for 3D/pyramidal
+   * boards (e.g. Spaiji/Pylos). Java checks centroid3D to detect covered pieces.
+   * TS flat-state substrate has no 3D topology → stored but NOT applied.
+   */
+  private readonly isVisibleFn: BooleanFunction | null;
+  /**
+   * @java type — SiteType; flat-state substrate, see pattern #5.
+   * Stored but eval behaviour is substrate-independent in the flat state.
+   */
+  private readonly siteType: string | null;
 
-  public constructor(condition: BooleanFunction | null) {
+  public constructor(
+    condition: BooleanFunction | null,
+    direction: string = "Adjacent",
+    isVisibleFn: BooleanFunction | null = null,
+    siteType: string | null = null,
+  ) {
     this.condition = condition;
+    this.direction = direction;
+    this.isVisibleFn = isVisibleFn;
+    this.siteType = siteType;
   }
 
   /**
@@ -67,7 +92,8 @@ export class CountSizeBiggestGroup implements IntFunction {
         const s = groupSites[i]!;
         let neighbours: number[];
         if (traj) {
-          neighbours = traj.group(s, "Adjacent");
+          // @java dirnChoice.convertToAbsolute — use the threaded direction
+          neighbours = traj.group(s, this.direction);
         } else {
           const W = g.equipment.board.width;
           const H = g.equipment.board.height;
@@ -78,6 +104,13 @@ export class CountSizeBiggestGroup implements IntFunction {
           if (col < W - 1) neighbours.push(s + 1);
           if (row > 0) neighbours.push(s - W);
           if (row < H - 1) neighbours.push(s + W);
+          // Include diagonals when direction is All or Diagonal
+          if (this.direction === "All" || this.direction === "Diagonal") {
+            if (col > 0 && row > 0) neighbours.push(s - W - 1);
+            if (col < W - 1 && row > 0) neighbours.push(s - W + 1);
+            if (col > 0 && row < H - 1) neighbours.push(s + W - 1);
+            if (col < W - 1 && row < H - 1) neighbours.push(s + W + 1);
+          }
         }
 
         for (const nb of neighbours) {

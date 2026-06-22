@@ -32,10 +32,22 @@ export class CountGroups implements IntFunction {
    */
   private readonly directionName: string;
 
-  public constructor(condition: BooleanFunction | null, minFn: IntFunction, directionName: string = "Adjacent") {
+  /**
+   * @java type — SiteType; flat-state substrate, see pattern #5.
+   * Stored but eval behaviour is substrate-independent in the flat state.
+   */
+  private readonly siteType: string | null;
+
+  public constructor(
+    condition: BooleanFunction | null,
+    minFn: IntFunction,
+    directionName: string = "Adjacent",
+    siteType: string | null = null,
+  ) {
     this.condition = condition;
     this.minFn = minFn;
     this.directionName = directionName;
+    this.siteType = siteType;
   }
 
   /**

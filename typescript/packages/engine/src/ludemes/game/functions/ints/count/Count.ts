@@ -258,6 +258,8 @@ export class Count extends BaseIntFunction {
           (_If ?? null) as never,
           (_stop ?? null) as never,
           (typeof _stackDirection === "string" ? _stackDirection : null) as never,
+          // @java type — SiteType; flat-state substrate, see pattern #5
+          typeof _type === "string" ? _type : null,
         ));
       }
       default:
@@ -358,7 +360,16 @@ export class Count extends BaseIntFunction {
       case "Pieces": {
         const isAll = role === null || role === undefined || role === "All";
         const whoFn = of !== null && of !== undefined ? asLeanInt(of) : roleToInt(role);
-        return asJavaReturn(new CountPieces(whoFn, inArg !== null && inArg !== undefined ? asRegion(inArg) : null, typeof name === "string" ? name : null, isAll));
+        // @java CountPieces(type, role, of, name, in, If) — If was previously dropped.
+        return asJavaReturn(new CountPieces(
+          whoFn,
+          inArg !== null && inArg !== undefined ? asRegion(inArg) : null,
+          typeof name === "string" ? name : null,
+          isAll,
+          asBool(_If),
+          // @java type — SiteType; flat-state substrate, see pattern #5
+          typeof _type === "string" ? _type : null,
+        ));
       }
       case "Pips":
         return asJavaReturn(countPips());
@@ -383,10 +394,29 @@ export class Count extends BaseIntFunction {
           typeof _directions === "string"
             ? _directions
             : (_directions as { name?: string } | null)?.name ?? "Adjacent";
-        return asJavaReturn(new CountGroups(asBool(If), asLeanInt(min, ZERO_INT), dirName));
+        return asJavaReturn(new CountGroups(
+          asBool(If),
+          asLeanInt(min, ZERO_INT),
+          dirName,
+          // @java type — SiteType; flat-state substrate, see pattern #5
+          typeof _type === "string" ? _type : null,
+        ));
       }
-      case "SizeBiggestGroup":
-        return asJavaReturn(new CountSizeBiggestGroup(asBool(If)));
+      case "SizeBiggestGroup": {
+        // @java CountSizeBiggestGroup(type, directions, throughAny, If, isVisible)
+        // — directions and isVisible were previously dropped.
+        const sbgDirName: string =
+          typeof _directions === "string"
+            ? _directions
+            : (_directions as { name?: string } | null)?.name ?? "Adjacent";
+        return asJavaReturn(new CountSizeBiggestGroup(
+          asBool(If),
+          sbgDirName,
+          asBool(_isVisible),
+          // @java type — SiteType; flat-state substrate, see pattern #5
+          typeof _type === "string" ? _type : null,
+        ));
+      }
       default:
         throw new Error("Count(): A CountGroupsType is not implemented.");
     }
@@ -409,8 +439,20 @@ export class Count extends BaseIntFunction {
    */
   public static constructLiberties(countType: unknown, _type: unknown, at: unknown, _directions: unknown, If: unknown): JavaIntFunction {
     switch (countType) {
-      case "Liberties":
-        return asJavaReturn(new CountLiberties(asLeanInt(at, LAST_TO), asBool(If)));
+      case "Liberties": {
+        // @java CountLiberties(type, at, directions, If) — directions was previously dropped.
+        const libDirName: string =
+          typeof _directions === "string"
+            ? _directions
+            : (_directions as { name?: string } | null)?.name ?? "Adjacent";
+        return asJavaReturn(new CountLiberties(
+          asLeanInt(at, LAST_TO),
+          asBool(If),
+          libDirName,
+          // @java type — SiteType; flat-state substrate, see pattern #5
+          typeof _type === "string" ? _type : null,
+        ));
+      }
       default:
         throw new Error("Count(): A CountLibertiesType is not implemented.");
     }
@@ -436,11 +478,16 @@ export class Count extends BaseIntFunction {
             ? (_stepMove as { goRule(): BooleanFunction }).goRule()
             : null;
 
+        // @java CountSteps.newRotationFn — updates piece rotation after each BFS
+        // step (used by rotation-aware games). TS CountSteps has no rotation model;
+        // _newRotation is received but not forwarded. Pattern #5 placeholder only.
         return asJavaReturn(new CountSteps(
           asLeanInt(site1),
           region2 !== null && region2 !== undefined ? asRegion(region2) : singleSiteRegion(site2),
           typeof _relation === "string" ? _relation : (_relation as { name?: string } | null)?.name ?? null,
           stepCondFn,
+          // @java type — SiteType; flat-state substrate, see pattern #5
+          typeof _type === "string" ? _type : null,
         ));
       }
       default:

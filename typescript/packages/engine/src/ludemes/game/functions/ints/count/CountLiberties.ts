@@ -25,10 +25,28 @@ export class CountLiberties implements IntFunction {
   private readonly startLocationFn: IntFunction;
   /** @java CountLiberties.condition — optional condition on group membership */
   private readonly condition: BooleanFunction | null;
+  /**
+   * @java CountLiberties.dirnChoice — direction for BFS group expansion and
+   * liberty collection. Java default: AbsoluteDirection.Adjacent.
+   * Previously hardcoded to "Adjacent"; now threaded from Count.constructLiberties.
+   */
+  private readonly direction: string;
+  /**
+   * @java type — SiteType; flat-state substrate, see pattern #5.
+   * Stored but eval behaviour is substrate-independent in the flat state.
+   */
+  private readonly siteType: string | null;
 
-  public constructor(startLocationFn: IntFunction, condition: BooleanFunction | null) {
+  public constructor(
+    startLocationFn: IntFunction,
+    condition: BooleanFunction | null,
+    direction: string = "Adjacent",
+    siteType: string | null = null,
+  ) {
     this.startLocationFn = startLocationFn;
     this.condition = condition;
+    this.direction = direction;
+    this.siteType = siteType;
   }
 
   /**
@@ -75,7 +93,8 @@ export class CountLiberties implements IntFunction {
       const s = groupSites[i]!;
       let neighbours: number[];
       if (traj) {
-        neighbours = traj.group(s, "Adjacent");
+        // @java dirnChoice.convertToAbsolute — use threaded direction
+        neighbours = traj.group(s, this.direction);
       } else {
         const W = g.equipment.board.width;
         const H = g.equipment.board.height;
@@ -86,6 +105,12 @@ export class CountLiberties implements IntFunction {
         if (col < W - 1) neighbours.push(s + 1);
         if (row > 0) neighbours.push(s - W);
         if (row < H - 1) neighbours.push(s + W);
+        if (this.direction === "All" || this.direction === "Diagonal") {
+          if (col > 0 && row > 0) neighbours.push(s - W - 1);
+          if (col < W - 1 && row > 0) neighbours.push(s - W + 1);
+          if (col > 0 && row < H - 1) neighbours.push(s + W - 1);
+          if (col < W - 1 && row < H - 1) neighbours.push(s + W + 1);
+        }
       }
 
       for (const nb of neighbours) {
@@ -106,11 +131,13 @@ export class CountLiberties implements IntFunction {
     ctx._evalFrom = origFrom;
 
     // Count empty adjacent sites around the group (liberties)
+    // @java uses dirnChoice — same direction as group expansion
     const libertySet = new Uint8Array(boardN);
     for (const s of groupSites) {
       let neighbours: number[];
       if (traj) {
-        neighbours = traj.group(s, "Adjacent");
+        // @java dirnChoice.convertToAbsolute — use threaded direction
+        neighbours = traj.group(s, this.direction);
       } else {
         const W = g.equipment.board.width;
         const H = g.equipment.board.height;
@@ -121,6 +148,12 @@ export class CountLiberties implements IntFunction {
         if (col < W - 1) neighbours.push(s + 1);
         if (row > 0) neighbours.push(s - W);
         if (row < H - 1) neighbours.push(s + W);
+        if (this.direction === "All" || this.direction === "Diagonal") {
+          if (col > 0 && row > 0) neighbours.push(s - W - 1);
+          if (col < W - 1 && row > 0) neighbours.push(s - W + 1);
+          if (col > 0 && row < H - 1) neighbours.push(s + W - 1);
+          if (col < W - 1 && row < H - 1) neighbours.push(s + W + 1);
+        }
       }
       for (const nb of neighbours) {
         if (nb >= 0 && nb < boardN && !groupVisited[nb] && (cells[nb] ?? 0) === 0) {
