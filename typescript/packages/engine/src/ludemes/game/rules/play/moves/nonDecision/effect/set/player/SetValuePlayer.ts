@@ -135,8 +135,14 @@ export class SetValuePlayer implements MovesFunction {
 
   /** Helper: get the number of players. */
   private _numPlayers(ctx: Context): number {
-    const gameAny = ctx.game as unknown as { players?: { count?: number } };
-    return gameAny.players?.count ?? 2;
+    // @java context.game().players().count(). In the 1:1 port game.players is
+    // the compiled Players LUDEME (a function), so `.count` was undefined and
+    // this always returned 2 — the pid>numPlayers guard then rejected every
+    // (set Value Mover …) for player 3+ in 4-/6-player race games (Petol,
+    // Asi Keliya), so their consecutive-turn moveAgain never fired and the
+    // mover drifted. numPlayers is the established numeric accessor.
+    const n = (ctx.game as unknown as { numPlayers?: number }).numPlayers;
+    return typeof n === "number" && n > 0 ? n : 2;
   }
 
   /** @java SetValuePlayer.isStatic() → false */

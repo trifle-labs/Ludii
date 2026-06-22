@@ -180,7 +180,15 @@ export class ActionMove extends BaseAction {
         const owner = ownerStack[lvl] ?? state.cellAt(this.fromIndex).owner;
         if (owner <= 0) continue;
         fromOwners.push(owner);
-        fromWhats.push(whatStack[lvl] ?? (ownerStack.length > 0 ? owner : state.whatAtSite(this.fromIndex)));
+        // Fall back to the site's component index (whatAtSite), NEVER the owner
+        // pid: a piece entering from hand has stacks=[owner]/whatStack=[] with
+        // whats[site] holding its real component. Pushing the owner as the
+        // "what" stored owner numbers in whatStacks[dest], so ForEachPiece's
+        // component match later failed and only a pass was generated (Nama,
+        // Pachisi, Panchi, Uturu Uturu Kaida). Homogeneous stacks have
+        // whatAtSite == owner==comp, so this is unchanged for them; mixed
+        // stacks carry an explicit whatStack[lvl] and never hit the fallback.
+        fromWhats.push(whatStack[lvl] ?? state.whatAtSite(this.fromIndex));
       }
       // @java OwnedFactory — the level-aware FullOwned registry exists for
       // stacking games; materialize it the moment the game starts stacking.

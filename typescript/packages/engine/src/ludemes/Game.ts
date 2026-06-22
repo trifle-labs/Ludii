@@ -694,7 +694,11 @@ export class Game implements Game {
           mancalaTracks,
           tli,
           this.componentLabels.length,
-          (site) => whats[site] ?? 0,
+          // Read the TOP piece of each site via state.whatAtSite (not the local
+          // whats[] which, after (place Stack …) starts, still holds the BOTTOM
+          // piece). TrackSiteMove later looks up OTI by the top piece's
+          // component, so the init must agree (Tugi-Epfe stacked start).
+          (site) => state.whatAtSite(site),
           (site) => countAt[site] ?? 0,
           this.equipment.totalSites,
         );
