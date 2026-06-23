@@ -17,6 +17,7 @@
 import { Context } from "../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../move.js";
 import { Move as LudiiMove } from "../../../../../../../../move.js";
+import { ActionPass } from "../../../../../../../../action/action-pass.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
 import { applyPostStateThen, applyMoveWithThens } from "../Then.js";
 
@@ -139,6 +140,27 @@ export class Do implements MovesFunction {
           decisionIndex: priorActions.length + nm.decisionIndex,
         });
         result.push(merged);
+      }
+
+      // @java Do.java:155-176 prependPreMoves — when `next` yields NO legal
+      // moves but the game has hand dice (a (roll) ran in `prior`), Java still
+      // emits a forced pass with the roll's actions prepended, so the Do's own
+      // (then …) evaluates against the LIVE dice (e.g. (if (all DiceEqual)
+      // (moveAgain)) / (= 10 ("ThrowValue"))). Without it the bare fallback
+      // pass from game.moves() carries no then and the turn advanced wrongly
+      // (Siga, Ofanfelling, Zohn Ahl, Nebakuthana, Tasholiwe …).
+      const handDice = (ctx.game as unknown as { handDice?: () => unknown[] }).handDice?.() ?? [];
+      if (result.length === 0 && handDice.length > 0) {
+        result.push(new LudiiMove({
+          id: "pass",
+          label: "Pass",
+          siteIndices: [0],
+          mover: ctx.state.mover,
+          placedOwner: ctx.state.mover,
+          actions: [...priorActions, new ActionPass()],
+          moveAgain: false,
+          decisionIndex: priorActions.length,
+        }));
       }
     }
 
