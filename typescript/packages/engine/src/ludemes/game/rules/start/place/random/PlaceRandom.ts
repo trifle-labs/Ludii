@@ -143,6 +143,18 @@ export class PlaceRandom {
     eval: (_ctx: never) => [],
   };
 
+  // @java new SitesBoard(type) — all board sites [0..numSites). PlaceRandom's
+  // constructor 1 defaults a null region to this (place the pieces anywhere on
+  // the board); NULL_REGION's [] would place nothing (Quantum Leap / Shut Off
+  // His Lights started with an empty board -> only a pass).
+  private static readonly SITES_BOARD: RegionFunction = {
+    eval: (ctx: never) => {
+      const board = ((ctx as unknown as { game?: { equipment?: { board?: { numSites?: number } } } }).game)?.equipment?.board;
+      const n = board?.numSites ?? (ctx as unknown as { state: { cells: readonly number[] } }).state.cells.length;
+      return Array.from({ length: n }, (_, i) => i);
+    },
+  };
+
   /**
    * Random placement of pieces within a region.
    *
@@ -248,7 +260,7 @@ export class PlaceRandom {
       const siteType = type;
 
       // Java: this.region = (region == null ? new SitesBoard(type) : region);
-      this.region = regionFn ?? PlaceRandom.NULL_REGION;
+      this.region = regionFn ?? PlaceRandom.SITES_BOARD;
       this.countFn = countFn ?? intConstant(1);
       this.item = items;
       this.where = null;
