@@ -183,7 +183,15 @@ function directionChoice(direction: unknown): { absoluteDirection(): string; nam
 
 function countPips(): IntFunction {
   return {
-    eval: (context: Context) => context.state.diceValues?.reduce((sum, value) => sum + value, 0) ?? 0,
+    eval: (context: Context) => {
+      // @java State.sumDice — set by ActionSetDiceAllEqual on roll, NEVER decremented by ActionUseDie.
+      // diceRolledFaces mirrors that: set at roll time by ActionUpdateDice, not zeroed by ActionUseDie.
+      // diceValues IS zeroed by ActionUseDie, so using it here would give wrong pip counts mid-Sohatara.
+      const faces = context.state.diceRolledFaces?.length
+        ? context.state.diceRolledFaces
+        : context.state.diceValues;
+      return faces?.reduce((sum, value) => sum + value, 0) ?? 0;
+    },
   };
 }
 
