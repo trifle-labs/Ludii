@@ -467,7 +467,12 @@ function scanPositions(
       for (let lvl = 0; lvl < size; lvl++) {
         const owner = ownerStack[lvl] ?? 0;
         if (!allPlayers && owner !== specificPlayer) continue;
-        const what = whatStack[lvl] ?? owner;
+        // Fall back to the site's component channel (whats[site]), NOT the
+        // owner pid: a homogeneous flat-encoded stack has whatStack[]=[] while
+        // whats[site] holds the real component, which differs from the owner
+        // when comp != pid (e.g. Marker6 = comp 10, owner 6). Using owner made
+        // the component match fail. Mirrors CountPieces' whats[i] || owner.
+        const what = whatStack[lvl] ?? ((state.whats[site] ?? 0) || owner);
         if (what !== componentId) continue;
         const level = lvl;
         out.push({
