@@ -272,8 +272,17 @@ export class Regions extends Item {
 
     if (this.isStatic()) {
       // @java Regions.java:492 — precomputedRegion = eval(new Context(game, null))
-      // Use escape hatch: create a minimal context with just the game
-      const dummyCtx = { game } as unknown as Context & EvalScratch;
+      // Use escape hatch: create a minimal context with the game AND its
+      // board()/topology() accessors. eval() calls context.board().topology()
+      // (line ~296) and coord-based region sites call context.topology(); a
+      // bare { game } left those undefined so a static region built from
+      // coords/topology resolved empty (same class as the Map.computeMap bug).
+      const g = game as unknown as { board(): { topology(): unknown; defaultSite(): string } };
+      const dummyCtx = {
+        game,
+        board: () => g.board(),
+        topology: () => g.board().topology(),
+      } as unknown as Context & EvalScratch;
       this._precomputedRegion = this.eval(dummyCtx);
     }
   }

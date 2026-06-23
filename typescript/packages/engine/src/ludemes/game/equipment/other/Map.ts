@@ -170,7 +170,11 @@ export class Map extends Item {
     for (const pair of this._mapPairs) {
       // Create a dummy context for eval — use escape hatch since we don't
       // have access to the trial/state types in this module.
-      const dummyCtx = { game } as unknown as Context;
+      // @java Coord.eval calls context.topology() (then getElement/findByCoord)
+      // to resolve a (coord …) map key. Without topology the lookup returned
+      // OFF, so coord-keyed maps ((map "EntrySite" {(pair P1 (coord …)) …}))
+      // stored 0 for every key and (mapEntry …) read site 0 (Len Doat).
+      const dummyCtx = { game, topology: () => game.board().topology() } as unknown as Context;
 
       let intKey: number = pair.getIntKey().eval(dummyCtx as unknown as Context & { _evalTo: number; _evalFrom: number; _evalValue: number });
       if (intKey === OFF) {
