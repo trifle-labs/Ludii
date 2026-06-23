@@ -1731,11 +1731,19 @@ function aroundSites(ctx: Context & EvalScratch, site: number, distance: number,
     // Adjacent on square-board CELLS is 8-way (orthogonal + diagonal); the previous
     // Orthogonal default dropped diagonal pushes (Gekitai ply-6 drift).
     for (const dir of directions.length > 0 ? directions : ["Adjacent"]) {
-      const oneStep = dir === "All" || dir === "Adjacent"
-        ? traj.group(site, "Adjacent")
-        : dir === "Orthogonal" || dir === "Diagonal" || dir === "OffDiagonal"
-          ? traj.group(site, dir)
-          : traj.steps(site, dir);
+      // @java AbsoluteDirection.All vs Adjacent differ on VERTEX boards: there
+      // Adjacent is the 4 orthogonals while All adds the diagonals. Mapping
+      // "All" to the "Adjacent" group dropped those diagonal neighbours, so
+      // (sites Around … All) on vertex boards missed pieces (Forge/Wong/
+      // Garrisons). On square CELL boards group("All")==group("Adjacent")
+      // (both 8-way), so cell games are unaffected.
+      const oneStep = dir === "All"
+        ? traj.group(site, "All")
+        : dir === "Adjacent"
+          ? traj.group(site, "Adjacent")
+          : dir === "Orthogonal" || dir === "Diagonal" || dir === "OffDiagonal"
+            ? traj.group(site, dir)
+            : traj.steps(site, dir);
       if (distance === 1) {
         for (const n of oneStep) out.add(n);
       } else {
