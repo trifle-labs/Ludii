@@ -241,8 +241,12 @@ export class TakeControl implements MovesFunction {
 
   /** Helper: get the number of players from context. */
   private _numPlayers(ctx: Context): number {
-    const gameAny = ctx.game as unknown as { players?: { count?: number } };
-    return gameAny.players?.count ?? 2;
+    // @java context.game().players().count() — game.players is the compiled
+    // Players ludeme (a function), so `.count` was undefined and this always
+    // returned 2 (broke multi-player logic for >2 players). Use the numeric
+    // accessor (same fix as SetValuePlayer).
+    const n = (ctx.game as unknown as { numPlayers?: number }).numPlayers;
+    return typeof n === "number" && n > 0 ? n : 2;
   }
 
   /** @java TakeControl.isStatic() → false */

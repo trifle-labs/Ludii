@@ -217,8 +217,11 @@ export class SetHidden implements MovesFunction {
 
   /** Helper: get the number of players. */
   private _numPlayers(ctx: Context): number {
-    const gameAny = ctx.game as unknown as { players?: { count?: number } };
-    return gameAny.players?.count ?? 2;
+    // @java players().count() — game.players is the compiled Players ludeme
+    // (a function), so `.count` was undefined and this always returned 2. Use
+    // the numeric accessor (same fix as SetValuePlayer).
+    const n = (ctx.game as unknown as { numPlayers?: number }).numPlayers;
+    return typeof n === "number" && n > 0 ? n : 2;
   }
 
   private _evalRegion(ctx: Context): number[] {
