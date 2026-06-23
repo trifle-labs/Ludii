@@ -30,6 +30,7 @@ import { ActionAddCount } from "../../../../../../../action/action-add-count.js"
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
+import { evalDeferredThens } from "./Then.js";
 import type { Action } from "../../../../../../../action/index.js";
 
 /** Minimal track element descriptor. @java game/equipment/container/board/Track.java */
@@ -346,6 +347,18 @@ export class Sow extends Effect {
           for (const a of m.actions) finalActions.push(a);
           rollingState = m.applyTo(rollingState, ctx.rng);
           if (m.moveAgain) moveAgain = true;
+          // @java Sow.java:304-308 — sowMove.actions().addAll(
+          //   m.getActionsWithConsequences(newContext)): a capture move carries
+          //   its OWN (then …) chain (e.g. ("CaptureMove")'s (then (if (is Even
+          //   …) (capture …)))) that captures further holes. Applying only
+          //   m.actions silently dropped that chain (Bechi & ~60 two-row sow
+          //   games left seeds Java had captured). Fold the deferred thens.
+          if (m.deferredThens && m.deferredThens.length > 0) {
+            const folded = evalDeferredThens(evalCtx, rollingState as never, m);
+            for (const a of folded.extraActions) finalActions.push(a);
+            rollingState = folded.state as never;
+            if (folded.moveAgain) moveAgain = true;
+          }
         }
         if (this.backtracking === null && this.forward === null) break;
         if (this.backtracking !== null) {
