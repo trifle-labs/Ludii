@@ -461,6 +461,17 @@ export class Game implements Game {
   }
 
   /**
+   * @java Game.getMaxMoveLimit() — returns maxMovesLimit (default
+   * Constants.DEFAULT_MOVES_LIMIT = 10000). Used by (value MoveLimit) and the
+   * MoveLimit end check; its absence threw "getMaxMoveLimit is not a function"
+   * (Ludus Coriovalli). Matches the 10000 bound already used in apply()'s
+   * Step 4b move-limit draw.
+   */
+  public getMaxMoveLimit(): number {
+    return 10000;
+  }
+
+  /**
    * @java Equipment.sitesFrom() — base site index per container:
    * [0 (board), hand bases..., dice base].
    */

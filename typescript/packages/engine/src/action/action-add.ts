@@ -126,6 +126,14 @@ export class ActionAdd extends BaseAction {
     let next = state
       .withCell(this.toIndex, this.ownerIndex)
       .withWhatAt(this.toIndex, this.whatIndex);
+    // @java ActionAdd.java:292 — cs.setSite writes `count` alongside who/what.
+    // The new-piece path omitted it, so (add (piece …) (to …) count:N) left
+    // countAt=0 and (count Cell at:site)/(is Occupied) read 0 (Azteka's reset
+    // re-deals count:14 to a just-cleared hand; HandOccupied stayed false ->
+    // only a pass). Guarded on >1 so flat single-piece adds are unchanged.
+    if (this.countValue > 1) {
+      next = next.withCountAt(this.toIndex, this.countValue);
+    }
     if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
       next = next.withStateAt(this.toIndex, this.stateValue);
     }
