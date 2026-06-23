@@ -472,6 +472,16 @@ export class Game implements Game {
   }
 
   /**
+   * @java Game.getMaxTurnLimit() — maxTurnLimit (default
+   * Constants.DEFAULT_TURN_LIMIT = 1250). Used by (value TurnLimit); its
+   * absence threw "getMaxTurnLimit is not a function". Matches the
+   * 1250*numPlayers bound apply()'s Step 4b uses.
+   */
+  public getMaxTurnLimit(): number {
+    return 1250;
+  }
+
+  /**
    * @java Equipment.sitesFrom() — base site index per container:
    * [0 (board), hand bases..., dice base].
    */
