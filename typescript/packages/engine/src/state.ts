@@ -637,8 +637,14 @@ export class State {
   public isOccupiedSite(siteIndex: number): boolean {
     if (siteIndex < 0 || siteIndex >= this.cells.length) return false;
     if ((this.whats[siteIndex] ?? 0) !== 0) return true;
-    if ((this.cells[siteIndex] ?? 0) !== 0) return true;
     if ((this.stacks[siteIndex]?.length ?? 0) > 0) return true;
+    // NOTE: an owner (`cells`) with no what/stack/count is NOT occupancy —
+    // @java ContainerFlatState.isOccupied = countCell != 0; a drained stack
+    // (fromTo stack:True) leaves a STALE owner (Shared=3) behind, and reading
+    // it as occupied made (is Empty)/LeftMostEmpty pick the wrong sow site
+    // (~57 two-row sow games). whats covers piece placement, stacks covers
+    // stacking, countAt covers mancala/large-piece bodies — the owner channel
+    // alone is never the authority.
     // Count-only occupancy (Java: a site removed from the empty chunkset). A
     // large piece's body cells carry only `setCount(loc, 1)` with no who/what
     // (ActionAdd/ActionMove.applyLargePiece); they must read as occupied so
