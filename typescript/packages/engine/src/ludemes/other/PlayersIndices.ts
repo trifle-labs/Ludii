@@ -138,9 +138,18 @@ export class PlayersIndices {
         idPlayers.push(context.state().mover());
         break;
 
-      case "Next":
-        idPlayers.push(context.state().next());
+      case "Next": {
+        // @java context.state().next(). The 1:1 State clears next to 0 after a
+        // move, but Java keeps the upcoming player; resolving "Next" to 0 made
+        // (sites Next)/(sizes Group Next)/(no Pieces Next) read the neutral
+        // owner 0 (Bug/Baqura: P2's constraints saw player 0's empty groups ->
+        // forced pass). Fall back to the rotational next when unset, matching
+        // the canonical roleToPlayerId guard.
+        const nxt = context.state().next();
+        const npNext = context.game().players().size() - 1;
+        idPlayers.push(nxt > 0 ? nxt : (context.state().mover() % npNext) + 1);
         break;
+      }
 
       case "Prev":
         idPlayers.push(context.state().prev());

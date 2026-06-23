@@ -392,8 +392,14 @@ function roleToIntFunction(role: RoleTypeStr): IntFunction {
     eval: (ctx: Context): number => {
       switch (role) {
         case "Mover": return ctx.state.mover;
-        case "Next": return ctx.state.next ?? ctx.state.mover;
-        case "Prev": return (ctx.state as unknown as { prev?: number }).prev ?? ctx.state.mover;
+        // next is cleared to 0 mid-turn in the 1:1 State; 0 ?? mover keeps 0
+        // (the neutral owner). Treat <=0 as unset and use the rotational next,
+        // matching the canonical roleToPlayerId guard.
+        case "Next": return (ctx.state.next ?? 0) > 0 ? ctx.state.next : (ctx.state.mover % ctx.game.numPlayers) + 1;
+        case "Prev": {
+          const pv = (ctx.state as unknown as { prev?: number }).prev ?? 0;
+          return pv > 0 ? pv : ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+        }
         case "All": return ctx.game.numPlayers + 1; // convention: all-players sentinel
         case "Each": return ctx.game.numPlayers + 1;
         // @java RoleType.Shared — the shared player id is numPlayers+1
