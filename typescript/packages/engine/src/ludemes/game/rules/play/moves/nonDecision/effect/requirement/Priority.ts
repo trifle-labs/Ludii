@@ -12,7 +12,7 @@
 import type { Context } from "../../../../../../../../context.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import type { Move } from "../../../../../../../../move.js";
-import type { Then } from "../Then.js";
+import { applyPostStateThen, type Then } from "../Then.js";
 
 export class Priority implements MovesFunction {
   /** @java Priority.list — the prioritised list of move sets */
@@ -65,11 +65,14 @@ export class Priority implements MovesFunction {
       // @java Priority.java:83-96 — evaluate each move set
       const moves = moveGen.eval(ctx);
       if (moves.length > 0) {
-        // @java Priority.java:86-88 — append then clause if set
+        // @java Priority.java:86-88 — l.moves().get(j).then().add(then().moves()):
+        // the then clause is DEFERRED onto each move and evaluated post-apply,
+        // so (last To)/rotation/custom defines see the moved board. Evaluating
+        // it eagerly here (pre-move) baked in the false-branch and hardcoded
+        // moveAgain=false, advancing the turn when (then (if … (moveAgain)))
+        // should have kept it (Gadis/Senet/Sokkattan).
         if (this.thenClause != null) {
-          const thenMoves = this.thenClause.eval(ctx);
-          const thenActions = thenMoves.flatMap(tm => [...tm.actions]);
-          return moves.map(m => m.withConsequence(thenActions, false));
+          return moves.map(m => applyPostStateThen(this.thenClause!, ctx, m));
         }
         return moves;
       }
