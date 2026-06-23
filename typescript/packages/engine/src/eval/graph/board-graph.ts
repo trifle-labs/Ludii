@@ -297,9 +297,15 @@ function lowerEdges(n: LudNode | undefined): {
       if (pts.length >= 2)
         byCoord.push([pts[0] as [number, number], pts[1] as [number, number]]);
     } else {
-      // Flat scalar pair: endpoint vertex indices.
-      const xs = edge.items.filter(isNumber).map((x) => x.value);
-      if (xs.length >= 2) byIndex.push([xs[0] as number, xs[1] as number]);
+      // Flat scalar pair in lowercase `edges:` — @java BOTH Add.java:79 and
+      // Remove.java:86 type lowercase `edges` as FloatFunction[][][]/Float[][][]
+      // (COORDINATE endpoints {{x1 y1}{x2 y2}}). A flat {a b} is parsed as two
+      // 1-D points (fns[0].length==1) and Add.eval/Remove SKIP it
+      // (`if (fns[0].length < 2) continue;`). Index-edge pairs use UPPERCASE
+      // `Edges:` (DimFunction[][]). Routing flat lowercase pairs to byIndex
+      // added/removed phantom edges Java never touches (Ratio/Game of Dwarfs
+      // got 4 extra edges -> wrong adjacency -> wrong moves). Drop them, faithfully.
+      void edge;
     }
   }
   return { byCoord, byIndex };
