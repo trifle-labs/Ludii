@@ -220,7 +220,20 @@ export class FromTo implements MovesFunction {
           ctx._evalTo = origTo;
           continue;
         }
-        if (this.stack) {
+        if (this.stack && this.levelFrom !== null) {
+          // @java FromTo.java:328-340 — when levelFrom is given, Java creates a
+          // SINGLE-LEVEL ActionMove(from, levelFrom, to, …, stack=false) even
+          // with stack:True; the stack flag only governs whole-stack moves when
+          // levelFrom is ABSENT. largeStack mancala sows with
+          //   (forEach Value … (fromTo (from site level:(- stackSize value))
+          //                              (to …) stack:True))
+          // — one seed per value. Treating it as a whole-stack move piled ALL
+          // seeds into the first hole (Ceelkoqyuqkoqiji/O An Quan/Laomuzhu/
+          // Yucebao diverged from ply 0). Route through ActionMoveLevelFrom,
+          // whose count-backed branch moves exactly one seed per call.
+          const lv = this.levelFrom.eval(ctx);
+          moveAction = new ActionMoveLevelFrom(from, lv, to);
+        } else if (this.stack) {
           // @java FromTo.java:346-360 — stackingGame||stack with a count is an
           // ActionSubStackMove(numLevel=count): only the TOP `count` levels
           // relocate (Seesaw's (move ... count:("StackSize" (from)) stack:True)
