@@ -110,9 +110,14 @@ export class ActionAdd extends BaseAction {
     const currentWhat = state.whatAtSite(this.toIndex);
     const currentOwner = state.who(this.toIndex);
     if (currentWhat === this.whatIndex && currentOwner === this.ownerIndex) {
-      const oldCount = state.countAtSite(this.toIndex) || 1;
-      // Java parity: occupied ActionAdd sites accumulate count instead of
-      // rewriting who/what (Core/src/other/action/move/ActionAdd.java:307-310).
+      // @java ActionAdd.java:310 — occupied sites accumulate: setSite(.., UNDEFINED,
+      //   UNDEFINED, requiresCount ? oldCount + count : 1, ..). The old `|| 1`
+      // coerced a real oldCount of 0 into 1, fabricating a seed when a mancala
+      // empty-pit capture `(add piece (to (handSite Shared)) count:(count at:site))`
+      // re-adds with count=0 (oldCount 0 + 0 should stay 0, not become 1). Use the
+      // raw oldCount: 0+0=0 (empty-pit), 4+4=8 (normal sow), 0+1=1 (flat re-add,
+      // matching Java's non-requiresCount `: 1` branch since count defaults to 1).
+      const oldCount = state.countAtSite(this.toIndex);
       let next = state.withCountAt(this.toIndex, oldCount + this.countValue);
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
         next = next.withStateAt(this.toIndex, this.stateValue);
