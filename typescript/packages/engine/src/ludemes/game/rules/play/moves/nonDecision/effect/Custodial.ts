@@ -25,6 +25,7 @@ import type { CellFlatRadials } from "../../../../../../topology-radials.js";
 import { radialsForDirection } from "../../../../../../topology-radials.js";
 import type { Trajectories } from "../../../../../../../eval/graph/trajectories.js";
 import { Effect } from "./Effect.js";
+import { applyPostStateThen } from "./Then.js";
 import type { ThenLike } from "../../Moves.js";
 import type { Action } from "../../../../../../../action/index.js";
 import { IntConstant } from "../../../../../functions/ints/IntConstant.js";
@@ -153,15 +154,19 @@ export class Custodial extends Effect {
       this.longSandwich(ctx, result, mover, directions, minPathLength, maxPathLength);
     }
 
-    // Add then-consequences (coverage deferred)
-    if (this.then() !== null) {
-      // Java: for (j ...) moves.get(j).then().add(then().moves());
-    }
-
     // Restore
     (ctx as unknown as { _evalBetween?: number })._evalBetween = origBetween;
     (ctx as unknown as { _evalTo?: number })._evalTo = origTo;
     (ctx as unknown as { _evalFrom?: number })._evalFrom = origFrom;
+
+    // @java Custodial.java:146-148 — if (then() != null) for each generated move
+    // moves.get(j).then().add(then().moves()). Each capture move carries the
+    // ludeme's (then …); Move.apply evaluates it in the post-capture context. For
+    // (custodial … (then (if ("CanCaptureAgain") (moveAgain)))) this is what fires
+    // the chained-capture moveAgain — the prior stub dropped it, so the mover's
+    // turn ended early and turn order inverted (Khamousiyya/Sabou'iyya/AlmaTafl).
+    const thenClause = this.then();
+    if (thenClause != null) return result.map((m) => applyPostStateThen(thenClause, ctx, m));
 
     return result;
   }
