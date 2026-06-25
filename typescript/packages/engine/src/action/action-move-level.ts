@@ -68,6 +68,12 @@ abstract class ActionMoveLevelBase extends BaseAction {
         .withCountAt(this.toIndex, toCount + 1);
       if ((next.cells[this.toIndex] ?? 0) === 0) {
         next = next.withCell(this.toIndex, movingOwner);
+        // Also restore the component channel: a seed arriving at a previously
+        // DRAINED count-backed site (cells/whats both zeroed when it emptied)
+        // must repopulate whats[to], else the next read of that site falls back
+        // to cells[to] (the OWNER, e.g. Shared=3) as the "what", flipping a Seed
+        // into a phantom stack and zeroing countAt (Ceelkoqyuqkoqiji corruption).
+        if (movingWhat !== 0) next = next.withWhatAt(this.toIndex, movingWhat);
       }
       if (fromCount === 1 && (stackLen <= 1 || stackLen === fromCount)) {
         next = next.withCell(this.fromIndex, 0).withWhatAt(this.fromIndex, 0);
