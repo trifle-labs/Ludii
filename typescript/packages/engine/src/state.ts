@@ -1158,6 +1158,22 @@ export class State {
     });
   }
 
+  /**
+   * Clear only the stacks/whatStacks arrays for a site, leaving cells/whats/countAt
+   * untouched. Used to remove the ghost stacks entry left by a countBacked sow path
+   * when the last seed has been moved out (fromCount===1, stackLen<=1).
+   * Without this cleanup, stackSize() returns 1 instead of 0, corrupting
+   * (size Stack at:site) evaluations and BetweenRounds replay index computation.
+   */
+  public withStacksClearedAt(siteIndex: number): State {
+    if ((this.stacks[siteIndex]?.length ?? 0) === 0) return this;
+    const nextStacks = this.stacks.map((s) => [...s]);
+    nextStacks[siteIndex] = [];
+    const nextWhatStacks = this.whatStacks.map((s) => [...s]);
+    nextWhatStacks[siteIndex] = [];
+    return this.with({ stacks: nextStacks, whatStacks: nextWhatStacks });
+  }
+
   // ---- Per-site value / state / rotation / count -----------------------
 
   public stateAtSite(siteIndex: number): number {

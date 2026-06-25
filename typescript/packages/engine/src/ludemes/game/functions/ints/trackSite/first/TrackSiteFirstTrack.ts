@@ -18,6 +18,42 @@ const OFF = -1;
 /** Java parity: Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
 
+/**
+ * Convert a Java RoleType string ("Mover", "Next", "P1", "All", etc.) to
+ * an IntFunction that evaluates to the corresponding player index.
+ * @java game/types/play/RoleType.java — matches Java's player resolution.
+ */
+function roleTypeToIntFn(role: string): JavaIntFunction {
+  switch (role) {
+    case "Mover":
+      return { eval: (ctx: Context) => ctx.state.mover } as unknown as JavaIntFunction;
+    case "Next":
+      return {
+        eval: (ctx: Context) =>
+          (ctx.state.mover % (ctx.game as { numPlayers: number }).numPlayers) + 1,
+      } as unknown as JavaIntFunction;
+    case "Prev":
+      return {
+        eval: (ctx: Context) => {
+          const np = (ctx.game as { numPlayers: number }).numPlayers;
+          return ((ctx.state.mover - 2 + np) % np) + 1;
+        },
+      } as unknown as JavaIntFunction;
+    case "Shared":
+    case "Neutral":
+    case "All":
+      return { eval: (_ctx: Context) => 0 } as unknown as JavaIntFunction;
+    default: {
+      // "P1" → 1, "P2" → 2, etc.
+      if (/^P\d+$/.test(role)) {
+        const pid = Number(role.slice(1));
+        return { eval: (_ctx: Context) => pid } as unknown as JavaIntFunction;
+      }
+      return { eval: (_ctx: Context) => 0 } as unknown as JavaIntFunction;
+    }
+  }
+}
+
 /** Minimal track element shape (Java: Track.TrackElem). */
 interface TrackElem {
   readonly site: number;
@@ -66,8 +102,9 @@ export class TrackSiteFirstTrack extends BaseIntFunction {
   private precomputedValue: number = OFF;
 
   /**
-   * @param player The index of the player (as IntFunction or null).
-   * @param role   The role of the player (null — handled at call site).
+   * @param player The player as an IntFunction (exclusive with role).
+   * @param role   The role of the player as a RoleType string (e.g. "Mover",
+   *               "Next", "P1"). Exclusive with player.
    * @param name   The name of the track.
    * @param from   The site from where to look.
    * @param If     The condition to verify for that site.
@@ -76,14 +113,23 @@ export class TrackSiteFirstTrack extends BaseIntFunction {
    */
   public constructor(
     player: JavaIntFunction | null,
-    _role: null,
+    role: string | null,
     name: string | null,
     from: JavaIntFunction | null,
     If: BaseBooleanFunction | null,
   ) {
     super();
     this.name = name;
-    this.pidFn = player;
+    // Java: player and role are mutually exclusive (@Or); resolve role to an
+    // IntFunction so playerId is always evaluated dynamically.
+    // @java TrackSiteFirstTrack: when role != null, pid = role.owner(state)
+    if (player !== null) {
+      this.pidFn = player;
+    } else if (role !== null && role !== undefined) {
+      this.pidFn = roleTypeToIntFn(role as string);
+    } else {
+      this.pidFn = null;
+    }
     this.fromFn = (from === null) ? null : from;
     this.condFn = (If === null) ? new BooleanConstant(true) : If;
   }

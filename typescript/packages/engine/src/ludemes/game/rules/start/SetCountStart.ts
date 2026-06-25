@@ -48,11 +48,19 @@ export class SetCountStart implements StartRule {
     // site indices from regionFn/siteFn are already absolute (all site types
     // share a flat index space in the TS state arrays). The setSite() bridge
     // does not take a type parameter.
-    const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number }> } }).equipment?.pieces;
-    const what = pieces && pieces.length > 0 ? pieces[pieces.length - 1]!.index : -1;
+    const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number; owner: number }> } }).equipment?.pieces;
+    const lastPiece = pieces && pieces.length > 0 ? pieces[pieces.length - 1]! : null;
+    const what = lastPiece ? lastPiece.index : -1;
+    // @java ActionSetCount stamps the Seed component's OWNER as well as its
+    // what/count (SetCount.ts already does this). Passing who=-1 left
+    // cells[site]=0, so a SowAgainMove's ActionAdd accumulate-check
+    // (currentWhat===what && currentOwner===owner) failed the owner half, took
+    // the placement path and skipped the countAt update — NumToSow ran short
+    // and the mover drifted (Dongjintian 4-player). Stamp the owner too.
+    const who = lastPiece ? lastPiece.owner : -1;
     for (const site of sites) {
-      // @java ActionSetCount(type, loc, what, count) -> cs.setSite(site, UNDEF, what, count, ...)
-      cs.setSite(site, -1, count > 0 ? what : -1, count, -1, -1);
+      // @java ActionSetCount(type, loc, what, count) -> cs.setSite(site, who, what, count, ...)
+      cs.setSite(site, count > 0 ? who : -1, count > 0 ? what : -1, count, -1, -1);
     }
   }
 

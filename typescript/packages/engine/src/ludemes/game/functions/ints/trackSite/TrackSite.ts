@@ -34,7 +34,7 @@ export class TrackSite extends BaseIntFunction {
   public static constructFirst(
     _trackSiteType: TrackSiteFirstType,
     player: JavaIntFunction | null,
-    role: null,
+    role: string | null,
     name: string | null,
     from: JavaIntFunction | null,
     If: BaseBooleanFunction | null,
@@ -56,7 +56,7 @@ export class TrackSite extends BaseIntFunction {
   public static constructEnd(
     _trackSiteType: TrackSiteType,
     player: JavaIntFunction | null,
-    role: null,
+    role: string | null,
     name: string | null,
   ): JavaIntFunction {
     switch (_trackSiteType) {

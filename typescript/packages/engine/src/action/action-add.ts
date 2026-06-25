@@ -88,6 +88,14 @@ export class ActionAdd extends BaseAction {
 
   public override apply(state: State): State {
     if (this.toIndex < 0 || this.whatIndex < 1) return state;
+    // @java parity: ActionAdd with count=0 and no footprint is a no-op — Java's
+    // setSite skips the write path when count≤0 (Core/…/ActionAdd.java:287-292).
+    // In TS, a zero-count add for mancala (e.g. capturing from an empty pit via
+    // `(add piece (to (handSite Shared)) count:(count at:site))` where the pit
+    // is empty) previously stamped who/what on the hand site, then a second such
+    // add hit the `oldCount || 1` fallback and set count=1 — triggering the
+    // `(fromTo … (to (last From)))` capture-return with a spurious seed.
+    if (this.countValue <= 0 && this.footprint.length === 0) return state;
     if (this.onStack) {
       // @java ActionAdd (stacking) calls cs.addItemGeneric(state, to, what, who, …),
       // pushing the COMPONENT and the OWNER into their parallel stack columns in
