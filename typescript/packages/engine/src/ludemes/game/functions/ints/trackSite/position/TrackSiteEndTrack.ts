@@ -10,6 +10,7 @@
 import type { Context } from "../../../../../../context.js";
 import { BaseIntFunction } from "../../BaseIntFunction.js";
 import type { JavaIntFunction } from "../../IntFunction.js";
+import { roleToPlayerId } from "../../board/IdFn.js";
 
 /** Java parity: Constants.OFF = -1 */
 const OFF = -1;
@@ -63,12 +64,16 @@ export class TrackSiteEndTrack extends BaseIntFunction {
    */
   public constructor(
     player: JavaIntFunction | null,
-    _role: null,
+    role: string | null,
     name: string | null,
   ) {
     super();
     this.name = name;
-    this.pidFn = player;
+    // @java TrackSiteEndTrack — pidFn = player.index() else RoleType.toIntFunction(role).
+    // Route role through the canonical roleToPlayerId (= Id(null,role).eval).
+    this.pidFn = player !== null
+      ? player
+      : (role !== null ? { eval: (ctx: Context) => roleToPlayerId(role, ctx) } as JavaIntFunction : null);
   }
 
   //-------------------------------------------------------------------------

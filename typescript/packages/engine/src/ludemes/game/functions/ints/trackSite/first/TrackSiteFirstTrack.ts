@@ -12,6 +12,7 @@ import { BaseIntFunction } from "../../BaseIntFunction.js";
 import type { JavaIntFunction } from "../../IntFunction.js";
 import { BooleanConstant } from "../../../booleans/BooleanConstant.js";
 import type { BaseBooleanFunction } from "../../../booleans/BaseBooleanFunction.js";
+import { roleToPlayerId } from "../../board/IdFn.js";
 
 /** Java parity: Constants.OFF = -1 */
 const OFF = -1;
@@ -76,14 +77,20 @@ export class TrackSiteFirstTrack extends BaseIntFunction {
    */
   public constructor(
     player: JavaIntFunction | null,
-    _role: null,
+    role: string | null,
     name: string | null,
     from: JavaIntFunction | null,
     If: BaseBooleanFunction | null,
   ) {
     super();
     this.name = name;
-    this.pidFn = player;
+    // @java TrackSiteFirstTrack:68 — pidFn = player.index() if a player is given,
+    // else RoleType.toIntFunction(role) when a role is given. RoleType.toIntFunction
+    // is owner>0 ? IntConstant(owner) : new Id(null, role); Id(null,role).eval is the
+    // canonical roleToPlayerId switch — route through it (no duplicate resolver).
+    this.pidFn = player !== null
+      ? player
+      : (role !== null ? { eval: (ctx: Context) => roleToPlayerId(role, ctx) } as JavaIntFunction : null);
     this.fromFn = (from === null) ? null : from;
     this.condFn = (If === null) ? new BooleanConstant(true) : If;
   }
