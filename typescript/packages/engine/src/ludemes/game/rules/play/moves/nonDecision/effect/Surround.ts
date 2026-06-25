@@ -39,6 +39,39 @@ import type { To } from "../../../../../util/moves/To.js";
 import type { Piece } from "../../../../../util/moves/Piece.js";
 import { Remove } from "./Remove.js";
 import { normaliseFriendAtPlaceholder } from "./EffectCtorAdapters.js";
+import type { CellFlatRadials } from "../../../../../../topology-radials.js";
+import { radialsForDirection } from "../../../../../../topology-radials.js";
+
+/**
+ * Resolve all directed radials (as bare step-arrays) at `site` in `dirnChoice`,
+ * mirroring Custodial: prefer the graph trajectories (hex/tri/graph boards), then
+ * fall back to the index-based CellFlatRadials. @java Surround.java uses
+ * graph.trajectories().radials(type, from, dirnChoice). The previous code indexed
+ * the CellFlatRadials object with the direction STRING (cellRadials[dirnChoice]),
+ * which is always undefined ({axes:[…]} has no such key) — so Surround returned []
+ * unconditionally and no surround capture ever fired (Bizingo/Castello).
+ */
+function flattenAxes(
+  axes: readonly { ray: readonly number[]; opposite: readonly number[] }[],
+): readonly (readonly number[])[] {
+  return axes.flatMap(({ ray, opposite }) => [ray, opposite]);
+}
+
+function dirsAt(
+  ctxAny: { _trajectories?: { radialsByName(site: number, dir: string): number[][] } | null },
+  radials: readonly CellFlatRadials[],
+  site: number,
+  dirnChoice: string,
+): readonly (readonly number[])[] {
+  const traj = ctxAny._trajectories ?? null;
+  if (traj) {
+    const directed = traj.radialsByName(site, dirnChoice);
+    if (directed.length > 0) return directed;
+  }
+  const cellRadials = radials[site];
+  if (!cellRadials) return [];
+  return flattenAxes(radialsForDirection(cellRadials, dirnChoice));
+}
 
 /**
  * Surround effect — applies an effect to surrounded pieces.
@@ -109,7 +142,8 @@ export class Surround extends Effect {
     if (from < 0) return [];
 
     const ctxAny = ctx as unknown as {
-      _radials?: Array<Record<string, Array<{ ray: number[]; opposite: number[] }>>>;
+      _radials?: readonly CellFlatRadials[];
+      _trajectories?: { radialsByName(site: number, dir: string): number[][] } | null;
     };
     const radials = ctxAny._radials;
     if (!radials) {
@@ -128,13 +162,10 @@ export class Surround extends Effect {
     const evalFromOrig = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
     const evalToOrig = (ctx as unknown as { _evalTo?: number })._evalTo ?? -1;
 
-    const cellRadials = radials[from];
-    if (!cellRadials) return [];
-
-    const dirsForFrom = cellRadials[this.dirnChoice] ?? [];
+    const dirsForFrom = dirsAt(ctxAny, radials, from, this.dirnChoice);
     const result: Move[] = [];
 
-    for (const { ray } of dirsForFrom) {
+    for (const ray of dirsForFrom) {
       if (ray.length < 2) continue;
 
       const locationUnderThreat = ray[1]!;
@@ -143,33 +174,38 @@ export class Surround extends Effect {
       (ctx as unknown as { _evalBetween?: number })._evalBetween = locationUnderThreat;
       if (!this.targetRule.eval(ctx)) continue;
 
-      // @java Surround.java:152 — check neighbours of threatened piece
+      // @java Surround.java:153-155 — check neighbours of threatened piece.
+      // withPieceOk starts false (Java line 155): it becomes true only when SOME
+      // surrounding site (the pivot included) actually holds the required piece.
       let except = 0;
-      let withPieceOk = withPiece === -1; // already ok if no piece required
+      let withPieceOk = false;
 
-      const threatRadials = radials[locationUnderThreat];
-      if (threatRadials) {
-        const threatDirs = threatRadials[this.dirnChoice] ?? [];
-        outer: for (const { ray: tRay } of threatDirs) {
-          if (tRay.length < 2) { withPieceOk = true; continue; }
+      {
+        const threatDirs = dirsAt(ctxAny, radials, locationUnderThreat, this.dirnChoice);
+        outer: for (const tRay of threatDirs) {
+          // Java accesses steps()[1] directly; a direction with no neighbour yields
+          // no radial, so steps().length is always >= 2 here. Skip defensively.
+          if (tRay.length < 2) continue;
           const friendSite = tRay[1]!;
+          // @java Surround.java:162-164 — isThreat = (steps<2) || friendPieceSite==from
+          // || isFriend(friendPieceSite). A non-threat (a real non-friend that isn't
+          // the pivot) counts as an exception.
+          let isThreat: boolean;
           if (friendSite === from) {
-            withPieceOk = true;
-            continue;
+            isThreat = true;
+          } else {
+            (ctx as unknown as { _evalTo?: number })._evalTo = friendSite;
+            isThreat = this.friendRule.eval(ctx);
           }
-          // @java: isFriend check
-          (ctx as unknown as { _evalTo?: number })._evalTo = friendSite;
-          const isFriend = this.friendRule.eval(ctx);
+          if (!isThreat) except++;
 
-          if (!isFriend) {
-            except++;
-          }
-
-          // @java: withPiece check
-          if (!withPieceOk) {
-            const whatFriend = state.whatAtSite(friendSite);
-            if (withPiece === -1 || withPiece === whatFriend) withPieceOk = true;
-          }
+          // @java Surround.java:167-170 — the withPiece test runs for EVERY
+          // surrounding site, the pivot included. The prior code set withPieceOk
+          // unconditionally when friendSite===from, so a surround led by a piece
+          // that ISN'T the required `with:` piece wrongly qualified (Bizingo's
+          // (surround … with:(piece (id "Jarl" Mover))) fired off a Thrall).
+          const whatFriend = state.whatAtSite(friendSite);
+          if (withPiece === -1 || withPiece === whatFriend) withPieceOk = true;
 
           if (except > nbExcept) break outer;
         }
