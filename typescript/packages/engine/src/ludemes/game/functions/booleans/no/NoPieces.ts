@@ -98,12 +98,6 @@ export class NoPieces implements BooleanFunction {
     const idPlayers: Set<number> = new Set();
     if (this.role === "All") {
       for (let pid = 0; pid <= numPlayersN; pid++) idPlayers.add(pid);
-      // @java Constants.SHARED = numPlayers+1 is included in the "All" role in Java.
-      // Shared-owned pieces (ExtraSeeds, owner=numPlayers+1) must count as pieces
-      // when checking (no Pieces All); without this, largeStack mancala sites with
-      // countAt>0 appear empty (stacks=[Shared] exists but owner not in idPlayers,
-      // so the flat countAt check is skipped).
-      idPlayers.add(numPlayersN + 1);
     } else if ((this.role as string) === "TeamMover" || (this.role as string) === "TeamNext") {
       // @java Id.java — RoleType.TeamMover → state.getTeam(mover); NoPieces
       // expands a team role to ALL its members. (no Pieces TeamMover) is true

@@ -59,10 +59,6 @@ abstract class ActionMoveLevelBase extends BaseAction {
         let next = state.withCountAt(this.fromIndex, Math.max(0, fromCount - 1));
         if (fromCount === 1) {
           next = next.withCell(this.fromIndex, 0).withWhatAt(this.fromIndex, 0);
-          // @java Ghost-stacks cleanup: countBacked sow leaves stacks[from]=[owner]
-          // after the last seed is moved out. Clear the ghost so stackSize() returns
-          // 0 instead of 1, keeping (size Stack at:from) and BetweenRounds correct.
-          if (stackLen <= 1) next = next.withStacksClearedAt(this.fromIndex);
         }
         return next.withStackPush(this.toIndex, movingOwner, movingWhat);
       }
@@ -81,8 +77,6 @@ abstract class ActionMoveLevelBase extends BaseAction {
       }
       if (fromCount === 1 && (stackLen <= 1 || stackLen === fromCount)) {
         next = next.withCell(this.fromIndex, 0).withWhatAt(this.fromIndex, 0);
-        // @java Ghost-stacks cleanup: same as stackIntoDestination path above.
-        if (stackLen <= 1) next = next.withStacksClearedAt(this.fromIndex);
       }
       return next;
     }

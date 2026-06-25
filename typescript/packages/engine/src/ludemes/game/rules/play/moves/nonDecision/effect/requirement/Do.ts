@@ -19,7 +19,7 @@ import type { Move } from "../../../../../../../../move.js";
 import { Move as LudiiMove } from "../../../../../../../../move.js";
 import { ActionPass } from "../../../../../../../../action/action-pass.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
-import { applyPostStateThen, applyMoveWithThens, evalDeferredThens } from "../Then.js";
+import { applyPostStateThen, applyMoveWithThens } from "../Then.js";
 
 /**
  * @java game/rules/play/moves/nonDecision/effect/requirement/Do.java
@@ -227,23 +227,9 @@ export class Do implements MovesFunction {
     // board topology visible (radials/trajectories), mirroring Game.applyInternal.
     // @java Move.apply runs then() consequences in TempContexts too — the
     // ifAfterwards condition must see e.g. the deferred (sow …) board (J'odu).
-    const postState = m.applyTo(ctx.state, ctx.rng);
-    let finalState = postState;
-    // Augmented move: includes the deferred-then actions (e.g. sow placements) so
-    // that (last To afterConsequence:True) / toAfterSubsequents() returns the FINAL
-    // sow landing site, not just the decision select site. Without this, Intotoi's
-    // (sites From (do (move Select … (then (sow))) ifAfterwards:(is In (PlayFromLastHole) …)))
-    // would always return the wrong site and filter every candidate.
-    let augmentedMove: Move = m;
-    if (m.deferredThens.length > 0) {
-      const { state: stateAfterThens, extraActions, moveAgain } = evalDeferredThens(ctx, postState, m);
-      finalState = stateAfterThens;
-      if (extraActions.length > 0) {
-        augmentedMove = m.withConsequence(extraActions, moveAgain);
-      }
-    }
-    const newTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(augmentedMove, false, -1) ?? ctx.trial;
-    const newCtx = new Context(ctx.game, finalState, newTrial, ctx.rng);
+    const newState = applyMoveWithThens(ctx, m);
+    const newTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(m, false, -1) ?? ctx.trial;
+    const newCtx = new Context(ctx.game, newState, newTrial, ctx.rng);
     const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
     const aug = newCtx as Context & { _radials?: unknown; _trajectories?: unknown };
     aug._radials = src._radials;

@@ -16,37 +16,6 @@ const OFF = -1;
 /** Java parity: Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
 
-/** Convert a Java RoleType string to an IntFunction. @java RoleType.java */
-function roleTypeToIntFn(role: string): JavaIntFunction {
-  switch (role) {
-    case "Mover":
-      return { eval: (ctx: Context) => ctx.state.mover } as unknown as JavaIntFunction;
-    case "Next":
-      return {
-        eval: (ctx: Context) =>
-          (ctx.state.mover % (ctx.game as { numPlayers: number }).numPlayers) + 1,
-      } as unknown as JavaIntFunction;
-    case "Prev":
-      return {
-        eval: (ctx: Context) => {
-          const np = (ctx.game as { numPlayers: number }).numPlayers;
-          return ((ctx.state.mover - 2 + np) % np) + 1;
-        },
-      } as unknown as JavaIntFunction;
-    case "Shared":
-    case "Neutral":
-    case "All":
-      return { eval: (_ctx: Context) => 0 } as unknown as JavaIntFunction;
-    default: {
-      if (/^P\d+$/.test(role)) {
-        const pid = Number(role.slice(1));
-        return { eval: (_ctx: Context) => pid } as unknown as JavaIntFunction;
-      }
-      return { eval: (_ctx: Context) => 0 } as unknown as JavaIntFunction;
-    }
-  }
-}
-
 /** Minimal track element shape (Java: Track.TrackElem). */
 interface TrackElem {
   readonly site: number;
@@ -86,27 +55,20 @@ export class TrackSiteEndTrack extends BaseIntFunction {
   private precomputedValue: number = OFF;
 
   /**
-   * @param player The player as an IntFunction (exclusive with role).
-   * @param role   The role of the player as a RoleType string ("Mover", "P1", etc.).
+   * @param player The index of the player (as IntFunction or null).
+   * @param role   The role of the player (null — handled at call site).
    * @param name   The name of the track.
    *
    * @java TrackSiteEndTrack(Player, RoleType, String)
    */
   public constructor(
     player: JavaIntFunction | null,
-    role: string | null,
+    _role: null,
     name: string | null,
   ) {
     super();
     this.name = name;
-    // Java: player and role are mutually exclusive (@Or); resolve role to IntFunction.
-    if (player !== null) {
-      this.pidFn = player;
-    } else if (role !== null && role !== undefined) {
-      this.pidFn = roleTypeToIntFn(role as string);
-    } else {
-      this.pidFn = null;
-    }
+    this.pidFn = player;
   }
 
   //-------------------------------------------------------------------------

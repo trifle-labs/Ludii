@@ -201,14 +201,7 @@ export class Sites extends BaseRegionFunction {
             // gives them on any geometry: a square board's hull has 4
             // non-collinear turns, a hexhex board's has 6 (HeXentafl's
             // fortresses {0,3,15,21,33,36}), rotation-invariant.
-            const traj = (ctx as unknown as { _trajectories?: { cornerSites?: () => number[] | undefined; els?: ArrayLike<{ pt: { x: number; y: number } }> } })._trajectories;
-            // Prefer the graph-theoretic corner sites (min-degree nodes) over the
-            // convex hull, which over-counts for mancala and similar boards.
-            // Java uses Topology.corners('Cell') which maps to graph corner vertices.
-            const cornerSitesResult = traj?.cornerSites?.();
-            if (cornerSitesResult && cornerSitesResult.length > 0) {
-              return cornerSitesResult;
-            }
+            const traj = (ctx as unknown as { _trajectories?: { els?: ArrayLike<{ pt: { x: number; y: number } }> } })._trajectories;
             const els = traj?.els;
             if (els && els.length > 0) {
               const pts: { i: number; x: number; y: number }[] = [];
