@@ -339,6 +339,13 @@ export class Sow extends Effect {
     // @java Sow.java:293-351 — apply capture rule after sowing
     if (this.captureEffect !== null) {
       let numCapture = 0;
+      // @java Sow.java — the backtracking/forward CONTINUATION conditions
+      // ((is Odd (count at:(next hole))) etc.) are evaluated on the post-sow,
+      // PRE-capture board (Java's newContext), never on the captured board.
+      // Evaluating them on the post-capture rollingState made a just-emptied
+      // hole read count 0 -> (is Odd 0)=false -> the capture chain broke one
+      // hole early (Okwe). Snapshot the pre-capture board for the condition evals.
+      const preCaptureState = rollingState;
       while (this.captureRule === null || this.captureRule.eval(evalCtx)) {
         evalCtx._evalFrom = start;
         evalCtx._evalTo = lastTo;
@@ -362,25 +369,25 @@ export class Sow extends Effect {
         }
         if (this.backtracking === null && this.forward === null) break;
         if (this.backtracking !== null) {
-          evalCtx = tempContext(ctx, rollingState, start, lastTo);
+          evalCtx = tempContext(ctx, preCaptureState, start, lastTo);
           if (!this.backtracking.eval(evalCtx)) break;
           const prevTo = elems[i]?.prev ?? -1;
           if (prevTo < 0) break;
           i = elems[i]!.prevIndex;
           lastTo = prevTo;
-          evalCtx = tempContext(ctx, rollingState, start, lastTo);
+          evalCtx = tempContext(ctx, preCaptureState, start, lastTo);
           if (!this.backtracking.eval(evalCtx)) break;
           if (prevTo === start) break;
         }
         if (this.forward !== null) {
-          evalCtx = tempContext(ctx, rollingState, start, lastTo);
+          evalCtx = tempContext(ctx, preCaptureState, start, lastTo);
           if (!this.forward.eval(evalCtx)) break;
           if (!track.islooped() && (elems[i]?.next ?? -1) < 0) break;
           const nextTo = elems[i]?.next ?? -1;
           if (nextTo < 0) break;
           i = elems[i]!.nextIndex;
           lastTo = nextTo;
-          evalCtx = tempContext(ctx, rollingState, start, lastTo);
+          evalCtx = tempContext(ctx, preCaptureState, start, lastTo);
           if (!this.forward.eval(evalCtx)) break;
         }
         evalCtx = tempContext(ctx, rollingState, start, lastTo);
