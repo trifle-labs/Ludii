@@ -97,7 +97,13 @@ export class NoPieces implements BooleanFunction {
     const numPlayersN = ctx.game.numPlayers;
     const idPlayers: Set<number> = new Set();
     if (this.role === "All") {
-      for (let pid = 0; pid <= numPlayersN; pid++) idPlayers.add(pid);
+      // @java PlayersIndices.getIdPlayers case All: for (pid=0; pid <= players().size(); pid++).
+      // Players.size() counts the padded null slot 0, so size() = numPlayers+1 — the loop
+      // therefore covers 0..numPlayers+1 INCLUSIVE. numPlayers+1 is the Shared owner
+      // (Constants.SHARED); Shared-owned pieces (mancala ExtraSeeds) must count under
+      // (no Pieces All). For games without Shared-owned pieces this id matches nothing
+      // (neutral). The TS loop stopped at numPlayers, dropping numPlayers+1.
+      for (let pid = 0; pid <= numPlayersN + 1; pid++) idPlayers.add(pid);
     } else if ((this.role as string) === "TeamMover" || (this.role as string) === "TeamNext") {
       // @java Id.java — RoleType.TeamMover → state.getTeam(mover); NoPieces
       // expands a team role to ALL its members. (no Pieces TeamMover) is true
