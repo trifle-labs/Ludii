@@ -296,21 +296,28 @@ export class ForEachPiece extends Operator {
               || specificPlayer === 0) {
             pieceMoves = component.generate?.(context)?.moves() ?? [];
           } else {
-            // @java modify context state for non-mover player
-            const stateM = state as unknown as {
-              setPrev?(p: number): void; setMover?(p: number): void; setNext?(p: number): void;
-              prev?: number;
-            };
-            const oldPrev = stateM.prev ?? state.mover;
-            const oldMover = state.mover;
-            const oldNext = state.next;
-            stateM.setPrev?.(oldMover);
-            stateM.setMover?.(specificPlayer);
-            stateM.setNext?.(oldMover);
-            pieceMoves = component.generate?.(context)?.moves() ?? [];
-            stateM.setPrev?.(oldPrev);
-            stateM.setMover?.(oldMover);
-            stateM.setNext?.(oldNext);
+            // @java ForEachPiece.java:293-299 — temporarily set state.mover/prev/next
+            // to the target player so the piece's generator resolves (mover)-relative
+            // tests (IsFriendAt/IsEnemyAt) for THAT player, then restore. State.mover is
+            // `readonly` only at the type level; mutate directly (Java's State is mutable
+            // here). The prior optional-chained setMover?.() calls were NO-OPS — State has
+            // no such methods — so non-mover pieces generated with the WRONG mover: a king
+            // "captured" its own pieces and could not capture the checking enemy, yielding
+            // a false (no) checkmate (Main Chator).
+            const mut = state as unknown as { mover: number; prev: number; next: number };
+            const oldPrev = mut.prev;
+            const oldMover = mut.mover;
+            const oldNext = mut.next;
+            mut.prev = oldMover;
+            mut.mover = specificPlayer;
+            mut.next = oldMover;
+            try {
+              pieceMoves = component.generate?.(context)?.moves() ?? [];
+            } finally {
+              mut.prev = oldPrev;
+              mut.mover = oldMover;
+              mut.next = oldNext;
+            }
           }
         } else {
           // @java pieceMoves = specificMoves.eval(context)
@@ -319,20 +326,22 @@ export class ForEachPiece extends Operator {
               || specificPlayer === 0) {
             pieceMoves = this.specificMoves.eval(context);
           } else {
-            const stateM = state as unknown as {
-              setPrev?(p: number): void; setMover?(p: number): void; setNext?(p: number): void;
-              prev?: number;
-            };
-            const oldPrev = stateM.prev ?? state.mover;
-            const oldMover = state.mover;
-            const oldNext = state.next;
-            stateM.setPrev?.(oldMover);
-            stateM.setMover?.(specificPlayer);
-            stateM.setNext?.(oldMover);
-            pieceMoves = this.specificMoves.eval(context);
-            stateM.setPrev?.(oldPrev);
-            stateM.setMover?.(oldMover);
-            stateM.setNext?.(oldNext);
+            // @java ForEachPiece.java:293-299 — same temporary mover swap as the
+            // component-generate branch above (the setX?.() no-ops were silent).
+            const mut = state as unknown as { mover: number; prev: number; next: number };
+            const oldPrev = mut.prev;
+            const oldMover = mut.mover;
+            const oldNext = mut.next;
+            mut.prev = oldMover;
+            mut.mover = specificPlayer;
+            mut.next = oldMover;
+            try {
+              pieceMoves = this.specificMoves.eval(context);
+            } finally {
+              mut.prev = oldPrev;
+              mut.mover = oldMover;
+              mut.next = oldNext;
+            }
           }
         }
 
