@@ -19,7 +19,7 @@ import type { Move } from "../../../../../../../../move.js";
 import { Move as LudiiMove } from "../../../../../../../../move.js";
 import { ActionPass } from "../../../../../../../../action/action-pass.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
-import { applyPostStateThen, applyMoveWithThens } from "../Then.js";
+import { applyPostStateThen, applyMoveWithThens, evalDeferredThens } from "../Then.js";
 
 /**
  * @java game/rules/play/moves/nonDecision/effect/requirement/Do.java
@@ -227,8 +227,28 @@ export class Do implements MovesFunction {
     // board topology visible (radials/trajectories), mirroring Game.applyInternal.
     // @java Move.apply runs then() consequences in TempContexts too — the
     // ifAfterwards condition must see e.g. the deferred (sow …) board (J'odu).
-    const newState = applyMoveWithThens(ctx, m);
-    const newTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(m, false, -1) ?? ctx.trial;
+    // finalState is IDENTICAL to applyMoveWithThens(ctx, m) — that helper is
+    // m.applyTo(ctx.state) then evalDeferredThens(..).state. We inline it only to
+    // also capture the deferred-then actions and fold them into the move recorded
+    // on the trial via withConsequence. withConsequence keeps fromSite/toSite (so
+    // (last To)/(last From) are unchanged) and merely appends the consequence
+    // actions, exposing them to (last To afterConsequence:True) / toAfterSubsequents.
+    // Without this, Intotoi's (sites From (do (move Select … (then (sow)))
+    // ifAfterwards:(is In (PlayFromLastHole …)))) read the Select site, not the
+    // final sow landing site, and filtered every candidate. @java Move records its
+    // then-consequence actions on the applied move.
+    const postState = m.applyTo(ctx.state, ctx.rng);
+    let finalState = postState;
+    let augmentedMove: Move = m;
+    if (m.deferredThens.length > 0) {
+      const { state: stateAfterThens, extraActions, moveAgain } = evalDeferredThens(ctx, postState, m);
+      finalState = stateAfterThens;
+      if (extraActions.length > 0) {
+        augmentedMove = m.withConsequence(extraActions, moveAgain);
+      }
+    }
+    const newState = finalState;
+    const newTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(augmentedMove, false, -1) ?? ctx.trial;
     const newCtx = new Context(ctx.game, newState, newTrial, ctx.rng);
     const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
     const aug = newCtx as Context & { _radials?: unknown; _trajectories?: unknown };
