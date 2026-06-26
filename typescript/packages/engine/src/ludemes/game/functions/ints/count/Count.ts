@@ -366,7 +366,15 @@ export class Count extends BaseIntFunction {
 
     switch (countType) {
       case "Pieces": {
-        const isAll = role === null || role === undefined || role === "All";
+        // @java Count Pieces is the "all owners" count only when NO specific owner
+        // is named — i.e. neither `of:` (a dynamic IntFunction) nor a specific role.
+        // A dynamic `of:` (e.g. (count Pieces of:(who at:s level:(level)))) is
+        // owner-filtered: the old `role === null` test wrongly flagged it as isAll
+        // and counted EVERY piece in the stack, so the Pachisi capture-return guard
+        // (= 1 (count Pieces of:(who …) …)) saw 2 on a 2-high capture stack and never
+        // fired. whoFn already uses `of` when present; gate isAll on `of` being null.
+        const isAll = (of === null || of === undefined)
+          && (role === null || role === undefined || role === "All");
         const whoFn = of !== null && of !== undefined ? asLeanInt(of) : roleToInt(role);
         // @java CountPieces(type, role, of, name, in, If) — If was previously dropped.
         return asJavaReturn(new CountPieces(
