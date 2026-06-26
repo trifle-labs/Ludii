@@ -143,7 +143,11 @@ export class NoPieces implements BooleanFunction {
         for (let lvl = 0; lvl < stackRow.length; lvl++) {
           const who = stackRow[lvl] ?? 0;
           if (!idPlayers.has(who)) continue;
-          if (allowedWhats !== null && !allowedWhats.has(whatRow[lvl] ?? 0)) continue;
+          // @java NoPieces.eval uses cs.what(site, level). A FLAT game stores
+          // stacks[site]=[owner] (degenerate pseudo-stack) but leaves the whatStacks
+          // column EMPTY — the component lives in flat whats[site]. Fall back to it.
+          const what = whatRow[lvl] !== undefined ? whatRow[lvl]! : (state.whats[site] ?? 0);
+          if (allowedWhats !== null && !allowedWhats.has(what)) continue;
           return false;
         }
         continue;
