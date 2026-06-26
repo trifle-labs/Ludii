@@ -99,11 +99,20 @@ export class ForEachLevel extends Effect {
       ? (cs as unknown as { sizeStack(site: number, type: unknown): number }).sizeStack(site, realType) ?? 0
       : (context.state.stacks[site]?.length ?? 0);
 
+    // @java context.setLevel(level) — the engine Context has no setLevel method
+    // (the optional chain below is a silent no-op); the TS-native iterator field
+    // is _evalLevel, which (level)/Level.eval reads. Set it explicitly each
+    // iteration (mirroring ForEachPiece) so (who at:s level:(level)) and
+    // (fromTo (from … level:(level))) resolve the CURRENT stack level instead of
+    // always 0 — the Pachisi-family capture-return (forEach Level (last To) FromTop
+    // …) lost every capture because (level) collapsed to 0. Save/restore to avoid
+    // leaking the iterator value to the surrounding scope.
+    const savedLevel = (context as unknown as { _evalLevel?: number })._evalLevel;
     // @java if (stackDirection.equals(StackDirection.FromBottom))
     if (this.stackDirection === "FromBottom") {
       for (let level = 0; level < stackSize; level++) {
-        // @java context.setLevel(level);
         (context as unknown as { setLevel(l: number): void }).setLevel?.(level);
+        (context as unknown as { _evalLevel?: number })._evalLevel = level;
         // @java final FastArrayList<Move> generatedMoves = generator.eval(context).moves();
         const generatedMoves = this.generator.eval(context);
         moves.moves().push(...generatedMoves);
@@ -111,13 +120,14 @@ export class ForEachLevel extends Effect {
     } else {
       // @java for (int level = stackSize-1; level >= 0; level--)
       for (let level = stackSize - 1; level >= 0; level--) {
-        // @java context.setLevel(level);
         (context as unknown as { setLevel(l: number): void }).setLevel?.(level);
+        (context as unknown as { _evalLevel?: number })._evalLevel = level;
         // @java final FastArrayList<Move> generatedMoves = generator.eval(context).moves();
         const generatedMoves = this.generator.eval(context);
         moves.moves().push(...generatedMoves);
       }
     }
+    (context as unknown as { _evalLevel?: number })._evalLevel = savedLevel;
 
     // @java if (then() != null) for each move add then moves
     if (this.then() !== null) {
