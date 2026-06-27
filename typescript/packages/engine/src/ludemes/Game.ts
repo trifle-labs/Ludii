@@ -1140,13 +1140,24 @@ export class Game implements Game {
       const setNextAction = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
       const dynamicNextOverride: number = setNextAction ? setNextAction.who() : 0;
 
+      // @java Game.java:3201 — state.setMover(state.next()). state.next holds the value
+      // of the LAST ActionSetNextPlayer applied this move (deferred thens included), so
+      // it wins over both the moveAgain flag and the FIRST SetNextPlayer. This matters
+      // when a sow's apply: fires (moveAgain) -> SetNextPlayer(mover) AND the outer then
+      // fires (no Moves Next) -> SetNextPlayer(winner): Java starts BetweenRounds with the
+      // winner, but the port kept the current mover (moveAgain took priority), handing the
+      // round to the wrong player (~40 two_rows sow MM). newState.next is this move's value
+      // — it is cleared to 0 after every move (line ~1160), so it is never stale; in the
+      // ordinary moveAgain case it equals mover and the result is unchanged.
+      const stateNext: number = (newState.next ?? 0) > 0 ? newState.next : 0;
+
       let nextMover: number;
-      if (appliedMove.moveAgain) {
-        // Static (then (moveAgain)) flag: keep the same player.
-        // The ActionSetNextPlayer(mover) we added also sets next=mover (same).
+      if (stateNext > 0) {
+        nextMover = stateNext;
+      } else if (appliedMove.moveAgain) {
+        // Static (then (moveAgain)) flag with no SetNextPlayer action: keep the player.
         nextMover = newState.mover;
       } else if (dynamicNextOverride > 0) {
-        // Dynamic ActionSetNextPlayer from current move's effects.
         nextMover = dynamicNextOverride;
       } else {
         nextMover = (newState.mover % this.numPlayers) + 1;
