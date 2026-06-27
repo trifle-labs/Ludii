@@ -9,17 +9,24 @@ export const compileFlags = {
   /** stack:True MOVE ludemes only (Hop/Step/Slide/...): per-level moves. */
   usesStackMoves: false,
   /**
-   * @java GameType.NotAllPass — set by Pass.gameFlags (Pass.java:79) and
-   * AllPassed.gameFlags (AllPassed.java:71): a game with an explicit
-   * (move Pass) / (all Passed) manages passing itself, so the engine's
-   * all-pass-draw fallback must NOT fire (Bosh's between-rounds double
-   * pass drew the game at ply 71 where Java plays 342).
+   * @java GameType.NotAllPass via Pass.gameFlags (Pass.java:78-79) — the (move Pass)
+   * ludeme sets NotAllPass ONLY when game.players().count() == 1. play1to1 therefore
+   * gates this flag on numPlayers === 1; a multiplayer game with (move Pass) (e.g.
+   * Maleys's multi-capture continuation) MUST still all-pass-draw.
    */
   usesExplicitPass: false,
+  /**
+   * @java GameType.NotAllPass via AllPassed.gameFlags (AllPassed.java:71) and
+   * PassEnd.gameFlags (PassEnd.java:49, type == NoEnd) — these set NotAllPass
+   * UNCONDITIONALLY (no player-count check), so the engine's all-pass-draw
+   * fallback must never fire for such games regardless of player count.
+   */
+  usesUnconditionalNotAllPass: false,
 };
 
 export function resetCompileFlags(): void {
   compileFlags.usesStacking = false;
   compileFlags.usesStackMoves = false;
   compileFlags.usesExplicitPass = false;
+  compileFlags.usesUnconditionalNotAllPass = false;
 }

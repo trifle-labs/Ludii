@@ -13,6 +13,7 @@
  */
 
 import { MetaRule } from "./MetaRule.js";
+import { compileFlags } from "../../../../ludii/compiler/compile-flags.js";
 
 /** PassEnd type. @java game/types/play/PassEndType.java */
 export type PassEndType = "NoEnd" | string;
@@ -30,6 +31,10 @@ export class PassEnd extends MetaRule {
   public constructor(type: PassEndType) {
     super();
     this.type = type;
+    // @java PassEnd.gameFlags() returns NotAllPass only for type == NoEnd.
+    if (type === "NoEnd") {
+      compileFlags.usesUnconditionalNotAllPass = true;
+    }
   }
 
   /**

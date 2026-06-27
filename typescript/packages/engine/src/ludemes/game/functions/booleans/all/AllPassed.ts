@@ -11,9 +11,11 @@ import type { LudNode } from "@ludii/typescript-language";
  * @java game/functions/booleans/all/simple/AllPassed.java
  */
 export class AllPassed implements BooleanFunction {
-  /** @java AllPassed.gameFlags() = GameType.NotAllPass. */
+  /** @java AllPassed.gameFlags() = GameType.NotAllPass (unconditional, no player
+   * count check) — the game tests all-passed itself, so the engine's all-pass-draw
+   * fallback must never fire for it regardless of player count. */
   public constructor() {
-    compileFlags.usesExplicitPass = true;
+    compileFlags.usesUnconditionalNotAllPass = true;
   }
 
   /**
