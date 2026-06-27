@@ -24,7 +24,21 @@ export class Equals implements BooleanFunction {
 
   /** @java Equals.eval(Context): valueA.eval(context) == valueB.eval(context) */
   public eval(ctx: Context): boolean {
-    return this.valueA.eval(ctx) === this.valueB.eval(ctx);
+    // @java Equals has TWO overloads: Equals(IntFunction, IntFunction) numeric equality
+    // and Equals(RegionFunction, RegionFunction) unordered SET equality. The reflection
+    // compiler duck-types region args into the int slots, so detect array (region)
+    // results at eval time and compare as sets — `number[] === number[]` is always false,
+    // which made (= (sites Occupied by:Mover) <region>) (FillWin: Aralzaa/Azteka/Bajr/
+    // Grasshopper) never fire and the game never end.
+    const a = (this.valueA as { eval(c: Context): number | readonly number[] }).eval(ctx);
+    const b = (this.valueB as { eval(c: Context): number | readonly number[] }).eval(ctx);
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      const setB = new Set<number>(b as readonly number[]);
+      for (const x of a as readonly number[]) if (!setB.has(x)) return false;
+      return true;
+    }
+    return a === b;
   }
 }
 
