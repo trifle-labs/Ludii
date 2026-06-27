@@ -365,6 +365,57 @@ export class Board extends Container {
       }
     }
 
+    // @java MeasureGraph.measurePhase (Core/src/game/util/graph/MeasureGraph.java:992)
+    // — greedy graph-coloring (lowest phase 0..3 not used by any edge-adjacent cell)
+    // so no two cells sharing an edge have the same phase. The faithful topology path
+    // never ran this, leaving every cell at phase 0; (phase of:s) / IsPhaseOne then
+    // returned 0 everywhere, so Bizingo's triangular board could not tell up-faces
+    // from down-faces and dropped every outer-edge Surround capture. Cells sharing an
+    // edge are neighbours (Java face.nbors()); BFS from each uncoloured cell.
+    {
+      const cellList = topology.cells();
+      const nc = cellList.length;
+      if (nc > 0) {
+        const idxOf = new Map<Cell, number>();
+        cellList.forEach((c, i) => idxOf.set(c, i));
+        const adj: number[][] = Array.from({ length: nc }, () => []);
+        for (const edge of topology.edges()) {
+          const ec = edge.cells();
+          for (let i = 0; i < ec.length; i += 1) {
+            for (let j = i + 1; j < ec.length; j += 1) {
+              const a = idxOf.get(ec[i]!);
+              const b = idxOf.get(ec[j]!);
+              if (a === undefined || b === undefined) continue;
+              adj[a]!.push(b);
+              adj[b]!.push(a);
+            }
+          }
+        }
+        const phase = new Array<number>(nc).fill(-1);
+        for (let s = 0; s < nc; s += 1) {
+          if (phase[s] !== -1) continue;
+          phase[s] = 0;
+          const queue: number[] = [s];
+          const visited = new Set<number>();
+          while (queue.length > 0) {
+            const ge = queue.shift()!;
+            if (visited.has(ge)) continue;
+            visited.add(ge);
+            const used = new Set<number>();
+            for (const nb of adj[ge]!) {
+              const np = phase[nb] ?? -1;
+              if (np >= 0) used.add(np);
+            }
+            let p = 0;
+            while (p < 4 && used.has(p)) p += 1;
+            phase[ge] = p < 4 ? p : 0;
+            for (const nb of adj[ge]!) if ((phase[nb] ?? -1) < 0) queue.push(nb);
+          }
+        }
+        for (let i = 0; i < nc; i += 1) cellList[i]!.setPhase(phase[i]! < 0 ? 0 : phase[i]!);
+      }
+    }
+
     const perimVertices = (graph.perimeter ?? [])
       .map((vid) => topology.vertices()[vid])
       .filter((v): v is Vertex => v !== undefined);
