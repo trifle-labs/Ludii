@@ -43,10 +43,16 @@ export class Result {
         const stateNext = ctx?.state?.next ?? 0;
         return stateNext > 0 ? stateNext : (mover % numPlayers) + 1;
       }
-      case "P1":    return 1;
-      case "P2":    return 2;
       case "All":   return 0;
-      default:      return mover;
+      default: {
+        // @java RoleType — (result Pn Win) names a specific player; resolve Pn for
+        // ALL n, not just P1/P2. The old switch stopped at P2, so (result P3 Win) /
+        // (result P4 Win) fell through to `mover` and the wrong player won 4-player
+        // races (Aime: recWinner=3 but TS returned mover=4).
+        const pm = /^P(\d+)$/.exec(this.who);
+        if (pm) return Number(pm[1]);
+        return mover;
+      }
     }
   }
 }

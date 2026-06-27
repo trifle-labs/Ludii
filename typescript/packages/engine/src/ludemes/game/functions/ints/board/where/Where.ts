@@ -114,11 +114,14 @@ function wherePlayerFn(indexPlayer: unknown, role: unknown): never {
       if (r === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
       if (r === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
       if (typeof r === "string" && /^P\d+$/.test(r)) return Number(r.slice(1));
-      // @java RoleType.Neutral / RoleType.Shared → player 0. Without this,
-      // `(where "Ghoula" Neutral)` fell through to the mover and located the
-      // wrong piece, firing Es-Sig's GhoulaPhaseDone ~498 plies early (false
-      // (byScore) end with all-zero scores → wrong/tie winner).
-      if (r === "Neutral" || r === "Shared") return 0;
+      // @java RoleType — Neutral → 0, Shared → numPlayers+1 (Constants.SHARED).
+      // Neutral keeps `(where "Ghoula" Neutral)` finding the neutral piece (Es-Sig).
+      // Shared must be numPlayers+1: a Shared-owned piece (e.g. Neutron) has owner
+      // numPlayers+1, so mapping Shared→0 made the byName owner filter miss it and
+      // the eval fell back to the first empty board site, firing a false win at ply 1
+      // (Neutron). @java game/functions/ints/board/Id.java — Shared/All → numPlayers+1.
+      if (r === "Neutral") return 0;
+      if (r === "Shared") return ctx.game.numPlayers + 1;
       return ctx.state.mover;
     },
   } as never;
