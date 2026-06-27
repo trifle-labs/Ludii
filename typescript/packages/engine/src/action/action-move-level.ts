@@ -17,6 +17,7 @@
 import type { State } from "../state.js";
 import { BaseAction } from "./action.js";
 import type { ActionType } from "./action-type.js";
+import { maintainOnTrackIndicesForMove } from "../on-track-indices.js";
 
 abstract class ActionMoveLevelBase extends BaseAction {
   protected readonly fromIndex: number;
@@ -81,7 +82,21 @@ abstract class ActionMoveLevelBase extends BaseAction {
       return next;
     }
     const popped = state.withStackPop(this.fromIndex, sourceLevel);
-    return popped.withStackPush(this.toIndex, movingOwner, movingWhat);
+    const pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
+    // @java ActionMoveLevelFrom.java:474 updateOnTrackIndices — after relocating the
+    // piece (remove level / addItemGeneric) Java keeps the onTrackIndices structure in
+    // sync. The TS port mapped remove->withStackPop and addItemGeneric->withStackPush
+    // but omitted this, so a Pachisi capture-return ((fromTo (from (last To) level:…)
+    // (to (mapEntry "Start" …)))) moved the piece physically but left onTrackIndices
+    // registered at the old site — (trackSite Move) then returned OFF and the returned
+    // piece could never move again, diverging the whole replay (race/escape cluster).
+    const oti = pushed.onTrackIndices;
+    const loc = pushed.trackLocToIndex;
+    if (oti !== undefined && loc !== undefined && movingWhat !== 0) {
+      const updated = maintainOnTrackIndicesForMove(oti, loc, movingWhat, 1, this.fromIndex, this.toIndex);
+      return pushed.withOnTrackIndices(updated);
+    }
+    return pushed;
   }
   public override actionType(): ActionType {
     return "Move";
