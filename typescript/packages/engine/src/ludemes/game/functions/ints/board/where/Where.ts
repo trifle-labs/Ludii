@@ -42,6 +42,14 @@ export class Where extends BaseIntFunction {
     state: unknown = null,
     type: unknown = null,
   ): WhereSite {
+    // @java Where.construct(String namePiece, …) — the byName overload requires a
+    // String. The reflection ArgCompiler dispatches construct* purely by arity, so
+    // for (where (id "King" P2)) — an IntFunction arg — it would otherwise pick this
+    // 2-arity constructName over the 1-arity constructWhat and pass the Id object as
+    // namePiece (AlmaTafl: byName then scanned the MOVER's pieces, declaring a bogus
+    // King-captured win). Reject a non-string namePiece so the dispatcher falls
+    // through to constructWhat (the IntFunction overload Java resolves by type).
+    if (typeof namePiece !== "string") return null as unknown as WhereSite;
     return WhereSite.byName(namePiece, wherePlayerFn(indexPlayer, role), state as never, type as never);
   }
 
@@ -61,6 +69,8 @@ export class Where extends BaseIntFunction {
     at: unknown = null,
     fromTop: unknown = null,
   ): WhereLevel {
+    // Same byName/byWhat overload guard as constructName (reject non-string).
+    if (typeof namePiece !== "string") return null as unknown as WhereLevel;
     return WhereLevel.byName(namePiece, wherePlayerFn(indexPlayer, role), state as never, type as never, at as never, wrapBool(fromTop));
   }
 
