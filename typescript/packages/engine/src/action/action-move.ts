@@ -128,6 +128,15 @@ export class ActionMove extends BaseAction {
       if (who === 0 && what === 0) return state;
       let s2 = state.withTypedSite(t, this.fromIndex, 0, 0, 0);
       s2 = s2.withTypedSite(t, this.toIndex, who, what, Math.max(count, 1));
+      // @java ActionMoveLevelFrom.java:343-347 — the move carries the source site's
+      // STATE to the destination (newStateTo = source.state when no explicit state).
+      // (state at:s) reads the flat stateAt[] (shared index space), so this typed-channel
+      // path must move it too: Owasokotz stores each Stick's CW/CCW direction as the Edge
+      // site state, and dropping it on the move made MadeACompleteCircuit read CCW (0)
+      // and fire a false win. Transfer source state to the destination, clear the source.
+      const srcState = state.stateAtSite(this.fromIndex);
+      if (srcState !== 0) s2 = s2.withStateAt(this.toIndex, srcState);
+      if (s2.stateAtSite(this.fromIndex) !== 0) s2 = s2.withStateAt(this.fromIndex, 0);
       return s2;
     }
     // @java ActionMoveStacking.java:316-347 — stack=true: append every level
