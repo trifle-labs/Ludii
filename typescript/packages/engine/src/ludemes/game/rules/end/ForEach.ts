@@ -88,6 +88,32 @@ export class ForEach extends EndRule implements EndRuleFunction {
     const mover = ctx.state.mover;
     const origPlayer = ctx._evalPlayer;
 
+    // @java a per-player (result Player Loss) is NOT terminal on the first loss in an
+    // n>2 game — Java ranks the loser and continues, ending only when <=1 active player
+    // remains. Count the players currently satisfying the condition; with more than one
+    // survivor the rule is non-decisive (return null so a later (result … Win) rule can
+    // fire — Ishighan's HyenaPhaseDone win was masked by an early Loss-as-draw). With
+    // <=1 survivor the game ends and the survivor wins (draw if none). (no Pieces Player)
+    // -style conditions re-evaluate every turn, so the current count IS the terminal state.
+    if (this.endResult.result === "Loss" && n > 2) {
+      const losers: number[] = [];
+      for (let pid = 1; pid <= n; pid++) {
+        if (this.roleType === "nonmover" && pid === mover) continue;
+        if (this.roleType === "mover" && pid !== mover) continue;
+        ctx._evalPlayer = pid;
+        if (this.cond.eval(ctx)) losers.push(pid);
+      }
+      ctx._evalPlayer = origPlayer;
+      if (losers.length === 0 || n - losers.length > 1) return null;
+      const ranking = new Array<number>(n + 1).fill(0);
+      for (const l of losers) ranking[l] = n;
+      let winner = 0;
+      for (let p = 1; p <= n; p++) {
+        if (!losers.includes(p)) { ranking[p] = 1.0; winner = winner === 0 ? p : 0; }
+      }
+      return { winner, over: true, ranking };
+    }
+
     for (let pid = 1; pid <= n; pid++) {
       // @java ForEach.eval:100-105 — skip mover when NonMover
       if (this.roleType === "nonmover" && pid === mover) continue;
