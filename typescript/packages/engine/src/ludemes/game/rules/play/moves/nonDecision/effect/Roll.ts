@@ -124,11 +124,16 @@ export class Roll implements MovesFunction {
       actions,
     });
 
-    // @java Roll.java:75-78 — then clause
+    // @java Roll.java:75-78 — then clause. The consequence reads the JUST-ROLLED dice
+    // ((count Pips)/(face)), so it must evaluate AFTER the roll actions apply. Defer it:
+    // the engine evaluates deferred thens on the post-move state (dice already updated),
+    // not this stale pre-roll ctx. Evaluating inline made (addScore Mover
+    // (mapEntry (count Pips))) read the PREVIOUS turn's faces, so Pasa's score stayed
+    // one turn stale and (>= (score Mover) N) never fired (tsWinner=-1).
     if (this.thenClause !== null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      const thenActions = thenMoves.flatMap(tm => [...tm.actions]);
-      return [move.withConsequence(thenActions, false)];
+      return [move.withDeferredThen({
+        eval: (postCtx: unknown): Move[] => this.thenClause!.eval(postCtx as Context),
+      })];
     }
 
     return [move];
