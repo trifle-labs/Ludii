@@ -89,7 +89,17 @@ export class CountPieces implements IntFunction {
         if (i < boardN) {
           const stack = stacks[i];
           if (stack && stack.length > 0) {
-            total += stack.filter(o => o !== 0).length;
+            // Compact grouped stack (mancala/Backgammon-race): a single owner level
+            // whose true pile size lives in countAt — count the SEEDS, not the one
+            // level. The non-isAll branch already does this (line ~145); the isAll
+            // branch counted levels, so (count Pieces All in:(sites P2)) read 1 for a
+            // 4-seed hole, making OneSingleCounterPerPlayer wrongly true -> the sweep
+            // emptied the board -> premature BetweenRounds (Gifia + ~42 two-row games).
+            if (stack.length === 1 && (countAt[i] ?? 0) > 1) {
+              total += countAt[i]!;
+            } else {
+              total += stack.filter(o => o !== 0).length;
+            }
           } else {
             const c = countAt[i] ?? 0;
             if (c > 0) total += c;
