@@ -358,11 +358,44 @@ export class Context {
    * passes.
    */
   public allPass(): boolean {
-    const n = this.game.numPlayers;
+    // @java Context.allPass — true iff the LAST TURN of each of the numPlayers
+    // players was a single pass move. A "turn" is a maximal run of consecutive
+    // same-mover moves. The old flat "last N moves are passes" check was wrong for
+    // any game with multi-move turns (SameTurn / (then (moveAgain))): Cascades's
+    // (place + voluntary pass) turn was miscounted as a pure pass, so the all-pass
+    // draw fired one turn early and the named win never resolved.
+    const numPlayers = this.game.numPlayers;
     const moves = this.trial.moves;
-    if (moves.length < n) return false;
-    for (let i = moves.length - 1; i >= moves.length - n; i--) {
-      if (!moves[i]?.isPass()) return false;
+    if (numPlayers === 1) {
+      const last = moves[moves.length - 1];
+      return last ? last.isPass() : false;
+    }
+    // state.mover is the mover of the just-applied move (End is evaluated before the
+    // mover advance), matching Java's `lastMover = state().mover()`.
+    let lastMover = this.state.mover;
+    let passMove = false;
+    let countMovesTurn = 0;
+    let idx = moves.length - 1;
+    for (let i = 1; i <= numPlayers; i += 1) {
+      for (;;) {
+        if (idx < 0) {
+          // Not enough moves: all-pass only if the run examined so far was a pass.
+          return passMove;
+        }
+        if (countMovesTurn > 1) return false; // a turn with >1 move is not a pure pass
+        const move = moves[idx]!;
+        idx -= 1;
+        if (lastMover !== move.mover) {
+          // new-turn boundary: the just-finished turn must have been a single pass
+          if (!passMove) return false;
+          lastMover = move.mover;
+          countMovesTurn = 0;
+          passMove = move.isPass();
+          break;
+        }
+        countMovesTurn += 1;
+        passMove = move.isPass();
+      }
     }
     return true;
   }
