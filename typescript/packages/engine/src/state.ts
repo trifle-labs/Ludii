@@ -914,8 +914,14 @@ export class State {
         `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
       );
     }
-    if (!Number.isInteger(owner) || owner < 1) {
-      throw new Error(`owner must be a 1-based integer; got ${owner}.`);
+    // @java ContainerStateStacks.addItemGeneric(state, site, what, who, …) accepts
+    // who=0 (a Neutral component level): Santorini/Kos build towers of Neutral
+    // building pieces (owner 0) that workers then climb onto, so a stack legitimately
+    // carries owner-0 levels. The old `owner < 1` guard (a TS invention) silently
+    // dropped every building add → towers never formed and the level-3 win never
+    // fired (Santorini WINNER_MISMATCH ts=-1). Still reject negatives (UNDEFINED=-1).
+    if (!Number.isInteger(owner) || owner < 0) {
+      throw new Error(`owner must be a non-negative integer; got ${owner}.`);
     }
     const existingCount = this.countAt[siteIndex] ?? 0;
     const nextStacks = this.stacks.map((s) => [...s]);
@@ -1487,10 +1493,22 @@ function syncStacks(
   const out: (readonly number[])[] = [];
   for (let i = 0; i < cells.length; i += 1) {
     const top = cells[i] ?? 0;
-    const prev = previous[i];
-    if (top === 0) {
-      out.push([]);
-    } else if (!prev || prev.length === 0) {
+    const prev = previous[i] ?? [];
+    const prevTop = prev.length > 0 ? (prev[prev.length - 1] ?? 0) : 0;
+    if (top === prevTop) {
+      // The visible top owner is UNCHANGED at this site — ride the existing
+      // stack through untouched. This is the key parity fix: the old code
+      // force-cleared every site whose owner channel was 0, which wiped Neutral
+      // pieces (owner 0 with a non-zero component — Santorini/Kos building
+      // towers) whenever an UNRELATED move patched `cells` and triggered this
+      // global resync. A Neutral piece's prevTop is already 0, so top===prevTop
+      // and it survives.
+      out.push(prev);
+    } else if (top === 0) {
+      // The top owner went to 0 → the top piece was removed. Drop ONLY the top
+      // level (a buried piece beneath is exposed), not the whole column.
+      out.push(prev.slice(0, -1));
+    } else if (prev.length === 0) {
       out.push([top]);
     } else {
       // Replace the visible top while keeping any buried pieces.

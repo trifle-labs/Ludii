@@ -204,11 +204,28 @@ export class Map extends Item {
               intValue = element.index();
             }
           } else {
-            // @java Map.java:157–166 — look up component by name
+            // @java Map.java:157–166 — look up component by name.
+            // Java's Component.name() is the OWNER-SUFFIXED name (e.g. a Neutral
+            // "SquareLarge" is component "SquareLarge0"; "Pawn3d" Each → "Pawn3d1"),
+            // and .lud map values carry that suffix ((pair 0 "SquareLarge0")). The TS
+            // port stores the base name in name() (suffix stripped into
+            // nameWithoutNumber), so a bare name()-equals check never matched and the
+            // map compiled empty — Santorini/Kos's (mapEntry (size Stack …)) then fell
+            // back to the key, (piece 0) was a no-op, towers never built and the
+            // level-3 win never fired. Reconstruct the Java name (base + owner) to match.
             const components = game.equipment().components();
             for (let i = 1; i < components.length; i++) {
               const component = components[i] ?? null;
-              if (component !== null && component.name() === pair.stringValue) {
+              if (component === null) continue;
+              const comp = component as unknown as {
+                name(): string | null;
+                getNameWithoutNumber?(): string;
+                owner?(): number;
+              };
+              const baseName = comp.getNameWithoutNumber?.() ?? comp.name() ?? "";
+              const ownerIdx = typeof comp.owner === "function" ? comp.owner() : undefined;
+              const javaName = ownerIdx !== undefined ? `${baseName}${ownerIdx}` : null;
+              if (javaName === pair.stringValue || comp.name() === pair.stringValue) {
                 intValue = i;
                 break;
               }
@@ -304,15 +321,35 @@ export class Map extends Item {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns whether a string looks like a board coordinate (e.g. "A4", "D1").
- * @java main.StringRoutines.isCoordinate(String)
+ * Returns whether a string looks like a board coordinate (e.g. "A1", "ZZ123", "37").
+ * @java main.StringRoutines.isCoordinate(String) — faithful 1:1 port.
  *
- * Java's isCoordinate returns true if the string contains at least one letter
- * followed by at least one digit (case insensitive), which covers algebraic
- * coordinate notation like "A4", "H8", etc.
+ * The earlier loose regex (`letters followed by digits`) wrongly classified
+ * owner-suffixed COMPONENT names like "SquareLarge0"/"Pawn3d1" as coordinates, so
+ * Map.computeMap routed them to SiteFinder (which fails) instead of the
+ * component-name lookup — Santorini/Kos's level→building map compiled empty and
+ * (mapEntry (size Stack …)) fell back to the key. Java requires the leading-letter
+ * run to be at most ~two chars (and identical if two), which "SquareLarge0" fails.
  */
-function isCoordinate(s: string): boolean {
-  return /^[a-zA-Z]+\d+$/.test(s) || /^\d+[a-zA-Z]+$/.test(s);
+function isDigit(ch: string): boolean { return ch >= "0" && ch <= "9"; }
+function isLetter(ch: string): boolean {
+  return (ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z");
+}
+function isCoordinate(str: string | null): boolean {
+  if (str == null || str.length === 0) return false;
+  let c = str.length - 1;
+  // @java last character should always be a digit
+  if (!isDigit(str.charAt(c))) return false;
+  while (c >= 0 && isDigit(str.charAt(c))) c--;
+  // @java string is all digits, e.g. custom board with no axes
+  if (c < 0) return true;
+  // @java coordinate should have no more than two letters
+  if (c > 2) return false;
+  // @java if first two chars are letters, they should be the same, e.g. "AA1"
+  if (c > 1 && str.length > 1 && str.charAt(0) !== str.charAt(1)) return false;
+  while (c >= 0 && isLetter(str.charAt(c))) c--;
+  // @java whether string is all letters followed by all digits
+  return c < 0;
 }
 
 /**

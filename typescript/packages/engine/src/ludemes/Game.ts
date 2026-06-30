@@ -207,7 +207,17 @@ function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, M
       topology: () => boardForMap.topology?.(),
     }),
     equipment: () => ({
-      components: () => [null, ...equipment.pieces.map((p) => ({ name: () => `${p.name}` }))],
+      // @java Map.computeMap reads component.name() (the OWNER-SUFFIXED name, e.g.
+      // "SquareLarge0"/"Pawn3d1") to resolve string-valued pairs. Expose owner and
+      // getNameWithoutNumber so the lookup can reconstruct that Java name; the old
+      // stub returned only the base name, so neutral-piece map values like
+      // (pair 0 "SquareLarge0") never matched and Santorini/Kos's level→building map
+      // compiled empty.
+      components: () => [null, ...equipment.pieces.map((p) => ({
+        name: () => `${p.name}`,
+        getNameWithoutNumber: () => `${p.name}`,
+        owner: () => p.owner ?? 0,
+      }))],
     }),
   };
 
