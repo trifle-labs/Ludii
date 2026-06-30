@@ -17,7 +17,7 @@ import { ActionMove } from "../../../../../../../action/action-move.js";
 import { ActionMoveLevelFrom } from "../../../../../../../action/action-move-level.js";
 import { ActionCopy } from "../../../../../../../action/action-copy.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
-import { Move as LudiiMove } from "../../../../../../../move.js";
+import { Move as LudiiMove, type DeferredThen } from "../../../../../../../move.js";
 import { Add as AddEffect } from "./Add.js";
 
 /** OFF constant matching Java's Constants.OFF = -1 */
@@ -319,14 +319,21 @@ export class FromTo implements MovesFunction {
         // (from (to)) names the PRE-move occupant. Appending it after the
         // attacker's ActionMove made the hit relocate the ATTACKER off the
         // stack top (P1's piece surfaced on P2's bar). PREPEND.
+        const captureThens: DeferredThen[] = [];
         if (this.captureEffect != null &&
             (this.captureRule == null || this.captureRule.eval(ctx))) {
           ctx._evalFrom = from;
           ctx._evalTo = to;
-          const captureActions = this.captureEffect.eval(ctx).flatMap(m => [...m.actions]);
+          const captureMoves = this.captureEffect.eval(ctx);
+          const captureActions = captureMoves.flatMap(m => [...m.actions]);
           // @java chainRuleWithAction(..., decision=false)
           for (const a of captureActions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
           actions.unshift(...captureActions);
+          // @java chainRuleWithAction also chains the capture effect's then()
+          // onto the move's then() list — (to X (apply (remove (to)
+          // (then (addScore Mover 1))))) must still accumulate score. Forward
+          // the capture move's deferred thens so Move.apply evaluates them.
+          for (const m of captureMoves) for (const dt of m.deferredThens) captureThens.push(dt);
           ctx._evalFrom = origFrom;
           ctx._evalTo = origTo;
         }
@@ -338,6 +345,7 @@ export class FromTo implements MovesFunction {
           mover,
           placedOwner: mover,
           actions,
+          deferredThens: captureThens,
           // Pin the DECISION from/to — a prepended capture action would
           // otherwise shift what from()/to() report (the recorded move keeps
           // the movement's sites: Move:mover=1,from=20,to=25,[victim,attacker]).
