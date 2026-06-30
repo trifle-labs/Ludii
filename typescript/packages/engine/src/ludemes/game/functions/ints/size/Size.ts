@@ -36,8 +36,10 @@ export class Size extends BaseIntFunction {
   /** @java Size.construct(SizeSiteType Stack, SiteType, in@Or, at@Or) */
   public static constructSite(_sizeType: string, _type: unknown, _inRegion: unknown, at: unknown = null): BaseIntFunction | null {
     if (_sizeType !== "Stack") return null;
-    const atFn = (at as JavaIntFunction | null) ?? new LastTo();
-    return new SizeStack(atFn as never) as unknown as BaseIntFunction;
+    // Java SizeStack: region = (in != null) ? in : (at != null ? at : new LastTo()).
+    const inFn = (_inRegion ?? null) as never;
+    const atFn = inFn !== null ? null : ((at as JavaIntFunction | null) ?? new LastTo());
+    return new SizeStack(atFn as never, inFn) as unknown as BaseIntFunction;
   }
 
   /** @java Size.construct(SizeLargePieceType, SiteType, in@Or, at@Or) */

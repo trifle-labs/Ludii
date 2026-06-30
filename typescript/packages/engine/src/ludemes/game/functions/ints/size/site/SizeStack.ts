@@ -2,25 +2,45 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { IntFunction, RegionFunction } from "../../../../../base.js";
-import type { LudNode } from "@ludii/typescript-language";
-import type { LudList } from "@ludii/typescript-language";
-import { isIdent, isList } from "@ludii/typescript-language";
-import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
-import type { Game } from "../../../../../Game.js";
 
+/**
+ * Returns the size of a stack — at a single site (`at:`) or summed over a
+ * region (`in:`).
+ *
+ * @java game/functions/ints/size/site/SizeStack.java
+ * @author Eric.Piette
+ */
 export class SizeStack implements IntFunction {
-  private readonly siteFn: IntFunction;
+  // @java SizeStack.region — IntArrayFromRegion: prefer the `in:` region; else the `at:` site.
+  private readonly atFn: IntFunction | null;
+  private readonly inFn: RegionFunction | null;
 
-  public constructor(siteFn: IntFunction) {
-    this.siteFn = siteFn;
+  /**
+   * @param atFn The `at:` location (IntFunction), or a fallback LastTo.
+   * @param inFn The `in:` region (RegionFunction), or null.
+   * @java SizeStack(SiteType type, @Or2 @Name RegionFunction in, @Or2 @Name IntFunction at)
+   */
+  public constructor(atFn: IntFunction | null, inFn: RegionFunction | null = null) {
+    // Java: region = new IntArrayFromRegion(
+    //   (in == null && at != null ? at : in == null ? new LastTo(null) : null),
+    //   (in != null) ? in : null);
+    this.atFn = inFn === null ? atFn : null;
+    this.inFn = inFn;
   }
 
-  /** @java game/functions/ints/size/site/SizeStack.java — eval: state.stateStack(site).size() */
+  /** @java SizeStack.eval — sum state.sizeStack(site) over every site in the region. */
   public eval(ctx: Context): number {
-    const s = this.siteFn.eval(ctx);
-    if (s < 0) return 0;
-    // stackSize returns the true stack height (max of stacks[s].length, countAt[s], 1 if occupied)
-    // @java ContainerState.sizeStack(site) — used by (size Stack at:site)
-    return ctx.state.stackSize(s);
+    const sites = this.inFn !== null
+      ? this.inFn.eval(ctx as never)
+      : this.atFn !== null
+        ? [this.atFn.eval(ctx as never)]
+        : [];
+    let count = 0;
+    for (const site of sites) {
+      if (site < 0) continue;
+      // @java BaseContainerStateStacking.sizeStack(site, type)
+      count += ctx.state.stackSize(site);
+    }
+    return count;
   }
 }
