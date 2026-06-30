@@ -12,7 +12,7 @@
  */
 
 import type { Context } from "../../../../../../context.js";
-import { boardSides } from "../../../region/sites/Sites.js";
+import { boardSides, boardCorners } from "../../../region/sites/Sites.js";
 import type { BooleanFunction, RegionFunction } from "../../../../../base.js";
 
 interface BoardLike {
@@ -142,6 +142,32 @@ function sidesAsTargets(ctx: Context): number[][] {
   return out;
 }
 
+/**
+ * Each corner site as its own single-site target set.
+ * @java Regions.convertStaticRegionOnLocs(Corners) — `regions[c][1]`: one region
+ * per corner, so `(is Connected 2 Corners)` requires the group to touch ≥2
+ * distinct corners.
+ */
+function cornersAsTargets(ctx: Context): number[][] {
+  return boardCorners(ctx).map((c) => [c]);
+}
+
+/**
+ * Each board side WITHOUT its corner sites as a separate target set.
+ * @java Regions.convertStaticRegionOnLocs(SidesNoCorners) — one region per side,
+ * each filtered to drop sites that are also corners, so `(is Connected 3
+ * SidesNoCorners)` requires touching ≥3 distinct non-corner sides.
+ */
+function sidesNoCornersAsTargets(ctx: Context): number[][] {
+  const corners = new Set(boardCorners(ctx));
+  const out: number[][] = [];
+  for (const dir of ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]) {
+    const sites = boardSides(ctx, dir).filter((s) => !corners.has(s));
+    if (sites.length > 0) out.push(sites);
+  }
+  return out;
+}
+
 export class IsConnected implements BooleanFunction {
   /** @java IsConnected.regionsToConnectFn */
   private readonly regions: readonly RegionFunction[] | null;
@@ -203,9 +229,13 @@ export class IsConnected implements BooleanFunction {
     // Sides) in the Y family: connect any `number` of the board's sides).
     const targets = this.regionType === "Sides"
       ? sidesAsTargets(ctx)
-      : this.regions !== null && this.regions.length > 0
-        ? this.regions.map((fn) => fn.eval(ctx as never))
-        : playerConnectionRegions(ctx, pid);
+      : this.regionType === "Corners"
+        ? cornersAsTargets(ctx)
+        : this.regionType === "SidesNoCorners"
+          ? sidesNoCornersAsTargets(ctx)
+          : this.regions !== null && this.regions.length > 0
+            ? this.regions.map((fn) => fn.eval(ctx as never))
+            : playerConnectionRegions(ctx, pid);
     if (targets.length === 0) return false;
     // @java final int numRegionToConnect = (number != null) ? number.eval(context) : sitesRegions.size();
     const required = this.numberFn === null

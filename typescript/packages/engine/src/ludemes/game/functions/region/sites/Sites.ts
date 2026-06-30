@@ -190,53 +190,14 @@ export class Sites extends BaseRegionFunction {
         })();
       case "Bottom":
         return new SitesBottom(elementType);
-      case "Corners": {
-        const et = elementType;
+      case "Corners":
+        // @java SitesCorners — the board's convex-turn corner sites. The shared
+        // boardCorners() helper is the single source of truth (also used by
+        // IsConnected's Corners / SidesNoCorners static region types).
         return new (class extends BaseRegionFunction {
-          private readonly _type: string | null;
-          constructor(t: string | null) { super(); this._type = t; }
-          override eval(ctx: Context & EvalScratch): number[] {
-            // @java MeasureGraph.measureCorners — corners are the perimeter
-            // sites at genuine convex turns. The convex hull of site centroids
-            // gives them on any geometry: a square board's hull has 4
-            // non-collinear turns, a hexhex board's has 6 (HeXentafl's
-            // fortresses {0,3,15,21,33,36}), rotation-invariant.
-            const traj = (ctx as unknown as { _trajectories?: { els?: ArrayLike<{ pt: { x: number; y: number } }> } })._trajectories;
-            const els = traj?.els;
-            if (els && els.length > 0) {
-              const pts: { i: number; x: number; y: number }[] = [];
-              for (let i = 0; i < els.length; i += 1) {
-                const pt = els[i]!.pt;
-                pts.push({ i, x: pt.x, y: pt.y });
-              }
-              pts.sort((a, b) => a.x - b.x || a.y - b.y);
-              const cross = (o: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) =>
-                (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-              const half = (list: typeof pts): typeof pts => {
-                const out: typeof pts = [];
-                for (const pt2 of list) {
-                  while (out.length >= 2 && cross(out[out.length - 2]!, out[out.length - 1]!, pt2) <= 1e-9) out.pop();
-                  out.push(pt2);
-                }
-                return out;
-              };
-              const lower = half(pts);
-              const upper = half([...pts].reverse());
-              const hull = [...lower.slice(0, -1), ...upper.slice(0, -1)];
-              if (hull.length >= 3) return hull.map((h) => h.i).sort((a, b) => a - b);
-            }
-            const g = ctx.game as unknown as {
-              equipment?: { board?: { width?: number; height?: number; numSites?: number } }
-            };
-            const W = g.equipment?.board?.width ?? 0;
-            const H = g.equipment?.board?.height ?? 0;
-            if (W === 0 || H === 0) return [];
-            const n = g.equipment?.board?.numSites ?? (W * H);
-            return [0, W - 1, n - W, n - 1].filter((v, i, a) => a.indexOf(v) === i);
-          }
+          override eval(ctx: Context & EvalScratch): number[] { return boardCorners(ctx); }
           override isStatic(): boolean { return true; }
-        })(et);
-      }
+        })();
       case "ConcaveCorners":
         return new SitesConcaveCorners(elementType);
       case "ConvexCorners":
@@ -1470,6 +1431,48 @@ function classifySideRuns(
     }
   }
   return [...out].sort((a, b) => a - b);
+}
+
+/**
+ * The board's corner sites (perimeter sites at genuine convex turns).
+ * @java MeasureGraph.measureCorners — the convex hull of site centroids gives
+ * them on any geometry: a square board's hull has 4 non-collinear turns, a
+ * hexhex board's has 6, rotation-invariant. Shared by `(sites Corners)` and by
+ * IsConnected's `Corners` / `SidesNoCorners` static region types.
+ */
+export function boardCorners(ctx: Context): number[] {
+  const traj = (ctx as unknown as { _trajectories?: { els?: ArrayLike<{ pt: { x: number; y: number } }> } })._trajectories;
+  const els = traj?.els;
+  if (els && els.length > 0) {
+    const pts: { i: number; x: number; y: number }[] = [];
+    for (let i = 0; i < els.length; i += 1) {
+      const pt = els[i]!.pt;
+      pts.push({ i, x: pt.x, y: pt.y });
+    }
+    pts.sort((a, b) => a.x - b.x || a.y - b.y);
+    const cross = (o: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) =>
+      (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    const half = (list: typeof pts): typeof pts => {
+      const out: typeof pts = [];
+      for (const pt2 of list) {
+        while (out.length >= 2 && cross(out[out.length - 2]!, out[out.length - 1]!, pt2) <= 1e-9) out.pop();
+        out.push(pt2);
+      }
+      return out;
+    };
+    const lower = half(pts);
+    const upper = half([...pts].reverse());
+    const hull = [...lower.slice(0, -1), ...upper.slice(0, -1)];
+    if (hull.length >= 3) return hull.map((h) => h.i).sort((a, b) => a - b);
+  }
+  const g = ctx.game as unknown as {
+    equipment?: { board?: { width?: number; height?: number; numSites?: number } }
+  };
+  const W = g.equipment?.board?.width ?? 0;
+  const H = g.equipment?.board?.height ?? 0;
+  if (W === 0 || H === 0) return [];
+  const n = g.equipment?.board?.numSites ?? (W * H);
+  return [0, W - 1, n - W, n - 1].filter((v, i, a) => a.indexOf(v) === i);
 }
 
 export function boardSides(ctx: Context, dirName: string): number[] {
