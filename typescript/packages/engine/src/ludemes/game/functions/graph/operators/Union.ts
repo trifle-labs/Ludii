@@ -44,11 +44,17 @@ export class Union extends BaseGraphFunction {
     // Evaluate all child graphs
     const graphs = this.graphFns.map((fn) => fn.eval(siteType));
 
-    // Start with a copy of the first graph, then append subsequent ones
+    // Start with a copy of the first graph, then append subsequent ones.
+    // @java Union.eval — graphs[0].addVertex(vertex)/addEdge(edge)/addFace(face)
+    // for each subsequent graph; Java's addVertex(Vertex) does a plain
+    // `vertices.add(vertex)` with NO coincidence dedup. Appending raw keeps the
+    // sub-graphs disjoint so they never share edges/faces, even when their
+    // coordinates coincide (Ultimate Tic-Tac-Toe's SuperGame meta-cells must
+    // not become adjacent to the sub-cells). A tolerance-based merge here fused
+    // coincident vertices, which leaked cross-board adjacency into the radials.
     const base = graphs[0]!;
     const out = new Graph();
-    // Re-add base vertices with tiny tolerance so they are deduplicated only if truly identical
-    const map0 = base.vertices.map((v) => out.addVertex(v.x, v.y, 0.001));
+    const map0 = base.vertices.map((v) => out.addVertexRaw(v.x, v.y));
     for (const e of base.edges)
       out.addEdge(map0[e.a] as number, map0[e.b] as number);
     for (const f of base.faces) {
@@ -58,7 +64,7 @@ export class Union extends BaseGraphFunction {
 
     for (let n = 1; n < graphs.length; n += 1) {
       const g = graphs[n]!;
-      const mapN = g.vertices.map((v) => out.addVertex(v.x, v.y, 0.001));
+      const mapN = g.vertices.map((v) => out.addVertexRaw(v.x, v.y));
       for (const e of g.edges)
         out.addEdge(mapN[e.a] as number, mapN[e.b] as number);
       for (const f of g.faces) {

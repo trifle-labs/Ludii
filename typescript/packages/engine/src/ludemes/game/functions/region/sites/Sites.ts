@@ -1628,12 +1628,28 @@ export function boardSides(ctx: Context, dirName: string): number[] {
 
 
 /**
- * Checks if a string looks like a board coordinate (e.g. "A1", "E5", "Z12").
+ * Checks if a string looks like a board coordinate (e.g. "A1", "E5", "AA12").
  * @java main.StringRoutines.isCoordinate(String)
+ *
+ * Faithful port: a coordinate is at most three leading letters followed by
+ * one-or-more trailing digits (the first two letters, if present, must match).
+ * The previous lenient regex `^[A-Za-z]+\d+$` wrongly classified region names
+ * like "SubGame0" as coordinates, so `(sites "SubGame0")` compiled to an empty
+ * SitesCoords instead of the equipment region (Ultimate Tic-Tac-Toe).
  */
+function isLetterChar(ch: string): boolean { return /\p{L}/u.test(ch); }
+function isDigitChar(ch: string): boolean { return ch >= "0" && ch <= "9"; }
 function isCoordinate(name: string | null | undefined): boolean {
-  if (!name) return false;
-  return /^[A-Za-z]+\d+$/.test(name.trim());
+  if (name === null || name === undefined) return false;
+  const str = name;
+  let c = str.length - 1;
+  if (c < 0 || !isDigitChar(str.charAt(c))) return false; // last char must be a digit
+  while (c >= 0 && isDigitChar(str.charAt(c))) c--;
+  if (c < 0) return true; // string is all digits
+  if (c > 2) return false; // coordinate has at most three leading letters
+  if (c > 1 && str.length > 1 && str.charAt(0) !== str.charAt(1)) return false; // e.g. "AA1"
+  while (c >= 0 && isLetterChar(str.charAt(c))) c--;
+  return c < 0; // all letters followed by all digits
 }
 
 /**

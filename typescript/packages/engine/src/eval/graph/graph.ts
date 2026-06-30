@@ -406,6 +406,21 @@ export class Graph {
     }
   }
 
+  /**
+   * Append a vertex unconditionally, WITHOUT coincidence dedup. Mirrors Java
+   * `Graph.addVertex(Vertex)` (`vertices.add(vertex)`), which never fuses
+   * coincident points. Used by the `(union …)` operator: Java's union keeps
+   * each sub-graph's vertices distinct even where they coincide, so a
+   * `(union (square 9) (scale 3 (square 3)))` board does NOT share edges/faces
+   * across the two sub-graphs (Ultimate Tic-Tac-Toe: the 9 SuperGame meta-cells
+   * must not become adjacent to the 81 sub-cells).
+   */
+  public addVertexRaw(x: number, y: number): number {
+    const id = this.vlist.length;
+    this.vlist.push({ id, x, y });
+    return id;
+  }
+
   /** Find an existing vertex within `tol` of (x, y), else add a new one. */
   public addVertex(x: number, y: number, tol = VERTEX_TOL): number {
     for (const v of this.vlist) {
