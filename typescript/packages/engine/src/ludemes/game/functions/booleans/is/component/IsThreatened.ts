@@ -32,6 +32,18 @@ export class IsThreatened extends BaseBooleanFunction {
 
     const owner = this.what !== null ? this.ownerOfWhat(context, this.what.eval(context)) : context.state.mover;
     active = true;
+    // @java IsThreatened.java:133 `new TempContext(context)` — Java runs the whole
+    // threat simulation on an ISOLATED context copy, so nothing it mutates leaks
+    // back to the caller. TS mutates the live context in place (cheaper), so we
+    // must snapshot the one piece of shared mutable state that `game.moves()`
+    // writes: `state.stalemated` is a CACHE mutated in place (Game.ts:801-802
+    // `flags[mover] = generated.length === 0`). The enemy loop calls
+    // `game.moves()` with `mover = enemy`, and the enemy set includes the real
+    // Mover, so without this restore the checkmate/check eval would poison
+    // `stalemated[Mover]` and the subsequent end-rule `(no Moves Mover)` would
+    // read a bogus flag (observed: Phase Chess trial0's ply-238 draw vanished).
+    const stalematedRef = context.state.stalemated as boolean[] | undefined;
+    const originalStalemated = stalematedRef ? [...stalematedRef] : null;
     try {
       const numPlayers =
         typeof (context.game as unknown as { numPlayers?: unknown }).numPlayers === "function"
@@ -42,12 +54,15 @@ export class IsThreatened extends BaseBooleanFunction {
       for (let enemy = 1; enemy <= numPlayers; enemy += 1) {
         if (enemy === owner) continue;
         (context.state as unknown as { mover: number }).mover = enemy;
-        // The hypothetical enemy turn is a FRESH turn: prev must not equal
-        // the temp mover or "SameTurn" play dispatch routes the threat
-        // simulation into chain/promote branches (Chess: king-steps were
-        // check-filtered against phantom promote "threats" once IsPrev read
-        // the real state.prev channel).
-        (context.state as unknown as { prev: number }).prev = originalMover === enemy ? 0 : originalMover;
+        // @java IsThreatened.java:135 newContext.state().setPrev(ownerWhat) —
+        // prev is the OWNER of the checked piece (a real player), NOT the temp
+        // mover and NOT the just-moved player. Since the enemy mover != owner,
+        // "SameTurn" (`(is Prev Mover)`) reads false, so the threat sim uses the
+        // normal move branch (not chain/promote). Using 0 here instead tripped
+        // IsPrev's pre-first-advance fallback (it read the just-applied move's
+        // mover, flipping SameTurn true and disabling checkmate detection in
+        // Chess/Shogi variants); owner is >0 so that fallback never fires.
+        (context.state as unknown as { prev: number }).prev = owner;
         try {
           const moves = this.specificMoves?.eval(context) ?? context.game.moves(context);
           for (const move of moves) {
@@ -60,6 +75,9 @@ export class IsThreatened extends BaseBooleanFunction {
         }
       }
     } finally {
+      if (stalematedRef && originalStalemated) {
+        for (let i = 0; i < originalStalemated.length; i += 1) stalematedRef[i] = originalStalemated[i]!;
+      }
       active = false;
     }
     return false;
