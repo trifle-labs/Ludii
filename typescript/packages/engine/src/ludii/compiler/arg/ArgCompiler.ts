@@ -696,6 +696,7 @@ export class ArgCompiler {
       variantName !== "track" &&
       variantName !== "hand" &&
       variantName !== "occupied" &&
+      variantName !== "crossing" &&
       !PLAYER_SITE_VARIANTS.has(variantName) &&
       !SIMPLE_SITE_VARIANTS.has(variantName)
     ) return null;
@@ -797,6 +798,27 @@ export class ArgCompiler {
       // mis-resolved this to SitesEquipmentRegion (empty), breaking HandEmpty conditions.
       const roleArg = node.items[2] && isIdent(node.items[2]) ? node.items[2].name : null;
       return Sites.constructPlayer("Hand" as never, null, null, roleArg, null, null);
+    }
+    if (variantName === "crossing") {
+      // @java Sites.construct(SitesCrossingType, @Name IntFunction at, @Opt @Or Player who,
+      // @Opt @Or RoleType role) -> SitesCrossing. The generic candidate path mis-resolved
+      // (sites Crossing at:(last To) All) to SitesEquipmentRegion (empty, name="All"),
+      // because constructEquipmentOrCoord precedes constructCrossing in the arity-based
+      // try order — so Crossline's (ifAfterwards) filtered every move and the game ended
+      // at ply1 by (no Moves Next).
+      const parsed = parseNodeArgs(node);
+      const atNode = parsed.argsIn.find((arg) => arg.parameterName === "at")?.node;
+      const atFn = atNode
+        ? this.compileMaybe(atNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+        : null;
+      // The positional who/role token after the variant (All, Mover, P1, …).
+      // Skip named-arg labels (idents ending in ":", e.g. "at:") — only the bare
+      // positional RoleType ident is the who/role.
+      const roleItem = node.items.slice(2).find(
+        (it) => isIdent(it as never) && !(it as { name: string }).name.endsWith(":"),
+      ) as { name: string } | undefined;
+      const roleTok = roleItem ? roleItem.name : null;
+      return Sites.constructCrossing("Crossing" as never, atFn as never, null, roleTok as never);
     }
     if (PLAYER_SITE_VARIANTS.has(variantName)) {
       // @java (sites <RoleType> <String>) → SitesEquipmentRegion: a NAME after

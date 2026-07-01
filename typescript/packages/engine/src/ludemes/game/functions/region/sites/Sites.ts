@@ -1712,6 +1712,9 @@ function resolveRoleIntFn(role: string): IntFunction {
   if (role === "P2") return constIntFn(2);
   if (role === "P3") return constIntFn(3);
   if (role === "P4") return constIntFn(4);
+  // @java RoleType.All -> numPlayers + 1 (the "any occupant" sentinel; SitesCrossing
+  // tests `whoSiteId == numPlayers + 1` for occupied-by-anyone).
+  if (role === "All") return { eval(ctx: Context & EvalScratch) { return ((ctx.game as unknown as { numPlayers?: number }).numPlayers ?? 2) + 1; } };
   return constIntFn(-1);
 }
 
