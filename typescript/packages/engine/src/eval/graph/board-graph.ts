@@ -514,7 +514,10 @@ export function toGraph(node: LudNode, vertexMode = false): Graph | undefined {
       // (originals + appended pivots) and spoke edges. `min:` defaults to 1.
       const g = firstOperand(pos, vertexMode);
       if (!g) return undefined;
-      g.subdivide(num(named.get("min"), 1), !vertexMode);
+      // @java subdivide(min, siteType). This DSL path only distinguishes
+      // vertex-vs-cell play; map accordingly (preserves prior !vertexMode
+      // behaviour exactly). Edge-use boards reach subdivide via Subdivide.ts.
+      g.subdivide(num(named.get("min"), 1), vertexMode ? "Vertex" : "Cell");
       return g;
     }
     case "trim": {

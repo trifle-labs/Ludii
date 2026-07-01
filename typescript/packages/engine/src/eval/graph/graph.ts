@@ -782,9 +782,15 @@ export class Graph {
    * `resetBasis()` only clears the basis tag — so the recorded trials' site
    * indices line up with `addVertex`'s append order.
    */
-  public subdivide(min: number, cellMode: boolean): void {
-    // Vertex play has no cells until we build them; Cell play already does.
-    if (!cellMode) this.makeFaces();
+  public subdivide(min: number, siteType: string): void {
+    // @java Subdivide.eval:66-67 — makeFaces runs ONLY for Vertex play
+    // ("can't subdivide without any faces!"). Edge play must NOT makeFaces: an
+    // edge-use board (e.g. Windir's octagram K_8) has no faces, and discovering
+    // them here adds a spurious centroid pivot vertex + spokes, inflating K_8 to
+    // K_9 so (is RegularGraph …) never sees uniform degrees. The old `!cellMode`
+    // guard grouped Edge with Vertex and wrongly ran makeFaces for both.
+    const cellMode = siteType === "Cell";
+    if (siteType === "Vertex") this.makeFaces();
 
     // Snapshot the faces eligible for subdivision (≥ min sides). The flist is
     // not mutated inside the loop — we only addVertex/addEdge — so these fids

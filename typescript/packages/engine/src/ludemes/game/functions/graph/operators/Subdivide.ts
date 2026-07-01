@@ -26,9 +26,11 @@ export class Subdivide extends BaseGraphFunction {
   /** @java Subdivide.eval(Context, SiteType) */
   public override eval(siteType: string): Graph {
     const graph = this.graphFn.eval(siteType);
-    // @java Subdivide.eval — delegate to Graph.subdivide(min, cellMode)
-    const cellMode = siteType === "Cell";
-    graph.subdivide(this.min, cellMode);
+    // @java Subdivide.eval — delegate to Graph.subdivide(min, siteType). The
+    // siteType decides whether pre-subdivision makeFaces runs (Vertex only, per
+    // Subdivide.java:66) and how cells are handled afterward (Cell remakes faces;
+    // Vertex/Edge clear them).
+    graph.subdivide(this.min, siteType);
     return graph;
   }
 }
