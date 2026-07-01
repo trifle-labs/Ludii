@@ -187,12 +187,20 @@ export class IsConnected implements BooleanFunction {
   /** @java IsConnected.dirnChoice — flood connectivity (null = board adjacency). */
   private readonly dirName: string | null;
 
+  /**
+   * @java IsConnected.startLocationFn = (at == null) ? new LastTo(null) : at.
+   * The flood's start site; its owner (`who = cs.who(from)`) is the player
+   * whose group is flooded. Null → fall back to the last-placed piece (LastTo).
+   */
+  private readonly atFn: { eval(ctx: Context): number } | null;
+
   public constructor(
     regions: readonly RegionFunction[] | null,
     role: string | null,
     regionType: string | null = null,
     numberFn: { eval(ctx: unknown): number } | number | null = null,
     dirName: string | null = null,
+    atFn: { eval(ctx: Context): number } | null = null,
   ) {
     this.regions = regions;
     // @java IsConnected — when NO role is given, Java leaves playerRegion
@@ -204,22 +212,30 @@ export class IsConnected implements BooleanFunction {
     this.regionType = regionType;
     this.numberFn = numberFn;
     this.dirName = dirName;
+    this.atFn = atFn;
   }
 
   /** @java IsConnected.eval(Context) — flood the mover's group, require every target touched. */
   public eval(ctx: Context): boolean {
     const r = this.role;
-    // @java when role is null, who = cs.who(lastTo) (owner of the last-placed
-    // piece) — for normal connection games the mover placed their OWN piece so
-    // this equals the mover, but Pippinzip's ballot has the mover place the
-    // opponent's piece, so the group to flood is the opponent's.
-    const lastToOwner = (): number => {
+    // @java IsConnected.eval — `from = startLocationFn.eval` (= at ?? LastTo),
+    // then the flooded player `who = cs.who(from)` is the OWNER of that start
+    // site. When an `at:` is given (e.g. Y's `(is Connected 3 at:(site) {sides})`
+    // iterating `(sites Occupied by:Next)`), `from` is the iteration site owned by
+    // Next — NOT the last-placed piece (owned by Mover). Without honouring `at:`
+    // the flood checked the wrong player and the win never fired. When no `at:`
+    // is given this falls back to LastTo — for normal connection games the mover
+    // placed their OWN piece so who = mover, but Pippinzip's ballot has the mover
+    // place the opponent's piece, so the group to flood is the opponent's.
+    const startOwner = (): number => {
       const cells = (ctx.state as unknown as { cells?: readonly number[] }).cells;
-      const to = (ctx as unknown as { _evalTo?: number })._evalTo ?? -1;
-      const o = to >= 0 ? (cells?.[to] ?? 0) : 0;
+      const from = this.atFn !== null
+        ? this.atFn.eval(ctx)
+        : ((ctx as unknown as { _evalTo?: number })._evalTo ?? -1);
+      const o = from >= 0 ? (cells?.[from] ?? 0) : 0;
       return o > 0 ? o : ctx.state.mover;
     };
-    const pid = r === null ? lastToOwner()
+    const pid = r === null ? startOwner()
       : r === "Mover" ? ctx.state.mover
       : r === "Next" ? (ctx.state.mover % ctx.game.numPlayers) + 1
       : r === "Prev" ? ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1

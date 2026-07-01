@@ -415,7 +415,13 @@ export class Is extends BaseBooleanFunction {
       const dirName = typeof _directions === "string"
         ? _directions
         : (_directions as { name?: string } | null)?.name ?? null;
-      return new IsConnected(regions, role, regionType, numberFn ?? null, dirName);
+      // @java IsConnected.startLocationFn = (at == null) ? new LastTo(null) : at.
+      // `_at` is the compiled `at:(site)` IntFunction; pass it through so the
+      // flood starts from that site (and floods its owner) rather than LastTo.
+      const atFn = _at != null && typeof (_at as { eval?: unknown }).eval === "function"
+        ? (_at as { eval(ctx: never): number })
+        : null;
+      return new IsConnected(regions, role, regionType, numberFn ?? null, dirName, atFn as never);
     }
     throw new Error("Is(): A ported IsConnectType variant is not implemented.");
   }
