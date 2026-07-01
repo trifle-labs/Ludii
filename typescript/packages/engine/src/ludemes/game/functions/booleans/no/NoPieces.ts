@@ -133,6 +133,23 @@ export class NoPieces implements BooleanFunction {
       } else {
         idPlayers.add(baseP);
       }
+    } else if ((this.role as string) === "Enemy") {
+      // @java PlayersIndices.getIdPlayers case Enemy — every player that is NOT
+      // the mover and (in team games) NOT on the mover's team. The old default
+      // parsed "Enemy".slice(1)="nemy" → parseInt=NaN → playerId=mover, so
+      // (no Pieces Enemy) checked the MOVER's pieces. In 4-player team games
+      // (Sig/Deleb: Team1={P1,P3}, Team2={P2,P4}) P3/P4 own no board pieces, so
+      // on their first move the mover-count was 0 and (result TeamMover Win)
+      // fired prematurely. teamMover===0 (non-team game) → all other players.
+      const teamMover = game.teamOf?.[state.mover] ?? 0;
+      for (let p = 1; p <= numPlayersN; p++) {
+        if (p === state.mover) continue;
+        if (teamMover > 0) {
+          if ((game.teamOf?.[p] ?? 0) !== teamMover) idPlayers.add(p);
+        } else {
+          idPlayers.add(p);
+        }
+      }
     } else {
       idPlayers.add(playerId);
     }
