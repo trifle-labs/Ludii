@@ -209,7 +209,7 @@ export class Context {
 
   /** @java Context.containers() — board + hands + dice, the Java container list
    * (consistent with sitesFrom(): index i here owns base sitesFrom()[i]). */
-  public containers(): Array<{ numSites(): number; isHand(): boolean; isDice(): boolean; owner(): number; index(): number }> {
+  public containers(): Array<{ numSites(): number; isHand(): boolean; isDice(): boolean; owner(): number; index(): number; name(): string }> {
     const eq = (this.game as {
       equipment?: {
         board?: { numSites?: number };
@@ -218,18 +218,21 @@ export class Context {
       };
     }).equipment;
     const n = eq?.board?.numSites ?? this.state.cells.length;
-    const out: Array<{ numSites(): number; isHand(): boolean; isDice(): boolean; owner(): number; index(): number }> = [
-      { numSites: () => n, isHand: () => false, isDice: () => false, owner: () => 0, index: () => 0 },
+    // @java Board.java:92 super("Board", …) — the main board container is named "Board";
+    // Hand containers are "Hand"+owner. mapContainer().get(name) (ContainerId.eval) relies
+    // on these names, e.g. (count Sites "Board") = board.numSites().
+    const out: Array<{ numSites(): number; isHand(): boolean; isDice(): boolean; owner(): number; index(): number; name(): string }> = [
+      { numSites: () => n, isHand: () => false, isDice: () => false, owner: () => 0, index: () => 0, name: () => "Board" },
     ];
     let idx = 1;
     for (const hand of eq?.hands ?? []) {
       const i = idx++;
-      out.push({ numSites: () => hand.size, isHand: () => true, isDice: () => false, owner: () => hand.owner, index: () => i });
+      out.push({ numSites: () => hand.size, isHand: () => true, isDice: () => false, owner: () => hand.owner, index: () => i, name: () => "Hand" + hand.owner });
     }
     if ((eq?.diceSpecs?.length ?? 0) > 0) {
       const i = idx++;
       const locs = eq!.diceSpecs!.length;
-      out.push({ numSites: () => locs, isHand: () => true, isDice: () => true, owner: () => 0, index: () => i });
+      out.push({ numSites: () => locs, isHand: () => true, isDice: () => true, owner: () => 0, index: () => i, name: () => "Dice" });
     }
     return out;
   }

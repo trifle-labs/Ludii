@@ -172,8 +172,15 @@ export class Trajectories {
    * @java Edge.vA().index() / Edge.vB().index().
    */
   public edgeEndpoints(site: number): readonly [number, number] | undefined {
-    if (this.playType !== SiteType.Edge) return undefined;
-    const el = this.els[site];
+    // @java IsPath.evalEdge:134 / the graph-theory predicates read
+    // context.topology().edges().get(siteId) — the FULL graph edge list, which is
+    // populated regardless of play type. A use:Vertex board that still plays onto
+    // Edge sites (Icosian: moves place `to Edge (sites Empty Edge)` while the board
+    // is use:Vertex) must resolve edge endpoints too. The old `playType !== Edge`
+    // guard returned undefined for such boards, so (is Path Edge …) rejected every
+    // candidate move and only a Pass was generated. Read the topology edge list
+    // directly; when playType===Edge, els === edgeEls so this is identical there.
+    const el = this.core.topo.edgeEls[site];
     if (!(el instanceof EdgeEl)) return undefined;
     return [el.va.id, el.vb.id];
   }

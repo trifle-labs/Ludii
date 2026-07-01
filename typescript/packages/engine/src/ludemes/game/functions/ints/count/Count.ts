@@ -341,7 +341,9 @@ export class Count extends BaseIntFunction {
       case "Orthogonal":
         return asJavaReturn(new CountSiteNeighbours(siteFn, "Orthogonal"));
       case "Sites":
-        return asJavaReturn(new CountSites(regionFrom(inArg, at)));
+        // @java Count.java:255 new CountSites(in, at, name) — the name binds the
+        // container ((count Sites "Board") = board.numSites()); it was dropped before.
+        return asJavaReturn(new CountSites(regionFrom(inArg, at), typeof name === "string" ? name : null));
       case "SitesPlatformBelow":
         return new CountSitesPlatformBelow(
           type as SiteType | null,
