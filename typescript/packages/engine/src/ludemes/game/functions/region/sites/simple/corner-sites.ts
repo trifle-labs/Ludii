@@ -94,7 +94,17 @@ export function cornersFromPerimeterTyped(
     for (let k = 1; k < numK; k += 1) {
       const a = poly[(n - k + num) % num] as [number, number];
       const b = poly[(n + k) % num] as [number, number];
-      let dist = sideDistToLine(pt[0], pt[1], a[0], a[1], b[0], b[1]);
+      // @java MathRoutines.distanceToLine returns an UNSIGNED magnitude
+      // (Math.sqrt(...)); the convex/concave sign comes SOLELY from the turn
+      // direction (`if (clockwise(a,pt,b)) dist = -dist`). sideDistToLine here
+      // is already a SIGNED cross-product distance whose sign equals the
+      // clockwise test — so without Math.abs the negation cancels to |dist|
+      // for every vertex, collapsing the convex/concave distinction (jagged
+      // perimeters like Onyx's rotated tiling then read EVERY edge vertex as a
+      // convex corner, fragmenting `(sites Side W)` into 3 sites instead of 12).
+      // Callers normalize the ring to CCW first, so |dist| negated on a
+      // clockwise turn reproduces Java exactly: convex(+), concave(−).
+      let dist = Math.abs(sideDistToLine(pt[0], pt[1], a[0], a[1], b[0], b[1]));
       if (sideClockwise(a[0], a[1], pt[0], pt[1], b[0], b[1])) dist = -dist;
       score += dist / k;
     }
