@@ -401,20 +401,25 @@ export class Is extends BaseBooleanFunction {
     _role: unknown,
     _regionType: unknown,
   ): BooleanFunction {
-    if (matchesType(isType, "Blocked")) return new IsBlocked();
+    // @java both IsBlocked and IsConnected take (regions | role | regionType),
+    // an optional minimum `number`, and an optional Direction — parse once.
+    const regions = Array.isArray(_regions) ? (_regions as never[]) : (_regions ? [_regions as never] : null);
+    const role = typeof _role === "string" ? _role : null;
+    // @java RegionTypeStatic (e.g. (is Connected 3 Sides)) + the minimum
+    // number of regions to connect — IsConnected.java staticRegions/number.
+    const regionType = typeof _regionType === "string" ? _regionType : null;
+    const numberFn = _number as { eval(ctx: unknown): number } | number | null;
+    // @java the Direction param selects the flood connectivity
+    // (Crossway: (is Connected All Mover) — 8-connectivity incl. diagonals).
+    const dirName = typeof _directions === "string"
+      ? _directions
+      : (_directions as { name?: string } | null)?.name ?? null;
+    if (matchesType(isType, "Blocked")) {
+      // @java case Blocked: new IsBlocked(type, number, directions, regions, role, regionType)
+      return new IsBlocked(regions, role, regionType, numberFn ?? null, dirName);
+    }
     if (matchesType(isType, "Connected")) {
       // @java case Connected: new IsConnected(number, type, at, directions, regions, role, regionType)
-      const regions = Array.isArray(_regions) ? (_regions as never[]) : (_regions ? [_regions as never] : null);
-      const role = typeof _role === "string" ? _role : null;
-      // @java RegionTypeStatic (e.g. (is Connected 3 Sides)) + the minimum
-      // number of regions to connect — IsConnected.java staticRegions/number.
-      const regionType = typeof _regionType === "string" ? _regionType : null;
-      const numberFn = _number as { eval(ctx: unknown): number } | number | null;
-      // @java the Direction param selects the flood connectivity
-      // (Crossway: (is Connected All Mover) — 8-connectivity incl. diagonals).
-      const dirName = typeof _directions === "string"
-        ? _directions
-        : (_directions as { name?: string } | null)?.name ?? null;
       // @java IsConnected.startLocationFn = (at == null) ? new LastTo(null) : at.
       // `_at` is the compiled `at:(site)` IntFunction; pass it through so the
       // flood starts from that site (and floods its owner) rather than LastTo.

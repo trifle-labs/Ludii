@@ -15,17 +15,17 @@ import type { Context } from "../../../../../../context.js";
 import { boardSides, boardCorners } from "../../../region/sites/Sites.js";
 import type { BooleanFunction, RegionFunction } from "../../../../../base.js";
 
-interface BoardLike {
+export interface BoardLike {
   numSites: number;
   radials: ReadonlyArray<{ axes: ReadonlyArray<{ ray: readonly number[]; opposite: readonly number[] }> } | undefined>;
 }
 
-function ownerAt(ctx: Context, site: number): number {
+export function ownerAt(ctx: Context, site: number): number {
   const state = ctx.state as unknown as { cells?: readonly number[]; whoAtSite?: (site: number) => number };
   return state.whoAtSite?.(site) ?? state.cells?.[site] ?? 0;
 }
 
-function adjacentSites(board: BoardLike, site: number): number[] {
+export function adjacentSites(board: BoardLike, site: number): number[] {
   const radials = board.radials[site]?.axes ?? [];
   const out = new Set<number>();
   for (const radial of radials) {
@@ -42,7 +42,7 @@ function adjacentSites(board: BoardLike, site: number): number[] {
  * (@java IsConnected dirnChoice.convertToAbsolute + radials): All = the
  * 8 compass headings, Orthogonal = 4, Diagonal = 4 diagonals.
  */
-function directionalNeighbours(ctx: Context, site: number, dirName: string): number[] {
+export function directionalNeighbours(ctx: Context, site: number, dirName: string): number[] {
   const groups: Record<string, readonly string[]> = {
     All: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
     Adjacent: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
@@ -82,7 +82,7 @@ function directionalNeighbours(ctx: Context, site: number, dirName: string): num
   return out;
 }
 
-function playerConnectionRegions(ctx: Context, pid: number): number[][] {
+export function playerConnectionRegions(ctx: Context, pid: number): number[][] {
   const equipment = (ctx.game as unknown as {
     equipment?: {
       playerRegions?: ReadonlyMap<number, RegionFunction>;
@@ -133,7 +133,7 @@ function playerConnectionRegions(ctx: Context, pid: number): number[][] {
  * @java IsConnected.java — staticRegions = RegionTypeStatic.Sides resolves to
  * topology.sides(type): one site list per compass direction.
  */
-function sidesAsTargets(ctx: Context): number[][] {
+export function sidesAsTargets(ctx: Context): number[][] {
   const out: number[][] = [];
   for (const dir of ["N", "NE", "E", "SE", "S", "SW", "W", "NW"]) {
     const sites = boardSides(ctx, dir);
@@ -148,7 +148,7 @@ function sidesAsTargets(ctx: Context): number[][] {
  * per corner, so `(is Connected 2 Corners)` requires the group to touch ≥2
  * distinct corners.
  */
-function cornersAsTargets(ctx: Context): number[][] {
+export function cornersAsTargets(ctx: Context): number[][] {
   return boardCorners(ctx).map((c) => [c]);
 }
 
@@ -166,6 +166,39 @@ function sidesNoCornersAsTargets(ctx: Context): number[][] {
     if (sites.length > 0) out.push(sites);
   }
   return out;
+}
+
+/**
+ * @java RoleType.toIntFunction(role).eval — resolve a named role to a player id.
+ * Used by both IsConnected (role-given branch) and IsBlocked. "Player" is the
+ * forEach iteration player (ctx._evalPlayer).
+ */
+export function rolePlayer(ctx: Context, role: string): number {
+  const n = ctx.game.numPlayers;
+  if (role === "Mover") return ctx.state.mover;
+  if (role === "Next") return (ctx.state.mover % n) + 1;
+  if (role === "Prev") return ((ctx.state.mover - 2 + n) % n) + 1;
+  if (role === "Player") return (ctx as unknown as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover;
+  if (/^P\d+$/.test(role)) return Number(role.slice(1));
+  return ctx.state.mover;
+}
+
+/**
+ * @java IsConnected/IsBlocked — build the target region site-sets for a player:
+ * RegionTypeStatic (Sides/Corners/SidesNoCorners), explicit region functions, or
+ * the player's owned equipment regions.
+ */
+export function connectionTargets(
+  ctx: Context,
+  regionType: string | null,
+  regions: readonly RegionFunction[] | null,
+  pid: number,
+): number[][] {
+  if (regionType === "Sides") return sidesAsTargets(ctx);
+  if (regionType === "Corners") return cornersAsTargets(ctx);
+  if (regionType === "SidesNoCorners") return sidesNoCornersAsTargets(ctx);
+  if (regions !== null && regions.length > 0) return regions.map((fn) => fn.eval(ctx as never));
+  return playerConnectionRegions(ctx, pid);
 }
 
 export class IsConnected implements BooleanFunction {
