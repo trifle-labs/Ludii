@@ -21,6 +21,13 @@ export function isPlacementRecordedMove(recMove) {
   // match a same-destination relocation (e.g. a backgammon 10→12 step landing
   // where a piece is borne off 12→12). So exclude Remove-decision moves here.
   if (recordedDecisionType(recMove) === 'Remove') return false;
+  // @java ActionSelect.from() returns the selected site (== to), so a Select
+  // decision ALSO records from == to — but it is not a placement. Treating it
+  // as a to-only placement lets the matcher pick any same-destination move
+  // (e.g. Minesweeper's FlagCopy(hand->site) instead of the bomb-click
+  // Select(site,site)), so the bomb is never clicked, (set Var 1) never runs,
+  // and the Loss end rule never fires. Match Select by from+to like Remove.
+  if (recordedDecisionType(recMove) === 'Select') return false;
   // from == to is the canonical Java placement marker
   if (recMove.from === recMove.to) return true;
   // Or the DECISION action is an Add (a true placement/drop). A capturing
