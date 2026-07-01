@@ -65,13 +65,30 @@ export class NoPieces implements BooleanFunction {
     const numPlayers = ctx.game.numPlayers;
     let playerId = this.whoFn.eval(ctx);
 
+    // @java Id.java — RoleType.Next resolves to context.state().next(), NOT a
+    // recomputed (mover%n)+1. This matters during a (moveAgain) ply: Java's
+    // (moveAgain) applies ActionSetNextPlayer(mover) BEFORE the end rule is
+    // checked, so state.next()==mover there. The end def
+    //   (if (no Pieces Next) (result Next Loss))
+    // then checks the SAME player it would punish — so the condition and the
+    // (result Next Loss) ludeme (which also reads state.next) stay consistent.
+    // Recomputing (mover%n)+1 for the condition while the result reads
+    // state.next split the two apart, ending Bheri Bakhri / Siryu etc. one ply
+    // early with the WINNER SWAPPED. Our engine clears state.next to 0 after
+    // every move (unlike Java, which stores the upcoming player), so it is only
+    // meaningful mid-apply / at end-eval where it is stamped; fall back to
+    // (mover%n)+1 when it is 0 to preserve prior mid-turn behaviour.
+    const stateNext = (state.next ?? 0) > 0 ? state.next : (state.mover % numPlayers) + 1;
     if (this.role !== null) {
       switch (this.role as string) {
         case "Mover":
           playerId = state.mover;
           break;
         case "Next":
-          playerId = (state.mover % numPlayers) + 1;
+          playerId = stateNext;
+          break;
+        case "Prev":
+          playerId = (state.prev ?? 0) > 0 ? state.prev : state.mover;
           break;
         case "Player":
           // @java RoleType.Player — the (forEach Player ...) iteration
@@ -109,7 +126,7 @@ export class NoPieces implements BooleanFunction {
       // expands a team role to ALL its members. (no Pieces TeamMover) is true
       // only when the whole team has no pieces (Nebakuthana: P2/P4 own no board
       // pieces, so the naive mover-only scan ended the game prematurely).
-      const baseP = (this.role as string) === "TeamMover" ? state.mover : (state.mover % numPlayersN) + 1;
+      const baseP = (this.role as string) === "TeamMover" ? state.mover : stateNext;
       const team = game.teamOf?.[baseP] ?? 0;
       if (team > 0) {
         for (let p = 1; p <= numPlayersN; p++) if (game.teamOf[p] === team) idPlayers.add(p);
@@ -183,7 +200,9 @@ function roleToIntFunction(role: RoleType | null): IntFunction {
     eval(ctx: Context): number {
       switch (role) {
         case "Next":
-          return (ctx.state.mover % ctx.game.numPlayers) + 1;
+          // @java Id.java — state.next() (see NoPieces.eval); fall back to
+          // (mover%n)+1 when our engine has cleared next to 0 mid-turn.
+          return (ctx.state.next ?? 0) > 0 ? ctx.state.next : (ctx.state.mover % ctx.game.numPlayers) + 1;
         case "All":
           return 0;
         case "P1":
