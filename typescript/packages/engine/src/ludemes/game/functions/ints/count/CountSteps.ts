@@ -18,7 +18,12 @@ import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../b
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Game } from "../../../../Game.js";
 
-const INFINITY = 999999;
+// @java Common/src/main/Constants.java:92 — INFINITY = 1000000000. Must match the
+// value the ArgCompiler maps the lud `Infinity` keyword to (ArgCompiler.ts), so
+// `(!= Infinity (count Steps …))` compares against the SAME sentinel this eval
+// returns when no path exists. The old 999999 made every unreachable target read
+// as reachable (e.g. Shred's "IsConnected" flood-fill never marked isolated pieces).
+const INFINITY = 1_000_000_000;
 
 export class CountSteps implements IntFunction {
   /** @java CountSteps.site1Fn */
@@ -71,7 +76,11 @@ export class CountSteps implements IntFunction {
     if (site1 < 0) return 0;
 
     const region2 = this.region2Fn.eval(ctx);
-    if (region2.length === 0) return 0;
+    // @java CountSteps.java — empty target region: the no-stepMove path returns 0
+    // (line 104) while the stepMove/BFS path returns INFINITY (line 129). Preserve
+    // that branch distinction: a step-conditioned count to an empty target is
+    // unreachable, not distance-0.
+    if (region2.length === 0) return this.stepConditionFn !== null ? INFINITY : 0;
 
     // If site1 is already in region2, distance is 0
     if (region2.includes(site1)) return 0;

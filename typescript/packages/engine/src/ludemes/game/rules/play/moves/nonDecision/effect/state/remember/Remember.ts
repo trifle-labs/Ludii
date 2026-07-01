@@ -12,7 +12,7 @@
 import type { Context } from "../../../../../../../../../context.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import type { Move } from "../../../../../../../../../move.js";
-import type { Then } from "../../Then.js";
+import { applyPostStateThen, type Then } from "../../Then.js";
 import { RememberState } from "./state/RememberState.js";
 import { ActionRememberValue } from "../../../../../../../../../action/action-remember.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
@@ -73,11 +73,15 @@ class RememberValueImpl implements MovesFunction {
     });
 
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return [move.withConsequence(
-        thenMoves.flatMap((tm: Move) => [...tm.actions]),
-        false,
-      )];
+      // @java Move.apply — the (then …) is evaluated in the POST-apply context and
+      // its generated moves are applied in order, recursing into THEIR then() list.
+      // The old code eval'd the then pre-apply and flat-mapped only tm.actions,
+      // which DROPPED the generated then-moves' own deferredThens (e.g. Garrisons'
+      // (set Var … (then ("ReachLoop" …))) — the ReachLoop flood-fill never ran, so
+      // the remembered territory stayed empty and byScore ended in a false result).
+      // applyPostStateThen wires the then as a deferredThen so evalDeferredThens
+      // runs it post-state and preserves the nested consequences.
+      return [applyPostStateThen(this.thenClause, ctx, move)];
     }
 
     return [move];

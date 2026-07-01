@@ -43,6 +43,14 @@ export class Result {
         const stateNext = ctx?.state?.next ?? 0;
         return stateNext > 0 ? stateNext : (mover % numPlayers) + 1;
       }
+      case "Prev": {
+        // @java game/functions/ints/board/Id.java:123 — case Prev: return context.state().prev()
+        // state.prev is set by setPrev in Game.apply (the previous mover). When
+        // state.prev > 0 use it; otherwise fall back to the rotational previous
+        // player (mirrors the defensive Next case above).
+        const statePrev = ctx?.state?.prev ?? 0;
+        return statePrev > 0 ? statePrev : ((mover - 2 + numPlayers) % numPlayers) + 1;
+      }
       case "All":   return 0;
       default: {
         // @java RoleType — (result Pn Win) names a specific player; resolve Pn for
