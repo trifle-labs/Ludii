@@ -578,6 +578,9 @@ export class Game implements Game {
     // @java State.scores / State.amounts — initialised by ActionSetScore/SetAmount.
     const scores = new Array<number>(this.numPlayers + 1).fill(0);
     const amounts = new Array<number>(this.numPlayers + 1).fill(0);
+    // Per-site graph-element cost (from (set Cost N Vertex at:X) start rules).
+    // @java Topology element cost written by ActionSetCost; State.costAt here.
+    const costAt = new Array<number>(totalSites).fill(0);
     // Bridge-owned start collections (STATE CONVERGENCE chunk 4 — the equipment
     // side-channels fold into these; rules write via the ContainerState facade).
     const startRemembered = new Map<string, number[]>();
@@ -600,7 +603,7 @@ export class Game implements Game {
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging, stackedStaging, startRng);
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging, stackedStaging, startRng, costAt);
     }
 
     // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
@@ -608,6 +611,7 @@ export class Game implements Game {
     const hasNonZeroValue = valueAt.some(v => v !== 0);
     const hasNonZeroScores = scores.some(v => v !== 0);
     const hasNonZeroAmounts = amounts.some(v => v !== 0);
+    const hasNonZeroCost = costAt.some(v => v !== 0);
 
     // Compute initial phase indices for each player.
     // @java other/state/State.java — initPhase(game)
@@ -645,6 +649,7 @@ export class Game implements Game {
       valueAt: hasNonZeroValue ? valueAt : undefined,
       scores: hasNonZeroScores ? scores : undefined,
       amounts: hasNonZeroAmounts ? amounts : undefined,
+      costAt: hasNonZeroCost ? costAt : undefined,
       typedSites: typedStaging.size > 0 ? typedStaging : undefined,
       // @java GameType.Stacking — compiled-tree flag (play1to1 harvest).
       stackingGame: (this as unknown as { usesStacking?: boolean }).usesStacking === true || undefined,
@@ -1281,6 +1286,7 @@ export class Game implements Game {
     typedStaging?: Map<string, { who: number[]; what: number[]; count: number[] }>,
     stackedStaging?: Map<number, Array<{ what: number; owner: number; count: number; state: number; value: number }>>,
     rng?: SeededRng,
+    costAt?: number[],
   ): void {
     const evalRule = rule as { eval?: (ctx: Context) => void };
     if (typeof evalRule.eval !== "function") return;
@@ -1331,6 +1337,10 @@ export class Game implements Game {
       /** @java State.setAmount(player, amount) */
       setAmount: (pid: number, amount: number): void => {
         if (amounts && pid >= 0 && pid < amounts.length) amounts[pid] = amount;
+      },
+      /** @java ActionSetCost.apply — Topology element cost (State.costAt here). */
+      setCost: (site: number, cost: number): void => {
+        if (costAt && site >= 0 && site < costAt.length) costAt[site] = cost;
       },
       /** @java State.remember(name, value) — ActionRememberValue.apply(context). */
       rememberValue: (name: string | null, value: number, unique: boolean): void => {

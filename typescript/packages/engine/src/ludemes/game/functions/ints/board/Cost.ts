@@ -73,9 +73,21 @@ export class Cost extends BaseIntFunction {
       };
     }).topology?.();
 
+    // @java ActionSetCost writes the cost onto the Topology graph element; this
+    // port stores per-site costs in State.costAt (populated by (set Cost …)
+    // start rules via the start-rule bridge). Prefer costAt when it carries a
+    // value; fall back to the topology graph element cost for boards that
+    // encode costs structurally rather than through a start rule.
+    const costAt = (context as unknown as { state?: { costAt?: readonly number[] } }).state?.costAt;
+
     let sum = 0;
 
     for (const site of sites) {
+      const fromState = costAt && site >= 0 && site < costAt.length ? (costAt[site] ?? 0) : 0;
+      if (fromState !== 0) {
+        sum += fromState;
+        continue;
+      }
       if (graph) {
         if (this.type === "Vertex") {
           sum += graph.vertices()[site]?.cost() ?? 0;

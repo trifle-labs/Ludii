@@ -118,23 +118,19 @@ export class SetDispatch {
   }
 
   /**
-   * @java Set.construct(RoleType role, @Opt SiteType type, @Opt IntFunction[] locs,
-   *   @Opt RegionFunction region, @Opt String[] coords) — routes multi-site SetSite.
-   */
-  public static constructSiteRegion(
-    role: string,
-    type: SiteType | null,
-    locs: readonly IntFunction[] | null,
-    region: RegionFunction | null,
-    coords: readonly string[] | null,
-  ): StartRule {
-    return new SetSite(role, type, locs, region, coords);
-  }
-
-  /**
    * @java Set.construct(SetStartSitesType startType, IntFunction value, @Opt SiteType type,
    *   @Or @Name IntFunction at, @Or @Name RegionFunction to) — routes Count/Cost/Phase.
    * Java maps `at`->site, `to`->region. 5 required params so .length===5 matches the bind.
+   *
+   * NOTE: this MUST be declared BEFORE constructSiteRegion. instantiateFaithful
+   * (ArgCompiler) probes the SetDispatch static methods by arity and takes the
+   * first non-null result; constructSiteRegion accepts ANY string as its `role`
+   * and always returns a SetSite, so if it were tried first it would intercept
+   * every 5-arity (set …) bind — including (set Cost …)/(set Count …)/(set Phase …),
+   * which the ArgCompiler correctly resolved to the SetStartSitesType overload.
+   * Declaring constructSites first lets it claim the SetStartSitesType tokens and
+   * return null for genuine RoleType tokens (Mover/P1/…), falling through to
+   * constructSiteRegion for those.
    */
   public static constructSites(
     startType: string,
@@ -149,6 +145,20 @@ export class SetDispatch {
       case "Phase": return new SetPhase(value, type, at, to);
       default: return null;
     }
+  }
+
+  /**
+   * @java Set.construct(RoleType role, @Opt SiteType type, @Opt IntFunction[] locs,
+   *   @Opt RegionFunction region, @Opt String[] coords) — routes multi-site SetSite.
+   */
+  public static constructSiteRegion(
+    role: string,
+    type: SiteType | null,
+    locs: readonly IntFunction[] | null,
+    region: RegionFunction | null,
+    coords: readonly string[] | null,
+  ): StartRule {
+    return new SetSite(role, type, locs, region, coords);
   }
 
   /**

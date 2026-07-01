@@ -30,11 +30,16 @@ export class Claim implements MovesFunction {
     to: To,
     then: Then | null = null,
   ) {
-    void then;
+    // @java Claim extends Effect; the (then …) consequence is carried on the
+    // Effect and evaluated per generated move. The 1:1 simplification delegates
+    // to Add, so the then MUST be forwarded into Add's options — otherwise the
+    // consequence (e.g. Onek Rong's per-placement (addScore Mover (cost …)))
+    // is silently dropped and byScore ends in a false draw.
     const component = what?.components()?.[0] ?? pieceComponent(what);
     this.inner = new Add(
       toRegion(to),
       what === null ? null : { what: component, owner: -1, ...(what.state() ? { state: what.state()! } : {}) },
+      { then },
     );
   }
 
