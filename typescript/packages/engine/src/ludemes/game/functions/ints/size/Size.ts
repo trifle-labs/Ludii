@@ -53,7 +53,12 @@ export class Size extends BaseIntFunction {
   public static constructGroup(_sizeType: string, _type: unknown, at: unknown, directions: unknown = null, _If: unknown = null): BaseIntFunction | null {
     if (_sizeType !== "Group") return null;
     const dir = typeof directions === "string" ? directions : "Adjacent";
-    return new SizeGroup(at as never, dir) as unknown as BaseIntFunction;
+    // @java SizeGroup(…, If) — the group-membership condition was previously
+    // dropped, so if:-scoped groups degraded to same-owner floods.
+    const cond = _If !== null && typeof (_If as { eval?: unknown }).eval === "function"
+      ? (_If as { eval(ctx: unknown): boolean })
+      : null;
+    return new SizeGroup(at as never, dir, cond as never) as unknown as BaseIntFunction;
   }
 
   /** @java Size.eval — never called (static-factory-only). */
