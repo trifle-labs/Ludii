@@ -65,20 +65,46 @@ export class CountSizeBiggestGroup implements IntFunction {
 
     const origTo = ctx._evalTo;
 
-    // @java CountSizeBiggestGroup.java:142-153,176-186 — isVisible filter.
-    // When (isVisible:True), a piece that is COVERED by another piece directly
-    // above it (an occupied Upward neighbour — Java's centroid3D same-(x,y),
-    // higher-index check / AbsoluteDirection.Upward step) is not counted: only
-    // the visible top of each pyramidal column contributes (Spaiji's end rule
-    // compares the biggest *visible* group). On a flat board steps(_,Upward)
-    // is empty, so this is a no-op and isVisible-less games are unaffected.
+    // @java CountSizeBiggestGroup.java:142-153,225-236 — isVisible covered
+    // check: a piece is COVERED (invisible) iff some HIGHER-INDEXED site with
+    // the SAME centroid (x, y) is occupied — the ball directly above in the
+    // same vertical column of the pyramid (two layers up on Shibumi), NOT any
+    // occupied Upward pocket-neighbour. The old Upward-step check excluded a
+    // ball as soon as ANY ball rested on one of its four pockets, so Spaiji /
+    // Spaji visible-group sizes were wrong. On flat boards no two sites share
+    // a centroid, so this is a no-op for isVisible-less games.
     const isVisActive = this.isVisibleFn !== null && this.isVisibleFn.eval(ctx);
+    const EPS = 1e-9;
     const covered = (site: number): boolean => {
-      if (!isVisActive || !traj || typeof traj.steps !== "function") return false;
-      for (const up of traj.steps(site, "Upward")) {
-        if (up >= 0 && !ctx.state.isEmptySite(up)) return true;
+      if (!isVisActive || !traj) return false;
+      const sx = traj.xOf(site);
+      const sy = traj.yOf(site);
+      for (let t = site + 1; t < boardN; t += 1) {
+        if (ctx.state.whatAtSite(t) === 0) continue;
+        if (Math.abs(traj.xOf(t) - sx) < EPS && Math.abs(traj.yOf(t) - sy) < EPS) return true;
       }
       return false;
+    };
+    // @java CountSizeBiggestGroup.java:172-217,237 — the VISUAL-CONNECTION
+    // blocker: expanding from `s` to `nb` is skipped when the two sites share
+    // >= 2 occupied Upward-step neighbours (a pair of balls sitting across the
+    // seam hides the connection between the two balls below).
+    const occupiedUpward = (site: number): number[] => {
+      if (!isVisActive || !traj || typeof traj.steps !== "function") return [];
+      const out: number[] = [];
+      for (const up of traj.steps(site, "Upward")) {
+        if (up >= 0 && ctx.state.whatAtSite(up) !== 0) out.push(up);
+      }
+      return out;
+    };
+    const connectionHidden = (a: number, b: number): boolean => {
+      if (!isVisActive) return false;
+      const upA = occupiedUpward(a);
+      if (upA.length < 2) return false;
+      const upB = occupiedUpward(b);
+      let shared = 0;
+      for (const u of upB) if (upA.includes(u)) shared += 1;
+      return shared >= 2;
     };
 
     // Collect seeds: sites where condition holds
@@ -137,9 +163,11 @@ export class CountSizeBiggestGroup implements IntFunction {
           } else {
             if ((cells[nb] ?? 0) === 0) continue;
           }
-          // @java covered pieces (occupied Upward neighbour) are not part of
-          // the visible group.
+          // @java CountSizeBiggestGroup.java:225-241 — covered pieces are not
+          // part of the visible group, and a connection whose seam is hidden
+          // by >= 2 shared occupied Upward neighbours does not link the group.
           if (covered(nb)) continue;
+          if (connectionHidden(s, nb)) continue;
           visited[nb] = 1;
           groupSites.push(nb);
         }
