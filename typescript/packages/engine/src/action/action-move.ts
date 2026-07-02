@@ -377,6 +377,16 @@ export class ActionMove extends BaseAction {
         if (popped.stateAtSite(this.fromIndex) !== 0) popped = popped.withStateAt(this.fromIndex, 0);
         if (popped.valueAtSite(this.fromIndex) !== 0) popped = popped.withValueAt(this.fromIndex, 0);
       }
+      // @java ActionMoveLevelFrom.java:343-347 — the relocated piece CARRIES
+      // its local state (newStateTo = source state when no explicit state).
+      // The flat stateAt[] approximates the top level's state, so a single
+      // relocating piece takes it along: Owasokotz marks each Stick's chosen
+      // CW/CCW direction as site state on the Edge it stands on; dropping it
+      // here made ("MadeACompleteCircuit") read direction 0 (CCW) after every
+      // later hop and fire a false win at ply 5. Multi-level pops (A)/(B)
+      // leave the flat channel untouched (the flat model cannot represent
+      // per-level state for the piece left behind).
+      const srcSiteState = !multiStack && srcCount <= 1 ? state.stateAtSite(this.fromIndex) : 0;
       const topValue =
         srcArr.length > 0 ? state.valueAtLevel(this.fromIndex, topLevel) : state.valueAtSite(this.fromIndex);
       const fromRow: number[] = [];
@@ -387,6 +397,8 @@ export class ActionMove extends BaseAction {
       pushed = pushed.withValueStackRow(this.fromIndex, fromRow);
       pushed = pushed.withValueStackRow(this.toIndex, [...toBase, topValue]);
       pushed = pushed.withOwnedAdd(topOwner, topWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
+      // Carry the single relocating piece's site state (see (C) above).
+      if (srcSiteState !== 0) pushed = pushed.withStateAt(this.toIndex, srcSiteState);
       return this.maintainTracks(pushed, topWhat);
     }
     // @java ActionMoveTopPiece (non-stacking): owned remove at from, add at
