@@ -327,20 +327,58 @@ export class ActionMove extends BaseAction {
         (toWhatStack !== undefined && toWhatStack.length > 0) ||
         fromOwnerStackLen > 1)
     ) {
-      const topLevel = state.stackSize(this.fromIndex) - 1;
-      const topOwner = state.stackAt(this.fromIndex, topLevel);
-      const topWhat = state.whatAtSiteLevel(this.fromIndex, topLevel);
+      // Identify the moving TOP piece and how to remove it from the source.
+      // The source falls into three shapes and the ORIGINAL code (topLevel =
+      // stackSize()-1) only handled the first:
+      //   (A) genuine multi-level per-level stack (Bashni [P2,P2]): pop the top
+      //       level;
+      //   (B) count-pile — a hand seeded with `(place Stack "disc" (handSite)
+      //       count:N)` stores its pieces as a SINGLE stack marker plus a
+      //       countAt=N pile (stacks=[owner], countAt=N). stackSize() returns
+      //       max(1,N)=N, so the original topLevel=N-1 read stacks[N-1]=∅ →
+      //       owner 0 → the whole move silently no-op'd. This branch is reached
+      //       for such a source whenever the DESTINATION is a mixed-component
+      //       stack (toWhatStack materialised): Agilidade stacking from hand
+      //       onto a vertex already holding both players' discs. Remove one from
+      //       the pile, keeping the marker so the rest stay placeable;
+      //   (C) a single piece (stacks=[owner], countAt≤1): clear the flat
+      //       channels and pop the lone marker.
+      const srcArr = state.stacks[this.fromIndex] ?? [];
+      const srcCount = state.countAtSite(this.fromIndex);
+      const multiStack = srcArr.length > 1;
+      const topLevel = srcArr.length > 0 ? srcArr.length - 1 : 0;
+      const topOwner =
+        srcArr.length > 0 ? state.stackAt(this.fromIndex, topLevel) : state.cellAt(this.fromIndex).owner;
+      const topWhat =
+        srcArr.length > 0 ? state.whatAtSiteLevel(this.fromIndex, topLevel) : state.whatAtSite(this.fromIndex);
       if (topOwner === 0) return state;
       // @java ActionMoveTopPiece (stacking): owned remove at the from-top
       // level, add at the to-top level after the push.
       let popped = state.withOwnedRemoveLevel(topOwner, topWhat, this.fromIndex, topLevel);
-      popped = popped.withStackPop(this.fromIndex);
-      // @java cs maintains the count channel; clear residue when the pop
-      // empties the site (same fix as the flush/ActionRemove paths).
-      if (popped.stackSize(this.fromIndex) === 0 && popped.countAtSite(this.fromIndex) > 0) {
-        popped = popped.withCountAt(this.fromIndex, 0);
+      if (multiStack) {
+        popped = popped.withStackPop(this.fromIndex);
+        // @java cs maintains the count channel; clear residue when the pop
+        // empties the site (same fix as the flush/ActionRemove paths).
+        if (popped.stackSize(this.fromIndex) === 0 && popped.countAtSite(this.fromIndex) > 0) {
+          popped = popped.withCountAt(this.fromIndex, 0);
+        }
+      } else if (srcCount > 1) {
+        // (B) count-pile: remove exactly one piece, keeping the marker & flat
+        // channels so the remaining N-1 pieces stay placeable.
+        popped = popped.withCountAt(this.fromIndex, srcCount - 1);
+      } else {
+        // (C) single piece: pop the lone marker, then vacate any residual flat
+        // channels (@java csFrom.remove). Conditional writes keep a normal
+        // stack-pop byte-identical when withStackPop already zeroed the site.
+        if (srcArr.length > 0) popped = popped.withStackPop(this.fromIndex);
+        if (popped.cellAt(this.fromIndex).owner !== 0) popped = popped.withCell(this.fromIndex, 0);
+        if (popped.whatAtSite(this.fromIndex) !== 0) popped = popped.withWhatAt(this.fromIndex, 0);
+        if (srcCount === 1 && popped.countAtSite(this.fromIndex) !== 0) popped = popped.withCountAt(this.fromIndex, 0);
+        if (popped.stateAtSite(this.fromIndex) !== 0) popped = popped.withStateAt(this.fromIndex, 0);
+        if (popped.valueAtSite(this.fromIndex) !== 0) popped = popped.withValueAt(this.fromIndex, 0);
       }
-      const topValue = state.valueAtLevel(this.fromIndex, topLevel);
+      const topValue =
+        srcArr.length > 0 ? state.valueAtLevel(this.fromIndex, topLevel) : state.valueAtSite(this.fromIndex);
       const fromRow: number[] = [];
       for (let l = 0; l < topLevel; l++) fromRow.push(state.valueAtLevel(this.fromIndex, l));
       const toBase: number[] = [];
