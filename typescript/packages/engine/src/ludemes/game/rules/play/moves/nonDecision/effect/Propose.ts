@@ -111,8 +111,14 @@ export class Propose implements MovesFunction {
     // @java Propose.java:82 — final BaseMoves moves = new BaseMoves(super.then());
     const mover = ctx.state.mover;
 
-    // @java Propose.java:84 — for (final int proposition : propositionInts)
-    const thenList: Move[] = this.thenMoves != null ? this.thenMoves.eval(ctx) : [];
+    // @java Then moves are consequents evaluated AT APPLY TIME, after the
+    // Propose action has recorded the proposition. Evaluating them eagerly
+    // here ran `(then (if (is Proposed "Conclude") (add …)))` BEFORE the
+    // proposition existed, so Abrobad's conclude fill+scoring silently
+    // no-opped. Defer via deferredThens like the other effect ludemes.
+    const deferredThens = this.thenMoves != null
+      ? [{ eval: (c: Context): Move[] => this.thenMoves!.eval(c) }]
+      : [];
 
     const moves: Move[] = [];
 
@@ -159,8 +165,9 @@ export class Propose implements MovesFunction {
       });
 
       // @java Propose.java:94 — moves.moves().add(move)
-      // @java Propose.java:97-99 — if then(): append then().moves() to each move's then()
-      if (thenList.length === 0) {
+      // @java Propose.java:97-99 — if then(): append then().moves() as
+      // APPLY-TIME consequents (deferredThens), not pre-evaluated moves.
+      if (deferredThens.length === 0) {
         moves.push(move);
       } else {
         moves.push(new LudiiMove({
@@ -172,7 +179,7 @@ export class Propose implements MovesFunction {
           actions: [action],
           fromSite: OFF,
           toSite: OFF,
-          then: thenList,
+          deferredThens,
         }));
       }
     }
