@@ -12,11 +12,19 @@ import type { GraphFunction } from "../GraphFunction.js";
  * @java game/functions/graph/operators/Rotate.java
  */
 export class Rotate extends BaseGraphFunction {
-  private readonly degrees: number;
+  /**
+   * @java Rotate.degreesFn — a FloatFunction, NOT a raw number: Make Muster's
+   * `(rotate (- 90 <Orient:amount>) (square …))` compiles the subtraction to a
+   * function object. Multiplying that object as a number gave NaN degrees, so
+   * every rotated coordinate became NaN — corner-contact detection and compass
+   * classification silently corrupted (asymmetric neighbour graph; groups
+   * over-split). Accept both and eval lazily like Java.
+   */
+  private readonly degrees: number | { eval(ctx?: unknown): number };
   private readonly graphFn: GraphFunction;
 
   /** @java Rotate(FloatFunction degreesFn, GraphFunction graph) */
-  constructor(degrees: number, graphFn: GraphFunction) {
+  constructor(degrees: number | { eval(ctx?: unknown): number }, graphFn: GraphFunction) {
     super();
     this._dim = [];
     this.degrees = degrees;
@@ -28,7 +36,9 @@ export class Rotate extends BaseGraphFunction {
     const graph = this.graphFn.eval(siteType);
     if (graph.vertices.length === 0) return graph;
 
-    const a = (this.degrees * Math.PI) / 180;
+    // @java Rotate.eval — final double degrees = degreesFn.eval(context).
+    const deg = typeof this.degrees === "number" ? this.degrees : this.degrees.eval(undefined);
+    const a = (deg * Math.PI) / 180;
     const c = Math.cos(a);
     const s = Math.sin(a);
 
