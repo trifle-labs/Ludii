@@ -931,7 +931,35 @@ function replayTrial(trialPath) {
       console.error(`=== END DEBUG ===\n`);
     }
 
-    let matched = chooseMatch(tsMoves, recMove, ctx, game, nextRecMove);
+    // Simultaneous-mode combined move (@java other/model/SimultaneousMove):
+    // the trial records ONE move with mover = numPlayers+1 whose decision
+    // sub-actions carry each player's choice. TS game.moves() faithfully
+    // returns PER-PLAYER moves (Java combines them in the Model layer, not in
+    // Game.moves), so match each recorded decision sub-action to a per-player
+    // TS move and merge their actions into a single synthetic move applied
+    // once — otherwise only one player's half applied and the end rule never
+    // saw the other's piece (Rock-Paper-Scissors: what at:1 stayed 0).
+    let matched = null;
+    if (recMove.mover === (game.numPlayers ?? 0) + 1) {
+      const decisionActs = recMove.actions.filter(a => a.fields.get('decision') === 'true');
+      if (decisionActs.length > 1) {
+        const parts = [];
+        for (const act of decisionActs) {
+          const aFrom = Number(act.fields.get('from') ?? -1);
+          const aTo = Number(act.fields.get('to') ?? -1);
+          const cand = tsMoves.find(m => m.from() === aFrom && m.to() === aTo && !parts.includes(m));
+          if (!cand) { parts.length = 0; break; }
+          parts.push(cand);
+        }
+        if (parts.length === decisionActs.length && parts.length > 0) {
+          matched = parts[0];
+          for (let i = 1; i < parts.length; i += 1) {
+            matched = matched.withConsequence(parts[i].actions, parts[i].moveAgain);
+          }
+        }
+      }
+    }
+    if (!matched) matched = chooseMatch(tsMoves, recMove, ctx, game, nextRecMove);
     if (process.env.CHOICE_TRACE && matched) console.error("[pick]", plyIndex ?? "?", `${matched.from()}>${matched.to()}`, matched.actions.map(a=>a.actionType()+"("+(a.from?.()??"")+">"+(a.to?.()??"")+")").join(","));
 
     // Auto-roll: Java's `(do (roll) next:#1)` pattern embeds dice-roll actions
