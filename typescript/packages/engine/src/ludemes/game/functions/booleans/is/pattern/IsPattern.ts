@@ -26,6 +26,9 @@ import type { LudNode, LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 import { isIdent, isList, isNumber } from "@ludii/typescript-language";
 import { LastTo } from "../../../ints/last/LastTo.js";
+import { CompassDirection, compassFacing } from "../../../../util/directions/CompassDirection.js";
+import { DirectionUniqueName } from "../../../../util/directions/DirectionUniqueName.js";
+import type { DirectionFacing } from "../../../../util/directions/DirectionFacing.js";
 
 // StepType: F, R, L (mirrors Java StepType enum)
 type StepType = "F" | "R" | "L";
@@ -87,11 +90,14 @@ export class IsPattern implements BooleanFunction {
     // @java IsPattern.java:110-113: walkDirections = supportedOrthogonalDirections
     const orthoDirs = traj.supportedOrthogonalDirNames();
     if (orthoDirs.length === 0) return false;
+    const supported = new Set(orthoDirs);
 
     // @java IsPattern.java:115-173: for each starting direction, walk the pattern
     for (const startDir of orthoDirs) {
+      const startFacing = facingByName(startDir);
+      if (startFacing === undefined) continue;
       let currentLoc = from;
-      let currentDir = startDir;
+      let currentFacing: DirectionFacing = startFacing;
       let whatIndex = 0;
 
       // @java IsPattern.java:120-126: check what at 'from' == whats[0]
@@ -103,7 +109,7 @@ export class IsPattern implements BooleanFunction {
       for (const step of this.walk) {
         if (step === "F") {
           // @java IsPattern.java:132-153: step forward in current direction
-          const to = traj.step(currentLoc, currentDir);
+          const to = traj.step(currentLoc, facingName(currentFacing));
           currentLoc = to;
 
           if (to < 0 || to === -1 || ctx.state.what(to) !== whats[whatIndex]!) {
@@ -113,11 +119,14 @@ export class IsPattern implements BooleanFunction {
           whatIndex++;
           if (whatIndex === whats.length) whatIndex = 0;
         } else if (step === "R") {
-          // @java IsPattern.java:155-159: rotate right to next supported orthogonal
-          currentDir = rotateToNext(orthoDirs, currentDir, +1);
+          // @java IsPattern.java:155-159: currentDirection.right() through the
+          // full compass rose until it lands on a supported orthogonal (E→SE→S).
+          currentFacing = currentFacing.right();
+          while (!supported.has(facingName(currentFacing))) currentFacing = currentFacing.right();
         } else if (step === "L") {
-          // @java IsPattern.java:161-164: rotate left
-          currentDir = rotateToNext(orthoDirs, currentDir, -1);
+          // @java IsPattern.java:161-164: currentDirection.left() likewise.
+          currentFacing = currentFacing.left();
+          while (!supported.has(facingName(currentFacing))) currentFacing = currentFacing.left();
         }
       }
 
@@ -128,11 +137,14 @@ export class IsPattern implements BooleanFunction {
   }
 }
 
-/** Rotate direction within supported orthogonal dirs by delta (+1 CW, -1 CCW). */
-function rotateToNext(dirs: readonly string[], current: string, delta: number): string {
-  const idx = dirs.indexOf(current);
-  if (idx < 0) return current;
-  const next = ((idx + delta) + dirs.length) % dirs.length;
-  return dirs[next] as string;
+/** DirectionFacing name via its DirectionUniqueName ordinal (e.g. "N", "SE"). */
+function facingName(facing: DirectionFacing): string {
+  return DirectionUniqueName[facing.uniqueName()] as string;
+}
+
+/** Resolve a compass direction name to its DirectionFacing, or undefined. */
+function facingByName(name: string): DirectionFacing | undefined {
+  const ord = CompassDirection[name as keyof typeof CompassDirection];
+  return typeof ord === "number" ? compassFacing(ord) : undefined;
 }
 
