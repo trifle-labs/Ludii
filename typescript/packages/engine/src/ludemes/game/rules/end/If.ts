@@ -118,6 +118,19 @@ export class If implements EndRuleFunction {
     }
 
     if (resultType === "Loss") {
+      // @java End.java:222-243 — (result All Loss): EVERY yet-unranked player
+      // gets rank numPlayers (shared last), all inactive, trial status 0 (no
+      // winner). The single-loser fallthrough below wrongly crowned the other
+      // player (Safe Passage's cooperative "All Loss" reported tsWinner=1
+      // instead of the recorded winner=0 / rankings 2.0,2.0).
+      if (whoRole === "All") {
+        if (n > 1) {
+          for (let p = 1; p <= n; p++) ranking[p] = n;
+        } else {
+          ranking[1] = 0.0;
+        }
+        return { winner: 0, over: true, ranking };
+      }
       // Loser = who, all others win
       const winner = n === 2 ? (who === 1 ? 2 : 1) : 0;
       for (let p = 1; p <= n; p++) {

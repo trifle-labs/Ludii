@@ -30,7 +30,29 @@ export class IsThreatened extends BaseBooleanFunction {
     const targets = this.targetSites(context);
     if (targets.length === 0) return false;
 
-    const owner = this.what !== null ? this.ownerOfWhat(context, this.what.eval(context)) : context.state.mover;
+    // @java IsThreatened.java — the what-branch probes enemies of the WHAT's
+    // owner; the site/sites/bare branch (what == null) probes PER SITE with
+    // owner = the owner of the piece AT that site (End.java's cooperative
+    // (is Threatened) checks every piece of every player — the old
+    // owner=mover aggregate never probed the mover's own capture threats, so
+    // Safe Passage missed a mover-side knight threat and played on).
+    // Group target sites by the owner of the piece occupying them.
+    const targetsByOwner = new Map<number, number[]>();
+    if (this.what !== null) {
+      const owner = this.ownerOfWhat(context, this.what.eval(context));
+      targetsByOwner.set(owner, targets);
+    } else {
+      for (const site of targets) {
+        const idPiece = context.state.whats[site] ?? 0;
+        if (idPiece <= 0) continue;
+        const owner = this.ownerOfWhat(context, idPiece);
+        if (owner < 1) continue;
+        const list = targetsByOwner.get(owner);
+        if (list) list.push(site);
+        else targetsByOwner.set(owner, [site]);
+      }
+      if (targetsByOwner.size === 0) return false;
+    }
     active = true;
     // @java IsThreatened.java:133 `new TempContext(context)` — Java runs the whole
     // threat simulation on an ISOLATED context copy, so nothing it mutates leaks
@@ -51,27 +73,29 @@ export class IsThreatened extends BaseBooleanFunction {
           : Number((context.game as unknown as { numPlayers?: number }).numPlayers ?? 2);
       const originalMover = context.state.mover;
       const originalPrev = (context.state as unknown as { prev: number }).prev;
-      for (let enemy = 1; enemy <= numPlayers; enemy += 1) {
-        if (enemy === owner) continue;
-        (context.state as unknown as { mover: number }).mover = enemy;
-        // @java IsThreatened.java:135 newContext.state().setPrev(ownerWhat) —
-        // prev is the OWNER of the checked piece (a real player), NOT the temp
-        // mover and NOT the just-moved player. Since the enemy mover != owner,
-        // "SameTurn" (`(is Prev Mover)`) reads false, so the threat sim uses the
-        // normal move branch (not chain/promote). Using 0 here instead tripped
-        // IsPrev's pre-first-advance fallback (it read the just-applied move's
-        // mover, flipping SameTurn true and disabling checkmate detection in
-        // Chess/Shogi variants); owner is >0 so that fallback never fires.
-        (context.state as unknown as { prev: number }).prev = owner;
-        try {
-          const moves = this.specificMoves?.eval(context) ?? context.game.moves(context);
-          for (const move of moves) {
-            const to = typeof move.to === "function" ? move.to() : undefined;
-            if (to !== undefined && targets.includes(to)) return true;
+      for (const [owner, ownerTargets] of targetsByOwner) {
+        for (let enemy = 1; enemy <= numPlayers; enemy += 1) {
+          if (enemy === owner) continue;
+          (context.state as unknown as { mover: number }).mover = enemy;
+          // @java IsThreatened.java:135 newContext.state().setPrev(ownerWhat) —
+          // prev is the OWNER of the checked piece (a real player), NOT the temp
+          // mover and NOT the just-moved player. Since the enemy mover != owner,
+          // "SameTurn" (`(is Prev Mover)`) reads false, so the threat sim uses the
+          // normal move branch (not chain/promote). Using 0 here instead tripped
+          // IsPrev's pre-first-advance fallback (it read the just-applied move's
+          // mover, flipping SameTurn true and disabling checkmate detection in
+          // Chess/Shogi variants); owner is >0 so that fallback never fires.
+          (context.state as unknown as { prev: number }).prev = owner;
+          try {
+            const moves = this.specificMoves?.eval(context) ?? context.game.moves(context);
+            for (const move of moves) {
+              const to = typeof move.to === "function" ? move.to() : undefined;
+              if (to !== undefined && ownerTargets.includes(to)) return true;
+            }
+          } finally {
+            (context.state as unknown as { mover: number }).mover = originalMover;
+            (context.state as unknown as { prev: number }).prev = originalPrev;
           }
-        } finally {
-          (context.state as unknown as { mover: number }).mover = originalMover;
-          (context.state as unknown as { prev: number }).prev = originalPrev;
         }
       }
     } finally {
