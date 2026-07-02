@@ -260,15 +260,16 @@ export class IsConnected implements BooleanFunction {
     // is given this falls back to LastTo — for normal connection games the mover
     // placed their OWN piece so who = mover, but Pippinzip's ballot has the mover
     // place the opponent's piece, so the group to flood is the opponent's.
-    const startOwner = (): number => {
-      const cells = (ctx.state as unknown as { cells?: readonly number[] }).cells;
-      const from = this.atFn !== null
-        ? this.atFn.eval(ctx)
-        : ((ctx as unknown as { _evalTo?: number })._evalTo ?? -1);
-      const o = from >= 0 ? (cells?.[from] ?? 0) : 0;
-      return o > 0 ? o : ctx.state.mover;
-    };
-    const pid = r === null ? startOwner()
+    // @java IsConnected.eval:103-121 — from = startLocationFn (= at ?? LastTo);
+    // invalid or EMPTY start site → false. `who` (the owner of the start site)
+    // is the player whose group is flooded.
+    const from = this.atFn !== null
+      ? this.atFn.eval(ctx)
+      : ((ctx as unknown as { _evalTo?: number })._evalTo ?? -1);
+    if (from < 0) return false;
+    const who = ownerAt(ctx, from);
+    if (who <= 0) return false;
+    const pid = r === null ? who
       : r === "Mover" ? ctx.state.mover
       : r === "Next" ? (ctx.state.mover % ctx.game.numPlayers) + 1
       : r === "Prev" ? ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1
@@ -294,34 +295,51 @@ export class IsConnected implements BooleanFunction {
         : this.numberFn.eval(ctx);
 
     const board = (ctx.game as unknown as { equipment: { board: BoardLike } }).equipment.board;
-    const owned = new Set<number>();
-    for (let site = 0; site < board.numSites; site += 1) {
-      if (ownerAt(ctx, site) === pid) owned.add(site);
+    if (from >= board.numSites) return false;
+
+    // @java IsConnected.eval:130-168 — Java floods the SINGLE group seeded at
+    // `from` (the at:/LastTo site), NOT every group of the player. The old
+    // any-group scan made `("ConnectsAt" (from))` true for EVERY stone of a
+    // player as soon as one of their groups connected (Signum scored all 91
+    // stones +1: byScore 46/45 = stone counts, wrong winner).
+    // First, count `from`'s OWN region memberships (Java does this before the
+    // flood, removing satisfied regions).
+    const remaining: Set<number>[] = [];
+    let touched = 0;
+    for (const sites of targets) {
+      const set = new Set(sites);
+      if (set.has(from)) {
+        touched += 1;
+        if (touched >= required) return true;
+      } else {
+        remaining.push(set);
+      }
     }
-    if (owned.size === 0) return false;
-    const targetSets = targets.map((sites) => new Set(sites));
-    const seen = new Set<number>();
-    for (const start of owned) {
-      if (seen.has(start)) continue;
-      const touched = new Set<number>();
-      const stack = [start];
-      seen.add(start);
-      while (stack.length > 0) {
-        const site = stack.pop()!;
-        for (let i = 0; i < targetSets.length; i += 1) {
-          if (targetSets[i]!.has(site)) touched.add(i);
-        }
-        for (const next of this.dirName !== null
-          ? directionalNeighbours(ctx, site, this.dirName)
-          : adjacentSites(board, site)) {
-          if (!seen.has(next) && owned.has(next)) {
-            seen.add(next);
-            stack.push(next);
+    // @java IsConnected.eval:147-148 — the group is seeded only when the start
+    // site's owner matches the role player (always true when role is null).
+    if (r !== null && who !== pid) return false;
+
+    const visited = new Set<number>([from]);
+    const stack = [from];
+    while (stack.length > 0) {
+      const site = stack.pop()!;
+      for (const next of this.dirName !== null
+        ? directionalNeighbours(ctx, site, this.dirName)
+        : adjacentSites(board, site)) {
+        if (visited.has(next)) continue;
+        visited.add(next);
+        // @java IsConnected.eval:203 — new group member iff same owner as `from`.
+        if (ownerAt(ctx, next) !== who) continue;
+        for (let j = remaining.length - 1; j >= 0; j -= 1) {
+          if (remaining[j]!.has(next)) {
+            touched += 1;
+            // @java if (numRegionConnected == numRegionToConnect) return true;
+            if (touched >= required) return true;
+            remaining.splice(j, 1);
           }
         }
+        stack.push(next);
       }
-      // @java if (numRegionConnected == numRegionToConnect) return true;
-      if (touched.size >= required) return true;
     }
     return false;
   }
