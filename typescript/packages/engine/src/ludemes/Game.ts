@@ -654,6 +654,14 @@ export class Game implements Game {
       // @java GameType.Stacking — compiled-tree flag (play1to1 harvest).
       stackingGame: (this as unknown as { usesStacking?: boolean }).usesStacking === true || undefined,
       stackMovesGame: (this as unknown as { usesStackMoves?: boolean }).usesStackMoves === true || undefined,
+      // @java Game.requiresCount() (Game.java:893) — !isStacking() && (any hand
+      // container || (gameFlags & GameType.Count)). ActionAdd's occupied-site
+      // branch consumes it (accumulate vs force count=1, ActionAdd.java:310).
+      requiresCountGame:
+        ((this as unknown as { usesStacking?: boolean }).usesStacking !== true &&
+          (this.equipment.hands.length > 0 ||
+            (this as unknown as { usesCount?: boolean }).usesCount === true)) ||
+        undefined,
     });
 
     // @java ActionAdd.apply (onStacking) — replay staged level-2+ start

@@ -116,14 +116,25 @@ export class Propose implements MovesFunction {
 
     const moves: Move[] = [];
 
-    const game = ctx.game as unknown as { voteString?: (i: number) => string };
+    const game = ctx.game as unknown as {
+      voteString?: (i: number) => string;
+      registerVoteString?: (s: string) => number;
+    };
 
-    for (const propositionInt of this.propositionInts) {
-      // @java Propose.java:87 — NOTE: if -1 here, preprocess() was not called!
+    for (let pi = 0; pi < this.propositionInts.length; pi += 1) {
+      // The compiler runs no preprocess pass, so propositionInts stay -1 until
+      // registered LAZILY here (same pattern as IsDecided.eval). Without this,
+      // game.voteString(-1) produced "-1" and the ActionPropose carried "-1"
+      // instead of the proposition text — (is Proposed "Conclude") never
+      // matched and Abrobad's conclude-end never fired.
+      if (this.propositionInts[pi] === UNDEFINED && typeof game.registerVoteString === "function") {
+        this.propositionInts[pi] = game.registerVoteString(this.propositions[pi]!);
+      }
+      const propositionInt = this.propositionInts[pi]!;
       // @java Propose.java:87 — context.game().voteString(proposition)
-      const propositionText = typeof game.voteString === "function"
+      const propositionText = propositionInt !== UNDEFINED && typeof game.voteString === "function"
         ? game.voteString(propositionInt)
-        : String(propositionInt);
+        : this.propositions[pi]!;
 
       // @java Propose.java:87 — new ActionPropose(voteString, propositionInt)
       // TS ActionPropose takes a single string arg

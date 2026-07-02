@@ -41,21 +41,11 @@ export class IsProposed extends BaseBooleanFunction {
    * Returns true if context.state().propositions().contains(propositionInt).
    */
   public override eval(context: Context): boolean {
-    // Java: return context.state().propositions().contains(propositionInt);
-    const state = context.state as unknown as {
-      propositions?: () => { contains?: (v: number) => boolean; has?: (v: number) => boolean };
-    };
-    const props = typeof state.propositions === "function" ? state.propositions() : null;
-    if (props === null || props === undefined) {
-      return false;
-    }
-    if (typeof props.contains === "function") {
-      return props.contains(this.propositionInt);
-    }
-    if (typeof props.has === "function") {
-      return props.has(this.propositionInt);
-    }
-    return false;
+    // @java IsProposed.eval — state.propositions().contains(propositionInt).
+    // The TS state stores proposition STRINGS (ActionPropose.apply pushes the
+    // text; no preprocess pass exists to pre-register ints), so compare text.
+    const props = (context.state as unknown as { propositions?: readonly string[] }).propositions;
+    return Array.isArray(props) && props.includes(this.proposition);
   }
 
   /** @java IsProposed.isStatic() */

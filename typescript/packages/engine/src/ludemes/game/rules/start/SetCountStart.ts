@@ -4,6 +4,7 @@
  */
 import type { IntFunction, RegionFunction } from "../../../base.js";
 import type { StartRule } from "./StartRule.js";
+import { compileFlags } from "../../../../ludii/compiler/compile-flags.js";
 import type { Context } from "../../../../context.js";
 import type { SiteType } from "../../../../action/site-type.js";
 
@@ -19,6 +20,8 @@ export class SetCountStart implements StartRule {
     site: IntFunction | null,
     region: RegionFunction | null,
   ) {
+    // @java SetCount.java:102 — gameFlags() = GameType.Count | … (unconditional).
+    compileFlags.usesCount = true;
     this.countFn = count;
     this.type = type ?? null;
     this.siteFn = site ?? null;

@@ -17,6 +17,7 @@ import type { Context } from "../../../../../context.js";
 import type { IntFunction } from "../../../../base.js";
 import type { RoleType } from "../../../../base.js";
 import type { Game } from "../../../../Game.js";
+import { compileFlags } from "../../../../../ludii/compiler/compile-flags.js";
 
 export class HandSite implements IntFunction {
   /** Player role. @java HandSite.role */
@@ -28,6 +29,8 @@ export class HandSite implements IntFunction {
    * @java game/functions/ints/board/HandSite.java — constructor
    */
   public constructor(role: RoleType | "Shared", offset = 0) {
+    // @java HandSite.java:107 — gameFlags() = GameType.Count | … (unconditional).
+    compileFlags.usesCount = true;
     this.role = role;
     this.offset = offset;
   }

@@ -14,6 +14,7 @@ import { AllGroupsType } from "./AllGroupsType.js";
 import { AllValuesType } from "./AllValuesType.js";
 import { AllSitesType } from "./AllSitesType.js";
 import { AllSimpleType } from "./AllSimpleType.js";
+import { compileFlags } from "../../../../../ludii/compiler/compile-flags.js";
 
 // ---------------------------------------------------------------------------
 // AllGroups — sub-implementation
@@ -647,7 +648,15 @@ class AllDiceUsed extends BaseBooleanFunction {
 // ---------------------------------------------------------------------------
 
 class AllPassed extends BaseBooleanFunction {
-  public constructor() { super(); }
+  public constructor() {
+    super();
+    // @java AllPassed.java:71 — gameFlags() = GameType.NotAllPass, UNCONDITIONAL.
+    // The game tests all-passed itself, so the engine's all-pass-draw fallback
+    // must never fire (Bechi's between-rounds all-pass drew instead of playing
+    // round 2). The standalone AllPassed.ts already sets this; this inner class
+    // is the one All.constructSimple actually builds for (all Passed).
+    compileFlags.usesUnconditionalNotAllPass = true;
+  }
 
   /**
    * @java AllPassed.eval(Context)

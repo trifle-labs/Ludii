@@ -7,6 +7,7 @@
 import type { EquipmentSurface } from "../../../../equipment/EquipmentSurface.js";
 import type { Context } from "../../../../../../context.js";
 import type { StartRule } from "../../StartRule.js";
+import { compileFlags } from "../../../../../../ludii/compiler/compile-flags.js";
 
 /**
  * @java game/rules/start/set/sites/SetCount.java
@@ -27,6 +28,8 @@ export class SetCount implements StartRule {
    * @param count  the count value
    */
   public constructor(sites: readonly number[], count: number) {
+    // @java SetCount.java:102 — gameFlags() = GameType.Count | … (unconditional).
+    compileFlags.usesCount = true;
     this.sites = sites;
     this.count = count;
   }

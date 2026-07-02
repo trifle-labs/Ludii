@@ -22,6 +22,15 @@ export const compileFlags = {
    * fallback must never fire for such games regardless of player count.
    */
   usesUnconditionalNotAllPass: false,
+  /**
+   * @java GameType.Count — OR'd in by SetCount (start), PlaceItem (count>1),
+   * Add (count: not the constant 1), Sow, HandSite, and CountNumber
+   * ((count at:…)). Feeds Game.requiresCount(): Java Game.java:893 —
+   * `!isStacking() && (anyHandContainer || (gameFlags & Count))`. ActionAdd's
+   * occupied-site branch uses it to decide between accumulating the count and
+   * forcing 1 (ActionAdd.java:310).
+   */
+  usesCount: false,
 };
 
 export function resetCompileFlags(): void {
@@ -29,4 +38,5 @@ export function resetCompileFlags(): void {
   compileFlags.usesStackMoves = false;
   compileFlags.usesExplicitPass = false;
   compileFlags.usesUnconditionalNotAllPass = false;
+  compileFlags.usesCount = false;
 }

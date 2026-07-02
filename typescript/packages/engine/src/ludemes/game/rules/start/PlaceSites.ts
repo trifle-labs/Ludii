@@ -14,6 +14,7 @@
 import type { EquipmentSurface } from "../../equipment/EquipmentSurface.js";
 import type { StartRule } from "./StartRule.js";
 import type { Context } from "../../../../context.js";
+import { compileFlags } from "../../../../ludii/compiler/compile-flags.js";
 
 export class PlaceSites implements StartRule {
   /**
@@ -54,6 +55,8 @@ export class PlaceSites implements StartRule {
     this.pieceId = pieceId;
     this.sites = sites;
     this.count = count;
+    // @java PlaceItem.java:494-495 — gameFlags() |= GameType.Count when count > 1.
+    if (count > 1) compileFlags.usesCount = true;
     this.stateValue = stateValue;
     this.valueValue = valueValue;
   }

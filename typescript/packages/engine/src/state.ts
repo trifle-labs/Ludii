@@ -123,6 +123,20 @@ export interface StateOptions {
   /** stack:True MOVE ludemes compiled (per-level plain-move pushes). */
   readonly stackMovesGame?: boolean;
   /**
+   * @java Game.requiresCount() (Game.java:893) — !isStacking() && (any hand
+   * container || GameType.Count in the ludeme tree). ActionAdd's occupied-site
+   * branch accumulates counts when true, forces 1 when false (ActionAdd.java:310).
+   */
+  readonly requiresCountGame?: boolean;
+  /**
+   * @java State.propositions (State.java:125, TIntArrayList) — propositions
+   * made via ActionPropose; read by (is Proposed …). Java stores registered
+   * vote-string ints; the TS port stores the strings themselves (no preprocess
+   * pass, and equality is all that is consumed). Cleared only by ActionVote's
+   * clearPropositions (vote resolved) or a fresh game state.
+   */
+  readonly propositions?: readonly string[];
+  /**
    * Per-level piece values, parallel to {@link stacks}. Java's plain stacking
    * push (addItemGeneric) does NOT carry the moving piece's value — the new
    * top level gets 0 (oracle: Fenix general s28=[1,0]) — while whole-stack
@@ -279,6 +293,10 @@ export class State {
   public readonly stackingGame: boolean;
   /** See {@link StateOptions.stackMovesGame}. */
   public readonly stackMovesGame: boolean;
+  /** @java Game.requiresCount(); see {@link StateOptions.requiresCountGame}. */
+  public readonly requiresCountGame: boolean;
+  /** @java State.propositions; see {@link StateOptions.propositions}. */
+  public readonly propositions: readonly string[];
   /** Per-level values; see {@link StateOptions.valueStacks}. */
   public readonly valueStacks?: readonly (readonly number[])[];
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
@@ -442,6 +460,8 @@ export class State {
     this.ownedEntries = options.ownedEntries;
     this.stackingGame = options.stackingGame ?? false;
     this.stackMovesGame = options.stackMovesGame ?? false;
+    this.requiresCountGame = options.requiresCountGame ?? false;
+    this.propositions = options.propositions ?? [];
     this.valueStacks = options.valueStacks;
     this.numTurn = options.numTurn ?? 1;
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
@@ -1262,6 +1282,16 @@ export class State {
   public withPrev(value: number): State {
     return this.with({ prev: value });
   }
+
+  /** @java ActionPropose.apply — state.propositions().add(propositionInt). */
+  public withPropositionAdded(proposition: string): State {
+    return this.with({ propositions: [...this.propositions, proposition] });
+  }
+
+  /** @java State.clearPropositions() (State.java:1507) — ActionVote resolution. */
+  public withPropositionsCleared(): State {
+    return this.with({ propositions: [] });
+  }
   /**
    * Java parity: `State.reinitNumTurnSamePlayer()` — begin a new turn, bumping
    * `numTurn` by one. Called when the player to move differs from the player
@@ -1449,6 +1479,8 @@ export class State {
         ownedEntries: patch.ownedEntries ?? this.ownedEntries,
         stackingGame: patch.stackingGame ?? this.stackingGame,
         stackMovesGame: patch.stackMovesGame ?? this.stackMovesGame,
+        requiresCountGame: patch.requiresCountGame ?? this.requiresCountGame,
+        propositions: patch.propositions ?? this.propositions,
         valueStacks: patch.valueStacks ?? this.valueStacks,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:

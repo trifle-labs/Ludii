@@ -3,6 +3,7 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { IntFunction, RegionFunction } from "../../../../../base.js";
+import { compileFlags } from "../../../../../../ludii/compiler/compile-flags.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import type { Game } from "../../../../../Game.js";
@@ -15,6 +16,8 @@ export class CountNumber implements IntFunction {
   private readonly type: string | null;
 
   public constructor(regionFn: RegionFunction, type: string | null = null) {
+    // @java CountNumber.java:126 — gameFlags() = GameType.Count | … (unconditional).
+    compileFlags.usesCount = true;
     this.regionFn = regionFn;
     this.type = type;
   }
@@ -36,10 +39,16 @@ export class CountNumber implements IntFunction {
     // legitimately count their hand via a bare (count at:<handSite>).
     const boardNumSites = ctx.board().numSites();
     let count = 0;
+    // @java CountNumber.java eval() — `if (context.game().isStacking())` the
+    // count of a site is its STACK SIZE (cs.sizeStack), not the count field:
+    // Laomuzhu's ("NoPieceOnBoard") `(all Sites (sites Board) if:(= 0 (count
+    // at:(site))))` read countAt 0 for genuinely stacked board sites and ended
+    // round 1 as a false win. Non-stacking games keep the count-field sum.
+    const stacking = ctx.state.stackingGame;
     for (const s of sites) {
       if (s < 0) continue;
       if (resolvedType !== "Cell" && s >= boardNumSites) continue;
-      count += ctx.state.count(s);
+      count += stacking ? ctx.state.stackSize(s) : ctx.state.count(s);
     }
     return count;
   }

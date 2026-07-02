@@ -9,6 +9,7 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { RegionFunction } from "../../../../../base.js";
+import { compileFlags } from "../../../../../../ludii/compiler/compile-flags.js";
 
 /** Java parity: Constants.OFF = -1 */
 const OFF = -1;
@@ -253,6 +254,16 @@ export class PlaceItem {
     this.rotationFn = rotation ?? intConstant(OFF);
     // Java: valueFn = (value == null) ? new IntConstant(Constants.OFF) : value;
     this.valueFn = value ?? intConstant(OFF);
+
+    // @java PlaceItem.java:494-495 — gameFlags() |= GameType.Count when
+    // countFn.eval(throwaway ctx) > 1. Start-rule counts are constants in
+    // practice; a non-constant count (eval needs a live context) is treated
+    // as count-bearing.
+    try {
+      if (this.countFn.eval(null as unknown as Context) > 1) compileFlags.usesCount = true;
+    } catch {
+      compileFlags.usesCount = true;
+    }
   }
 
   //-------------------------------------------------------------------------

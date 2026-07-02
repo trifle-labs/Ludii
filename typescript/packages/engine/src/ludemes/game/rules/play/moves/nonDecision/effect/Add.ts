@@ -21,6 +21,8 @@ import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { Move } from "../../../../../../../move.js";
 import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import { applyPostStateThen, type Then } from "./Then.js";
+import { IntConstant } from "../../../../../functions/ints/IntConstant.js";
+import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
 
 interface AddOptions {
   readonly count?: IntFunction | null;
@@ -75,6 +77,12 @@ export class Add implements MovesFunction {
     this.toRegion = toRegion;
     this.pieceFn = pieceFn;
     this.countFn = options.count ?? null;
+    // @java Add.java:468-471 — gameFlags() |= GameType.Count when countFn is
+    // present and is not the IntConstant 1 (non-constant counts always set it).
+    if (this.countFn !== null &&
+        (!(this.countFn instanceof IntConstant) || this.countFn.eval(null as unknown as Context) !== 1)) {
+      compileFlags.usesCount = true;
+    }
     this.stack = options.stack ?? false;
     this.thenClause = options.then ?? null;
     this.toCondition = options.condition ?? null;

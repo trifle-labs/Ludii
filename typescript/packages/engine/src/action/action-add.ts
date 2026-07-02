@@ -118,7 +118,17 @@ export class ActionAdd extends BaseAction {
       // raw oldCount: 0+0=0 (empty-pit), 4+4=8 (normal sow), 0+1=1 (flat re-add,
       // matching Java's non-requiresCount `: 1` branch since count defaults to 1).
       const oldCount = state.countAtSite(this.toIndex);
-      let next = state.withCountAt(this.toIndex, oldCount + this.countValue);
+      // @java ActionAdd.java:310 — `game.requiresCount() ? oldCount + count : 1`.
+      // Without the Count flag a re-Add to an occupied site FORCES count to 1:
+      // Spinimax's per-move auto-fill re-Adds every already-filled platform
+      // site each turn, so the accumulating branch inflated counts (1→2→…→18)
+      // and `(count Pieces …) = 30` never fired (draw instead of the recorded
+      // win). Count-bearing games (sow/handSite/(count at:)/count:>1 anywhere)
+      // keep the accumulate path — including its 0+0=0 empty-pit case.
+      let next = state.withCountAt(
+        this.toIndex,
+        state.requiresCountGame ? oldCount + this.countValue : 1,
+      );
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
         next = next.withStateAt(this.toIndex, this.stateValue);
       }

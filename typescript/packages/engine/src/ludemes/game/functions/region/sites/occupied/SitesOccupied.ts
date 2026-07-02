@@ -185,6 +185,17 @@ export class SitesOccupied extends BaseRegionFunction {
     }
     const role = this.role;
 
+    // @java SitesOccupied.eval — with NO container: the scan is the owned()
+    // registry, which spans EVERY container (board + hands), filtered by the
+    // play SiteType. Hand sites are Cells in Java, so they qualify only on
+    // Cell-play boards (a Vertex board's owned Vertex positions never live in
+    // a hand). Siga (Sri Lanka)'s "AllPiecesOnCentre" counts
+    // (sites Occupied by:Mover top:False) — with one marker on the centre and
+    // one captured to hand, the board-only scan saw 1 site and fired a false
+    // win. An explicit container: (e.g. "Board") keeps the board-only bound.
+    const playTypeIsCell = (ctx.board() as unknown as { defaultSite?: () => string }).defaultSite?.() === "Cell";
+    const scanN = this.containerName === null && playTypeIsCell ? cells.length : boardN;
+
     // @java SitesOccupied — if component is specified, filter by component index
     const specificWhat = this.component !== null ? this.component.eval(ctx) : UNDEFINED;
     // @java component:"Name"/components:{...} — name filter resolves to the
@@ -207,7 +218,7 @@ export class SitesOccupied extends BaseRegionFunction {
     if (role === "Enemy") {
       // @java RoleType.Enemy — any piece not owned by the mover (excluding neutral)
       const mover = ctx.state.mover;
-      for (let i = 0; i < boardN; i++) {
+      for (let i = 0; i < scanN; i++) {
         const owner = cells[i] ?? 0;
         if (owner !== 0 && owner !== mover) {
           if (whatOk(whats[i] ?? 0)) {
@@ -218,7 +229,7 @@ export class SitesOccupied extends BaseRegionFunction {
     } else if (role === "NonMover") {
       // @java RoleType.NonMover — any piece not owned by the mover (including neutral)
       const mover = ctx.state.mover;
-      for (let i = 0; i < boardN; i++) {
+      for (let i = 0; i < scanN; i++) {
         const owner = cells[i] ?? 0;
         if (owner !== mover && ctx.state.isOccupiedSite(i)) {
           if (whatOk(whats[i] ?? 0)) {
@@ -228,7 +239,7 @@ export class SitesOccupied extends BaseRegionFunction {
       }
     } else if (role === "All" || whoId < 0) {
       // @java RoleType.All — all occupied sites
-      for (let i = 0; i < boardN; i++) {
+      for (let i = 0; i < scanN; i++) {
         if (ctx.state.isOccupiedSite(i)) {
           if (whatOk(whats[i] ?? 0)) {
             sitesOccupied.push(i);
@@ -237,7 +248,7 @@ export class SitesOccupied extends BaseRegionFunction {
       }
     } else if (role === "Neutral" || role === "Shared") {
       // @java RoleType.Neutral — neutral pieces (owner=0, what!=0)
-      for (let i = 0; i < boardN; i++) {
+      for (let i = 0; i < scanN; i++) {
         const owner = cells[i] ?? 0;
         if (owner === 0 && (whats[i] ?? 0) !== 0) {
           if (whatOk(whats[i] ?? 0)) {
@@ -247,7 +258,7 @@ export class SitesOccupied extends BaseRegionFunction {
       }
     } else {
       // @java default — specific player (whoId)
-      for (let i = 0; i < boardN; i++) {
+      for (let i = 0; i < scanN; i++) {
         const stack = stacks[i];
         // @java top:False on stacks — the owned positions cover EVERY level:
         // the site qualifies when ANY level matches owner AND component

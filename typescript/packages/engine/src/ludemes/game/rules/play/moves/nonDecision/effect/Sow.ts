@@ -29,6 +29,7 @@ import { Move } from "../../../../../../../move.js";
 import { ActionAddCount } from "../../../../../../../action/action-add-count.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
+import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
 import type { ThenLike } from "../../Moves.js";
 import { evalDeferredThens } from "./Then.js";
 import type { Action } from "../../../../../../../action/index.js";
@@ -153,6 +154,8 @@ export class Sow extends Effect {
     then: ThenLike | null = null,
   ) {
     super(then ?? null);
+    // @java Sow.java:374 — gameFlags() = GameType.Count | … (unconditional).
+    compileFlags.usesCount = true;
     this.startLoc = start ?? null;
     this.countFn = count ?? null;
     this.numPerHoleFn = numPerHole ?? null;

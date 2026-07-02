@@ -119,6 +119,11 @@ export function play1to1(source: string, opts?: Play1to1Options): Game {
   // @java Game.computeGameFlags — harvest the ludeme-tree Stacking flag.
   (game as unknown as { usesStacking?: boolean; usesStackMoves?: boolean }).usesStacking = compileFlags.usesStacking;
   (game as unknown as { usesStackMoves?: boolean }).usesStackMoves = compileFlags.usesStackMoves;
+  // @java Game.requiresCount() (Game.java:893) — !isStacking() && (any hand
+  // container || (gameFlags & GameType.Count)). The hand-container half is
+  // resolved in Game.initialState (equipment is live there); here we harvest
+  // the tree flag.
+  (game as unknown as { usesCount?: boolean }).usesCount = compileFlags.usesCount;
   // @java requiresAllPass() — false when any ludeme set GameType.NotAllPass.
   // Pass.gameFlags sets NotAllPass ONLY when players().count() == 1 (Pass.java:78);
   // a multiplayer (move Pass) (e.g. Maleys's multi-capture continuation) must still

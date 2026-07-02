@@ -11,6 +11,7 @@
 
 import type { Context } from "../../../../../context.js";
 import { BaseIntFunction } from "../BaseIntFunction.js";
+import { compileFlags } from "../../../../../ludii/compiler/compile-flags.js";
 import type { JavaIntFunction } from "../IntFunction.js";
 
 /** Java parity: Constants.OFF = -1 */
@@ -51,6 +52,8 @@ export class HandSite extends BaseIntFunction {
     site: JavaIntFunction | number | null = null,
   ) {
     super();
+    // @java HandSite.java:107 — gameFlags() = GameType.Count | … (unconditional).
+    compileFlags.usesCount = true;
     this.playerId = indexPlayer ?? role ?? 0;
     this.siteFn = site ?? 0;
   }
