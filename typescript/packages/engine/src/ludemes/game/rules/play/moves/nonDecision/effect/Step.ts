@@ -53,6 +53,8 @@ function supportedDirNames(ctx: unknown): string[] | undefined {
  * @java game/rules/play/moves/nonDecision/effect/Step.java
  */
 export class Step extends Effect {
+  /** From-site of the current target computation (rotation lookup). */
+  private _rotFromSite: number | undefined;
   /** @java Step.startLocationFn */
   private readonly startLocationFn: IntFunction;
 
@@ -138,6 +140,7 @@ export class Step extends Effect {
     let facingOverride: number | undefined;
     {
       const fromSite = cellRadials.axes[0]?.ray[0] ?? -1;
+      this._rotFromSite = fromSite;
       const compFacing = (ctx.game as unknown as {
         equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } };
       }).equipment?.board?.componentFacing;
@@ -206,7 +209,10 @@ export class Step extends Effect {
     };
 
     for (const dirName of directions) {
-      const relative = resolveRelativeDir(dirName, mover, playerDirs, facingOverride, supportedDirNames(ctx));
+      // @java Directions.java:472-478 — the piece's stored rotation turns its
+      // facing FR-wise before relative directions resolve (Ploy).
+      const rotSteps = ctx.state.rotationAt?.[this._rotFromSite ?? -1] ?? 0;
+      const relative = resolveRelativeDir(dirName, mover, playerDirs, facingOverride, supportedDirNames(ctx), rotSteps);
       if (Array.isArray(relative)) {
         // Forwards/Backwards group → forward ray of each resolved compass heading.
         for (const d of relative) for (const { ray } of axesForDir(d)) pushRay(ray);

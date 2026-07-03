@@ -281,12 +281,31 @@ function coneDirections(
   return out;
 }
 
+/**
+ * @java game/functions/directions/Directions.java:472-478 — a piece's stored
+ * ROTATION advances its facing FR-wise `rotation` times over the supported
+ * directions (Ploy: rotation 1 on a square-8 board turns N to NE, so FR
+ * resolves E). In the 45°-unit facing model each FR step over an 8-direction
+ * ring is +1 unit; over a 4-direction (orthogonal-only) ring it is +2.
+ */
+export function applyRotationToFacing(
+  facingDir: number,
+  rotation: number,
+  supportedDirs?: readonly string[],
+): number {
+  if (!rotation || rotation <= 0) return facingDir;
+  const ring = supportedDirs && supportedDirs.length > 0 ? supportedDirs.length : 8;
+  const unitStep = ring >= 8 ? 1 : ring === 4 ? 2 : 8 / ring;
+  return (facingDir + Math.round(unitStep * rotation)) % 8;
+}
+
 export function resolveRelativeDir(
   dirName: string,
   mover: number,
   playerDirs?: Map<number, number>,
   facingOverride?: number,
   supportedDirs?: readonly string[],
+  rotationSteps = 0,
 ): string | string[] | null {
   // Determine the mover's facing direction (in 45°-units: 0=N … 7=NW).
   // @java Component.getDirn() — a piece's OWN declared facing overrides its
@@ -305,6 +324,14 @@ export function resolveRelativeDir(
     }
   } else {
     facingDir = (mover === 1) ? 0 : 4;
+  }
+  // @java Directions.java:469-478 — with a stored rotation the base facing is
+  // the COMPONENT's declared dirn (default N), NOT the owner's player
+  // direction: Ploy encodes P2's south facing as rotation 4 on an N-based
+  // piece, so adding the playerDirs default S(4) double-counted and flipped
+  // every facing. The rotation then advances the base FR-wise.
+  if (rotationSteps > 0) {
+    facingDir = applyRotationToFacing(facingOverride ?? 0, rotationSteps, supportedDirs);
   }
   const dn = dirName.toLowerCase();
   // @java Directions.convertToAbsolute — group relative directions resolve

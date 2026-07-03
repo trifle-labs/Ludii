@@ -614,6 +614,18 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     if (candidates.length === 1) return candidates[0];
   }
 
+  // SetRotation plies: the recorded action carries the explicit rotation
+  // value; the engine offers prev/next candidates at the same site,
+  // indistinguishable by from/to. Match the value — an arbitrary pick
+  // accumulated wrong facings and Ploy's relative directions diverged.
+  const recRot = recMove.actions?.find((a) => a.actionType === 'SetRotation')?.fields?.get('rotation') ?? null;
+  if (recRot !== null) {
+    const byRot = candidates.filter((c) =>
+      c.actions.some((a) => a.actionType() === 'SetRotation' && typeof a.rotation === 'function' && String(a.rotation()) === recRot));
+    if (byRot.length > 0) candidates = byRot;
+    if (candidates.length === 1) return candidates[0];
+  }
+
   // Disambiguate a promotion ply by the promoted-to piece: a pawn reaching the
   // last rank records `Promote:what=N` (e.g. Knight) but the engine offers a
   // candidate per promotable piece at the same from/to. Prefer the candidate
@@ -956,6 +968,7 @@ function replayTrial(trialPath) {
       console.error(`recMove: mover=${recMove.mover},from=${recMove.from},to=${recMove.to}`);
       console.error(`recActs=[${recMove.actions.map(a=>a.actionType+(a.fields.get('from')!==undefined?`(${a.fields.get('from')}->${a.fields.get('to')})`:'')).join(',')}]`);
       console.error(`occupied: ${cells.join(' ')}`);
+      if (process.env.DEBUG_ROT) { const rots=[]; const ra=st.rotationAt??[]; for (let s2=0;s2<ra.length;s2++){const r2=ra[s2]??0;if(r2) rots.push(`${s2}:r${r2}`);} console.error(`rotations: ${rots.join(' ')}`); }
       console.error(`tsMoves (${tsMoves.length}):`);
       for (const m of tsMoves) {
         console.error(`  mover=${m.mover} from=${m.from()} to=${m.to()} isPass=${m.isPass()} again=${m.moveAgain} acts=[${m.actions.map(a=>{try{return a.constructor.name+'('+(a.from?a.from():'')+'>'+(a.to?a.to():'')+(a.state?(' st'+a.state()):'')+')';}catch(e){return a.constructor.name;}}).join(',')}]`);

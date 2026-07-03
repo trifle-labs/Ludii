@@ -338,6 +338,43 @@ export class Trajectories {
    * and collects each step's `AbsoluteDirection.convert`-ible compass tag in
    * order. This is the set a turtle walk rotates through and starts from.
    */
+  /**
+   * Distinct compass direction names used by ADJACENT steps of the play type.
+   * @java Topology.supportedDirections(type).size() — the direction count
+   * feeding Game.maximalRotationStates() (square Vertex board: 8). Cached.
+   */
+  public supportedAdjacentDirNames(): readonly string[] {
+    if (this.adjDirNamesCache) return this.adjDirNamesCache;
+    // @java Game.maximalRotationStates() takes the MAX over Cell and Vertex
+    // supported directions — on a square-9 Vertex board the vertex adjacency
+    // has only 4 winds but the CELL layer has 8, and Java rotates over 8
+    // (Ploy's recorded rotations run 0..7).
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const st of [SiteType.Vertex, SiteType.Cell]) {
+      const perType = new Set<string>();
+      for (let id = 0; ; id += 1) {
+        const steps = this.core.stepsToTypeInDirection(st, id, st, AbsoluteDirection.Adjacent);
+        if (steps.length === 0 && id > this.numSites + 64) break;
+        if (id > 4096) break;
+        for (const step of steps) {
+          for (const c of COMPASS_ABS) {
+            if (step.directions.has(c)) perType.add(directionName(c));
+          }
+        }
+      }
+      if (perType.size > seen.size) {
+        seen.clear();
+        out.length = 0;
+        for (const nm of perType) { seen.add(nm); out.push(nm); }
+      }
+    }
+    this.adjDirNamesCache = out;
+    return out;
+  }
+
+  private adjDirNamesCache?: readonly string[];
+
   public supportedOrthogonalDirNames(): readonly string[] {
     if (this.orthoDirNamesCache) return this.orthoDirNamesCache;
     const out: string[] = [];

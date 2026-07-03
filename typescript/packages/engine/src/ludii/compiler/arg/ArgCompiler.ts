@@ -990,10 +990,18 @@ export class ArgCompiler {
             if (tok != null && tok in COMPASS8) facingOverride = COMPASS8[tok];
           }
         }
+        // @java Directions.java:472-478 — the piece's stored ROTATION advances
+        // its facing FR-wise before relative directions resolve (Ploy pieces
+        // turn via (move Set Rotation); rotation 1 on the square-8 board turns
+        // N to NE, so FR resolves E).
+        const rotFrom = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
+        const rotSteps = rotFrom >= 0
+          ? ((c.state as unknown as { rotationAt?: readonly number[] }).rotationAt?.[rotFrom] ?? 0)
+          : 0;
         const out: string[] = [];
         const seen = new Set<string>();
         for (const n of relNames) {
-          const resolved = resolveRelativeDir(n, c.state.mover, c.game._playerDirs, facingOverride, supported);
+          const resolved = resolveRelativeDir(n, c.state.mover, c.game._playerDirs, facingOverride, supported, rotSteps);
           const names = Array.isArray(resolved) ? resolved : [resolved ?? n];
           for (const nm of names) if (!seen.has(nm)) { seen.add(nm); out.push(nm); }
         }

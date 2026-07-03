@@ -457,6 +457,16 @@ export class Game implements Game {
    * (diceSiteBase); Java's typical (dice d:N num:M) is ONE container with M
    * locs. Container index = 1 + number of hands (board=0, hands, dice).
    */
+  /**
+   * @java Game.maximalRotationStates() (Game.java:1201) — the number of
+   * distinct supported directions of the board (square Vertex: 8). SetRotation
+   * ludemes cycle rotation values modulo this.
+   */
+  public maximalRotationStates(): number {
+    const n = this.equipment.board.trajectories?.supportedAdjacentDirNames().length ?? 0;
+    return n > 0 ? n : 1;
+  }
+
   public handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number }> {
     const specs = this.equipment.diceSpecs;
     if (specs.length === 0) return [];
@@ -574,6 +584,8 @@ export class Game implements Game {
     // @java ActionAdd.apply() — setStateAt / setValueAt on the initial container state.
     const stateAt = new Array<number>(totalSites).fill(0);
     const valueAt = new Array<number>(totalSites).fill(0);
+    // @java (place … rotation:N) — initial piece rotations (Ploy's facings).
+    const rotAt = new Array<number>(totalSites).fill(0);
     // Player-level start values (from (set Score ...) / (set Amount ...) rules).
     // @java State.scores / State.amounts — initialised by ActionSetScore/SetAmount.
     const scores = new Array<number>(this.numPlayers + 1).fill(0);
@@ -603,7 +615,7 @@ export class Game implements Game {
     // Apply start rules.
     // @java game/Game.java — start(): applies ActionAdd for each start placement
     for (const rule of this.startRules) {
-      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging, stackedStaging, startRng, costAt);
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging, stackedStaging, startRng, costAt, rotAt);
     }
 
     // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
@@ -646,6 +658,8 @@ export class Game implements Game {
       phases: initialPhases,
       diceValues: initialDiceValues,
       stateAt: hasNonZeroState ? stateAt : undefined,
+      // @java (place … rotation:N) initial facings (Ploy).
+      rotationAt: rotAt.some((r) => r !== 0) ? rotAt : undefined,
       valueAt: hasNonZeroValue ? valueAt : undefined,
       scores: hasNonZeroScores ? scores : undefined,
       amounts: hasNonZeroAmounts ? amounts : undefined,
@@ -1295,6 +1309,7 @@ export class Game implements Game {
     stackedStaging?: Map<number, Array<{ what: number; owner: number; count: number; state: number; value: number }>>,
     rng?: SeededRng,
     costAt?: number[],
+    rotAt?: number[],
   ): void {
     const evalRule = rule as { eval?: (ctx: Context) => void };
     if (typeof evalRule.eval !== "function") return;
@@ -1425,6 +1440,7 @@ export class Game implements Game {
         whats[site] = what;
         countAt[site] = 1;
         if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+        if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
         if (value !== UNDEFINED) valueAt[site] = value;
         return;
       }
@@ -1432,6 +1448,7 @@ export class Game implements Game {
       whats[site] = what;
       countAt[site] = count;
       if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+      if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
       if (value !== UNDEFINED) valueAt[site] = value;
     };
     const topologyAdapter = {

@@ -64,6 +64,8 @@ interface TrackLike {
 }
 
 export class Slide implements MovesFunction {
+  /** From-site of the current target computation (rotation lookup). */
+  private _rotFromSite: number | undefined;
   /** @java Slide.startLocationFn */
   private readonly startLocationFn: IntFunction;
   /** @java Slide.levelFromFn */
@@ -168,6 +170,7 @@ export class Slide implements MovesFunction {
     const origBetween = ctx._evalBetween;
 
     ctx._evalFrom = from;
+    this._rotFromSite = from;
 
     if (this.fromCondition != null && !this.fromCondition.eval(ctx)) {
       ctx._evalFrom = origFrom;
@@ -210,7 +213,9 @@ export class Slide implements MovesFunction {
         const tok = what > 0 ? compFacing[what] : undefined;
         if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
       }
-      const relative = resolveRelativeDir(this.dirnName, mover, playerDirs, facingOverride, supportedDirNames(ctx));
+      // @java Directions.java:472-478 — apply the piece's stored rotation.
+      const rotSteps = ctx.state.rotationAt?.[this._rotFromSite ?? -1] ?? 0;
+      const relative = resolveRelativeDir(this.dirnName, mover, playerDirs, facingOverride, supportedDirNames(ctx), rotSteps);
       if (Array.isArray(relative)) effDirNames = relative;
       else if (relative !== null) effDirNames = [relative];
     }
@@ -347,6 +352,7 @@ export class Slide implements MovesFunction {
     const origTo = ctx._evalTo;
     const origBetween = ctx._evalBetween;
     ctx._evalFrom = from;
+    this._rotFromSite = from;
 
     try {
       if (this.fromCondition != null && !this.fromCondition.eval(ctx)) return [];
