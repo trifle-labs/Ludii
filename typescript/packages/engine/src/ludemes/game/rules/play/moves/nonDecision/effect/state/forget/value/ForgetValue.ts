@@ -8,7 +8,7 @@
 import type { Context } from "../../../../../../../../../../context.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../../base.js";
 import type { Move } from "../../../../../../../../../../move.js";
-import type { Then } from "../../../Then.js";
+import { applyPostStateThen, type Then } from "../../../Then.js";
 import { ActionForgetValue } from "../../../../../../../../../../action/action-remember.js";
 import { Move as LudiiMove } from "../../../../../../../../../../move.js";
 
@@ -60,13 +60,15 @@ export class ForgetValue implements MovesFunction {
       actions: [action],
     });
 
-    // @java ForgetValue.java:65-66 — then clause
+    // @java ForgetValue.java:65-66 — the (then …) consequents run POST-apply,
+    // after the value has been forgotten. The old eager eval computed them
+    // against the pre-forget remembered list: Hexifact's
+    //   (forget Value (max …) (then (set Score Mover (* TopValue (max …)))))
+    // scored TopValue x TopValue (the max was still present) instead of
+    // TopValue x second-max, and the nested (then (forget Value All)) was
+    // dropped entirely (withConsequence flattening loses nested thens).
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return [move.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      )];
+      return [applyPostStateThen(this.thenClause, ctx, move)];
     }
 
     return [move];

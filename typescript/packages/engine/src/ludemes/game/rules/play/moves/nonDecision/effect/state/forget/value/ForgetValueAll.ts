@@ -8,7 +8,7 @@
 import type { Context } from "../../../../../../../../../../context.js";
 import type { MovesFunction } from "../../../../../../../../../base.js";
 import type { Move } from "../../../../../../../../../../move.js";
-import type { Then } from "../../../Then.js";
+import { applyPostStateThen, type Then } from "../../../Then.js";
 import { ActionForgetValue } from "../../../../../../../../../../action/action-remember.js";
 import { Move as LudiiMove } from "../../../../../../../../../../move.js";
 
@@ -78,12 +78,10 @@ export class ForgetValueAll implements MovesFunction {
       actions,
     });
 
+    // @java ForgetValue (All): the (then …) consequents run POST-apply — see
+    // ForgetValue.ts (eager eval read pre-forget state and dropped nested thens).
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return [move.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      )];
+      return [applyPostStateThen(this.thenClause, ctx, move)];
     }
 
     return [move];
