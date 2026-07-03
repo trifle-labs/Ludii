@@ -175,7 +175,11 @@ export class PlaceMonotonousStack {
       if (c === undefined) return;
       const siteFrom = ((game.equipment().sitesFrom()[c.index()] as number | undefined) ?? 0);
       for (let pos = siteFrom; pos < siteFrom + c.numSites(); pos++) {
-        this.placePieces(context, pos, what, count, state, rotation, value, true);
+        // @java Start.placePieces pushes ONE level per call — repeat `count`
+        // times (the staging accumulates the homogeneous pile per call).
+        for (let i = 0; i < count; i++) {
+          this.placePieces(context, pos, what, count, state, rotation, value, true);
+        }
       }
     } else {
       // Java: final int[] locs = region.eval(context).sites();

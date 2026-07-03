@@ -1399,20 +1399,34 @@ export class Game implements Game {
         const levels = stackedStaging.get(site);
         if (levels && levels.length > 0) {
           const last = levels[levels.length - 1]!;
-          // @java PlaceMonotonousStack calls placePieces `count` times with
-          // the SAME (what, owner) — a homogeneous pile carried by countAt,
-          // NOT extra stack levels (Backgammon's 5-checker points). Only a
-          // DIFFERENT component/owner at the same site is a genuine new
-          // level (PlaceCustomStack's Hex-then-Disc — Seesaw).
+          // @java Start.placePieces(onStack=true) pushes ONE level per call
+          // (the place rules loop `count` times); a repeat of the SAME
+          // (what, owner) grows the homogeneous pile via countAt
+          // (Backgammon's 5-checker points), while a DIFFERENT component or
+          // owner is a genuine new level (PlaceCustomStack's Hex-then-Disc —
+          // Seesaw).
           if (last.what === what && last.owner === owner) {
-            // monotonous repeat: fall through to the flat overwrite below.
-          } else {
-            levels.push({ what, owner, count, state: stateValue, value });
+            countAt[site] = (countAt[site] ?? 0) + 1;
             return;
           }
-        } else {
-          stackedStaging.set(site, [{ what, owner, count, state: stateValue, value }]);
+          levels.push({ what, owner, count, state: stateValue, value });
+          return;
         }
+        // First stacking call at this site. If a FLAT placement already put
+        // the SAME piece here (King And Courtesan: (place "Disc1" …) then
+        // (place Stack "Disc1" (sites Bottom)) marks the royals as 2-high),
+        // the push grows the pile instead of overwriting it back to 1.
+        stackedStaging.set(site, [{ what, owner, count, state: stateValue, value }]);
+        if (cells[site] === owner && whats[site] === what && owner !== 0) {
+          countAt[site] = (countAt[site] ?? 0) + 1;
+          return;
+        }
+        cells[site] = owner;
+        whats[site] = what;
+        countAt[site] = 1;
+        if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+        if (value !== UNDEFINED) valueAt[site] = value;
+        return;
       }
       cells[site] = owner;
       whats[site] = what;

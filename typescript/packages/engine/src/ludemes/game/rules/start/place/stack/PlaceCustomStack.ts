@@ -211,10 +211,17 @@ export class PlaceCustomStack {
             }
           }
         } else if (this.siteId !== null) {
-          this.placePieces(context, this.siteId.eval(context) + siteFrom, what, count, state, rotation, value, true);
+          // @java Start.placePieces pushes ONE level per call — repeat count
+          // times so the homogeneous pile accumulates per call.
+          const target = this.siteId.eval(context) + siteFrom;
+          for (let i = 0; i < count; i++) {
+            this.placePieces(context, target, what, count, state, rotation, value, true);
+          }
         } else {
           for (let pos = siteFrom; pos < siteFrom + c.numSites(); pos++) {
-            this.placePieces(context, pos, what, count, state, rotation, value, true);
+            for (let i = 0; i < count; i++) {
+              this.placePieces(context, pos, what, count, state, rotation, value, true);
+            }
           }
         }
       } else {
