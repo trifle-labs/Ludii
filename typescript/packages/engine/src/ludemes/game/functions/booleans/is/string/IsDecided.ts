@@ -53,10 +53,11 @@ export class IsDecided extends BaseBooleanFunction {
       }
     }
     // @java State.isDecided defaults to Constants.UNDEFINED until a vote
-    // resolves; an absent accessor means no decision has been made.
-    const state = context.state as unknown as { isDecided?: () => number };
-    const decided = typeof state.isDecided === "function" ? state.isDecided() : UNDEFINED;
-    return decided === this.decisionInt;
+    // resolves. The TS state stores the winning vote STRING in state.decided
+    // (ActionVote's majority resolution) — compare text directly, mirroring
+    // the propositions channel.
+    const decided = (context.state as unknown as { decided?: string | null }).decided ?? null;
+    return decided !== null && decided === this.decision;
   }
 
   /** @java IsDecided.isStatic() */

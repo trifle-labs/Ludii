@@ -136,6 +136,13 @@ export interface StateOptions {
    * clearPropositions (vote resolved) or a fresh game state.
    */
   readonly propositions?: readonly string[];
+  /** @java State.votes — votes cast via ActionVote this voting round. */
+  readonly votes?: readonly string[];
+  /**
+   * @java State.isDecided (Constants.UNDEFINED until a vote resolves) — the
+   * winning vote string once a majority decides; read by (is Decided …).
+   */
+  readonly decided?: string | null;
   /**
    * Per-level piece values, parallel to {@link stacks}. Java's plain stacking
    * push (addItemGeneric) does NOT carry the moving piece's value — the new
@@ -297,6 +304,10 @@ export class State {
   public readonly requiresCountGame: boolean;
   /** @java State.propositions; see {@link StateOptions.propositions}. */
   public readonly propositions: readonly string[];
+  /** @java State.votes; see {@link StateOptions.votes}. */
+  public readonly votes: readonly string[];
+  /** @java State.isDecided; see {@link StateOptions.decided}. */
+  public readonly decided: string | null;
   /** Per-level values; see {@link StateOptions.valueStacks}. */
   public readonly valueStacks?: readonly (readonly number[])[];
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
@@ -462,6 +473,8 @@ export class State {
     this.stackMovesGame = options.stackMovesGame ?? false;
     this.requiresCountGame = options.requiresCountGame ?? false;
     this.propositions = options.propositions ?? [];
+    this.votes = options.votes ?? [];
+    this.decided = options.decided ?? null;
     this.valueStacks = options.valueStacks;
     this.numTurn = options.numTurn ?? 1;
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
@@ -1292,6 +1305,13 @@ export class State {
   public withPropositionsCleared(): State {
     return this.with({ propositions: [] });
   }
+
+  /** @java ActionVote.apply — replace the votes list (and optionally resolve). */
+  public withVotesState(votes: readonly string[], decided?: string | null): State {
+    return decided !== undefined
+      ? this.with({ votes, decided, propositions: [] })
+      : this.with({ votes });
+  }
   /**
    * Java parity: `State.reinitNumTurnSamePlayer()` — begin a new turn, bumping
    * `numTurn` by one. Called when the player to move differs from the player
@@ -1481,6 +1501,8 @@ export class State {
         stackMovesGame: patch.stackMovesGame ?? this.stackMovesGame,
         requiresCountGame: patch.requiresCountGame ?? this.requiresCountGame,
         propositions: patch.propositions ?? this.propositions,
+        votes: patch.votes ?? this.votes,
+        decided: patch.decided !== undefined ? patch.decided : this.decided,
         valueStacks: patch.valueStacks ?? this.valueStacks,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:

@@ -112,18 +112,28 @@ export class Vote implements MovesFunction {
 
     const moves: Move[] = [];
 
-    const game = ctx.game as unknown as { voteString?: (i: number) => string };
+    const game = ctx.game as unknown as {
+      voteString?: (i: number) => string;
+      registerVoteString?: (s: string) => number;
+      numPlayers?: number;
+    };
 
-    for (const voteInt of this.voteInts) {
-      // @java Vote.java:88 — NOTE: if -1 here, preprocess() was not called!
-      // @java Vote.java:89 — context.game().voteString(vote)
-      const voteText = typeof game.voteString === "function"
+    for (let vi = 0; vi < this.voteInts.length; vi += 1) {
+      // The compiler runs no preprocess pass, so voteInts stay -1 until
+      // registered LAZILY here (same pattern as Propose/IsDecided). Without
+      // this, voteString(-1) produced "-1" and the ActionVote carried "-1"
+      // instead of the vote text.
+      if (this.voteInts[vi] === UNDEFINED && typeof game.registerVoteString === "function") {
+        this.voteInts[vi] = game.registerVoteString(this.votes[vi]!);
+      }
+      const voteInt = this.voteInts[vi]!;
+      const voteText = voteInt !== UNDEFINED && typeof game.voteString === "function"
         ? game.voteString(voteInt)
-        : String(voteInt);
+        : this.votes[vi]!;
 
-      // @java Vote.java:89 — new ActionVote(voteString, voteInt)
-      // TS ActionVote takes a single string arg
-      const action = new ActionVote(voteText);
+      // @java Vote.java:89 — new ActionVote(voteString, voteInt); the TS
+      // action also carries the player count for its majority resolution.
+      const action = new ActionVote(voteText, game.numPlayers ?? 0);
 
       // @java Vote.java:90-91 — if (isDecision()) action.setDecision(true)
       // (isDecision() is a Moves-level flag; not tracked per-instance here)
