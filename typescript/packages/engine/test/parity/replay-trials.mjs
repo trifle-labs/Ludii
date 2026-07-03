@@ -582,6 +582,28 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     if (candidates.length === 1) return candidates[0];
   }
 
+  // Vote/Propose plies: both TS candidates are from=-1,to=-1 with a single
+  // Vote/Propose action — indistinguishable by sites. Match the recorded
+  // vote/proposition TEXT (Los Escaques: the matcher picked Vote "End" for
+  // every recorded Vote "No", so TS's majority resolved "End" and the game
+  // ended 28 plies early with an all-tie byScore).
+  const recVote = /\[(?:Vote):vote=([^,\]]+)/.exec(recMove.raw ?? '')?.[1]
+    ?? recMove.actions?.find((a) => a.actionType === 'Vote')?.fields?.get('vote')
+    ?? null;
+  if (recVote !== null) {
+    const byVote = candidates.filter((c) =>
+      c.actions.some((a) => a.actionType() === 'Vote' && typeof a.vote === 'function' && a.vote() === recVote));
+    if (byVote.length > 0) candidates = byVote;
+    if (candidates.length === 1) return candidates[0];
+  }
+  const recProp = recMove.actions?.find((a) => a.actionType === 'Propose')?.fields?.get('proposition') ?? null;
+  if (recProp !== null) {
+    const byProp = candidates.filter((c) =>
+      c.actions.some((a) => a.actionType() === 'Propose' && typeof a.proposition === 'function' && a.proposition() === recProp));
+    if (byProp.length > 0) candidates = byProp;
+    if (candidates.length === 1) return candidates[0];
+  }
+
   // Disambiguate a promotion ply by the promoted-to piece: a pawn reaching the
   // last rank records `Promote:what=N` (e.g. Knight) but the engine offers a
   // candidate per promotable piece at the same from/to. Prefer the candidate
@@ -1018,6 +1040,7 @@ function replayTrial(trialPath) {
       };
     }
 
+    if (process.env.TRACE_MATCHED) console.error(`[MATCHED] ply=${plyIndex} ${matched.from()}>${matched.to()} nDefThens=${matched.deferredThens?.length ?? 'NA'} acts=[${matched.actions.map(a=>a.actionType()).join(',')}]`);
     try {
       ctx = game.apply(ctx, matched);
     } catch (e) {
