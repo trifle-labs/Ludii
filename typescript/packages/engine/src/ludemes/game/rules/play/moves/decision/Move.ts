@@ -206,8 +206,14 @@ export class Move extends Decision {
     switch (setType) {
       case "Rotation": {
         const directionFns = directions ?? (direction != null ? [direction] : null);
+        // @java SetRotation.java:86 — siteFn = (to == null) ? new From(null) :
+        // …: the bare (move Set Rotation) rotates the piece at the FROM
+        // iterator (forEach Piece binds it), not LastTo. Reading _evalTo left
+        // the site OFF during move generation, so Ploy's per-piece
+        // "…OrChangeDirection" arms produced NO rotation moves and the trial
+        // mismatched on the recorded SetRotation at ply 0.
         return new SetRotation(
-          to?.locFn() ?? { eval: (ctx) => ctx._evalTo },
+          to?.locFn() ?? { eval: (ctx) => ctx._evalFrom ?? -1 },
           to?.siteType() as SiteType | null,
           directionFns,
           previous,
