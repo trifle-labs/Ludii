@@ -45,9 +45,25 @@ export class CountNumber implements IntFunction {
     // at:(site))))` read countAt 0 for genuinely stacked board sites and ended
     // round 1 as a false win. Non-stacking games keep the count-field sum.
     const stacking = ctx.state.stackingGame;
+    // @java per-type ContainerStates — an explicit `Cell` count on a
+    // Vertex-play BOARD reads the board's CELL (face) channel, not the vertex
+    // seeds. Adidada's ("PiecesOwnedBy" = (+ (count Cell at:(mapEntry #1))
+    // (count in:(sites #1)))) scores stores via `count Cell at:0/13` on a
+    // Vertex mancala board: Java reads the empty face channel (0); the TS
+    // flat read returned the store's VERTEX pile (17/29) and flipped the
+    // byScore winner. Hand sites (>= boardNumSites) are genuine Cells in
+    // both engines and keep the flat read (Bechi's hand-count end).
+    const playType = ctx.board().defaultSite();
+    const typedCell = (ctx.state as unknown as {
+      typedSites?: ReadonlyMap<string, { count?: readonly number[] }>;
+    }).typedSites?.get("Cell");
     for (const s of sites) {
       if (s < 0) continue;
       if (resolvedType !== "Cell" && s >= boardNumSites) continue;
+      if (resolvedType === "Cell" && playType !== "Cell" && s < boardNumSites) {
+        count += typedCell?.count?.[s] ?? 0;
+        continue;
+      }
       count += stacking ? ctx.state.stackSize(s) : ctx.state.count(s);
     }
     return count;
