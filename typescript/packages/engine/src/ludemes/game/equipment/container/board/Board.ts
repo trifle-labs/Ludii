@@ -413,6 +413,23 @@ export class Board extends Container {
           }
         }
         for (let i = 0; i < nc; i += 1) cellList[i]!.setPhase(phase[i]! < 0 ? 0 : phase[i]!);
+        // @java Topology.phases(type) — (sites Phase N) reads the topology's
+        // per-phase element lists, which the property path never populated on
+        // this route: they stayed empty, so Catapult's start
+        // (difference (expand …) (sites Phase 0)) removed nothing and the
+        // checkerboard placement collapsed.
+        {
+          const phaseLists = (topology as unknown as {
+            phases?: (t: string) => Array<Array<unknown>>;
+          }).phases?.("Cell");
+          if (phaseLists) {
+            for (let i = 0; i < nc; i += 1) {
+              const p = phase[i]! < 0 ? 0 : phase[i]!;
+              const list = phaseLists[p];
+              if (list && !list.includes(cellList[i]!)) list.push(cellList[i]!);
+            }
+          }
+        }
       }
     }
 
