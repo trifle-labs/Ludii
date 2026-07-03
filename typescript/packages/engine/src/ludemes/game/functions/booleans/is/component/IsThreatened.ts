@@ -73,9 +73,17 @@ export class IsThreatened extends BaseBooleanFunction {
           : Number((context.game as unknown as { numPlayers?: number }).numPlayers ?? 2);
       const originalMover = context.state.mover;
       const originalPrev = (context.state as unknown as { prev: number }).prev;
+      // @java players().get(owner).enemies() — TEAMMATES are not enemies.
+      // Chatrang ((set Team 1 {P1 P3})) starts with the two allied kings
+      // adjacent; counting P3 as P1's enemy made ("IsInCheck" King Mover)
+      // true at ply 0 and the do-filter reduced P1 to a single phantom
+      // capture of the allied king.
+      const teamOf = (context.game as unknown as { teamOf?: readonly number[] }).teamOf;
       for (const [owner, ownerTargets] of targetsByOwner) {
+        const ownerTeam = teamOf?.[owner] ?? 0;
         for (let enemy = 1; enemy <= numPlayers; enemy += 1) {
           if (enemy === owner) continue;
+          if (ownerTeam > 0 && (teamOf?.[enemy] ?? 0) === ownerTeam) continue;
           (context.state as unknown as { mover: number }).mover = enemy;
           // @java IsThreatened.java:135 newContext.state().setPrev(ownerWhat) —
           // prev is the OWNER of the checked piece (a real player), NOT the temp
