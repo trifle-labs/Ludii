@@ -25,9 +25,20 @@ type RoleType =
 function roleToIntFunction(role: RoleType | null): IntFunction {
   return {
     eval(ctx: Context & EvalScratch): number {
-      switch (role) {
+      switch (role as string) {
         case "Mover": return ctx.state.mover;
         case "Next": return (ctx.state.mover % ctx.game.numPlayers) + 1;
+        // @java RoleType.Player → context.player(): the (forEach Player …)
+        // iterator value. Missing, it fell to the -1 default and the
+        // `role === "All" || whoId < 0` catch-all returned ALL occupied sites:
+        // Can The Sardines' per-player all-fish-in-the-can end saw both
+        // players' fish and never fired.
+        case "Player": return ctx._evalPlayer ?? ctx.state.mover;
+        // @java RoleType.Prev → context.state().prev() (rotational fallback).
+        case "Prev": {
+          const prev = (ctx.state as unknown as { prev?: number }).prev ?? 0;
+          return prev > 0 ? prev : ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+        }
         case "P1": return 1;
         case "P2": return 2;
         case "P3": return 3;
