@@ -1334,6 +1334,14 @@ export class Game implements Game {
         type: string | null,
       ) => void;
     };
+    // @java the start rules evaluate on a full Context with the board topology
+    // visible. Without trajectories, direction-aware start regions fell to the
+    // square width/height fallback: Icebreaker's ship placements
+    // (sites Around (centrePoint) distance:N <dir>) on a hex board resolved
+    // garbage and 5 of 6 ships never placed.
+    (ctx as Context & { _trajectories?: unknown })._trajectories =
+      this.equipment.board.trajectories ?? null;
+    (ctx as Context & { _radials?: unknown })._radials = this.equipment.board.radials;
 
     // Attach the board's trajectories/radials so Sites* region evals (Row/Left/Right/...)
     // resolve on the start-rule bridge context exactly as they do in play.

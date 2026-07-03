@@ -1763,7 +1763,15 @@ function aroundSites(ctx: Context & EvalScratch, site: number, distance: number,
         for (const n of oneStep) out.add(n);
       } else {
         for (const dirSite of oneStep) {
-          const ray = traj.ray(site, directionBetween(ctx, site, dirSite) ?? dir);
+          // @java SitesAround distance>1 walks the radial in the REQUESTED
+          // direction. For an explicit wind name use it directly — the
+          // directionBetween re-derivation binned NNW-family winds wrong on
+          // hex boards, so Icebreaker's ship spots
+          // (sites Around (centrePoint) distance:4 NNW) resolved to the E
+          // corner or nothing. Group names (Adjacent/…) still derive the
+          // per-neighbour wind.
+          const isGroup = dir === "All" || dir === "Adjacent" || dir === "Orthogonal" || dir === "Diagonal" || dir === "OffDiagonal";
+          const ray = traj.ray(site, isGroup ? (directionBetween(ctx, site, dirSite) ?? dir) : dir);
           const n = ray[distance - 1];
           if (n !== undefined) out.add(n);
         }
