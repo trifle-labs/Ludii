@@ -67,6 +67,7 @@ import type { SitesPlayerType } from "./SitesPlayerType.js";
 import type { SitesPieceType } from "./SitesPieceType.js";
 import type { SitesSimpleType } from "./SitesSimpleType.js";
 import { resolveRelativeDir } from "../../../util/directions/RelativeDirection.js";
+import { SitesPattern } from "./pattern/SitesPattern.js";
 
 /** Internal type alias for topology accessor shape. */
 type TopologyLike = {
@@ -623,7 +624,20 @@ export class Sites extends BaseRegionFunction {
               for (const n of aroundSites(ctx, s, dist, dirNames, typeLoc)) add(n);
             }
 
-            const filtered = dynType === null ? out : out.filter((site) => dynamicRegionAccepts(ctx, site, dynType));
+            // @java SitesAround.java:183-188 — with includeSelf false, EVERY
+            // origin site is removed from the result, including origin sites
+            // that entered as neighbours of OTHER origin sites (a multi-site
+            // origin region is mutually adjacent: Archworm's worm cells all
+            // neighbour each other, so the "around the worm" set wrongly
+            // contained the worm itself and the no-Pieces filter always failed).
+            const selfExcluded = include
+              ? out
+              : (() => {
+                  const src = new Set(sourceSites);
+                  return out.filter((site) => !src.has(site));
+                })();
+
+            const filtered = dynType === null ? selfExcluded : selfExcluded.filter((site) => dynamicRegionAccepts(ctx, site, dynType));
             if (condition === null) return filtered;
 
             const oldTo = ctx._evalTo;
@@ -1213,9 +1227,27 @@ export class Sites extends BaseRegionFunction {
     // @java overload resolution — the Pattern discriminant selects this clause
     if ((regionType as string) !== "Pattern") return null as unknown as RegionFunction;
     // @java return new SitesPattern(walk, type, from, what, whats);
-    return new (class extends BaseRegionFunction {
-      override eval(_ctx: Context & EvalScratch): number[] { return []; }
-    })();
+    // Previously a stub returning [] — Archworm's worm-count filter
+    //   (no Pieces Mover in:(sites Around (sites Pattern {F R F R F R} …) …))
+    // scanned an empty region, trivially passed, and every worm counted (a
+    // false early win). Parse the {F R F …} step list and build the real
+    // SitesPattern; from: defaults to (last To) like IsPattern (@java
+    // SitesPattern.java constructor).
+    const walk: string[] = [];
+    // The compiled {F R F R F R} step list arrives as a plain string array;
+    // tolerate a LudList of idents too.
+    const rawSteps: readonly unknown[] = Array.isArray(_walk)
+      ? _walk
+      : ((_walk as { items?: readonly unknown[] } | null)?.items ?? []);
+    for (const item of rawSteps) {
+      const nm = (typeof item === "string" ? item : (item as { name?: string } | null)?.name)?.toUpperCase();
+      if (nm === "F" || nm === "R" || nm === "L") walk.push(nm);
+    }
+    const fromFn: IntFunction = _from ?? {
+      eval: (ctx: Context & EvalScratch): number => ctx._evalTo ?? -1,
+    };
+    const whatsFns = _whats ?? (_what !== null ? [_what] : null);
+    return new SitesPattern(walk, fromFn, whatsFns);
   }
 
   /**
