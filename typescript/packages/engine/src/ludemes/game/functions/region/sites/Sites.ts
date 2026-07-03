@@ -68,6 +68,7 @@ import type { SitesPieceType } from "./SitesPieceType.js";
 import type { SitesSimpleType } from "./SitesSimpleType.js";
 import { resolveRelativeDir } from "../../../util/directions/RelativeDirection.js";
 import { SitesPattern } from "./pattern/SitesPattern.js";
+import { SitesWalk } from "./walk/SitesWalk.js";
 
 /** Internal type alias for topology accessor shape. */
 type TopologyLike = {
@@ -1326,65 +1327,25 @@ export class Sites extends BaseRegionFunction {
     rotations: BooleanFunction | null,
   ): RegionFunction {
     // @java return new SitesWalk(elementType, index, possibleSteps, rotations);
-    // SitesWalk.eval — turtle walks from the site: for each start direction
-    // (all orthogonals when rotations [True], else just the first) and each
-    // StepType[] walk, F steps along the current facing, R/L rotate to the
-    // next supported orthogonal; a step off the board kills that walk; the
-    // landing site of every surviving walk is in the region (KnightWalk:
-    // {{F F R F} {F F L F}} from each of N/E/S/W = the 8 knight targets).
+    // The real SitesWalk delegates to Trajectories.walkSites on graph boards
+    // (turtle walks over the board's OWN supported orthogonals with faithful
+    // compass R/L rotation) and keeps a square fallback. The previous inline
+    // walker hardcoded ["N","E","S","W"], so on any hex or rotated board the
+    // knight's {F F R F}/{F F L F} walks stepped along square headings and
+    // produced garbage targets (McCooey Chess ply 0: {33,72,14} instead of
+    // the six hex-knight leaps).
     const walks: readonly (readonly string[])[] = Array.isArray(possibleSteps)
       ? (possibleSteps as unknown[][]).map((w) => (Array.isArray(w) ? w.map(String) : [String(w)]))
       : [];
     const rotFn = typeof (rotations as unknown) === "boolean"
       ? { eval: () => rotations as unknown as boolean }
       : (rotations ?? { eval: () => true });
-    return new (class extends BaseRegionFunction {
-      override eval(ctx: Context & EvalScratch): number[] {
-        const from = index !== null ? index.eval(ctx) : ((ctx as { _evalFrom?: number })._evalFrom ?? -1);
-        if (from === null || from < 0) return [];
-        const ORTHO = ["N", "E", "S", "W"] as const;
-        const traj = (ctx as unknown as { _trajectories?: { step(site: number, dir: string): number } | null })._trajectories;
-        const board = (ctx.game as unknown as { equipment?: { board?: { width: number; height: number } } }).equipment?.board;
-        const W = board?.width ?? 0;
-        const H = board?.height ?? 0;
-        const stepTo = (site: number, dir: string): number => {
-          if (traj && typeof traj.step === "function") return traj.step(site, dir);
-          const col = site % W;
-          const row = Math.floor(site / W);
-          switch (dir) {
-            case "E": return col + 1 < W ? site + 1 : -1;
-            case "W": return col - 1 >= 0 ? site - 1 : -1;
-            case "N": return row + 1 < H ? site + W : -1;
-            case "S": return row - 1 >= 0 ? site - W : -1;
-            default: return -1;
-          }
-        };
-        // @java allRotations ? all orthogonals : just the first
-        const allRotations = rotFn.eval(ctx as never);
-        const startDirs = allRotations ? [0, 1, 2, 3] : [0];
-        const out: number[] = [];
-        for (const start of startDirs) {
-          for (const steps of walks) {
-            let cur: number = from;
-            let dirIdx = start;
-            for (const st of steps) {
-              if (st === "F") {
-                cur = stepTo(cur, ORTHO[dirIdx]!);
-                // @java no correct walk with that state
-                if (cur < 0) break;
-              } else if (st === "R") {
-                dirIdx = (dirIdx + 1) % ORTHO.length;
-              } else if (st === "L") {
-                dirIdx = (dirIdx + ORTHO.length - 1) % ORTHO.length;
-              }
-            }
-            // @java if (currentLoc != UNDEFINED) sitesAfterWalk.add(currentLoc)
-            if (cur >= 0) out.push(cur);
-          }
-        }
-        return out;
-      }
-    })();
+    return new SitesWalk(
+      _elementType as never,
+      index,
+      walks as never,
+      rotFn as never,
+    ) as unknown as RegionFunction;
   }
 }
 
