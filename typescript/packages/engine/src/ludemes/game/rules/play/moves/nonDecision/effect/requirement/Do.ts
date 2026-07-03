@@ -107,6 +107,12 @@ export class Do implements MovesFunction {
       const priorMoves = this.prior.eval(ctx);
       const nextMoves = this.next.eval(newCtx);
       const priorActions = priorMoves.flatMap((pm) => [...pm.actions]);
+      // @java the prior's then() consequents ride along on the compound move
+      // too — (do (roll (then (addScore Mover (mapEntry (count Pips)))))
+      // next:(move Pass …)) applies roll THEN addScore THEN the pass's thens.
+      // Only nm.deferredThens were kept, so the roll-then was dropped and
+      // Pasa/Los Escaques never accumulated score (end never fired, ts=-1).
+      const priorDeferred = priorMoves.flatMap((pm) => [...pm.deferredThens]);
 
       // Prepend prior actions to every next move.
       for (const nm of nextMoves) {
@@ -122,9 +128,9 @@ export class Do implements MovesFunction {
           placedOwner: nm.placedOwner,
           actions: prependedActions,
           then: nm.then as LudiiMove[],
-          // @java the inner move's then() list rides along — Do only merges
-          // the prior's actions in front; consequences evaluate at apply time.
-          deferredThens: nm.deferredThens,
+          // @java both the prior's AND the inner move's then() lists ride
+          // along; the prior's consequents evaluate first (post-apply).
+          deferredThens: [...priorDeferred, ...nm.deferredThens],
           moveAgain: nm.moveAgain,
           // Prepending the prior's actions shifts the decision action, so pin
           // the decision from/to explicitly (@java the recorded compound move
