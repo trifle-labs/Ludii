@@ -223,6 +223,14 @@ function neighboursOf(
   site: number,
   direction: string | null,
 ): number[] {
+  // @java Region.expand(…, direction, …) — a directional expand steps ONLY in
+  // that AbsoluteDirection. The topo.neighbours shortcut ignored the direction,
+  // so Los Escaques' ring sections (expand origin:N steps:6 Out) flooded the
+  // whole concentric board: "SameSection" was always true and the scoring
+  // then-clause never fired (all byScore totals stayed 0).
+  if (direction !== null && trajectories?.steps !== undefined) {
+    return trajectories.steps(site, direction);
+  }
   if (topo !== null && typeof topo.neighbours === "function") {
     return topo.neighbours(site, null);
   }
