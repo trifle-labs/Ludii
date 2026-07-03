@@ -57,12 +57,19 @@ const OUT_MD = join(HERE, `REPLAY-RESULTS${shardSuffix}.md`);
 // ---------------------------------------------------------------------------
 let limitArg = null;
 let filterArg = null;
+let filterListArg = null;
 let verbose = false;
 {
   const args = process.argv.slice(2);
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--limit' && args[i + 1]) { limitArg = parseInt(args[i + 1], 10); i++; }
     else if (args[i] === '--filter' && args[i + 1]) { filterArg = args[i + 1]; i++; }
+    // --filter-file <path>: newline-separated substrings; a trial is kept when
+    // it matches ANY line (scoped gates: replay only games affected by a change).
+    else if (args[i] === '--filter-file' && args[i + 1]) {
+      filterListArg = readFileSync(args[i + 1], 'utf8').split('\n').map((l) => l.trim()).filter(Boolean);
+      i++;
+    }
     else if (args[i] === '--verbose') verbose = true;
   }
 }
@@ -129,6 +136,9 @@ function walkFiles(dir, results = []) {
 let allTrials = walkFiles(TRIALS_ROOT);
 if (filterArg) {
   allTrials = allTrials.filter(f => f.includes(filterArg));
+}
+if (filterListArg) {
+  allTrials = allTrials.filter(f => filterListArg.some((sub) => f.includes(sub)));
 }
 // `--stride N` keeps every Nth trial so a wall-clock-bounded run samples the
 // whole corpus evenly instead of just the alphabetically-early families.
