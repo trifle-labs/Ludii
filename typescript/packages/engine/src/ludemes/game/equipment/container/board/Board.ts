@@ -391,16 +391,23 @@ export class Board extends Container {
             }
           }
         }
+        // @java MeasureGraph.measurePhase:1002-1073 — greedy smallest-free-phase
+        // BFS over a DEQUE: the popped element takes the lowest phase 0..3 not
+        // used by any already-phased neighbour (all four used → PHASE_4), and
+        // unvisited neighbours whose own neighbourhoods already show more than
+        // one distinct phase are pushed to the FRONT (more constrained first).
+        // The priority order matters for parity: hex boards 3-colour, and
+        // Triad's (mapEntry "PlayerPhase" (phase of:(to))) needs Java's exact
+        // per-cell assignment, not just any legal colouring.
         const phase = new Array<number>(nc).fill(-1);
         for (let s = 0; s < nc; s += 1) {
           if (phase[s] !== -1) continue;
           phase[s] = 0;
-          const queue: number[] = [s];
+          const deque: number[] = [s];
           const visited = new Set<number>();
-          while (queue.length > 0) {
-            const ge = queue.shift()!;
+          while (deque.length > 0) {
+            const ge = deque.shift()!;
             if (visited.has(ge)) continue;
-            visited.add(ge);
             const used = new Set<number>();
             for (const nb of adj[ge]!) {
               const np = phase[nb] ?? -1;
@@ -408,8 +415,18 @@ export class Board extends Container {
             }
             let p = 0;
             while (p < 4 && used.has(p)) p += 1;
-            phase[ge] = p < 4 ? p : 0;
-            for (const nb of adj[ge]!) if ((phase[nb] ?? -1) < 0) queue.push(nb);
+            phase[ge] = p; // p == 4 → @java PHASE_4
+            visited.add(ge);
+            for (const nb of adj[ge]!) {
+              if (visited.has(nb)) continue;
+              const nnPhases = new Set<number>();
+              for (const nn of adj[nb]!) {
+                const np = phase[nn] ?? -1;
+                if (np >= 0) nnPhases.add(np);
+              }
+              if (nnPhases.size > 1) deque.unshift(nb);
+              else deque.push(nb);
+            }
           }
         }
         for (let i = 0; i < nc; i += 1) cellList[i]!.setPhase(phase[i]! < 0 ? 0 : phase[i]!);
