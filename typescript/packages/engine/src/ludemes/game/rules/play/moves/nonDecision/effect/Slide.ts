@@ -299,13 +299,23 @@ export class Slide implements MovesFunction {
       }
     }
 
+    // @java Move.java:499-542 — a composite Move-as-action applies its OWN
+    // then() list when it applies, so an effect like (remove (to) (then (set
+    // Value Next …))) keeps its consequence. TS flattens effect moves into raw
+    // actions, so the inner move's deferred thens must be carried onto the
+    // outer slide move (they evaluate after the actions, before the slide's
+    // own then — Annuvin's capture bumps the victim's movement points).
+    const innerThens: Move["deferredThens"][number][] = [];
+
     // @java Slide.java:280-286 — between effects
     if (this.betweenEffect != null) {
       const origBetween = ctx._evalBetween;
       for (const between of betweenSites) {
         ctx._evalBetween = between;
         // @java Slide.java:285 — betweenEffect also chains with prepend=true.
-        const betweenActions = this.betweenEffect.eval(ctx).flatMap(m => [...m.actions]);
+        const betweenMoves = this.betweenEffect.eval(ctx);
+        const betweenActions = betweenMoves.flatMap(m => [...m.actions]);
+        for (const m of betweenMoves) innerThens.push(...m.deferredThens);
         actions.unshift(...betweenActions);
       }
       ctx._evalBetween = origBetween;
@@ -316,13 +326,16 @@ export class Slide implements MovesFunction {
     // the slide's ActionMove (recorded slide captures are [Remove, Move];
     // appending relocated the ATTACKER off the landing square).
     if (this.sideEffect != null) {
-      const sideActions = this.sideEffect.eval(ctx).flatMap(m => [...m.actions]);
+      const sideMoves = this.sideEffect.eval(ctx);
+      const sideActions = sideMoves.flatMap(m => [...m.actions]);
       // @java chainRuleWithAction(..., decision=false)
       for (const a of sideActions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+      for (const m of sideMoves) innerThens.push(...m.deferredThens);
       actions.unshift(...sideActions);
     }
 
     return new LudiiMove({
+      deferredThens: innerThens,
       id: `slide:${mover}:${from}:${to}`,
       label: `Slide(${from}→${to})`,
       siteIndices: [from, to],

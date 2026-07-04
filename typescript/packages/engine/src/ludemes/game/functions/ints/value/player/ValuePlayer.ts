@@ -37,8 +37,20 @@ function roleToIntFn(role: RoleType): JavaIntFunction {
   return {
     eval(ctx: Context): number {
       if (role === RoleType.Mover) return ctx.state.mover;
-      if (role === RoleType.Next) return (ctx.state as unknown as { next: number }).next ?? ctx.state.mover;
-      if (role === RoleType.Prev) return (ctx.state as unknown as { prev: number }).prev ?? ctx.state.mover;
+      // @java context.state().next() — TS states carry next=0 until the cycle
+      // finalises; rotational fallback like NextFn.ts (raw 0 read the value
+      // channel of player 0 inside deferred thens).
+      if (role === RoleType.Next) {
+        const rawNext = (ctx.state as unknown as { next?: number }).next ?? 0;
+        if (rawNext > 0) return rawNext;
+        const np = (ctx.game as unknown as { numPlayers?: number }).numPlayers ?? 2;
+        return (ctx.state.mover % np) + 1;
+      }
+      if (role === RoleType.Prev) {
+        const rawPrev = (ctx.state as unknown as { prev?: number }).prev ?? 0;
+        if (rawPrev > 0) return rawPrev;
+        return ctx.state.mover;
+      }
       // Default: return neutral (0) for unsupported roles
       return 0;
     },

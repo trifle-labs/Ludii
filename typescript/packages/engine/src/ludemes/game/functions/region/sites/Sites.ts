@@ -1361,78 +1361,6 @@ export class Sites extends BaseRegionFunction {
  * the property. Side membership is computed on the play-site graph.
  */
 
-/**
- * @java MeasureGraph.findSides/sideFromRun — normalize each ring CCW, find
- * corners, walk corner-to-corner runs, classify each run by the discrete
- * 16-bucket direction of its centroid from the ring centroid, and return the
- * element ids of every run matching dirName (run ends inclusive).
- */
-function classifySideRuns(
-  rings: readonly (readonly (readonly [number, number, number])[])[],
-  dirName: string,
-  maxId: number,
-): number[] {
-  const out = new Set<number>();
-  for (const rawRing of rings) {
-    if (rawRing.length === 0) continue;
-    const ring = rawRing.map((e) => [e[0], e[1], e[2]] as [number, number, number]);
-    {
-      let area = 0;
-      for (let i = 0; i < ring.length; i++) {
-        const [ax, ay] = ring[i]!;
-        const [bx, by] = ring[(i + 1) % ring.length]!;
-        area += ax * by - bx * ay;
-      }
-      if (area < 0) ring.reverse();
-    }
-    let cx = 0; let cy = 0;
-    for (const [x, y] of ring) { cx += x; cy += y; }
-    cx /= ring.length; cy /= ring.length;
-    const poly: [number, number][] = ring.map(([x, y]) => [x, y]);
-    const { convexIdx, concaveIdx } = cornersFromPerimeterTyped(poly);
-    const cornerIdx = new Set<number>([...convexIdx, ...concaveIdx]);
-    if (cornerIdx.size === 0) continue;
-    const discrete = (angle: number): number => {
-      const arc = (2 * Math.PI) / 16;
-      const off = arc / 2;
-      let a = angle;
-      while (a < 0) a += 2 * Math.PI;
-      while (a > 2 * Math.PI) a -= 2 * Math.PI;
-      return (Math.floor((a + off) / arc) + 16) % 16;
-    };
-    const sideOf = (dirn: number): string =>
-      dirn === 0 ? "E" : dirn === 4 ? "N" : dirn === 8 ? "W" : dirn === 12 ? "S"
-        : dirn < 4 ? "NE" : dirn < 8 ? "NW" : dirn < 12 ? "SW" : "SE";
-    const num = ring.length;
-    for (const from of cornerIdx) {
-      let to = from;
-      do { to = (to + 1) % num; } while (!cornerIdx.has(to) && to !== from);
-      const runLength = (to - from + num) % num;
-      let avgX = ring[from]![0];
-      let avgY = ring[from]![1];
-      for (let r = 0; r < runLength; r++) {
-        const e = ring[(from + 1 + r) % num]!;
-        avgX += e[0]; avgY += e[1];
-      }
-      avgX /= runLength + 1; avgY /= runLength + 1;
-      const dirn = discrete(Math.atan2(avgY - cy, avgX - cx));
-      if (sideOf(dirn) !== dirName) continue;
-      for (let r = 0; r <= runLength; r++) {
-        const id = ring[(from + r) % num]![2];
-        if (id >= 0 && id < maxId) out.add(id);
-      }
-    }
-  }
-  return [...out].sort((a, b) => a - b);
-}
-
-/**
- * The board's corner sites (perimeter sites at genuine convex turns).
- * @java MeasureGraph.measureCorners — the convex hull of site centroids gives
- * them on any geometry: a square board's hull has 4 non-collinear turns, a
- * hexhex board's has 6, rotation-invariant. Shared by `(sites Corners)` and by
- * IsConnected's `Corners` / `SidesNoCorners` static region types.
- */
 export function boardCorners(ctx: Context): number[] {
   const traj = (ctx as unknown as { _trajectories?: { els?: ArrayLike<{ pt: { x: number; y: number } }> } })._trajectories;
   const els = traj?.els;
@@ -1490,57 +1418,19 @@ export function boardSides(ctx: Context, dirName: string): number[] {
     return out;
   }
 
-  // @java MeasureGraph.measureSides — sides are computed PER ELEMENT TYPE on
-  // that type's own perimeter ring: corners split the ring into runs, each
-  // run is classified by the discrete direction (16 buckets) of its centroid
-  // from the graph centroid, and every element of the INCLUSIVE run is on
-  // that side (corners belong to both adjacent runs). For CELL play the ring
-  // is the perimeter CELL ring — vertex-inheritance over-included cells that
-  // merely touch a side vertex (HexDame: cell 1 landed in SE, promoting a
-  // mid-board man; Java SE = {0,5,11,18,26}).
-  const trajForCells = t as unknown as {
-    kind?: string;
-    playType?: unknown;
-    core?: { topo?: { faceEls?: Array<{ id: number; vertices: Array<{ id: number }> }> } };
-  };
-  const playKind = trajForCells.kind ?? String(trajForCells.playType);
-  if (playKind === "Cell") {
-    const faceEls = trajForCells.core?.topo?.faceEls;
-    const vertexRings = perimeterVertexRings(t as never);
-    if (faceEls && vertexRings && vertexRings.length > 0) {
-      // Perimeter cells: faces touching the outer vertex ring; walk them
-      // cyclically by ring-adjacency (shared perimeter vertex order).
-      const ringIds = vertexRings[0]!.map((v) => v[2]);
-      const ringPos = new Map<number, number>();
-      ringIds.forEach((id, i) => ringPos.set(id, i));
-      // Order perimeter cells by the FIRST ring position among their vertices.
-      const perimCells: Array<{ id: number; pos: number; x: number; y: number }> = [];
-      for (const f of faceEls) {
-        let best = Infinity;
-        for (const v of f.vertices) {
-          const pp = ringPos.get(v.id);
-          if (pp !== undefined && pp < best) best = pp;
-        }
-        if (best !== Infinity) {
-          perimCells.push({ id: f.id, pos: best, x: t.xOf(f.id), y: t.yOf(f.id) });
-        }
-      }
-      if (perimCells.length >= 3) {
-        // Order the cells CYCLICALLY around the board centroid — the
-        // first-ring-vertex sort splits an edge across the ring's wrap
-        // point (HexDame's east edge came out ...2,0,1,5..., shifting the
-        // corner from cell 0 to cell 1). Angle sort is a true perimeter
-        // order for convex boards (hexhex, squares); Java walks adjacency.
-        let ccx = 0; let ccy = 0;
-        for (const c of perimCells) { ccx += c.x; ccy += c.y; }
-        ccx /= perimCells.length; ccy /= perimCells.length;
-        perimCells.sort((a, b) =>
-          Math.atan2(a.y - ccy, a.x - ccx) - Math.atan2(b.y - ccy, b.x - ccx));
-        const ring: [number, number, number][] = perimCells.map((c) => [c.x, c.y, c.id]);
-        return classifySideRuns([ring], dirName, t.numSites);
-      }
-    }
-  }
+  // @java MeasureGraph.measureSides + findSides + sideFromRun — sides are
+  // computed on the VERTEX perimeter ring: corners (MeasureGraph corner
+  // scoring) split the ring into runs, each run is classified by the
+  // discrete direction (16 buckets) of its centroid from the graph centroid
+  // (exact cardinals N/E/S/W only at buckets 4/0/8/12 — a point-up hexhex
+  // like Annuvin's (rotate 30 (hex 4)) gets its N side ONLY from the short
+  // apex run at the top corner), and every vertex of the INCLUSIVE run is on
+  // that side. Faces then inherit every side bit of any of their vertices
+  // (@java measureSides:781-788). An earlier CELL-ring shortcut classified
+  // runs on cell centroids, which merges the apex runs away (Annuvin lost
+  // Side N and started a piece short per side); the vertex-run path below
+  // reproduces Java for both HexDame (SE = {0,5,11,18,26}) and Annuvin
+  // (N = {36}).
   const rings = perimeterVertexRings(t as never);
   if (!rings || rings.length === 0) return [];
 

@@ -122,8 +122,21 @@ export class SetValuePlayer implements MovesFunction {
       eval: (ctx: Context) => {
         switch (role) {
           case "Mover": return ctx.state.mover;
-          case "Next": return (ctx.state as unknown as { next: number }).next ?? ctx.state.mover;
-          case "Prev": return (ctx.state as unknown as { prev: number }).prev ?? ctx.state.mover;
+          // @java context.state().next() — TS states carry next=0 until the
+          // cycle finalises, so a raw read resolved Next to player 0 inside
+          // deferred thens (Annuvin's capture bumped nobody's move points).
+          // Rotational fallback like NextFn.ts.
+          case "Next": {
+            const rawNext = (ctx.state as unknown as { next?: number }).next ?? 0;
+            if (rawNext > 0) return rawNext;
+            const np = (ctx.game as unknown as { numPlayers?: number }).numPlayers ?? 2;
+            return (ctx.state.mover % np) + 1;
+          }
+          case "Prev": {
+            const rawPrev = (ctx.state as unknown as { prev?: number }).prev ?? 0;
+            if (rawPrev > 0) return rawPrev;
+            return ctx.state.mover;
+          }
           default: {
             const m = role.match(/^P(\d+)$/);
             return m ? parseInt(m[1]!, 10) : ctx.state.mover;
