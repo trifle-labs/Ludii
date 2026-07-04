@@ -716,6 +716,82 @@ export class Graph {
     this.flist = this.flist
       .filter((f) => !drop.has(f.id))
       .map((f, i) => ({ id: i, vertices: f.vertices, cx: f.cx, cy: f.cy }));
+    // @java Graph.removeFace(fid, removeOrphans) trims edges orphaned by the
+    // removal, so Java's perimeter (traced over boundary EDGES) never runs
+    // through the removed area. TS keeps the edges (adjacency among surviving
+    // faces is unaffected) but must RETRACE the perimeter from the surviving
+    // faces — the stale ring bulged around the removed cells, corner scoring
+    // peaked on orphan vertices touching no face, and every side of Shafran
+    // Chess' clipped hexagon came back empty (the pawn's promotion-zone
+    // moveAgain then never fired).
+    this.recomputePerimeterFromFaces();
+  }
+
+  /**
+   * Retrace the board perimeter from the CURRENT face list: a boundary edge
+   * borders exactly one face; walk boundary edges into closed rings and keep
+   * every ring not contained in another (holes from interior removals are
+   * dropped, matching @java MeasureGraph.measurePerimeter's outer-cycle pick).
+   */
+  private recomputePerimeterFromFaces(): void {
+    if (this.flist.length === 0) return;
+    const edgeCount = new Map<string, number>();
+    const key = (a: number, b: number): string => (a < b ? `${a}:${b}` : `${b}:${a}`);
+    for (const f of this.flist) {
+      const vs = f.vertices;
+      for (let n = 0; n < vs.length; n += 1) {
+        const k = key(vs[n] as number, vs[(n + 1) % vs.length] as number);
+        edgeCount.set(k, (edgeCount.get(k) ?? 0) + 1);
+      }
+    }
+    // Boundary adjacency: vertex -> neighbours over single-face edges.
+    const nbors = new Map<number, number[]>();
+    for (const [k, c] of edgeCount) {
+      if (c !== 1) continue;
+      const [a, b] = k.split(":").map(Number) as [number, number];
+      (nbors.get(a) ?? nbors.set(a, []).get(a)!).push(b);
+      (nbors.get(b) ?? nbors.set(b, []).get(b)!).push(a);
+    }
+    const visited = new Set<string>();
+    const rings: number[][] = [];
+    for (const [start, startNbors] of nbors) {
+      for (const first of startNbors) {
+        if (visited.has(`${start}:${first}`)) continue;
+        const ring = [start];
+        let prev = start;
+        let cur = first;
+        visited.add(`${start}:${first}`);
+        let guard = nbors.size * 4;
+        while (cur !== start && guard-- > 0) {
+          ring.push(cur);
+          const nb = nbors.get(cur) ?? [];
+          const nxt = nb.find((n) => n !== prev && !visited.has(`${cur}:${n}`));
+          if (nxt === undefined) break;
+          visited.add(`${cur}:${nxt}`);
+          prev = cur;
+          cur = nxt;
+        }
+        if (cur === start && ring.length >= 3) rings.push(ring);
+      }
+    }
+    if (rings.length === 0) return;
+    // Drop rings contained in another ring (holes).
+    const poly = (ring: readonly number[]): [number, number][] =>
+      ring.map((vid) => {
+        const v = this.vlist[vid] as GVertex;
+        return [v.x, v.y] as [number, number];
+      });
+    const outer = rings.filter((ringA) => {
+      const a = this.vlist[ringA[0] as number] as GVertex;
+      for (const ringB of rings) {
+        if (ringB === ringA) continue;
+        if (pointInPolygon(a.x, a.y, poly(ringB))) return false;
+      }
+      return true;
+    });
+    if (outer.length === 0) return;
+    this.perimeterRings = outer.map((r) => [...r]);
+    this.perimeterVerts = [...new Set(outer.flat())];
   }
 
   /**
