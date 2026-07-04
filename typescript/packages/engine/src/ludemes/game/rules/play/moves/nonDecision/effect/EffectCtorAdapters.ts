@@ -80,7 +80,16 @@ export function toEffect(to: To | null): MovesFunction | null {
 }
 
 export function toApplyEffect(to: To | null): MovesFunction | null {
-  return to?.effectFn()?.effectMoves() ?? null;
+  const eff = to?.effectFn()?.effectMoves() ?? null;
+  // @java Apply.eval — the effect fires ONLY when the apply's if: condition
+  // holds. Unwrapping effectMoves() past the condition let Hexshogi's Keima
+  // (apply if:("IsEnemyAt" (to)) (add …)) emit its capture-add on plain
+  // non-capture leaps (a phantom ActionAdd(0>0) on every move).
+  const cond = to?.effectFn()?.condition() ?? null;
+  if (eff === null || cond === null) return eff;
+  return {
+    eval: (ctx: never) => (cond.eval(ctx) ? eff.eval(ctx) : []),
+  } as MovesFunction;
 }
 
 export function toApplyCondition(to: To | null): BooleanFunction | null {

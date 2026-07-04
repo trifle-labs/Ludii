@@ -49,6 +49,22 @@ export type SiteKind = "Cell" | "Vertex" | "Edge";
  * the count of faces (Cell) or vertices (Vertex); methods take a site index in
  * `[0, numSites)`.
  */
+
+/**
+ * @java DirectionFacing enumeration order (CompassDirection): N first, then
+ * clockwise through the 16 winds. Java's supportedOrthogonalDirections /
+ * supportedDirections lists follow this order, and SitesWalk's
+ * rotations:False anchor is list ENTRY 0 — Hexshogi's gold walks anchored on
+ * TS's discovery-order list (WNW first) and stepped the wrong way.
+ */
+const COMPASS_ENUM_ORDER = [
+  "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+  "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
+];
+function sortByCompassEnum(names: string[]): string[] {
+  return names.sort((a, b) => COMPASS_ENUM_ORDER.indexOf(a) - COMPASS_ENUM_ORDER.indexOf(b));
+}
+
 export class Trajectories {
   public readonly kind: SiteKind;
   public readonly numSites: number;
@@ -398,8 +414,8 @@ export class Trajectories {
         }
       }
     }
-    this.adjPlayDirNamesCache = out;
-    return out;
+    this.adjPlayDirNamesCache = sortByCompassEnum(out);
+    return this.adjPlayDirNamesCache;
   }
 
   private adjPlayDirNamesCache?: readonly string[];
@@ -424,8 +440,8 @@ export class Trajectories {
         }
       }
     }
-    this.orthoDirNamesCache = out;
-    return out;
+    this.orthoDirNamesCache = sortByCompassEnum(out);
+    return this.orthoDirNamesCache;
   }
 
   /**

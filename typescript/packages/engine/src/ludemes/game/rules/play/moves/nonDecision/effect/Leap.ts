@@ -13,7 +13,7 @@
 import type { Context } from "../../../../../../../context.js";
 import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
-import type { Then } from "./Then.js";
+import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 
@@ -153,13 +153,12 @@ export class Leap implements MovesFunction {
     ctx._evalTo = origTo;
     ctx._evalFrom = origFrom;
 
-    // @java Leap.java:171-173 — then clause
+    // @java Leap.java:171-173 — then clause. Java evaluates then() in the
+    // POST-MOVE context (Move.apply); baking it at generation read a STALE
+    // (last To): Hexshogi's Keima 9->21 emitted ActionPromote at the
+    // PREVIOUS move's landing square 55 and flipped the enemy king's owner.
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return moves.map(m => m.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      ));
+      return moves.map(m => applyPostStateThen(this.thenClause, ctx, m) as LudiiMove);
     }
 
     return moves;
