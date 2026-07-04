@@ -100,6 +100,29 @@ class Directions1to1FromTo implements DirectionsFunction {
     const to = this.toFn.eval(ctx);
     if (from < 0 || to < 0 || from === to) return [];
 
+    // @java Directions.java:411-446 — iterate the radials from `from`; the
+    // wind whose radial contains `to` IS the direction. Wind names are
+    // BOARD-frame (angle-binned): on Catapult's (rotate 45 (square 8)) the
+    // +7 grid diagonal is the board's W wind, so the grid (dr,dc) arithmetic
+    // below misnames it and every consumer ((sites Between (directions Cell
+    // from: to:)) — the capture filter) came back empty. The grid math stays
+    // as the fallback for boards without trajectories.
+    const traj = (ctx as unknown as {
+      _trajectories?: {
+        supportedAdjacentDirNamesPlay?: () => readonly string[];
+        radialsByName?: (site: number, dir: string) => number[][];
+      } | null;
+    })._trajectories;
+    if (traj?.supportedAdjacentDirNamesPlay && traj.radialsByName) {
+      for (const d of traj.supportedAdjacentDirNamesPlay()) {
+        for (const ray of traj.radialsByName(from, d)) {
+          for (let i = 1; i < ray.length; i += 1) {
+            if (ray[i] === to) return [d];
+          }
+        }
+      }
+    }
+
     const game = ctx.game as unknown as Game;
     const W = game.equipment?.board?.width ?? 0;
     if (W <= 0) return [];

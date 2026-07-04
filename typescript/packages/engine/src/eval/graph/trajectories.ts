@@ -375,6 +375,35 @@ export class Trajectories {
 
   private adjDirNamesCache?: readonly string[];
 
+  /**
+   * Distinct compass winds of the PLAY type's ADJACENT steps. @java
+   * Topology.supportedDirections(Adjacent, playType) — the ring relative
+   * directions (Forwards cones, FR/FL turns) resolve against; on Catapult's
+   * rotate-45 square it is 8 winds (orthos NW/NE/SW/SE + diagonals N/E/S/W).
+   */
+  public supportedAdjacentDirNamesPlay(): readonly string[] {
+    if (this.adjPlayDirNamesCache) return this.adjPlayDirNamesCache;
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (let id = 0; id < this.numSites; id += 1) {
+      const steps = this.core.stepsToTypeInDirection(
+        this.playType, id, this.playType, AbsoluteDirection.Adjacent,
+      );
+      for (const step of steps) {
+        for (const c of COMPASS_ABS) {
+          if (step.directions.has(c)) {
+            const nm = directionName(c);
+            if (!seen.has(nm)) { seen.add(nm); out.push(nm); }
+          }
+        }
+      }
+    }
+    this.adjPlayDirNamesCache = out;
+    return out;
+  }
+
+  private adjPlayDirNamesCache?: readonly string[];
+
   public supportedOrthogonalDirNames(): readonly string[] {
     if (this.orthoDirNamesCache) return this.orthoDirNamesCache;
     const out: string[] = [];

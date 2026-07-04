@@ -868,10 +868,30 @@ export class ArgCompiler {
         const a = f.eval(ctx);
         const b = t.eval(ctx);
         if (a < 0 || b < 0 || a === b) return [];
+        // @java Directions.java:411-446 — iterate the radials from `a`; the
+        // wind whose radial contains `b` IS the direction. Board-frame wind
+        // names survive rotation (Catapult's rotate-45 square names its +7
+        // grid diagonal "W"); the sign arithmetic below misnamed it NW and
+        // (sites Between (directions Cell from: to:)) came back empty,
+        // silently dropping the long catapult captures.
+        const evalTraj = (ctx as { _trajectories?: {
+          supportedAdjacentDirNamesPlay?: () => readonly string[];
+          radialsByName?: (site: number, dir: string) => number[][];
+          xOf?(s: number): number; yOf?(s: number): number;
+        } | null })._trajectories;
+        if (evalTraj?.supportedAdjacentDirNamesPlay && evalTraj.radialsByName) {
+          for (const d of evalTraj.supportedAdjacentDirNamesPlay()) {
+            for (const ray of evalTraj.radialsByName(a, d)) {
+              for (let i = 1; i < ray.length; i += 1) {
+                if (ray[i] === b) return [d];
+              }
+            }
+          }
+        }
         const board = (ctx as Ctx).game?.equipment?.board;
-        const traj = board?.trajectories;
+        const traj = board?.trajectories ?? evalTraj ?? null;
         let dx: number; let dy: number;
-        if (traj) {
+        if (traj && typeof traj.xOf === "function" && typeof traj.yOf === "function") {
           dx = traj.xOf(b) - traj.xOf(a);
           dy = traj.yOf(b) - traj.yOf(a);
         } else {

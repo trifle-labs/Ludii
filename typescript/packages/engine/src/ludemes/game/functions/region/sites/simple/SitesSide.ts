@@ -226,10 +226,23 @@ export class SitesPhase implements RegionFunction {
     this.phaseFn = phaseFn;
   }
   public eval(ctx: Context): number[] {
+    const phase = this.phaseFn.eval(ctx);
+    // @java SitesPhase reads Topology.phases(type) — the graph colouring
+    // computed by the phase BFS. The width-arithmetic fallback below assumes
+    // a plain rectangular indexing; on Catapult's (rotate 45 (square 8))
+    // board width is meaningless there, so it degraded to site%2 and the
+    // checkerboard start filter kept the wrong squares.
+    const topo = (ctx as unknown as {
+      topology?(): { phases?(t: string): Array<Array<{ index(): number }>> };
+    }).topology?.();
+    const playT = (ctx as unknown as { board?(): { defaultSite?(): string } }).board?.()?.defaultSite?.() ?? "Cell";
+    const lists = topo?.phases?.(playT);
+    if (lists && lists.some((l) => l && l.length > 0)) {
+      return (lists[phase] ?? []).map((e) => e.index());
+    }
     const game = ctx.game as unknown as Game;
     const W = game.equipment.board.width;
     const H = game.equipment.board.height;
-    const phase = this.phaseFn.eval(ctx);
     const sites: number[] = [];
     for (let row = 0; row < H; row++) {
       for (let col = 0; col < W; col++) {

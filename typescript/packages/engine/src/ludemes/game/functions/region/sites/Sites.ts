@@ -1711,12 +1711,36 @@ function resolveRoleIntFn(role: string): IntFunction {
   return constIntFn(-1);
 }
 
+const ABSOLUTE_DIR_NAMES = new Set([
+  "N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW",
+  "Adjacent","Orthogonal","Diagonal","OffDiagonal","All","Axial","Angled","SameLayer",
+  "Upward","Downward","U","D","In","Out","CW","CCW","Rotational",
+]);
+
 function directionNames(directions: unknown, ctx: Context & EvalScratch): string[] {
   // @java SitesAround.java:97 — (directions == null) ? AbsoluteDirection.Adjacent : directions.
   // Adjacent on square-board cells is 8-way; an Orthogonal default drops diagonal
   // neighbours (Gekitai's diagonal pushes).
   if (directions === null || directions === undefined) return ["Adjacent"];
-  if (typeof directions === "string") return [directions];
+  if (typeof directions === "string") {
+    // @java Directions.convertToAbsolute — a RELATIVE token (Forwards/FL/…)
+    // arriving as a bare enum string must resolve against the mover's facing
+    // and the board's supported winds. It previously passed through verbatim,
+    // so radialsByName(site, "Forwards") found nothing and Catapult's
+    // noncapturing (sites Direction … Forwards …) rays were always empty.
+    if (!ABSOLUTE_DIR_NAMES.has(directions)) {
+      const mover = ctx.state.mover;
+      const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+      const traj = (ctx as unknown as { _trajectories?: { supportedOrthogonalDirNames?: () => readonly string[]; supportedAdjacentDirNamesPlay?: () => readonly string[] } })._trajectories;
+      // @java the relative cone resolves over supported ADJACENT winds (8 on
+      // Catapult's rotated square: orthos + diagonals), not orthogonals only —
+      // the recorded Forwards step 11->20 rides the diagonal N wind.
+      const supported = traj?.supportedAdjacentDirNamesPlay?.() ?? traj?.supportedOrthogonalDirNames?.();
+      const rel = resolveRelativeDir(directions, mover, playerDirs, undefined, supported && supported.length > 0 ? supported : undefined);
+      if (rel !== null) return Array.isArray(rel) ? [...rel] : [rel];
+    }
+    return [directions];
+  }
   const fn = directions as { eval?: (ctx: Context & EvalScratch) => string[] };
   if (typeof fn.eval === "function") return fn.eval(ctx);
   return ["Adjacent"];
