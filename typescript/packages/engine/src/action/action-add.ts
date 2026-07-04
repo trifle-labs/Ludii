@@ -146,7 +146,13 @@ export class ActionAdd extends BaseAction {
     // countAt=0 and (count Cell at:site)/(is Occupied) read 0 (Azteka's reset
     // re-deals count:14 to a just-cleared hand; HandOccupied stayed false ->
     // only a pass). Guarded on >1 so flat single-piece adds are unchanged.
-    if (this.countValue > 1) {
+    // @java ActionAdd.java:292 setSite ALWAYS writes count — in a
+    // requiresCount() game a fresh single add must stamp countAt=1, or the
+    // pile bookkeeping drifts: Shogi's first capture-to-hand left count=0,
+    // the second add then accumulated 0+1=1, and the recorded SECOND pawn
+    // drop from the hand found it empty. Non-count games keep the >1 guard
+    // (flat single-piece adds stay countAt=0, Spinimax's re-adds unchanged).
+    if (this.countValue > 1 || (state.requiresCountGame && this.countValue >= 1)) {
       next = next.withCountAt(this.toIndex, this.countValue);
     }
     if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
