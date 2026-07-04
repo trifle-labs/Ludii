@@ -130,7 +130,7 @@ export class Step extends Effect {
    *  - A GROUP direction (Adjacent/Orthogonal/Diagonal/All) steps both halves of
    *    each axis (ray[1] and opposite[1]).
    */
-  private stepTargets(ctx: Context, cellRadials: CellFlatRadials): number[] {
+  private stepTargets(ctx: Context, cellRadials: CellFlatRadials, fromSiteArg?: number): number[] {
     const directions = this.dirnChoice.eval(ctx);
     const mover = ctx.state.mover;
     const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
@@ -139,7 +139,7 @@ export class Step extends Effect {
     const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
     let facingOverride: number | undefined;
     {
-      const fromSite = cellRadials.axes[0]?.ray[0] ?? -1;
+      const fromSite = fromSiteArg ?? cellRadials.axes[0]?.ray[0] ?? -1;
       this._rotFromSite = fromSite;
       const compFacing = (ctx.game as unknown as {
         equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } };
@@ -174,12 +174,31 @@ export class Step extends Effect {
     const GROUP_DIRS = new Set(["adjacent", "orthogonal", "diagonal", "all"]);
     const axesForDir = (dir: string): readonly { ray: readonly number[]; opposite: readonly number[] }[] => {
       if (traj) {
-        const distinct = traj.distinctRadialsByName((cellRadials.axes[0]?.ray[0] ?? -1), dir);
+        const site0 = fromSiteArg ?? cellRadials.axes[0]?.ray[0] ?? -1;
+        const distinct = traj.distinctRadialsByName(site0, dir);
         if (distinct.length > 0) {
-          return distinct.map((radial) => ({
+          const axes = distinct.map((radial) => ({
             ray: radial.ray,
             opposite: radial.opposites[0] ?? [radial.ray[0] ?? -1],
           }));
+          // @java Step.java:200 — Java resolves step targets with
+          // trajectories().steps(type, from, dir), never radial axes. On
+          // boundary faces some steps lie on no distinct axis (Mini
+          // Hexchess (rotate 90 (hex 4)) face 8: the WNW step to 14 is the
+          // one-sided opposite of an axis whose opposites list is empty),
+          // so the king lost three of seven All-steps. Union the uncovered
+          // steps as single-step rays.
+          if (site0 >= 0 && typeof traj.steps === "function") {
+            const covered = new Set<number>();
+            for (const a of axes) {
+              if (a.ray[1] !== undefined) covered.add(a.ray[1]);
+              if (a.opposite[1] !== undefined) covered.add(a.opposite[1]);
+            }
+            for (const n of traj.steps(site0, dir)) {
+              if (!covered.has(n)) axes.push({ ray: [site0, n], opposite: [site0] });
+            }
+          }
+          return axes;
         }
         if (!GROUP_DIRS.has(dir.toLowerCase())) return [];
         // GROUP dirs with empty distinct buckets (irregular graphs): use the
@@ -187,7 +206,6 @@ export class Step extends Effect {
         // (Solomon: [[10,17],[10,5],[10,7,4,0],[10,12,16,18]]). The flat
         // geometric path below links collinear NON-ADJACENT vertices
         // (Solomon phantom 2>9). Directed rays: no opposite re-push.
-        const site0 = cellRadials.axes[0]?.ray[0] ?? -1;
         if (site0 >= 0 && typeof (traj as { radialsByName?: unknown }).radialsByName === "function") {
           const chained = (traj as unknown as { radialsByName(s: number, d: string): number[][] }).radialsByName(site0, dir);
           // UNION with single-step relation rays: a degree-1 spoke that lies
@@ -278,7 +296,7 @@ export class Step extends Effect {
     // stepTargets resolves relative directions (FR/FL/Forward via mover facing) and
     // walks one step per direction (ray-only for a single heading; both halves of each
     // axis for a group direction like Adjacent/Orthogonal/Diagonal).
-    for (const to of this.stepTargets(ctx, cellRadials)) {
+    for (const to of this.stepTargets(ctx, cellRadials, from)) {
       (ctx as unknown as { _evalTo?: number })._evalTo = to;
       if (!this.rule.eval(ctx)) continue;
 
@@ -355,7 +373,7 @@ export class Step extends Effect {
 
       if (this.fromCondition !== null && !this.fromCondition.eval(ctx)) continue;
 
-      for (const to of this.stepTargets(ctx, cellRadials)) {
+      for (const to of this.stepTargets(ctx, cellRadials, from)) {
         (ctx as unknown as { _evalTo?: number })._evalTo = to;
         if (!this.rule.eval(ctx)) continue;
 

@@ -391,6 +391,35 @@ export class ActionMove extends BaseAction {
         srcArr.length > 0 ? state.valueAtLevel(this.fromIndex, topLevel) : state.valueAtSite(this.fromIndex);
       const fromRow: number[] = [];
       for (let l = 0; l < topLevel; l++) fromRow.push(state.valueAtLevel(this.fromIndex, l));
+      // @java ActionMoveTopPiece non-stacking apply — in a game without stack
+      // moves, landing on an occupied FLAT destination REPLACES the piece
+      // there (csTo.setStuff), it does not add a level. Wellisch Chess: a
+      // grabbed knight re-enters from hand onto the promoting pawn's square;
+      // the push made a ghost height-2 stack whose residue resurfaced when
+      // the knight later moved off. Genuine distinct-piece stacks (Tower of
+      // Hanoi) land on destinations with a materialised whatStacks column or
+      // a real multi-level stack and still push.
+      const destFlatOccupied =
+        !state.stackMovesGame &&
+        !state.stackingGame &&
+        popped.cellAt(this.toIndex).owner > 0 &&
+        (toWhatStack === undefined || toWhatStack.length === 0) &&
+        popped.stackSize(this.toIndex) <= 1;
+      if (destFlatOccupied) {
+        const prevOwner = popped.cellAt(this.toIndex).owner;
+        const prevWhat = popped.whatAtSite(this.toIndex);
+        let s3 = popped;
+        if (prevOwner > 0 && prevWhat > 0) s3 = s3.withOwnedRemoveAll(prevOwner, prevWhat, this.toIndex);
+        s3 = s3.withStackRemoveAll(this.toIndex);
+        s3 = s3.withCell(this.toIndex, topOwner);
+        s3 = s3.withWhatAt(this.toIndex, topWhat);
+        s3 = s3.withValueAt(this.toIndex, topValue !== 0 ? topValue : 0);
+        s3 = s3.withValueStackRow(this.fromIndex, fromRow);
+        s3 = s3.withValueStackRow(this.toIndex, []);
+        s3 = s3.withOwnedAdd(topOwner, topWhat, this.toIndex, 0);
+        if (srcSiteState !== 0) s3 = s3.withStateAt(this.toIndex, srcSiteState);
+        return this.maintainTracks(s3, topWhat);
+      }
       const toBase: number[] = [];
       for (let l = 0; l < popped.stackSize(this.toIndex); l++) toBase.push(popped.valueAtLevel(this.toIndex, l));
       let pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
@@ -524,9 +553,16 @@ export class ActionMove extends BaseAction {
       next = this.transferHidden(next, state, fromCount <= 1);
       return this.maintainTracks(next, movingWhat);
     }
+    // @java ActionMoveTopPiece.java:423-439 — a pile merge happens ONLY when
+    // the destination holds the SAME component (csTo.what(to) == what) and
+    // the count bumps only in requiresCount() games (else it resets to 1).
+    // A same-OWNER different-WHAT landing REPLACES the destination piece
+    // (owned().remove + setSite(who, what, 1)). The old same-owner disjunct
+    // merged Wellisch's promoted knight onto its own pawn as a count-2 pile,
+    // and the ghost copy resurfaced when the knight later moved off.
     if (
       this.fromIndex !== this.toIndex &&
-      ((movingOwner !== 0 && state.who(this.toIndex) === movingOwner) ||
+      ((state.stackingGame && movingOwner !== 0 && state.who(this.toIndex) === movingOwner) ||
         ((state.whatAtSite(this.toIndex) === movingWhat ||
           state.whatAtSite(this.toIndex) === 0) &&
           state.countAtSite(this.toIndex) > 0))
@@ -535,7 +571,11 @@ export class ActionMove extends BaseAction {
       next = next.withCell(this.toIndex, movingOwner);
       next = next.withWhatAt(this.toIndex, movingWhat);
       next = this.applyDestAttrs(next, destState, destRotation, destValue);
-      next = next.withCountAt(this.toIndex, destHeight + 1);
+      // @java requiresCount() games bump the pile; stacking games route to
+      // the stacking applies in Java but TS lands some same-owner stack
+      // merges here (Agilidade), where the height must also grow. Flat
+      // piece games reset to 1 (the replace).
+      next = next.withCountAt(this.toIndex, state.requiresCountGame || state.stackingGame ? destHeight + 1 : 1);
       next = this.transferHidden(next, state, false);
       return this.maintainTracks(next, movingWhat);
     }

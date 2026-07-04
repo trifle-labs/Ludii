@@ -455,6 +455,13 @@ export function isSingleDir(dirName: string): boolean {
   switch (dirName.toUpperCase()) {
     case "N": case "S": case "E": case "W":
     case "NE": case "NW": case "SE": case "SW":
+    // 16-wind intercardinals are single headings too — hex boards bin steps
+    // to NNE/SSW/…; treating them as groups pushed each axis' OPPOSITE ray,
+    // so Mini Hexchess' pawn capture (directions {SSW SSE}) also "attacked"
+    // the NNW/NNE squares behind it and the check filter culled legal king
+    // steps.
+    case "NNE": case "ENE": case "ESE": case "SSE":
+    case "SSW": case "WSW": case "WNW": case "NNW":
     case "NORTH": case "SOUTH": case "EAST": case "WEST":
     case "NORTHEAST": case "NORTHWEST": case "SOUTHEAST": case "SOUTHWEST":
       return true;
