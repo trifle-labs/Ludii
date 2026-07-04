@@ -1001,10 +1001,19 @@ export class ArgCompiler {
         // P2 tower at site 0 lost its Forwards=N step to site 1).
         const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
         let facingOverride: number | undefined;
+        // @java Directions.convertToAbsolute(type, element, component,
+        // NEWDIRECTION, …) — ForEachDirection passes the heading of the step
+        // that led here so nested relative dirs ({FR FL} of:All, Xiangqi's
+        // horse leg) bend off THAT step, not the player facing. TS threads it
+        // through a context scratch since the fn interface is eval(ctx)-only.
+        {
+          const dirOverride = (ctx as unknown as { _dirFacingOverride?: number })._dirFacingOverride;
+          if (typeof dirOverride === "number") facingOverride = dirOverride;
+        }
         {
           const from = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
           const compFacing = (c.game as unknown as { equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } } }).equipment?.board?.componentFacing;
-          if (compFacing && from >= 0) {
+          if (facingOverride === undefined && compFacing && from >= 0) {
             const what = (c.state as unknown as { what?: (s: number) => number }).what?.(from) ?? 0;
             const tok = what > 0 ? compFacing[what] : undefined;
             if (tok != null && tok in COMPASS8) facingOverride = COMPASS8[tok];

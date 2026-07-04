@@ -206,12 +206,25 @@ export class ForEachDirection extends Effect {
           steps?: (t: string | null, f: number, t2: string | null, d: string) => Array<{ to(): { id(): number } }>;
           step?: (site: number, dir: string) => number;
         };
+        // The ENGINE trajectories expose steps(site, dir): number[] — calling
+        // them with Java's 4-arg (type, from, type, dir) signature passed
+        // 'Cell' as the site and the derivation always missed, so the inner
+        // relative dirs ({FR FL} of:All) fell back to the PLAYER facing and
+        // Xiangqi's horse only ever bent off its south leg.
+        const engineTraj = (ctxAny as { _trajectories?: { steps?: (site: number, dir: string) => number[] } })._trajectories;
         outer:
         for (const direction of supported) {
           const absoluteDirection = typeof direction === "string" ? direction : direction.toAbsolute();
-          if (typeof trajForStep.steps === "function") {
+          if (engineTraj && typeof engineTraj.steps === "function") {
+            for (const n of engineTraj.steps(contextFrom, absoluteDirection)) {
+              if (n === contextTo) {
+                newDirection = absoluteDirection;
+                break outer;
+              }
+            }
+          } else if (typeof trajForStep.steps === "function") {
             for (const step of trajForStep.steps(realType, contextFrom, realType, absoluteDirection)) {
-              if (step.to().id() === contextTo) {
+              if (typeof step === "object" && step !== null && typeof step.to === "function" && step.to().id() === contextTo) {
                 newDirection = absoluteDirection;
                 break outer;
               }
@@ -230,7 +243,16 @@ export class ForEachDirection extends Effect {
       // — RELATIVE tokens (FR/FL/Forward…) resolve against newDirection, the
       // heading of the step that led here (Janggi's Ma: orthogonal step, then
       // {FR FL} of:All relative to that step's direction).
+      // @java dirnChoice.convertToAbsolute(realType, fromV, component,
+      // newDirection, null, ctx) — thread the derived heading to the compiled
+      // directions resolver via context scratch (see ArgCompiler resolver).
+      const COMPASS8Pre: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+      const preFacing = newDirection !== null && newDirection in COMPASS8Pre ? COMPASS8Pre[newDirection] : undefined;
+      const scratchCtx = context as unknown as { _dirFacingOverride?: number };
+      const origOverride = scratchCtx._dirFacingOverride;
+      if (preFacing !== undefined) scratchCtx._dirFacingOverride = preFacing;
       const rawDirections = this.dirnChoice.eval(context);
+      scratchCtx._dirFacingOverride = origOverride;
       const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
       const mover = context.state.mover;
       const playerDirs = (context.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
