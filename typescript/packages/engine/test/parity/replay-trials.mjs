@@ -886,6 +886,18 @@ function replayTrial(trialPath) {
   let replayFrom = 0;
   if (numInitialPlacementMoves > 0) {
     replayFrom = numInitialPlacementMoves;
+  } else if ((game.numPlayers ?? 2) === 0) {
+    // 0-player simulation (Game of Life): EVERY move has mover=0, so the
+    // contiguous-prefix heuristic would skip the entire trial. Structural
+    // placement moves are single-Add; the simulation steps are compound.
+    while (
+      replayFrom < recMoves.length &&
+      recMoves[replayFrom].actions.length === 1 &&
+      recMoves[replayFrom].actions[0].actionType === 'Add' &&
+      !recMoves[replayFrom].actions[0].fields?.has?.('level')
+    ) {
+      replayFrom++;
+    }
   } else {
     // Count contiguous mover=0 moves at the start
     while (replayFrom < recMoves.length && recMoves[replayFrom].mover === 0) {

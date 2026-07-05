@@ -1058,7 +1058,10 @@ export class Game implements Game {
       const endNextOverride = endSetNext ? endSetNext.who() : 0;
       const endImpliedNext = appliedMove.moveAgain
         ? newState.mover
-        : (endNextOverride > 0 ? endNextOverride : (newState.mover % this.numPlayers) + 1);
+        : (endNextOverride > 0 ? endNextOverride
+          // @java Game.java:3193-3206 — mover rotation is skipped when
+          // !context.active(); x % 0 is NaN for 0-player simulations.
+          : this.numPlayers > 0 ? (newState.mover % this.numPlayers) + 1 : newState.mover);
       endEvalState = newState.withNext(endImpliedNext);
     }
     const evalCtx = new Context(this, endEvalState, evalTrial, context.rng) as Context1to1;
@@ -1114,7 +1117,10 @@ export class Game implements Game {
     if (!over) {
       const numTurn = (newState as unknown as { numTurn?: number }).numTurn ?? 1;
       const numMoves = evalTrial.moves.length;
-      if (numTurn >= 1250 * this.numPlayers || numMoves >= 10000) {
+      // @java Game.java:3076 gates checkMaxTurns on context.active() — a
+      // 0-player simulation (Game of Life) is never "active", so the turn
+      // limit must not fire (1250*0=0 ended the sim on its first step).
+      if ((this.numPlayers > 0 && numTurn >= 1250 * this.numPlayers) || numMoves >= 10000) {
         over = true;
         winner = 0; // draw
       }
@@ -1197,7 +1203,7 @@ export class Game implements Game {
       } else if (dynamicNextOverride > 0) {
         nextMover = dynamicNextOverride;
       } else {
-        nextMover = (newState.mover % this.numPlayers) + 1;
+        nextMover = this.numPlayers > 0 ? (newState.mover % this.numPlayers) + 1 : newState.mover;
       }
       // @java Game.java:3200 — state.setPrev(mover) before mover advances.
       // (value Player Prev) / MaxMoves' prev==mover replay check read this.
