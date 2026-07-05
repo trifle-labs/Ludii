@@ -10,6 +10,7 @@
  *          the source site is returned.
  */
 
+import { resolveRelativeDir } from "../../../util/directions/RelativeDirection.js";
 import type { Context } from "../../../../../context.js";
 import { BaseIntFunction } from "../BaseIntFunction.js";
 import type { JavaIntFunction } from "../IntFunction.js";
@@ -254,6 +255,23 @@ export class Ahead extends BaseIntFunction {
     }
 
     if (directionName === null) return site;
+
+    // @java dirn.convertToAbsolute — a RELATIVE token (Forward/Backward/FL/…)
+    // must resolve against the mover's facing before the radial lookup;
+    // passed through verbatim, radialsByName(site, "Forward") found nothing
+    // and Currierspiel's forced Opening double-steps degraded to from==to.
+    {
+      const relResolved = resolveRelativeDir(
+        directionName,
+        context.state.mover,
+        (context.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs,
+        undefined,
+        (context as unknown as { _trajectories?: { supportedAdjacentDirNamesPlay?: () => readonly string[] } })._trajectories?.supportedAdjacentDirNamesPlay?.(),
+      );
+      if (relResolved !== null && relResolved !== undefined) {
+        directionName = Array.isArray(relResolved) ? (relResolved[0] ?? directionName) : relResolved;
+      }
+    }
 
     // Java: walk radials from site in the found direction for `distance` steps
     const engTraj2 = (context as unknown as { _trajectories?: { radialsByName?(site: number, dir: string): number[][] } })._trajectories;
