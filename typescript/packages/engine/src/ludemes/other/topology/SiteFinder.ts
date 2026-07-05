@@ -43,6 +43,20 @@ export class SiteFinder {
     coord: string,
     type: SiteType | null,
   ): TopologyElement | null {
+    // @java SiteFinder.find — label-driven on the board's (default) type.
+    // Topology.getElement carries the full MeasureGraph clustered-label
+    // computation; the plain element.label() scan below misses labels that
+    // only exist via clustering (Wellisch Chess' hex coords: the "King"
+    // castling map lost D1/K9 and Castle_PreCheck could never hold).
+    const topo = board.topology() as {
+      getElement?(c: string, t: SiteType | null): TopologyElement | null;
+      cells(): TopologyElement[];
+      vertices(): TopologyElement[];
+    };
+    if (typeof topo.getElement === "function") {
+      const el = topo.getElement(coord, type);
+      if (el !== null) return el;
+    }
     if (
       (type === null && board.defaultSite() === "Cell") ||
       (type !== null && type === "Cell")
