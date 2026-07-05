@@ -61,7 +61,7 @@ export class SitesLineOfSight extends BaseRegionFunction {
 		typeLoS: LineOfSightType | null,
 		typeLoc: string | null,
 		loc: IntFunction,
-		directionName: string,
+		directionName: string | null,
 	) {
 		super();
 		// @java this.typeLoS = (typeLoS == null) ? LineOfSightType.Piece : typeLoS
@@ -69,7 +69,14 @@ export class SitesLineOfSight extends BaseRegionFunction {
 		this.typeLoc = typeLoc;
 		this.loc = loc;
 		this.siteType = typeLoc;
-		this.directionName = directionName;
+		// @java dirnChoice = (directions != null) ? … : new Directions(
+		// AbsoluteDirection.Adjacent, null). The reflection compiler calls this
+		// ctor DIRECTLY with a null directions slot ((sites LineOfSight Piece
+		// at:X) has no dirs arg); radialsByName(site, null) returned [] so LoS
+		// was empty game-wide — Stargazers' every sees-check failed and a
+		// phantom "assured" placement outlived Java's game end.
+		this.directionName = typeof directionName === "string" ? directionName
+			: (directionName as { name?: string } | null)?.name ?? "Adjacent";
 	}
 
 	/**
