@@ -229,6 +229,17 @@ export class SetRotation implements MovesFunction {
    * @java context.containerState(context.containerId()[site]).rotation(site, type)
    */
   private _currentRotation(ctx: Context, site: number): number {
+    // @java context.containerState(cid).rotation(site, type) — the engine
+    // state keeps rotations in the flat rotationAt channel. The container
+    // path below is absent on engine contexts, so this always returned 0 and
+    // the previous/next candidates were forever 0±1 — Ploy's recorded
+    // rotations (current±1 of the REAL facing) never matched a candidate,
+    // the harness fell back to an arbitrary pick, and every piece's facing
+    // drifted within a few plies.
+    const rotArr = (ctx.state as unknown as { rotationAt?: readonly number[] }).rotationAt;
+    if (rotArr && rotArr[site] !== undefined) return rotArr[site] ?? 0;
+    const rotFn = (ctx.state as unknown as { rotationAtSite?: (s: number) => number }).rotationAtSite;
+    if (typeof rotFn === "function") return rotFn.call(ctx.state, site);
     const ctxAny = ctx as unknown as {
       containerId?: number[];
       containerState?: (id: number) => { rotation?: (site: number, type: SiteType | null) => number };
