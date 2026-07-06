@@ -69,6 +69,10 @@ export class Where extends BaseIntFunction {
     at: unknown = null,
     fromTop: unknown = null,
   ): WhereLevel {
+    // @java overload resolution — the WhereLevelType discriminant selects
+    // this clause; without the gate the site-less (where (id "King" P)) form
+    // bound here too.
+    if ((_whereType as unknown as string) !== "Level") return null as unknown as WhereLevel;
     // Same byName/byWhat overload guard as constructName (reject non-string).
     if (typeof namePiece !== "string") return null as unknown as WhereLevel;
     return WhereLevel.byName(namePiece, wherePlayerFn(indexPlayer, role), state as never, type as never, at as never, wrapBool(fromTop));
@@ -82,6 +86,13 @@ export class Where extends BaseIntFunction {
     at: unknown = null,
     fromTop: unknown = null,
   ): WhereLevel {
+    // @java overload resolution — the WhereLevelType discriminant selects this
+    // clause. Without the gate, (where (id "King_noCross" P3)) — the SITE-less
+    // WhereSite form — bound here with the id-fn in the what slot and at=null;
+    // WhereLevel.eval then threw on the null siteFn, which silently killed the
+    // whole (then …) chain it sat in (Chatrang's RemovePiecesIfCheckmate never
+    // ran, checkmated armies stayed on the board, the team end never fired).
+    if ((_whereType as unknown as string) !== "Level") return null as unknown as WhereLevel;
     return WhereLevel.byWhat(what as never, type as never, at as never, wrapBool(fromTop));
   }
 
