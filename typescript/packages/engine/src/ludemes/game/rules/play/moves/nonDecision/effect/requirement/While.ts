@@ -85,6 +85,17 @@ export class While implements MovesFunction {
         // @java Move.apply — simulated application includes then() consequences
         const nextState = applyMoveWithThens(liveCtx, m);
         liveCtx = new Context(ctx.game, nextState, ctx.trial, ctx.rng);
+        // Carry the board topology scratch to the fresh context (same fix as
+        // Do.ts): without it the SECOND iteration's conditions evaluate with
+        // no _trajectories — Stargazers' unmark cascade saw empty
+        // line-of-sight and stopped one round early, leaving live pieces
+        // marked dead and the by-over end never firing.
+        {
+          const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
+          const aug = liveCtx as Context & { _radials?: unknown; _trajectories?: unknown };
+          aug._radials = src._radials;
+          aug._trajectories = src._trajectories;
+        }
         result.push(m);
       }
       numIteration++;
