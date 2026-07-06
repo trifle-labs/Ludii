@@ -139,7 +139,7 @@ export function evalDeferredThens(
       } catch (e) {
         // Java never throws here; a throw means a port gap in the
         // consequence subtree. Surface under LUDII_DEBUG_THEN.
-        if (process.env["LUDII_DEBUG_THEN"]) console.error("[then threw]", (e as Error).stack?.split("\n").slice(0, 4).join(" | "));
+        if (process.env["LUDII_DEBUG_THEN"]) console.error("[then threw]", (globalThis as { __parityGame?: string }).__parityGame ?? "?", "|", (e as Error).stack?.split("\n").slice(0, 3).join(" | "));
         continue;
       }
       if (process.env["TRACE_THEN"]) console.error("[then] depth", depth, "lastTo", m.to(), "gen:", (gen as object)?.constructor?.name, "->", thenMoves.map(t => t.actions.map(a => a.actionType()).join("+") + (t.moveAgain ? "(again)" : "")).join(" | ") || "(none)");

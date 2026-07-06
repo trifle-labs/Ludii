@@ -856,6 +856,7 @@ function replayTrial(trialPath) {
   // it in. TS start() then reproduces the exact placed sites; deterministic
   // starts ignore the rng and leave its state untouched for the dice path below.
   // @java org.apache.commons.rng.core.source64.SplitMix64 (Apache Commons RNG)
+  globalThis.__parityGame = gameBase;
   const rngAdapter = makeSplitMix64Adapter(trial.rngState);
 
   // Start

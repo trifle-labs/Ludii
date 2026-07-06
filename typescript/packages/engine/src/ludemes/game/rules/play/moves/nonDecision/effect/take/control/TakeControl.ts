@@ -120,21 +120,28 @@ export class TakeControl implements MovesFunction {
       newOwner = this._resolveRole(this.newOwnerRole, ctx);
     }
 
-    // Collect owned sites.
+    // Collect owned sites. @java context.state().owned().sites(pid) — the TS
+    // State has no callable owned registry here; scan the flat owner channel
+    // (equivalent for owner-holding sites). The old owned?.sites call threw
+    // ("not a function") and the swallowed error killed the enclosing then
+    // (Mini Wars' capture-conversion never ran).
     const ownedSites: number[] = [];
-    const stateAny = ctx.state as unknown as {
-      owned?: { sites: (pid: number) => number[] };
+    const ownedOf = (pid: number): number[] => {
+      const st = ctx.state as unknown as { cells: readonly number[]; whats: readonly number[] };
+      const out: number[] = [];
+      for (let s2 = 0; s2 < st.cells.length; s2++) {
+        if ((st.cells[s2] ?? 0) === pid && (st.whats[s2] ?? 0) !== 0) out.push(s2);
+      }
+      return out;
     };
     const numPlayers = this._numPlayers(ctx);
 
     if (this.ownerRole === "All") {
       for (let pid = 0; pid <= numPlayers; pid++) {
-        const sites = stateAny.owned?.sites(pid) ?? [];
-        ownedSites.push(...sites);
+        ownedSites.push(...ownedOf(pid));
       }
     } else {
-      const sites = stateAny.owned?.sites(owner) ?? [];
-      ownedSites.push(...sites);
+      ownedSites.push(...ownedOf(owner));
     }
 
     // Filter to region if specified.

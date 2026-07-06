@@ -208,8 +208,11 @@ export class Sow extends Effect {
     const owner = (this.ownerFn === null) ? -1 : this.ownerFn.eval(ctx);
     let track: Track | null = null;
 
-    const tracks = this.preComputedTracks.length > 0
-      ? this.preComputedTracks
+    // preComputedTracks can arrive null via the reflection ctor path
+    // (Tchoukaillon's then-sow threw on .length and the swallowed error
+    // killed its consequence chain).
+    const tracks = (this.preComputedTracks?.length ?? 0) > 0
+      ? this.preComputedTracks!
       : boardTracks(ctx);
 
     for (const t of tracks) {

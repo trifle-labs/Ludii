@@ -30,8 +30,12 @@ export class Pot extends BaseIntFunction {
    * Returns the pot value from the game state.
    */
   public override eval(context: Context): number {
-    // Java: return context.state().pot();
-    return (context.state as unknown as { pot?: () => number }).pot?.() ?? 0;
+    // @java context.state().pot() — the TS State exposes pot as a NUMBER
+    // property; calling it threw ("pot is not a function") and the swallowed
+    // error killed the enclosing then (Acedrex de los Cuatros Tiempos'
+    // bet-settling chain).
+    const potVal = (context.state as unknown as { pot?: number | (() => number) }).pot;
+    return typeof potVal === "function" ? potVal() : (potVal ?? 0);
   }
 
   /** @java Pot.isStatic() */
