@@ -59,6 +59,7 @@ export class CountPieces implements IntFunction {
    */
   public eval(ctx: Context): number {
     const cells = ctx.state.cells;
+    const whatsArr = (ctx.state as unknown as { whats?: readonly number[] }).whats;
     const stacks = ctx.state.stacks;
     const countAt = ctx.state.countAt;
     const g = ctx.game as unknown as Game;
@@ -103,13 +104,18 @@ export class CountPieces implements IntFunction {
           } else {
             const c = countAt[i] ?? 0;
             if (c > 0) total += c;
-            else if ((cells[i] ?? 0) !== 0) total++;
+            // @java CountPieces All counts by COMPONENT presence (what != 0),
+            // not owner: Affinage's stones are NEUTRAL (owner 0, colour in the
+            // site state), so the owner test skipped every piece and the
+            // odd-neutral-territory parity read 0 == 0 everywhere — phantom
+            // flip moves kept (no Moves Next) false and the game never ended.
+            else if (((whatsArr?.[i] ?? 0) !== 0) || (cells[i] ?? 0) !== 0) total++;
           }
         } else {
           // Hand slot: countAt[i] pieces
           const c = countAt[i] ?? 0;
           if (c > 0) total += c;
-          else if ((cells[i] ?? 0) !== 0) total++;
+          else if (((whatsArr?.[i] ?? 0) !== 0) || (cells[i] ?? 0) !== 0) total++;
         }
       }
       ctx._evalSite = origSite;
