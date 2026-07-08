@@ -16,6 +16,7 @@ import type { Context } from "../../../../../../../context.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
 import type { Then } from "./Then.js";
+import { applyPostStateThen } from "./Then.js";
 import type { SiteType } from "../../../../../../../action/site-type.js";
 import type { From } from "../../../../../util/moves/From.js";
 import type { Between } from "../../../../../util/moves/Between.js";
@@ -305,13 +306,11 @@ export class Enclose implements MovesFunction {
     ctx._evalTo = origTo;
     ctx._evalBetween = origBetween;
 
-    // @java Enclose.java:311-313 — then clause
+    // @java Enclose.java:311-313 — then clause. Move.apply evaluates then()
+    // AFTER the action, and the consequence reads the post-enclose board (the
+    // captured pieces), so defer instead of baking the pre-move eval.
     if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return allMoves.map(m => m.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      ));
+      return allMoves.map(m => applyPostStateThen(this.thenClause, ctx, m));
     }
 
     return allMoves;

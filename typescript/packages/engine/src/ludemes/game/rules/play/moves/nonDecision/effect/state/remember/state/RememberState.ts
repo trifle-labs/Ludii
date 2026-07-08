@@ -18,6 +18,7 @@ import type { Move } from "../../../../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../../../../base.js";
 import { ActionStoreStateInContext } from "../../../../../../../../../../action/action-store-state.js";
 import { Move as LudiiMove } from "../../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../../Then.js";
 
 /**
  * @java game/rules/play/moves/nonDecision/effect/state/remember/state/RememberState.java
@@ -65,25 +66,8 @@ export class RememberState implements MovesFunction {
       actions: [action],
     });
 
-    const thenList: Move[] = this.thenMoves != null
-      ? this.thenMoves.eval(ctx)
-      : [];
-
-    if (thenList.length === 0) {
-      return [move];
-    }
-
-    // Java parity: append then().moves() to each generated move.
-    const withThen = new LudiiMove({
-      id: "rememberState",
-      label: "rememberState",
-      siteIndices: [],
-      mover,
-      placedOwner: mover,
-      actions: [action],
-      then: thenList,
-    });
-    return [withThen];
+    // @java Move.apply evaluates then() AFTER the action — defer, don't bake.
+    return [applyPostStateThen(this.thenMoves, ctx, move)];
   }
 
   /** @java RememberState.isStatic() → true */

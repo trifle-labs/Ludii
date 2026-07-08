@@ -16,6 +16,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetPot } from "../../../../../../../../../action/action-set-pot.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../Then.js";
 
 /** Java parity: Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
@@ -72,21 +73,8 @@ export class SetPot implements MovesFunction {
       actions: [action],
     });
 
-    const thenList: Move[] = this.thenMoves != null ? this.thenMoves.eval(ctx) : [];
-    if (thenList.length === 0) {
-      return [move];
-    }
-
-    const withThen = new LudiiMove({
-      id: "setPot",
-      label: `setPot:${potValue}`,
-      siteIndices: [],
-      mover,
-      placedOwner: mover,
-      actions: [action],
-      then: thenList,
-    });
-    return [withThen];
+    // @java Move.apply evaluates then() AFTER the action — defer, don't bake.
+    return [applyPostStateThen(this.thenMoves, ctx, move)];
   }
 
   /** @java SetPot.isStatic() → false */

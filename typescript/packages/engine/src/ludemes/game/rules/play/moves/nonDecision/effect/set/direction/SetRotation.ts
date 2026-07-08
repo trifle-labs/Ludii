@@ -14,6 +14,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntFunction, BooleanFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetRotation } from "../../../../../../../../../action/action-set-rotation.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../Then.js";
 import type { SiteType } from "../../../../../../../../../action/site-type.js";
 
 /** Java parity: Constants.OFF = -1 */
@@ -157,24 +158,11 @@ export class SetRotation implements MovesFunction {
       }
     }
 
-    // @java SetRotation.java:158-165 — attach then consequences; store MovesLudeme
+    // @java SetRotation.java:158-165 — attach then consequences. Move.apply
+    // evaluates then() AFTER the action, so defer instead of baking against the
+    // pre-move state.
     if (this.thenMoves != null && moves.length > 0) {
-      const thenList = this.thenMoves.eval(ctx);
-      if (thenList.length > 0) {
-        return moves.map(m => new LudiiMove({
-          id: m.id,
-          label: m.label,
-          siteIndices: m.siteIndices,
-          mover: m.mover,
-          placedOwner: m.placedOwner,
-          actions: m.actions,
-          then: thenList,
-          deferredThens: m.deferredThens,
-          moveAgain: m.moveAgain,
-          fromNonDecisionSite: m.fromNonDecisionSite,
-          toNonDecisionSite: m.toNonDecisionSite,
-        }));
-      }
+      return moves.map(m => applyPostStateThen(this.thenMoves, ctx, m));
     }
 
     return moves;

@@ -9,6 +9,7 @@ import type { Context } from "../../../../../../../../../../context.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../../base.js";
 import type { Move } from "../../../../../../../../../../move.js";
 import type { Then } from "../../../Then.js";
+import { applyPostStateThen } from "../../../Then.js";
 import { ActionMove } from "../../../../../../../../../../action/action-move.js";
 import { ActionAdd } from "../../../../../../../../../../action/action-add.js";
 import { Move as LudiiMove } from "../../../../../../../../../../move.js";
@@ -72,15 +73,8 @@ export class SwapPieces implements MovesFunction {
       toNonDecisionSite: locB,
     });
 
-    // @java SwapPieces.java:91-93 — then clause
-    if (this.thenClause != null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return [move.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      )];
-    }
-
-    return [move];
+    // @java SwapPieces.java:91-93 — then clause. Move.apply evaluates then()
+    // AFTER the action, so defer instead of baking the pre-move eval.
+    return [applyPostStateThen(this.thenClause, ctx, move)];
   }
 }

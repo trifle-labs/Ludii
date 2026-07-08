@@ -21,6 +21,7 @@ import { ActionSetState } from "../../../../../../../../../action/action-set-sta
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
 import type { SiteType } from "../../../../../../../../../action/site-type.js";
 import type { Then } from "../../Then.js";
+import { applyPostStateThen } from "../../Then.js";
 
 /** Java parity: Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
@@ -108,21 +109,7 @@ export class SetState implements MovesFunction {
       actions: [action],
     });
 
-    if (this.thenClause != null) {
-      const thenList = this.thenClause.eval(ctx);
-      if (thenList.length > 0) {
-        return [new LudiiMove({
-          id: `setstate:${mover}:${site}:${stateValue}`,
-          label: `SetState(site=${site}, state=${stateValue})`,
-          siteIndices: [site],
-          mover,
-          placedOwner: mover,
-          actions: [action],
-          then: thenList,
-        })];
-      }
-    }
-
-    return [move];
+    // @java Move.apply evaluates then() AFTER the action — defer, don't bake.
+    return [applyPostStateThen(this.thenClause, ctx, move)];
   }
 }

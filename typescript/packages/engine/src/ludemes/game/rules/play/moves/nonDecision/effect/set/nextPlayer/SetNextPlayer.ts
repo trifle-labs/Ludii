@@ -12,6 +12,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntArrayFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetNextPlayer } from "../../../../../../../../../action/action-set-next-player.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../Then.js";
 import { IntArrayConstant } from "../../../../../../../../game/functions/intArray/IntArrayConstant.js";
 import type { Player } from "../../../../../../../../game/util/moves/Player.js";
 
@@ -106,8 +107,6 @@ export class SetNextPlayer implements MovesFunction {
       ? numPlayers.players().count()
       : (numPlayers.numPlayers ?? Number.MAX_SAFE_INTEGER);
 
-    const thenList: Move[] = this.thenMoves != null ? this.thenMoves.eval(ctx) : [];
-
     const moves: Move[] = [];
 
     for (const nextPlayerId of nextPlayerIds) {
@@ -138,22 +137,9 @@ export class SetNextPlayer implements MovesFunction {
         toSite: OFF,
       });
 
-      // @java SetNextPlayer.java:92 — moves.moves().add(move)
-      if (thenList.length === 0) {
-        moves.push(move);
-      } else {
-        moves.push(new LudiiMove({
-          id: "setNextPlayer",
-          label: `setNextPlayer:${nextPlayerId}`,
-          siteIndices: [],
-          mover,
-          placedOwner: mover,
-          actions: [actionSetNextPlayer],
-          fromSite: OFF,
-          toSite: OFF,
-          then: thenList,
-        }));
-      }
+      // @java SetNextPlayer.java:92 — moves.moves().add(move). Move.apply
+      // evaluates then() AFTER the action, so defer instead of baking.
+      moves.push(applyPostStateThen(this.thenMoves, ctx, move));
     }
 
     // @java SetNextPlayer.java:95-97 — setMovesLudeme(this) on each move

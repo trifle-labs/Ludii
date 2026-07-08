@@ -18,6 +18,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionAddPlayerToTeam } from "../../../../../../../../../action/action-add-player-to-team.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../Then.js";
 
 /** @java game/types/play/RoleType.java — minimal subset */
 export type RoleType = string;
@@ -99,23 +100,8 @@ export class SetTeam implements MovesFunction {
       toSite: OFF,
     });
 
-    const thenList: Move[] = this.thenMoves != null ? this.thenMoves.eval(ctx) : [];
-    if (thenList.length === 0) {
-      return [move];
-    }
-
-    const withThen = new LudiiMove({
-      id: "setTeam",
-      label: `setTeam:${teamId}`,
-      siteIndices: [],
-      mover,
-      placedOwner: mover,
-      actions,
-      then: thenList,
-      fromSite: OFF,
-      toSite: OFF,
-    });
-    return [withThen];
+    // @java Move.apply evaluates then() AFTER the action — defer, don't bake.
+    return [applyPostStateThen(this.thenMoves, ctx, move)];
   }
 
   /** Convert a RoleType string to an IntFunction. */

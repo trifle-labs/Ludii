@@ -14,6 +14,7 @@ import type { Move } from "../../../../../../../move.js";
 import type { MovesFunction } from "../../../../../../base.js";
 import { ActionVote } from "../../../../../../../action/action-vote.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+import { applyPostStateThen } from "./Then.js";
 
 /** @java Constants.OFF = -1 */
 const OFF = -1;
@@ -108,8 +109,6 @@ export class Vote implements MovesFunction {
     const mover = ctx.state.mover;
 
     // @java Vote.java:86 — for (final int vote : voteInts)
-    const thenList: Move[] = this.thenMoves != null ? this.thenMoves.eval(ctx) : [];
-
     const moves: Move[] = [];
 
     const game = ctx.game as unknown as {
@@ -154,22 +153,9 @@ export class Vote implements MovesFunction {
       });
 
       // @java Vote.java:96 — moves.moves().add(move)
-      // @java Vote.java:99-101 — if then(): append then().moves() to each move's then()
-      if (thenList.length === 0) {
-        moves.push(move);
-      } else {
-        moves.push(new LudiiMove({
-          id: "vote",
-          label: `vote:${voteText}`,
-          siteIndices: [],
-          mover,
-          placedOwner: mover,
-          actions: [action],
-          fromSite: OFF,
-          toSite: OFF,
-          then: thenList,
-        }));
-      }
+      // @java Vote.java:99-101 — append then().moves() to each move's then();
+      // Move.apply evaluates then() AFTER the action, so defer instead of baking.
+      moves.push(applyPostStateThen(this.thenMoves, ctx, move));
     }
 
     // @java Vote.java — NOTE: Vote.java does NOT have the setMovesLudeme loop

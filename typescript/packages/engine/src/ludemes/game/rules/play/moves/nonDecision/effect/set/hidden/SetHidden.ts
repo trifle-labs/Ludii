@@ -29,6 +29,7 @@ import {
   ActionSetHiddenWho,
 } from "../../../../../../../../../action/action-set-hidden.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../Then.js";
 import type { Player } from "../../../../../../../../game/util/moves/Player.js";
 
 /** @java game/types/board/SiteType.java — minimal subset */
@@ -176,21 +177,8 @@ export class SetHidden implements MovesFunction {
       actions,
     });
 
-    const thenList: Move[] = this.thenMoves != null ? this.thenMoves.eval(ctx) : [];
-    if (thenList.length === 0) {
-      return [move];
-    }
-
-    const withThen = new LudiiMove({
-      id: "setHidden",
-      label: "setHidden",
-      siteIndices: sites.length > 0 ? [firstSite] : [0],
-      mover,
-      placedOwner: mover,
-      actions,
-      then: thenList,
-    });
-    return [withThen];
+    // @java Move.apply evaluates then() AFTER the action — defer, don't bake.
+    return [applyPostStateThen(this.thenMoves, ctx, move)];
   }
 
   /** Check whether a RoleType refers to many players (e.g. All, Team1, …). */

@@ -11,6 +11,7 @@ import type { Context } from "../../../../../../../context.js";
 import type { IntFunction, MovesFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
 import type { Then } from "./Then.js";
+import { applyPostStateThen } from "./Then.js";
 import { ActionPromote } from "../../../../../../../action/action-promote.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 
@@ -120,13 +121,12 @@ export class Promote implements MovesFunction {
       moves.push(move);
     }
 
-    // @java Promote.java:193-195 — append then
+    // @java Promote.java:193-195 — append then. Move.apply evaluates then()
+    // AFTER the action, and the consequence typically reads the post-promote
+    // board (e.g. the piece now at the site), so defer instead of baking the
+    // pre-move eval.
     if (this.thenClause !== null) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return moves.map(m => m.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      ));
+      return moves.map(m => applyPostStateThen(this.thenClause, ctx, m));
     }
 
     return moves;

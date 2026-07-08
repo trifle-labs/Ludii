@@ -18,6 +18,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntArrayFunction, IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetTrumpSuit } from "../../../../../../../../../action/action-set-trump-suit.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../Then.js";
 
 /** Java parity: Constants.OFF = -1 */
 const OFF = -1;
@@ -88,24 +89,8 @@ export class SetTrumpSuit implements MovesFunction {
         toSite: OFF,
       });
 
-      const thenList: Move[] = this.thenMoves != null ? this.thenMoves.eval(ctx) : [];
-      if (thenList.length === 0) {
-        moves.push(move);
-      } else {
-        moves.push(
-          new LudiiMove({
-            id: "setTrumpSuit",
-            label: `setTrumpSuit:${suit}`,
-            siteIndices: [],
-            mover,
-            placedOwner: mover,
-            actions: [action],
-            then: thenList,
-            fromSite: OFF,
-            toSite: OFF,
-          }),
-        );
-      }
+      // @java Move.apply evaluates then() AFTER the action — defer, don't bake.
+      moves.push(applyPostStateThen(this.thenMoves, ctx, move));
     }
 
     return moves;

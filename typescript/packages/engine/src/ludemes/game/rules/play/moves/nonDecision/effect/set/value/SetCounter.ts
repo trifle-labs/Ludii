@@ -15,6 +15,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetCounter } from "../../../../../../../../../action/action-set-counter.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../Then.js";
 
 /** @java Constants.UNDEFINED = -1 */
 const UNDEFINED_VAL = -1;
@@ -86,22 +87,11 @@ export class SetCounter implements MovesFunction {
     // @java SetCounter.java:65-66 — setMovesLudeme(this) on each move
     // (meta-tag only — no runtime effect in TS; skipped)
 
-    // @java SetCounter.java:62 — moves.moves().add(move)
-    const thenList: Move[] = this.thenMoves != null ? this.thenMoves.eval(ctx) : [];
-    if (thenList.length === 0) {
-      return [move];
-    }
-
-    const withThen = new LudiiMove({
-      id: "setCounter",
-      label: `setCounter:${actionSetCounter.value()}`,
-      siteIndices: [],
-      mover,
-      placedOwner: mover,
-      actions: [actionSetCounter],
-      then: thenList,
-    });
-    return [withThen];
+    // @java SetCounter.java:62 — moves.moves().add(move); Move.apply evaluates
+    // then() AFTER the action applies. Baking thenMoves.eval(ctx) at generation
+    // froze the consequence against the PRE-move state; applyPostStateThen
+    // defers it to post-apply, matching Slide/Step/Leap.
+    return [applyPostStateThen(this.thenMoves, ctx, move)];
   }
 
   /**

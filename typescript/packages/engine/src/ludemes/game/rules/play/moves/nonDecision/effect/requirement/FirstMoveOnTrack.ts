@@ -12,6 +12,7 @@ import type { Context } from "../../../../../../../../context.js";
 import type { MovesFunction } from "../../../../../../../base.js";
 import type { Move } from "../../../../../../../../move.js";
 import type { Then } from "../Then.js";
+import { applyPostStateThen } from "../Then.js";
 
 /** Constants.UNDEFINED = -2 */
 const UNDEFINED = -2;
@@ -112,13 +113,11 @@ export class FirstMoveOnTrack implements MovesFunction {
 
     ctx._evalSite = originSiteValue;
 
-    // @java FirstMoveOnTrack.java:103-105 — then clause
+    // @java FirstMoveOnTrack.java:103-105 — then clause. Move.apply evaluates
+    // then() AFTER the action, and the consequence reads the post-move track
+    // position, so defer instead of baking the pre-move eval.
     if (this.thenClause != null && returnMoves.length > 0) {
-      const thenMoves = this.thenClause.eval(ctx);
-      return returnMoves.map(m => m.withConsequence(
-        thenMoves.flatMap(tm => [...tm.actions]),
-        false,
-      ));
+      return returnMoves.map(m => applyPostStateThen(this.thenClause, ctx, m));
     }
 
     return returnMoves;

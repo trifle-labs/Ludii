@@ -12,6 +12,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { ActionSetValue } from "../../../../../../../../../action/action-set-value.js";
 import { Move as LudiiMove } from "../../../../../../../../../move.js";
+import { applyPostStateThen } from "../../Then.js";
 import type { SiteType } from "../../../../../../../../../action/site-type.js";
 
 /** Java parity: Constants.UNDEFINED = -1 */
@@ -104,23 +105,9 @@ export class SetValue implements MovesFunction {
       actions: [action],
     });
 
-    // @java SetValue.java:89-91 — attach then consequences
-    if (this.thenMoves != null) {
-      const thenList = this.thenMoves.eval(ctx);
-      if (thenList.length > 0) {
-        return [new LudiiMove({
-          id: `setValue:${site}:${valueInt}`,
-          label: `SetValue(site=${site}, value=${valueInt})`,
-          siteIndices: [site],
-          mover,
-          placedOwner: mover,
-          actions: [action],
-          then: thenList,
-        })];
-      }
-    }
-
-    return [move];
+    // @java SetValue.java:89-91 — attach then consequences. Move.apply evaluates
+    // then() AFTER the action, so defer instead of baking against pre-move state.
+    return [applyPostStateThen(this.thenMoves, ctx, move)];
   }
 
   /**
