@@ -1072,6 +1072,17 @@ function replayTrial(trialPath) {
     if (!matched) {
       const recDesc = `mover=${recMove.mover},from=${recMove.from},to=${recMove.to}` +
         (isPassRecordedMove(recMove) ? '[Pass]' : '');
+      // Divergence-census tag: most ludemes prefix Move.id with their own name
+      // (`slide:`, `hop:`, `promote:`, `sow:`, `custodial:` …). The set of
+      // prefixes among the TS candidate moves at the diverging ply says which
+      // movement-ludeme families were active, so mismatches can be clustered by
+      // generating ludeme corpus-wide instead of traced one game at a time.
+      const ludemeTag = (m) => {
+        const id = m.id ?? m.label ?? '';
+        const c = String(id).indexOf(':');
+        return c > 0 ? String(id).slice(0, c) : (String(id) || '?');
+      };
+      const tsLudemes = [...new Set(tsMoves.map(ludemeTag))].sort();
       return {
         bucket: 'MOVE_MISMATCH',
         game: gameBase,
@@ -1079,7 +1090,8 @@ function replayTrial(trialPath) {
         detail: `No matching TS move`,
         recMove: recDesc,
         tsMoveCount: tsMoves.length,
-        sampleTsMoves: tsMoves.slice(0, 3).map(m => `mover=${m.mover},from=${m.from()},to=${m.to()},isPass=${m.isPass()}`),
+        tsLudemes,
+        sampleTsMoves: tsMoves.slice(0, 3).map(m => `${ludemeTag(m)}|mover=${m.mover},from=${m.from()},to=${m.to()},isPass=${m.isPass()}`),
       };
     }
 
