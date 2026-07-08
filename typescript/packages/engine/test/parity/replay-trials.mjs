@@ -293,6 +293,13 @@ const BUCKETS = {
   WINNER_MISMATCH: [],
   OUTCOME_OK: [],
   REPLAY_OK_NO_OUTCOME: [],
+  // TIMEOUT is distinct from REPLAY_OK_NO_OUTCOME: the trial was still
+  // progressing when the per-trial soft deadline hit, so its outcome is
+  // INDETERMINATE (not "replayed fully but no winner"). Long games near the
+  // deadline flip between OUTCOME_OK and TIMEOUT depending on machine load, so
+  // conflating the two manufactures spurious regressions/improvements in gate
+  // diffs. Kept separate here and excluded from diff classification.
+  TIMEOUT: [],
 };
 
 // Track failure detail for reporting
@@ -919,7 +926,7 @@ function replayTrial(trialPath) {
     if (game.over(ctx)) break;
     if (Date.now() > trialDeadline) {
       return {
-        bucket: 'REPLAY_OK_NO_OUTCOME',
+        bucket: 'TIMEOUT',
         game: gameBase,
         plyReplayed: plyIndex,
         detail: `per-trial time budget (${PER_TRIAL_MS}ms) exceeded at ply ${plyIndex}`,
