@@ -297,7 +297,15 @@ export class ActionMove extends BaseAction {
       if (toNew > 0 && movedWhat > 0 && (s.whats[this.toIndex] ?? 0) === 0) {
         s = s.withWhatAt(this.toIndex, movedWhat);
       }
-      return s;
+      // @java ActionMoveN.apply lines 297-340 — an N-seed move ALSO maintains
+      // onTrackIndices (identically to the single-piece ActionMove). For an
+      // internal-loop track game (Len Doat: 3 Markers enter from hand via a
+      // `count:(count Cell at:(handSite))` move) the entering pieces must be
+      // recorded on the track, else TrackSiteMove's internal-loop lookup reads
+      // oti=0 and NextSiteOnTrack returns OFF, forcing a spurious Pass. A no-op
+      // for mancala (full-loop tracks allocate no onTrackIndices — the guard in
+      // maintainTracks short-circuits when oti is undefined).
+      return this.maintainTracks(s, movedWhat);
     }
     // Genuine per-level stack at the source — a distinct-piece stack (Tower of
     // Hanoi disks, snakes-and-ladders pawn piles) seeded by `(place Stack
