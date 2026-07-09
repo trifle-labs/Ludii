@@ -519,6 +519,24 @@ export class ActionMove extends BaseAction {
     if (movingOwner === 0 && movingWhat === 0) {
       return state;
     }
+    // @java ActionMoveTopPiece.java:378-448 — a self-move (from == to) in the
+    // non-stacking (requiresCount) branch REMOVES the piece and immediately
+    // RE-ADDS it to the same site: csFrom.setSite writes count-1, then
+    // csTo.setSite (line 432-435) reads that decremented count and writes
+    // count+1, netting the ORIGINAL count; who/what are likewise restored. The
+    // board is therefore unchanged — only explicit state/rotation/value writes
+    // (lines 399-419) apply and onTrackIndices advances (line 451). The flat
+    // count-decrement below has no matching re-increment for from == to (every
+    // restore is gated `fromIndex !== toIndex`), so it would silently DROP one
+    // marker off a stacked site. Internal-loop tracks (Len Doat, Pachisi) are
+    // the only movers that legitimately emit a from == to hop: NextSiteOnTrack
+    // can return the same board index at a later ring position. (The stacking
+    // branch's `if (from == to) return this;` at Java line 487 skips even the
+    // oti update, but that path is unreachable for count-model games.)
+    if (this.fromIndex === this.toIndex) {
+      let self = this.applyDestAttrs(state, destState, destRotation, destValue);
+      return this.maintainTracks(self, movingWhat);
+    }
     // When the source carries a stacked count — e.g. a hand seeded with
     // `(place … "Hand" count:N)` from which pieces are placed one at a time —
     // move a single piece out and leave the rest, so the site stays occupied
