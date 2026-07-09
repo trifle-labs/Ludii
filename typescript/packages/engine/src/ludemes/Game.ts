@@ -752,12 +752,29 @@ export class Game implements Game {
           mancalaTracks,
           tli,
           this.componentLabels.length,
-          // Read the TOP piece of each site via state.whatAtSite (not the local
-          // whats[] which, after (place Stack …) starts, still holds the BOTTOM
-          // piece). TrackSiteMove later looks up OTI by the top piece's
-          // component, so the init must agree (Tugi-Epfe stacked start).
-          (site) => state.whatAtSite(site),
-          (site) => countAt[site] ?? 0,
+          // Enumerate EVERY piece resting at a site. A genuine per-level start
+          // stack (Tugi-Epfe's `(place Stack items:{Horse2 Horse1})`) holds two
+          // differently-owned Horses on the one start corner; each level is a
+          // distinct component that must be recorded so its owner can later be
+          // disambiguated on the internal-loop track. Java records both because
+          // it runs one ActionAdd per placed item; the prior TS init read only
+          // the TOP piece (state.whatAtSite), so the buried piece (P2's Horse2)
+          // had no ring index and P2's very first move generated OFF → a
+          // spurious pass at ply 1. A flat site (single piece or mancala seed
+          // pile, stackSize ≤ 1) yields one {what, count} entry as before.
+          (site) => {
+            const size = state.stackSize(site);
+            if (size > 1) {
+              const out: Array<{ what: number; count: number }> = [];
+              for (let lvl = 0; lvl < size; lvl += 1) {
+                const w = state.whatAtSiteLevel(site, lvl);
+                if (w > 0) out.push({ what: w, count: 1 });
+              }
+              return out;
+            }
+            const w = state.whatAtSite(site);
+            return w > 0 ? [{ what: w, count: countAt[site] ?? 0 }] : [];
+          },
           this.equipment.totalSites,
         );
         state = state.withTrackIndices(oti, tli);

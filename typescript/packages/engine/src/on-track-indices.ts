@@ -74,8 +74,13 @@ export function buildInitialOnTrackIndices(
   tracks: readonly MancalaTrack[],
   trackLocToIndex: TrackLocToIndex,
   numWhat: number,
-  whatAt: (site: number) => number,
-  countAt: (site: number) => number,
+  // Every distinct piece resting at a site, as {what, count} entries. A flat
+  // site yields at most one entry; a genuine per-level start stack (Tugi-Epfe's
+  // `(place Stack items:{Horse2 Horse1})`) yields one entry PER LEVEL, so each
+  // buried piece is recorded — Java populates the structure incrementally, one
+  // ActionAdd per placed item (ActionAdd.updateTrackIndices), so every level's
+  // component lands at its site's first ring index.
+  piecesAt: (site: number) => ReadonlyArray<{ what: number; count: number }>,
   numCells: number,
 ): OnTrackIndices {
   // Dense allocation: onTrackIndices[trackIdx][what][ringIndex] = 0.
@@ -88,19 +93,19 @@ export function buildInitialOnTrackIndices(
     }
     oti[trackIdx] = perWhat;
   }
-  // Scan every cell; a piece (what != 0) adds its count at the first ring index
-  // for its site on each track that contains the site.
+  // Scan every cell; each piece (what != 0) adds its count at the first ring
+  // index for its site on each track that contains the site.
   for (let site = 0; site < numCells; site += 1) {
-    const what = whatAt(site);
-    if (what <= 0 || what >= numWhat) continue;
-    const count = countAt(site);
-    const addCount = count > 0 ? count : 1;
-    for (let trackIdx = 0; trackIdx < trackLocToIndex.length; trackIdx += 1) {
-      const indices = trackLocToIndex[trackIdx]?.get(site);
-      if (indices && indices.length > 0) {
-        const firstIdx = indices[0] as number;
-        const lane = oti[trackIdx]?.[what];
-        if (lane) lane[firstIdx] = (lane[firstIdx] ?? 0) + addCount;
+    for (const { what, count } of piecesAt(site)) {
+      if (what <= 0 || what >= numWhat) continue;
+      const addCount = count > 0 ? count : 1;
+      for (let trackIdx = 0; trackIdx < trackLocToIndex.length; trackIdx += 1) {
+        const indices = trackLocToIndex[trackIdx]?.get(site);
+        if (indices && indices.length > 0) {
+          const firstIdx = indices[0] as number;
+          const lane = oti[trackIdx]?.[what];
+          if (lane) lane[firstIdx] = (lane[firstIdx] ?? 0) + addCount;
+        }
       }
     }
   }
