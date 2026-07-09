@@ -215,15 +215,24 @@ export class WhereSite extends BaseIntFunction {
         } else {
           for (let i = 0; i < ownedSites.size(); i++) {
             const site = ownedSites.getQuick(i);
+            // @java WhereSite.java:194-196 — if (cs.what == what) if (localState
+            // == UNDEFINED || cs.state(site,type) == localState) return site.
+            // The prior port dropped the localState comparison, so any
+            // `(where "Piece" Mover state:N)` query always fell through to OFF.
             if (site < numSite && context.state.what(site) === what) {
-              if (localState === UNDEFINED_CONST) return site;
+              if (localState === UNDEFINED_CONST || context.state.stateAtSite(site) === localState) return site;
             }
           }
         }
       } else {
-        // Fallback: linear scan
+        // Fallback linear scan (used when the engine context exposes `state` as
+        // a property rather than the Java-style `state()` method, so the
+        // owned-registry duck-type above is skipped). Must still honour the
+        // localState filter to match @java WhereSite.java:194-196.
         for (let site = 0; site < numSite; site++) {
-          if (context.state.what(site) === what) return site;
+          if (context.state.what(site) === what
+            && (localState === UNDEFINED_CONST || context.state.stateAtSite(site) === localState))
+            return site;
         }
       }
     }
