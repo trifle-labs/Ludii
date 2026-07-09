@@ -95,9 +95,24 @@ export class ForEachLevel extends Effect {
     const cs = (context as unknown as { containerState(i: number): unknown }).containerState?.(cid);
 
     // @java final int stackSize = cs.sizeStack(site, realType);
-    const stackSize: number = cs
+    // Java's ContainerState.sizeStack returns the true ITEM count: a largeStack
+    // mancala hole with 6 seeds reports 6 (each seed is a stack item). The TS
+    // ContainerState.sizeStack is a raw ENTRY accessor that returns the length of
+    // the per-level `stacks[]` array — for a count-backed pile (one entry with
+    // countAt=6, the memory-efficient seed model) it reports 1, so ForEachLevel
+    // generated only ONE per-level move and a mancala capture
+    // (forEach Level (hole) FromTop (fromTo (from hole level:(level)) …)) dropped
+    // 5 of 6 seeds (Yucebao/Ceelkoqyuqkoqiji sow-family divergence). When the site
+    // is a count-backed pile (countAt exceeds the raw entry length) take the true
+    // height from countAt — the faithful equivalent of Java's item-count sizeStack.
+    // Gated on countAt (not the SiteType, which a mancalaBoard reports as Vertex),
+    // so genuine per-level stacks (Lasca/Focus: countAt at its default 1 ≤ length)
+    // and empty edge/vertex sites (countAt 0) are never inflated.
+    const rawStackSize: number = cs
       ? (cs as unknown as { sizeStack(site: number, type: unknown): number }).sizeStack(site, realType) ?? 0
       : (context.state.stacks[site]?.length ?? 0);
+    const countAtSite: number = context.state.countAt?.[site] ?? 0;
+    const stackSize: number = Math.max(rawStackSize, countAtSite);
 
     // @java context.setLevel(level) — the engine Context has no setLevel method
     // (the optional chain below is a silent no-op); the TS-native iterator field
