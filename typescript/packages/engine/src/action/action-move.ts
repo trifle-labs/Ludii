@@ -266,9 +266,23 @@ export class ActionMove extends BaseAction {
       // owner, leaving `whatAt` untouched (the mancala model never sets it).
       const n = this.countValue;
       let s = state;
+      // The receiving pit/site holds the moved component while seeded.
+      const movedWhat = state.whats[this.fromIndex] ?? 0;
+      // @java ActionMoveN.apply:202-203 — who = components[what].owner(), i.e.
+      // the OWNER OF THE MOVED COMPONENT, not a per-move seed owner. The prior
+      // port stamped ownership only for hand-sourced sows (seedOwnerValue, left
+      // 0 for board-sourced moves), so a board→hand capture — Len Doat sends an
+      // enemy Marker to its owner's hand via `(fromTo (from (to)) (to (handSite
+      // Next)) count:(count at:(to)))` — dropped the piece's owner and it could
+      // never re-enter. Deriving the owner from the component label matches Java
+      // and is identical to seedOwnerValue for hand-sourced sows (same parse),
+      // so mancala's neutral "Seed" (no owner digit → 0) is unchanged.
+      const movedOwner = movedWhat > 0
+        ? Number((state.componentLabels[movedWhat] ?? "").match(/(\d+)$/)?.[1] ?? 0) || 0
+        : 0;
       const fromNew = Math.max(0, s.countAtSite(this.fromIndex) - n);
       s = s.withCountAt(this.fromIndex, fromNew);
-      const fromOwner = fromNew > 0 ? this.seedOwnerValue : 0;
+      const fromOwner = fromNew > 0 ? movedOwner : 0;
       if ((s.cells[this.fromIndex] ?? 0) !== fromOwner) {
         s = s.withCell(this.fromIndex, fromOwner);
       }
@@ -286,11 +300,9 @@ export class ActionMove extends BaseAction {
       if (fromNew === 0 && (s.stateAt[this.fromIndex] ?? 0) !== 0) {
         s = s.withStateAt(this.fromIndex, 0);
       }
-      // The receiving pit holds the component while seeded.
-      const movedWhat = state.whats[this.fromIndex] ?? 0;
       const toNew = Math.max(0, s.countAtSite(this.toIndex) + n);
       s = s.withCountAt(this.toIndex, toNew);
-      const toOwner = toNew > 0 ? this.seedOwnerValue : 0;
+      const toOwner = toNew > 0 ? movedOwner : 0;
       if ((s.cells[this.toIndex] ?? 0) !== toOwner) {
         s = s.withCell(this.toIndex, toOwner);
       }
