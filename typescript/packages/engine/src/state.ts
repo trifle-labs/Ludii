@@ -864,6 +864,20 @@ export class State {
     if (this.active.some((v, i) => i > 0 && !v)) {
       for (const a of this.active) mix(a ? 1 : 0);
     }
+    // @java State.fullHash also fingerprints non-default graph-element
+    // container states. Edge/Vertex occupancy lives in the typedSites channel;
+    // without it an Edge-only game (cells.length === 0, e.g. a pure line game)
+    // would have a constant hash and break repetition detection. Iterated in a
+    // stable key order; the map is EMPTY for every Cell-only game, so this
+    // contributes nothing and leaves their hashes byte-identical.
+    if (this.typedSites.size > 0) {
+      for (const type of [...this.typedSites.keys()].sort()) {
+        const ch = this.typedSites.get(type)!;
+        for (const w of ch.who) mix(w);
+        for (const w of ch.what) mix(w);
+        for (const c of ch.count) mix(c);
+      }
+    }
     return h >>> 0;
   }
 

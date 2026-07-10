@@ -60,6 +60,9 @@ export class AddFaithful extends Add {
       then,
       condition: to?.condFn() ?? null,
       applyEffect: to?.effectFn()?.effectMoves() ?? null,
+      // @java To.type() — a non-default graph-element target (Edge/Vertex)
+      // routes the placement to that element's occupancy layer.
+      siteType: to?.siteType() ?? null,
     });
   }
 }

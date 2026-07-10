@@ -30,6 +30,13 @@ interface AddOptions {
   readonly then?: Then | null;
   readonly condition?: BooleanFunction | null;
   readonly applyEffect?: MovesFunction | null;
+  /**
+   * Graph-element type of the `to` clause (@java To.type()). When "Edge" or
+   * "Vertex" the placement targets that element's own occupancy layer rather
+   * than the board's default (Cell) layer; threaded into ActionAdd so apply()
+   * writes the typed channel. Null/"Cell" ⇒ ordinary cell placement.
+   */
+  readonly siteType?: "Cell" | "Vertex" | "Edge" | null;
 }
 
 export class Add implements MovesFunction {
@@ -63,6 +70,9 @@ export class Add implements MovesFunction {
   /** @java To.effect */
   private readonly applyEffect: MovesFunction | null;
 
+  /** @java To.type — graph-element type of the target sites. */
+  private readonly siteType: "Cell" | "Vertex" | "Edge" | null;
+
   /**
    * @java game/rules/play/moves/nonDecision/effect/Add.java — constructor
    *
@@ -87,6 +97,7 @@ export class Add implements MovesFunction {
     this.thenClause = options.then ?? null;
     this.toCondition = options.condition ?? null;
     this.applyEffect = options.applyEffect ?? null;
+    this.siteType = options.siteType ?? null;
   }
 
   /**
@@ -160,6 +171,19 @@ export class Add implements MovesFunction {
     const sites = this.toRegion.eval(ctx);
     const moves: Move[] = [];
     const origTo = ctx._evalTo;
+
+    // @java The default graph-element type is stored in the board's own
+    // container (cells[] in the TS flat model), regardless of whether that
+    // default is Cell/Edge/Vertex — a `use:Edge` game keeps its edges in the
+    // default layer and already works. Only a NON-default `to` type (e.g.
+    // Edge on a Cell/Vertex-default board) needs the separate typedSites
+    // occupancy layer. Compute the effective typed target once here.
+    const defaultSite = (ctx as unknown as { board?: () => { defaultSite?: () => string } })
+      .board?.()?.defaultSite?.() ?? "Cell";
+    const typedTarget: "Edge" | "Vertex" | null =
+      (this.siteType === "Edge" || this.siteType === "Vertex") && this.siteType !== defaultSite
+        ? this.siteType
+        : null;
 
     // Resolve what (component index) and owner
     let what: number;
@@ -255,6 +279,7 @@ export class Add implements MovesFunction {
         owner,
         count,
         onStack: this.stack,
+        ...(typedTarget !== null ? { type: typedTarget } : {}),
         ...(stateVal !== undefined ? { state: stateVal } : {}),
       });
       action.setDecision(true);

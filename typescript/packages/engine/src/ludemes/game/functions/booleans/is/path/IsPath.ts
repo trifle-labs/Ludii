@@ -181,13 +181,23 @@ export class IsPath implements BooleanFunction {
     const totalVertices = traj.vertexCount;
     const totalEdges = traj.numSites;
 
+    // @java IsPath reads `cs.what(edge, SiteType.Edge)` — the EDGE container
+    // state. In the live TS State, edge occupancy lives in the typedSites
+    // channel (a non-default graph-element layer), not cells[]. Read it there;
+    // fall back to the default layer for games where Edge IS the board's
+    // default site type (edges stored in cells[]), so both models are covered.
+    const edgeWhat = (k: number): number => {
+      const tw = ctx.state.whatTyped("Edge", k);
+      return tw !== 0 ? tw : ctx.state.what(k);
+    };
+
     // Build vertex adjacency from owned edges
     const adj: number[][] = Array.from({ length: totalVertices }, () => []);
     const edgeList: { va: number; vb: number }[] = [];
     for (let k = 0; k < totalEdges; k++) {
       const kEp = traj.edgeEndpoints(k);
       edgeList.push(kEp ? { va: kEp[0], vb: kEp[1] } : { va: -1, vb: -1 });
-      if (ctx.state.what(k) === whoSiteId && kEp) {
+      if (edgeWhat(k) === whoSiteId && kEp) {
         adj[kEp[0]]!.push(kEp[1]);
         adj[kEp[1]]!.push(kEp[0]);
       }
@@ -209,7 +219,7 @@ export class IsPath implements BooleanFunction {
       const adjClosedGraph: number[][] = Array.from({ length: totalVertices }, () => []);
       for (let i = 0; i < totalEdges; i++) {
         const kEp = edgeList[i]!;
-        if (ctx.state.what(i) === whoSiteId && kEp.va >= 0) {
+        if (edgeWhat(i) === whoSiteId && kEp.va >= 0) {
           adjClosedGraph[kEp.va]!.push(kEp.vb);
           adjClosedGraph[kEp.vb]!.push(kEp.va);
           if (sccResult.members.has(kEp.va) && sccResult.members.has(kEp.vb)) {
@@ -231,7 +241,7 @@ export class IsPath implements BooleanFunction {
       // Collect all owned edges
       const edgeBitset = new Set<number>();
       for (let i = 0; i < totalEdges; i++) {
-        if (ctx.state.what(i) === whoSiteId) edgeBitset.add(i);
+        if (edgeWhat(i) === whoSiteId) edgeBitset.add(i);
       }
 
       const depthBitset1 = new Set<number>();

@@ -17,6 +17,50 @@ interface ContainerStateLike {
 }
 
 /**
+ * Empty graph-element sites of a non-default SiteType (Edge/Vertex).
+ *
+ * @java Core/src/game/functions/region/sites/index/SitesEmpty.java:74-76 —
+ * `containerStates()[container].emptyRegion(realType)`. For a graph-element
+ * container state, "empty" means the element carries no piece (who/what/count
+ * all zero). The live TS `State` tracks Edge/Vertex occupancy in the
+ * `typedSites` channel (whoTyped/whatTyped/countTyped), and the set of all
+ * elements of that type is enumerated from the board topology (edges()/
+ * vertices()), which is built faithfully from the graph. An element is empty
+ * iff its typed who/what/count are all 0 (the map is absent for untouched
+ * types, so every element reads 0 → the full element set is returned).
+ */
+/**
+ * True when `type` is a NON-default graph element (Edge/Vertex on a board whose
+ * default site type is something else). Only then does occupancy live in the
+ * separate typedSites layer; when `type` equals the board default the element is
+ * stored in the default container (cells[] in the TS flat model), e.g. a
+ * `use:Edge` board keeps its edges there and the ordinary cell path is correct.
+ */
+export function isNonDefaultTyped(context: Context, type: string | null): type is "Edge" | "Vertex" {
+	if (type !== "Edge" && type !== "Vertex") return false;
+	const def = (context as unknown as { board?: () => { defaultSite?: () => string } })
+		.board?.()?.defaultSite?.() ?? "Cell";
+	return type !== def;
+}
+
+export function emptyTypedSites(context: Context, type: "Edge" | "Vertex"): number[] {
+	const topo = (context as unknown as { topology?: () => unknown }).topology?.() as
+		| { edges?: () => Array<{ index(): number }>; vertices?: () => Array<{ index(): number }> }
+		| undefined;
+	const elems = type === "Edge" ? topo?.edges?.() : topo?.vertices?.();
+	if (!elems) return [];
+	const state = context.state;
+	const out: number[] = [];
+	for (const el of elems) {
+		const i = el.index();
+		if (state.whoTyped(type, i) === 0 && state.whatTyped(type, i) === 0 && state.countTyped(type, i) === 0) {
+			out.push(i);
+		}
+	}
+	return out;
+}
+
+/**
  * Returns the empty (unoccupied) sites of a container.
  *
  * Java parity: SitesEmpty.eval(context) checks the container's emptyRegion.
@@ -47,6 +91,13 @@ export class SitesEmpty extends BaseRegionFunction {
 	public override eval(context: Context & EvalScratch): number[] {
 		// @java final int container = containerFunction.eval(context)
 		const container: number = this.containerFunction.eval(context);
+
+		// @java SitesEmpty.java:74-76 — a non-default graph-element type (Edge/
+		// Vertex) reads that element's own container-state occupancy. The live
+		// State tracks it in the typedSites channel; enumerate via topology.
+		if (container < 1 && isNonDefaultTyped(context, this.siteType)) {
+			return emptyTypedSites(context, this.siteType);
+		}
 
 		// @java final SiteType realType = container > 0 ? SiteType.Cell : type
 		const realType: string = container > 0
@@ -155,6 +206,14 @@ export class EmptyDefault extends BaseRegionFunction {
 	 * Returns empty sites for container 0.
 	 */
 	public override eval(context: Context & EvalScratch): number[] {
+		// @java EmptyDefault container-0 read: a non-default graph-element type
+		// (Edge/Vertex) resolves its empties from that element's occupancy, tracked
+		// in the State typedSites channel and enumerated from the board topology.
+		// When the type IS the board default, edges/vertices live in cells[] — fall
+		// through to the ordinary cell scan below (e.g. `use:Edge` boards).
+		if (isNonDefaultTyped(context, this.siteType)) {
+			return emptyTypedSites(context, this.siteType);
+		}
 		// @java return context.state().containerStates()[0].emptyRegion(type)
 		const containerStates = (context as unknown as {
 			state?: { containerStates?: () => Array<{ emptyRegion(type: string): { sites(): number[] } }> };

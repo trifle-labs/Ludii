@@ -88,6 +88,29 @@ export class ActionAdd extends BaseAction {
 
   public override apply(state: State): State {
     if (this.toIndex < 0 || this.whatIndex < 1) return state;
+    // @java ActionAdd.apply — when the target is a non-default graph element
+    // (Edge/Vertex), Java writes that element's ContainerState (a distinct
+    // occupancy layer from Cell). The live TS State tracks Edge/Vertex
+    // occupancy in the typedSites channel; write who/what/count there and skip
+    // the cells/whats arrays entirely so the two layers never collide (edge
+    // index 9 and cell index 9 are independent sites).
+    if (this.siteType !== "Cell") {
+      const curWho = state.whoTyped(this.siteType, this.toIndex);
+      const curWhat = state.whatTyped(this.siteType, this.toIndex);
+      if (curWhat === this.whatIndex && curWho === this.ownerIndex) {
+        // @java occupied-site accumulate (requiresCount) vs force-1 (see the
+        // Cell branch below for the reasoning behind the requiresCount gate).
+        const oldCount = state.countTyped(this.siteType, this.toIndex);
+        return state.withTypedSite(
+          this.siteType, this.toIndex, this.ownerIndex, this.whatIndex,
+          state.requiresCountGame ? oldCount + this.countValue : 1,
+        );
+      }
+      return state.withTypedSite(
+        this.siteType, this.toIndex, this.ownerIndex, this.whatIndex,
+        Math.max(this.countValue, 1),
+      );
+    }
     if (this.onStack) {
       // @java ActionAdd (stacking) calls cs.addItemGeneric(state, to, what, who, …),
       // pushing the COMPONENT and the OWNER into their parallel stack columns in
