@@ -1475,9 +1475,22 @@ export class State {
     },
   ): State {
     const nextCells = patch.cells ?? this.cells;
+    const cellsDrivenSync = patch.cells !== undefined && patch.stacks === undefined;
     const nextStacks =
       patch.stacks ??
-      (patch.cells ? syncStacks(this.stacks, nextCells) : this.stacks);
+      (cellsDrivenSync ? syncStacks(this.stacks, nextCells) : this.stacks);
+    // @java ContainerStateStacks keeps the who[] and what[] columns strictly
+    // parallel — remove(site, level) splices BOTH. A cells-driven syncStacks that
+    // drops a top OWNER level (cell → 0) must drop the parallel whatStacks level
+    // too, else the component column outlives its owner and a later withStackPop
+    // strands a phantom whats[]. (Yucebao count-backed hole-6 sow: the lone
+    // representative stack collapses when the hole drains via ActionAddCount →
+    // withCell(6,0), but whatStacks[6] kept its stale [1]; the next sow re-pushed
+    // to [1,1], and popping one level left whats[6]=1 — a phantom that falsely
+    // occupied the hole and blocked the round-end sweep / BetweenRounds phase.)
+    const nextWhatStacks =
+      patch.whatStacks ??
+      (cellsDrivenSync ? syncWhatStacks(this.whatStacks, this.stacks, nextCells) : this.whatStacks);
     return new State(
       patch.mover ?? this.mover,
       nextCells,
@@ -1489,12 +1502,11 @@ export class State {
         active: patch.active ?? this.active,
         hiddenForPlayer: patch.hiddenForPlayer ?? this.hiddenForPlayer,
         stacks: nextStacks,
-        // whatStacks rides through unchanged unless explicitly patched. It is
-        // maintained in lockstep with `stacks` only by withStackPush/Pop (which
-        // always patch both), so a plain `withCell`/`withWhatAt` never needs to
-        // resync it — the visible top `what` lives in `whats[]`, which those
-        // mutators keep current.
-        whatStacks: patch.whatStacks ?? this.whatStacks,
+        // whatStacks is kept in lockstep with `stacks`: withStackPush/Pop patch
+        // both explicitly, and a cells-driven syncStacks now resyncs whatStacks
+        // via syncWhatStacks (see above) so a collapsed owner level never leaves
+        // an orphaned component column behind.
+        whatStacks: nextWhatStacks,
         stateAt: patch.stateAt ?? this.stateAt,
         valueAt: patch.valueAt ?? this.valueAt,
         costAt: patch.costAt ?? this.costAt,
@@ -1584,6 +1596,34 @@ function syncStacks(
       const copy = [...prev];
       copy[copy.length - 1] = top;
       out.push(copy);
+    }
+  }
+  return out;
+}
+
+// @java ContainerStateStacks — the component (`what`) column runs strictly
+// parallel to the owner (`who`) column. This mirrors syncStacks' per-site
+// structural decision onto whatStacks: when a cells patch drops the top OWNER
+// level (owner top → 0), splice the parallel whatStacks top level too. The
+// ride-through / owner-replace / new-from-empty branches leave the whatStacks
+// length untouched (owner-only degenerate stacks legitimately carry an empty
+// whatStacks column, resolved by whatAtSiteLevel's flat fallback).
+function syncWhatStacks(
+  previousWhat: readonly (readonly number[])[],
+  previousOwner: readonly (readonly number[])[],
+  cells: readonly number[],
+): (readonly number[])[] {
+  const out: (readonly number[])[] = [];
+  for (let i = 0; i < cells.length; i += 1) {
+    const top = cells[i] ?? 0;
+    const prevOwner = previousOwner[i] ?? [];
+    const prevTop = prevOwner.length > 0 ? (prevOwner[prevOwner.length - 1] ?? 0) : 0;
+    const prevWhat = previousWhat[i] ?? [];
+    if (top !== prevTop && top === 0 && prevWhat.length > 0) {
+      // Owner top removed → drop the parallel component level in lockstep.
+      out.push(prevWhat.slice(0, -1));
+    } else {
+      out.push(prevWhat);
     }
   }
   return out;
