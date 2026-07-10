@@ -248,6 +248,16 @@ export class Sow extends Effect {
 
     let numSeedSowed = 0;
     let lastTo = start;
+    // @java Sow.java:235 `context.setTo(to)` — the context `to` used by the
+    // post-sow capture rule. Java sets it to `track.elems()[i].next` at the TOP
+    // of each seed iteration, BEFORE the `!includeSelf && to == start` skip
+    // (Sow.java:249-254) reassigns the *local* `to`. So when the final seed
+    // wraps past the origin (skip fires), context.to is left on the ORIGIN
+    // (count 0 after draining), NOT the hole the seed actually lands in — and
+    // the capture rule `(= (count at:(to)) 2/3)` reads the empty origin and does
+    // not fire. `lastTo` below tracks the ACTUAL landing site (for the sow
+    // action); `ctxTo` faithfully tracks Java's frozen context.to for capture.
+    let ctxTo = start;
 
     // @java Sow.java:194-197 — find index i in track for start
     let i = 0;
@@ -293,6 +303,10 @@ export class Sow extends Effect {
 
         let to = elems[i]!.next;
         (ctx as unknown as { _evalTo?: number })._evalTo = to;
+        // @java Sow.java:235 — freeze context.to at the pre-skip site (see ctxTo
+        // declaration). The includeSelf skip below reassigns local `to` but never
+        // calls setTo again, so ctxTo must NOT be updated there.
+        ctxTo = to;
 
         // @java Sow.java:240-247 — skip logic
         if (this.skipFn !== null && this.skipFn.eval(ctx) && numSkipped < MAX_SKIP) {
@@ -349,6 +363,11 @@ export class Sow extends Effect {
     // `-count` over-drained when a non-looped track ran out before `count`).
     const finalActions: Action[] = [...actions];
     let moveAgain = false;
+    // @java Sow.java:295-304 — the capture rule is evaluated on Java's frozen
+    // context.to (`ctxTo`), which diverges from the actual last-sown hole only
+    // when the final seed wrapped past a skipped origin. Use ctxTo from here on;
+    // backtracking then walks `i`'s track links from the last-sown index.
+    lastTo = ctxTo;
     (ctx as unknown as { _evalTo?: number })._evalTo = lastTo;
     let rollingState = applyActions(ctx, finalActions);
     let evalCtx = tempContext(ctx, rollingState, start, lastTo);

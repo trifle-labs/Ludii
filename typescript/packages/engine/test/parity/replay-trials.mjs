@@ -435,15 +435,31 @@ function candidateMatches(tsMoves, recMove) {
 function recordedCountDelta(recMove) {
   const d = new Map();
   for (const a of recMove.actions) {
-    if (a.actionType !== 'Move') continue;
-    const f = Number(a.fields.get('from'));
-    const t = Number(a.fields.get('to'));
     // A Move action transfers `count` pieces (default 1 when absent). Per-seed
     // sow drops omit count (=1); a relay capture / bulk transfer records the
     // explicit pile size (e.g. Move:from=1,to=11,count=3). Counting these as ±1
     // mismeasured the seed delta and lost direction/candidate disambiguation.
+    //
+    // Add/Remove change a single site's count with no counterpart. The mancala
+    // "drop as many as you wish" opening (Ti/Wari-family TwoFirstTurn phase)
+    // emits `(move Add (to (NextHole)) count:(value))`, recorded as `value`
+    // single-seed Add actions at one hole. The forEach over `value` produces N
+    // candidates that share from/to and differ ONLY in how many seeds they drop,
+    // so without an Add-count signal the matcher fell through to candidates[0]
+    // (value=1) and under-filled the hole — diverging every downstream sow.
+    if (a.actionType !== 'Move' && a.actionType !== 'Add' && a.actionType !== 'Remove') continue;
+    const f = Number(a.fields.get('from'));
+    const t = Number(a.fields.get('to'));
     const n = Number(a.fields.get('count'));
     const cnt = Number.isFinite(n) && n > 0 ? n : 1;
+    if (a.actionType === 'Remove') {
+      if (Number.isFinite(t)) d.set(t, (d.get(t) || 0) - cnt);
+      continue;
+    }
+    if (a.actionType === 'Add') {
+      if (Number.isFinite(t)) d.set(t, (d.get(t) || 0) + cnt);
+      continue;
+    }
     if (Number.isFinite(t)) d.set(t, (d.get(t) || 0) + cnt);
     if (Number.isFinite(f)) d.set(f, (d.get(f) || 0) - cnt);
   }
