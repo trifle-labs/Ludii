@@ -448,6 +448,16 @@ export class Topology {
   private _clusteredLabels = new Map<string, Map<string, TopologyElement> | null>();
 
   /**
+   * Per-type clustered row/col bucket assignment (one entry per element, index
+   * aligned with getGraphElements(realType)). Populated by the same clustering
+   * pass that builds `_clusteredLabels`; `null` when the clustering collides
+   * (Java's `duplicateCoordinates == true` case, where row/col come from the
+   * centroid bands instead). @java the RCL buckets MeasureGraph writes into each
+   * element's situation().rcl(), read back by Topology.computeRows/Columns.
+   */
+  private _clusteredRC = new Map<string, { rows: number[]; cols: number[] } | null>();
+
+  /**
    * @java MeasureGraph.clusterByDimension — distance-to-reference-line
    * clustering with margin 0.6*unit; Row tries theta 0..60° (step 15°),
    * Column tries bestRowTheta + 90..120°. Returns null when labels collide
@@ -459,7 +469,7 @@ export class Topology {
   ): Map<string, TopologyElement> | null {
     const cached = this._clusteredLabels.get(realType);
     if (cached !== undefined) return cached;
-    if (elements.length === 0) { this._clusteredLabels.set(realType, null); return null; }
+    if (elements.length === 0) { this._clusteredLabels.set(realType, null); this._clusteredRC.set(realType, null); return null; }
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const e of elements) {
       const c = e.centroid3D();
@@ -518,12 +528,26 @@ export class Topology {
       if (map.has(label)) {
         if (process.env.TRACE_CLUSTER) console.error(`[cluster] COLLISION ${label} at el ${n} (prev ${(map.get(label) as { index(): number }).index()}); rowErr=${bestRow.error.toFixed(4)} colErr=${bestCol.error.toFixed(4)}`);
         this._clusteredLabels.set(realType, null);
+        this._clusteredRC.set(realType, null);
         return null;
       }
       map.set(label, elements[n]!);
     }
     this._clusteredLabels.set(realType, map);
+    this._clusteredRC.set(realType, { rows: bestRow.buckets.slice(), cols: bestCol.buckets.slice() });
     return map;
+  }
+
+  /**
+   * Clustered row/col bucket assignment for a site type, or `null` when the
+   * clustering collides (→ centroid banding). Ensures the clustering has run,
+   * then returns the cached buckets. @java the RCL that MeasureGraph assigns to
+   * graph elements and Topology.computeRows/Columns reads when the graph does
+   * NOT have duplicateCoordinates for this type.
+   */
+  private clusteredRowCol(realType: SiteType): { rows: number[]; cols: number[] } | null {
+    this.clusteredLabelLookup(realType, this.getGraphElements(realType));
+    return this._clusteredRC.get(realType) ?? null;
   }
 
   private _bandedLabels = new Map<string, Map<string, TopologyElement>>();
@@ -856,7 +880,26 @@ export class Topology {
   computeRows(type: SiteType, threeDimensions: boolean): void {
     const rows = this.rows(type);
     clearArray(rows);
-    if (this.shouldComputeFromCentroids(type, threeDimensions)) {
+    // @java Topology.computeRows takes row() from the graph's RCL when the graph
+    // does NOT report duplicateCoordinates. The eval/graph board pipeline stores
+    // no RCL, so mirror MeasureGraph's angle-search clustering: when it yields a
+    // collision-free assignment (Java's duplicateCoordinates == false) use those
+    // buckets; otherwise fall back to distinct-centroid banding. Centroid banding
+    // over-splits hex rows/columns (the half-cell row offset makes the union of
+    // all rows' x-values a double-density set of columns), so Chinese Checkers'
+    // (coord row:0 column:4) missed the real star tip. Clustering restores it.
+    const clustered = threeDimensions ? null : this.clusteredRowCol(type);
+    if (clustered !== null) {
+      const elements = this.getGraphElements(type);
+      let nRows = 0;
+      for (const r of clustered.rows) if (r + 1 > nRows) nRows = r + 1;
+      for (let i = 0; i < nRows; i += 1) rows.push([]);
+      for (let e = 0; e < elements.length; e += 1) {
+        const r = clustered.rows[e]!;
+        rows[r]!.push(elements[e]!);
+        elements[e]!.setRow(r);
+      }
+    } else if (this.shouldComputeFromCentroids(type, threeDimensions)) {
       const values = uniqueSorted(
         this.getGraphElements(type)
           .filter((e) => e.centroid3D().z() === 0)
@@ -882,7 +925,20 @@ export class Topology {
   computeColumns(type: SiteType, threeDimensions: boolean): void {
     const columns = this.columns(type);
     clearArray(columns);
-    if (this.shouldComputeFromCentroids(type, threeDimensions)) {
+    // @java see computeRows — clustered column buckets take precedence over
+    // distinct-x banding when the angle-search clustering is collision-free.
+    const clustered = threeDimensions ? null : this.clusteredRowCol(type);
+    if (clustered !== null) {
+      const elements = this.getGraphElements(type);
+      let nCols = 0;
+      for (const c of clustered.cols) if (c + 1 > nCols) nCols = c + 1;
+      for (let i = 0; i < nCols; i += 1) columns.push([]);
+      for (let e = 0; e < elements.length; e += 1) {
+        const c = clustered.cols[e]!;
+        columns[c]!.push(elements[e]!);
+        elements[e]!.setColumn(c);
+      }
+    } else if (this.shouldComputeFromCentroids(type, threeDimensions)) {
       const values = uniqueSorted(
         this.getGraphElements(type)
           .filter((e) => e.centroid3D().z() === 0)
