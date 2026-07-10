@@ -14,9 +14,20 @@ import type { Context } from "../../../../../context.js";
 import type { RegionFunction } from "../../../../base.js";
 import { BaseIntFunction } from "../BaseIntFunction.js";
 import type { JavaIntFunction } from "../IntFunction.js";
+import { applyRotationToFacing } from "../../../util/directions/RelativeDirection.js";
 
 /** Java parity: Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
+
+/**
+ * @java game/util/directions/CompassDirection — facing units (45°, N=0 … NW=7).
+ * PathExtent resolves a tile path's side index to an absolute compass heading
+ * exactly like Java's Directions(Forward, Orthogonal).convertToAbsolute with an
+ * explicit rotation: the default facing is North (Trax tiles declare no dirn),
+ * FR-rotated `sideIndex` steps over the cell's supported orthogonal ring, and
+ * the Forward relative direction is the resulting facing itself.
+ */
+const COMPASS8 = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const;
 
 /**
  * Thin interface for the Java `RegionFunction` contract used by PathExtent's
@@ -132,8 +143,38 @@ export class PathExtent extends BaseIntFunction {
    * Walks the tile-path graph from each start site, following path segments
    * that match the requested colour. Returns the maximum row or column
    * distance from the origin start cell encountered during the walk.
+   *
+   * Uses the real TS Context API (ctx.topology()/ctx.containerState()/
+   * ctx.components()) exactly as the sibling tile ludeme IsSidesMatch does —
+   * the earlier port called a Java-shaped `ctx.state().containerStates()` that
+   * does not exist in TS and hard-crashed apply() (Trax, ply 1).
    */
   public override eval(context: Context): number {
+    const ctx = context as unknown as {
+      containerId?: () => number[];
+      containerState?: (cid: number) => {
+        what: (site: number) => number;
+        rotation: (site: number) => number;
+      };
+      components?: () => Array<{ isTile?: () => boolean; paths?: () => Array<{
+        side1Rotated: (rotation: number, numEdges: number) => number;
+        side2Rotated: (rotation: number, numEdges: number) => number;
+        colour: () => number;
+      }> | null }>;
+      topology?: () => {
+        cells: () => Array<{
+          row: () => number;
+          col: () => number;
+          index: () => number;
+          supportedOrthogonalDirections?: () => Array<{ toAbsolute?: () => string }>;
+        }>;
+        numEdges: () => number;
+        trajectories: () => {
+          steps: (fromType: string, from: number, toType: string, dir: string) => Array<{ to: () => { id: () => number } }>;
+        };
+      };
+    };
+
     // Java: final int[] regionToCheck;
     let regionToCheck: number[];
     if (this.regionStartFn !== null) {
@@ -149,62 +190,35 @@ export class PathExtent extends BaseIntFunction {
 
     let maxExtent = 0;
 
+    const topology = typeof ctx.topology === "function" ? ctx.topology() : null;
+    if (!topology) return maxExtent;
+    const cells = typeof topology.cells === "function" ? topology.cells() : [];
+    // Java: ratioAdjOrtho = context.topology().numEdges() (regular per-cell edge
+    // count, e.g. 4 for a square tile). Also the modulus for side1/side2 rotation.
+    const numEdges = typeof topology.numEdges === "function" ? topology.numEdges() : 0;
+    const ratioAdjOrtho = numEdges;
+    const traj = typeof topology.trajectories === "function" ? topology.trajectories() : null;
+    const components = typeof ctx.components === "function" ? ctx.components() : [];
+    const containerIdArr = typeof ctx.containerId === "function" ? ctx.containerId() : null;
+
     for (let p = 0; p < regionToCheck.length; p++) {
       const from = regionToCheck[p] as number;
       // Java: if (from == Constants.UNDEFINED) return maxExtent;
       if (from === UNDEFINED) return maxExtent;
 
       const colourLoop = this.colourFn.eval(context);
-
-      // Access the Java topology via the context's underlying game/board.
-      // These casts are faithful to the Java but require a full Java-style
-      // Context to work at runtime; in the 1:1 TS path this throws gracefully.
-      const ctx = context as unknown as {
-        topology?(): {
-          cells(): { get(i: number): { row(): number; col(): number } };
-          numEdges(): number;
-          trajectories(): {
-            steps(
-              fromType: string,
-              from: number,
-              toType: string,
-              dir: unknown,
-            ): Array<{ to(): { id(): number } }>;
-          };
-        };
-        containerId?(): number[];
-        state(): {
-          containerStates(): Array<{
-            what(site: number, type: string): number;
-            rotation(site: number, type: string): number;
-          }>;
-        };
-        components?(): Array<{
-          isTile(): boolean;
-          paths(): Array<{
-            colour(): { intValue(): number };
-            side1(rotation: number, numEdges: number): number;
-            side2(rotation: number, numEdges: number): number;
-          }>;
-        }>;
-      };
-
-      const graph = ctx.topology?.();
-      if (graph === undefined) return maxExtent;
-
-      const fromCell = graph.cells().get(from);
+      const fromCell = cells[from];
+      if (!fromCell) return maxExtent;
       const fromRow = fromCell.row();
       const fromCol = fromCell.col();
-      const containerId = ctx.containerId?.() ?? [];
-      const cid = containerId[from] ?? 0;
-      const cs = ctx.state().containerStates()[cid];
-      if (cs === undefined) return maxExtent;
 
-      const whatSideId = cs.what(from, "Cell");
-      const components = ctx.components?.() ?? [];
-      if (whatSideId === 0 || !components[whatSideId]?.isTile()) return maxExtent;
+      const cid = (containerIdArr && containerIdArr.length > from) ? (containerIdArr[from] ?? 0) : 0;
+      const cs = typeof ctx.containerState === "function" ? ctx.containerState(cid) : null;
+      if (!cs) return maxExtent;
 
-      const ratioAdjOrtho = graph.numEdges();
+      // Java: whatSideId = cs.what(from, Cell); if (0 || !isTile) return maxExtent;
+      const whatSideId = cs.what(from);
+      if (whatSideId === 0 || !components[whatSideId]?.isTile?.()) return maxExtent;
 
       // Java: TIntArrayList tileConnected / originTileConnected
       const tileConnected: number[] = [from];
@@ -212,64 +226,71 @@ export class PathExtent extends BaseIntFunction {
 
       for (let index = 0; index < tileConnected.length; index++) {
         const site = tileConnected[index] as number;
-        const cell = graph.cells().get(site);
-        const what = cs.what(site, "Cell");
+        const cell = cells[site];
+        if (!cell) continue;
+        const what = cs.what(site);
         const component = components[what];
-        if (component === undefined) continue;
+        if (component === undefined || !component.isTile?.()) continue;
 
-        const rotation = (cs.rotation(site, "Cell") * 2) / ratioAdjOrtho;
-        const paths = [...component.paths()];
+        // Java: rotation = (cs.rotation(site, Cell) * 2) / ratioAdjOrtho (int div)
+        const rotation = Math.trunc((cs.rotation(site) * 2) / (ratioAdjOrtho || 1));
+        const paths = component.paths?.() ?? [];
+        const orthoDirs = typeof cell.supportedOrthogonalDirections === "function"
+          ? cell.supportedOrthogonalDirections()
+          : [];
+        const orthoNames = orthoDirs.map(d => (typeof d?.toAbsolute === "function" ? d.toAbsolute() : String(d)));
 
         for (const path of paths) {
-          if (path.colour().intValue() !== colourLoop) continue;
+          // Java: path.colour().intValue() == colourLoop
+          if (path.colour() !== colourLoop) continue;
 
-          // Side 1
-          const side1Dir = path.side1(rotation, graph.numEdges());
-          const stepsSide1 = graph.trajectories().steps("Cell", cell.row(), "Cell", side1Dir);
+          // Side 1 — Java: convertToAbsolute(Cell, cell, null, null, side1(rotation, numEdges))
+          const side1Idx = path.side1Rotated(rotation, numEdges);
+          const dir1 = COMPASS8[applyRotationToFacing(0, side1Idx, orthoNames) % 8] ?? "N";
+          const stepsSide1 = traj ? traj.steps("Cell", cell.index(), "Cell", dir1) : [];
           if (stepsSide1.length > 0) {
             const site1Connected = stepsSide1[0]!.to().id();
-            const cell1Connected = graph.cells().get(site1Connected);
-            const rowCell1 = cell1Connected.row();
-            const colCell1 = cell1Connected.col();
+            const cell1Connected = cells[site1Connected];
+            if (cell1Connected) {
+              const drow = Math.abs(cell1Connected.row() - fromRow);
+              const dcol = Math.abs(cell1Connected.col() - fromCol);
+              if (drow > maxExtent) maxExtent = drow;
+              if (dcol > maxExtent) maxExtent = dcol;
 
-            const drow = Math.abs(rowCell1 - fromRow);
-            const dcol = Math.abs(colCell1 - fromCol);
-            if (drow > maxExtent) maxExtent = drow;
-            if (dcol > maxExtent) maxExtent = dcol;
-
-            const whatSide1 = cs.what(site1Connected, "Cell");
-            if (
-              originTileConnected[index] !== site1Connected &&
-              whatSide1 !== 0 &&
-              components[whatSide1]?.isTile()
-            ) {
-              tileConnected.push(site1Connected);
-              originTileConnected.push(site);
+              const whatSide1 = cs.what(site1Connected);
+              if (
+                originTileConnected[index] !== site1Connected &&
+                whatSide1 !== 0 &&
+                components[whatSide1]?.isTile?.()
+              ) {
+                tileConnected.push(site1Connected);
+                originTileConnected.push(site);
+              }
             }
           }
 
-          // Side 2
-          const side2Dir = path.side2(rotation, graph.numEdges());
-          const stepsSide2 = graph.trajectories().steps("Cell", cell.row(), "Cell", side2Dir);
+          // Side 2 — Java: convertToAbsolute(Cell, cell, null, null, side2(rotation, numEdges))
+          const side2Idx = path.side2Rotated(rotation, numEdges);
+          const dir2 = COMPASS8[applyRotationToFacing(0, side2Idx, orthoNames) % 8] ?? "N";
+          const stepsSide2 = traj ? traj.steps("Cell", cell.index(), "Cell", dir2) : [];
           if (stepsSide2.length > 0) {
             const site2Connected = stepsSide2[0]!.to().id();
-            const cell2Connected = graph.cells().get(site2Connected);
-            const rowCell2 = cell2Connected.row();
-            const colCell2 = cell2Connected.col();
+            const cell2Connected = cells[site2Connected];
+            if (cell2Connected) {
+              const drow = Math.abs(cell2Connected.row() - fromRow);
+              const dcol = Math.abs(cell2Connected.col() - fromCol);
+              if (drow > maxExtent) maxExtent = drow;
+              if (dcol > maxExtent) maxExtent = dcol;
 
-            const drow = Math.abs(rowCell2 - fromRow);
-            const dcol = Math.abs(colCell2 - fromCol);
-            if (drow > maxExtent) maxExtent = drow;
-            if (dcol > maxExtent) maxExtent = dcol;
-
-            const whatSide2 = cs.what(site2Connected, "Cell");
-            if (
-              originTileConnected[index] !== site2Connected &&
-              whatSide2 !== 0 &&
-              components[whatSide2]?.isTile()
-            ) {
-              tileConnected.push(site2Connected);
-              originTileConnected.push(site);
+              const whatSide2 = cs.what(site2Connected);
+              if (
+                originTileConnected[index] !== site2Connected &&
+                whatSide2 !== 0 &&
+                components[whatSide2]?.isTile?.()
+              ) {
+                tileConnected.push(site2Connected);
+                originTileConnected.push(site);
+              }
             }
           }
         }
