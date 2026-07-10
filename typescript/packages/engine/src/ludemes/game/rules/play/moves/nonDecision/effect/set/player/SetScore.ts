@@ -22,6 +22,7 @@ import { Move as LudiiMove } from "../../../../../../../../../move.js";
 import type { RoleTypeFull } from "../../../../../../../types/play/RoleType.js";
 import type { Player } from "../../../../../../../util/moves/Player.js";
 import type { Then } from "../../Then.js";
+import { PlayersIndices } from "../../../../../../../../other/PlayersIndices.js";
 
 export class SetScore implements MovesFunction {
   /**
@@ -43,6 +44,13 @@ export class SetScore implements MovesFunction {
    * @param score  The new score.
    * @param then   The moves applied after that move is applied.
    */
+  /**
+   * The roleType, retained so eval can expand multi-player roles (All, Enemy,
+   * NonMover, TeamN…) into one ActionSetScore per real player.
+   * @java SetScore.role
+   */
+  private readonly role: RoleTypeFull | null;
+
   public constructor(
     player: Player | null,
     role: RoleTypeFull | null,
@@ -50,7 +58,9 @@ export class SetScore implements MovesFunction {
     then: Then | null = null,
   ) {
     this.thenClause = then ?? null;
+    // @java SetScore.<init> — playerFn = (player==null)? RoleType.toIntFunction(role) : player.index()
     this.playerFn = player === null ? roleToIntFunction(role) : player.index();
+    this.role = player === null ? role : null;
     this.scoreFn = score;
   }
 
@@ -66,32 +76,72 @@ export class SetScore implements MovesFunction {
     const score = this.scoreFn.eval(ctx);
     const mover = ctx.state.mover;
 
-    if (playerId < 1) return [];
-
-    // @java SetScore.java:83 — ActionSetScore(playerId, score, Boolean.FALSE)
-    const action = new ActionSetScore({ player: playerId, score, add: false });
-
-    // @java SetScore extends Effect — the (then ...) consequence applies
-    // AFTER the score is set (Brood's (set Score Mover 0 (then (forEach
-    // Piece (addScore ...)))) accumulates the per-piece score; dropping the
-    // then left scores at 0 and byScore picked the wrong winner). Attach as
-    // a deferredThen so it evaluates post-apply.
+    // @java SetScore.eval — the (then ...) consequence applies AFTER the score
+    // is set (Brood's (set Score Mover 0 (then (forEach Piece (addScore ...))))
+    // accumulates the per-piece score; dropping the then left scores at 0 and
+    // byScore picked the wrong winner). Attach as a deferredThen (post-apply).
     const deferredThens = this.thenClause != null
       ? [{ eval: (c: Context): LudiiMove[] => {
           const r = (this.thenClause as unknown as { moves(): { eval(c: Context): LudiiMove[] | { moves(): LudiiMove[] } } }).moves().eval(c);
           return Array.isArray(r) ? r : r.moves();
         } }]
       : [];
-    return [new LudiiMove({
-      id: `setscore:${mover}:p${playerId}:${score}`,
-      label: `SetScore(P${playerId}=${score})`,
+
+    const makeMove = (pid: number): LudiiMove => new LudiiMove({
+      // @java SetScore.eval — ActionSetScore(pid, score, Boolean.FALSE)
+      id: `setscore:${mover}:p${pid}:${score}`,
+      label: `SetScore(P${pid}=${score})`,
       siteIndices: [],
       mover,
       placedOwner: mover,
-      actions: [action],
+      actions: [new ActionSetScore({ player: pid, score, add: false })],
       deferredThens,
-    })];
+    });
+
+    // @java SetScore.eval — when a roleType is given, expand to the real player
+    // ids it denotes (All -> every player 1..n, Enemy/NonMover -> many, …) and
+    // emit ONE set-score move per player. Resolving the role to a single
+    // IntFunction (e.g. numPlayers+1 for All) wrote past the scores array and
+    // crashed (Bide: pid 3 out of range [0, 3)).
+    if (this.role != null) {
+      const adapter = playersIndicesAdapter(ctx);
+      const idPlayers = PlayersIndices.getIdRealPlayers(adapter, this.role);
+      const moves: LudiiMove[] = [];
+      for (const pid of idPlayers) moves.push(makeMove(pid));
+      return moves;
+    }
+
+    if (playerId < 1) return [];
+    return [makeMove(playerId)];
   }
+}
+
+/**
+ * Minimal Context adapter exposing the method-shaped surface that
+ * PlayersIndices.getIdRealPlayers calls, backed by the TS Context.
+ * Teams are unsupported in the current TS state, so requiresTeams()=false and
+ * the team accessors return neutral values (mirrors NoPieces' inlined handling).
+ * @java other/context/Context — the subset PlayersIndices reads.
+ */
+function playersIndicesAdapter(ctx: Context): Parameters<typeof PlayersIndices.getIdRealPlayers>[0] {
+  const st = ctx.state as unknown as { mover: number; next?: number; prev?: number };
+  const numPlayers = ctx.game.numPlayers;
+  const evalPlayer = (ctx as unknown as { _evalPlayer?: number })._evalPlayer;
+  return {
+    game: () => ({
+      // @java game.players().size() == numPlayers + 1 (player list is 1-based, slot 0 reserved).
+      players: () => ({ size: () => numPlayers + 1 }),
+      requiresTeams: () => false,
+    }),
+    state: () => ({
+      mover: () => st.mover,
+      next: () => st.next ?? 0,
+      prev: () => st.prev ?? 0,
+      getTeam: () => 0,
+      playerInTeam: () => false,
+    }),
+    player: () => evalPlayer ?? st.mover,
+  };
 }
 
 function roleToIntFunction(role: RoleTypeFull | null): IntFunction {
