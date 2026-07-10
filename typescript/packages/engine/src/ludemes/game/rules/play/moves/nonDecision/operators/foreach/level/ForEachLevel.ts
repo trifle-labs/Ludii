@@ -12,6 +12,7 @@ import type { Move } from "../../../../../../../../../move.js";
 import type { IntFunction, MovesFunction } from "../../../../../../../../base.js";
 import { BaseMoves } from "../../../../BaseMoves.js";
 import { Effect } from "../../../effect/Effect.js";
+import { applyPostStateThen } from "../../../effect/Then.js";
 import type { ThenLike } from "../../../../Moves.js";
 
 /**
@@ -144,28 +145,27 @@ export class ForEachLevel extends Effect {
     }
     (context as unknown as { _evalLevel?: number })._evalLevel = savedLevel;
 
-    // @java if (then() != null) for each move add then moves
-    if (this.then() !== null) {
-      const thenMoves = this.then()!.moves();
-      for (const m of moves.moves()) {
-        const mThen = (m as unknown as { then?: Move[] }).then;
-        if (Array.isArray(mThen)) {
-          const thenArr = (thenMoves as unknown as { eval?(ctx: Context): Move[]; moves?(): Move[] });
-          if (typeof thenArr.eval === "function") {
-            mThen.push(...thenArr.eval(context));
-          } else if (typeof thenArr.moves === "function") {
-            mThen.push(...thenArr.moves());
-          }
-        }
-      }
-    }
-
     // @java context.setTo(savedTo);
     context._evalTo = savedTo;
 
     // @java context.setSite(originSiteValue);
     if (context._evalSite !== undefined) {
       context._evalSite = originSiteValue;
+    }
+
+    // @java ForEachLevel.java:106-108 — `moves.moves().get(j).then().add(then().moves())`:
+    // attach this ForEachLevel's own (then …) consequence to EACH generated move.
+    // TS Move.then is a FROZEN immutable array, so mutating it in place threw
+    // "Cannot add property 0, object is not extensible" (So Long Sucker's
+    // (forEach Level … (then …)) at ply 17). Mirror the sibling ForEachSite:
+    // bake the post-state consequence + moveAgain into a NEW move via
+    // applyPostStateThen. Same recipe as If/Do/MaxDistance/ForEachPiece.
+    const thenObj = this.then() as unknown as { moves?: () => { eval(c: Context): Move[] }; eval?(c: Context): Move[] } | null;
+    if (thenObj !== null) {
+      const thenLike = typeof thenObj.moves === "function"
+        ? (thenObj as { moves(): { eval(c: Context): Move[] } })
+        : { moves: () => thenObj as { eval(c: Context): Move[] } };
+      return moves.moves().map((m) => applyPostStateThen(thenLike, context, m));
     }
 
     return moves.moves();
