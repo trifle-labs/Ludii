@@ -36,7 +36,13 @@ export class GraphLudeme {
   /** @java BaseGraphFunction.eval — build the literal graph (vertices + edges + faces). */
   public eval(_siteType: string): Graph {
     const graph = new Graph();
-    for (const [x, y] of this.vertices) graph.addVertex(x, y);
+    // @java Graph.setVertices → addVertex(x,y,z) appends UNCONDITIONALLY (id =
+    // vertices.size()), never fusing coincident points — the edge list then
+    // references vertices by their explicit declared index. Using the
+    // coincidence-deduping addVertex() here would fuse a repeated coordinate
+    // (CrossGeo Graph1 lists {10 3} at both index 22 and 28), renumber the
+    // survivors, and corrupt every later edge — dropping edge {51 54} entirely.
+    for (const [x, y] of this.vertices) graph.addVertexRaw(x, y);
     for (const [a, b] of this.edges) graph.addEdge(a, b);
     graph.makeFaces();
     return graph;
