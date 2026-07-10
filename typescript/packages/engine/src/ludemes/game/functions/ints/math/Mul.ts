@@ -10,6 +10,7 @@
 import type { Context } from "../../../../../context.js";
 import { BaseIntFunction } from "../BaseIntFunction.js";
 import type { JavaIntFunction } from "../IntFunction.js";
+import { IntArrayConstant } from "../../intArray/IntArrayConstant.js";
 
 const UNDEFINED = -1;
 
@@ -40,7 +41,15 @@ export class Mul extends BaseIntFunction {
       const valueB = b;
       this.array = { eval: (ctx: Context) => [valueA.eval(ctx), valueB.eval(ctx)] };
     } else {
-      this.array = (aPresent ? a : b) as IntArrayLike;
+      const lone = (aPresent ? a : b) as IntArrayLike | JavaIntFunction[];
+      // @java Mul(@Or IntFunction[] list, @Or IntArrayFunction array):
+      //   this.array = (array != null) ? array : new IntArrayConstant(list);
+      // The reflection compiler binds the `list` @Or param as a raw IntFunction[]
+      // (e.g. `(* {3 #1 #1})` in Coil's corner setup), which has no .eval — Java
+      // wraps it in an IntArrayConstant. A lone `array` @Or already implements eval.
+      this.array = Array.isArray(lone)
+        ? new IntArrayConstant(lone as unknown as JavaIntFunction[])
+        : (lone as IntArrayLike);
     }
   }
 
