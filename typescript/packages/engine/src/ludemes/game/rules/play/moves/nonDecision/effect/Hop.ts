@@ -153,6 +153,26 @@ export class Hop extends Effect {
     const directions = this.dirnChoice.eval(ctx);
     const mover = ctx.state.mover;
     const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+    // @java Component.getDirn() — the hopping piece's own facing (componentFacing
+    // by what id) takes precedence over the player facing for relative directions.
+    // Without this, a per-piece direction (Insanity Marker1 E / Marker2 W on a
+    // 1×N row) fell back to the player facing (N/S), which has no ray on the row,
+    // so the Hop generated nothing. Mirrors Step.stepTargets.
+    const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+    let facingOverride: number | undefined;
+    {
+      const compFacing = (ctx.game as unknown as {
+        equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } };
+      }).equipment?.board?.componentFacing;
+      if (compFacing && from >= 0) {
+        const what = ctx.state.what(from);
+        const tok = what > 0 ? compFacing[what] : undefined;
+        if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
+      }
+    }
+    // @java Directions.java:472-478 — the piece's stored rotation turns its facing
+    // FR-wise before relative directions resolve (Ploy).
+    const rotSteps = ctx.state.rotationAt?.[from] ?? 0;
     // Dual-SiteType: route through the iterated position's element-type view
     // (local only — never mutate ctx._trajectories).
     const baseTrajH = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
@@ -202,7 +222,7 @@ export class Hop extends Effect {
         if (resolved === null) continue;
         dirName = resolved;
       }
-      const relative = resolveRelativeDir(dirName, mover, playerDirs, undefined, supportedDirNames(ctx));
+      const relative = resolveRelativeDir(dirName, mover, playerDirs, facingOverride, supportedDirNames(ctx), rotSteps);
       if (Array.isArray(relative)) {
         for (const dir of relative) {
           for (const { ray } of axesForDir(dir)) pushRay(ray);
