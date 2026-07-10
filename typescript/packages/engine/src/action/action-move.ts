@@ -458,6 +458,20 @@ export class ActionMove extends BaseAction {
       let pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
       pushed = pushed.withValueStackRow(this.fromIndex, fromRow);
       pushed = pushed.withValueStackRow(this.toIndex, [...toBase, topValue]);
+      // @java ContainerState.value(site, type) returns the TOP level's value; the
+      // flat valueAt channel (which ValuePiece's level-less read consults) must
+      // track the new stack top after this relocation. The destFlatOccupied
+      // branch above already writes it via withValueAt; the push-to-stack branch
+      // omitted it, so a single relocating piece's value landed only in the
+      // per-level valueStacks column and the flat read returned a stale 0
+      // (Kawasukuts Marker's start-gate value travelling up the track → the
+      // level-less (value Piece at:(where "Marker" Mover)) read 0 and
+      // (is In 0 <track segment containing 0>) fired a false MadeACompleteCircuit
+      // win). Keep both the source and destination flat values consistent with
+      // their remaining stack tops (0 when the source drained empty).
+      if (pushed.valueAtSite(this.toIndex) !== topValue) pushed = pushed.withValueAt(this.toIndex, topValue);
+      const fromTopValue = fromRow.length > 0 ? (fromRow[fromRow.length - 1] ?? 0) : 0;
+      if (pushed.valueAtSite(this.fromIndex) !== fromTopValue) pushed = pushed.withValueAt(this.fromIndex, fromTopValue);
       pushed = pushed.withOwnedAdd(topOwner, topWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
       // Carry the single relocating piece's site state (see (C) above).
       if (srcSiteState !== 0) pushed = pushed.withStateAt(this.toIndex, srcSiteState);

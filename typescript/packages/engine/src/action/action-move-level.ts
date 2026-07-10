@@ -94,8 +94,35 @@ abstract class ActionMoveLevelBase extends BaseAction {
       }
       return next;
     }
+    // @java ActionMoveLevelFrom.java:341-364 — the relocated piece CARRIES its
+    // local state, rotation and piece-VALUE to the destination when the move
+    // records no explicit override (currentStateFrom/currentRotationFrom/
+    // currentValueFrom -> csTo). The flat state/value/rotation channels
+    // approximate the top level, so a single relocating piece takes them along
+    // (the plain ActionMove path already does this — action-move.ts:413-453,
+    // Owasokotz on the same FortyStonesWithFourGapsBoard). Kawasukuts stores each
+    // Marker's start gate as its piece value ((set Value at:(last To) (last To)))
+    // and ("MadeACompleteCircuit") reads (value Piece at:(where "Marker" Mover))
+    // to test whether that start gate lies in the track segment just traversed;
+    // without the carry the value read 0 and a region that happened to include 0
+    // fired a false win (WINNER_MISMATCH exposed by the FromTo Stacking fix).
+    // Read the source channels BEFORE the pop clears them.
+    const carryValue = state.valueAtSite(this.fromIndex);
+    const carryState = state.stateAtSite(this.fromIndex);
+    const carryRotation = state.rotationAtSite(this.fromIndex);
     const popped = state.withStackPop(this.fromIndex, sourceLevel);
-    const pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
+    let pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
+    if (carryValue !== 0) pushed = pushed.withValueAt(this.toIndex, carryValue);
+    if (carryState !== 0) pushed = pushed.withStateAt(this.toIndex, carryState);
+    if (carryRotation !== 0) pushed = pushed.withRotationAt(this.toIndex, carryRotation);
+    // Clear the vacated source's flat channels only when the pop emptied it — a
+    // shared site (two Markers entering the same gate before one races off) must
+    // keep the remaining piece's value/state, which the flat channel still holds.
+    if (pushed.stackSize(this.fromIndex) === 0) {
+      if (carryValue !== 0) pushed = pushed.withValueAt(this.fromIndex, 0);
+      if (carryState !== 0) pushed = pushed.withStateAt(this.fromIndex, 0);
+      if (carryRotation !== 0) pushed = pushed.withRotationAt(this.fromIndex, 0);
+    }
     // @java ActionMoveLevelFrom.java:474 updateOnTrackIndices — after relocating the
     // piece (remove level / addItemGeneric) Java keeps the onTrackIndices structure in
     // sync. The TS port mapped remove->withStackPop and addItemGeneric->withStackPush
