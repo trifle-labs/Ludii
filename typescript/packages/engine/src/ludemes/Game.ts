@@ -1374,9 +1374,25 @@ export class Game implements Game {
     // start rules (STATE CONVERGENCE chunk 3). Java start rules apply actions that
     // call ContainerState.setSite(...); converted rules speak this API instead of
     // touching parallel arrays. UNDEFINED (-1) leaves a slot unchanged, as Java does.
+    // @java the play (default) SiteType of the board — a start rule targeting a
+    // DIFFERENT graph element (e.g. `(set Shared Edge …)` on a use:Vertex board)
+    // must write the typed Edge/Vertex/Cell channel, not the default cells[]
+    // arrays, exactly as ActionAdd does in play (placePieces typed routing below).
+    const startPlayType = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+    const startPlayTypeName = typeof startPlayType === "function" ? startPlayType() : startPlayType ?? null;
     (ctx as unknown as { _startState?: unknown })._startState = {
       /** @java ContainerState.setSite(state, site, who, what, count, state, rotation, value) */
-      setSite: (site: number, who: number, what: number, count: number, stateVal: number, value: number): void => {
+      setSite: (site: number, who: number, what: number, count: number, stateVal: number, value: number, type?: string | null): void => {
+        // @java non-default graph element → typed ContainerState channel.
+        if (type && startPlayTypeName && type !== startPlayTypeName && typedStaging) {
+          let ch = typedStaging.get(type);
+          if (!ch) { ch = { who: [], what: [], count: [] }; typedStaging.set(type, ch); }
+          while (ch.who.length <= site) { ch.who.push(0); ch.what.push(0); ch.count.push(0); }
+          if (who !== UNDEFINED) ch.who[site] = who;
+          if (what !== UNDEFINED) ch.what[site] = what;
+          if (count !== UNDEFINED) ch.count[site] = count;
+          return;
+        }
         if (site < 0 || site >= cells.length) return;
         if (who !== UNDEFINED) cells[site] = who;
         if (what !== UNDEFINED) whats[site] = what;

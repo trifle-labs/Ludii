@@ -103,18 +103,39 @@ export class SitesIncident extends BaseRegionFunction {
 		return ctxAny._trajectories?.core?.topo ?? null;
 	}
 
-	/** Get containerState for owner filtering. */
-	private getCs(context: Context): { who(site: number, type: string): number } | null {
-		return (context as unknown as {
-			containerState?(n: number): { who(site: number, type: string): number };
-		}).containerState?.(0) ?? null;
+	/**
+	 * Owner recorded at a graph element of `resultType`. @java
+	 * cs.who(site, resultType) dispatches to the per-type ContainerState. The TS
+	 * default `State.who(site,type)` ignores the type and only reads the play
+	 * channel, so when `resultType` has its OWN typed channel (a NON-play element,
+	 * e.g. an Edge on a use:Vertex board) read that channel AUTHORITATIVELY —
+	 * including a 0 (an edge removed by `(remove Edge …)` is genuinely unowned).
+	 * Falling back to `State.who(site)` when the typed value is 0 conflated the
+	 * edge index with a same-numbered VERTEX's occupancy, so removed edges kept
+	 * counting as owned and LastEdge's `(no Moves Next)` BlockWin never fired.
+	 * Only fall back to the default channel when there is NO typed channel for
+	 * `resultType` (i.e. `resultType` IS the play type).
+	 */
+	private whoOf(context: Context, site: number, resultType: string): number {
+		const st = context.state as unknown as {
+			whoTyped?(t: string, s: number): number;
+			typedSites?: ReadonlyMap<string, unknown>;
+		};
+		if (st.typedSites?.has(resultType)) {
+			return st.whoTyped?.(resultType, site) ?? 0;
+		}
+		return context.state.who(site);
 	}
 
-	/** Get total number of players for owner-ANY check. */
-	private getNumPlayers(context: Context): number {
-		return (context.game as unknown as { players?: { size?: number; numPlayers?: number } }).players?.size
-			?? (context.game as unknown as { numPlayers?: number }).numPlayers
-			?? 2;
+	/**
+	 * @java context.game().players().size() — the players LIST size, which is
+	 * `numPlayers + 1` (Ludii's list carries a phantom player 0). This is the
+	 * "any owner" sentinel in filterByOwner and equals the value `Id.eval`
+	 * returns for the Shared/All/Each roles (`players().count() + 1`), so a
+	 * `Shared` owner filter matches every owned (who != 0) element.
+	 */
+	private getPlayersSize(context: Context): number {
+		return ((context.game as unknown as { numPlayers?: number }).numPlayers ?? 2) + 1;
 	}
 
 	/**
@@ -279,14 +300,13 @@ export class SitesIncident extends BaseRegionFunction {
 
 		const resultOwner: number[] = [];
 		const owner: number = this.ownerFn.eval(context);
-		const cs = this.getCs(context);
-		const numPlayers: number = this.getNumPlayers(context);
+		const playersSize: number = this.getPlayersSize(context);
 
 		// @java ContainerState cs = context.containerState(0)
-		// @java for(int i = 0; i < result.size(); i++) { int who = cs.who(site, resultType); if ((who != 0 && owner == numPlayers) || who == owner) }
+		// @java if ((who != 0 && owner == context.game().players().size()) || who == owner)
 		for (const site of result) {
-			const who: number = cs ? cs.who(site, this.resultType) : 0;
-			if ((who !== 0 && owner === numPlayers) || who === owner) {
+			const who: number = this.whoOf(context, site, this.resultType);
+			if ((who !== 0 && owner === playersSize) || who === owner) {
 				resultOwner.push(site);
 			}
 		}

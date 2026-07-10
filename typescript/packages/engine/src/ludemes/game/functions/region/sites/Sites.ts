@@ -168,10 +168,33 @@ export class Sites extends BaseRegionFunction {
       })(type);
 
     switch (rt) {
-      case "Board":
-        // @java SitesBoard — all board sites
+      case "Board": {
+        // @java SitesBoard.eval — return topology.getGraphElements(type): all
+        // Vertices/Edges/Cells for the requested SiteType. On a use:Vertex
+        // board the play-site count (numSites) equals the VERTEX count, so an
+        // explicit `(sites Board Edge)` must bound on the full EDGE list, not
+        // numSites — otherwise `(set Shared Edge (sites Board Edge))` only marks
+        // the first vertexCount edges (LastEdge start desync).
+        const explicitType = elementType;
         return new (class extends BaseRegionFunction {
           override eval(ctx: Context & EvalScratch): number[] {
+            if (explicitType === "Edge" || explicitType === "Vertex" || explicitType === "Cell") {
+              const traj = (ctx as unknown as {
+                _trajectories?: {
+                  vertexCount: number;
+                  edgeCount: number;
+                  core?: { topo?: { faceEls?: ArrayLike<unknown> } };
+                };
+              })._trajectories;
+              if (traj) {
+                const n = explicitType === "Edge"
+                  ? traj.edgeCount
+                  : explicitType === "Vertex"
+                    ? traj.vertexCount
+                    : (traj.core?.topo?.faceEls?.length ?? 0);
+                return Array.from({ length: n }, (_, i) => i);
+              }
+            }
             const board = (ctx.game as unknown as {
               equipment?: {
                 board?: {
@@ -190,6 +213,7 @@ export class Sites extends BaseRegionFunction {
           }
           override isStatic(): boolean { return true; }
         })();
+      }
       case "Bottom":
         return new SitesBottom(elementType);
       case "Corners":
@@ -465,14 +489,22 @@ export class Sites extends BaseRegionFunction {
     of: string,
     at: IntFunction,
     owner: IntFunction | null,
-    _roleOwner: unknown,
+    roleOwner: unknown,
   ): RegionFunction {
     const rt = regionType as unknown as string;
     switch (rt) {
-      case "Incident":
-        // @java SitesIncident(resultType, of, at, owner, roleOwner)
+      case "Incident": {
+        // @java ownerFn = (owner != null) ? owner.index() : (roleOwner != null)
+        //   ? RoleType.toIntFunction(roleOwner) : null;
+        // A bare RoleType token (Shared / Mover / P1 …) arrives as roleOwner with
+        // owner null; without this conversion the owner filter was dropped, so
+        // `(sites Incident Edge of:Vertex at:(to) Shared)` counted REMOVED (who=0)
+        // edges too and LastEdge never reached its BlockWin end.
+        const ownerFn = owner !== null ? owner
+          : roleOwner != null ? resolveRoleIntFn(roleOwner as string) : null;
         // TS SitesIncident constructor: (resultType, ofType, indexFn, ownerFn)
-        return new SitesIncident(resultType, of, at, owner);
+        return new SitesIncident(resultType, of, at, ownerFn);
+      }
       default:
         throw new Error(`Sites(): A SitesIncidentType is not implemented: ${regionType}`);
     }
@@ -1595,9 +1627,13 @@ function resolveRoleIntFn(role: string): IntFunction {
   if (role === "P2") return constIntFn(2);
   if (role === "P3") return constIntFn(3);
   if (role === "P4") return constIntFn(4);
-  // @java RoleType.All -> numPlayers + 1 (the "any occupant" sentinel; SitesCrossing
-  // tests `whoSiteId == numPlayers + 1` for occupied-by-anyone).
-  if (role === "All") return { eval(ctx: Context & EvalScratch) { return ((ctx.game as unknown as { numPlayers?: number }).numPlayers ?? 2) + 1; } };
+  // @java Id.eval: RoleType.All / Shared / Each all resolve to numPlayers + 1
+  // (the shared / "any occupant" sentinel; SitesCrossing tests
+  // `whoSiteId == numPlayers + 1` for occupied-by-anyone, and LastEdge's
+  // `(sites Incident Edge … Shared)` filters on the shared-edge owner).
+  if (role === "All" || role === "Shared" || role === "Each") {
+    return { eval(ctx: Context & EvalScratch) { return ((ctx.game as unknown as { numPlayers?: number }).numPlayers ?? 2) + 1; } };
+  }
   return constIntFn(-1);
 }
 

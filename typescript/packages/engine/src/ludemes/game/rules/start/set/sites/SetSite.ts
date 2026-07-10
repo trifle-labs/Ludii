@@ -101,7 +101,7 @@ export class SetSite implements StartRule {
    * Start.placePieces(context, site, what, 1, UNDEFINED, UNDEFINED, UNDEFINED, false, type).
    */
   public eval(ctx: Context): void {
-    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
+    const cs = (ctx as unknown as { _startState?: { setSite(site: number, who: number, what: number, count: number, stateVal: number, value: number, type?: string | null): void; setScore(pid: number, score: number): void; setAmount(pid: number, amount: number): void } })._startState;
     if (!cs) return;
     const game = ctx.game as unknown as { equipment: EquipmentSurface; numPlayers: number };
 
@@ -112,9 +112,14 @@ export class SetSite implements StartRule {
 
     const what = piece.index;
 
+    // @java Start.placePieces(context, loc, what, 1, …, type) — the SiteType is
+    // threaded through so a `(set … Edge/Vertex/Cell …)` rule writes the typed
+    // graph-element channel, not the default cells[] (LastEdge's `(set Shared
+    // Edge …)` otherwise marked every VERTEX occupied and `(sites Empty)` emptied).
+    const typeName = this.type === null ? null : String(this.type);
     const place = (site: number): void => {
       // Java: Start.placePieces(...) -> ActionAdd -> ContainerState.setSite(...)
-      cs.setSite(site, owner, what, 1, -1, -1);
+      cs.setSite(site, owner, what, 1, -1, -1, typeName);
     };
 
     if (this.coords !== null) {
@@ -136,7 +141,10 @@ export class SetSite implements StartRule {
 
 function roleOwner(role: RoleType, numPlayers: number): number {
   if (/^P\d+$/.test(role)) return Number(role.slice(1));
-  if (role === "Shared" || role === "All") return numPlayers;
+  // @java SetSite: the Shared/All component is the one whose owner() ==
+  // context.game().players().size() == numPlayers + 1 (the list's phantom
+  // player 0 makes size one greater than the player count).
+  if (role === "Shared" || role === "All") return numPlayers + 1;
   if (role === "Neutral") return 0;
   if (/^Team\d+$/.test(role)) return Number(role.slice(4));
   return UNDEFINED;
