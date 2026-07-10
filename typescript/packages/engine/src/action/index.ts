@@ -67,6 +67,7 @@ export { ActionSetValue } from "./action-set-value.js";
 export { ActionSetValueOfPlayer } from "./action-set-value-of-player.js";
 export { ActionSet } from "./action-set-value-puzzle.js";
 export { ActionSetVar } from "./action-set-var.js";
+export { ActionSowSeed } from "./action-sow-seed.js";
 export { ActionSubStackMove } from "./action-stack-move.js";
 export { ActionStoreStateInContext } from "./action-store-state.js";
 export { ActionSwap } from "./action-swap.js";

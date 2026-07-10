@@ -26,7 +26,7 @@
 
 import { Context } from "../../../../../../../context.js";
 import { Move } from "../../../../../../../move.js";
-import { ActionAddCount } from "../../../../../../../action/action-add-count.js";
+import { ActionSowSeed } from "../../../../../../../action/action-sow-seed.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
@@ -270,7 +270,10 @@ export class Sow extends Effect {
       const numPerHole = numPerHoleDefault();
       while (numDone !== numPerHole) {
         if (numSeedSowed < count) {
-          actions.push(new ActionAddCount(start, 1, mover, seedWhat));
+          // @java a self-drop is ActionMove(start→start): net-zero, but it still
+          // consumes one seed from the origin pool. Per-seed transfer keeps the
+          // origin drain incremental (and idempotent on re-application).
+          actions.push(new ActionSowSeed(start, start, mover, seedWhat));
           lastTo = start;
         }
         numDone++;
@@ -323,7 +326,10 @@ export class Sow extends Effect {
 
         while (numDone !== numPerHole) {
           if (numSeedSowed < count) {
-            actions.push(new ActionAddCount(to, 1, mover, seedWhat));
+            // @java Sow.java emits an ActionMove(start→to) per dropped seed; the
+            // per-seed transfer decrements the origin and increments the hole,
+            // and no-ops on an already-drained origin (ActionMoveTopPiece guard).
+            actions.push(new ActionSowSeed(start, to, mover, seedWhat));
             lastTo = to;
           }
           numDone++;
@@ -335,8 +341,13 @@ export class Sow extends Effect {
       }
     }
 
-    // @java Sow.java:291 — add the move
-    const finalActions: Action[] = [new ActionAddCount(start, -count, mover, seedWhat), ...actions];
+    // @java Sow.java:291 — add the move. The origin drain is NOT a separate
+    // bulk action: each per-seed ActionSowSeed already decrements the origin by
+    // one (mirroring Java's list of single-seed ActionMove(start→hole)). This
+    // makes the sow idempotent when Do/Move re-applies it (see ActionSowSeed),
+    // and it only drains as many seeds as were actually sown (the old bulk
+    // `-count` over-drained when a non-looped track ran out before `count`).
+    const finalActions: Action[] = [...actions];
     let moveAgain = false;
     (ctx as unknown as { _evalTo?: number })._evalTo = lastTo;
     let rollingState = applyActions(ctx, finalActions);
