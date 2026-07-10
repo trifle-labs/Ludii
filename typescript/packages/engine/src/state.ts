@@ -41,6 +41,24 @@ export interface OwnedEntry {
   readonly level: number;
 }
 
+/**
+ * Per-SiteType occupancy channel for NON-DEFAULT graph elements (Edge/Vertex on
+ * a Cell-default board, etc.) — @java the distinct ContainerState Ludii keeps for
+ * each SiteType. `who`/`what`/`count` are always present; `state`/`rotation`/
+ * `value` are lazily materialised only when a `(set State/Rotation/Value <Type>
+ * …)` writes them (the flat cells-indexed stateAt/rotationAt/valueAt arrays
+ * cannot hold an Edge index that exceeds the Cell count — N-Mesh's
+ * `(set State Edge at:(var "ToEdge") …)` overflowed them).
+ */
+export interface TypedChannel {
+  who: readonly number[];
+  what: readonly number[];
+  count: readonly number[];
+  state?: readonly number[];
+  rotation?: readonly number[];
+  value?: readonly number[];
+}
+
 export interface StateOptions {
   readonly scores?: readonly number[];
   readonly valuesPlayer?: readonly number[];
@@ -183,7 +201,7 @@ export interface StateOptions {
    * a NON-play element type (Guerrilla Checkers: vertex play, Cell pieces).
    * Keyed by SiteType name; arrays indexed by that type's element id.
    */
-  readonly typedSites?: ReadonlyMap<string, { who: readonly number[]; what: readonly number[]; count: readonly number[] }>;
+  readonly typedSites?: ReadonlyMap<string, TypedChannel>;
   /** @java State.sitesToRemove() — EndOfTurn-queued capture sites (Frisian). */
   readonly toClear?: ReadonlySet<number>;
   /**
@@ -325,7 +343,7 @@ export class State {
   public readonly diceRolledFaces: readonly number[];
 
   /** Dual-SiteType channels. See {@link StateOptions.typedSites}. */
-  public readonly typedSites: ReadonlyMap<string, { who: readonly number[]; what: readonly number[]; count: readonly number[] }>;
+  public readonly typedSites: ReadonlyMap<string, TypedChannel>;
 
   /** @java State.sitesToRemove(). See {@link StateOptions.toClear}. */
   public readonly toClear: ReadonlySet<number>;
@@ -645,7 +663,56 @@ export class State {
     const who2 = grow(cur?.who); const what2 = grow(cur?.what); const count2 = grow(cur?.count);
     who2[site] = who; what2[site] = what; count2[site] = count;
     const next = new Map(this.typedSites);
-    next.set(type, { who: who2, what: what2, count: count2 });
+    // Preserve any lazily-materialised state/rotation/value sub-channels (only
+    // grow their arrays if this write extends the channel past their length).
+    const ch: TypedChannel = { who: who2, what: what2, count: count2 };
+    if (cur?.state) ch.state = grow(cur.state);
+    if (cur?.rotation) ch.rotation = grow(cur.rotation);
+    if (cur?.value) ch.value = grow(cur.value);
+    next.set(type, ch);
+    return this.with({ typedSites: next });
+  }
+
+  /** @java ContainerState.state(site, type) for a non-default graph element. */
+  public stateTyped(type: string, site: number): number {
+    return this.typedSites.get(type)?.state?.[site] ?? 0;
+  }
+  /** @java ContainerState.rotation(site, type) for a non-default graph element. */
+  public rotationTyped(type: string, site: number): number {
+    return this.typedSites.get(type)?.rotation?.[site] ?? 0;
+  }
+  /** @java ContainerState.value(site, type) for a non-default graph element. */
+  public valueTyped(type: string, site: number): number {
+    return this.typedSites.get(type)?.value?.[site] ?? 0;
+  }
+
+  /**
+   * Write the `state`/`rotation`/`value` sub-channel of a non-default graph
+   * element's typed container (@java cs.setState/setRotation/setValue on the
+   * Edge/Vertex ContainerState). Materialises the sub-channel and the base
+   * who/what/count arrays lazily; safe to call before any occupancy write.
+   */
+  public withTypedAttr(type: string, site: number, attr: "state" | "rotation" | "value", val: number): State {
+    const cur = this.typedSites.get(type);
+    const size = Math.max(site + 1, cur?.who.length ?? 0, cur?.[attr]?.length ?? 0);
+    const grow = (arr: readonly number[] | undefined): number[] => {
+      const out = new Array<number>(size).fill(0);
+      if (arr) for (let i = 0; i < arr.length; i += 1) out[i] = arr[i]!;
+      return out;
+    };
+    const ch: TypedChannel = {
+      who: grow(cur?.who),
+      what: grow(cur?.what),
+      count: grow(cur?.count),
+    };
+    if (cur?.state) ch.state = grow(cur.state);
+    if (cur?.rotation) ch.rotation = grow(cur.rotation);
+    if (cur?.value) ch.value = grow(cur.value);
+    const arr = grow(cur?.[attr]);
+    arr[site] = val;
+    ch[attr] = arr;
+    const next = new Map(this.typedSites);
+    next.set(type, ch);
     return this.with({ typedSites: next });
   }
 

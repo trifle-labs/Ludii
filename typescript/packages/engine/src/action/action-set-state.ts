@@ -11,6 +11,14 @@ import type { ActionType } from "./action-type.js";
 export interface ActionSetStateOptions {
   readonly to: number;
   readonly state: number;
+  /** Graph element type of `to` (Cell/Edge/Vertex). @java ActionSetState.type */
+  readonly toType?: string | null;
+  /**
+   * True when `to` is a NON-default graph element (e.g. Edge on a Cell-default
+   * board), so the state belongs in the typed channel, not the flat cell-sized
+   * stateAt[]. Computed at move-construction time (needs Context/board).
+   */
+  readonly toTypedNonDefault?: boolean;
 }
 
 export class ActionSetState extends BaseAction {
@@ -18,6 +26,8 @@ export class ActionSetState extends BaseAction {
 
   private readonly toIndex: number;
   private readonly stateValue: number;
+  private readonly toSiteType: string | null;
+  private readonly toTypedNonDefault: boolean;
 
   public constructor(options: ActionSetStateOptions) {
     super();
@@ -26,9 +36,14 @@ export class ActionSetState extends BaseAction {
     }
     this.toIndex = options.to;
     this.stateValue = options.state;
+    this.toSiteType = options.toType ?? null;
+    this.toTypedNonDefault = options.toTypedNonDefault ?? false;
   }
 
   public override apply(state: State): State {
+    if (this.toTypedNonDefault && this.toSiteType) {
+      return state.withTypedAttr(this.toSiteType, this.toIndex, "state", this.stateValue);
+    }
     return state.withStateAt(this.toIndex, this.stateValue);
   }
 

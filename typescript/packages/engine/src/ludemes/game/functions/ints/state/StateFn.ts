@@ -10,6 +10,7 @@
 import type { Context } from "../../../../../context.js";
 import { BaseIntFunction } from "../BaseIntFunction.js";
 import type { JavaIntFunction } from "../IntFunction.js";
+import { isNonDefaultTyped } from "../../region/sites/index/SitesEmpty.js";
 
 export class State extends BaseIntFunction {
   /** @java State.type */
@@ -36,7 +37,14 @@ export class State extends BaseIntFunction {
   public override eval(context: Context): number {
     const site = this.loc.eval(context);
     if (site < 0) return 0;
-    void this.type; void this.level;
+    void this.level;
+    // Non-default graph element (e.g. Edge on a Cell-default board): state lives
+    // in the typed channel, not the flat cell-sized stateAt[].
+    if (isNonDefaultTyped(context, this.type)) {
+      return (context.state as unknown as {
+        stateTyped(type: string, site: number): number;
+      }).stateTyped(this.type as string, site);
+    }
     return (context.state as unknown as { stateAt: readonly number[] }).stateAt[site] ?? 0;
   }
 

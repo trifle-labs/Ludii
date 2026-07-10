@@ -22,6 +22,7 @@ import { Move as LudiiMove } from "../../../../../../../../../move.js";
 import type { SiteType } from "../../../../../../../../../action/site-type.js";
 import type { Then } from "../../Then.js";
 import { applyPostStateThen } from "../../Then.js";
+import { isNonDefaultTyped } from "../../../../../../../functions/region/sites/index/SitesEmpty.js";
 
 /** Java parity: Constants.UNDEFINED = -1 */
 const UNDEFINED = -1;
@@ -97,8 +98,16 @@ export class SetState implements MovesFunction {
     const mover = ctx.state.mover;
 
     // @java SetState.java:105 — ActionSetState(realType, site, level, stateValue)
-    // type and level are omitted in the flat 1:1 action path
-    const action = new ActionSetState({ to: site, state: stateValue });
+    // realType = type ?? board.defaultSite(); when realType is a NON-default
+    // graph element (e.g. Edge on a Cell-default board) the state lives in the
+    // typed channel, not the flat cell-sized stateAt[] — route it accordingly.
+    const toNonDefault = isNonDefaultTyped(ctx, this.type);
+    const action = new ActionSetState({
+      to: site,
+      state: stateValue,
+      toType: this.type,
+      toTypedNonDefault: toNonDefault,
+    });
 
     const move = new LudiiMove({
       id: `setstate:${mover}:${site}:${stateValue}`,

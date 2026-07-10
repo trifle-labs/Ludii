@@ -584,11 +584,13 @@ export class ActionMove extends BaseAction {
       (this.siteTypeTo === "Edge" || this.siteTypeTo === "Vertex")
     ) {
       let s2 = next.withTypedSite(this.siteTypeTo, this.toIndex, movingOwner, movingWhat, 1);
-      // Carry the moving piece's state/rotation/value to the destination element
-      // (shared flat index space: (state at:s)/(value Piece at:s) read stateAt[]).
-      if (destState !== 0) s2 = s2.withStateAt(this.toIndex, destState);
-      if (destRotation !== 0) s2 = s2.withRotationAt(this.toIndex, destRotation);
-      if (destValue !== 0) s2 = s2.withValueAt(this.toIndex, destValue);
+      // Carry the moving piece's state/rotation/value to the destination element.
+      // The destination is a NON-default graph element, so these live in the typed
+      // channel — writing to the flat cell-sized stateAt[] would overflow when the
+      // edge/vertex index exceeds the cell count.
+      if (destState !== 0) s2 = s2.withTypedAttr(this.siteTypeTo, this.toIndex, "state", destState);
+      if (destRotation !== 0) s2 = s2.withTypedAttr(this.siteTypeTo, this.toIndex, "rotation", destRotation);
+      if (destValue !== 0) s2 = s2.withTypedAttr(this.siteTypeTo, this.toIndex, "value", destValue);
       s2 = this.transferHidden(s2, state, fromCount <= 1);
       return this.maintainTracks(s2, movingWhat);
     }
