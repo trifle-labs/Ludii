@@ -401,21 +401,23 @@ export class PlaceRandom {
     for (let i = 0; i < piecesArr.length; i++) {
       const piece = piecesArr[i];
       if (piece === undefined) continue;
-      const components = (context as unknown as { components(): ({ name(): string } | null)[] }).components();
-      for (let pieceIndex = 1; pieceIndex < components.length; pieceIndex++) {
-        if (components[pieceIndex]?.name() === piece) {
-          if (this.counts === null) {
+      // @java evalStack: context.components()[k].name().equals(piece). Java's
+      // Component.name() returns the owner-suffixed name (e.g. "Pawn1"); the TS
+      // components() elements store the base name + owner separately, so resolve
+      // the suffixed piece string to its component index via getComponent — the
+      // same resolver (componentByName) the non-stack eval path uses above.
+      const component = (context.game as unknown as { getComponent(name: string): { index(): number } | null }).getComponent(piece);
+      if (component === null) continue;
+      const pieceIndex = component.index();
+      if (this.counts === null) {
+        toPlace.push(pieceIndex);
+      } else {
+        const countsEntry = this.counts[i];
+        if (countsEntry !== undefined) {
+          const c = countsEntry.eval(context);
+          for (let j = 0; j < c; j++) {
             toPlace.push(pieceIndex);
-          } else {
-            const countsEntry = this.counts[i];
-            if (countsEntry !== undefined) {
-              const c = countsEntry.eval(context);
-              for (let j = 0; j < c; j++) {
-                toPlace.push(pieceIndex);
-              }
-            }
           }
-          break;
         }
       }
     }
