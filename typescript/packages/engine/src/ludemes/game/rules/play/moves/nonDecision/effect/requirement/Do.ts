@@ -107,6 +107,17 @@ export class Do implements MovesFunction {
       const priorMoves = this.prior.eval(ctx);
       const nextMoves = this.next.eval(newCtx);
       const priorActions = priorMoves.flatMap((pm) => [...pm.actions]);
+      // @java the compound (do prior next:X) has a SINGLE decision — X's. The
+      // prior's actions are pre-moves prepended before X, so Java records them
+      // WITHOUT the decision flag ((do (add …) next:(move Pass)) shows the Add
+      // un-flagged and the Pass with decision=true). The prior `(add …)` here
+      // still carried decision=true, so decisionAction() returned the Add ahead
+      // of the shifted decisionIndex → the compound reported isPass()=false /
+      // from=handSite and the recorded pure-pass never matched (Bide bide move).
+      // Clear it so the decision resolves to the `next` move at decisionIndex.
+      for (const a of priorActions) {
+        if (a.isDecision()) (a as { setDecision(d: boolean): void }).setDecision(false);
+      }
       // @java the prior's then() consequents ride along on the compound move
       // too — (do (roll (then (addScore Mover (mapEntry (count Pips)))))
       // next:(move Pass …)) applies roll THEN addScore THEN the pass's thens.
