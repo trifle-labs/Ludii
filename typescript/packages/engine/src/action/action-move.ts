@@ -30,6 +30,16 @@ export interface ActionMoveOptions {
   readonly fromType?: SiteType;
   readonly toType?: SiteType;
   /**
+   * True when `toType` is a genuinely NON-DEFAULT graph element on this board
+   * (Java: csTo is the Edge/Vertex ContainerState, not the flat Cell layer).
+   * Computed by the caller via `isNonDefaultTyped(context, toType)` because
+   * `apply(state)` has no Context. Gates the cross-type typed-channel write:
+   * a Cell→Vertex move on a `use:Vertex` board names the DEFAULT element and
+   * must stay in cells[] (Guerrilla marker), whereas a Cell→Edge move on a
+   * Cell board is genuinely typed (Quoridor wall).
+   */
+  readonly toTypedNonDefault?: boolean;
+  /**
    * Non-stacking N-seed transfer (Java `ActionMoveN`, FromTo.java 348). When
    * set, `apply` moves `count` seeds from→to by adjusting the per-site counts
    * (mancala model) instead of relocating a single piece. The resulting state
@@ -90,6 +100,8 @@ export class ActionMove extends BaseAction {
   private readonly clearFootprint: readonly number[];
   private readonly stackMove: boolean;
   private readonly numLevel: number | undefined;
+  /** @see ActionMoveOptions.toTypedNonDefault */
+  private readonly toTypedNonDefault: boolean;
 
   public constructor(options: ActionMoveOptions) {
     super();
@@ -114,6 +126,7 @@ export class ActionMove extends BaseAction {
     this.clearFootprint = options.clearFootprint ?? [];
     this.stackMove = options.stack ?? false;
     this.numLevel = options.numLevel;
+    this.toTypedNonDefault = options.toTypedNonDefault ?? false;
   }
 
   public override apply(state: State): State {
@@ -553,6 +566,31 @@ export class ActionMove extends BaseAction {
       if (currentStateFrom !== 0) next = next.withStateAt(this.fromIndex, 0);
       if (currentRotationFrom !== 0) next = next.withRotationAt(this.fromIndex, 0);
       if (currentValueFrom !== 0) next = next.withValueAt(this.fromIndex, 0);
+    }
+    // @java a cross-type move whose DESTINATION is a non-default graph element
+    // (Edge/Vertex) writes the relocated piece into that element's typed channel
+    // — csTo is the Edge/Vertex ContainerState, not the flat Cell layer. Quoridor's
+    // wall `(move (from (handSite Mover)) (to Edge (difference (sites Empty Edge) …)))`
+    // relocates a Rectangle from the Cell hand onto an Edge; the flat destination
+    // path below does `withCell(edgeIndex)` and threw "siteIndex out of range"
+    // because an edge index exceeds the cells range. The source (a Cell hand) was
+    // already cleared above; write the destination in the typed channel and return.
+    // Gated on the destination being Edge/Vertex AND differing from the source type
+    // so same-type graph moves (handled by the typed path above) and ordinary
+    // Cell→Cell moves are untouched.
+    if (
+      this.toTypedNonDefault &&
+      this.siteTypeTo !== this.siteTypeFrom &&
+      (this.siteTypeTo === "Edge" || this.siteTypeTo === "Vertex")
+    ) {
+      let s2 = next.withTypedSite(this.siteTypeTo, this.toIndex, movingOwner, movingWhat, 1);
+      // Carry the moving piece's state/rotation/value to the destination element
+      // (shared flat index space: (state at:s)/(value Piece at:s) read stateAt[]).
+      if (destState !== 0) s2 = s2.withStateAt(this.toIndex, destState);
+      if (destRotation !== 0) s2 = s2.withRotationAt(this.toIndex, destRotation);
+      if (destValue !== 0) s2 = s2.withValueAt(this.toIndex, destValue);
+      s2 = this.transferHidden(s2, state, fromCount <= 1);
+      return this.maintainTracks(s2, movingWhat);
     }
     // Stacking onto an occupied destination owned by the same player (Java:
     // ContainerStateStacks.addItem). Backgammon-family points hold a pile of

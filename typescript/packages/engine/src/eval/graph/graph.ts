@@ -266,6 +266,19 @@ export class Graph {
   }
 
   /**
+   * The board perimeter as ordered vertex rings, one per connected component
+   * (Java `MeasureGraph.measurePerimeter`, which returns one Perimeter per
+   * component). Consecutive vertices in each ring (with wrap-around) are the
+   * boundary edges — used by `(sites Outer Edge)` to reproduce Java's
+   * `edge.properties().set(PERIMETER)` walk. Falls back to a single ring from
+   * `perimeterVerts` when the per-component split was not computed.
+   */
+  public get perimeterRingList(): readonly (readonly number[])[] {
+    if (this.perimeterRings.length > 0) return this.perimeterRings;
+    return this.perimeterVerts.length > 0 ? [this.perimeterVerts] : [];
+  }
+
+  /**
    * Vertex ids flagged as board corners — Java `MeasureGraph.measureCorners` /
    * `cornersFromPerimeter` for the VERTEX site type (a vertex is CORNER when its
    * perimeter position is a turning point of the boundary polygon). Computed

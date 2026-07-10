@@ -19,6 +19,7 @@ import { ActionCopy } from "../../../../../../../action/action-copy.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove, type DeferredThen } from "../../../../../../../move.js";
 import { Add as AddEffect } from "./Add.js";
+import { isNonDefaultTyped } from "../../../../../functions/region/sites/index/SitesEmpty.js";
 
 /** OFF constant matching Java's Constants.OFF = -1 */
 const OFF = -1;
@@ -34,6 +35,8 @@ export class FromTo implements MovesFunction {
 
   /** @java From.type() — explicit (from Cell ...) declaration. */
   private readonly declaredFromType: string | null;
+  /** @java To.type() — explicit (to Edge/Vertex ...) declaration (typeTo). */
+  private readonly declaredToType: string | null;
   /** @java FromTo.locTo */
   private readonly locTo: IntFunction;
   /** @java FromTo.levelTo */
@@ -65,6 +68,7 @@ export class FromTo implements MovesFunction {
     levelFrom?: IntFunction | null;
     countFn?: IntFunction | null;
     declaredFromType?: string | null;
+    declaredToType?: string | null;
     locTo: IntFunction;
     levelTo?: IntFunction | null;
     regionFrom?: RegionFunction | null;
@@ -81,6 +85,7 @@ export class FromTo implements MovesFunction {
     this.levelFrom = opts.levelFrom ?? null;
     this.countFn = opts.countFn ?? null;
     this.declaredFromType = opts.declaredFromType ?? null;
+    this.declaredToType = opts.declaredToType ?? null;
     this.locTo = opts.locTo;
     this.levelTo = opts.levelTo ?? null;
     this.regionFrom = opts.regionFrom ?? null;
@@ -303,11 +308,25 @@ export class FromTo implements MovesFunction {
           if (lv >= 0 && lv < fromStackLen - 1 && fromStackLen > 1) {
             moveAction = new ActionMoveLevelFrom(from, lv, to);
           } else {
-            // Dual-SiteType: stamp the declared type so application routes
+            // Dual-SiteType: stamp the declared types so application routes
             // through the typed channel (gated downstream on channel existence).
-            const dt = this.declaredFromType;
-            moveAction = dt
-              ? new ActionMove({ from, to, fromType: dt as never, toType: dt as never })
+            // @java FromTo typeFrom=from.type(), typeTo=to.type() are SEPARATE:
+            // Quoridor's wall `(move (from (handSite Mover)) (to Edge …))` has no
+            // from-type (Cell hand) but an explicit to-type Edge — the destination
+            // must land in the Edge channel, not cells[]. When no to-type is
+            // declared, fall back to the from-type so same-type graph moves
+            // (Guerrilla Vertex board) are unchanged.
+            const dft = this.declaredFromType;
+            const dtt = this.declaredToType;
+            // @java csTo is the Edge/Vertex ContainerState ONLY when the to-type is
+            // a genuinely NON-DEFAULT graph element on this board. On a `use:Vertex`
+            // board a `(to Vertex …)` names the DEFAULT element (written to cells[]),
+            // so a Cell→Vertex relocation (Guerrilla's hand→Vertex marker) must NOT
+            // route to a typed channel. Compute the decision here (apply() has no
+            // Context) and pass it as a flag.
+            const toNonDefault = isNonDefaultTyped(ctx, dtt);
+            moveAction = (dft || dtt)
+              ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault })
               : new ActionMove({ from, to });
           }
         }

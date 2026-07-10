@@ -60,6 +60,7 @@ export class SitesOuter extends BaseRegionFunction {
     const ctxAny = ctx as unknown as {
       _trajectories?: {
         outer?(type: string): number[];
+        outerEdges?(): number[];
         core?: { topo?: { outerEls?: number[]; cells?: Array<{ id: number }> } };
       } | null;
       topology?: () => {
@@ -68,6 +69,14 @@ export class SitesOuter extends BaseRegionFunction {
     };
 
     const traj = ctxAny._trajectories;
+    // @java graph.outer(SiteType.Edge): the perimeter EDGES. The cell-perimeter
+    // fallback below returns CELL ids, which corrupts `(difference (sites Empty
+    // Edge) (sites Outer Edge))` (Quoridor wall placement) by removing edges whose
+    // id collides with a perimeter cell id. Route Edge through the dedicated
+    // edge-perimeter walk.
+    if (realType === "Edge" && traj && typeof traj.outerEdges === "function") {
+      return traj.outerEdges();
+    }
     if (traj) {
       // Check for outer() method on trajectories
       if (typeof (traj as unknown as Record<string, unknown>).outer === "function") {

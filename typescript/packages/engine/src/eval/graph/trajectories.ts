@@ -148,6 +148,50 @@ export class Trajectories {
   }
 
   /**
+   * Edge play-sites on the board perimeter — Java `Topology.outer(SiteType.Edge)`
+   * / `MeasureGraph.measurePerimeter`, which sets the PERIMETER (→ OUTER) property
+   * on the edge between each pair of CONSECUTIVE perimeter-ring vertices. Returned
+   * as edge site ids (identical to Java's outer(Edge) list) ascending.
+   *
+   * `(sites Outer Edge)` previously fell through to `SitesOuter`'s cell-perimeter
+   * fallback, returning perimeter CELL indices; `(difference (sites Empty Edge)
+   * (sites Outer Edge))` then stripped those numeric values from the edge set,
+   * deleting valid interior wall-edges whose id collided with a perimeter cell id
+   * (Quoridor: wall to Edge 45 dropped because cell 45 is a perimeter cell).
+   */
+  public outerEdges(): number[] {
+    const rings = this.srcGraph.perimeterRingList;
+    if (rings.length === 0) {
+      // No perimeter ring (lattice / Vertex-mode board with no faces): fall back
+      // to the topological definition — an outer edge borders exactly one face.
+      const out: number[] = [];
+      for (const e of this.core.topo.edgeEls) {
+        if (e.faces.length === 1) out.push(e.id);
+      }
+      return out.sort((a, b) => a - b);
+    }
+    // @java for each consecutive perimeter-vertex pair, mark their incident edge.
+    const out = new Set<number>();
+    for (const ring of rings) {
+      const n = ring.length;
+      for (let i = 0; i < n; i += 1) {
+        const a = ring[i] as number;
+        const b = ring[(i + 1) % n] as number;
+        const va = this.core.topo.verts[a];
+        if (!va) continue;
+        // Find the edge whose endpoints are exactly {a, b}.
+        for (const e of va.edges) {
+          if ((e.va.id === a && e.vb.id === b) || (e.va.id === b && e.vb.id === a)) {
+            out.add(e.id);
+            break;
+          }
+        }
+      }
+    }
+    return [...out].sort((x, y) => x - y);
+  }
+
+  /**
    * Play-sites flagged as board corners (Java MeasureGraph.measureCorners), or
    * `undefined` when the corner geometry is not modelled for this play type.
    * In Vertex play the corner vertices are returned directly; Cell play returns

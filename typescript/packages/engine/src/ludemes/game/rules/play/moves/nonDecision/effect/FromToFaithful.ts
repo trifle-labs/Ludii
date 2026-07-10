@@ -21,6 +21,7 @@ export class FromToFaithful extends FromTo {
     super({
       locFrom: fromLoc(from),
       declaredFromType: from?.type?.() ?? null,
+      declaredToType: to?.type?.() ?? null,
       levelFrom: fromLevel(from),
       countFn: count,
       locTo: toLoc(to),
