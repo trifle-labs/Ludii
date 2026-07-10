@@ -13,6 +13,7 @@ import type { Context } from "../../../../../../../context.js";
 import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import type { Move } from "../../../../../../../move.js";
 import { applyPostStateThen, type Then } from "./Then.js";
+import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
 import { ActionMoveLevelFrom } from "../../../../../../../action/action-move-level.js";
 import { ActionCopy } from "../../../../../../../action/action-copy.js";
@@ -100,6 +101,15 @@ export class FromTo implements MovesFunction {
     this.captureRule = wrapBoolFn(opts.captureRule);
     this.captureEffect = opts.captureEffect ?? null;
     this.stack = opts.stack ?? false;
+    // @java FromTo.java:567-568 — `if (levelFrom != null || stack) gameFlags |=
+    // GameType.Stacking`. A level-addressable from-clause (or an explicit
+    // stack:True) makes the whole game stacking, so a plain single-piece move
+    // landing on an occupied site PUSHES a level rather than overwriting the
+    // occupant (ActionMove's state.stackingGame branch). Kawasukuts' Marker move
+    // `(move (from (from) level:(level)) (to …))` is the flag's only trigger;
+    // without it two markers entering the same gate overwrote (the lower one was
+    // lost) and that player then had no piece to race, forcing a spurious Pass.
+    if (this.levelFrom !== null || this.stack) compileFlags.usesStacking = true;
     this.copy = opts.copy ?? { eval: () => false };
     this.thenClause = opts.then ?? null;
   }
