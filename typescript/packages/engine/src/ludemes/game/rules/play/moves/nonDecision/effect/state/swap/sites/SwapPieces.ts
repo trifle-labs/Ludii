@@ -59,8 +59,15 @@ export class SwapPieces implements MovesFunction {
     // @java SwapPieces.java:76-78 — ActionMove(locA → locB)
     const actionMove = new ActionMove({ from: locA, to: locB });
 
-    // @java SwapPieces.java:80-82 — ActionAdd(locA, whatB) — place whatB back
-    const actionAdd = new ActionAdd({ to: locA, what: whatB, owner: mover });
+    // @java SwapPieces.java:80-82 — ActionAdd(null, locA, whatB, 1, …). The `1`
+    // is COUNT, not owner: Java's ActionAdd.apply always derives who from
+    // components()[what].owner() (ActionAdd.java:199), never the mover. Passing
+    // owner:mover left the swapped-in stone flagged as the mover's — e.g.
+    // Quantum Leap's pre-game (swap Pieces) put an enemy Marker onto locA but
+    // tagged it as the mover's, so IsFriendAt counted it and the hop distance
+    // (= friendly-neighbour count) read one too high, dropping the recorded hop.
+    const ownerB = this.componentOwner(ctx, whatB);
+    const actionAdd = new ActionAdd({ to: locA, what: whatB, owner: ownerB });
 
     const move = new LudiiMove({
       id: `swapPieces:${mover}:${locA}:${locB}`,
@@ -76,5 +83,18 @@ export class SwapPieces implements MovesFunction {
     // @java SwapPieces.java:91-93 — then clause. Move.apply evaluates then()
     // AFTER the action, so defer instead of baking the pre-move eval.
     return [applyPostStateThen(this.thenClause, ctx, move)];
+  }
+
+  /**
+   * @java ActionAdd.java:199 — who = (what < 1) ? 0 : components()[what].owner().
+   * Derive the placed component's real owner; empty (what<1) falls back to the
+   * ActionAdd `owner ?? what` default via whatB (harmless — apply no-ops what<1).
+   */
+  private componentOwner(ctx: Context, whatB: number): number {
+    if (whatB < 1) return whatB;
+    const equipment = (ctx.game as unknown as {
+      equipment?: { componentAt?(id: number): { owner?: number } | undefined };
+    }).equipment;
+    return equipment?.componentAt?.(whatB)?.owner ?? whatB;
   }
 }
