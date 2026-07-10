@@ -226,6 +226,17 @@ export class Trajectories {
   }
 
   /**
+   * Number of graph EDGES underlying this board — the full topology edge list
+   * (@java Topology.edges().size()), populated regardless of play type. The
+   * Edge-variant graph predicates (`(is Path Edge …)`) iterate the whole edge
+   * set; on a `use:Vertex` board `numSites` is the VERTEX count, so those loops
+   * must bound on this instead or they never examine edges past vertexCount.
+   */
+  public get edgeCount(): number {
+    return this.core.topo.edgeEls.length;
+  }
+
+  /**
    * Endpoint graph-vertex ids of an Edge play-site, or `undefined` when this is
    * not an Edge-play board or the site is out of range. The play-sites of an
    * Edge board ARE the graph edges (in order), so `site` indexes `edgeEls`.

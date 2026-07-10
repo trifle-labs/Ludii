@@ -179,7 +179,10 @@ export class IsPath implements BooleanFunction {
 
     const [v1, v2] = ep;
     const totalVertices = traj.vertexCount;
-    const totalEdges = traj.numSites;
+    // @java IsPath iterates context.topology().edges() — the FULL edge list.
+    // `traj.numSites` is the VERTEX count on a use:Vertex board (Icosian), so
+    // bounding the owned-edge scan on it silently skips edges past vertexCount.
+    const totalEdges = traj.edgeCount;
 
     // @java IsPath reads `cs.what(edge, SiteType.Edge)` — the EDGE container
     // state. In the live TS State, edge occupancy lives in the typedSites
