@@ -653,7 +653,22 @@ export class State {
     if (ws !== undefined && ws.length > 0) {
       const w = ws[level] ?? 0;
       if (w !== 0) return w;
-      return this.stackAt(siteIndex, level);
+      const s = this.stackAt(siteIndex, level);
+      if (s !== 0) return s;
+      // Count-backed pile: a uniform component whose true height lives in
+      // countAt alongside a single representative entry in stacks/whatStacks
+      // (the mancala largeStack model). A level below the count but beyond that
+      // lone stored entry is the SAME component — mirror whoAtSiteLevel, which
+      // already falls back to the uniform cell owner for out-of-range levels.
+      // Without this, sowing a seed off level>0 of a count-backed hole read
+      // what=0 and deposited a phantom what-0 seed at the destination (the
+      // Yucebao/two-row `w0` corruption: seeds sown from any level but the
+      // bottom lost their Seed component channel, diverging later size/what
+      // reads and the round-end sweep).
+      const count = this.countAt[siteIndex] ?? 0;
+      const stackLen = this.stacks[siteIndex]?.length ?? 0;
+      if (count > stackLen && level >= 0 && level < count) return this.whatAtSite(siteIndex);
+      return 0;
     }
     const st = this.stacks[siteIndex];
     if (st !== undefined && st.length > 1) return this.stackAt(siteIndex, level);

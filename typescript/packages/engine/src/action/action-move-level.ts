@@ -63,10 +63,23 @@ abstract class ActionMoveLevelBase extends BaseAction {
         }
         return next.withStackPush(this.toIndex, movingOwner, movingWhat);
       }
-      const toCount = state.countAtSite(this.toIndex);
+      // @java ContainerStateStacks.addItem always appends one item, so the
+      // destination height grows by exactly 1. A count-backed pile keeps its
+      // true height in countAt alongside a single representative stacks[] entry.
+      // But a seed previously deposited via withStackPush (a seed landing on a
+      // ball-hole, or inherited from the genuine-stack representation that Ball
+      // placements seed the board with) lives in stacks[] with countAt still 0.
+      // Reading the increment base from countAtSite alone then UNDER-counts:
+      // countAt 0→1 while stackLen is already 1, so stackSize = max(1,1) = 1
+      // swallows the new seed (the Yucebao hole-6 sow divergence — one seed per
+      // affected hole silently vanishes, drifting every downstream size/moveAgain
+      // read). Base the new height on the true pre-add count: stackSize when the
+      // site holds real content (cells set), else 0 for a drained/empty site
+      // (whose lone stacks[] entry is a stale representative, not a live seed).
+      const toBase = (state.cells[this.toIndex] ?? 0) === 0 ? 0 : state.stackSize(this.toIndex);
       let next = state
         .withCountAt(this.fromIndex, Math.max(0, fromCount - 1))
-        .withCountAt(this.toIndex, toCount + 1);
+        .withCountAt(this.toIndex, toBase + 1);
       if ((next.cells[this.toIndex] ?? 0) === 0) {
         next = next.withCell(this.toIndex, movingOwner);
         // Also restore the component channel: a seed arriving at a previously
