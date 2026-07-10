@@ -20,9 +20,23 @@ export class Prev extends BaseIntFunction {
     this.type = type;
   }
 
-  /** @java Prev.eval(Context) — state.prev() (MoverLastTurn handled by trial walk in Java) */
+  /**
+   * @java Prev.eval(Context)
+   *   Mover         -> context.state().prev()
+   *   MoverLastTurn -> context.trial().lastTurnMover(context.state().mover())
+   * The two differ in same-turn (moveAgain) games: within one turn `prev` is
+   * the same player who is still moving, while `lastTurnMover` walks the move
+   * log back to the most recent DIFFERENT mover (Fibonacci Nim's `Max` reads
+   * `(value Player (prev MoverLastTurn))` mid-turn and must see the opponent).
+   */
   public override eval(context: Context): number {
-    void this.type;
+    const typeName = this.type == null ? "Mover" : String(this.type);
+    if (typeName === "MoverLastTurn") {
+      const last = (context.trial as unknown as { lastTurnMover?(m: number): number })
+        .lastTurnMover?.(context.state.mover);
+      if (last !== undefined && last > 0) return last;
+      // fall through to the previous-mover estimate when no distinct mover yet
+    }
     const stored = (context.state as unknown as { prev?: number }).prev ?? 0;
     if (stored > 0) return stored;
     return ((context.state.mover - 2 + context.game.numPlayers) % context.game.numPlayers) + 1;
