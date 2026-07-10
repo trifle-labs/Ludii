@@ -377,11 +377,31 @@ export class State {
     }
     const cells = this.cells;
     const whats = this.whats;
+    const stacks = this.stacks;
     return {
       positions: (pid: number) => {
         const byComp: Array<Array<{ site(): number; level(): number; siteType(): string }>> = [];
         for (let s = 0; s < cells.length; s++) {
-          if (cells[s] === pid) {
+          const st = stacks[s];
+          // @java FullOwned — Java's per-level Owned registry lists EVERY level a
+          // player owns at a site, not just the top. A mixed stack formed by a
+          // flat move (Main Pacheh: a HittingCapture that sends p4 back to its own
+          // start square, which is also an enemy's landing square, buries p4's
+          // pieces under the enemy) must still expose the buried levels, or
+          // ForEachPiece never generates a move from those pieces. Enumerate the
+          // per-level owner array; fall back to the flat top owner when a site has
+          // no stack row (fillStacks gives [c] for an occupied flat cell, so
+          // single-level/count-pile sites report exactly one level-0 entry as
+          // before). The per-level component is read via whatAtSiteLevel, which
+          // returns the real flat `what` at level 0 and the stacked `what` above.
+          if (st !== undefined && st.length > 0) {
+            for (let level = 0; level < st.length; level++) {
+              if ((st[level] ?? 0) === pid) {
+                const comp = this.whatAtSiteLevel(s, level);
+                (byComp[comp] ??= []).push({ site: () => s, level: () => level, siteType: () => "Cell" });
+              }
+            }
+          } else if (cells[s] === pid) {
             const comp = whats[s] ?? 0;
             (byComp[comp] ??= []).push({ site: () => s, level: () => 0, siteType: () => "Cell" });
           }

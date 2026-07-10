@@ -259,10 +259,22 @@ export class ForEachPiece extends Operator {
           // never second-guess them.
           if ((st as { ownedEntries?: unknown }).ownedEntries === undefined && ownerStack.length > 1 && level === 0) {
             const whatStack = st.whatStacks[location] ?? [];
-            for (let lvl = ownerStack.length - 1; lvl >= 0; lvl--) {
-              const o = ownerStack[lvl] ?? 0;
-              const w = whatStack[lvl] ?? o;
-              if (w === componentId && (allPlayers || o === specificPlayer)) { level = lvl; break; }
+            // The lazy Owned scan now enumerates EVERY level (state.ts owned
+            // getter), so a level-0 entry that genuinely holds this player's
+            // component (Main Pacheh: p4 buried at levels 0-2 under an enemy) is
+            // real and must NOT be pulled up to the top — doing so would drop the
+            // bottom pieces and duplicate the top. Only recover when level 0 does
+            // NOT actually hold this component for this player (the historical
+            // top-owner-reported-as-0 case the recovery was written for).
+            const o0 = ownerStack[0] ?? 0;
+            const w0 = whatStack[0] ?? o0;
+            const level0Matches = w0 === componentId && (allPlayers || o0 === specificPlayer);
+            if (!level0Matches) {
+              for (let lvl = ownerStack.length - 1; lvl >= 0; lvl--) {
+                const o = ownerStack[lvl] ?? 0;
+                const w = whatStack[lvl] ?? o;
+                if (w === componentId && (allPlayers || o === specificPlayer)) { level = lvl; break; }
+              }
             }
           }
         }
