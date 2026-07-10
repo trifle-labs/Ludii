@@ -66,6 +66,20 @@ export class IsThreatened extends BaseBooleanFunction {
     // read a bogus flag (observed: Phase Chess trial0's ply-238 draw vanished).
     const stalematedRef = context.state.stalemated as boolean[] | undefined;
     const originalStalemated = stalematedRef ? [...stalematedRef] : null;
+    // @java IsThreatened.java:133 `new TempContext(context)` — the isolated copy
+    // also insulates the caller's EVAL-CONTEXT registers (from/to/value). The
+    // enemy loop calls `game.moves()`, which unconditionally clobbers
+    // `_evalFrom/_evalTo/_evalValue` to -1/-1/0 (Game.ts moves()); when
+    // IsThreatened is evaluated as the LEFT conjunct of an And whose RIGHT
+    // conjunct reads `(from)` — e.g. Hindustani/Shatranj Diwana Shah king rule
+    // `(and (not ("IsInCheck" King Mover)) ("HasNeverMoved"=(= (state at:(from)) 1)))`
+    // — the clobbered `(from)` made HasNeverMoved read `(state at:-1)`=0 and the
+    // king's first-move knight-leap was never generated. Snapshot & restore, exactly
+    // as Java's TempContext leaves the parent context's from/to/value untouched.
+    const evCtx = context as unknown as { _evalFrom?: number; _evalTo?: number; _evalValue?: number };
+    const originalEvalFrom = evCtx._evalFrom;
+    const originalEvalTo = evCtx._evalTo;
+    const originalEvalValue = evCtx._evalValue;
     try {
       const numPlayers =
         typeof (context.game as unknown as { numPlayers?: unknown }).numPlayers === "function"
@@ -110,6 +124,10 @@ export class IsThreatened extends BaseBooleanFunction {
       if (stalematedRef && originalStalemated) {
         for (let i = 0; i < originalStalemated.length; i += 1) stalematedRef[i] = originalStalemated[i]!;
       }
+      // @java restore the caller's from/to/value that game.moves() clobbered.
+      evCtx._evalFrom = originalEvalFrom;
+      evCtx._evalTo = originalEvalTo;
+      evCtx._evalValue = originalEvalValue;
       active = false;
     }
     return false;
