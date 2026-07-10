@@ -54,17 +54,15 @@ export type RoleType =
  * @java game.types.play.RoleType.owner()
  */
 export function roleOwner(role: RoleType): number {
+  // @java RoleType.PN.owner() == N for every concrete player role P1..P16
+  // (Constants.MAX_PLAYERS). The old switch stopped at P8, so a 16-handed
+  // game's Disc9..Disc16 (Pagade Kayi Ata, Shing Quon Tu) resolved to
+  // UNDEFINED and the "component DiscN is not defined" start rule threw.
+  const playerMatch = /^P(\d+)$/.exec(role);
+  if (playerMatch) return Number(playerMatch[1]);
   switch (role) {
     case "Neutral": return 0;
     case "Each":    return 0; // @java RoleType.Each.owner() = Constants.NOBODY (0)
-    case "P1":      return 1;
-    case "P2":      return 2;
-    case "P3":      return 3;
-    case "P4":      return 4;
-    case "P5":      return 5;
-    case "P6":      return 6;
-    case "P7":      return 7;
-    case "P8":      return 8;
     case "Shared":  return -1; // RoleType.Shared.owner() in Java returns numPlayers+1 after create()
     case "All":     return -1;
     default:        return UNDEFINED;
@@ -152,11 +150,12 @@ export abstract class Item {
    * @param pid 1-based player id.
    */
   public setRoleFromPlayerId(pid: number): void {
-    const mapping: Record<number, RoleType> = {
-      0: "Neutral", 1: "P1", 2: "P2", 3: "P3", 4: "P4",
-      5: "P5", 6: "P6", 7: "P7", 8: "P8",
-    };
-    this._role = mapping[pid] ?? "Neutral";
+    // @java Item.setRoleFromPlayerId — owner = RoleType.roleForPlayerId(pid),
+    // which maps 1..MAX_PLAYERS (16) to P1..P16 and anything else to Neutral.
+    // The old literal map stopped at P8, so (piece "Disc" Each) in a 16-handed
+    // game left Disc9..Disc16 as Neutral (owner 0) and their DiscN names never
+    // existed (Pagade Kayi Ata (Sixteen-handed), Shing Quon Tu).
+    this._role = pid >= 1 && pid <= 16 ? (`P${pid}` as RoleType) : "Neutral";
   }
 
   /**
