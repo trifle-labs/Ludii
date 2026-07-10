@@ -192,6 +192,28 @@ export class Trajectories {
   }
 
   /**
+   * Play-sites NOT on the board perimeter — Java `Topology.inner(realType)`,
+   * which `SitesInner` returns. `MeasureGraph.measureInnerOuter` sets INNER on
+   * every element that is not OUTER, so inner is the exact complement of the
+   * OUTER set — the same perimeter computation `(sites Outer)` consumes:
+   * `perimeterSites()` (faces incident to a perimeter vertex, or the perimeter
+   * vertices themselves) for Cell/Vertex play, and `outerEdges()` for Edge play.
+   * Returned ascending by site id. Route `(sites Inner)` through the play-type
+   * view (`viewOf(realType)`) so the count and OUTER set match the requested
+   * element type. Without this the topology's `_inner` list stayed empty and
+   * `(sites Inner)` returned nothing (Unlur's opening `(move Add … (to
+   * (intersection (sites Empty) (sites Inner))))` produced no moves → only Pass).
+   */
+  public innerSites(): number[] {
+    const outer = new Set(
+      this.playType === SiteType.Edge ? this.outerEdges() : this.perimeterSites(),
+    );
+    const res: number[] = [];
+    for (let i = 0; i < this.numSites; i += 1) if (!outer.has(i)) res.push(i);
+    return res;
+  }
+
+  /**
    * Play-sites flagged as board corners (Java MeasureGraph.measureCorners), or
    * `undefined` when the corner geometry is not modelled for this play type.
    * In Vertex play the corner vertices are returned directly; Cell play returns

@@ -197,7 +197,14 @@ export class Note extends Effect {
     // @java Note.java:235-252 — send to all or specific player
     if (this.role === "All") {
       // @java: for(int i = 1; i < context.game().players().size(); i++)
-      const numPlayers = (ctx as unknown as { numPlayers?: number }).numPlayers ?? 2;
+      // NB: read numPlayers off ctx.game (a number) — ctx.numPlayers is a METHOD
+      // (truthy function), which made `i <= numPlayers` a NaN comparison so the
+      // loop never ran and a default `(note …)`/`(note … to:All)` emitted no move.
+      // When the note is the else branch of `(if … (then C))`, C is attached to
+      // the note's generated moves; an empty note list dropped C entirely (Unlur:
+      // P2's opening Pass never ran `next:(set Var 1)`, so the phase never advanced
+      // to Playing).
+      const numPlayers = ctx.game.numPlayers ?? 2;
       for (let i = 1; i <= numPlayers; i++) {
         result.push(new Move({
           id: `note:${mover}:${i}`,

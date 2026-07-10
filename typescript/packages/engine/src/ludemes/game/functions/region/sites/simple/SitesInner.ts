@@ -67,7 +67,23 @@ export class SitesInner extends BaseRegionFunction {
       ctxAny.board?.()?.defaultSite?.() ??
       "Cell";
 
-    // @java SitesInner.java:53-54 — graph.inner(realType)
+    // @java SitesInner.java:53-54 — graph.inner(realType). Java's topology.inner
+    // list is populated by MeasureGraph.measureInnerOuter (INNER = every element
+    // not OUTER). The eval/graph topology build never runs that derivation, so
+    // the topology's _inner list is empty; resolve inner as the complement of the
+    // OUTER perimeter set via the trajectories, exactly as SitesOuter resolves
+    // outer. This keeps `(sites Inner)` and `(sites Outer)` consistent for every
+    // board shape (Unlur's opening restriction to inner cells now generates).
+    const traj = (ctx as unknown as {
+      _trajectories?: {
+        viewOf(kind: string): { innerSites(): number[] };
+      } | null;
+    })._trajectories;
+    if (traj) {
+      return traj.viewOf(realType).innerSites();
+    }
+
+    // @java fallback — topology.inner(realType) when no trajectories present.
     const topo: TopologyLike | undefined =
       ctxAny.board?.()?.topology?.() ?? ctxAny.topology?.();
 

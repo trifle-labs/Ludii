@@ -46,6 +46,7 @@ import { SitesHint } from "./simple/SitesHint.js";
 import { SitesLeft } from "./simple/SitesLeft.js";
 import { SitesPerimeter } from "./simple/SitesPerimeter.js";
 import { SitesOuter } from "./simple/SitesOuter.js";
+import { SitesInner } from "./simple/SitesInner.js";
 import { SitesRight } from "./simple/SitesRight.js";
 import { SitesTop } from "./simple/SitesTop.js";
 import { SitesTrack } from "./track/SitesTrack.js";
@@ -231,7 +232,13 @@ export class Sites extends BaseRegionFunction {
       case "Hint":
         return new SitesHint();
       case "Inner":
-        return makeTopologyFn("inner", elementType);
+        // @java Sites.java — case Inner: return new SitesInner(elementType).
+        // The eval/graph topology never runs MeasureGraph.measureInnerOuter, so
+        // the topology's inner list is empty; SitesInner resolves inner as the
+        // complement of the OUTER perimeter set via the trajectories (exactly as
+        // SitesOuter resolves outer), instead of reading the unpopulated
+        // topology.inner list.
+        return new SitesInner(elementType);
       case "Left":
         return new SitesLeft(elementType);
       case "LineOfPlay":

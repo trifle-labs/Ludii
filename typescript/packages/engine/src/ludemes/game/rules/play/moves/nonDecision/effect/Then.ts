@@ -129,8 +129,22 @@ export function evalDeferredThens(
       aug._radials = src._radials;
       aug._trajectories = src._trajectories;
       aug._thenContextDepth = depth + 1;
-      postCtx._evalFrom = m.from();
-      postCtx._evalTo = m.to();
+      // @java Move.apply (Core/src/other/move/Move.java:520-522) evaluates each
+      // consequent via `consequent.eval(context)` in the SAME context WITHOUT
+      // calling setFrom/setTo — so `(from)`/`(to)` inside a `(then …)` read
+      // whatever the generating context had bound (e.g. ForEach Piece's origin).
+      // A from-less consequence (SetVar, Note, …) reports from()/to() = -1; the
+      // old code clobbered _evalFrom to that -1, so `(set Var "From" (from))` in
+      // Conflagration's Shakattrition stored From=-1 instead of the piece's cell.
+      // The step condition `(!= (var "From") (to))` then failed to exclude the
+      // origin, inflating "DestinationGroupSize" and generating phantom singleton
+      // steps (P2's contained lone piece looked mobile, so `(no Moves Next)`
+      // never fired). Preserve the source binding whenever the move has no real
+      // from/to; a move that DOES move a piece still overrides it (unchanged).
+      const mFrom = m.from();
+      const mTo = m.to();
+      postCtx._evalFrom = mFrom >= 0 ? mFrom : (src._evalFrom ?? mFrom);
+      postCtx._evalTo = mTo >= 0 ? mTo : (src._evalTo ?? mTo);
       postCtx._evalValue = 0;
 
       let thenMoves: Move[];
