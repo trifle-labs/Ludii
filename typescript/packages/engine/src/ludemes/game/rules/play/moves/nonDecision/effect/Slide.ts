@@ -444,16 +444,35 @@ export class Slide implements MovesFunction {
       new ActionMove({ from, to, stack: this.stack }),
     ];
     actions[0]!.setDecision(true);
+
+    // @java Slide.java:238/257/266 — chainRuleWithAction(context, sideEffect,
+    // move, /*prepend=*/true, false): the capture effect's actions go BEFORE
+    // the slide's ActionMove, EXACTLY as the direction-based path above. The
+    // old `push` appended [Move, Remove], so a track-slide capture applied the
+    // ActionMove first and the Remove(to) then deleted the just-moved attacker
+    // (Cylinder Chess: the black queen's wrap-track capture 16→8 vanished the
+    // queen). Mirror the direction path: prepend, mark non-decision, and carry
+    // the effect's deferred then() (e.g. (remove (to) (then (set Counter)))).
+    const innerThens: Move["deferredThens"][number][] = [];
     if (this.sideEffect != null) {
-      actions.push(...this.sideEffect.eval(ctx).flatMap(m => [...m.actions]));
+      const sideMoves = this.sideEffect.eval(ctx);
+      const sideActions = sideMoves.flatMap(m => [...m.actions]);
+      // @java chainRuleWithAction(..., decision=false)
+      for (const a of sideActions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+      for (const m of sideMoves) innerThens.push(...m.deferredThens);
+      actions.unshift(...sideActions);
     }
     return new LudiiMove({
+      deferredThens: innerThens,
       id: `slide-track:${mover}:${from}:${to}`,
       label: `Slide(${from}→${to})`,
       siteIndices: [from, to],
       mover,
       placedOwner: mover,
       actions,
+      // Prepended capture actions shift actions[0]; pin the decision sites.
+      fromSite: from,
+      toSite: to,
       fromNonDecisionSite: from,
       toNonDecisionSite: to,
     });
