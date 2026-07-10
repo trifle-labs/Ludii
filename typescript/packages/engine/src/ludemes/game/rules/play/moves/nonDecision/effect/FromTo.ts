@@ -154,18 +154,51 @@ export class FromTo implements MovesFunction {
       // Add.ts's large-piece path. Without this a pentomino move filled only the
       // anchor (Pentomino's (no Moves) end never fired; the L-tile in L Game).
       const lpWhat = ctx.state.whatAtSite(from);
-      const largePiece = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number; walks?: readonly (readonly string[])[] }> } })
+      const largePiece = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number; walks?: readonly (readonly string[])[]; isDomino?: () => boolean }> } })
         .equipment?.pieces?.find((p) => p.index === lpWhat && p.walks && p.walks.length > 0);
       if (largePiece?.walks) {
         const walks = largePiece.walks;
         const nbPossibleStates = walks.length * 4;
-        for (const to of sitesTo) {
+        // @java FromTo.java:449-486 — a board→board tile move is NOT gated on the
+        // footprint being empty. Java (a) computes the piece's CURRENT footprint
+        // currentLocs = piece.locs(from, localState) and appends currentLocs[1..]
+        // to the candidate to-anchors (newSitesTo), and (b) validates a candidate
+        // placement by requiring every footprint cell to land on a to-region site
+        // OR on one of the piece's own current cells (or the from-anchor). The old
+        // `isEmptySite(loc)` test rejected any orientation whose footprint overlapped
+        // the moving L-piece's own cells, dropping valid moves (L Game to=15/to=11).
+        const localState = ctx.state.stateAtSite(from);
+        const currentLocs = AddEffect.locsLargePiece(ctx, from, localState, walks);
+        const newSitesTo = new Set<number>(sitesTo);
+        for (let i = 1; i < currentLocs.length; i++) {
+          const c = currentLocs[i];
+          if (c !== undefined) newSitesTo.add(c);
+        }
+        // @java largePiece.isDomino() — equipment pieces resolve to plain objects
+        // (no isDomino method) for tiles, so this is false and the non-domino test
+        // applies; a true Domino would need csTo.isPlayable + trial().moveNumber(),
+        // which no board→board domino-move game in scope uses.
+        const isDomino = typeof largePiece.isDomino === "function" && largePiece.isDomino();
+        for (const to of newSitesTo) {
           if (to <= OFF) continue;
           for (let st = 0; st < nbPossibleStates; st++) {
             const locs = AddEffect.locsLargePiece(ctx, to, st, walks);
             if (locs.length === 0) continue;
-            if (locs.some((loc) => !ctx.state.isEmptySite(loc))) continue;
-            const action = new ActionMove({ from, to, state: st, footprint: locs });
+            // @java valid iff every footprint cell is a to-site / own-cell / from-anchor.
+            let valid = true;
+            if (!isDomino) {
+              for (const loc of locs) {
+                if (!newSitesTo.has(loc) && loc !== from) { valid = false; break; }
+              }
+            }
+            // @java (from != to || localState != state) — skip the identity no-op.
+            if (!valid || (from === to && localState === st)) continue;
+            // @java ActionMove.applyLargePiece vacates the piece's WHOLE current
+            // footprint (currentLocs), not just the anchor, before laying the new
+            // footprint — self-overlap is fine (clearing precedes laying). Omitting
+            // clearFootprint left the old body cells count=1 (phantom occupancy),
+            // which corrupted (sites Empty) on later plies (the earlier regression).
+            const action = new ActionMove({ from, to, state: st, footprint: locs, clearFootprint: currentLocs });
             const move = new LudiiMove({
               id: `move:${mover}:${from}:${to}:${st}`,
               label: `Move(${from}->${to},r${st})`,
