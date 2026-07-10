@@ -195,26 +195,39 @@ export class Slide implements MovesFunction {
     // double-step uses Forward, which is N for P1 / S for P2 (or the piece's
     // own declared dirn). Same recipe as Step.
     let effDirNames: string[] = [this.dirnName];
-    // @java a dynamic (directions Cell from:X to:Y) resolves to ABSOLUTE compass
-    // names from the current from (bound above); use them directly and skip the
-    // mover-facing relative resolution (Boop's repel slide direction).
+    // @java Slide directions are converted to ABSOLUTE via the mover's facing
+    // (DirectionsFunction.convertToAbsolute). Compute the facing/rotation params
+    // once; both the dynamic (dirnFn) and static (dirnName) paths use them.
+    const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+    const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
+    let facingOverride: number | undefined;
+    const compFacing = (ctx.game as unknown as {
+      equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } };
+    }).equipment?.board?.componentFacing;
+    if (compFacing && from >= 0) {
+      const what = ctx.state.what(from);
+      const tok = what > 0 ? compFacing[what] : undefined;
+      if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
+    }
+    // @java Directions.java:472-478 — apply the piece's stored rotation.
+    const rotSteps = ctx.state.rotationAt?.[this._rotFromSite ?? -1] ?? 0;
+    const toAbsolute = (name: string): string[] => {
+      const rel = resolveRelativeDir(name, mover, playerDirs, facingOverride, supportedDirNames(ctx), rotSteps);
+      // @java DirectionsFunction.convertToAbsolute — an already-absolute compass
+      // name is not a relative direction (resolveRelativeDir returns null): use
+      // it directly. A relative name resolves to the mover-facing absolute(s).
+      if (rel === null) return [name];
+      return Array.isArray(rel) ? rel : [rel];
+    };
+    // @java a dynamic DirectionsFunction (e.g. (if cond Forward Backward) or
+    // (directions Cell from:X to:Y)) evaluates to a list of direction names that
+    // may be RELATIVE (directions.If returns the chosen branch's relative name,
+    // e.g. "Forward" for Squadro's per-piece heading) or already ABSOLUTE
+    // (Boop's repel slide). Java's convertToAbsolute handles both; resolve each.
     const dynDirs = this.dirnFn ? this.dirnFn.eval(ctx) : null;
     if (dynDirs && dynDirs.length > 0) {
-      effDirNames = dynDirs;
+      effDirNames = dynDirs.flatMap(toAbsolute);
     } else {
-      const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
-      const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
-      let facingOverride: number | undefined;
-      const compFacing = (ctx.game as unknown as {
-        equipment?: { board?: { componentFacing?: readonly (string | undefined)[] } };
-      }).equipment?.board?.componentFacing;
-      if (compFacing && from >= 0) {
-        const what = ctx.state.what(from);
-        const tok = what > 0 ? compFacing[what] : undefined;
-        if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
-      }
-      // @java Directions.java:472-478 — apply the piece's stored rotation.
-      const rotSteps = ctx.state.rotationAt?.[this._rotFromSite ?? -1] ?? 0;
       const relative = resolveRelativeDir(this.dirnName, mover, playerDirs, facingOverride, supportedDirNames(ctx), rotSteps);
       if (Array.isArray(relative)) effDirNames = relative;
       else if (relative !== null) effDirNames = [relative];
