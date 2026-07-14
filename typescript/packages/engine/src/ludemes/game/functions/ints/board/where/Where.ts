@@ -50,11 +50,29 @@ export class Where extends BaseIntFunction {
     // King-captured win). Reject a non-string namePiece so the dispatcher falls
     // through to constructWhat (the IntFunction overload Java resolves by type).
     if (typeof namePiece !== "string") return null as unknown as WhereSite;
+    // @java overload resolution — "Level" is the WhereLevelType enum constant that
+    // selects the (where Level "Piece" Owner at:...) form (constructLevelName).
+    // constructName.length == 2 and constructLevelName.length == 3; both land in
+    // instantiateFaithful's relaxedFns list for 8-arg calls and constructName is
+    // iterated first, so without this guard (where Level "Hyena" Neutral at:...)
+    // would be mis-compiled: namePiece="Level", localStateFn=raw-string "Neutral".
+    // At eval time WhereSite calls localStateFn.eval(ctx) → "is not a function" throw.
+    // @java Where.java:94 — the whereType param is required and typed WhereLevelType,
+    // which Java resolves by type before string; we replicate that discriminant here.
+    if (namePiece === "Level") return null as unknown as WhereSite;
     return WhereSite.byName(namePiece, wherePlayerFn(indexPlayer, role), state as never, type as never);
   }
 
   /** @java Where.construct(IntFunction what, @Opt SiteType type) */
   public static constructWhat(what: unknown, type: unknown = null): WhereSite {
+    // @java overload resolution — "Level" is a WhereLevelType enum constant, not
+    // an IntFunction/piece-index. If constructName rejected it (namePiece guard
+    // above) and constructLevelName hasn't matched yet, reject here too so the
+    // dispatcher continues to constructLevelName. Without this guard a 2-arg call
+    // (where Level (id "Piece" P)) would bind "Level" as the what-index, producing
+    // WhereSite.byWhat("Level") — a raw string in place of an IntFunction. At eval
+    // time WhereSite.eval() calls whatFn.eval(ctx) → "is not a function" throw.
+    if (what === "Level") return null as unknown as WhereSite;
     return WhereSite.byWhat(what as never, type as never);
   }
 
