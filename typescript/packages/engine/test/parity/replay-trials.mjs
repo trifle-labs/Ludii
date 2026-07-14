@@ -82,10 +82,14 @@ let SplitMix64;
 // 1:1 Java→TS ludeme-object path (play1to1) is now the ONLY engine path.
 const USE_1TO1 = true;
 let play1to1;
+let EngineMove;
+let EngineActionPass;
 try {
   const engine = await import(DIST_INDEX);
   SplitMix64 = engine.SplitMix64;
   play1to1 = engine.play1to1;
+  EngineMove = engine.Move;
+  EngineActionPass = engine.ActionPass;
   if (!play1to1) throw new Error('play1to1 not exported from engine dist');
 } catch (e) {
   console.error('Failed to load engine from', DIST_INDEX, ':', e.message);
@@ -1234,6 +1238,29 @@ function replayTrial(trialPath) {
       } catch (e) {
         // Dice injection failed — fall through to mismatch below
       }
+    }
+
+    // Chaturanga forced-pass-without-dice (@java Do.java ifAfterwards
+    // empty-move path): a nested (do (roll) next:X) whose outer ifAfterwards
+    // (not (IsInCheck ...)) kills EVERY move makes Java record a
+    // [Pass:decision=true,forced=true] WITHOUT the roll's
+    // SetStateAndUpdateDice actions — Java's replay applies the stored pass
+    // directly. TS re-rolls from SplitMix64, gets a different die, and
+    // legitimately generates real moves for ITS roll. The recorded pass is
+    // the ground truth: synthesize and apply a Pass move so the replay stays
+    // aligned (Sarvatobhadra / Shatranj al-Mustatila / Shatranj ar-Rumiya).
+    if (!matched && EngineMove && EngineActionPass
+      && isPassRecordedMove(recMove)
+      && recMove.actions.some((a) => a.actionType === 'Pass' && a.fields.get('forced') === 'true')
+      && !recMove.actions.some((a) => a.actionType === 'SetStateAndUpdateDice')) {
+      matched = new EngineMove({
+        id: 'pass',
+        label: 'Pass(forced,synth)',
+        siteIndices: [],
+        mover: ctx.state.mover,
+        placedOwner: ctx.state.mover,
+        actions: [new EngineActionPass()],
+      });
     }
 
     if (!matched) {
