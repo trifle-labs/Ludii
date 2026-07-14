@@ -144,17 +144,23 @@ export function evalDeferredThens(
       const mFrom = m.from();
       const mTo = m.to();
       postCtx._evalFrom = mFrom >= 0 ? mFrom : (src._evalFrom ?? mFrom);
-      // NOTE (Kotu Baendum ply-185 residual): a diagnosis suggested Java's
-      // `(to)` inside `(then …)` reads a STALE context binding (Move.java:520
-      // never calls setTo before consequent.eval), and that binding the
-      // move's to here fires a phantom (fromTo (from ("OppositePit" (to))))
-      // capture. Switching to the stale binding (src._evalTo ?? mTo) was
-      // EMPIRICALLY WRONG at scale: Adi/Adidada/Bechi/Mulabalaba/Nine Men's
-      // Morris all regressed OUTCOME_OK -> MOVE_MISMATCH and Kotu itself got
-      // worse (ply 1) — the wider ecosystem's thens DO consume the applied
-      // move's destination through `(to)`. Java's real context.to() lifecycle
-      // needs a finer-grained trace before touching this line again.
-      postCtx._evalTo = mTo >= 0 ? mTo : (src._evalTo ?? mTo);
+      // @java EvalContext.java:26-27 — context.to() is an ITERATOR variable
+      // defaulting to Constants.OFF (-1). Every generator (Step.java:239-240,
+      // FromTo.java:427-428, Add.java:343-344, Sow.java:353-354,
+      // Select.java:220-221) saves origTo, binds setTo(to) during iteration,
+      // and RESTORES origTo before setGeneratedMovesData attaches the then;
+      // no action.apply ever calls setTo (Move.java:499-542). So context.to()
+      // is OFF at then-eval time. `(to)` that "works" inside thens is either
+      // inside a sow's apply: (Sow.eval rebinds newContext.setTo per hole,
+      // Sow.java:320-341) or actually (last To) under the hood
+      // (IsLine.java:150 — through defaults to LastTo). Kotu Baendum ply 185:
+      // (fromTo (from ("OppositePit" (to)))) must read -1 (empty OppositePit,
+      // no capture); binding the applied move's to=1 fired a phantom capture.
+      // An earlier attempt at this change regressed the sow family because
+      // TS's Sow fell back to _evalTo for its missing startLoc — Sow now
+      // defaults startLoc to LastTo per Sow.java:144, making this binding
+      // faithful AND safe.
+      postCtx._evalTo = src._evalTo ?? -1;
       postCtx._evalValue = 0;
 
       let thenMoves: Move[];

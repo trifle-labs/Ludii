@@ -27,6 +27,7 @@
 import { Context } from "../../../../../../../context.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionSowSeed } from "../../../../../../../action/action-sow-seed.js";
+import { LastTo } from "../../../../../functions/ints/last/LastTo.js";
 import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
@@ -156,7 +157,12 @@ export class Sow extends Effect {
     super(then ?? null);
     // @java Sow.java:374 — gameFlags() = GameType.Count | … (unconditional).
     compileFlags.usesCount = true;
-    this.startLoc = start ?? null;
+    // @java Sow.java:144 — startLoc = (start == null) ? new LastTo(null) :
+    // start. The sow's default origin is the LAST MOVE's destination (the
+    // selected pit), NOT the context's (to) iterator binding: the old
+    // ctx._evalTo fallback in eval() only worked because evalDeferredThens
+    // un-faithfully bound _evalTo to the applied move's to.
+    this.startLoc = start ?? (new LastTo() as unknown as IntFunction);
     this.countFn = count ?? null;
     this.numPerHoleFn = numPerHole ?? null;
     this.trackName = trackName ?? null;
@@ -192,10 +198,10 @@ export class Sow extends Effect {
    *   4. Apply capture rule and effect if conditions are met.
    */
   public override eval(ctx: Context): Move[] {
-    const start = this.startLoc?.eval(ctx)
-      ?? (ctx as unknown as { _evalTo?: number })._evalTo
-      ?? (ctx as unknown as { _evalFrom?: number })._evalFrom
-      ?? -1;
+    // @java Sow.java:196 — startLoc.eval(context); always defined (LastTo
+    // default reads trial.lastMove().toNonDecision(), independent of the
+    // context's (to)/(from) iterator bindings).
+    const start = this.startLoc?.eval(ctx) ?? -1;
     if (start < 0) return [];
     const count = this.countFn?.eval(ctx) ?? ctx.state.count(start);
     if (process.env.TRACE_SOW) console.error(`[sow] start=${start} count=${count}`);

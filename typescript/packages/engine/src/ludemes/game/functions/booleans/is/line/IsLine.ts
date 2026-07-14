@@ -21,6 +21,7 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../../base.js";
+import { LastTo } from "../../../ints/last/LastTo.js";
 import type { CellFlatRadials, FlatRadial } from "../../../../../topology-radials.js";
 import type { Trajectories } from "../../../../../../eval/graph/trajectories.js";
 
@@ -137,8 +138,16 @@ export class IsLine implements BooleanFunction {
   private pivots(ctx: Context): number[] {
     if (this.throughAnyFn !== null) return [...this.throughAnyFn.eval(ctx)];
     if (this.throughFn !== null) return [this.throughFn.eval(ctx)];
-    return [ctx._evalTo];
+    // @java IsLine.java:150 — through = (through == null) ? new LastTo(null)
+    // : through. The default pivot is the LAST MOVE's destination, NOT the
+    // context's (to) iterator binding: the _evalTo fallback only worked while
+    // evalDeferredThens un-faithfully bound _evalTo to the applied move's to
+    // (Java's context.to() is OFF at then-eval time — EvalContext.java:26).
+    return [IsLine.lastToDefault.eval(ctx)];
   }
+
+  /** Shared @java `new LastTo(null)` default pivot (stateless). */
+  private static readonly lastToDefault = new LastTo();
 
   private targetWhats(ctx: Context, pivot: number, level: number | null): Set<number> {
     const explicit = this.whatFns;
