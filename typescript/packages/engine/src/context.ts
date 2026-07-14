@@ -242,9 +242,27 @@ export class Context {
     const st = this.state as unknown as {
       cells: readonly number[]; whats?: readonly number[]; stateAt?: readonly number[];
       rotationAt?: readonly number[]; valueAt?: readonly number[]; stacks?: readonly (readonly number[])[];
+      countAt?: readonly number[];
     };
     return {
-      sizeStack: (site: number) => st.stacks?.[site]?.length ?? ((st.cells[site] ?? 0) ? 1 : 0),
+      // @java ContainerState.sizeStack(site) — a true per-level `stacks[]` array
+      // reports its length; otherwise a flat cell counts as one level if owned.
+      // This preserves the flat-count families (backgammon/hunt) EXACTLY: their
+      // `(size Stack at:)` must be occupied?1:0, NOT the pile `countAt` — routing
+      // them through State.stackSize (count-aware, returns the full pile) broke
+      // their `top:True` move-gen. The ONLY added case is a flat-placed NEUTRAL
+      // piece (owner 0 but `what` and `count` both set — Ex Nihilo's opening
+      // Disc0): the old `cells ? 1 : 0` test read it as empty, so `top:True`
+      // rejected every neutral piece. A genuinely-empty cell (no component, no
+      // count) still reports 0, so cleared cells are unaffected.
+      sizeStack: (site: number) => {
+        const old = st.stacks?.[site]?.length ?? ((st.cells[site] ?? 0) ? 1 : 0);
+        if (old !== 0) return old;
+        if ((st.stacks?.[site]?.length ?? 0) === 0
+          && (st.whats?.[site] ?? 0) !== 0
+          && (st.countAt?.[site] ?? 0) > 0) return 1;
+        return 0;
+      },
       what: (site: number) => st.whats?.[site] ?? 0,
       who: (site: number) => st.cells[site] ?? 0,
       isEmpty: (site: number) => (st.cells[site] ?? 0) === 0,
