@@ -33,8 +33,21 @@ export class IsFriend implements BooleanFunction {
    *   Non-teams: playerId.eval == mover || mover == players.size()
    */
   public eval(ctx: Context): boolean {
+    // @java IsFriend.java:59-70 — teams branch FIRST (no neutral early-return
+    // in Java): collect the mover's team via state.getTeam and return
+    // teamMembers.contains(id) — a same-team player IS a friend. TS team
+    // membership lives in game.teamOf (SetTeam start-rule harvest). id=0
+    // yields false here too (team ids start at 1), matching Java.
     const id = this.playerId.eval(ctx);
-    if (id === 0) return false; // neutral is never a friend
+    const teamOf = (ctx.game as unknown as { teamOf?: readonly (number | null)[] }).teamOf ?? [];
+    let requiresTeams = false;
+    for (let p = 1; p < teamOf.length; p++) if ((teamOf[p] ?? 0) > 0) { requiresTeams = true; break; }
+    if (requiresTeams) {
+      const tid = teamOf[ctx.state.mover] ?? 0;
+      return id >= 1 && id < teamOf.length && (teamOf[id] ?? 0) === tid;
+    }
+    // @java IsFriend.java:72-73 — id == mover, or the mover is the shared
+    // player (players().size() = numPlayers count + 1).
     return id === ctx.state.mover || ctx.state.mover === ctx.game.numPlayers + 1;
   }
 }

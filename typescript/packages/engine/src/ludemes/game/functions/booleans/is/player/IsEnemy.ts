@@ -29,11 +29,25 @@ export class IsEnemy implements BooleanFunction {
 
   /**
    * @java game/functions/booleans/is/player/IsEnemy.java — eval(Context):
-   *   Non-teams: roleId != 0 && roleId != mover
+   *   Teams (IsEnemy.java:67-75): collect the mover's team members via
+   *   state.getTeam and return !teamMembers.contains(id) — a same-team
+   *   player is NOT an enemy. TS team membership lives in game.teamOf
+   *   (harvested from SetTeam start rules at Game construction). Without
+   *   this branch, Setichch's ("IsEnemyAt" (to)) treated the mover's
+   *   teammates as enemies and blocked landing/passing moves (ply-87
+   *   divergence: mover=P6 Team2 vs target=P2 Team2).
+   *   Non-teams: roleId != 0 && roleId != mover.
    */
   public eval(ctx: Context): boolean {
     const id = this.playerId.eval(ctx);
     if (id === 0) return false; // neutral is not an enemy
+    const teamOf = (ctx.game as unknown as { teamOf?: readonly (number | null)[] }).teamOf ?? [];
+    let requiresTeams = false;
+    for (let p = 1; p < teamOf.length; p++) if ((teamOf[p] ?? 0) > 0) { requiresTeams = true; break; }
+    if (requiresTeams) {
+      const tid = teamOf[ctx.state.mover] ?? 0;
+      return (teamOf[id] ?? 0) !== tid;
+    }
     return id !== ctx.state.mover;
   }
 }
