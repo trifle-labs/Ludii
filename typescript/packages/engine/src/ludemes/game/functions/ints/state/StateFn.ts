@@ -55,7 +55,12 @@ export class State extends BaseIntFunction {
         stateAtLevel(site: number, level: number): number;
       }).stateAtLevel(site, levelVal);
     }
-    return (context.state as unknown as { stateAt: readonly number[] }).stateAt[site] ?? 0;
+    // @java ContainerStateStacks.state(site, type) — the LEVEL-LESS read on a
+    // stacking container is the TOP level's state; sites without a per-level
+    // row keep the flat scalar (Dubblets: (set State ... level:(level) 2)
+    // then (= (state at:#1) 2) — the flat-only read returned stale 0 and the
+    // whole tables family regressed).
+    return (context.state as unknown as { stateTop(site: number): number }).stateTop(site);
   }
 
   /** @java State.isStatic() */

@@ -1609,12 +1609,20 @@ export class Game implements Game {
           const count = placeItem.countFn?.eval(ctx) ?? 1;
           const stateValue = placeItem.stateFn?.eval(ctx) ?? UNDEFINED;
           const value = placeItem.valueFn?.eval(ctx) ?? UNDEFINED;
+          // @java PlaceItem.eval — rotationFn rides every placement like
+          // state/value. This fast path hardcoded UNDEFINED, silently
+          // dropping (place ... rotation:R): There and Back's P2 discs lost
+          // their rotation-derived SOUTH facing, and once the global facing
+          // default became Java's N (Directions.java:467) P2 generated no
+          // Slide moves at all (ply-1 pass).
+          const rotation = (placeItem as unknown as { rotationFn?: { eval(c: Context): number } })
+            .rotationFn?.eval(ctx) ?? UNDEFINED;
           const placementSites = sites.length > 0
             ? sites
             : this.facingStartStripSites(placeItem.item);
           for (const site of placementSites) {
             if (typeof site !== "number") continue;
-            ctx.placePieces?.(site, what, count, stateValue, UNDEFINED, value, false, null);
+            ctx.placePieces?.(site, what, count, stateValue, rotation, value, false, null);
           }
         }
         return;

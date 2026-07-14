@@ -1095,6 +1095,19 @@ export class State {
     }
     target.push(owner);
     nextStacks[siteIndex] = target;
+    // @java ContainerStateStacks.addItem — a newly pushed level carries state
+    // 0. When this site already has a materialised per-level state row, keep
+    // it in sync with the stack so the level-less TOP read (stateTop) stays
+    // aligned with Java's chunk top (sparse default: no row, nothing to do).
+    let nextStateStacksPush: (readonly number[])[] | undefined;
+    {
+      const ss = this.stateStacks?.[siteIndex];
+      if (ss !== undefined && ss.length > 0) {
+        const copy = (this.stateStacks ?? []).map((r) => [...r]);
+        copy[siteIndex] = [...(copy[siteIndex] ?? []), 0];
+        nextStateStacksPush = copy;
+      }
+    }
     const nextCells = [...this.cells];
     nextCells[siteIndex] = owner;
     const existing = this.whatStacks[siteIndex];
@@ -1132,11 +1145,17 @@ export class State {
         whatStacks: nextWhatStacks,
         whats: nextWhats,
         countAt: nextCounts,
+        ...(nextStateStacksPush !== undefined ? { stateStacks: nextStateStacksPush } : {}),
       });
     }
     const nextWhats = [...this.whats];
     nextWhats[siteIndex] = what ?? owner;
-    return this.with({ cells: nextCells, stacks: nextStacks, whats: nextWhats });
+    return this.with({
+      cells: nextCells,
+      stacks: nextStacks,
+      whats: nextWhats,
+      ...(nextStateStacksPush !== undefined ? { stateStacks: nextStateStacksPush } : {}),
+    });
   }
 
   /**
@@ -1304,6 +1323,20 @@ export class State {
     const ss = this.stateStacks?.[site];
     if (ss !== undefined && ss.length > 0) return ss[level] ?? 0;
     return level === 0 ? (this.stateAt[site] ?? 0) : 0;
+  }
+
+  /**
+   * @java ContainerStateStacks.state(site, type) — the LEVEL-LESS state read
+   * on a stacking container returns the TOP level's state (mirrors valueTop).
+   * Dubblets writes (set State at:(last To) level:(level) 2) then reads
+   * (state at:#1) with no level: Java's top read sees the written value; the
+   * flat-only read returned stale 0. Sites without a materialised per-level
+   * row keep the flat scalar.
+   */
+  public stateTop(site: number): number {
+    const ss = this.stateStacks?.[site];
+    if (ss !== undefined && ss.length > 0) return ss[ss.length - 1] ?? 0;
+    return this.stateAt[site] ?? 0;
   }
 
   /**
