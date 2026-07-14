@@ -717,7 +717,16 @@ export class ArgCompiler {
     }
     if (variantName === "track") {
       const role = node.items[2] && isIdent(node.items[2]) ? node.items[2].name : null;
-      const name = node.items[2] && isString(node.items[2]) ? node.items[2].value : null;
+      // @java Sites.construct(SitesTrackType, @Opt RoleType, @Opt String name, ...)
+      // (SitesTrack.java) — a RoleType and a track name are SEPARATE positional
+      // args: (sites Track Mover "HomeTrack") carries the role at items[2] and
+      // the name at items[3]. Only items[2] was checked, so the name was
+      // silently dropped and SitesTrack fell back to the mover's FIRST track —
+      // Sig (Tidikelt)'s "HomeTrack"/"EnemyTrack" both resolved to the same
+      // track and pieces on the enemy track generated no moves.
+      const nameAt2 = node.items[2] && isString(node.items[2]) ? node.items[2].value : null;
+      const nameAt3 = role !== null && node.items[3] && isString(node.items[3]) ? node.items[3].value : null;
+      const name = nameAt2 ?? nameAt3;
       const parsed = parseNodeArgs(node);
       const fromNode = parsed.argsIn.find((arg) => arg.parameterName === "from")?.node;
       const toNode = parsed.argsIn.find((arg) => arg.parameterName === "to")?.node;
