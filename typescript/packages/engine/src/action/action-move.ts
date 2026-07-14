@@ -651,6 +651,23 @@ export class ActionMove extends BaseAction {
         movingOwner,
         movingWhat !== 0 ? movingWhat : undefined,
       );
+      // @java ActionMoveTopPiece.java:490-498 -> ContainerStateStacks.addItem
+      // (3-arg form, :278-301) — the pushed level gets who/what ONLY; its
+      // value is 0 (setValue is never called). The flat valueAt channel must
+      // reflect the NEW top, not the pinned piece underneath: Kawasukuts'
+      // level-less (value Piece at:...) read the buried P2 gate value (37)
+      // and fired MadeACompleteCircuit at ply 2 (false win, rec winner=2).
+      // Preserve the pre-push levels' values into the per-level column FIRST
+      // (Java's chunk keeps the buried piece's value; when the pin later pops,
+      // the revealed top must read its original value again).
+      {
+        const preLevels = Math.max(1, state.stackSize(this.toIndex));
+        const row: number[] = [];
+        for (let l = 0; l < preLevels; l++) row.push(state.valueAtLevel(this.toIndex, l));
+        row.push(0); // the newly pushed level (@java addItem: value unset = 0)
+        next = next.withValueStackRow(this.toIndex, row);
+      }
+      if (next.valueAtSite(this.toIndex) !== 0) next = next.withValueAt(this.toIndex, 0);
       next = this.transferHidden(next, state, fromCount <= 1);
       return this.maintainTracks(next, movingWhat);
     }

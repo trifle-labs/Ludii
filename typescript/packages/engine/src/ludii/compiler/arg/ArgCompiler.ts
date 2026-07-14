@@ -1916,7 +1916,12 @@ function roleIntFunction(role: string): { eval(ctx: unknown): number } {
       if (role === "Next") return (c.state.mover % c.game.numPlayers) + 1;
       if (role === "Prev") return ((c.state.mover - 2 + c.game.numPlayers) % c.game.numPlayers) + 1;
       const m = /^P(\d+)$/.exec(role);
-      return m ? Number(m[1]) : 0;
+      if (m) return Number(m[1]);
+      // @java RoleType.java:190-196 — toIntFunction: any role with owner > 0
+      // is IntConstant(owner); TeamN.owner == N (same fallthrough bug as
+      // Where.wherePlayerFn — TeamN silently became 0 here).
+      const tm = /^Team(\d+)$/.exec(role);
+      return tm ? Number(tm[1]) : 0;
     },
   };
 }

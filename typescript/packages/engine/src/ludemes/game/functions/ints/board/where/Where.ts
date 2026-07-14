@@ -125,6 +125,15 @@ function wherePlayerFn(indexPlayer: unknown, role: unknown): never {
       if (r === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
       if (r === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
       if (typeof r === "string" && /^P\d+$/.test(r)) return Number(r.slice(1));
+      // @java RoleType.java:190-196 — toIntFunction(role): every role with
+      // owner > 0 resolves to IntConstant(owner); TeamN.owner == N. The old
+      // fallthrough returned the MOVER, so Setichch's (where "Stick" Team2)
+      // searched for player-6 pieces, found none (OFF=-1), and the Team2 win
+      // condition (= 38 (where ...)) never fired (both trials rec winner=team2).
+      {
+        const tm = typeof r === "string" ? /^Team(\d+)$/.exec(r) : null;
+        if (tm) return Number(tm[1]);
+      }
       // @java RoleType — Neutral → 0, Shared → numPlayers+1 (Constants.SHARED).
       // Neutral keeps `(where "Ghoula" Neutral)` finding the neutral piece (Es-Sig).
       // Shared must be numPlayers+1: a Shared-owned piece (e.g. Neutron) has owner
