@@ -27,7 +27,19 @@ function roleToIntFunction(role: RoleType | null): IntFunction {
     eval(ctx: Context & EvalScratch): number {
       switch (role as string) {
         case "Mover": return ctx.state.mover;
-        case "Next": return (ctx.state.mover % ctx.game.numPlayers) + 1;
+        case "Next": {
+          // @java PlayersIndices.java:74 — context.state().next(). A prior
+          // deferred then's (moveAgain) applies ActionSetNextPlayer(mover),
+          // so state.next == mover; (sites Occupied by:Next) evaluated in a
+          // LATER then of the same move must read that value, not the
+          // rotational successor. Tenjiku Shogi's PassiveBurn resolved
+          // "Next" to P1 (rotational) instead of P2 (state.next), found
+          // P1's FireDemon beside the landing square and burned P2's
+          // just-landed RookGeneral. Falls back to rotational when unset
+          // (the IdFn.roleToPlayerId / PlayersIndices.ts pattern).
+          const nxt = (ctx.state as unknown as { next?: number }).next ?? 0;
+          return nxt > 0 ? nxt : (ctx.state.mover % ctx.game.numPlayers) + 1;
+        }
         // @java RoleType.Player → context.player(): the (forEach Player …)
         // iterator value. Missing, it fell to the -1 default and the
         // `role === "All" || whoId < 0` catch-all returned ALL occupied sites:
