@@ -119,8 +119,13 @@ export class CustomOnTri extends Basis {
       if (px > maxX) maxX = px;
       if (py > maxY) maxY = py;
     }
-    // @java margin = (shape == Limping && sides) ? sides.get(0) : 2
-    const margin = this.sides ? Math.max(0, Math.trunc(this.sides[0] ?? 2)) : 2;
+    // @java CustomOnTri.java:66-68 — shape is Limping iff sides.length == 2
+    // && sides[1] == sides[0]+1; @java CustomOnTri.java:89 — margin = sides[0]
+    // ONLY for Limping, else 2 (the old read applied sides[0] to every custom
+    // polygon and over-widened the scan window — Skirt).
+    const s = this.sides;
+    const isLimping = s !== null && s.length === 2 && s[1] === (s[0] as number) + 1;
+    const margin = isLimping ? Math.max(0, Math.trunc(s![0] ?? 2)) : 2;
     const fromCol = Math.trunc(minX) - margin;
     const fromRow = Math.trunc(minY) - margin;
     const toCol   = Math.trunc(maxX) + margin;

@@ -290,7 +290,14 @@ export function genTriCustom(sides: readonly number[]): Graph {
     if (px > maxX) maxX = px;
     if (py > maxY) maxY = py;
   }
-  const margin = Math.max(0, Math.trunc(sides[0] ?? 2));
+  // @java CustomOnTri.java:66-68,89 — shape is Limping iff exactly two sides
+  // with sides[1] == sides[0]+1; margin = sides[0] ONLY then, else 2. Using
+  // sides[0] for every custom polygon widened the scan window and let extra
+  // lattice points in concave bays pass the containment test (Skirt's
+  // (tri {6 8 6 10 5}) built 136 vertices instead of Java's 126, with a
+  // completely different id->position mapping).
+  const isLimping = sides.length === 2 && sides[1] === (sides[0] as number) + 1;
+  const margin = isLimping ? Math.max(0, Math.trunc(sides[0] ?? 2)) : 2;
   const fromCol = Math.trunc(minX) - margin;
   const fromRow = Math.trunc(minY) - margin;
   const toCol = Math.trunc(maxX) + margin;
