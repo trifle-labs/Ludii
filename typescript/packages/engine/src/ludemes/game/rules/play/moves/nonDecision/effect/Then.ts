@@ -144,6 +144,16 @@ export function evalDeferredThens(
       const mFrom = m.from();
       const mTo = m.to();
       postCtx._evalFrom = mFrom >= 0 ? mFrom : (src._evalFrom ?? mFrom);
+      // NOTE (Kotu Baendum ply-185 residual): a diagnosis suggested Java's
+      // `(to)` inside `(then …)` reads a STALE context binding (Move.java:520
+      // never calls setTo before consequent.eval), and that binding the
+      // move's to here fires a phantom (fromTo (from ("OppositePit" (to))))
+      // capture. Switching to the stale binding (src._evalTo ?? mTo) was
+      // EMPIRICALLY WRONG at scale: Adi/Adidada/Bechi/Mulabalaba/Nine Men's
+      // Morris all regressed OUTCOME_OK -> MOVE_MISMATCH and Kotu itself got
+      // worse (ply 1) — the wider ecosystem's thens DO consume the applied
+      // move's destination through `(to)`. Java's real context.to() lifecycle
+      // needs a finer-grained trace before touching this line again.
       postCtx._evalTo = mTo >= 0 ? mTo : (src._evalTo ?? mTo);
       postCtx._evalValue = 0;
 
