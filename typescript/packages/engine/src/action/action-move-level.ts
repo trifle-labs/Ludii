@@ -32,6 +32,14 @@ abstract class ActionMoveLevelBase extends BaseAction {
   }
 
   public override apply(state: State): State {
+    // @java ActionMoveTopPiece.java:487-488 — stacking-game branch: a move
+    // that deposits back at its own origin is a NO-OP (picked up and put
+    // straight back). Without the guard the countBacked path overcounts the
+    // origin (countAt=toBase+1) and then withCell(from,0) -> syncStacks pops
+    // the stack to length 0: O An Quan's 12-seed wrap-around sow corrupted
+    // site 8 to {countAt:2, stackSize:0} and the next sow's
+    // (size Stack at:(last From)) direction choice picked the wrong branch.
+    if (this.fromIndex === this.toIndex) return state;
     const stackSize = state.stackSize(this.fromIndex);
     const requestedLevel = this.fromLevelIndex;
     const sourceLevel =
