@@ -310,7 +310,14 @@ export function resolveRelativeDir(
   // Determine the mover's facing direction (in 45°-units: 0=N … 7=NW).
   // @java Component.getDirn() — a piece's OWN declared facing overrides its
   // owner's (player <Dir>) facing (Dodgem's E/N Cars, Toads & Frogs).
-  // Default: P1=N(0), P2=S(4). Override with per-player dirs when available.
+  // @java Game.java:2574-2588 — component.setDirection(direction) is only
+  // called when the player record has an EXPLICIT (player <Dir>) declaration;
+  // for (players 2) every direction stays null, and Directions.java:467-469
+  // then defaults EVERY piece to CompassDirection.N regardless of owner.
+  // The old TS default hard-coded P2=S(4), flipping Forward for P2 in games
+  // without declarations (Shatranj 12x12/14x14, Tsatsarandi: rec Δ=+width
+  // northward vs ts Δ=-width). Chess is unaffected — ("TwoPlayersNorthSouth")
+  // declares (player N)/(player S) so the playerDirs branch fires.
   let facingDir: number;
   if (facingOverride !== undefined) {
     facingDir = facingOverride;
@@ -319,11 +326,12 @@ export function resolveRelativeDir(
     if (pd !== undefined) {
       facingDir = pd;
     } else {
-      // Default for players not in the map
-      facingDir = (mover === 1) ? 0 : 4;
+      // @java a player absent from the declarations also defaults to N.
+      facingDir = 0;
     }
   } else {
-    facingDir = (mover === 1) ? 0 : 4;
+    // No (player <Dir>) declarations at all: Java defaults everyone to N.
+    facingDir = 0;
   }
   // @java Directions.java:469-478 — with a stored rotation the base facing is
   // the COMPONENT's declared dirn (default N), NOT the owner's player
