@@ -1622,7 +1622,15 @@ export class Game implements Game {
             : this.facingStartStripSites(placeItem.item);
           for (const site of placementSites) {
             if (typeof site !== "number") continue;
-            ctx.placePieces?.(site, what, count, stateValue, rotation, value, false, null);
+            // @java PlaceItem.java:369-371 — the placement ALWAYS carries the
+            // declared SiteType so ActionAdd routes to the right typed
+            // container. Passing null here dropped Russian Fortress Chess's
+            // (place "Disc" Edge (sites {...})) wall pieces into the flat
+            // cells[] channel: 6 phantom walls at wrong ids, 10 silently
+            // dropped past cells.length, and pawn moves at ply 18 were
+            // blocked by a "wall" that was really a board pawn.
+            ctx.placePieces?.(site, what, count, stateValue, rotation, value, false,
+              (placeItem as unknown as { type?: string | null }).type ?? null);
           }
         }
         return;

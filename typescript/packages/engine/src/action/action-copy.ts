@@ -30,6 +30,21 @@ export class ActionCopy extends BaseAction {
     if (owner === 0 && what === 0) return state; // Truly empty source
     let next = state.withCell(this.toIndex, owner);
     if (what !== 0) next = next.withWhatAt(this.toIndex, what);
+    // @java ActionCopy.java:195-196 -> ActionMoveTopPiece.apply — the copy
+    // carries EVERY piece attribute from the source (state/rotation/value),
+    // not just who/what. Or Thella's hand slot 1 carries state=1; dropping
+    // it made the custodial capture's (!= (state at:between) (state at:
+    // lastTo)) compare 0 vs 0 and the Do ifAfterwards filter rejected every
+    // from=65 placement (the apparent copy-coord "+1 offset").
+    const srcState = state.stateAtSite(this.fromIndex);
+    if (srcState !== 0) next = next.withStateAt(this.toIndex, srcState);
+    const srcValue = state.valueAtSite(this.fromIndex);
+    if (srcValue !== 0) next = next.withValueAt(this.toIndex, srcValue);
+    const srcRot = (state as unknown as { rotationAt?: readonly number[] }).rotationAt?.[this.fromIndex] ?? 0;
+    if (srcRot !== 0) {
+      const withRot = (next as unknown as { withRotationAt?: (s: number, r: number) => State }).withRotationAt;
+      if (withRot) next = withRot.call(next, this.toIndex, srcRot);
+    }
     return next;
   }
   public override actionType(): ActionType {

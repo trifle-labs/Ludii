@@ -74,7 +74,16 @@ type StepTypeName = "F" | "R" | "L";
 const ZERO_INT = new IntConstant(0);
 const ONE_INT = new IntConstant(1);
 const INFINITY_INT = new IntConstant(999_999);
-const LAST_TO_INT: IntFunction = { eval: (ctx: Context & EvalScratch) => ctx._evalTo };
+// @java new LastTo(null) — reads trial.lastMove().toNonDecision(), NOT the
+// (to) iterator binding (_evalTo is faithfully OFF inside (then ...) since
+// the EvalContext lifecycle fix; the old read silenced DisPath/MaxMatch's
+// (is Path ...) end scoring — tsWinner flatlined to 0).
+const LAST_TO_INT: IntFunction = {
+  eval: (ctx: Context & EvalScratch) => {
+    const mv = ctx.trial.lastMove();
+    return mv ? mv.toNonDecision() : -1;
+  },
+};
 const FALSE_BOOL: BooleanFunction = { eval: () => false };
 
 function matchesType(value: unknown, name: string): boolean {

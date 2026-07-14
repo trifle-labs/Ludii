@@ -80,7 +80,13 @@ export class IsRegularGraph implements BooleanFunction {
    * @java game/functions/booleans/is/regularGraph/IsRegularGraph.java — eval(Context)
    */
   public eval(ctx: Context & EvalScratch): boolean {
-    const siteId = ctx._evalTo;
+    // @java new LastTo(null).eval(context) — these predicates key on the
+    // LAST MOVE's destination (IsTreeCentre.java:55 et al.), NOT the (to)
+    // iterator binding: _evalTo is faithfully OFF inside (then ...) since the
+    // EvalContext lifecycle fix, which silenced Ilpion/DisPath/MaxMatch
+    // scoring (winner flatlined to 0).
+    const lastMove = ctx.trial.lastMove();
+    const siteId = lastMove ? lastMove.toNonDecision() : -1;
     if (siteId < 0) return false;
 
     const ctxAny = ctx as unknown as { _trajectories?: Trajectories | null };
