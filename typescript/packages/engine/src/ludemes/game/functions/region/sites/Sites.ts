@@ -1415,8 +1415,12 @@ export function boardCorners(ctx: Context): number[] {
   // on a mancala track) hit the els convex hull, whose input is TRACK
   // positions, yielding 6 "corners" [0,1,7,8,14,15] and flipping the
   // (is In (to) (expand (sites Corners))) sow-capture branch.
+  // An EMPTY measured set means the corner measure did not model this board
+  // (concentric rings measure to [] although Java finds ring corners —
+  // Mulabalaba regressed to zero corner moves), so only a non-empty measure
+  // wins; otherwise fall through to the hull/bounding-box stand-ins.
   const measured = traj?.cornerSites?.();
-  if (measured !== undefined) return measured;
+  if (measured !== undefined && measured.length > 0) return measured;
   const els = traj?.els;
   if (els && els.length > 0) {
     const pts: { i: number; x: number; y: number }[] = [];
