@@ -50,7 +50,11 @@ export class PlayersMany extends BaseIntArrayFunction {
   /** @java PlayersMany.eval(Context) */
   public override eval(ctx: Context & EvalScratch): number[] {
     const indices: number[] = [];
-    const numPlayers = ctx.game.numPlayers;
+    // @java PlayersMany.java:64 — numPlayers = players().size() = count+1
+    // (includes the null-player slot). Every loop below keeps Java's exact
+    // bounds under that convention (All's `<=` even covers the Shared slot
+    // at count+1, as Java does).
+    const numPlayers = ctx.game.numPlayers + 1;
     const savedPlayer = ctx._evalPlayer;
     const of_ =
       this.ofFn !== null ? this.ofFn.eval(ctx) : ctx.state.mover;
@@ -61,10 +65,12 @@ export class PlayersMany extends BaseIntArrayFunction {
       return indices;
     }
 
-    // Minimal team helpers — TS state does not expose Java's full team API;
-    // use valuePlayer (Java's per-player state.getTeam maps to this).
+    // @java PlayersMany.java:63 — context.game().requiresTeams(); per-branch
+    // teamOf = context.state().getTeam(of). TS team membership lives in
+    // game.teamOf (harvested from SetTeam start rules at Game construction).
     const requiresTeam = this._requiresTeam(ctx);
-    const teamOf = ctx.state.valuePlayer(of_);
+    const teamOfArr = (ctx.game as unknown as { teamOf?: readonly (number | null)[] }).teamOf ?? [];
+    const teamOf = teamOfArr[of_] ?? 0;
 
     const addIf = (pid: number): void => {
       ctx._evalPlayer = pid;
@@ -121,17 +127,24 @@ export class PlayersMany extends BaseIntArrayFunction {
     return indices;
   }
 
-  /** Heuristic: teams are in use if any player has a positive valuePlayer. */
+  /**
+   * @java Game.requiresTeams() (Game.java:820) — (gameFlags & GameType.Team) != 0;
+   * SetTeam.gameFlags() contributes GameType.Team. TS equivalent: game.teamOf
+   * (harvested from SetTeam at Game construction) has a non-zero entry.
+   */
   private _requiresTeam(ctx: Context & EvalScratch): boolean {
-    for (let p = 1; p <= ctx.game.numPlayers; p++) {
-      if (ctx.state.valuePlayer(p) > 0) return true;
-    }
+    const teamOf = (ctx.game as unknown as { teamOf?: readonly (number | null)[] }).teamOf ?? [];
+    for (let p = 1; p < teamOf.length; p++) if ((teamOf[p] ?? 0) > 0) return true;
     return false;
   }
 
-  /** @java State.playerInTeam(pid, teamIndex) */
+  /**
+   * @java State.playerInTeam(pid, teamIndex) (State.java:1861) — reads
+   * State.teams[]; TS reads game.teamOf[pid] from the SetTeam harvest.
+   */
   private _playerInTeam(ctx: Context & EvalScratch, pid: number, teamIndex: number): boolean {
-    return teamIndex > 0 && ctx.state.valuePlayer(pid) === teamIndex;
+    const teamOf = (ctx.game as unknown as { teamOf?: readonly (number | null)[] }).teamOf ?? [];
+    return teamIndex > 0 && (teamOf[pid] ?? 0) === teamIndex;
   }
 
   public override toString(): string {

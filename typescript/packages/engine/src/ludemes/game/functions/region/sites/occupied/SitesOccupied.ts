@@ -248,6 +248,34 @@ export class SitesOccupied extends BaseRegionFunction {
           }
         }
       }
+    } else if (role === "Team1" || role === "Team2" || role === "Team3" || role === "Team4") {
+      // @java PlayersIndices.getIdPlayers (PlayersIndices.java:376-395) —
+      // RoleType.TeamN: when game.requiresTeams(), collect every pid with
+      // state.playerInTeam(pid, N); otherwise just {N}. TS team membership
+      // lives in game.teamOf (harvested from SetTeam start rules at Game
+      // construction). Without this branch TeamN fell to roleToIntFunction's
+      // -1 default and the `whoId < 0` catch-all returned ALL occupied sites
+      // (Setichch's (sites Occupied by:TeamN) saw both teams' pieces).
+      const teamIndex = Number(role.slice(4));
+      const teamOf = (ctx.game as unknown as { teamOf?: readonly (number | null)[] }).teamOf ?? [];
+      let requiresTeams = false;
+      for (let p = 1; p < teamOf.length; p++) if ((teamOf[p] ?? 0) > 0) { requiresTeams = true; break; }
+      const idPlayers = new Set<number>();
+      if (requiresTeams) {
+        for (let pid = 1; pid <= ctx.game.numPlayers; pid++) {
+          if ((teamOf[pid] ?? 0) === teamIndex) idPlayers.add(pid);
+        }
+      } else {
+        idPlayers.add(teamIndex);
+      }
+      for (let i = 0; i < scanN; i++) {
+        const owner = cells[i] ?? 0;
+        if (owner > 0 && idPlayers.has(owner)) {
+          if (whatOk(whats[i] ?? 0)) {
+            sitesOccupied.push(i);
+          }
+        }
+      }
     } else if (role === "All" || whoId < 0) {
       // @java RoleType.All — all occupied sites
       for (let i = 0; i < scanN; i++) {
