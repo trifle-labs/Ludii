@@ -55,9 +55,19 @@ export class MapEntry extends BaseIntFunction {
     const key = this.keyFn.eval(context);
     const maps = mapsFromContext(context);
     if (maps) {
-      const map = maps.get(this.mapName ?? "__default__");
-      const value = map?.get(key);
-      if (value !== undefined) return value;
+      // @java MapEntry.java:79-91 — when name is null, iterate ALL maps and
+      // return the first real hit; when name is set, match only that map.
+      // A hit equal to Constants.OFF (-1) / noEntryValue is skipped (Java
+      // falls through to return the key itself). The previous
+      // maps.get("__default__") lookup missed every named map, so
+      // (mapEntry (count Pips)) returned the raw pip count instead of the
+      // throw value (Sig family dice-tracks).
+      for (const [mapName, map] of maps) {
+        if (this.mapName === null || mapName === this.mapName) {
+          const value = map.get(key);
+          if (value !== undefined && value !== -1) return value;
+        }
+      }
     }
     return key;
   }
