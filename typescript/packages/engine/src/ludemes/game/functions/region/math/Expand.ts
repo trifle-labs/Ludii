@@ -145,6 +145,30 @@ export class Expand extends BaseRegionFunction {
       topo = ctxAny.topology();
     }
 
+    // @java Region.expand — undirected expansion uses element.adjacent() from
+    // the graph topology. Faithful boards expose that adjacency via
+    // equipment.board.radials (the same source Game's topology adapter uses);
+    // the resolved `topo` object on those boards has no callable neighbours(),
+    // and falling through to _trajectories.steps gave mancala TRACK adjacency
+    // instead of board adjacency (Kotu Baendum's expand(sites Corners)).
+    const radials = (ctx as unknown as {
+      game?: { equipment?: { board?: { radials?: ArrayLike<{ axes: ReadonlyArray<{ ray: readonly number[]; opposite: readonly number[] }> }> } } };
+    }).game?.equipment?.board?.radials;
+    const radialNeighbours = radials
+      ? (site: number): number[] => {
+          const cellRadials = radials[site];
+          if (cellRadials === undefined) return [];
+          const out: number[] = [];
+          for (const axis of cellRadials.axes) {
+            const a = axis.ray[1];
+            const b = axis.opposite[1];
+            if (a !== undefined) out.push(a);
+            if (b !== undefined) out.push(b);
+          }
+          return out;
+        }
+      : null;
+
     // Perform BFS expansion.
     const resultSet = new Set<number>(baseRegion);
     let frontier = new Set<number>(baseRegion);
@@ -152,7 +176,7 @@ export class Expand extends BaseRegionFunction {
     for (let step = 0; step < num; step++) {
       const nextFrontier = new Set<number>();
       for (const site of frontier) {
-        const neighbours: number[] = neighboursOf(topo, ctxAny._trajectories ?? null, site, this.direction);
+        const neighbours: number[] = neighboursOf(topo, ctxAny._trajectories ?? null, site, this.direction, radialNeighbours);
         for (const nb of neighbours) {
           if (!resultSet.has(nb)) {
             resultSet.add(nb);
@@ -222,6 +246,7 @@ function neighboursOf(
   trajectories: { steps?: (site: number, dir: string) => number[] } | null,
   site: number,
   direction: string | null,
+  radialNeighbours: ((site: number) => number[]) | null,
 ): number[] {
   // @java Region.expand(…, direction, …) — a directional expand steps ONLY in
   // that AbsoluteDirection. The topo.neighbours shortcut ignored the direction,
@@ -233,6 +258,13 @@ function neighboursOf(
   }
   if (topo !== null && typeof topo.neighbours === "function") {
     return topo.neighbours(site, null);
+  }
+  // @java Region.expand (no direction) — element.adjacent() from the graph
+  // topology. Board radials carry that adjacency on faithful boards; the
+  // _trajectories.steps fallback below is track/sow adjacency and stays LAST
+  // resort only (it mis-expanded Kotu Baendum's (expand (sites Corners))).
+  if (radialNeighbours !== null) {
+    return radialNeighbours(site);
   }
   if (trajectories?.steps !== undefined) {
     return trajectories.steps(site, direction ?? "Adjacent");

@@ -1401,7 +1401,22 @@ export class Sites extends BaseRegionFunction {
  */
 
 export function boardCorners(ctx: Context): number[] {
-  const traj = (ctx as unknown as { _trajectories?: { els?: ArrayLike<{ pt: { x: number; y: number } }> } })._trajectories;
+  const traj = (ctx as unknown as {
+    _trajectories?: {
+      els?: ArrayLike<{ pt: { x: number; y: number } }>;
+      cornerSites?: () => number[] | undefined;
+    };
+  })._trajectories;
+  // @java SitesCorners.eval → context.topology().corners(realType), computed
+  // by MeasureGraph.measureCorners on the play-site graph. The faithful
+  // Trajectories exposes the measured corners as cornerSites() (Vertex play;
+  // Cell-play cell-corner measurement is not yet ported and returns undefined,
+  // keeping the hull/bounding-box stand-ins below). Kotu Baendum (Vertex play
+  // on a mancala track) hit the els convex hull, whose input is TRACK
+  // positions, yielding 6 "corners" [0,1,7,8,14,15] and flipping the
+  // (is In (to) (expand (sites Corners))) sow-capture branch.
+  const measured = traj?.cornerSites?.();
+  if (measured !== undefined) return measured;
   const els = traj?.els;
   if (els && els.length > 0) {
     const pts: { i: number; x: number; y: number }[] = [];
