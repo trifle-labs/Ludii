@@ -170,6 +170,16 @@ export interface StateOptions {
    */
   readonly valueStacks?: readonly (readonly number[])[];
   /**
+   * Per-level piece STATE values, sparse like {@link valueStacks}.
+   * @java ContainerStateStacks — state(site, level, type) reads the state
+   * channel of the per-site HashedChunkStack, distinct from the top-level
+   * scalar state. Only materialised when a level-targeted SetState is applied
+   * (Aj Sakakil family: a capture stacks the captor and marks the buried
+   * level state=2 "CapturedPiece" / top level state=1 "CapturingPiece" via
+   * [SetState:...,level=N,state=V] actions; (state at:s level:L) reads them).
+   */
+  readonly stateStacks?: readonly (readonly number[])[];
+  /**
    * Java parity: `State.numTurn` (the field, returned by `state.numTurn()` and
    * read by `(count Turns)`). It is initialised to **1** (not 0) and is bumped
    * by `reinitNumTurnSamePlayer()` whenever a *new* turn begins — i.e. when the
@@ -328,6 +338,8 @@ export class State {
   public readonly decided: string | null;
   /** Per-level values; see {@link StateOptions.valueStacks}. */
   public readonly valueStacks?: readonly (readonly number[])[];
+  /** Per-level piece states; see {@link StateOptions.stateStacks}. */
+  public readonly stateStacks?: readonly (readonly number[])[];
   /** Java parity: `State.numTurn` (init 1). See {@link StateOptions.numTurn}. */
   public readonly numTurn: number;
   /** Java parity: `State.numTurnSamePlayer`. */
@@ -514,6 +526,7 @@ export class State {
     this.votes = options.votes ?? [];
     this.decided = options.decided ?? null;
     this.valueStacks = options.valueStacks;
+    this.stateStacks = options.stateStacks;
     this.numTurn = options.numTurn ?? 1;
     this.numTurnSamePlayer = options.numTurnSamePlayer ?? 0;
     this.diceAllEqual = options.diceAllEqual ?? false;
@@ -1156,6 +1169,19 @@ export class State {
         nextValueStacks = copy;
       }
     }
+    // Per-level STATES shift with the pop too (@java ContainerStateStacks
+    // .remove splices every per-level channel, state included) — leaving them
+    // desyncs (state at:s level:L) reads after a capture stack unwinds.
+    let nextStateStacks: (readonly number[])[] | undefined;
+    {
+      const ss = this.stateStacks?.[siteIndex];
+      if (ss !== undefined && ss.length > 0 && removeAt >= 0) {
+        const copy = (this.stateStacks ?? []).map((r) => [...r]);
+        if (removeAt < (copy[siteIndex]?.length ?? 0)) copy[siteIndex]!.splice(removeAt, 1);
+        else copy[siteIndex] = copy[siteIndex]!.slice(0, -1);
+        nextStateStacks = copy;
+      }
+    }
     const nextCells = [...this.cells];
     nextCells[siteIndex] = target[target.length - 1] ?? 0;
     const existing = this.whatStacks[siteIndex];
@@ -1172,6 +1198,7 @@ export class State {
         whatStacks: nextWhatStacks,
         whats: nextWhats,
         ...(nextValueStacks !== undefined ? { valueStacks: nextValueStacks } : {}),
+        ...(nextStateStacks !== undefined ? { stateStacks: nextStateStacks } : {}),
       });
     }
     const nextWhats = [...this.whats];
@@ -1181,6 +1208,7 @@ export class State {
       stacks: nextStacks,
       whats: nextWhats,
       ...(nextValueStacks !== undefined ? { valueStacks: nextValueStacks } : {}),
+      ...(nextStateStacks !== undefined ? { stateStacks: nextStateStacks } : {}),
     });
   }
 
@@ -1265,6 +1293,34 @@ export class State {
     const next = (this.valueStacks ?? this.stacks.map(() => [] as number[])).map((r) => [...r]);
     next[site] = [...row];
     return this.with({ valueStacks: next });
+  }
+
+  /**
+   * @java ContainerStateStacks.state(site, level, type) — per-level piece
+   * state. Unmaterialized sites: level 0 carries the flat stateAt; higher
+   * levels 0 (mirrors valueAtLevel above).
+   */
+  public stateAtLevel(site: number, level: number): number {
+    const ss = this.stateStacks?.[site];
+    if (ss !== undefined && ss.length > 0) return ss[level] ?? 0;
+    return level === 0 ? (this.stateAt[site] ?? 0) : 0;
+  }
+
+  /**
+   * @java ActionSetState.apply (ActionSetState.java:107-121) — stacking game
+   * with level != UNDEFINED: cs.remove(...level) + cs.insert(...level, state)
+   * re-writes the state channel at that exact level. Materialises the sparse
+   * stateStacks column on first write, backfilling lower levels with 0
+   * (unset chunk slots read as 0 in Java).
+   */
+  public withStateAtLevel(site: number, level: number, value: number): State {
+    this.requireSite(site);
+    const next = (this.stateStacks ?? this.stacks.map(() => [] as number[])).map((r) => [...r]);
+    const row = next[site] ?? [];
+    while (row.length <= level) row.push(0);
+    row[level] = value;
+    next[site] = row;
+    return this.with({ stateStacks: next });
   }
 
   /** Level-less site wipe of the registry (flat ActionRemove). */
@@ -1632,6 +1688,7 @@ export class State {
         votes: patch.votes ?? this.votes,
         decided: patch.decided !== undefined ? patch.decided : this.decided,
         valueStacks: patch.valueStacks ?? this.valueStacks,
+        stateStacks: patch.stateStacks ?? this.stateStacks,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:
           patch.numTurnSamePlayer ?? this.numTurnSamePlayer,

@@ -107,6 +107,9 @@ export class SetState implements MovesFunction {
       state: stateValue,
       toType: this.type,
       toTypedNonDefault: toNonDefault,
+      // @java SetState.java:105 — the evaluated level rides on the action;
+      // UNDEFINED (-1) means flat/top (ActionSetState treats <0 as no level).
+      level,
     });
 
     const move = new LudiiMove({

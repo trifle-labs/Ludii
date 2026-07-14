@@ -37,13 +37,23 @@ export class State extends BaseIntFunction {
   public override eval(context: Context): number {
     const site = this.loc.eval(context);
     if (site < 0) return 0;
-    void this.level;
+    // @java State.java — level = (level == null) ? UNDEFINED : level.eval(context),
+    // then cs.state(site, level, type): ContainerStateStacks reads the state
+    // channel AT that level. Discarding the level made (state at:s level:L)
+    // return the flat scalar for every level — Aj Sakakil's buried
+    // CapturedPiece (state=2 at level 0) read as 0 and stayed mobile.
+    const levelVal = this.level !== null ? this.level.eval(context) : -1;
     // Non-default graph element (e.g. Edge on a Cell-default board): state lives
     // in the typed channel, not the flat cell-sized stateAt[].
     if (isNonDefaultTyped(context, this.type)) {
       return (context.state as unknown as {
         stateTyped(type: string, site: number): number;
       }).stateTyped(this.type as string, site);
+    }
+    if (levelVal >= 0) {
+      return (context.state as unknown as {
+        stateAtLevel(site: number, level: number): number;
+      }).stateAtLevel(site, levelVal);
     }
     return (context.state as unknown as { stateAt: readonly number[] }).stateAt[site] ?? 0;
   }
