@@ -73,12 +73,22 @@ export class SitesEquipmentRegion extends BaseRegionFunction {
       const seen = new Set<number>();
       let matchedName = false;
       for (const [regionName, byOwner] of named) {
-        // @java region.name().contains(name) — substring match ("" matches
-        // all). Compare case-insensitively on BOTH sides: the needle was
-        // lowercased while map keys keep their lud casing, so Chameleons'
-        // (sites "RedTiles") matched nothing and the start rule placed
-        // zero pieces.
-        if (!regionName.toLowerCase().includes(needle)) continue;
+        // @java SitesEquipmentRegion.java — TWO match modes: the
+        // player-qualified path (index != null, :245) uses
+        // region.name().contains(name) (substring); the bare-name path
+        // (index == null, :280) uses region.name().equals(name) (EXACT).
+        // Substring matching on the bare path bloated Los Escaques'
+        // (sites "Section1") into Section1 ∪ Section10 ∪ Section11 (84 sites
+        // instead of 28), sending SectionDistance down the wrong branch and
+        // mis-scoring every relative-position award. Compare
+        // case-insensitively on BOTH sides (Chameleons' "RedTiles" lesson).
+        {
+          const lc = regionName.toLowerCase();
+          const matches = this.index !== null
+            ? (needle === "" || lc.includes(needle))
+            : (needle === "" || lc === needle);
+          if (!matches) continue;
+        }
         matchedName = true;
         // No player qualifier ((sites "RedTiles")) → union the name's
         // regions across ALL owners (@java preprocess collects per-owner;

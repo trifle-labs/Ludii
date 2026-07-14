@@ -23,7 +23,19 @@ export class Next extends BaseIntFunction {
     // State.next() is always a real player. 0 means "use natural order".
     const override = (context.state as unknown as { next?: number }).next ?? 0;
     if (override > 0) return override;
-    return (context.state.mover % context.game.numPlayers) + 1;
+    // @java Game.java:3210-3215 — the natural successor SKIPS inactive
+    // (eliminated) players; Java's state.next always holds that adjusted
+    // value. So Long Sucker: with P4 eliminated, (next) from mover=3 must be
+    // P1, not P4 — TS generated SetNextPlayer(4) and handed the turn to a
+    // dead player (MM at ply 62).
+    const n = context.game.numPlayers;
+    let next = (context.state.mover % n) + 1;
+    const st = context.state as unknown as { activePlayer?: (p: number) => boolean };
+    let guard = n;
+    while (st.activePlayer && !st.activePlayer(next) && guard-- > 0) {
+      next = (next % n) + 1;
+    }
+    return next;
   }
 
   /** @java Next.isStatic() */
