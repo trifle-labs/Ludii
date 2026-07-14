@@ -219,7 +219,11 @@ export class FromTo implements MovesFunction {
               fromSite: from,
               toSite: to,
             });
-            moves.push(this.thenClause != null ? applyPostStateThen(this.thenClause, ctx, move) : move);
+            // @java FromTo.java:427 — the then clause is applied ONCE for all
+            // moves at the end of eval (line ~433 below); applying it here too
+            // double-tagged the deferredThens (Morra's copy/large-piece moves
+            // scored 2 per hit and (= (score P1) 3) never fired).
+            moves.push(move);
           }
         }
         ctx._evalFrom = origFrom;
@@ -263,7 +267,9 @@ export class FromTo implements MovesFunction {
             fromNonDecisionSite: from,
             toNonDecisionSite: to,
           });
-          moves.push(this.thenClause != null ? applyPostStateThen(this.thenClause, ctx, move) : move);
+          // @java FromTo.java:427 — then applied once at the end of eval; the
+          // inline apply here duplicated Morra's ShowHand deferredThen.
+          moves.push(move);
           ctx._evalFrom = origFrom;
           ctx._evalTo = origTo;
           continue;
