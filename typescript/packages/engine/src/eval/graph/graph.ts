@@ -494,8 +494,19 @@ export class Graph {
    * cycle; the single unbounded (outer) cycle — the one whose signed area is
    * the most negative — is discarded.
    */
-  public makeFaces(): void {
-    this.flist = [];
+  /**
+   * Trace the outer boundary of each connected component from EDGE topology
+   * alone and store it in perimeterRings/perimeterVerts — does NOT touch the
+   * face list. @java MeasureGraph.measurePerimeter (MeasureGraph.java:81),
+   * invoked via Board.init → graph.measure (Board.java:187) on the FINAL
+   * graph after the whole operator chain. The TS port traces at
+   * makeFaces-time, so operators that rebuild (Remove) or mutate (Add) the
+   * graph must call this to refresh the boundary — re-running makeFaces
+   * instead would resurrect deleted faces (Java Remove.java:318 "Do not
+   * create faces!") and shift containerSpan/hand-site offsets the recorded
+   * trials depend on. Safe to call repeatedly; fully overwrites both fields.
+   */
+  public measurePerimeter(): void {
     if (this.elist.length === 0) return;
 
     // Sorted adjacency: for each vertex, neighbour ids ordered by edge angle.
@@ -620,6 +631,40 @@ export class Graph {
 
     this.perimeterRings = outerRings.map((r) => [...r]);
     this.perimeterVerts = [...new Set(outerRings.flat())];
+  }
+
+  public makeFaces(): void {
+    this.flist = [];
+    if (this.elist.length === 0) return;
+
+    // Sorted adjacency: for each vertex, neighbour ids ordered by edge angle.
+    const adj: { to: number; angle: number }[][] = this.vlist.map(() => []);
+    for (const e of this.elist) {
+      const va = this.vlist[e.a];
+      const vb = this.vlist[e.b];
+      if (!va || !vb) continue;
+      adj[e.a]?.push({ to: e.b, angle: Math.atan2(vb.y - va.y, vb.x - va.x) });
+      adj[e.b]?.push({ to: e.a, angle: Math.atan2(va.y - vb.y, va.x - vb.x) });
+    }
+    for (const list of adj) list.sort((p, q) => p.angle - q.angle);
+
+    // index of neighbour `to` within vertex `v`'s sorted adjacency.
+    const indexOf = (v: number, to: number): number => {
+      const list = adj[v];
+      if (!list) return -1;
+      for (let i = 0; i < list.length; i += 1) {
+        if (list[i]?.to === to) return i;
+      }
+      return -1;
+    };
+
+    // @java MeasureGraph.measurePerimeter — the perimeter trace is extracted
+    // to measurePerimeter() (same angle-sorted half-edge walk) so graph
+    // operators that rebuild (Remove) or mutate (Add) the graph can retrace
+    // the boundary WITHOUT regenerating faces (re-running makeFaces would
+    // resurrect deleted faces and shift containerSpan/hand-site offsets the
+    // recorded trials depend on).
+    this.measurePerimeter();
 
     // @java Graph.makeFaces:1328-1422 — faces are discovered VERTEX-major:
     // for each vertex in id order, for each of its edges in ascending-angle

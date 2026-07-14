@@ -69,6 +69,13 @@ function graphWithoutVertices(source: Graph, dropVids: ReadonlySet<number>): Gra
     const vids = f.vertices.map((v) => remap.get(v) as number);
     if (vids.every((v) => v >= 0)) out.findOrAddFace(vids);
   }
+  // @java Board.init → graph.measure → MeasureGraph.measurePerimeter
+  // (MeasureGraph.java:81): Java measures the FINAL graph after the operator
+  // chain. The rebuilt graph here has an empty perimeter (Game of Dwarfs'
+  // (sites Outer) returned [] and a start Gnome was never placed); retrace
+  // from edges — makeFaces would resurrect the deleted faces
+  // (Remove.java:318 "Do not create faces!").
+  out.measurePerimeter();
   return out;
 }
 
@@ -84,6 +91,9 @@ function graphWithoutEdges(
     if (!dropEdges.has(k)) out.addEdge(e.a, e.b);
   }
   for (const f of source.faces) out.findOrAddFace([...f.vertices]);
+  // @java MeasureGraph.measurePerimeter (MeasureGraph.java:81) — same as
+  // graphWithoutVertices above: the rebuilt graph must retrace its boundary.
+  out.measurePerimeter();
   return out;
 }
 

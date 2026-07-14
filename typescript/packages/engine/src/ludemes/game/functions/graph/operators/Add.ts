@@ -153,6 +153,13 @@ export class Add extends BaseGraphFunction {
       }
     }
 
+    // @java Board.init → graph.measure → MeasureGraph.measurePerimeter
+    // (MeasureGraph.java:81): Java measures the FINAL graph after the whole
+    // operator chain. Add mutates the inner graph in place (new vertices /
+    // edges above), so a perimeter traced earlier in the chain — e.g. by the
+    // inner generator's makeFaces, or Remove's retrace — is stale here.
+    // Retrace on the finished graph (Game of Dwarfs: (add (remove …) …)).
+    graph.measurePerimeter();
     return graph;
   }
 }
