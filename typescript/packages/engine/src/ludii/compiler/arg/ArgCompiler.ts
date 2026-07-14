@@ -27,6 +27,7 @@ import {
 } from "../../Language/src/grammar/ebnf-grammar-loader.js";
 import { JAVA_TS_CTORS } from "../gen/java-ts-ctors.js";
 import { Sites } from "../../../ludemes/game/functions/region/sites/Sites.js";
+import { parseWalks } from "../../../ludemes/game/functions/region/sites/walk/SitesWalk.js";
 import { EmptyDefault } from "../../../ludemes/game/functions/region/sites/index/SitesEmpty.js";
 import { SitesPhase } from "../../../ludemes/game/functions/region/sites/simple/SitesSide.js";
 import { IsIn } from "../../../ludemes/game/functions/booleans/is/in/IsIn.js";
@@ -684,6 +685,34 @@ export class ArgCompiler {
         if (metaCtx && expectedTypes.some((expected) => isAssignable(metaCtx, expected.name))) {
           this.resolveTrace.push({ token: head, cls: "game.functions.region.sites.context.SitesContext" });
           return new SitesContext();
+        }
+      }
+      // @java Sites.construct(@Opt SiteType, @Opt IntFunction index, StepType[][] possibleSteps,
+      //       @Opt @Name BooleanFunction rotations) → SitesWalk
+      // (Core/src/game/functions/region/sites/Sites.java line ~695)
+      //
+      // When items[1] is a non-ident expression (e.g. `(from)`) and items[2] is a
+      // curly list of step sequences (the DoubleSteps define expansion), the generic
+      // Sites candidate path mis-resolves to overload [1]
+      // construct(@Opt Player, @Opt RoleType, @Opt SiteType, @Opt String) → SitesEquipmentRegion
+      // because all four params are @Opt and `(from)` type-checks as Player.
+      // SitesEquipmentRegion then returns [] for any player index, so the Difference
+      // source region is empty and no double-step to-sites are generated.
+      // Java resolves correctly via strict static type-checking: a StepType[][]
+      // argument can never match the String name param.
+      // Fix: intercept the walk pattern here before falling through to the generic path.
+      if (node.items.length >= 2 && variant && isList(variant)) {
+        const stepsNode = node.items[2];
+        const walks = stepsNode ? parseWalks(stepsNode) : [];
+        if (walks.length > 0) {
+          const meta = this.reflection.get("game.functions.region.sites.Sites");
+          if (meta && expectedTypes.some((expected) => isAssignable(meta, expected.name))) {
+            const indexFn = this.compileMaybe(variant, [parseJavaType("game.functions.ints.IntFunction")], env);
+            if (indexFn !== null) {
+              this.resolveTrace.push({ token: head, cls: "game.functions.region.sites.walk.SitesWalk" });
+              return Sites.constructWalk(null, indexFn as never, walks, null);
+            }
+          }
         }
       }
       return null;
