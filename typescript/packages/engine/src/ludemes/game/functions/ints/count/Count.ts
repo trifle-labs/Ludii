@@ -496,6 +496,17 @@ export class Count extends BaseIntFunction {
             ? (_stepMove as { goRule(): BooleanFunction }).goRule()
             : null;
 
+        // @java CountSteps.stepMove.directions() (CountSteps.java:355-395) —
+        // the step's OWN directions bound the BFS neighbourhood; the top-level
+        // relation is only the distance-table default. (count Steps (step
+        // Orthogonal ...) ...) must not walk diagonals (N-Mesh).
+        const stepDirsFn =
+          _stepMove !== null &&
+          _stepMove !== undefined &&
+          typeof (_stepMove as { directions?: unknown }).directions === "function"
+            ? (_stepMove as { directions(): import("../../../../base.js").DirectionsFunction }).directions()
+            : null;
+
         // @java CountSteps.newRotationFn — updates piece rotation after each BFS
         // step (used by rotation-aware games). TS CountSteps has no rotation model;
         // _newRotation is received but not forwarded. Pattern #5 placeholder only.
@@ -506,6 +517,7 @@ export class Count extends BaseIntFunction {
           stepCondFn,
           // @java type — SiteType; flat-state substrate, see pattern #5
           typeof _type === "string" ? _type : null,
+          stepDirsFn,
         ));
       }
       default:

@@ -14,7 +14,7 @@
  */
 
 import type { Context } from "../../../../../context.js";
-import type { BooleanFunction, IntFunction, RegionFunction } from "../../../../base.js";
+import type { BooleanFunction, DirectionsFunction, IntFunction, RegionFunction } from "../../../../base.js";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
 import type { Game } from "../../../../Game.js";
 
@@ -43,6 +43,15 @@ export class CountSteps implements IntFunction {
    */
   private readonly stepConditionFn: BooleanFunction | null;
   /**
+   * @java CountSteps.stepMove.directions() — when a (step ...) is given, its
+   * DirectionsFunction (not the top-level relation) controls which neighbours
+   * the BFS visits (CountSteps.java:355-395 converts the step's directions to
+   * absolute per from-site and walks trajectories().steps per direction).
+   * Without this, (count Steps (step Orthogonal ...) ...) walked ALL 8
+   * neighbours and N-Mesh found a spurious diagonal 2-step escape path.
+   */
+  private readonly stepDirectionsFn: DirectionsFunction | null;
+  /**
    * @java type — SiteType; flat-state substrate, see pattern #5.
    * Stored but eval behaviour is substrate-independent in the flat state.
    */
@@ -54,12 +63,14 @@ export class CountSteps implements IntFunction {
     relation: string | null = null,
     stepConditionFn: BooleanFunction | null = null,
     siteType: string | null = null,
+    stepDirectionsFn: DirectionsFunction | null = null,
   ) {
     this.site1Fn = site1Fn;
     this.region2Fn = region2Fn;
     this.relation = relation ?? "Adjacent";
     this.stepConditionFn = stepConditionFn;
     this.siteType = siteType;
+    this.stepDirectionsFn = stepDirectionsFn;
   }
 
   /**
@@ -110,9 +121,26 @@ export class CountSteps implements IntFunction {
 
       let neighbours: number[];
       if (traj) {
-        // @java GameType.Step<relation>Distance — the distance table is built
-        // with the declared relation (All includes diagonals).
-        neighbours = traj.group(s, this.relation);
+        if (this.stepConditionFn !== null && this.stepDirectionsFn !== null) {
+          // @java CountSteps.java:355-395 (stepMove path) — the STEP's own
+          // directions, converted per from-site, bound the BFS; the top-level
+          // relation is only the distance-table default. Group names walk the
+          // whole group; compass/relative names walk that single direction.
+          ctx._evalFrom = s;
+          const dirNames = this.stepDirectionsFn.eval(ctx as Parameters<DirectionsFunction["eval"]>[0]);
+          const acc: number[] = [];
+          for (const name of dirNames) {
+            const batch = (name === "Adjacent" || name === "Orthogonal" || name === "Diagonal" || name === "All")
+              ? traj.group(s, name)
+              : (traj as unknown as { steps(site: number, dir: string): number[] }).steps(s, name);
+            for (const nb of batch) if (!acc.includes(nb)) acc.push(nb);
+          }
+          neighbours = acc;
+        } else {
+          // @java GameType.Step<relation>Distance — the distance table is built
+          // with the declared relation (All includes diagonals).
+          neighbours = traj.group(s, this.relation);
+        }
       } else {
         const W = g.equipment.board.width;
         const H = g.equipment.board.height;

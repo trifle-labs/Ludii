@@ -427,4 +427,15 @@ export class Step extends Effect {
   public goRule(): BooleanFunction {
     return this.rule;
   }
+
+  /**
+   * @java Step.java — directions(): the step's DirectionsFunction. CountSteps'
+   * stepMove path (CountSteps.java:355-395) calls
+   * stepMove.directions().convertToAbsolute(...) so the BFS only walks the
+   * step's declared directions (N-Mesh: (step Orthogonal ...) must not
+   * traverse diagonals).
+   */
+  public directions(): DirectionsFunction {
+    return this.dirnChoice;
+  }
 }
