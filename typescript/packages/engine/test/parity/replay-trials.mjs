@@ -176,6 +176,13 @@ const PER_TRIAL_MS = process.env.PER_TRIAL_MS
 // Per-ply scripted-dice replay (recorded SetStateAndUpdateDice faces). On by
 // default; set SCRIPTED_DICE=0 to fall back to whole-game SplitMix64 RNG parity.
 const SCRIPTED_DICE = process.env.SCRIPTED_DICE !== "0";
+// Post-start scripted placement: override the TS engine's random start with
+// the recorded mover=0 Add actions so `(place Random …)` games replay
+// faithfully. Java replays trials the same way — the stored initial
+// placements are applied directly, PlaceRandom is never re-run
+// (@java Trial.java initial placements → ActionAdd.apply). Set
+// SCRIPTED_START=0 to fall back to whole-game SplitMix64 RNG parity.
+const SCRIPTED_START = process.env.SCRIPTED_START !== "0";
 const WALL_CLOCK_MS = process.env.WALL_CLOCK_MS
   ? parseInt(process.env.WALL_CLOCK_MS, 10)
   : 5 * 60 * 1000; // 5 minutes total (override via WALL_CLOCK_MS env)
@@ -275,7 +282,9 @@ function loadGame(gameRelPath, trialPath) {
     // Pass a resolveSubgame callback so that (match ...) game files can
     // transparently compile their first referenced subgame.
     const game = play1to1(src, { resolveSubgame: resolveSubgameSrc });
-    result = { game };
+    // src exposed for feature gates that inspect the lud text (scripted-start
+    // only rewrites (place Random …) games).
+    result = { game, src };
   } catch (e) {
     result = { error: e };
   }
@@ -919,6 +928,57 @@ function replayTrial(trialPath) {
   }
   if (rngAdapter) {
     ctx = ctx.withRng(rngAdapter);
+  }
+
+  // Scripted-start (mirrors the scripted-dice pattern): `(place Random …)`
+  // games record their randomized initial placements as leading mover=0 Add
+  // moves. The TS start() draws from the same SplitMix64 sequence but the
+  // per-draw empty-site bounds diverge from Java's from the 2nd placement on,
+  // so the boards differ at ply 0. Do what Java's own trial replay does:
+  // discard the TS-random placements and re-apply the recorded ones through
+  // the public State API. Guard: a recorded site beyond the TS board (Shut
+  // Off His Lights' celtic-stub board) skips the rewrite so the trial keeps
+  // surfacing as MOVE_MISMATCH instead of throwing.
+  if (SCRIPTED_START) {
+    const initPlacements = [];
+    let sawRandomPlace = false;
+    for (const mv of recMoves) {
+      if (mv.mover !== 0) break;
+      for (const a of mv.actions) {
+        if (a.actionType !== 'Add') continue;
+        const to = Number(a.fields.get('to'));
+        const what = Number(a.fields.get('what'));
+        const stateVal = a.fields.has('state') ? Number(a.fields.get('state')) : null;
+        if (Number.isFinite(to) && Number.isFinite(what) && what > 0) {
+          initPlacements.push({ to, what, stateVal });
+        }
+      }
+    }
+    // Only rewrite when the game actually randomizes its start — a
+    // deterministic start already matches and the rewrite would discard
+    // stacking/count structure the flat re-apply below cannot rebuild.
+    sawRandomPlace = /\(place\s+Random\b/.test(loaded.src ?? '');
+    if (sawRandomPlace && initPlacements.length > 0) {
+      const numCells = ctx.state.cells?.length ?? 0;
+      const maxSite = Math.max(...initPlacements.map((p) => p.to));
+      if (maxSite < numCells) {
+        let st = ctx.state;
+        for (let s = 0; s < numCells; s++) {
+          const w = st.whats?.[s] ?? 0;
+          const c = st.cells?.[s] ?? 0;
+          if (w || c) st = st.withCell(s, 0).withWhatAt(s, 0);
+        }
+        for (const { to, what, stateVal } of initPlacements) {
+          const comp = game.equipment?.componentAt?.(what);
+          const owner = comp?.owner ?? 0;
+          st = st.withWhatAt(to, what).withCell(to, owner);
+          if (stateVal !== null && Number.isFinite(stateVal) && stateVal > 0) {
+            st = st.withStateAt(to, stateVal);
+          }
+        }
+        ctx = ctx.withState(st);
+      }
+    }
   }
 
   // Determine where actual "play" moves begin.
