@@ -419,6 +419,53 @@ function makeScriptedRng(states) {
 // moved verbatim to ./move-match.mjs (importable without running this script's corpus walk).
 
 /**
+ * A trailing random-spawn Add in a recorded move (2048's per-turn tile):
+ * the LAST action, an Add, not the decision, with a real to/what.
+ * @java the spawn comes from (then (add ... (to (sites Random ...)))) —
+ * SitesRandom.java:69 draws from context.rng() at APPLY time.
+ */
+function recordedSpawnAdd(recMove) {
+  const acts = recMove.actions;
+  if (!acts || acts.length < 2) return null;
+  const last = acts[acts.length - 1];
+  if (last.actionType !== 'Add') return null;
+  if (last.fields.get('decision') === 'true') return null;
+  const to = Number(last.fields.get('to'));
+  const what = Number(last.fields.get('what'));
+  if (!Number.isFinite(to) || !Number.isFinite(what) || what <= 0) return null;
+  return { to, what };
+}
+
+/**
+ * Post-apply spawn correction: when the recorded move carries a trailing
+ * spawn Add and the engine's own RNG spawned the SAME component at a
+ * DIFFERENT previously-empty site, relocate it to the recorded site. Java's
+ * trial replay applies the stored spawn action instead of re-rolling
+ * (@java Trial replay -> ActionAdd.apply). The same-what requirement keeps
+ * capture-to-hand / non-spawn thens untouched.
+ */
+function applySpawnPatch(preCtx, postCtx, recSpawn, game) {
+  const { to: recTo, what: recWhat } = recSpawn;
+  const preWhat = (s) => preCtx.state.whats?.[s] ?? 0;
+  const postWhat = (s) => postCtx.state.whats?.[s] ?? 0;
+  if (postWhat(recTo) === recWhat) return postCtx; // already right
+  const n = postCtx.state.cells?.length ?? 0;
+  if (recTo >= n) return postCtx;
+  let wrongSite = -1;
+  for (let s = 0; s < n; s++) {
+    if (s === recTo) continue;
+    if (preWhat(s) === 0 && postWhat(s) === recWhat) { wrongSite = s; break; }
+  }
+  if (wrongSite < 0) return postCtx; // no misplaced same-what spawn — leave alone
+  let st = postCtx.state;
+  st = st.withWhatAt(wrongSite, 0).withCell(wrongSite, 0);
+  const comp = game.equipment?.componentAt?.(recWhat);
+  const owner = comp?.owner ?? 0;
+  st = st.withWhatAt(recTo, recWhat).withCell(recTo, owner);
+  return postCtx.withState(st);
+}
+
+/**
  * Collect every TS move that matches the recorded move's from/to/mover, using
  * the same tiered logic as findMatchingMove but returning ALL matches at the
  * best tier. Used to disambiguate moves that share from/to but differ in their
@@ -1216,6 +1263,7 @@ function replayTrial(trialPath) {
     }
 
     if (process.env.TRACE_MATCHED) console.error(`[MATCHED] ply=${plyIndex} ${matched.from()}>${matched.to()} nDefThens=${matched.deferredThens?.length ?? 'NA'} acts=[${matched.actions.map(a=>a.actionType()).join(',')}]`);
+    const preSpawnCtx = SCRIPTED_START ? ctx : null;
     try {
       ctx = game.apply(ctx, matched);
     } catch (e) {
@@ -1227,6 +1275,17 @@ function replayTrial(trialPath) {
         recMove: `mover=${recMove.mover},from=${recMove.from},to=${recMove.to}`,
         tsMoveCount: tsMoves.length,
       };
+    }
+    // Scripted-spawn (2048 family): a move's (then ...) can (add ...) at
+    // (sites Random ...) — an APPLY-TIME RNG draw the scripted-dice/start
+    // machinery cannot pre-empt (@java SitesRandom.java:69). Java's trial
+    // replay applies the STORED spawn Add; mirror that by relocating the
+    // engine's freshly spawned piece to the recorded site when they differ.
+    if (preSpawnCtx !== null) {
+      const spawn = recordedSpawnAdd(recMove);
+      if (spawn !== null) {
+        ctx = applySpawnPatch(preSpawnCtx, ctx, spawn, game);
+      }
     }
     plyIndex++;
   }
