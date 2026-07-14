@@ -50,11 +50,20 @@ export class IsPrev implements BooleanFunction {
     // (no Moves Next) and ending Dama (Italy) mid-chain (WM at ply 10).
     const prev = (ctx.state as unknown as { prev?: number }).prev ?? 0;
     if (prev <= 0) {
-      // Pre-first-advance fallback (start rules / ply 0 then-contexts).
       const moves = ctx.trial.moves;
       if (moves.length === 0) return false;
       const inThen = (ctx as unknown as { _thenContextDepth?: number })._thenContextDepth ?? 0;
-      const prevIdx = inThen > 0 ? moves.length - 2 : moves.length - 1;
+      // @java State.java:68 prev=0 initially; Game.java:3200 stamps setPrev
+      // AFTER the nextPhase evaluation (:3119-3141). OUTSIDE a then-context,
+      // Java's (is Prev X) therefore compares against prev==0 — false for any
+      // real player. The old trial-derived read returned the CURRENT move's
+      // mover, flipping ("SameTurn") true during ply-0 nextPhase evaluation:
+      // Shakhmaty's Opening->Playing transition fired after the very first
+      // move and only Promote moves were generated from ply 1.
+      if (inThen === 0) return this.who.eval(ctx) === 0;
+      // Inside a (then ...) the eval trial already contains the current move,
+      // so the previous mover is one move back.
+      const prevIdx = moves.length - 2;
       if (prevIdx < 0) return false;
       return this.who.eval(ctx) === moves[prevIdx]!.mover;
     }
