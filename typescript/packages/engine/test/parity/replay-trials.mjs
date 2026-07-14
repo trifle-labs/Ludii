@@ -942,15 +942,26 @@ function replayTrial(trialPath) {
   if (SCRIPTED_START) {
     const initPlacements = [];
     let sawRandomPlace = false;
+    // Stacked-hand setups (Chex: Add:...level=0..15,stack=true + SetHiddenWhat
+    // masks) cannot be rebuilt by the flat rewrite below — sequential
+    // withWhatAt calls collapse the 16-level stack to its last piece and the
+    // hidden-info masks are lost, making the divergence EARLIER, not later.
+    // Detect and skip; those games keep the SplitMix64 RNG-parity path.
+    let hasStackedAdd = false;
     for (const mv of recMoves) {
       if (mv.mover !== 0) break;
       for (const a of mv.actions) {
         if (a.actionType !== 'Add') continue;
+        if (a.fields.get('stack') === 'true') hasStackedAdd = true;
         const to = Number(a.fields.get('to'));
         const what = Number(a.fields.get('what'));
         const stateVal = a.fields.has('state') ? Number(a.fields.get('state')) : null;
+        // @java ActionAdd.java:172-173 — the value= field rides the Add
+        // (Zombego's movement-pattern codes); dropping it left every piece
+        // value=0 and PossibleLeapSites generated the wrong patterns.
+        const valueVal = a.fields.has('value') ? Number(a.fields.get('value')) : null;
         if (Number.isFinite(to) && Number.isFinite(what) && what > 0) {
-          initPlacements.push({ to, what, stateVal });
+          initPlacements.push({ to, what, stateVal, valueVal });
         }
       }
     }
@@ -958,7 +969,7 @@ function replayTrial(trialPath) {
     // deterministic start already matches and the rewrite would discard
     // stacking/count structure the flat re-apply below cannot rebuild.
     sawRandomPlace = /\(place\s+Random\b/.test(loaded.src ?? '');
-    if (sawRandomPlace && initPlacements.length > 0) {
+    if (sawRandomPlace && initPlacements.length > 0 && !hasStackedAdd) {
       const numCells = ctx.state.cells?.length ?? 0;
       const maxSite = Math.max(...initPlacements.map((p) => p.to));
       if (maxSite < numCells) {
@@ -966,14 +977,23 @@ function replayTrial(trialPath) {
         for (let s = 0; s < numCells; s++) {
           const w = st.whats?.[s] ?? 0;
           const c = st.cells?.[s] ?? 0;
-          if (w || c) st = st.withCell(s, 0).withWhatAt(s, 0);
+          // stateAt must be zeroed too: TS's own random placement may have
+          // stamped a tile color here (Paintscape's Squares, state 1-5); a
+          // recorded Disc placed at this site carries NO state field, so a
+          // stale color survived the rewrite and corrupted the Play phase.
+          if (w || c) st = st.withCell(s, 0).withWhatAt(s, 0).withStateAt(s, 0);
         }
-        for (const { to, what, stateVal } of initPlacements) {
+        for (const { to, what, stateVal, valueVal } of initPlacements) {
           const comp = game.equipment?.componentAt?.(what);
           const owner = comp?.owner ?? 0;
           st = st.withWhatAt(to, what).withCell(to, owner);
           if (stateVal !== null && Number.isFinite(stateVal) && stateVal > 0) {
             st = st.withStateAt(to, stateVal);
+          }
+          // @java ActionAdd.java:292 — cs.setSite(... value ...) applies the
+          // recorded per-piece value (Zombego's movement patterns).
+          if (valueVal !== null && Number.isFinite(valueVal) && valueVal > 0) {
+            st = st.withValueAt(to, valueVal);
           }
         }
         ctx = ctx.withState(st);
