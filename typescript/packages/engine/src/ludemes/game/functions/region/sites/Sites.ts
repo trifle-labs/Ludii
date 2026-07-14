@@ -70,6 +70,7 @@ import type { SitesSimpleType } from "./SitesSimpleType.js";
 import { resolveRelativeDir } from "../../../util/directions/RelativeDirection.js";
 import { SitesPattern } from "./pattern/SitesPattern.js";
 import { SitesWalk } from "./walk/SitesWalk.js";
+import { SitesLargePiece } from "./largePiece/SitesLargePiece.js";
 
 /** Internal type alias for topology accessor shape. */
 type TopologyLike = {
@@ -1302,9 +1303,10 @@ export class Sites extends BaseRegionFunction {
     // @java overload resolution — the LargePiece discriminant selects this clause
     if ((regionType as string) !== "LargePiece") return null as unknown as RegionFunction;
     // @java return new SitesLargePiece(type, at);
-    return new (class extends BaseRegionFunction {
-      override eval(_ctx: Context & EvalScratch): number[] { return []; }
-    })();
+    // Previously a stub returning [] — Battleships' (sites LargePiece at:(last To))
+    // returned no cells, so ships placed as single anchors only and the winner
+    // comparison against the full footprint never matched (WINNER_MISMATCH).
+    return new SitesLargePiece(_type, _at);
   }
 
   /**
