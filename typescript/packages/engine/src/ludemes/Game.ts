@@ -1491,6 +1491,23 @@ export class Game implements Game {
         if (value !== UNDEFINED) valueAt[site] = value;
         return;
       }
+      // @java Start.placePieces -> ActionAdd.apply (ActionAdd.java:287-311): a
+      // flat Add onto an ALREADY-OCCUPIED site does NOT overwrite who/what — it
+      // keeps the existing piece and only updates the count (accumulate iff the
+      // game requiresCount, else force to 1). Shui Yen Ho-Shang places the monk
+      // ("Marker2" at C5) first, then fills the perimeter with water whose
+      // region still contains C5 — the second placement must leave the monk.
+      if ((whats[site] ?? 0) !== 0) {
+        const requiresCount =
+          (this as unknown as { usesStacking?: boolean }).usesStacking !== true &&
+          (this.equipment.hands.length > 0 ||
+            (this as unknown as { usesCount?: boolean }).usesCount === true);
+        countAt[site] = requiresCount ? (countAt[site] ?? 0) + count : 1;
+        if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+        if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
+        if (value !== UNDEFINED) valueAt[site] = value;
+        return;
+      }
       cells[site] = owner;
       whats[site] = what;
       countAt[site] = count;

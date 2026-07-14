@@ -163,8 +163,12 @@ export class ActionAdd extends BaseAction {
         context.state().owned().add(owner, this.whatField, this.toSite, this.typeField);
       }
     } else {
-      cs.setSite(context.state(), this.toSite, who, this.whatField,
-        cs.count(this.toSite, this.typeField) + this.countField,
+      // @java ActionAdd.java:309-310 — site already occupied: keep the existing
+      // who/what (UNDEFINED = no change), only update the count (accumulate iff
+      // the game requiresCount, otherwise force to 1).
+      const oldCount: number = cs.count(this.toSite, this.typeField);
+      cs.setSite(context.state(), this.toSite, UNDEFINED, UNDEFINED,
+        (game.requiresCount() ? oldCount + this.countField : 1),
         this.stateField, this.rotationField, this.valueField, this.typeField);
     }
     return this;
