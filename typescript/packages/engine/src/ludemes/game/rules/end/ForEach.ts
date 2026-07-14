@@ -104,7 +104,18 @@ export class ForEach extends EndRule implements EndRuleFunction {
         if (this.cond.eval(ctx)) losers.push(pid);
       }
       ctx._evalPlayer = origPlayer;
-      if (losers.length === 0 || n - losers.length > 1) return null;
+      if (losers.length === 0) return null;
+      if (n - losers.length > 1) {
+        // @java End.java:249 — the game CONTINUES (>1 survivor) but each loser
+        // must be marked inactive so the mover rotation skips them
+        // (Game.java:3210-3215; Quendo/Mwendo/Thaayam advanced INTO the
+        // eliminated player and diverged). Report only NEWLY eliminated
+        // players; conditions like (no Pieces Player) stay true every turn
+        // for already-inactive players.
+        const stActive = (ctx.state as unknown as { activePlayer?: (p: number) => boolean });
+        const fresh = losers.filter((l) => stActive.activePlayer?.(l) ?? true);
+        return fresh.length > 0 ? { winner: 0, over: false, eliminated: fresh } : null;
+      }
       const ranking = new Array<number>(n + 1).fill(0);
       for (const l of losers) ranking[l] = n;
       let winner = 0;

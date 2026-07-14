@@ -135,6 +135,15 @@ export interface EndResult {
   readonly over: boolean;
   /** Java-parity: final ranking array (index 1..N, 1.0 = winner). */
   readonly ranking?: readonly number[];
+  /**
+   * @java End.java:249 + RankUtils — players who just LOST in a multi-player
+   * game that CONTINUES (>1 survivor): Java marks them context.setActive(who,
+   * false) and keeps playing; the mover rotation then skips them
+   * (Game.java:3210-3215). Carried on a non-over result so End.eval can keep
+   * evaluating later rules (a Win rule must still be able to fire) and
+   * Game.apply marks the players inactive before advancing the mover.
+   */
+  readonly eliminated?: readonly number[];
 }
 
 // ---------------------------------------------------------------------------

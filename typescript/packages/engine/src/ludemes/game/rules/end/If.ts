@@ -131,7 +131,26 @@ export class If implements EndRuleFunction {
         }
         return { winner: 0, over: true, ranking };
       }
-      // Loser = who, all others win
+      // @java RankUtils/End.java:249 — in an n>2 game a single Loss does NOT
+      // end the game while >1 opponent remains ACTIVE: the loser goes
+      // inactive (mover rotation skips them) and play continues. Only when
+      // exactly one active player remains is the game over, with that
+      // survivor as winner (So Long Sucker: P2,P4,P3 eliminated in turn ->
+      // Java winner=1; TS ended at the first Loss with winner=0).
+      if (n > 2 && who >= 1) {
+        const stActive = (ctx.state as unknown as { activePlayer?: (p: number) => boolean });
+        const activeOthers: number[] = [];
+        for (let p = 1; p <= n; p++) {
+          if (p !== who && (stActive.activePlayer?.(p) ?? true)) activeOthers.push(p);
+        }
+        if (activeOthers.length > 1) {
+          return { winner: 0, over: false, eliminated: [who] };
+        }
+        const survivor = activeOthers[0] ?? 0;
+        for (let p = 1; p <= n; p++) ranking[p] = p === survivor ? 1.0 : n;
+        return { winner: survivor, over: true, ranking };
+      }
+      // Loser = who, the other player wins (2-player case).
       const winner = n === 2 ? (who === 1 ? 2 : 1) : 0;
       for (let p = 1; p <= n; p++) {
         ranking[p] = p === who ? n : 1.0;

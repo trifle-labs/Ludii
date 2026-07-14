@@ -1094,6 +1094,17 @@ export class Game implements Game {
     let winner = -1;
     let ranking: readonly number[] | undefined;
 
+    // @java End.java:249 + RankUtils — losers of a CONTINUING multi-player
+    // game arrive as endResult.eliminated (over=false or riding an over
+    // result); they must be marked inactive on the post-move state so the
+    // mover rotation (Game.java:3210-3215) skips them.
+    const eliminatedPlayers: number[] = [];
+    const collectEliminated = (r: { eliminated?: readonly number[] } | null): void => {
+      if (r?.eliminated && r.eliminated.length > 0) {
+        eliminatedPlayers.push(...r.eliminated);
+      }
+    };
+
     if (this.rules.phases !== null) {
       const phaseIdx = newState.phase(mover);
       const phases = this.rules.phases;
@@ -1101,6 +1112,7 @@ export class Game implements Game {
         const phaseEnd = phases[phaseIdx]!.end;
         if (phaseEnd !== null) {
           const phaseEndResult = phaseEnd.eval(evalCtx);
+          collectEliminated(phaseEndResult);
           if (phaseEndResult !== null && phaseEndResult.over) {
             over = true;
             winner = phaseEndResult.winner;
@@ -1113,6 +1125,7 @@ export class Game implements Game {
     // Step 3b: Evaluate global end rules.
     if (!over && this.rules.end !== null) {
       const endResult = this.rules.end.eval(evalCtx);
+      collectEliminated(endResult);
       if (endResult !== null && endResult.over) {
         over = true;
         winner = endResult.winner;
@@ -1155,6 +1168,14 @@ export class Game implements Game {
     // a Movement→Capture transition. Java's SameTurn check handles the Morris
     // case correctly without deferral. @java Game.java:3119-3141
     let stateAfterPhase = newState;
+    // @java Context.setActive(who, false) via End.java:249 — apply the
+    // eliminations collected from the end rules BEFORE the mover advance so
+    // this very turn's rotation already skips the newly-inactive players.
+    if (eliminatedPlayers.length > 0 && !over) {
+      for (const p of eliminatedPlayers) {
+        stateAfterPhase = stateAfterPhase.withActivePlayer(p, false);
+      }
+    }
     if (!over && this.rules.phases !== null) {
       const phases = this.rules.phases;
       for (let pid = 1; pid <= this.numPlayers; pid++) {
@@ -1221,6 +1242,16 @@ export class Game implements Game {
         nextMover = dynamicNextOverride;
       } else {
         nextMover = this.numPlayers > 0 ? (newState.mover % this.numPlayers) + 1 : newState.mover;
+        // @java Game.java:3210-3215 — while (!context.active(next)) next++
+        // (wrapping): eliminated players are skipped by the default rotation.
+        // Quendo/Mwendo/Thaayam handed the turn to an eliminated player and
+        // diverged (rec mover=4, ts mover=3 after P3 lost its pieces).
+        if (this.numPlayers > 0) {
+          let guard = this.numPlayers;
+          while (!stateAfterPhase.activePlayer(nextMover) && guard-- > 0) {
+            nextMover = (nextMover % this.numPlayers) + 1;
+          }
+        }
       }
       // @java Game.java:3200 — state.setPrev(mover) before mover advances.
       // (value Player Prev) / MaxMoves' prev==mover replay check read this.

@@ -70,7 +70,19 @@ function roleToIntFunction(role: RoleTypeFull): IntFunction {
   return {
     eval(ctx: Context): number {
       if (key === "mover") return ctx.state.mover;
-      if (key === "next") return ctx.state.next;
+      // @java Game.java:3209-3216 — Java re-populates state.next with the
+      // cyclic successor of the new mover after EVERY apply, so "Next" is
+      // never 0 between moves. The TS port clears next to 0 after consuming
+      // it (the SetNextPlayer override channel), so mirror Java by falling
+      // back to the rotational successor — the established idiom used by
+      // NoPieces/NoMoves/Result/ForEachPiece. Epoxy's (then (if (is Prev
+      // Next) (moveAgain) ...)) read next=0, never fired moveAgain, and the
+      // mover advanced a turn early (ply-3 divergence).
+      if (key === "next") {
+        return (ctx.state.next ?? 0) > 0
+          ? ctx.state.next
+          : (ctx.state.mover % ctx.game.numPlayers) + 1;
+      }
       if (key === "prev") return previousMover(ctx);
       if (key === "player") return ctx._evalPlayer ?? ctx.state.mover;
       if (key === "neutral") return 0;
