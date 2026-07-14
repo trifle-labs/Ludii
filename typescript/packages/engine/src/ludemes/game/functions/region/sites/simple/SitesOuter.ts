@@ -61,6 +61,10 @@ export class SitesOuter extends BaseRegionFunction {
       _trajectories?: {
         outer?(type: string): number[];
         outerEdges?(): number[];
+        perimeterSites?(): number[];
+        viewOf?(kind: string): {
+          perimeterSites(): number[];
+        };
         core?: { topo?: { outerEls?: number[]; cells?: Array<{ id: number }> } };
       } | null;
       topology?: () => {
@@ -78,6 +82,25 @@ export class SitesOuter extends BaseRegionFunction {
       return traj.outerEdges();
     }
     if (traj) {
+      // @java SitesOuter.java:47-53 — graph.outer(realType). Java's
+      // topology._outer map is keyed by SiteType: on a Cell-play board,
+      // outer("Vertex") is the VERTEX perimeter (MeasureGraph.measureInnerOuter
+      // marks outer per type). Route an EXPLICITLY-typed query that differs
+      // from the play type through the per-type trajectory view (the pattern
+      // SitesInner/SitesCorners already use): ConHex's (sites Outer Vertex) on
+      // a Cell-play board got the 16 Cell perimeter ids instead of the 20
+      // perimeter vertices, corrupting its "Holes" region. The DEFAULT-type
+      // path must stay on the direct traj.perimeterSites() below — routing it
+      // through viewOf(playType) regressed Shui Yen Ho-Shang's merged Vertex
+      // board to zero matching moves at ply 0.
+      const playType = (ctx as unknown as { board?: { defaultSite?: () => string } }).board?.defaultSite?.() ?? "Cell";
+      if (this.siteType && this.siteType !== playType && typeof traj.viewOf === "function") {
+        const view = traj.viewOf(realType);
+        if (view && typeof (view as { perimeterSites?(): number[] }).perimeterSites === "function") {
+          const peri = (view as { perimeterSites(): number[] }).perimeterSites();
+          if (peri.length > 0) return peri;
+        }
+      }
       // Check for outer() method on trajectories
       if (typeof (traj as unknown as Record<string, unknown>).outer === "function") {
         return (traj as unknown as { outer(type: string): number[] }).outer(realType);
@@ -95,9 +118,9 @@ export class SitesOuter extends BaseRegionFunction {
       // perimeterSites() returns the graph boundary for ALL board shapes (for a
       // plain rectangle it equals the border row/col, so square games are
       // unchanged).
-      if (typeof (traj as unknown as { perimeterSites?: () => number[] }).perimeterSites === "function") {
-        const peri = (traj as unknown as { perimeterSites(): number[] }).perimeterSites();
-        if (peri.length > 0) return peri;
+      if (typeof traj.perimeterSites === "function") {
+        const peri = traj.perimeterSites();
+        if (peri && peri.length > 0) return peri;
       }
     }
 
