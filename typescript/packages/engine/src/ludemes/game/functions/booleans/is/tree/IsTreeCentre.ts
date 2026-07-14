@@ -53,6 +53,29 @@ function roleToIntFunction(role: RoleTypeFull): IntFunction {
   };
 }
 
+/**
+ * Read an edge's occupancy (who/what). @java IsTreeCentre.java:73-98 —
+ * state.what(k, SiteType.Edge) routes to the EDGE container state. On a
+ * Vertex-play board the edges live in the typed "Edge" channel (Ilpion's
+ * (set Shared Edge (sites Board Edge)) put every edge there; the flat read
+ * saw ZERO edges, every vertex was an isolated trivial tree-centre and
+ * (addScore Mover 1) fired on every placement). On an Edge-play board the
+ * flat channels ARE the edge channel.
+ */
+function edgeOcc(state: Context["state"], k: number): { w: number; who: number } {
+  const st = state as unknown as {
+    typedSites?: Map<string, unknown>;
+    whoTyped?: (t: string, s: number) => number;
+    whatTyped?: (t: string, s: number) => number;
+    whatAtSite(s: number): number;
+    who(s: number): number;
+  };
+  if (st.typedSites?.has("Edge") && st.whoTyped && st.whatTyped) {
+    return { w: st.whatTyped("Edge", k), who: st.whoTyped("Edge", k) };
+  }
+  return { w: st.whatAtSite(k), who: st.who(k) };
+}
+
 /** Build adjacency sets from coloured edges. Returns Map<v, Set<v>>. */
 function buildAdj(
   numVertices: number,
@@ -66,8 +89,7 @@ function buildAdj(
   for (let i = 0; i < numVertices; i++) adj.set(i, new Set());
 
   for (let k = 0; k < numEdges; k++) {
-    const w = state.whatAtSite(k);
-    const who = state.who(k);
+    const { w, who } = edgeOcc(state, k);
     const isOwnedEdge =
       (whoSiteId === numPlayers + 1 && w !== 0) ||
       (whoSiteId <= numPlayers && who === whoSiteId);
@@ -154,7 +176,10 @@ export class IsTreeCentre implements BooleanFunction {
     const whoSiteId = this.whoFn.eval(ctx);
     const numPlayers = ctx.game.numPlayers;
     const totalVertices = traj.vertexCount;
-    const numEdges = traj.numSites;
+    // @java IsTreeCentre.java:73 — iterate the EDGE list, not the play-site
+    // list (traj.numSites is the VERTEX count on a use:Vertex board — Ilpion
+    // scanned 36 "edges" of a 35-edge graph).
+    const numEdges = traj.edgeCount > 0 ? traj.edgeCount : traj.numSites;
 
     const adj = buildAdj(totalVertices, numEdges, whoSiteId, numPlayers, ctx.state, traj);
 
@@ -162,8 +187,7 @@ export class IsTreeCentre implements BooleanFunction {
     const parent = new Array<number>(totalVertices);
     for (let i = 0; i < totalVertices; i++) parent[i] = i;
     for (let k = 0; k < numEdges; k++) {
-      const w = ctx.state.what(k);
-      const who = ctx.state.who(k);
+      const { w, who } = edgeOcc(ctx.state, k);
       const isOwnedEdge =
         (whoSiteId === numPlayers + 1 && w !== 0) ||
         (whoSiteId <= numPlayers && who === whoSiteId);

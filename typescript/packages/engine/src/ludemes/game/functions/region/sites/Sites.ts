@@ -218,14 +218,20 @@ export class Sites extends BaseRegionFunction {
       }
       case "Bottom":
         return new SitesBottom(elementType);
-      case "Corners":
+      case "Corners": {
         // @java SitesCorners — the board's convex-turn corner sites. The shared
         // boardCorners() helper is the single source of truth (also used by
         // IsConnected's Corners / SidesNoCorners static region types).
+        // @java SitesCorners.java:50-54 — realType = (type != null) ? type :
+        // defaultSite(); graph.corners(realType). The explicit elementType was
+        // silently dropped, so ConHex's (sites Corners Vertex) on a Cell-play
+        // board returned the CELL hull instead of the 4 corner vertices.
+        const cornersType = elementType;
         return new (class extends BaseRegionFunction {
-          override eval(ctx: Context & EvalScratch): number[] { return boardCorners(ctx); }
+          override eval(ctx: Context & EvalScratch): number[] { return boardCorners(ctx, cornersType); }
           override isStatic(): boolean { return true; }
         })();
+      }
       case "ConcaveCorners":
         return new SitesConcaveCorners(elementType);
       case "ConvexCorners":
@@ -1402,7 +1408,22 @@ export class Sites extends BaseRegionFunction {
  * the property. Side membership is computed on the play-site graph.
  */
 
-export function boardCorners(ctx: Context): number[] {
+export function boardCorners(ctx: Context, elementType?: string | null): number[] {
+  // @java SitesCorners.java:50-54 — an EXPLICIT SiteType queries the faithful
+  // topology's per-type corner list directly (graph.corners(realType)): ConHex's
+  // (sites Corners Vertex) on a Cell-play board must return the 4 corner
+  // VERTICES [64..67], not the Cell hull. Only the explicit-type path routes
+  // here; the default-type path below keeps its validated behavior
+  // (measured-Vertex / els-hull / bounding-box).
+  if (elementType) {
+    const topo = (ctx as unknown as {
+      board?: () => { topology?: () => { corners?: (t: string) => ReadonlyArray<{ index(): number }> } };
+    }).board?.()?.topology?.();
+    const list = topo?.corners?.(elementType);
+    if (list && list.length > 0) {
+      return list.map((e) => e.index()).sort((a, b) => a - b);
+    }
+  }
   const traj = (ctx as unknown as {
     _trajectories?: {
       els?: ArrayLike<{ pt: { x: number; y: number } }>;

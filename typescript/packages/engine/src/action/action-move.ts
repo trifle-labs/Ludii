@@ -150,6 +150,15 @@ export class ActionMove extends BaseAction {
       const srcState = state.stateAtSite(this.fromIndex);
       if (srcState !== 0) s2 = s2.withStateAt(this.toIndex, srcState);
       if (s2.stateAtSite(this.fromIndex) !== 0) s2 = s2.withStateAt(this.fromIndex, 0);
+      // @java ActionMove — Java's setSite carries EVERY piece attribute to the
+      // destination (who/what/count/state/rotation/VALUE). The flat valueAt[]
+      // shares the typed index space just like stateAt[] above; dropping it
+      // left the piece's value at the OLD site (Kawasukuts' Marker carries its
+      // starting gate as its value — the stale value at the destination made
+      // the circuit-completion check fire a false win at ply 3).
+      const srcValue = state.valueAtSite(this.fromIndex);
+      if (srcValue !== 0) s2 = s2.withValueAt(this.toIndex, srcValue);
+      if (s2.valueAtSite(this.fromIndex) !== 0) s2 = s2.withValueAt(this.fromIndex, 0);
       return s2;
     }
     // @java ActionMoveStacking.java:316-347 — stack=true: append every level
