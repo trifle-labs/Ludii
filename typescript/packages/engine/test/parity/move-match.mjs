@@ -60,47 +60,88 @@ export function recordedDecisionType(recMove) {
  * 3. Movement (from != to): match by mover+from+to exactly.
  *    Handle mover=0 (rare) → match any TS mover.
  */
+/**
+ * Score a TS candidate move against the recorded move's FULL action list.
+ * Java's trial matcher compares complete moves; our tiers only compare
+ * mover/from/to, so when the engine legitimately generates SEVERAL moves with
+ * the same from/to (per-die moves, sow variants that differ only in their
+ * (set Var …)/SetState consequences — Kiuthi, the Aj dice family), the
+ * first-match pick could apply the WRONG variant and silently desync state.
+ * For each recorded action, find the best same-type TS action and add points
+ * for every agreeing field (to/from/state/what/level). Higher = closer to the
+ * exact move Java applied.
+ */
+function scoreCandidateActions(tsMove, recMove) {
+  const tsActs = tsMove.actions ?? tsMove._actions ?? [];
+  const sig = (a) => {
+    const out = { t: null, to: null, from: null, state: null, what: null, level: null };
+    try { const t = a.actionType?.(); out.t = t == null ? null : String(t); } catch { /* ignore */ }
+    try { const v = a.to?.(); if (typeof v === 'number') out.to = v; } catch { /* ignore */ }
+    try { const v = a.from?.(); if (typeof v === 'number') out.from = v; } catch { /* ignore */ }
+    try { const v = a.state?.(); if (typeof v === 'number') out.state = v; } catch { /* ignore */ }
+    try { const v = a.what?.(); if (typeof v === 'number') out.what = v; } catch { /* ignore */ }
+    try { const v = a.level?.(); if (typeof v === 'number') out.level = v; } catch { /* ignore */ }
+    return out;
+  };
+  const tsSigs = tsActs.map(sig);
+  let score = 0;
+  for (const ra of recMove.actions) {
+    const num = (k) => (ra.fields.has(k) ? Number(ra.fields.get(k)) : null);
+    const rTo = num('to'); const rFrom = num('from'); const rState = num('state');
+    const rWhat = num('what'); const rLevel = num('level');
+    let best = 0;
+    for (const s of tsSigs) {
+      if (s.t !== ra.actionType) continue;
+      let pts = 1; // same action type present at all
+      if (rTo !== null && s.to === rTo) pts += 1;
+      if (rFrom !== null && s.from === rFrom) pts += 1;
+      if (rState !== null && s.state === rState) pts += 1;
+      if (rWhat !== null && s.what === rWhat) pts += 1;
+      if (rLevel !== null && s.level === rLevel) pts += 1;
+      if (pts > best) best = pts;
+    }
+    score += best;
+  }
+  return score;
+}
+
+/** Argmax by recorded-action score; ties keep the FIRST candidate (the
+ * pre-existing behavior), so single-candidate tiers are entirely unchanged. */
+function pickBestCandidate(candidates, recMove) {
+  if (candidates.length <= 1) return candidates[0] ?? null;
+  let best = candidates[0];
+  let bestScore = scoreCandidateActions(best, recMove);
+  for (let i = 1; i < candidates.length; i += 1) {
+    const s = scoreCandidateActions(candidates[i], recMove);
+    if (s > bestScore) { best = candidates[i]; bestScore = s; }
+  }
+  return best;
+}
+
 export function findMatchingMove(tsMoves, recMove) {
   const { mover, from, to } = recMove;
   const isPass = isPassRecordedMove(recMove);
   const isPlacement = !isPass && isPlacementRecordedMove(recMove);
 
   if (isPass) {
-    for (const tsMove of tsMoves) {
-      if (tsMove.isPass()) return tsMove;
-    }
-    return null;
+    const cands = tsMoves.filter((m) => m.isPass());
+    return pickBestCandidate(cands, recMove);
   }
 
   if (isPlacement) {
     // Match by mover + to (from is -1 in TS for Add moves)
-    for (const tsMove of tsMoves) {
-      if (tsMove.to() === to) {
-        // Exact mover match
-        if (tsMove.mover === mover) return tsMove;
-        // mover=0 in trial → setup move, engine may use any mover
-        if (mover === 0) return tsMove;
-      }
-    }
+    const tier1 = tsMoves.filter((m) => m.to() === to && (m.mover === mover || mover === 0));
+    if (tier1.length > 0) return pickBestCandidate(tier1, recMove);
     // Fallback: match just by to() if nothing else works
-    for (const tsMove of tsMoves) {
-      if (tsMove.to() === to) return tsMove;
-    }
-    return null;
+    const tier2 = tsMoves.filter((m) => m.to() === to);
+    return pickBestCandidate(tier2, recMove);
   }
 
   // Movement move (from != to)
-  for (const tsMove of tsMoves) {
-    if (tsMove.from() === from && tsMove.to() === to) {
-      if (tsMove.mover === mover) return tsMove;
-      if (mover === 0) return tsMove; // setup-phase movement
-    }
-  }
+  const tier1 = tsMoves.filter((m) => m.from() === from && m.to() === to && (m.mover === mover || mover === 0));
+  if (tier1.length > 0) return pickBestCandidate(tier1, recMove);
 
   // Fallback: just match from+to regardless of mover
-  for (const tsMove of tsMoves) {
-    if (tsMove.from() === from && tsMove.to() === to) return tsMove;
-  }
-
-  return null;
+  const tier2 = tsMoves.filter((m) => m.from() === from && m.to() === to);
+  return pickBestCandidate(tier2, recMove);
 }

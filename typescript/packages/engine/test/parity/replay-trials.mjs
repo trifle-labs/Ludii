@@ -796,6 +796,30 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     if (candidates.length === 1) return candidates[0];
   }
 
+  // Disambiguate by GAME-VAR consequences. Dual-direction sow games emit two
+  // identical Select moves per pit via (or (if (!= 2 (var "Direction")) [CCW])
+  // (if (!= 1 (var "Direction")) [CW])) — both branches fire while Direction
+  // is unset, differing ONLY in their deferred (set Var ...) consequences
+  // (Kiuthi/Daramuti/Ceelkoqyuqkoqiji: picking the first candidate locked the
+  // WRONG direction at ply 0 and cascaded seed counts, Replay vars and the
+  // BetweenRounds RNG draw). Java records the exact [SetVar:name=…,value=…]
+  // actions, so hypothetically apply each candidate and prefer the one whose
+  // post-state vars reproduce every recorded SetVar.
+  const recSetVars = recMove.actions
+    .filter((a) => a.actionType === 'SetVar')
+    .map((a) => [a.fields.get('name'), Number(a.fields.get('value'))]);
+  if (recSetVars.length > 0) {
+    const byVars = candidates.filter((cand) => {
+      try {
+        const after = game.apply(ctx, cand)?.state;
+        if (!after || typeof after.getVar !== 'function') return false;
+        return recSetVars.every(([name, v]) => after.getVar(name) === v);
+      } catch { return false; }
+    });
+    if (byVars.length > 0 && byVars.length < candidates.length) candidates = byVars;
+    if (candidates.length === 1) return candidates[0];
+  }
+
   // One-ply LOOKAHEAD tie-breaker: variants tying on every observable of THIS
   // ply (Fanorona's two 20→21 captures both removing {19}) can still differ in
   // their consequences (the chain probe's moveAgain); the recorded trial is
