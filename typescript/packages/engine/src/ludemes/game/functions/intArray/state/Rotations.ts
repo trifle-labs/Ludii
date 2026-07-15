@@ -115,9 +115,27 @@ export class Rotations extends BaseIntArrayFunction {
 
     if (topology !== null) {
       // Full topology path — mirrors Java exactly.
+      //
+      // IMPORTANT: Topology.supportedDirections() is OVERLOADED in the real
+      // engine: a 1-arg call is treated as a SiteType lookup
+      // (_supportedDirections.get(type)); only the 2-arg form
+      // (relation, type) routes to the specialized per-relation maps
+      // (_supportedOrthogonalDirections / _supportedDiagonalDirections /
+      // etc). Calling supportedDirections("Orthogonal") with a single arg
+      // silently mis-routes to the SiteType overload and returns [] (since
+      // "Orthogonal" is not a SiteType key) — both call sites below MUST
+      // pass defaultSite as the second argument.
+      //
+      // Also: for the "Cell" SiteType the real compiled Topology returns
+      // raw direction-name STRINGS ("N", "E", "S", "W", ...), not
+      // DirectionFacing objects with an .index() method — confirmed via a
+      // live probe against the built dist. Facings are therefore converted
+      // through the same compass-index table as the single-direction case
+      // rather than calling `.index()` on them.
       const topo = topology as {
         numEdges(): number;
-        supportedDirections(type: string): Array<{ index(): number; toAbsolute(): string }>;
+        supportedDirections(type: string): Array<string | { index(): number; toAbsolute(): string }>;
+        supportedDirections(relation: string, type: string): Array<string | { index(): number; toAbsolute(): string }>;
       };
       const board = typeof ctxAny["board"] === "function"
         ? (ctxAny["board"] as () => unknown)()
@@ -138,7 +156,7 @@ export class Rotations extends BaseIntArrayFunction {
       // supportedSize to 8 (ratio 2, halved indices). Until the topology
       // derivation is fixed, clamp: when the ORTHOGONAL direction count
       // equals numEdges, diagonal support is spurious by construction.
-      const orthoSize = topo.supportedDirections("Orthogonal" as never)?.length ?? 0;
+      const orthoSize = topo.supportedDirections("Orthogonal" as never, defaultSite)?.length ?? 0;
       const spuriousDiagonals = orthoSize > 0 && orthoSize === numEdges && supportedSize > numEdges;
       const ratio = numEdges > 0 && !spuriousDiagonals ? supportedSize / numEdges : 1;
 
@@ -152,9 +170,13 @@ export class Rotations extends BaseIntArrayFunction {
           // Multi-direction: expand to set of facing directions.
           const relation = this._toRelation(absDir);
           if (relation === null) continue;
-          const facings = topo.supportedDirections(relation);
+          const facings = topo.supportedDirections(relation, defaultSite);
           for (const facing of facings) {
-            const rotation = Math.floor(facing.index() / ratio);
+            const idx = typeof facing === "string"
+              ? this._convertToFacing(facing)
+              : facing.index();
+            if (idx === null || idx === undefined) continue;
+            const rotation = Math.floor(idx / ratio);
             if (!result.includes(rotation)) result.push(rotation);
           }
         }
