@@ -57,7 +57,14 @@ export class SitesCustom extends BaseRegionFunction {
 		// Reverse to preserve original order (we iterated backwards)
 		sites.reverse();
 
-		return sites;
+		// @java SitesCustom.java:70 — return new Region(sites.toArray());
+		// Region(int[]) is ChunkSet/BitSet-backed (Region.java:118-128 ctor,
+		// :198-206 sites() via nextSetBit) — inherently DEDUPED and ASCENDING.
+		// The raw array here desynced downstream unique/ascending assumptions
+		// (Adhesion WINNER_MISMATCH @156).
+		const uniq = [...new Set(sites)];
+		uniq.sort((a, b) => a - b);
+		return uniq;
 	}
 
 	/**

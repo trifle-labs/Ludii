@@ -428,7 +428,16 @@ export class ActionMove extends BaseAction {
       // later hop and fire a false win at ply 5. Multi-level pops (A)/(B)
       // leave the flat channel untouched (the flat model cannot represent
       // per-level state for the piece left behind).
-      const srcSiteState = !multiStack && srcCount <= 1 ? state.stateAtSite(this.fromIndex) : 0;
+      // @java ContainerState.state(site, type) (BaseContainerStateStacking
+      // .java:87-95 -> ContainerStateStacks.stateCell:644-650 ->
+      // ChunkStack.state():435-440) — the level-less read on a stacking
+      // container returns the TOP of the per-level state column, not the
+      // flat scalar. stateAtSite here dropped the mover's "activated" flag
+      // whenever a Stick pushed onto an occupied site (Sik ply 86: P3 landed
+      // at level 1 with state 0; the lud's level-0 self-repair couldn't fire
+      // because P1's level 0 was already 1 — so ply 90 offered only Pass).
+      // Same fix as the sibling branch below (line ~549 stateTop).
+      const srcSiteState = !multiStack && srcCount <= 1 ? state.stateTop(this.fromIndex) : 0;
       const topValue =
         srcArr.length > 0 ? state.valueAtLevel(this.fromIndex, topLevel) : state.valueAtSite(this.fromIndex);
       const fromRow: number[] = [];
@@ -483,7 +492,17 @@ export class ActionMove extends BaseAction {
       if (pushed.valueAtSite(this.fromIndex) !== fromTopValue) pushed = pushed.withValueAt(this.fromIndex, fromTopValue);
       pushed = pushed.withOwnedAdd(topOwner, topWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
       // Carry the single relocating piece's site state (see (C) above).
-      if (srcSiteState !== 0) pushed = pushed.withStateAt(this.toIndex, srcSiteState);
+      // @java ActionMoveLevelFrom.java:444-457 — the carried state rides the
+      // NEW TOP LEVEL via the stateVal addItemGeneric overload, so a
+      // per-level read (state at:to level:newTop) must see it too: Sik's
+      // activation check reads (state at:55 level:1) after P3 pushes onto
+      // P1's occupied gate — the flat-only write left stateStacks[55][1]=0
+      // and ply 90 offered only Pass.
+      if (srcSiteState !== 0) {
+        pushed = pushed.withStateAt(this.toIndex, srcSiteState);
+        const newTopLevel = pushed.stackSize(this.toIndex) - 1;
+        if (newTopLevel >= 0) pushed = pushed.withStateAtLevel(this.toIndex, newTopLevel, srcSiteState);
+      }
       return this.maintainTracks(pushed, topWhat);
     }
     // @java ActionMoveTopPiece (non-stacking): owned remove at from, add at

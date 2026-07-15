@@ -40,12 +40,42 @@ export class Sizes extends BaseIntArrayFunction {
     sizesType: SizesGroupType,
     siteType: string | null,
     directions: string,
-    whoFn: IntFunction,
-    minFn: IntFunction,
-    condition: BooleanFunction | null,
-    allPieces: boolean,
+    role: string | IntFunction | null,
+    of: IntFunction | null,
+    ifCond: BooleanFunction | null,
+    min: IntFunction | null,
     isVisibleFn: BooleanFunction | null,
   ): BaseIntArrayFunction {
+    // @java Sizes.java:44-56,70 — the factory takes the RAW grammar arguments
+    // (role, of, If, min, isVisible); SizesGroup's own constructor
+    // (SizesGroup.java:78-97) derives whoFn/minFn/condition/allPieces from
+    // them. The old TS signature assumed pre-resolved args, so the reflection
+    // compiler's positional raw tuple landed shifted: minFn got `of`,
+    // allPieces got `min` — corrupting (sizes Group …) filtering (SnipSnip's
+    // line-clearing WINNER_MISMATCH @17).
+    let whoFn: IntFunction;
+    let allPieces: boolean;
+    const roleStr = typeof role === "string" ? role : null;
+    const roleFn = role !== null && typeof role !== "string" ? role : null;
+    if (of !== null) {
+      whoFn = of;
+      allPieces = false;
+    } else if (roleFn !== null) {
+      whoFn = roleFn;
+      allPieces = false;
+    } else if (roleStr === "All" || roleStr === "Shared") {
+      whoFn = { eval: () => -1 } as unknown as IntFunction;
+      allPieces = true;
+    } else if (roleStr !== null) {
+      whoFn = roleStrToIntFunction(roleStr);
+      allPieces = false;
+    } else {
+      // @java role==null && of==null && If==null → whoFn = Id(null, All)
+      whoFn = { eval: () => -1 } as unknown as IntFunction;
+      allPieces = true;
+    }
+    const minFn: IntFunction = min ?? ({ eval: () => 0 } as unknown as IntFunction);
+    const condition = ifCond;
     switch (sizesType) {
       case SizesGroupType.Group:
         return new SizesGroup(siteType, directions, whoFn, minFn, condition, allPieces, isVisibleFn);
@@ -62,10 +92,54 @@ export class Sizes extends BaseIntArrayFunction {
     super();
   }
 
+  /** For tests/direct callers that already resolved the arguments. */
+  public static constructResolved(
+    sizesType: SizesGroupType,
+    siteType: string | null,
+    directions: string,
+    whoFn: IntFunction,
+    minFn: IntFunction,
+    condition: BooleanFunction | null,
+    allPieces: boolean,
+    isVisibleFn: BooleanFunction | null,
+  ): BaseIntArrayFunction {
+    switch (sizesType) {
+      case SizesGroupType.Group:
+        return new SizesGroup(siteType, directions, whoFn, minFn, condition, allPieces, isVisibleFn);
+      default:
+        throw new Error(`Sizes.construct(): SizesGroupType '${sizesType as string}' not implemented.`);
+    }
+  }
+
   /**
    * @java Sizes.eval(Context) — should never be called directly.
    */
   public override eval(_ctx: Context & EvalScratch): number[] {
     throw new Error("Sizes.eval(): Should never be called directly — use construct() to obtain a SizesGroup.");
   }
+}
+
+/**
+ * @java RoleType.toIntFunction — P\d+ → owner constant; contextual roles read
+ * the state at eval time.
+ */
+function roleStrToIntFunction(role: string): IntFunction {
+  return {
+    eval(ctx: Context & EvalScratch): number {
+      const m = /^P(\d+)$/.exec(role);
+      if (m) return Number(m[1]);
+      if (role === "Neutral") return 0;
+      if (role === "Mover") return ctx.state.mover;
+      if (role === "Next") {
+        const nx = (ctx.state as unknown as { next: number }).next;
+        const n = (ctx.game as unknown as { numPlayers: number }).numPlayers;
+        return nx > 0 ? nx : (ctx.state.mover % n) + 1;
+      }
+      if (role === "Prev") {
+        const n = (ctx.game as unknown as { numPlayers: number }).numPlayers;
+        return ((ctx.state.mover - 2 + n) % n) + 1;
+      }
+      return ctx.state.mover;
+    },
+  } as unknown as IntFunction;
 }
