@@ -202,12 +202,67 @@ function vertexStepsTo(vertex: VertexEl, steps: Steps): void {
   }
 }
 
+/**
+ * @java Core/src/game/util/graph/Edge.java:422-514 Edge.stepsTo(Steps)
+ * Steps from an edge to: coincident edges (sharing either endpoint vertex),
+ * its own two endpoint vertices, its bordering faces (left/right), and any
+ * remaining faces incident to an endpoint but not already covered.
+ */
+function edgeStepsTo(edge: EdgeEl, steps: Steps): void {
+  const endpoints: readonly VertexEl[] = [edge.va, edge.vb];
+
+  // Steps to coincident edges.
+  for (const vertex of endpoints) {
+    for (const other of vertex.edges) {
+      if (other.id === edge.id) continue;
+      const step = new Step(edge, other);
+      step.directions.add(AbsoluteDirection.Orthogonal);
+      step.directions.add(AbsoluteDirection.Adjacent);
+      step.directions.add(AbsoluteDirection.All);
+      steps.add(step);
+    }
+  }
+
+  // Steps to vertices.
+  for (const vertex of endpoints) {
+    const step = new Step(edge, vertex);
+    step.directions.add(AbsoluteDirection.Orthogonal);
+    step.directions.add(AbsoluteDirection.Adjacent);
+    step.directions.add(AbsoluteDirection.All);
+    steps.add(step);
+  }
+
+  // Steps to faces (left/right first, then any other incident faces).
+  const usedFaces = new Set<number>();
+  for (const face of [edge.left, edge.right]) {
+    if (face === null) continue;
+    usedFaces.add(face.id);
+    const step = new Step(edge, face);
+    step.directions.add(AbsoluteDirection.Orthogonal);
+    step.directions.add(AbsoluteDirection.Adjacent);
+    step.directions.add(AbsoluteDirection.All);
+    steps.add(step);
+  }
+  for (const vertex of endpoints) {
+    for (const face of vertex.faces) {
+      if (usedFaces.has(face.id)) continue;
+      usedFaces.add(face.id);
+      const step = new Step(edge, face);
+      step.directions.add(AbsoluteDirection.Orthogonal);
+      step.directions.add(AbsoluteDirection.Adjacent);
+      step.directions.add(AbsoluteDirection.All);
+      steps.add(step);
+    }
+  }
+}
+
 function stepsToFor(element: GElement, steps: Steps): void {
   if (element.siteType === SiteType.Cell) faceStepsTo(element as FaceEl, steps);
   else if (element.siteType === SiteType.Vertex) {
     vertexStepsTo(element as VertexEl, steps);
+  } else if (element.siteType === SiteType.Edge) {
+    edgeStepsTo(element as EdgeEl, steps);
   }
-  // Edge.stepsTo is unused: board-graph maps use:Edge play onto Vertex sites.
 }
 
 // -- compass-direction assignment --------------------------------------------
