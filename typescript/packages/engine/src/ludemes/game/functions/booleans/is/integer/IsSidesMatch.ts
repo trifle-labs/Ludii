@@ -129,7 +129,9 @@ export class IsSidesMatch extends BaseBooleanFunction {
     }
 
     const numberEdges = typeof topology.numEdges === "function" ? topology.numEdges() : 0;
-    let rotation = (typeof cs.rotation === "function" ? cs.rotation(to, "Cell") : 0) / ratioAdjOrtho;
+    // @java IsSidesMatch.java:132 — int/int division TRUNCATES; the float
+    // quotient produced fractional rotation indices when ratio > 1.
+    let rotation = Math.trunc((typeof cs.rotation === "function" ? cs.rotation(to, "Cell") : 0) / ratioAdjOrtho);
 
     let terminus: number[] = typeof component.terminus === "function"
       ? (component.terminus() ?? [])
@@ -190,7 +192,8 @@ export class IsSidesMatch extends BaseBooleanFunction {
       if (!compOrtho) continue;
       if (typeof compOrtho.isTile !== "function" || !compOrtho.isTile()) continue;
 
-      let rotationOrtho = (typeof cs.rotation === "function" ? cs.rotation(vOrthoIdx, "Cell") : 0) / ratioAdjOrtho;
+      // @java IsSidesMatch.java:193 — int/int truncation, as above.
+      let rotationOrtho = Math.trunc((typeof cs.rotation === "function" ? cs.rotation(vOrthoIdx, "Cell") : 0) / ratioAdjOrtho);
       let terminusOrtho: number[] = typeof compOrtho.terminus === "function"
         ? (compOrtho.terminus() ?? [])
         : [];

@@ -18,9 +18,11 @@ import { ActionMove } from "../../../../../../../action/action-move.js";
 import { ActionMoveLevelFrom } from "../../../../../../../action/action-move-level.js";
 import { ActionCopy } from "../../../../../../../action/action-copy.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
+import { ActionSetRotation } from "../../../../../../../action/action-set-rotation.js";
 import { Move as LudiiMove, type DeferredThen } from "../../../../../../../move.js";
 import { Add as AddEffect } from "./Add.js";
 import { isNonDefaultTyped } from "../../../../../functions/region/sites/index/SitesEmpty.js";
+import type { RotationsLike } from "../../../../../util/moves/To.js";
 
 /** OFF constant matching Java's Constants.OFF = -1 */
 const OFF = -1;
@@ -42,6 +44,9 @@ export class FromTo implements MovesFunction {
   private readonly locTo: IntFunction;
   /** @java FromTo.levelTo */
   private readonly levelTo: IntFunction | null;
+  /** @java FromTo.rotationTo — To.rotations(), consumed only when non-null
+   *  (FromTo.java:396-406): fans one candidate move out per (site, rotation). */
+  private readonly rotationsTo: RotationsLike | null;
   /** @java FromTo.regionFrom */
   private readonly regionFrom: RegionFunction | null;
   /** @java FromTo.regionTo */
@@ -72,6 +77,7 @@ export class FromTo implements MovesFunction {
     declaredToType?: string | null;
     locTo: IntFunction;
     levelTo?: IntFunction | null;
+    rotations?: RotationsLike | null;
     regionFrom?: RegionFunction | null;
     regionTo?: RegionFunction | null;
     fromCondition?: BooleanFunction | null;
@@ -89,6 +95,7 @@ export class FromTo implements MovesFunction {
     this.declaredToType = opts.declaredToType ?? null;
     this.locTo = opts.locTo;
     this.levelTo = opts.levelTo ?? null;
+    this.rotationsTo = opts.rotations ?? null;
     this.regionFrom = opts.regionFrom ?? null;
     this.regionTo = opts.regionTo ?? null;
     // Raw-literal trap: lud True/False reach these BooleanFunction slots raw
@@ -254,6 +261,45 @@ export class FromTo implements MovesFunction {
         // shared hand, so the second placement found an empty source).
         const copyOn = (() => { try { return this.copy.eval(ctx); } catch { return false; } })();
         if (copyOn) {
+          // @java FromTo.java:396-406 — when the `(to … (rotations …))` clause
+          // is present, generation fans out to ONE candidate move PER (site,
+          // rotation) pair: the base ActionCopy plus an ActionSetRotation(to,
+          // rotation) appended to the SAME move (apply order: copy the tile in,
+          // THEN stamp its rotation — matches `moveWithRotation.actions().add(
+          // actionRotation)` after the base `move` already carries the copy).
+          // Trax is the only ported game exercising this (`(rotations {N E})`
+          // / `(rotations Orthogonal)` on its two tile placements, both
+          // copy:True); the downstream `(do … ifAfterwards:(is SidesMatch))`
+          // wrapper then prunes candidates whose rotation doesn't line up
+          // colours with already-placed neighbours (IsSidesMatch.ts reads the
+          // same rotationAt channel ActionSetRotation writes via
+          // Context.containerState().rotation()). Before this fix, `to.rotations()`
+          // was stored on To.ts but never consumed here, so only one
+          // un-rotated candidate was ever emitted per site — SidesMatch had no
+          // orientation to accept/reject and Trax's move generation diverged
+          // from ply 0 of the recorded trial (MOVE_MISMATCH @4, once the
+          // un-rotated candidate ran out of legal continuations).
+          if (this.rotationsTo != null) {
+            const rotations = (this.rotationsTo.eval(ctx) as number[] | undefined) ?? [];
+            for (const rotation of rotations) {
+              const rotMove = new LudiiMove({
+                id: `copy:${mover}:${from}:${to}:r${rotation}`,
+                label: `Copy(${from}->${to})+SetRotation(${to}=${rotation})`,
+                siteIndices: [from, to],
+                mover,
+                placedOwner: mover,
+                actions: [new ActionCopy(from, to), new ActionSetRotation({ to, rotation })],
+                fromSite: from,
+                toSite: to,
+                fromNonDecisionSite: from,
+                toNonDecisionSite: to,
+              });
+              moves.push(rotMove);
+            }
+            ctx._evalFrom = origFrom;
+            ctx._evalTo = origTo;
+            continue;
+          }
           actions.push(new ActionCopy(from, to));
           const move = new LudiiMove({
             id: `copy:${mover}:${from}:${to}`,

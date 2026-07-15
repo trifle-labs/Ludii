@@ -1065,6 +1065,25 @@ export class Equipment extends BaseLudeme {
       // flipped. Carry both the value and a getFlips() accessor.
       const flipsFn = (component as unknown as { getFlips?: () => unknown }).getFlips;
       const flips = typeof flipsFn === "function" ? flipsFn.call(component) : null;
+      // @java Component/Tile accessors — the plain surface object dropped the
+      // Tile-specific accessors (isTile/terminus/numTerminus/paths), so
+      // IsSidesMatch saw every component as "not a tile" and returned true
+      // unconditionally (Trax accepted every rotation; the automove fold
+      // never fired). Pass them through bound, like getFaces/getFlips.
+      const tileC = component as unknown as {
+        isTile?: () => boolean;
+        terminus?: () => number[] | null;
+        numTerminus?: () => number | null;
+        paths?: () => unknown[];
+      };
+      const tileExtras = typeof tileC.isTile === "function"
+        ? {
+          isTile: () => tileC.isTile!.call(component),
+          terminus: () => tileC.terminus?.call(component) ?? null,
+          numTerminus: () => tileC.numTerminus?.call(component) ?? null,
+          paths: () => tileC.paths?.call(component) ?? [],
+        }
+        : {};
       pieces.push(Object.freeze({
         name: component.name() ?? "",
         owner: component.owner(),
@@ -1075,6 +1094,7 @@ export class Equipment extends BaseLudeme {
         walks: walks && walks.length > 0 ? Object.freeze(walks.map((w) => Object.freeze([...w]))) : undefined,
         flips: flips ?? undefined,
         getFlips: () => flips ?? null,
+        ...tileExtras,
       }));
     }
     return Object.freeze(pieces);

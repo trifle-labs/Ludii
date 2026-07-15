@@ -128,7 +128,19 @@ export class Rotations extends BaseIntArrayFunction {
 
       const numEdges = topo.numEdges();
       const supportedSize = topo.supportedDirections(defaultSite).length;
-      const ratio = numEdges > 0 ? supportedSize / numEdges : 1;
+      // @java Rotations.java ratio = supportedDirections.size()/numEdges,
+      // where Java's supportedDirections derives ONLY from real trajectory
+      // steps: a (boardless Square) with no (diagonals …) has 4 orthogonal
+      // directions (ratio 4/4 = 1, raw AbsoluteDirection indices {0,2,4,6} —
+      // exactly Trax's recorded SetRotation values). TS's Topology
+      // computeRelation geometric fallback over-detects diagonal ADJACENCY
+      // from shared vertices even when no diagonal EDGE exists, inflating
+      // supportedSize to 8 (ratio 2, halved indices). Until the topology
+      // derivation is fixed, clamp: when the ORTHOGONAL direction count
+      // equals numEdges, diagonal support is spurious by construction.
+      const orthoSize = topo.supportedDirections("Orthogonal" as never)?.length ?? 0;
+      const spuriousDiagonals = orthoSize > 0 && orthoSize === numEdges && supportedSize > numEdges;
+      const ratio = numEdges > 0 && !spuriousDiagonals ? supportedSize / numEdges : 1;
 
       for (const absDir of this.directionsOfRotation) {
         // Try direct AbsoluteDirection → DirectionFacing conversion.

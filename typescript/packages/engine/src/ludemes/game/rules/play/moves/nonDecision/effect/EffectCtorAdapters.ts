@@ -9,7 +9,7 @@ import { Who } from "../../../../../functions/ints/state/Who.js";
 import type { JavaIntFunction } from "../../../../../functions/ints/IntFunction.js";
 import type { From } from "../../../../../util/moves/From.js";
 import type { Piece } from "../../../../../util/moves/Piece.js";
-import type { To } from "../../../../../util/moves/To.js";
+import type { To, RotationsLike } from "../../../../../util/moves/To.js";
 import type { Between, RangeLike } from "../../../../../util/moves/Between.js";
 
 export type DirectionArg = string | DirectionsFunction | { directionsFunctions?: () => DirectionsFunction } | null;
@@ -69,6 +69,11 @@ export function toRegion(to: To | null): RegionFunction {
 
 export function toCond(to: To | null, fallback: BooleanFunction = TRUE_FN): BooleanFunction {
   return to?.condFn() ?? fallback;
+}
+
+/** @java game/util/moves/To.java — To.rotations(). */
+export function toRotations(to: To | null): RotationsLike | null {
+  return to?.rotations() ?? null;
 }
 
 export function normaliseFriendAtPlaceholder(rule: BooleanFunction): BooleanFunction {

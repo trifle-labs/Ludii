@@ -45,6 +45,7 @@ import { ActionSwapPlayers } from "../action/action-swap-players.js";
 import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
 import { ActionRemove } from "../action/action-remove.js";
 import { Gravity } from "./game/rules/meta/Gravity.js";
+import { Automove } from "./game/rules/meta/Automove.js";
 import { SetTeam } from "./game/rules/start/set/players/SetTeam.js";
 import type { Action } from "../action/index.js";
 import { evalDeferredThens } from "./game/rules/play/moves/nonDecision/effect/Then.js";
@@ -316,6 +317,8 @@ export class Game implements Game {
    *   post-hoc in {@link apply} yields the identical board.
    */
   public readonly usesGravity: boolean;
+  /** @java (meta (automove)) present — forced-unique-move chaining in moves(). */
+  public readonly usesAutomove: boolean;
 
   /**
    * Team membership: `teamOf[pid]` is the 1-based team index of player `pid`,
@@ -390,6 +393,9 @@ export class Game implements Game {
     // We detect the meta-rule directly off the compiled rules tree instead of
     // a portOption: any (meta (gravity …)) enables pyramidal drop in apply().
     this.usesGravity = (rules.meta?.rules ?? []).some(r => r instanceof Gravity);
+    // @java Automove.eval — context.game().metaRules().setAutomove(true);
+    // detected like usesGravity: presence in the compiled meta rules.
+    this.usesAutomove = (rules.meta?.rules ?? []).some(r => r instanceof Automove);
     // @java SetTeam.eval — ActionAddPlayerToTeam(teamId, pid). Harvest the
     // static team membership from the (set Team …) start rules.
     {
@@ -839,6 +845,16 @@ export class Game implements Game {
     const movesGen = this.getPlayForMover(ctx);
     const generated: Move[] = [...movesGen.moves.eval(ctx)];
 
+    // @java Game.java:2863-2873 — for each raw candidate straight out of
+    // phase.play().moves().eval(), Automove.apply(context, legalMove) folds
+    // forced unique-site continuations into the move's then chain (recorded
+    // as ONE compound trial ply — Trax's paired tile placements).
+    if (this.usesAutomove) {
+      for (let i = 0; i < generated.length; i++) {
+        generated[i] = this.resolveAutomoveChain(ctx, generated[i]!);
+      }
+    }
+
     // @java Game.java:2948 — context.state().setStalemated(mover,
     // legalMoves.moves().isEmpty()): the stalemated flag is a CACHE written
     // during REAL move generation (with the real roll), read by
@@ -895,6 +911,56 @@ export class Game implements Game {
       actions: [passAction],
     });
     return [passMove];
+  }
+
+  /**
+   * @java game/rules/meta/Automove.java:47-107 — apply(Context, Move):
+   * re-evaluates raw legal moves after speculatively applying `move`'s own
+   * actions; any target site left with EXACTLY ONE candidate is forced and
+   * folded into `move.then` so it plays in the SAME recorded ply (Java's
+   * Move.apply()/toTrialFormat() folds then consequences into one compound
+   * trial Move=[...] entry — confirmed against Trax RandomTrial_0 line 9).
+   * Iterates to a fixpoint; forcing one site can newly force another.
+   */
+  private resolveAutomoveChain(ctx: Context1to1, move: Move): Move {
+    let state = move.applyTo(ctx.state, ctx.rng);
+    const forced: Move[] = [];
+    let guard = 256;
+    while (guard-- > 0) {
+      const hypCtx = ctx.withState(state) as Context1to1;
+      const candidates = this.getPlayForMover(hypCtx).moves.eval(hypCtx);
+      if (candidates.length === 0) break;
+      const byTo = new Map<number, Move[]>();
+      for (const c of candidates) {
+        const to = c.toNonDecision();
+        const arr = byTo.get(to);
+        if (arr) arr.push(c);
+        else byTo.set(to, [c]);
+      }
+      const unique: Move[] = [];
+      for (const arr of byTo.values()) if (arr.length === 1) unique.push(arr[0]!);
+      if (unique.length === 0) break;
+      for (const u of unique) {
+        forced.push(u);
+        state = u.applyTo(state, ctx.rng);
+      }
+    }
+    if (forced.length === 0) return move;
+    return new Move({
+      id: move.id,
+      label: move.label,
+      siteIndices: [...move.siteIndices],
+      mover: move.mover,
+      placedOwner: move.placedOwner,
+      actions: [...move.actions],
+      // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
+      then: [...move.then, ...forced],
+      deferredThens: move.deferredThens,
+      moveAgain: move.moveAgain,
+      decisionIndex: move.decisionIndex,
+      fromSite: move.fromSite,
+      toSite: move.toSite,
+    });
   }
 
   /**

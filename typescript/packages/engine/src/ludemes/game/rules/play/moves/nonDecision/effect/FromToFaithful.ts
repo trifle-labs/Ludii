@@ -5,7 +5,7 @@ import type { Then } from "./Then.js";
 import type { From } from "../../../../../util/moves/From.js";
 import type { To } from "../../../../../util/moves/To.js";
 import { FromTo } from "./FromTo.js";
-import { FALSE_FN, fromCond, fromLevel, fromLoc, fromRegion, toApplyCondition, toApplyEffect, toLoc } from "./EffectCtorAdapters.js";
+import { FALSE_FN, fromCond, fromLevel, fromLoc, fromRegion, toApplyCondition, toApplyEffect, toLoc, toRotations } from "./EffectCtorAdapters.js";
 
 export class FromToFaithful extends FromTo {
   public constructor(
@@ -26,6 +26,8 @@ export class FromToFaithful extends FromTo {
       countFn: count,
       locTo: toLoc(to),
       levelTo: to.levelFn(),
+      // @java FromTo.java:150 — rotationTo = to.rotations().
+      rotations: toRotations(to),
       regionFrom: fromRegion(from),
       regionTo: to.regionFn(),
       fromCondition: fromCond(from),
