@@ -239,26 +239,62 @@ export class SitesOccupied extends BaseRegionFunction {
     const sitesOccupied: number[] = [];
 
     if (role === "Enemy") {
-      // @java RoleType.Enemy — any piece not owned by the mover (excluding neutral)
+      // @java Core/src/other/PlayersIndices.java:30-44 (getIdPlayers,
+      // RoleType.Enemy) — team-aware: every player NOT on the mover's team
+      // (mover's own team excluded; plain pid != mover when no teams).
+      // @java SitesOccupied.java:129,146-160,224-234 — idPlayers feeds an
+      // owned()-registry scan covering EVERY level; `top` only NARROWS the
+      // result afterward, and only `if (top && isStacking())`. The old
+      // cells[i]-only (flat/top) read was wrong for top:False: after the
+      // mover's own piece lands on TOP of a stack, cells[i]===mover excluded
+      // the site even though enemy pieces remain buried underneath — Aj
+      // Sakakil's (is In (last To) (sites Occupied by:Enemy top:False))
+      // CaptureMove guard read false and buried captured pieces stayed
+      // FreePiece forever (7-game Maya stick-dice cluster).
       const mover = ctx.state.mover;
+      const teamOf = (ctx.game as unknown as { teamOf?: readonly (number | null)[] }).teamOf ?? [];
+      let requiresTeams = false;
+      for (let p = 1; p < teamOf.length; p++) if ((teamOf[p] ?? 0) > 0) { requiresTeams = true; break; }
+      const moverTeam = requiresTeams ? (teamOf[mover] ?? 0) : 0;
+      const idPlayers = new Set<number>();
+      for (let pid = 1; pid <= ctx.game.numPlayers; pid++) {
+        if (pid === mover) continue;
+        if (requiresTeams && moverTeam > 0 && (teamOf[pid] ?? 0) === moverTeam) continue;
+        idPlayers.add(pid);
+      }
       for (let i = 0; i < scanN; i++) {
-        const owner = cells[i] ?? 0;
-        if (owner !== 0 && owner !== mover) {
-          if (whatOk(whats[i] ?? 0)) {
-            sitesOccupied.push(i);
+        if (!ctx.state.isOccupiedSite(i)) continue;
+        const stack = stacks[i];
+        if (!this.top && stack && stack.length > 1) {
+          const whatRow = ctx.state.whatStacks[i];
+          for (let lvl = 0; lvl < stack.length; lvl += 1) {
+            if (idPlayers.has(stack[lvl] ?? 0) && whatOk(whatRow?.[lvl] ?? 0)) { sitesOccupied.push(i); break; }
           }
+          continue;
         }
+        const owner = this.top && stack && stack.length > 0 ? (stack[stack.length - 1] ?? 0) : (cells[i] ?? 0);
+        if (owner !== 0 && idPlayers.has(owner) && whatOk(whats[i] ?? 0)) sitesOccupied.push(i);
       }
     } else if (role === "NonMover") {
-      // @java RoleType.NonMover — any piece not owned by the mover (including neutral)
+      // @java PlayersIndices.java:65-69 — RoleType.NonMover: every player
+      // except the mover (NOT team-aware, unlike Enemy). Same top:False
+      // any-level scan as the Enemy branch above.
       const mover = ctx.state.mover;
       for (let i = 0; i < scanN; i++) {
-        const owner = cells[i] ?? 0;
-        if (owner !== mover && ctx.state.isOccupiedSite(i)) {
-          if (whatOk(whats[i] ?? 0)) {
-            sitesOccupied.push(i);
+        if (!ctx.state.isOccupiedSite(i)) continue;
+        const stack = stacks[i];
+        if (!this.top && stack && stack.length > 1) {
+          const whatRow = ctx.state.whatStacks[i];
+          for (let lvl = 0; lvl < stack.length; lvl += 1) {
+            const owner = stack[lvl] ?? 0;
+            if (owner !== 0 && owner !== mover && whatOk(whatRow?.[lvl] ?? 0)) { sitesOccupied.push(i); break; }
           }
+          continue;
         }
+        const owner = this.top && stack && stack.length > 0 ? (stack[stack.length - 1] ?? 0) : (cells[i] ?? 0);
+        // @java PlayersIndices.java:65-69 — idPlayers spans pids 1..N only;
+        // a neutral-owned piece (owner 0) never qualifies for NonMover.
+        if (owner > 0 && owner !== mover && whatOk(whats[i] ?? 0)) sitesOccupied.push(i);
       }
     } else if (role === "Team1" || role === "Team2" || role === "Team3" || role === "Team4") {
       // @java PlayersIndices.getIdPlayers (PlayersIndices.java:376-395) —
