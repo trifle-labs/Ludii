@@ -86,7 +86,18 @@ export class Do implements MovesFunction {
 
     // --- Case A: next is provided -----------------------------------------
     if (this.next != null) {
-      const newState = this._applyPriorToContext(ctx);
+      // @java Do.java:90-93 generateAndApplyPreMoves — prior.eval(context) is
+      // called EXACTLY ONCE; the SAME preMoves list both builds the temp
+      // context for `next` and prepends onto the result. TS previously
+      // evaluated this.prior a second time below, drawing a FRESH random
+      // face from ctx.rng for a stochastic prior like (roll): the branch
+      // `next` selected (via (count Pips) on draw #1) could diverge from the
+      // dice value stamped on the returned move (draw #2) — Sarvatobhadra
+      // ply 168 selected the King branch on draw #1 (=6) while stamping st4
+      // (draw #2), returning 4 illegal King moves instead of Java's empty
+      // list — and every (do (roll) …) consumed twice as much RNG as Java.
+      const priorMoves = this.prior.eval(ctx);
+      const newState = this._applyPreMovesToContext(ctx, priorMoves);
       const newCtx = new Context(ctx.game, newState, ctx.trial, ctx.rng);
       // @java TempContext copies the whole context — the derived context must keep
       // the board topology scratch (Asalto: do->Hop threw "requires _radials").
@@ -104,7 +115,6 @@ export class Do implements MovesFunction {
           if (v !== undefined) (aug as unknown as Record<string, unknown>)[k] = v;
         }
       }
-      const priorMoves = this.prior.eval(ctx);
       const nextMoves = this.next.eval(newCtx);
       const priorActions = priorMoves.flatMap((pm) => [...pm.actions]);
       // @java the compound (do prior next:X) has a SINGLE decision — X's. The
@@ -226,14 +236,18 @@ export class Do implements MovesFunction {
   }
 
   /**
-   * Apply all prior moves to a copy of the current context state and
-   * return the resulting state.
+   * Apply the (already-evaluated) prior moves to a copy of the current
+   * context state and return the resulting state. The caller evaluates
+   * `prior` exactly once (@java Do.generateAndApplyPreMoves) — evaluating
+   * it here as well double-drew the RNG for stochastic priors.
    *
    * @java Do.generateAndApplyPreMoves(Context, Context)
    */
-  private _applyPriorToContext(ctx: Context): import("../../../../../../../../state.js").State {
+  private _applyPreMovesToContext(
+    ctx: Context,
+    preMoves: readonly Move[],
+  ): import("../../../../../../../../state.js").State {
     let state = ctx.state;
-    const preMoves = this.prior.eval(ctx);
     for (const m of preMoves) {
       // @java Move.apply — prior moves apply with their then() consequences
       state = applyMoveWithThens(ctx, m, state);

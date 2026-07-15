@@ -538,7 +538,15 @@ export class ActionMove extends BaseAction {
     // destination. (Quarto encodes a piece's 3rd attribute as the local site
     // state and its 4th as the value; its win rules read `(state at:(to))` and
     // `(value Piece at:(to))`.) Read all three before the source is cleared.
-    const currentStateFrom = state.stateAtSite(this.fromIndex);
+    // @java ContainerState.state(site, type) (ChunkStack.java:435-440) — the
+    // level-less read on a stacking container returns stateStacks' TOP entry,
+    // not a separate flat scalar. TS keeps two channels (stateAt[] flat,
+    // stateStacks[][] per-level) that a bare ActionMove never resynced:
+    // (set State at: level:) writes only stateStacks[], so the flat read here
+    // returned a permanently-stale 0 for any site with a materialized
+    // per-level row, dropping the mover's "activated" flag every time it
+    // moved again (Sik/Es-Sig/Sig wa Duqqan stick-dice family).
+    const currentStateFrom = state.stateTop(this.fromIndex);
     const currentRotationFrom = state.rotationAtSite(this.fromIndex);
     const currentValueFrom = state.valueAtSite(this.fromIndex);
     const destState =
@@ -676,6 +684,19 @@ export class ActionMove extends BaseAction {
         next = next.withValueStackRow(this.toIndex, row);
       }
       if (next.valueAtSite(this.toIndex) !== carriedValue) next = next.withValueAt(this.toIndex, carriedValue);
+      // @java ActionMoveLevelFrom.java:444-457 — newStateTo = containerFrom
+      // .state(from, levelFrom, typeFrom) is read before the pop and carried
+      // into the pushed level via the stateVal-carrying addItemGeneric
+      // overload (ContainerStateStacks.java:331-361). This branch carries
+      // `value` (carriedValue above) but had no equivalent for `state`, so a
+      // piece landing on an occupied site in a stacking game had its OWN
+      // per-level "activated" flag reset to withStackPush's default 0 —
+      // permanently losing the mover's activation (Sik family).
+      if (destState !== 0) {
+        const newLevel = next.stackSize(this.toIndex) - 1;
+        if (newLevel >= 0) next = next.withStateAtLevel(this.toIndex, newLevel, destState);
+        if (next.stateAtSite(this.toIndex) !== destState) next = next.withStateAt(this.toIndex, destState);
+      }
       next = this.transferHidden(next, state, fromCount <= 1);
       return this.maintainTracks(next, movingWhat);
     }

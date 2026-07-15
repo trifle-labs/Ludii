@@ -116,12 +116,25 @@ abstract class ActionMoveLevelBase extends BaseAction {
     // fired a false win (WINNER_MISMATCH exposed by the FromTo Stacking fix).
     // Read the source channels BEFORE the pop clears them.
     const carryValue = state.valueAtSite(this.fromIndex);
-    const carryState = state.stateAtSite(this.fromIndex);
+    // @java ActionMoveLevelFrom.java:445 — newStateTo = containerFrom.state(
+    // from, levelFrom, typeFrom): a PER-LEVEL read at the level being
+    // vacated, not the flat/level-less scalar. A buried piece (Sik: a Stick
+    // under another player's Stick) moving via ActionMoveLevelFrom carried
+    // the flat stateAt[from] (permanently 0 for sites whose activation flag
+    // only exists in the per-level stateStacks[] column), losing its own
+    // activation.
+    const carryState = state.stateAtLevel(this.fromIndex, sourceLevel);
     const carryRotation = state.rotationAtSite(this.fromIndex);
     const popped = state.withStackPop(this.fromIndex, sourceLevel);
     let pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
     if (carryValue !== 0) pushed = pushed.withValueAt(this.toIndex, carryValue);
-    if (carryState !== 0) pushed = pushed.withStateAt(this.toIndex, carryState);
+    if (carryState !== 0) {
+      pushed = pushed.withStateAt(this.toIndex, carryState);
+      // @java addItemGeneric's stateVal overload — the state rides on the
+      // NEW top level of the destination's per-level column too.
+      const newLevel = pushed.stackSize(this.toIndex) - 1;
+      if (newLevel >= 0) pushed = pushed.withStateAtLevel(this.toIndex, newLevel, carryState);
+    }
     if (carryRotation !== 0) pushed = pushed.withRotationAt(this.toIndex, carryRotation);
     // Clear the vacated source's flat channels only when the pop emptied it — a
     // shared site (two Markers entering the same gate before one races off) must
