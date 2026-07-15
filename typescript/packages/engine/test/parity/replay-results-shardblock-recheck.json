@@ -1,0 +1,78 @@
+{
+  "summary": {
+    "totalTrials": 2,
+    "elapsed_s": 3.6,
+    "buckets": {
+      "COMPILE_FAIL": 0,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 2,
+      "WINNER_MISMATCH": 0,
+      "OUTCOME_OK": 0,
+      "REPLAY_OK_NO_OUTCOME": 0,
+      "TIMEOUT": 0
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [],
+    "MOVE_MISMATCH": [
+      [
+        "dominoes/Block",
+        2
+      ]
+    ]
+  },
+  "exampleMismatches": [
+    {
+      "game": "dominoes/Block",
+      "ply": 0,
+      "recMove": "mover=1,from=1682,to=840",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "pass|mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "dominoes/Block",
+      "ply": 0,
+      "recMove": "mover=1,from=1687,to=840",
+      "tsMoveCount": 1,
+      "sampleTsMoves": [
+        "pass|mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
+  "perTrial": [
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "dominoes/Block",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=1682,to=840",
+      "tsMoveCount": 1,
+      "tsLudemes": [
+        "pass"
+      ],
+      "sampleTsMoves": [
+        "pass|mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/dominoes/Block/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "dominoes/Block",
+      "ply": 0,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=1687,to=840",
+      "tsMoveCount": 1,
+      "tsLudemes": [
+        "pass"
+      ],
+      "sampleTsMoves": [
+        "pass|mover=1,from=-1,to=-1,isPass=true"
+      ],
+      "trialFile": "../../../Player/res/random_trials/dominoes/Block/RandomTrial_1.txt"
+    }
+  ]
+}

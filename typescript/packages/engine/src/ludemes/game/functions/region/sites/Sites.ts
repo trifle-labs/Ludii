@@ -41,6 +41,7 @@ import { SitesRandom } from "./random/SitesRandom.js";
 import { SitesBottom } from "./simple/SitesBottom.js";
 import { SitesCentre } from "./simple/SitesCentre.js";
 import { SitesPlayable } from "./simple/SitesPlayable.js";
+import { SitesLineOfPlay } from "./simple/SitesLineOfPlay.js";
 import { SitesConcaveCorners } from "./simple/SitesConcaveCorners.js";
 import { SitesConvexCorners } from "./simple/SitesConvexCorners.js";
 import { SitesHint } from "./simple/SitesHint.js";
@@ -250,10 +251,7 @@ export class Sites extends BaseRegionFunction {
       case "Left":
         return new SitesLeft(elementType);
       case "LineOfPlay":
-        // @java SitesLineOfPlay — not yet ported
-        return new (class extends BaseRegionFunction {
-          override eval(_ctx: Context & EvalScratch): number[] { return []; }
-        })();
+        return new SitesLineOfPlay();
       case "Major":
         return makeTopologyFn("major", elementType);
       case "Minor":
@@ -818,7 +816,7 @@ export class Sites extends BaseRegionFunction {
    */
   public static constructGroup(
     regionType: SitesGroupType,
-    _type: string | null,
+    type: string | null,
     at: IntFunction | null,
     From: RegionFunction | null,
     _directions: unknown,
@@ -846,7 +844,7 @@ export class Sites extends BaseRegionFunction {
           typeof _directions === "string"
             ? _directions
             : (_directions as { name?: string } | null)?.name ?? "Adjacent";
-        return new SitesGroup(startFn, condition, dirName, isVisible);
+        return new SitesGroup(type, startFn, condition, dirName, isVisible);
       }
       default:
         throw new Error(`Sites(): A SitesGroupType is not implemented: ${regionType}`);

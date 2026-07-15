@@ -1,0 +1,28 @@
+{
+  "summary": {
+    "totalTrials": 1,
+    "elapsed_s": 0.3,
+    "buckets": {
+      "COMPILE_FAIL": 0,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 0,
+      "WINNER_MISMATCH": 0,
+      "OUTCOME_OK": 1,
+      "REPLAY_OK_NO_OUTCOME": 0,
+      "TIMEOUT": 0
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [],
+    "MOVE_MISMATCH": []
+  },
+  "exampleMismatches": [],
+  "perTrial": [
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Tavli",
+      "plyReplayed": 916,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Tavli/RandomTrial_0.txt"
+    }
+  ]
+}

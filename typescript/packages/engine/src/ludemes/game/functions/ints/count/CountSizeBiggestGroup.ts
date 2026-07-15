@@ -12,7 +12,7 @@
  */
 
 import type { Context } from "../../../../../context.js";
-import type { IntFunction, BooleanFunction } from "../../../../base.js";
+import type { IntFunction, BooleanFunction, RegionFunction } from "../../../../base.js";
 import type { LudNode } from "@ludii/typescript-language";
 import type { LudList } from "@ludii/typescript-language";
 import type { Trajectories } from "../../../../../eval/graph/trajectories.js";
@@ -39,17 +39,27 @@ export class CountSizeBiggestGroup implements IntFunction {
    * Stored but eval behaviour is substrate-independent in the flat state.
    */
   private readonly siteType: string | null;
+  /**
+   * @java CountSizeBiggestGroup.throughAny — restricts the seed sites the
+   * group search starts from (e.g. `(sites Around (to))`). Java:
+   * CountSizeBiggestGroup.java:56,92-103. Previously dropped entirely by
+   * the Count.constructGroups dispatcher, causing seeds to be collected
+   * from the WHOLE BOARD instead of just this region.
+   */
+  private readonly throughAny: RegionFunction | null;
 
   public constructor(
     condition: BooleanFunction | null,
     direction: string = "Adjacent",
     isVisibleFn: BooleanFunction | null = null,
     siteType: string | null = null,
+    throughAny: RegionFunction | null = null,
   ) {
     this.condition = condition;
     this.direction = direction;
     this.isVisibleFn = isVisibleFn;
     this.siteType = siteType;
+    this.throughAny = throughAny;
   }
 
   /**
@@ -108,8 +118,15 @@ export class CountSizeBiggestGroup implements IntFunction {
     };
 
     // Collect seeds: sites where condition holds
+    // @java CountSizeBiggestGroup.java:92-103 — when throughAny is set, the
+    // candidate `sites` list (and therefore the seed scan) is restricted to
+    // throughAny.eval(context).sites(), evaluated ONCE up front (not per
+    // candidate site being scanned).
+    const candidateSites: number[] = this.throughAny !== null
+      ? this.throughAny.eval(ctx)
+      : Array.from({ length: boardN }, (_, i) => i);
     const sitesToCheck: number[] = [];
-    for (let site = 0; site < boardN; site++) {
+    for (const site of candidateSites) {
       if (this.condition !== null) {
         ctx._evalTo = site;
         if (this.condition.eval(ctx) && !covered(site)) sitesToCheck.push(site);

@@ -1,0 +1,63 @@
+{
+  "summary": {
+    "totalTrials": 2,
+    "elapsed_s": 0.1,
+    "buckets": {
+      "COMPILE_FAIL": 0,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 1,
+      "WINNER_MISMATCH": 0,
+      "OUTCOME_OK": 1,
+      "REPLAY_OK_NO_OUTCOME": 0,
+      "TIMEOUT": 0
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [],
+    "MOVE_MISMATCH": [
+      [
+        "puzzle/planning/Spuzzle",
+        1
+      ]
+    ]
+  },
+  "exampleMismatches": [
+    {
+      "game": "puzzle/planning/Spuzzle",
+      "ply": 11,
+      "recMove": "mover=1,from=23,to=23",
+      "tsMoveCount": 9,
+      "sampleTsMoves": [
+        "add|mover=1,from=3,to=3,isPass=false",
+        "add|mover=1,from=7,to=7,isPass=false",
+        "add|mover=1,from=8,to=8,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
+  "perTrial": [
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "puzzle/planning/Spuzzle",
+      "plyReplayed": 11,
+      "trialFile": "../../../Player/res/random_trials/puzzle/planning/Spuzzle/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "puzzle/planning/Spuzzle",
+      "ply": 11,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=23,to=23",
+      "tsMoveCount": 9,
+      "tsLudemes": [
+        "add"
+      ],
+      "sampleTsMoves": [
+        "add|mover=1,from=3,to=3,isPass=false",
+        "add|mover=1,from=7,to=7,isPass=false",
+        "add|mover=1,from=8,to=8,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/puzzle/planning/Spuzzle/RandomTrial_1.txt"
+    }
+  ]
+}

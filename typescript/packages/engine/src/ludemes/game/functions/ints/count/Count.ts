@@ -422,7 +422,7 @@ export class Count extends BaseIntFunction {
       }
       case "SizeBiggestGroup": {
         // @java CountSizeBiggestGroup(type, directions, throughAny, If, isVisible)
-        // — directions and isVisible were previously dropped.
+        // — directions and isVisible were previously fixed; throughAny wired below.
         const sbgDirName: string =
           typeof _directions === "string"
             ? _directions
@@ -433,6 +433,9 @@ export class Count extends BaseIntFunction {
           asBool(_isVisible),
           // @java type — SiteType; flat-state substrate, see pattern #5
           typeof _type === "string" ? _type : null,
+          // @java throughAny — restrict group-search seeds to this region
+          // (Spuzzle: `(sites Around (to))`) instead of the whole board.
+          _throughAny as RegionFunction | null,
         ));
       }
       default:

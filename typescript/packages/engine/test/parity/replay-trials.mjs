@@ -809,21 +809,36 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
   // lists Add:to=N,what=W for each repositioned piece; prefer the candidate
   // whose applied board reaches those exact (site→what) cells. Diffing the
   // applied state (not cand.actions) handles re-adds carried in deferred thens.
+  // Also handles NON-DEFAULT typed channels (e.g. Morpion Solitaire's
+  // `(add (to Edge …))` line-segment draws on a `use:Vertex` board): reading
+  // only the default `.what(i)` channel is blind to Add actions whose
+  // `type` field names a secondary `ctx.state.typedSites` channel, so two
+  // candidates that differ ONLY in which typed-Edge sites they add score an
+  // identical tie and fall through to an arbitrary pick (Morpion RandomTrial_0
+  // ply 26: picked Edge-draw {547,548,549,550} instead of the recorded
+  // {546,547,548,549}, later blocking the legal ply-53 move at edge 550).
   {
     const recAdds = recMove.actions
       .filter((a) => a.actionType === 'Add' && a.fields.get('decision') !== 'true')
-      .map((a) => `${a.fields.get('to')}:${a.fields.get('what')}`);
+      .map((a) => ({
+        to: Number(a.fields.get('to')),
+        what: Number(a.fields.get('what')),
+        type: a.fields.get('type') ?? null,
+      }));
     if (recAdds.length > 0) {
-      const recSet = new Set(recAdds);
+      const readAt = (state, type, site) =>
+        (type && state.typedSites?.has?.(type))
+          ? state.whatTyped(type, site)
+          : state.what(site);
       let best = null, bestScore = 0, tied = false;
       for (const cand of candidates) {
         let score = 0;
         try {
           const after = game.apply(ctx, cand).state;
-          const n = ctx.state.cells?.length ?? 0;
-          for (let i = 0; i < n; i += 1) {
-            const w = after.what(i);
-            if (w > 0 && after.what(i) !== ctx.state.what(i) && recSet.has(`${i}:${w}`)) score += 1;
+          for (const { to, what, type } of recAdds) {
+            const beforeW = readAt(ctx.state, type, to);
+            const afterW = readAt(after, type, to);
+            if (afterW === what && afterW !== beforeW) score += 1;
           }
         } catch { /* candidate failed to apply — score 0 */ }
         if (score > bestScore) { bestScore = score; best = cand; tied = false; }

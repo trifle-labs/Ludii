@@ -45,12 +45,14 @@ export class SitesGroup extends BaseRegionFunction {
 	 * @java SitesGroup(SiteType, IntFunction, RegionFunction, Direction, BooleanFunction, BooleanFunction)
 	 */
 	public constructor(
+		siteType: string | null,
 		startLocationFn: IntArrayFunction,
 		condition: BooleanFunction | null,
 		directionName: string,
 		isVisibleFn: BooleanFunction | null,
 	) {
 		super();
+		this.siteType = siteType;
 		this.startLocationFn = startLocationFn;
 		this.condition = condition;
 		this.directionName = directionName;
