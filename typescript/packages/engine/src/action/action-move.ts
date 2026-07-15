@@ -731,7 +731,11 @@ export class ActionMove extends BaseAction {
       this.fromIndex !== this.toIndex &&
       movingOwner !== 0 &&
       state.who(this.toIndex) > 0 &&
-      state.who(this.toIndex) !== movingOwner
+      // @java ActionMoveTopPiece.java:484-516 — the push-a-level branch fires
+      // for ANY occupied destination whose top differs (owner OR component);
+      // a same-owner different-piece landing stacks too (AlmaTafl's tower).
+      (state.who(this.toIndex) !== movingOwner ||
+        state.whatAtSite(this.toIndex) !== movingWhat)
     ) {
       next = next.withStackPush(
         this.toIndex,
@@ -788,7 +792,10 @@ export class ActionMove extends BaseAction {
     // and the ghost copy resurfaced when the knight later moved off.
     if (
       this.fromIndex !== this.toIndex &&
-      ((state.stackingGame && movingOwner !== 0 && state.who(this.toIndex) === movingOwner) ||
+      // @java same-piece pile merge requires the SAME component too (see
+      // push branch above; AlmaTafl same-owner different-piece stacks).
+      ((state.stackingGame && movingOwner !== 0 && state.who(this.toIndex) === movingOwner &&
+        state.whatAtSite(this.toIndex) === movingWhat) ||
         ((state.whatAtSite(this.toIndex) === movingWhat ||
           state.whatAtSite(this.toIndex) === 0) &&
           state.countAtSite(this.toIndex) > 0))

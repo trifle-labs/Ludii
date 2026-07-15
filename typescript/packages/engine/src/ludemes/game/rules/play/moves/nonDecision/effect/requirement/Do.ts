@@ -287,7 +287,19 @@ export class Do implements MovesFunction {
         augmentedMove = m.withConsequence(extraActions, moveAgain);
       }
     }
-    const newState = finalState;
+    let newState = finalState;
+    // @java Do.java:276-278 movePassesCond — "DONE TO AVOID ANY REPLAY MOVE
+    // (e.g. Bug in Chess found by Wijnand :))": if the simulated state's
+    // mover equals its next, reset next to prev before evaluating
+    // ifAfterwards. A same-player continuation stamped by a nested
+    // (then (moveAgain)) inside THIS candidate's own then-chain (Shantarad's
+    // CaptureAndMoveAgain Pending grant) otherwise leaks into NoMoves'
+    // `next > 0 ? next : rotational` fallback, which then checks the WRONG
+    // player's mobility and wrongly rejects a legal candidate (Shantarad
+    // ply 57: TS rejected 11->10 while Java plays it).
+    if (newState.mover === newState.next) {
+      newState = newState.withNext(newState.prev);
+    }
     const newTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(augmentedMove, false, -1) ?? ctx.trial;
     const newCtx = new Context(ctx.game, newState, newTrial, ctx.rng);
     const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
