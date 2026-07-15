@@ -107,8 +107,17 @@ class AllGroups extends BaseBooleanFunction {
     // no `sites(pid): number[]` method on it, so the old
     // `typeof owned.sites === "function"` guard was checking for an API
     // that never existed on the TS getter either.
-    const ownedSites = (pid: number): number[] =>
-      context.state.owned.positions(pid).map((p) => p.site());
+    // positions(pid) is indexed BY COMPONENT (byComp[comp] = locations[]);
+    // flatten every component's location list to the raw site list.
+    const ownedSites = (pid: number): number[] => {
+      const byComp = context.state.owned.positions(pid);
+      const out: number[] = [];
+      for (const locs of byComp) {
+        if (!locs) continue;
+        for (const p of locs) out.push(p.site());
+      }
+      return out;
+    };
 
     // Java: We get the minimum set of sites to look.
     const sitesToCheck: number[] = [];
