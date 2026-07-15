@@ -19,7 +19,7 @@ import type { Move } from "../../../../../../../../move.js";
 import { Move as LudiiMove } from "../../../../../../../../move.js";
 import { ActionPass } from "../../../../../../../../action/action-pass.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../base.js";
-import { applyPostStateThen, applyMoveWithThens, evalDeferredThens } from "../Then.js";
+import { applyPostStateThen, evalDeferredThens } from "../Then.js";
 
 /**
  * @java game/rules/play/moves/nonDecision/effect/requirement/Do.java
@@ -97,7 +97,7 @@ export class Do implements MovesFunction {
       // (draw #2), returning 4 illegal King moves instead of Java's empty
       // list — and every (do (roll) …) consumed twice as much RNG as Java.
       const priorMoves = this.prior.eval(ctx);
-      const newState = this._applyPreMovesToContext(ctx, priorMoves);
+      const { state: newState, appliedMoves } = this._applyPreMovesToContext(ctx, priorMoves);
       const newCtx = new Context(ctx.game, newState, ctx.trial, ctx.rng);
       // @java TempContext copies the whole context — the derived context must keep
       // the board topology scratch (Asalto: do->Hop threw "requires _radials").
@@ -116,7 +116,20 @@ export class Do implements MovesFunction {
         }
       }
       const nextMoves = this.next.eval(newCtx);
-      const priorActions = priorMoves.flatMap((pm) => [...pm.actions]);
+      // @java Do.java:141 generateAndApplyPreMoves captures `appliedMove =
+      // m.apply(applyContext, false)` — Move.apply (Move.java:499-611) runs
+      // m's own actions AND recursively resolves+applies its then()
+      // consequents in the SAME pass, returning a NEW flattened Move whose
+      // actions already include every then-action and which carries NO
+      // then()/deferred list of its own (returnMove never copies `then`,
+      // Move.java:594-611). prependPreMoves (Do.java:155-177) then prepends
+      // ONLY appliedMove.actions() — never a deferred/then list — onto each
+      // next move. Use the already-resolved `appliedMoves` (built below by
+      // _applyPreMovesToContext, which mirrors Move.apply) instead of the
+      // raw, pre-resolution `priorMoves`, so prior's then-actions are baked
+      // in at the SAME point Java bakes them: before `next` is even
+      // generated, off of the correct pre-`next` state.
+      const priorActions = appliedMoves.flatMap((pm) => [...pm.actions]);
       // @java the compound (do prior next:X) has a SINGLE decision — X's. The
       // prior's actions are pre-moves prepended before X, so Java records them
       // WITHOUT the decision flag ((do (add …) next:(move Pass)) shows the Add
@@ -131,9 +144,22 @@ export class Do implements MovesFunction {
       // @java the prior's then() consequents ride along on the compound move
       // too — (do (roll (then (addScore Mover (mapEntry (count Pips)))))
       // next:(move Pass …)) applies roll THEN addScore THEN the pass's thens.
-      // Only nm.deferredThens were kept, so the roll-then was dropped and
-      // Pasa/Los Escaques never accumulated score (end never fired, ts=-1).
-      const priorDeferred = priorMoves.flatMap((pm) => [...pm.deferredThens]);
+      // This used to be handled by re-attaching prior's RAW deferredThens
+      // here, to be evaluated a SECOND time when the compound move actually
+      // committed — but by then `next`'s own actions had already applied for
+      // real, so a then that reads live board state (Polypods' Captures:
+      // "(forEach Site CaptureSites (remember CS) (then (forEach Site
+      // KeySitesOfAffectedGroups (remember KS))))") saw a DIFFERENT board
+      // than the one used to generate `next` (the capture's own Remove had
+      // already run), producing wrong KS values and silently dropping the
+      // UpdateTerminals reclassification (ply 54: site 51 stuck at
+      // state=1 instead of correctly reverting to state=5, which 10 plies
+      // later wrongly excluded site 59 from ToAllowedSites). Now that
+      // `priorActions` above already contains prior's then-actions (resolved
+      // ONCE, before `next` ran, exactly like Java's returnMove), nothing
+      // from prior needs to ride along as a deferred generator any more.
+      // Pasa/Los Escaques' addScore action is already present in
+      // priorActions via the same mechanism.
 
       // Prepend prior actions to every next move.
       for (const nm of nextMoves) {
@@ -149,9 +175,12 @@ export class Do implements MovesFunction {
           placedOwner: nm.placedOwner,
           actions: prependedActions,
           then: nm.then as LudiiMove[],
-          // @java both the prior's AND the inner move's then() lists ride
-          // along; the prior's consequents evaluate first (post-apply).
-          deferredThens: [...priorDeferred, ...nm.deferredThens],
+          // @java prior's then() consequents are already resolved into
+          // priorActions above (Move.apply bakes them in before `next` is
+          // generated); only `next`'s OWN then() rides along as a deferred
+          // generator, to be resolved once the compound move actually
+          // commits.
+          deferredThens: [...nm.deferredThens],
           moveAgain: nm.moveAgain,
           // Prepending the prior's actions shifts the decision action, so pin
           // the decision from/to explicitly (@java the recorded compound move
@@ -185,14 +214,13 @@ export class Do implements MovesFunction {
           mover: ctx.state.mover,
           placedOwner: ctx.state.mover,
           actions: [...priorActions, new ActionPass()],
-          // @java Do.java:136-146 — the prior's own (then …) is folded into
-          // preM before prependPreMoves reuses it, so the forced pass carries
-          // it too. Every other construction path above threads
-          // priorDeferred; omitting it here silently dropped the prior's
-          // nested consequence (Set Dilth' ply 250: the 3rd-circuit
-          // (then (remove …)) never ran, the scored piece stayed on site 22,
-          // and TS offered an illegal move where Java records a forced pass).
-          deferredThens: [...priorDeferred],
+          // @java Do.java:136-146 — the prior's own (then …) is already
+          // folded into priorActions above (see the comment on priorActions'
+          // definition), so the forced pass carries it too without needing a
+          // deferred list (Set Dilth' ply 250: the 3rd-circuit
+          // (then (remove …)) must still run — it now does, baked into
+          // priorActions instead of as a live deferred re-evaluation).
+          deferredThens: [],
           moveAgain: false,
           decisionIndex: priorActions.length,
         }));
@@ -237,23 +265,46 @@ export class Do implements MovesFunction {
 
   /**
    * Apply the (already-evaluated) prior moves to a copy of the current
-   * context state and return the resulting state. The caller evaluates
+   * context state and return the resulting state, along with each prior
+   * move's fully-RESOLVED form (own actions + then-consequence actions
+   * baked in, no leftover deferred/then list). The caller evaluates
    * `prior` exactly once (@java Do.generateAndApplyPreMoves) — evaluating
    * it here as well double-drew the RNG for stochastic priors.
    *
-   * @java Do.generateAndApplyPreMoves(Context, Context)
+   * @java Do.generateAndApplyPreMoves(Context, Context) — `appliedMove =
+   * m.apply(applyContext, false)`. Move.apply (Move.java:499-611) runs m's
+   * actions AND recursively evaluates+applies its then() consequents in the
+   * SAME pass, against the SAME (mutating) applyContext, returning a new
+   * flattened Move whose actions() already include every then-action and
+   * whose then() list is empty (returnMove never copies `then`). Mirror that
+   * here via evalDeferredThens + withConsequence instead of leaving prior's
+   * then as a live deferredThens generator for the caller to re-attach and
+   * re-evaluate later against a state `next` has since mutated.
    */
   private _applyPreMovesToContext(
     ctx: Context,
     preMoves: readonly Move[],
-  ): import("../../../../../../../../state.js").State {
+  ): {
+    state: import("../../../../../../../../state.js").State;
+    appliedMoves: Move[];
+  } {
     let state = ctx.state;
+    const appliedMoves: Move[] = [];
     for (const m of preMoves) {
       // @java Do.java:141 generateAndApplyPreMoves — m.apply(applyContext,
       // false): preMoves are store=false; must not advance lastMove().
-      state = applyMoveWithThens(ctx, m, state, false);
+      const postState = m.applyTo(state, ctx.rng);
+      if (m.deferredThens.length === 0) {
+        state = postState;
+        appliedMoves.push(m);
+        continue;
+      }
+      const { state: stateAfterThens, extraActions, moveAgain } =
+        evalDeferredThens(ctx, postState, m, false);
+      state = stateAfterThens;
+      appliedMoves.push(m.withConsequence(extraActions, moveAgain));
     }
-    return state;
+    return { state, appliedMoves };
   }
 
   /**
