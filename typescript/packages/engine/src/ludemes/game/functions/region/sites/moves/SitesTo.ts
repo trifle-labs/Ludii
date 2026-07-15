@@ -70,7 +70,14 @@ export class SitesTo extends BaseRegionFunction {
       }
     }
 
-    return sites;
+    // @java SitesTo.java:50 — Region(int[]) is BitSet-backed, so duplicate
+    // to-sites collapse to one and iterate in ascending bit order. Shogun's
+    // 2-hop slide expansion reaches the same destination via multiple
+    // sub-path decompositions; the un-deduped array inflated the candidate
+    // set (40 vs Java's recorded 30) and every extra duplicate consumed a
+    // spurious context.rng() draw in FromTo's per-candidate (value Random)
+    // apply — desyncing the RNG stream from ply 0.
+    return Array.from(new Set(sites)).sort((a, b) => a - b);
   }
 
   /** @java SitesTo.isStatic() */

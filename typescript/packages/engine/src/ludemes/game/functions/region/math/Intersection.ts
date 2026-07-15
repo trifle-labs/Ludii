@@ -54,7 +54,9 @@ export class Intersection extends BaseRegionFunction {
       }
       return [...acc].sort((a, b) => a - b);
     }
-    const first = this.region1!.eval(ctx);
+    // Dedup the first operand (@java both operands are BitSet Regions) —
+    // matches the multi-region branch above.
+    const first = Array.from(new Set(this.region1!.eval(ctx)));
     const second = new Set(this.region2!.eval(ctx));
     return first.filter((s) => second.has(s)).sort((a, b) => a - b);
   }

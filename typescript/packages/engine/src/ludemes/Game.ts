@@ -782,6 +782,10 @@ export class Game implements Game {
             return w > 0 ? [{ what: w, count: countAt[site] ?? 0 }] : [];
           },
           this.equipment.totalSites,
+          // @java Game.isStacking() gate for ActionAdd's double
+          // updateTrackIndices() fall-through bug (see
+          // buildInitialOnTrackIndices doc).
+          (this as unknown as { usesStacking?: boolean }).usesStacking === true,
         );
         state = state.withTrackIndices(oti, tli);
       }

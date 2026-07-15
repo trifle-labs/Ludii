@@ -82,6 +82,20 @@ export function buildInitialOnTrackIndices(
   // component lands at its site's first ring index.
   piecesAt: (site: number) => ReadonlyArray<{ what: number; count: number }>,
   numCells: number,
+  // @java Core/src/other/action/move/ActionAdd.java:284-313 — ActionAdd.apply()
+  // does NOT return after calling applyStack() (line 285), so for a STACKING
+  // game (game.isStacking()==true) it falls through into the non-stack branch
+  // and calls updateTrackIndices(context) a SECOND time (line 313) —
+  // applyStack's own call is at line 348. Both add `count` at the site's
+  // FIRST ring index, so every start piece on a stacking game's internal-loop
+  // track is DOUBLE-counted there, and the duplicate never gets removed
+  // (departures remove 1 per move) — a permanent "ghost" at ring 0 that keeps
+  // TrackSiteMove's ascending first-count>0 scan resolving the site to its
+  // early-lap index even after the real piece laps and returns via a
+  // capture-to-start reset (Chaupar ply 41: Java plays from=21,to=2 off the
+  // ghosted ring 0; TS's clean count resolved ring 72). Reproducing the Java
+  // bug (not "fixing" it) is required for 1:1 parity. Logged for upstream.
+  isStackingGame = false,
 ): OnTrackIndices {
   // Dense allocation: onTrackIndices[trackIdx][what][ringIndex] = 0.
   const oti: number[][][] = [];
@@ -98,7 +112,9 @@ export function buildInitialOnTrackIndices(
   for (let site = 0; site < numCells; site += 1) {
     for (const { what, count } of piecesAt(site)) {
       if (what <= 0 || what >= numWhat) continue;
-      const addCount = count > 0 ? count : 1;
+      // @java ActionAdd.java:284-313 double-fires updateTrackIndices() for
+      // stacking games (see param doc above) — mirror the double-count.
+      const addCount = (count > 0 ? count : 1) * (isStackingGame ? 2 : 1);
       for (let trackIdx = 0; trackIdx < trackLocToIndex.length; trackIdx += 1) {
         const indices = trackLocToIndex[trackIdx]?.get(site);
         if (indices && indices.length > 0) {
