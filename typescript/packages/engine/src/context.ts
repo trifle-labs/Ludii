@@ -251,13 +251,48 @@ export class Context {
     return out;
   }
 
-  /** @java Context.containerState(cont) — per-site accessors delegating to State arrays. */
+  /**
+   * @java Context.containerState(cont) — per-site accessors delegating to State arrays.
+   *
+   * BUG FIX (Sik/Es-Sig/Sig family, ply-215-class divergence): Java's
+   * ContainerState overloads `what/who/state`(site, type) with a THREE-ARG
+   * form `what/who/state`(site, level, type) that reads the given LEVEL of
+   * a genuine per-level stack (ContainerStateStacks.java ~L200-260), not
+   * just the top/flat value. Callers that need level-aware reads — e.g.
+   * WhereSite.eval()'s `isStacking` branch (game/functions/ints/board/
+   * where/WhereSite.java) and WhereLevel.eval() — always pass the level
+   * as the 2nd argument and rely on it being honoured. This TS shim used
+   * to ignore any extra arguments and always return the flat/top value
+   * (`st.whats?.[site]`), so once a second piece stacked on TOP of a
+   * buried piece the buried piece became permanently unfindable by any
+   * `(where "X" P level:...)`-style / isStacking per-level scan — even
+   * though the underlying State already carries fully correct per-level
+   * data via `whatAtSiteLevel`/`whoAtSiteLevel`/`stateAtLevel`.
+   *
+   * Concretely: Sik's `(where "Stick" Mover)` stopped finding mover 4's
+   * own Stick sitting at level 0 of the Center stack the moment another
+   * player's Stick stacked on top of it (level 1), because the shim's
+   * `what(site, level, type)` call collapsed to `st.whats[site]` (the
+   * flat/top value = the OTHER player's Stick) regardless of the level
+   * argument. That made the `(= (Center) (where "Stick" Mover))` guard
+   * evaluate false, routing Sik's Bankor-move branch to a dead end and
+   * forcing a spurious Pass despite every other piece of state (owner/
+   * what/state channels, both flat and per-level) being fully correct.
+   *
+   * Fix: detect the 3-arg (site, level, type) call form and delegate to
+   * State's existing, already-correct per-level accessors instead of the
+   * flat arrays. The 2-arg (site, type) / 1-arg (site) forms are
+   * unchanged (still flat/top, matching Java's own two-arg overloads).
+   */
   public containerState(_cont: number): Record<string, any> {
+    const state = this.state;
     const st = this.state as unknown as {
       cells: readonly number[]; whats?: readonly number[]; stateAt?: readonly number[];
       rotationAt?: readonly number[]; valueAt?: readonly number[]; stacks?: readonly (readonly number[])[];
       countAt?: readonly number[];
     };
+    /** True when `arg` is the numeric level argument of a 3-arg call (site, level, type). */
+    const isLevelArg = (arg: unknown): arg is number => typeof arg === "number";
     return {
       // @java ContainerState.sizeStack(site) — a true per-level `stacks[]` array
       // reports its length; otherwise a flat cell counts as one level if owned.
@@ -277,12 +312,20 @@ export class Context {
           && (st.countAt?.[site] ?? 0) > 0) return 1;
         return 0;
       },
-      what: (site: number) => st.whats?.[site] ?? 0,
-      who: (site: number) => st.cells[site] ?? 0,
+      // @java ContainerState.what(site, type) / what(site, level, type).
+      what: (site: number, levelOrType?: unknown) =>
+        isLevelArg(levelOrType) ? state.whatAtSiteLevel(site, levelOrType) : (st.whats?.[site] ?? 0),
+      // @java ContainerState.who(site, type) / who(site, level, type).
+      who: (site: number, levelOrType?: unknown) =>
+        isLevelArg(levelOrType) ? state.whoAtSiteLevel(site, levelOrType) : (st.cells[site] ?? 0),
       isEmpty: (site: number) => (st.cells[site] ?? 0) === 0,
-      state: (site: number) => st.stateAt?.[site] ?? 0,
+      // @java ContainerState.state(site, type) / state(site, level, type).
+      state: (site: number, levelOrType?: unknown) =>
+        isLevelArg(levelOrType) ? state.stateAtLevel(site, levelOrType) : (st.stateAt?.[site] ?? 0),
       rotation: (site: number) => st.rotationAt?.[site] ?? 0,
-      value: (site: number) => st.valueAt?.[site] ?? 0,
+      // @java ContainerState.value(site, type) / value(site, level, type).
+      value: (site: number, levelOrType?: unknown) =>
+        isLevelArg(levelOrType) ? state.valueAtLevel(site, levelOrType) : (st.valueAt?.[site] ?? 0),
     };
   }
 

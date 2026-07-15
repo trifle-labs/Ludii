@@ -393,7 +393,22 @@ export class ActionMove extends BaseAction {
         srcArr.length > 0 ? state.stackAt(this.fromIndex, topLevel) : state.cellAt(this.fromIndex).owner;
       const topWhat =
         srcArr.length > 0 ? state.whatAtSiteLevel(this.fromIndex, topLevel) : state.whatAtSite(this.fromIndex);
-      if (topOwner === 0) return state;
+      // @java ActionMoveTopPiece (stacking) has no owner-based bail-out — it
+      // relocates whatever occupies the top level, `who` included, and Java
+      // legitimately stacks Neutral (owner 0) components (Santorini building
+      // levels; Sik/Es-Sig/Sig-family's Neutral "Bankor" piece riding atop —
+      // and eventually alone atop — the 5-piece start stack). The old
+      // `topOwner === 0` guard treated every Neutral-owned top level as "no
+      // piece here" and no-op'd the ENTIRE move: once Sik's Bankor became the
+      // sole occupant of its site, every one of its own relocations (mover
+      // takes control after reaching Center) silently did nothing — the
+      // piece stayed put while (where "Bankor" Neutral) kept resolving to
+      // the stale site, corrupting move generation for the rest of the trial
+      // (MOVE_MISMATCH ~4 plies after the first Bankor move). A site that is
+      // truly empty has BOTH topOwner and topWhat at 0 (Constants.NO_PIECE);
+      // gate on that pair instead so a real Neutral piece (topWhat > 0) is
+      // never mistaken for an empty site.
+      if (topOwner === 0 && topWhat === 0) return state;
       // @java ActionMoveTopPiece (stacking): owned remove at the from-top
       // level, add at the to-top level after the push.
       let popped = state.withOwnedRemoveLevel(topOwner, topWhat, this.fromIndex, topLevel);

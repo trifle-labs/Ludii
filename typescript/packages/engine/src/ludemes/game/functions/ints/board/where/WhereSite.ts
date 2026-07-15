@@ -106,11 +106,6 @@ export class WhereSite extends BaseIntFunction {
         state(site: number, level: number, type: SiteType | null): number;
         sizeStack(site: number, type: SiteType | null): number;
       };
-      state?: () => {
-        owned?: () => {
-          sites(playerId: number, what: number): { size(): number; getQuick(i: number): number };
-        };
-      };
     };
 
     const numSite = ctx.board?.().numSites() ?? context.game.numSites;
@@ -165,7 +160,6 @@ export class WhereSite extends BaseIntFunction {
       // Java: find what via matchingNameComponents for playerId
       // In TS fallback: scan state.cells for owner match, optionally filter by name
       const game = context.game as unknown as {
-        isStacking?: () => boolean;
         equipment?: {
           pieces?: Array<{ name: string; owner: number; index: number }>;
         };
@@ -195,48 +189,41 @@ export class WhereSite extends BaseIntFunction {
       }
 
       // Java: TIntArrayList sites = context.state().owned().sites(playerId, what)
-      // The ENGINE context exposes state as a PROPERTY (not a method) — guard
-      // the duck-type call or `ctx.state?.()` throws (Atomic Chess WhereSite).
-      const ownedSites = typeof (ctx as { state?: unknown }).state === "function"
-        ? ctx.state?.()?.owned?.()?.sites(playerId, what)
-        : undefined;
-      if (ownedSites) {
-        const isStacking = game.isStacking?.() ?? false;
-        if (isStacking && cs) {
-          for (let i = 0; i < ownedSites.size(); i++) {
-            const site = ownedSites.getQuick(i);
-            if (site < numSite) {
-              const stackSize = (cs as unknown as { sizeStack(s: number, t: SiteType | null): number }).sizeStack(site, this.type);
-              for (let level = 0; level < stackSize; level++) {
-                if ((cs as unknown as { what(s: number, l: number, t: SiteType | null): number }).what(site, level, this.type) === what) {
-                  if (localState === UNDEFINED_CONST
-                    || (cs as unknown as { state(s: number, l: number, t: SiteType | null): number }).state(site, level, this.type) === localState)
-                    return site;
-                }
-              }
-            }
-          }
-        } else {
-          for (let i = 0; i < ownedSites.size(); i++) {
-            const site = ownedSites.getQuick(i);
-            // @java WhereSite.java:194-196 — if (cs.what == what) if (localState
-            // == UNDEFINED || cs.state(site,type) == localState) return site.
-            // The prior port dropped the localState comparison, so any
-            // `(where "Piece" Mover state:N)` query always fell through to OFF.
-            if (site < numSite && context.state.what(site) === what) {
-              if (localState === UNDEFINED_CONST || context.state.stateAtSite(site) === localState) return site;
-            }
-          }
-        }
-      } else {
-        // Fallback linear scan (used when the engine context exposes `state` as
-        // a property rather than the Java-style `state()` method, so the
-        // owned-registry duck-type above is skipped). Must still honour the
-        // localState filter to match @java WhereSite.java:194-196.
-        for (let site = 0; site < numSite; site++) {
-          if (context.state.what(site) === what
-            && (localState === UNDEFINED_CONST || context.state.stateAtSite(site) === localState))
-            return site;
+      //
+      // BUG FIX (Sik/Es-Sig family, ply-215-class divergence; superseded fix,
+      // see git history in this scratch tree for the earlier, over-broad
+      // attempt that regressed Seesaw). The ENGINE's `context.state` is
+      // always a plain property (a live State object), never a Java-style
+      // `state()` method — so the old `typeof ctx.state === "function"`
+      // duck-type guard here was permanently false, and execution always
+      // fell through to a hand-rolled fallback that linear-scanned every
+      // site AND every stack level of the ENTIRE board unconditionally
+      // (not gated on `isStacking()`, unlike every other branch in this
+      // file and unlike Java's real WhereSite.java structure). That
+      // over-broad scan could match an unrelated piece occupying some
+      // OTHER level of some OTHER site purely because the scan visited
+      // every level everywhere — this is what silently regressed Seesaw
+      // (a non-stacking game) after the original Sik fix landed.
+      //
+      // The correct port of `context.state().owned().sites(playerId, what)`
+      // is `context.state.owned.positions(playerId)[what]` — State already
+      // maintains this exact per-(player,component) index (see
+      // `state.ts` `get owned()`, ~line 392), correctly enumerating every
+      // LEVEL a player owns of a component when the game genuinely stacks
+      // distinct pieces at a site, and degrading to a single level-0 entry
+      // for flat/count-pile sites — so no separate isStacking() branch or
+      // full-board scan is needed here at all: the registry only ever
+      // yields locations that actually belong to (playerId, what).
+      const positions = context.state.owned.positions(playerId);
+      const locs = positions[what] ?? [];
+      for (const loc of locs) {
+        const site = loc.site();
+        if (site >= numSite) continue;
+        // @java WhereSite.java:194-196 / :213-215 — if (cs.what(...) == what)
+        // if (localState == UNDEFINED || cs.state(...) == localState) return site.
+        if (localState === UNDEFINED_CONST
+          || context.state.stateAtLevel(site, loc.level()) === localState) {
+          return site;
         }
       }
     }

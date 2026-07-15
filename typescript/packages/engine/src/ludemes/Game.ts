@@ -534,6 +534,30 @@ export class Game implements Game {
   }
 
   /**
+   * @java Game.java:946 `Game.isStacking()` — `(gameFlags() & GameType.Stacking)
+   * != 0L || hasCard() || board().largeStack()`.
+   *
+   * BUG FIX (Sik/Es-Sig family, ply-215-class divergence): the compiled-tree
+   * `usesStacking` flag was already harvested onto every Game instance by
+   * play1to1.ts (`game.usesStacking = compileFlags.usesStacking`) and several
+   * call sites inside this very file duck-type-read it directly off `this`.
+   * But no *method* of this name existed, so every OTHER caller that
+   * duck-types `(context.game as {isStacking?: () => boolean}).isStacking?.()`
+   * — WhereSite.eval()'s per-level stacking branch, WhereLevel.eval(),
+   * CountStepsOnTrack.eval() — always saw `undefined`, coalesced to `false`
+   * via `?? false`, and silently fell through to the FLAT (top-of-stack-only)
+   * scan branch even for genuine per-level stacking games. That made any
+   * `(where "X" P)`-style query permanently blind to a piece buried under
+   * another piece on the same site (Sik: mover 4's own Stick, once another
+   * player's Stick stacked on top of it at Center, became unfindable by
+   * `(where "Stick" Mover)`, so the `(= (Center) (where "Stick" Mover))`
+   * guard went false even though the piece was still correctly there).
+   */
+  public isStacking(): boolean {
+    return (this as unknown as { usesStacking?: boolean }).usesStacking === true;
+  }
+
+  /**
    * @java Game.players()
    */
   public players(): GamePlayers {
@@ -693,10 +717,25 @@ export class Game implements Game {
     // @java ActionAdd.apply (onStacking) — replay staged level-2+ start
     // placements as stack pushes (withStackPush backfills level 0 from the
     // flat write; withOwnedAdd no-ops until the owned registry materializes).
+    // @java ContainerStateStacks.addItemGeneric accepts who=0 (a Neutral
+    // component level): Sik/Es-Sig/Sig-family games place a Neutral "Bankor"
+    // token as the LAST level of the 5-piece start stack at the board's
+    // outer site (`(place Stack items:<Player:init> 85) (place Stack
+    // "Bankor0" 85)`). The old `owner < 1` guard here silently dropped that
+    // level during start-rule materialization — same TS-invented mistake the
+    // withStackPush Santorini fix already corrected at the push primitive
+    // itself, but this loop has its own independent guard that still had it.
+    // Losing the level meant the flat cell/what channel got stuck on the
+    // second-to-last pushed level's owner (never advanced to Bankor's owner
+    // 0), and stacks[]/whatStacks[] were one level short of Java's from turn
+    // 0 — surfacing ~200 plies later as a Pass-only ply once mover4 reached
+    // the board Center and tried to take control of the (already-vanished)
+    // Bankor piece. Reject only genuinely invalid (negative/undefined)
+    // owners, matching withStackPush's own `owner < 0` guard.
     for (const [site, levels] of stackedStaging) {
       for (let li = 1; li < levels.length; li += 1) {
         const lv = levels[li]!;
-        if (lv.owner < 1) continue;
+        if (lv.owner < 0) continue;
         for (let c = 0; c < Math.max(1, lv.count); c += 1) {
           state = state.withStackPush(site, lv.owner, lv.what);
           state = state.withOwnedAdd(lv.owner, lv.what, site, state.stackSize(site) - 1);
