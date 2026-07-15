@@ -2046,7 +2046,13 @@ function hydrateEquipmentRegions(equipment: unknown, args: readonly unknown[]): 
     if (fn === null) continue;
     const name = region.name();
     if (typeof name === "string" && !/^RegionP?\d+$/i.test(name)) {
-      const key = name.toLowerCase();
+      // @java SitesEquipmentRegion.java:280 — bare-name lookup is
+      // region.name().equals(name), a case-SENSITIVE exact match. Preserve
+      // the declared case here so SitesEquipmentRegion.ts can replicate that
+      // exactness; folding case away made mistyped-case .lud refs (e.g.
+      // Pachisi's `(sites "castle")` vs. the declared "Castle" region)
+      // silently resolve instead of coming back empty, as Java does.
+      const key = name;
       const byOwner = namedPlayerRegions.get(key) ?? new Map<number, { eval(ctx: unknown): number[] }>();
       byOwner.set(owner, fn);
       namedPlayerRegions.set(key, byOwner);

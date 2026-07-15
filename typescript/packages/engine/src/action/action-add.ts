@@ -12,10 +12,26 @@
  * undo lands, those fields can be filled in.
  */
 
+import { maintainOnTrackIndicesForMove } from "../on-track-indices.js";
 import type { State } from "../state.js";
 import { ACTION_OFF, ACTION_UNDEFINED, BaseAction } from "./action.js";
 import type { ActionType } from "./action-type.js";
 import type { SiteType } from "./site-type.js";
+
+/**
+ * Java parity: ActionAdd.updateTrackIndices(Context) —
+ * Core/src/other/action/move/ActionAdd.java:394-409. Registers the newly
+ * placed piece in the per-track ring-index structure so a later
+ * `(trackSite Move …)` (bear-off / hand-entry checks) can find it. No-op
+ * when the game has no track-index structure allocated.
+ */
+function updateTrackIndices(state: State, what: number, count: number, to: number): State {
+  const oti = state.onTrackIndices;
+  const loc = state.trackLocToIndex;
+  if (oti === undefined || loc === undefined) return state;
+  const updated = maintainOnTrackIndicesForMove(oti, loc, what, count, ACTION_OFF, to);
+  return state.withOnTrackIndices(updated);
+}
 
 export interface ActionAddOptions {
   /** Target site index. */
@@ -133,6 +149,15 @@ export class ActionAdd extends BaseAction {
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
         next = next.withStateAt(this.toIndex, this.stateValue);
       }
+      // @java ActionAdd.java:348 (applyStack) + :313 (apply, fall-through) —
+      // a stacking-game Add genuinely calls updateTrackIndices TWICE (once
+      // per call site). OnTrackIndices.add is a true `+= count` increment
+      // (Core/src/other/state/track/OnTrackIndices.java:166-170), so this
+      // double call really does double the ring-index tally for stacking
+      // games — matching the double-count already replicated for initial
+      // placement in on-track-indices.ts's buildInitialOnTrackIndices.
+      next = updateTrackIndices(next, this.whatIndex, this.countValue, this.toIndex);
+      next = updateTrackIndices(next, this.whatIndex, this.countValue, this.toIndex);
       return next;
     }
     const currentWhat = state.whatAtSite(this.toIndex);
@@ -166,6 +191,10 @@ export class ActionAdd extends BaseAction {
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
         next = next.withStateAt(this.toIndex, this.stateValue);
       }
+      // @java ActionAdd.java:313 — apply() unconditionally calls
+      // updateTrackIndices at the end, including the occupied-site
+      // (non-stacking accumulate) branch.
+      next = updateTrackIndices(next, this.whatIndex, this.countValue, this.toIndex);
       return next;
     }
     // Java parity: ActionAdd.apply → cs.setSite(.., who, what, count, state,
@@ -206,6 +235,9 @@ export class ActionAdd extends BaseAction {
         if (loc >= 0) next = next.withCountAt(loc, 1);
       }
     }
+    // @java ActionAdd.java:313 — apply() unconditionally calls
+    // updateTrackIndices at the end (new-piece / empty-site branch too).
+    next = updateTrackIndices(next, this.whatIndex, this.countValue, this.toIndex);
     return next;
   }
 

@@ -75,18 +75,23 @@ export class SitesEquipmentRegion extends BaseRegionFunction {
       for (const [regionName, byOwner] of named) {
         // @java SitesEquipmentRegion.java — TWO match modes: the
         // player-qualified path (index != null, :245) uses
-        // region.name().contains(name) (substring); the bare-name path
-        // (index == null, :280) uses region.name().equals(name) (EXACT).
-        // Substring matching on the bare path bloated Los Escaques'
-        // (sites "Section1") into Section1 ∪ Section10 ∪ Section11 (84 sites
-        // instead of 28), sending SectionDistance down the wrong branch and
-        // mis-scoring every relative-position award. Compare
-        // case-insensitively on BOTH sides (Chameleons' "RedTiles" lesson).
+        // region.name().contains(name) (substring, case-insensitive here per
+        // the Chameleons "RedTiles" lesson); the bare-name path (index ==
+        // null, :280) uses region.name().equals(name) (EXACT, case-
+        // SENSITIVE). Substring matching on the bare path bloated Los
+        // Escaques' (sites "Section1") into Section1 ∪ Section10 ∪
+        // Section11 (84 sites instead of 28), sending SectionDistance down
+        // the wrong branch and mis-scoring every relative-position award —
+        // the qualified path must stay case-insensitive substring. The bare
+        // path must stay case-SENSITIVE and exact: Pachisi's
+        // `(sites "castle")` (lowercase typo vs. the declared "Castle"
+        // region) resolves to an EMPTY region in Java, silently disabling
+        // its Castle-protection check — matching that (rather than "fixing"
+        // the typo) is required for move-for-move parity.
         {
-          const lc = regionName.toLowerCase();
           const matches = this.index !== null
-            ? (needle === "" || lc.includes(needle))
-            : (needle === "" || lc === needle);
+            ? (needle === "" || regionName.toLowerCase().includes(needle))
+            : (this.name === "" || regionName === this.name);
           if (!matches) continue;
         }
         matchedName = true;

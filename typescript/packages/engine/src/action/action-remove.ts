@@ -75,12 +75,27 @@ export class ActionRemove extends BaseAction {
     // a multi-piece stack so the default level-less remove is unchanged.
     if (this.level >= 0 && (state.stacks[this.toIndex]?.length ?? 0) > 1) {
       let nx = state;
+      // The removed level's component id, read before the level is popped,
+      // so the track-index structure can drop it — mirrors the flat-clear
+      // path below (@java ActionRemoveLevel.java:220-235 also maintains
+      // onTrackIndices for an explicit-level bear-off; this branch omitted
+      // it, silently leaving a stale ring-index entry for the borne-off
+      // piece and blocking its later hand-entry move).
+      const removedLevelWhat = nx.whatAtSiteLevel(this.toIndex, this.level);
       if (nx.ownedEntries !== undefined) {
         const own = nx.stackAt(this.toIndex, this.level);
         const wht = nx.whatAtSiteLevel(this.toIndex, this.level);
         nx = nx.withOwnedRemoveLevel(own, wht, this.toIndex, this.level);
       }
-      return nx.withStackPop(this.toIndex, this.level);
+      nx = nx.withStackPop(this.toIndex, this.level);
+      const oti = nx.onTrackIndices;
+      const loc = nx.trackLocToIndex;
+      if (oti !== undefined && loc !== undefined && removedLevelWhat !== 0) {
+        nx = nx.withOnTrackIndices(
+          maintainOnTrackIndicesForRemove(oti, loc, removedLevelWhat, this.toIndex),
+        );
+      }
+      return nx;
     }
     // @java ContainerStateStacks.java:694-711 — remove() pops only the TOP
     // stack level, unconditionally; there is no registry-presence gate. The

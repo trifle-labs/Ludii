@@ -135,15 +135,11 @@ export class MaxMoves implements MovesFunction {
     // Java: contextCopy.game().moves(contextCopy)
     // @java MaxMoves.java:143 — contextCopy.game().moves(contextCopy); no
     // empty-list early return: Java falls through to max-of-children (0).
-    // Our Game.moves injects a synthetic forced-pass when the play rule
-    // yields nothing (Java returns the empty Moves there) — treat that
-    // single-pass result as Java's empty list.
-    let legalMoves = ctx.game.moves(ctx) as readonly Move[];
-    if (
-      legalMoves.length === 1 &&
-      legalMoves[0]!.actions.length === 1 &&
-      legalMoves[0]!.actions[0]!.actionType() === "Pass"
-    ) legalMoves = [];
+    // A synthetic forced-pass IS a legal move in Java too (it recurses one
+    // level deeper through it, same as any other move) — do not special-case
+    // it away here, doing so undercounts replay depth for games whose only
+    // legal continuation at a given depth is a pass (e.g. Buffa de Baldrac).
+    const legalMoves = ctx.game.moves(ctx) as readonly Move[];
 
     const replayCounts: number[] = new Array(legalMoves.length).fill(0);
 
