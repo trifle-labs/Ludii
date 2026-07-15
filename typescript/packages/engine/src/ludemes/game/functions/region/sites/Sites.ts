@@ -1015,6 +1015,13 @@ export class Sites extends BaseRegionFunction {
               }
             }
             ctx._evalTo = oldTo;
+            // @java SitesDirection.java:113-127 — Java passes the origin
+            // element as a direct PARAMETER; the TS per-loc _evalFrom rebind
+            // (see loop head) must be restored or the LAST origin leaks into
+            // sibling evaluations sharing this ctx (Morpharaoh: intersection's
+            // second term read the leaked loc; Hordes Realm: the next move
+            // Select candidate's Between/Steps checks).
+            ctx._evalFrom = oldFrom;
             return out;
           }
         })();
