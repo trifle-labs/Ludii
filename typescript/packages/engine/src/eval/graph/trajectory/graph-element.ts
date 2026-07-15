@@ -67,9 +67,26 @@ export class VertexEl implements GElement {
 
 export class EdgeEl implements GElement {
   public readonly siteType = SiteType.Edge;
-  public readonly faces: FaceEl[] = [];
+  // @java Edge.java:20-27 — exactly two SINGLE-VALUE slots, not an
+  // unbounded accumulating list. Graph.findOrAddFace (Graph.java:1167-1230)
+  // calls setLeft/setRight UNCONDITIONALLY, so a face that reuses an
+  // already-existing edge (Celtic's corner-rounding pass reusing a
+  // perimeter edge as a rounded-corner triangle's closing side,
+  // Celtic.java:205-277) OVERWRITES whichever slot a previously-built face
+  // had claimed. "Last claimant wins, eviction is silent" is authoritative
+  // reference behaviour: Java's own celtic(4) reports boundary cell 7's
+  // edges to cells 3/4 as one-sided (otherFace == null) even though those
+  // cells geometrically touch.
+  public left: FaceEl | null = null;
+  public right: FaceEl | null = null;
   /** @java Edge.cells() — the incident cells (faces) bordering this edge. */
-  public get cells(): FaceEl[] { return this.faces; }
+  public get cells(): FaceEl[] {
+    const out: FaceEl[] = [];
+    if (this.left) out.push(this.left);
+    if (this.right) out.push(this.right);
+    return out;
+  }
+  public get faces(): FaceEl[] { return this.cells; }
 
   public constructor(
     public readonly id: number,
@@ -87,9 +104,22 @@ export class EdgeEl implements GElement {
     return this.va.id === vid ? this.vb : this.va;
   }
 
+  /**
+   * @java Graph.findOrAddFace (Graph.java:~1216-1224):
+   *   if (edge.vertexA().id() == vert.id()) edge.setRight(newFace);
+   *   else                                  edge.setLeft(newFace);
+   * `vert` is the FROM vertex of this edge in the face's cyclic winding
+   * order. Overwrites unconditionally, exactly like Java.
+   */
+  public claim(face: FaceEl, fromVertexId: number): void {
+    if (this.va.id === fromVertexId) this.right = face;
+    else this.left = face;
+  }
+
   /** @java Edge.otherFace(int) */
   public otherFace(faceId: number): FaceEl | null {
-    for (const f of this.faces) if (f.id !== faceId) return f;
+    if (this.left !== null && this.left.id === faceId) return this.right;
+    if (this.right !== null && this.right.id === faceId) return this.left;
     return null;
   }
 }
@@ -185,7 +215,10 @@ export class GraphTopology {
         const edge = edgeByKey.get(key(a, b));
         if (edge) {
           face.edges.push(edge);
-          if (!edge.faces.includes(face)) edge.faces.push(face);
+          // @java Graph.findOrAddFace: setRight/setLeft keyed off which
+          // endpoint is vertexA of the (single, shared) Edge object —
+          // NOT off which face got here first. Unconditional, like Java.
+          edge.claim(face, a);
         }
       }
       this.faceEls.push(face);
