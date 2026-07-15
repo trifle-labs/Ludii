@@ -106,10 +106,19 @@ export class Promote implements MovesFunction {
       return [];
     }
 
+    // @java ActionPromote.java:70,97,102,136,176,212,226 — `who` is ALWAYS
+    // the promoted component's OWN static owner
+    // (context.components()[newWhat].owner()); Promote.java:183 passes no
+    // owner at all. Hardcoding mover broke Wild Draughts' capture-by-
+    // promotion `(promote (between) (piece "DoubleCounter") Prev)` — the
+    // jumped OPPONENT piece became the mover's King.
+    const promoPieces = (ctx.game as unknown as {
+      equipment?: { pieces?: readonly { name: string; owner: number; index: number }[] };
+    }).equipment?.pieces ?? [];
     const moves: LudiiMove[] = [];
     for (const what of whats) {
-      // ActionPromote(to, who, what) — mover is the owner, what is the piece index
-      const actionPromote = new ActionPromote(location, mover, what);
+      const who = promoPieces.find((p) => p.index === what)?.owner ?? mover;
+      const actionPromote = new ActionPromote(location, who, what);
       const move = new LudiiMove({
         id: `promote:${mover}:${location}:${what}`,
         label: `Promote(${location}→${what})`,

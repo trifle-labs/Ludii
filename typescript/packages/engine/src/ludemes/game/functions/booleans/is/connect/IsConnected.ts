@@ -263,9 +263,13 @@ export class IsConnected implements BooleanFunction {
     // @java IsConnected.eval:103-121 — from = startLocationFn (= at ?? LastTo);
     // invalid or EMPTY start site → false. `who` (the owner of the start site)
     // is the player whose group is flooded.
+    // @java IsConnected.java:107,123 — startLocationFn = at ?? new LastTo();
+    // LastTo.java:48-61 reads trial.lastMove().toNonDecision(), NOT any
+    // transient scratch (ctx._evalTo is reset before end rules run —
+    // Morpharaoh's final-ply connection saw no start site, wrong winner).
     const from = this.atFn !== null
       ? this.atFn.eval(ctx)
-      : ((ctx as unknown as { _evalTo?: number })._evalTo ?? -1);
+      : (ctx.trial.lastMove()?.toNonDecision() ?? -1);
     if (from < 0) return false;
     const who = ownerAt(ctx, from);
     if (who <= 0) return false;

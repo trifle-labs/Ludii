@@ -77,6 +77,8 @@ export class Context {
    * @java other/context/Context.java — player()/setPlayer(int)
    */
   public _evalPlayer?: number;
+  /** See EvalScratch._sitesDirectionOrigin (ludemes/base.ts). */
+  public _sitesDirectionOrigin?: number;
 
   /**
    * Java parity: Context.region() / setRegion(Region).
@@ -366,6 +368,7 @@ export class Context {
     ctx._evalBetween = this._evalBetween;
     ctx._evalTrack = this._evalTrack;
     ctx._evalPlayer = this._evalPlayer;
+    ctx._sitesDirectionOrigin = this._sitesDirectionOrigin;
     ctx._evalRegion = this._evalRegion;
     return ctx;
   }

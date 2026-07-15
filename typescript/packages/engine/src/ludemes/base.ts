@@ -47,6 +47,14 @@ export interface EvalScratch {
    * @java other/context/Context.java — player()/setPlayer(int)
    */
   _evalPlayer?: number;
+  /**
+   * Non-Java-parity scratch (Java threads this as an explicit parameter —
+   * SitesDirection.java's `element` arg to convertToAbsolute). Set by
+   * Sites.ts constructDirection's per-origin walk so Difference.ts resolves
+   * per-site category tokens WITHOUT clobbering the ambient _evalFrom/_evalTo
+   * that nested (directions Cell from: to:) expressions read.
+   */
+  _sitesDirectionOrigin?: number;
 }
 
 // ---------------------------------------------------------------------------

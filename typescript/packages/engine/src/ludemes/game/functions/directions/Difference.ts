@@ -62,7 +62,13 @@ export class Difference implements DirectionsFunction {
       // step Orthogonal regardless of angle — at site 30 Java's Diagonal
       // is only {SE,NW}, so (difference Forwards Diagonal) keeps the NE
       // edge-step 30>40. Global expansion wrongly subtracted it.
-      const from = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
+      // @java SitesDirection.java:105-127 — the per-loc walk origin arrives
+      // via the dedicated _sitesDirectionOrigin scratch (see Sites.ts
+      // constructDirection); fall back to the ambient _evalFrom for callers
+      // outside a sites-Direction walk.
+      const from = (ctx as unknown as { _sitesDirectionOrigin?: number })._sitesDirectionOrigin
+        ?? (ctx as unknown as { _evalFrom?: number })._evalFrom
+        ?? -1;
       type ElLike = { supportedDirections?: (rel?: string) => Array<{ toAbsolute?: () => string } | string> };
       const el: ElLike | undefined = from >= 0
         ? (topo as unknown as { getGraphElements?: (t: string) => ElLike[] })?.getGraphElements?.(playType)?.[from]

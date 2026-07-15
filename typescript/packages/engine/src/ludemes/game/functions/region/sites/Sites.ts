@@ -981,7 +981,7 @@ export class Sites extends BaseRegionFunction {
             const seen = new Set<number>();
             const add = (site2: number): void => { if (!seen.has(site2)) { seen.add(site2); out.push(site2); } };
             const oldTo = ctx._evalTo;
-            const oldFrom = ctx._evalFrom;
+            const oldOrigin = (ctx as unknown as { _sitesDirectionOrigin?: number })._sitesDirectionOrigin;
             for (const loc of origins) {
               if (loc < 0) continue;
               // @java SitesDirection.java:113-127 — direction resolution
@@ -993,7 +993,18 @@ export class Sites extends BaseRegionFunction {
               // dual board resolved "Diagonal" with the OUTER Results-bound
               // from (site 40, ['SSE','E']) instead of the nested origin
               // (site 39, ['SSW','NNW','W']) — empty region, wrong legality.
-              ctx._evalFrom = loc;
+              // @java SitesDirection.java:105-127 — Java passes the current
+              // loc's TopologyElement as an EXPLICIT PARAMETER to
+              // convertToAbsolute; it never calls context.setFrom(). Thread
+              // the per-loc origin through a DEDICATED scratch field so the
+              // AMBIENT ctx._evalFrom/_evalTo stay visible to nested dynamic
+              // direction expressions like (directions Cell from:(from)
+              // to:(to)) — clobbering _evalFrom here made Hordes Realm's
+              // nested AvailableSites see from===to, return no directions,
+              // and reject every distance>=2 column attack. Difference.eval
+              // reads this field with a fallback to _evalFrom (preserving
+              // the Morpharaoh Cairo-board per-site Diagonal fix).
+              (ctx as unknown as { _sitesDirectionOrigin?: number })._sitesDirectionOrigin = loc;
               const dirNames = directionNames(directions ?? null, ctx);
               if (asBool(includedFn, ctx, false)) add(loc);
               for (const dn of dirNames) {
@@ -1013,13 +1024,7 @@ export class Sites extends BaseRegionFunction {
               }
             }
             ctx._evalTo = oldTo;
-            // @java SitesDirection.java:113-127 — Java passes the origin
-            // element as a direct PARAMETER; the TS per-loc _evalFrom rebind
-            // (see loop head) must be restored or the LAST origin leaks into
-            // sibling evaluations sharing this ctx (Morpharaoh: intersection's
-            // second term read the leaked loc; Hordes Realm: the next move
-            // Select candidate's Between/Steps checks).
-            ctx._evalFrom = oldFrom;
+            (ctx as unknown as { _sitesDirectionOrigin?: number })._sitesDirectionOrigin = oldOrigin;
             return out;
           }
         })();
