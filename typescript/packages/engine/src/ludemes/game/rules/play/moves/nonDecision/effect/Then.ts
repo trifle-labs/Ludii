@@ -109,6 +109,7 @@ export function evalDeferredThens(
   ctx: Context,
   postState: ThenState,
   move: Move,
+  storeMove = true,
 ): { state: ThenState; extraActions: import("../../../../../../../action/index.js").Action[]; moveAgain: boolean } {
   let state = postState;
   const extraActions: import("../../../../../../../action/index.js").Action[] = [];
@@ -122,7 +123,16 @@ export function evalDeferredThens(
     // Backstop against a consequence regenerating itself forever.
     if (depth > 16) return;
     for (const gen of thens) {
-      const postTrial = (ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(move, false, -1) ?? ctx.trial;
+      // @java Move.java:514-522 — trial.addMove(this) only runs `if (store)`;
+      // when store=false (While.java:71, Do.java:141 generateAndApplyPreMoves)
+      // lastMove() must stay pinned to whatever was last genuinely stored, so
+      // internally-simulated moves must NOT be fabricated onto the trial here
+      // (Vanguard's Goat bounce: the hop's own then read (last To) as the
+      // hop's destination instead of the outer Step's, laying the trailing
+      // Dot on an occupied site where ActionAdd silently no-ops).
+      const postTrial = storeMove
+        ? ((ctx.trial as unknown as { withMove?: (mv: Move, over: boolean, winner: number) => typeof ctx.trial }).withMove?.(move, false, -1) ?? ctx.trial)
+        : ctx.trial;
       const postCtx = new (ctx.constructor as new (...a: unknown[]) => Context)(ctx.game, state, postTrial, ctx.rng);
       const src = ctx as Context & { _radials?: unknown; _trajectories?: unknown };
       const aug = postCtx as Context & { _radials?: unknown; _trajectories?: unknown; _thenContextDepth?: number };
@@ -195,8 +205,8 @@ export function evalDeferredThens(
  * applied during generation to inspect the resulting position.
  * @java Core/src/other/move/Move.java:apply
  */
-export function applyMoveWithThens(ctx: Context, m: Move, base?: ThenState): ThenState {
+export function applyMoveWithThens(ctx: Context, m: Move, base?: ThenState, storeMove = true): ThenState {
   const postState = m.applyTo(base ?? ctx.state, ctx.rng);
   if (m.deferredThens.length === 0) return postState;
-  return evalDeferredThens(ctx, postState, m).state;
+  return evalDeferredThens(ctx, postState, m, storeMove).state;
 }

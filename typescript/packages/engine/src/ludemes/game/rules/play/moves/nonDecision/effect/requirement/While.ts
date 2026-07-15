@@ -83,7 +83,10 @@ export class While implements MovesFunction {
         // Apply the move to the live copy of the context so the condition
         // can detect when to stop.
         // @java Move.apply — simulated application includes then() consequences
-        const nextState = applyMoveWithThens(liveCtx, m);
+        // @java While.java:71 — m.apply(newContext, false): internal loop
+        // iterations are store=false, so lastMove() stays pinned to the
+        // outer decision move throughout then-resolution (Move.java:514-522).
+        const nextState = applyMoveWithThens(liveCtx, m, undefined, false);
         liveCtx = new Context(ctx.game, nextState, ctx.trial, ctx.rng);
         // Carry the board topology scratch to the fresh context (same fix as
         // Do.ts): without it the SECOND iteration's conditions evaluate with

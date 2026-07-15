@@ -249,8 +249,9 @@ export class Do implements MovesFunction {
   ): import("../../../../../../../../state.js").State {
     let state = ctx.state;
     for (const m of preMoves) {
-      // @java Move.apply — prior moves apply with their then() consequences
-      state = applyMoveWithThens(ctx, m, state);
+      // @java Do.java:141 generateAndApplyPreMoves — m.apply(applyContext,
+      // false): preMoves are store=false; must not advance lastMove().
+      state = applyMoveWithThens(ctx, m, state, false);
     }
     return state;
   }
