@@ -9,96 +9,28 @@
  * @java game/equipment/component/tile/Domino.java — constructor/getValue/getValue2/isDoubleDomino/isTile/isDomino/numSides
  */
 
-import { Item, type RoleType, type GameLike } from "../../Item.js";
+import type { RoleType, GameLike } from "../../Item.js";
 import type { MovesFunction } from "../../../../base.js";
-
-/** Java Constants.OFF = -1 */
-const OFF = -1;
-
-/** Java Constants.UNDEFINED = -1 */
-const UNDEFINED = -1;
+import { Component } from "../Component.js";
+import type { StepType } from "../../../types/board/StepType.js";
 
 /**
- * Mirrors Java's metadata.graphics.util.ComponentStyleType.
- * @java metadata.graphics.util.ComponentStyleType
+ * @java Domino.java:55–61 — the domino's fixed large-piece walk, tracing its
+ * 2(wide)×4(long) 8-cell footprint (4 cells per pip value) in a boustrophedon
+ * pattern: F,R,F,R,F,L,F,L,F,R,F,R,F. This was previously omitted ("not
+ * modelled in the TS port") because this file defined its own local stub
+ * `Component` base class instead of importing the real one (Component.ts),
+ * so there was nowhere to store a walk at all. Without it, `Component.walk()`
+ * returns null for every domino, `equipment.pieces[i].walks` stays undefined
+ * (Equipment.ts:1060-1061), and Add.ts/FromTo.ts's `p.walks && p.walks.length
+ * > 0` large-piece gate never fires for domino placement — every domino move
+ * silently degenerated into a plain single-cell FromTo with no footprint and
+ * no orientation state (validated: `stateAtSite` stayed 0 and only the anchor
+ * cell left the empty set after placing a domino).
  */
-export type ComponentStyleType =
-  | "Piece" | "Card" | "Die" | "Domino" | "Tile" | "LargePiece" | "Hand";
-
-/**
- * Abstract component base mirroring Java's Component class (fields needed for
- * Domino). Extends Item.
- *
- * @java game/equipment/component/Component.java
- */
-abstract class Component extends Item {
-  /** @java Component.generator — optional move generator */
-  protected _generator: MovesFunction | null;
-
-  /** @java Component.generator() */
-  public generator(): MovesFunction | null {
-    return this._generator;
-  }
-
-  /** @java Component.nameWithoutNumber */
-  public nameWithoutNumber: string;
-
-  /** @java Component.style */
-  protected style: ComponentStyleType;
-
-  /** @java Component.maxState */
-  public readonly maxState: number;
-
-  /** @java Component.maxCount */
-  public readonly maxCount: number;
-
-  /** @java Component.maxValue */
-  public readonly maxValue: number;
-
-  /**
-   * @java game/equipment/component/Component.java constructor
-   */
-  protected constructor(
-    label: string | null,
-    role: RoleType,
-    generator: MovesFunction | null,
-    maxState: number | null,
-    maxCount: number | null,
-    maxValue: number | null,
-  ) {
-    super(label, UNDEFINED, role);
-    this._generator        = generator;
-    this.nameWithoutNumber = (label ?? "").replace(/\d+$/, "");
-    this.style             = "Piece";
-    this.maxState          = maxState !== null ? maxState : OFF;
-    this.maxCount          = maxCount !== null ? maxCount : OFF;
-    this.maxValue          = maxValue !== null ? maxValue : OFF;
-    this.setType("Component");
-  }
-
-  /** @java Component.isCard() */
-  public isCard(): boolean  { return false; }
-  /** @java Component.isDie() */
-  public isDie(): boolean   { return false; }
-  /** @java Component.isDomino() */
-  public isDomino(): boolean { return false; }
-  /** @java Component.isTile() */
-  public isTile(): boolean  { return false; }
-  /** @java Component.getValue() */
-  public getValue(): number { return OFF; }
-  /** @java Component.getValue2() */
-  public getValue2(): number { return OFF; }
-  /** @java Component.numSides() */
-  public numSides(): number { return OFF; }
-  /** @java Component.isDoubleDomino() */
-  public isDoubleDomino(): boolean { return false; }
-  /** @java Component.styleType() */
-  public styleType(): ComponentStyleType { return this.style; }
-  /** @java Component.missingRequirement(Game) */
-  public missingRequirement(_game: GameLike & { addRequirementToReport?: (msg: string) => void }): boolean {
-    return false;
-  }
-}
+const DOMINO_WALK: StepType[][] = [
+  ["F", "R", "F", "R", "F", "L", "F", "L", "F", "R", "F", "R", "F"],
+];
 
 /**
  * A single domino tile component.
@@ -127,9 +59,8 @@ export class Domino extends Component {
     value2: number,
     generator: MovesFunction | null = null,
   ) {
-    // @java Domino.java:55–61 — super(...) with a fixed walk for large-piece shape
-    // The walk is not modelled in the TS port (no StepType enum needed).
-    super(name, role, generator, null, null, null);
+    // @java Domino.java:55–61 — super(name, role, WALK, null, generator, null, null, null);
+    super(name, role, DOMINO_WALK, null, generator, null, null, null);
 
     this._value  = value;
     this._value2 = value2;
@@ -138,7 +69,7 @@ export class Domino extends Component {
     this.nameWithoutNumber = name.replace(/\d+$/, "");
 
     // @java Domino.java:67 — style = ComponentStyleType.Domino
-    this.style = "Domino";
+    this.setStyle("Domino");
   }
 
   /** @java Domino.clone() */
