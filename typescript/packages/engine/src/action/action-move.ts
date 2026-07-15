@@ -437,7 +437,16 @@ export class ActionMove extends BaseAction {
       // at level 1 with state 0; the lud's level-0 self-repair couldn't fire
       // because P1's level 0 was already 1 — so ply 90 offered only Pass).
       // Same fix as the sibling branch below (line ~549 stateTop).
-      const srcSiteState = !multiStack && srcCount <= 1 ? state.stateTop(this.fromIndex) : 0;
+      // @java ActionMoveLevelFrom.java:445 — the state read is PER-LEVEL and
+      // UNCONDITIONAL: Java never special-cases a departure from the top of
+      // an already-multi-occupant source pile. Excluding `multiStack` zeroed
+      // a Sik Stick's activation flag whenever it left the top of a 2+
+      // occupant pile (ply 166: mover 3's Stick 17->13 lost its "1"; the
+      // corruption surfaced two moves later as a spurious Pass-only ply 174).
+      // topLevel is computed from the pre-pop state, so it is exactly the
+      // vacated level; count-piles (srcCount>1) keep the 0 (no per-instance
+      // state).
+      const srcSiteState = srcCount <= 1 ? state.stateAtLevel(this.fromIndex, topLevel) : 0;
       const topValue =
         srcArr.length > 0 ? state.valueAtLevel(this.fromIndex, topLevel) : state.valueAtSite(this.fromIndex);
       const fromRow: number[] = [];
