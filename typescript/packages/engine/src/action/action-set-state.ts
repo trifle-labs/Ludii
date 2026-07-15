@@ -58,6 +58,14 @@ export class ActionSetState extends BaseAction {
     // @java ActionSetState.java:107-121 — stacking + level != UNDEFINED writes
     // the state channel AT that level (per-level stateStacks), not the scalar.
     if (this.levelIndex >= 0) {
+      // @java ActionSetState.java:107-108 — `if (level < cs.sizeStack(...))`:
+      // an out-of-range level is a silent NO-OP. TS's withStateAtLevel padded
+      // the stateStacks row with zeros to REACH the stale level (a sequential
+      // then-pair: CapturedPiecesFollowCapturingPiece pops the stack, then
+      // UnsetCapturingPieces' SetState targets the now-vanished level),
+      // materializing a phantom entry that desynced stacks vs stateStacks
+      // and surfaced ~1000 plies later (Aj family + Bul).
+      if (this.levelIndex >= state.stackSize(this.toIndex)) return state;
       return state.withStateAtLevel(this.toIndex, this.levelIndex, this.stateValue);
     }
     return state.withStateAt(this.toIndex, this.stateValue);
