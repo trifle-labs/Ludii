@@ -451,6 +451,37 @@ export class Move {
     return this.decisionAction()?.who() ?? this.mover;
   }
 
+  /**
+   * @java Core/src/other/move/Move.java:1059-1066 — Move.levelFrom() scans
+   * `actions` for the first `isDecision()` action and returns its
+   * `levelFrom()`, defaulting to 0. The concrete stacking actions
+   * (ActionMoveLevelFrom, ActionMoveLevelFromLevelTo) already implement
+   * `levelFrom()`; this accessor was missing from `Move` itself, so
+   * `(last LevelFrom)`/`(last LevelTo)` (LastLevelFrom/LastLevelTo duck-type
+   * on trial.lastMove()) always returned UNDEFINED and every
+   * `(set State at:… level:(last LevelTo) …)` write fell back to the FLAT
+   * state channel instead of the per-level one (Sik/Es-Sig/Sig wa Duqqan
+   * stack-activation bug: stale flat bits fired phantom moves and hid real
+   * ones).
+   */
+  public levelFrom(): number {
+    // Java's concrete action getters clamp UNDEFINED to GROUND_LEVEL —
+    // ActionMoveTopPiece.java:917-920, ActionMoveStacking.java — so a
+    // level-less move reports level 0, never -1. TS BaseAction returns the
+    // raw UNDEFINED default, so clamp here (equivalent: every TS action that
+    // really carries a level stores a >= 0 value).
+    const v = this.decisionAction()?.levelFrom() ?? 0;
+    return v < 0 ? 0 : v;
+  }
+
+  /** @java Core/src/other/move/Move.java:1116-1123 — Move.levelTo(); see
+   * levelFrom() above for the parity gap this closes. Clamp per
+   * ActionMoveTopPiece.java:923-926 (UNDEFINED → GROUND_LEVEL). */
+  public levelTo(): number {
+    const v = this.decisionAction()?.levelTo() ?? 0;
+    return v < 0 ? 0 : v;
+  }
+
   public count(): number {
     return this.decisionAction()?.count() ?? 1;
   }
