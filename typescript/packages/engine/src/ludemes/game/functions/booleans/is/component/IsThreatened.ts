@@ -80,6 +80,8 @@ export class IsThreatened extends BaseBooleanFunction {
     const originalEvalFrom = evCtx._evalFrom;
     const originalEvalTo = evCtx._evalTo;
     const originalEvalValue = evCtx._evalValue;
+    // Set when the probe temporarily freezes state.next (restored in finally).
+    let nextWasFrozen = false;
     try {
       const numPlayers =
         typeof (context.game as unknown as { numPlayers?: unknown }).numPlayers === "function"
@@ -87,6 +89,26 @@ export class IsThreatened extends BaseBooleanFunction {
           : Number((context.game as unknown as { numPlayers?: number }).numPlayers ?? 2);
       const originalMover = context.state.mover;
       const originalPrev = (context.state as unknown as { prev: number }).prev;
+      // @java State.java's `next` is a PERSISTENT snapshot, freshly recomputed
+      // by Game.java:3209-3216 immediately after every real mover advance and
+      // never touched by this TempContext branch (IsThreatened.java:102-171
+      // never calls setNext). TS instead zeroes state.next after every real
+      // move (Game.ts — "clear next after consumption"), so "Next"-role
+      // lookups evaluated below — AFTER mover is mutated to `enemy` —
+      // recompute live off the mutated mover and resolve backwards (to
+      // `owner` instead of `enemy` in the 2-player case; Dice Shogi ply-9
+      // move-gen divergence). Freeze the Java-faithful value derived from the
+      // REAL pre-mutation mover for the duration of the threat probe.
+      if (!(context.state as unknown as { next: number }).next && numPlayers > 0) {
+        let frozenNext = (originalMover % numPlayers) + 1;
+        let guard = numPlayers;
+        const st = context.state as unknown as { next: number; activePlayer?: (p: number) => boolean };
+        while (st.activePlayer && !st.activePlayer(frozenNext) && guard-- > 0) {
+          frozenNext = (frozenNext % numPlayers) + 1;
+        }
+        st.next = frozenNext;
+        nextWasFrozen = true;
+      }
       // @java players().get(owner).enemies() — TEAMMATES are not enemies.
       // Chatrang ((set Team 1 {P1 P3})) starts with the two allied kings
       // adjacent; counting P3 as P1's enemy made ("IsInCheck" King Mover)
@@ -124,6 +146,8 @@ export class IsThreatened extends BaseBooleanFunction {
       if (stalematedRef && originalStalemated) {
         for (let i = 0; i < originalStalemated.length; i += 1) stalematedRef[i] = originalStalemated[i]!;
       }
+      // Restore the pre-probe next (only mutated when it was 0 going in).
+      if (nextWasFrozen) (context.state as unknown as { next: number }).next = 0;
       // @java restore the caller's from/to/value that game.moves() clobbered.
       evCtx._evalFrom = originalEvalFrom;
       evCtx._evalTo = originalEvalTo;

@@ -805,6 +805,16 @@ export class ArgCompiler {
       if ((componentNames === null || componentNames.length === 0) && componentNode && isString(componentNode)) {
         componentNames = [(componentNode as { value: string }).value];
       }
+      // @java SitesOccupied.java:85,99,126 — component: also accepts an
+      // IntFunction piece INDEX ((sites Occupied by:All component:2) —
+      // Spuzzle's per-color adjacency). Only the string name form was wired;
+      // the IntFunction slot was hardcoded null below, so the filter was
+      // silently dropped and the region degraded to "any occupied site of
+      // any component" (Spuzzle wrongly excluded the two placement sites
+      // adjacent to BOTH occupied sites).
+      const componentFn = componentNode && !isString(componentNode)
+        ? this.compileMaybe(componentNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+        : null;
       // @java @Opt @Name Boolean top [True] — the intercept dropped it, so
       // top:False (Seesaw's buried-Hex scan) silently behaved as top:True.
       const topNode = parsed.argsIn.find((arg) => arg.parameterName === "top")?.node;
@@ -817,7 +827,8 @@ export class ArgCompiler {
         byRole as never,
         null,
         containerName as never,
-        null, null,
+        componentFn as never,
+        null,
         (componentNames && componentNames.length > 0 ? componentNames : null) as never,
         topVal as never,
         (((): string | null => {

@@ -709,6 +709,27 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     if (candidates.length === 1) return candidates[0];
   }
 
+  // Disambiguate "give the move to player X" plies (So Long Sucker's rule 3a
+  // forEach-Player branch: (move Set NextPlayer (player (player)))) — several
+  // candidates share from=-1,to=-1,mover=M and differ ONLY in which player the
+  // decision action's ActionSetNextPlayer.who() targets. No tier above inspects
+  // that field, and the LOOKAHEAD tier below can't discriminate when the
+  // FOLLOWING recorded move is a Pass (candidateMatches' isPass tier matches
+  // ANY mover) — ties fell through to candidates[0], an arbitrary player.
+  // So Long Sucker/RandomTrial_1: Java recorded SetNextPlayer(player=4); the
+  // harness picked player=2, desyncing `mover` for the rest of the trial and
+  // only surfacing as a hard MOVE_MISMATCH plies later.
+  const recNextPlayer = recMove.actions
+    ?.find((a) => a.actionType === 'SetNextPlayer' && a.fields.get('decision') === 'true')
+    ?.fields?.get('player') ?? null;
+  if (recNextPlayer !== null) {
+    const target = Number(recNextPlayer);
+    const byTarget = candidates.filter((c) =>
+      c.actions.some((a) => a.actionType() === 'SetNextPlayer' && typeof a.who === 'function' && a.who() === target));
+    if (byTarget.length > 0) candidates = byTarget;
+    if (candidates.length === 1) return candidates[0];
+  }
+
   // Disambiguate a promotion ply by the promoted-to piece: a pawn reaching the
   // last rank records `Promote:what=N` (e.g. Knight) but the engine offers a
   // candidate per promotable piece at the same from/to. Prefer the candidate
@@ -1238,7 +1259,7 @@ function replayTrial(trialPath) {
       }
     }
     if (!matched) matched = chooseMatch(tsMoves, recMove, ctx, game, nextRecMove);
-    if (process.env.CHOICE_TRACE && matched) console.error("[pick]", plyIndex ?? "?", `${matched.from()}>${matched.to()}`, matched.actions.map(a=>a.actionType()+"("+(a.from?.()??"")+">"+(a.to?.()??"")+")").join(","));
+    if (process.env.CHOICE_TRACE && matched) console.error("[pick]", plyIndex ?? "?", `${matched.from()}>${matched.to()}`, matched.actions.map(a=>a.actionType()+"("+(a.from?.()??"")+">"+(a.to?.()??"")+(a.who?.()?" w"+a.who():"")+")").join(","), "recActs="+(recMove.actions.map(a=>a.actionType+"["+[...a.fields].map(([k,v])=>k+"="+v).join(" ")+"]").join(",")));
 
     // Auto-roll: Java's `(do (roll) next:#1)` pattern embeds dice-roll actions
     // INTO each movement move (SetStateAndUpdateDice/SetDiceAllEqual), so the

@@ -11,6 +11,7 @@ import type { Context } from "../../../../../../context.js";
 import type { IntFunction, EvalScratch } from "../../../../../base.js";
 import { BaseRegionFunction } from "../../BaseRegionFunction.js";
 import { LineOfSightType } from "../LineOfSightType.js";
+import { resolveSameOppositeDir } from "../../../../util/directions/RelativeDirection.js";
 
 /** Java parity: Constants.OFF = -1 */
 const OFF = -1;
@@ -125,10 +126,30 @@ export class SitesLineOfSight extends BaseRegionFunction {
 		const ctxAny = context as unknown as { _trajectories?: (TrajectoriesRadials & { radialsByName?(site: number, dir: string): number[][] }) | null };
 		const traj = ctxAny._trajectories;
 
+		// @java Directions.java:495-525 — convertToAbsolute special-cases
+		// RelativeDirection.SameDirection/OppositeDirection at EVAL time: it
+		// finds the compass direction whose radial from the last move's
+		// from-site passes through its to-site (LastFrom/LastTo on
+		// trial.lastMove()). The reflection compiler binds the bare token to
+		// its literal name string; without this resolution, radialsByName
+		// ("SameDirection") returned [] and the LoS region was always empty
+		// (Labirintus: a (then (fromTo … (sites LineOfSight … SameDirection)))
+		// generated zero follow-up moves; validated — full trial replays green
+		// with this resolution).
+		let evalDirectionName = this.directionName;
+		if (evalDirectionName === "SameDirection" || evalDirectionName === "OppositeDirection") {
+			const resolved = resolveSameOppositeDir(
+				context as unknown as Parameters<typeof resolveSameOppositeDir>[0],
+				evalDirectionName === "OppositeDirection",
+			);
+			if (resolved === null) return sitesLineOfSight;
+			evalDirectionName = resolved;
+		}
+
 		if (traj) {
 			// Try radialsByName first (1to1 API)
 			if (traj.radialsByName) {
-				const radialArrays: number[][] = traj.radialsByName(from, this.directionName);
+				const radialArrays: number[][] = traj.radialsByName(from, evalDirectionName);
 				for (const radialSites of radialArrays) {
 					// radialSites[0] is the `from` site, radialSites[1..] are the subsequent steps
 					let prevTo: number = -1;
@@ -145,7 +166,7 @@ export class SitesLineOfSight extends BaseRegionFunction {
 			} else if (typeof (traj as unknown as Record<string, unknown>).radials === "function") {
 				// Java-style radials API
 				const trajR = traj as TrajectoriesRadials;
-				const radials: Radial[] = trajR.radials(realType, from, this.directionName);
+				const radials: Radial[] = trajR.radials(realType, from, evalDirectionName);
 				for (const radial of radials) {
 					let prevTo: number = -1;
 					for (let toIdx = 1; toIdx < radial.steps.length; toIdx++) {

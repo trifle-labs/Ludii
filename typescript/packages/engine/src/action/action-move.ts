@@ -651,23 +651,31 @@ export class ActionMove extends BaseAction {
         movingOwner,
         movingWhat !== 0 ? movingWhat : undefined,
       );
-      // @java ActionMoveTopPiece.java:490-498 -> ContainerStateStacks.addItem
-      // (3-arg form, :278-301) — the pushed level gets who/what ONLY; its
-      // value is 0 (setValue is never called). The flat valueAt channel must
-      // reflect the NEW top, not the pinned piece underneath: Kawasukuts'
-      // level-less (value Piece at:...) read the buried P2 gate value (37)
-      // and fired MadeACompleteCircuit at ply 2 (false win, rec winner=2).
-      // Preserve the pre-push levels' values into the per-level column FIRST
-      // (Java's chunk keeps the buried piece's value; when the pin later pops,
-      // the revealed top must read its original value again).
+      // @java ActionMove.construct() dispatches to ActionMoveLevelFrom when
+      // the recorded move carries an explicit levelFrom (Kawasukuts' Marker
+      // moves always do); ActionMoveLevelFrom's stacking-push branch reads
+      // newValueTo = containerFrom.value(from, levelFrom, typeFrom) and
+      // carries it via the 7-arg addItemGeneric — the MOVER's own value rides
+      // along even onto an occupied/enemy destination (ActionMoveLevelFrom
+      // .java ~444-475). ActionMoveTopPiece.java:490-498's 3-arg addItem
+      // (value unset = 0) is a DIFFERENT dispatch branch, used only when no
+      // levelFrom is recorded; an earlier fix here conflated the two and
+      // zeroed the pushed level (and flat valueAt) unconditionally, which
+      // discarded Kawasukuts' gate value 38 at ply 3 — MadeACompleteCircuit
+      // then read 0 (in-range) instead of 38 (out-of-range) at ply 5 and
+      // declared a false win. carriedValue is 0 for value-less stacking-push
+      // games (Plakoto etc.), so this is a no-op there. Preserve the pre-push
+      // levels' values FIRST (the buried piece's value must resurface when
+      // the pin later pops).
+      const carriedValue = state.valueTop(this.fromIndex);
       {
         const preLevels = Math.max(1, state.stackSize(this.toIndex));
         const row: number[] = [];
         for (let l = 0; l < preLevels; l++) row.push(state.valueAtLevel(this.toIndex, l));
-        row.push(0); // the newly pushed level (@java addItem: value unset = 0)
+        row.push(carriedValue); // the newly pushed level carries the mover's own value
         next = next.withValueStackRow(this.toIndex, row);
       }
-      if (next.valueAtSite(this.toIndex) !== 0) next = next.withValueAt(this.toIndex, 0);
+      if (next.valueAtSite(this.toIndex) !== carriedValue) next = next.withValueAt(this.toIndex, carriedValue);
       next = this.transferHidden(next, state, fromCount <= 1);
       return this.maintainTracks(next, movingWhat);
     }

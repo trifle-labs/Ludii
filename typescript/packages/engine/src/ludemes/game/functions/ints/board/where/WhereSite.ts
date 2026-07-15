@@ -182,11 +182,15 @@ export class WhereSite extends BaseIntFunction {
       }
 
       if (what <= OFF) {
-        // Java: if (what <= Constants.OFF) return Constants.OFF
-        // Try scanning by owner
-        for (let site = 0; site < numSite; site++) {
-          if (context.state.who(site) === playerId) return site;
-        }
+        // @java WhereSite.java:157-171 — when no component matches the
+        // name+owner, return Constants.OFF immediately. There is NO
+        // owner-scan fallback in Java: Cittabhramanrpasya Khelanam's .lud
+        // has a name typo ((where "King-noCross" Next) vs pieces named
+        // King_noCross*), so Java resolves OFF and (sites Around -1) is an
+        // empty region (SitesAround.java:143) — the no-cross restriction is
+        // a harmless no-op. The old fallback returned the first owner-owned
+        // site (an unrelated Elephant), wrongly blocking two slide
+        // destinations.
         return OFF;
       }
 
