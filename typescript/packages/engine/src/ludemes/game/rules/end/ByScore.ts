@@ -69,14 +69,19 @@ export class ByScore implements EndRuleFunction {
     const scores = stateAny.scores ?? new Array<number>(n + 1).fill(0);
 
     // Apply optional finalScore overrides.
-    // @java ByScore.eval:63-70 — context.setScore(pid, scoreToSet)
+    // @java ByScore.eval:63-70 — context.setScore(pid, scoreToSet): the
+    // overrides are PERSISTED to the state, not just used for ranking.
+    // Returned on the EndResult so Game.apply writes them via withScore
+    // (a match's result:(score Mover) reads them off the finished instance).
     const allScores = [...scores];
+    const persistedScores = new Map<number, number>();
     if (this.finalScore !== null) {
       for (const entry of this.finalScore) {
         const pid = scoreEntryPlayerId(entry, ctx);
         const v = scoreEntryValue(entry, ctx);
         if (pid >= 1 && pid <= n) {
           allScores[pid] = v;
+          persistedScores.set(pid, v);
         }
       }
     }
@@ -141,7 +146,12 @@ export class ByScore implements EndRuleFunction {
       if (ranking[p] === 1.0) { winner = p; break; }
     }
 
-    return { winner, over: true, ranking };
+    return {
+      winner,
+      over: true,
+      ranking,
+      ...(persistedScores.size > 0 ? { scores: persistedScores } : {}),
+    };
   }
 }
 

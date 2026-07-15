@@ -19,7 +19,15 @@ const UNDEFINED = -1;
  * Wraps a RoleType as a JavaIntFunction returning its owner index.
  * @java RoleType.toIntFunction(RoleType)
  */
-function roleToIntFn(role: RoleType): JavaIntFunction {
+function roleToIntFn(role: RoleType | string): JavaIntFunction {
+  // The reflection ArgCompiler binds enum constants as their raw NAME string
+  // ("P1"), not the numeric RoleType — normalise before the owner lookup
+  // (roleTypeOwner("P1") compared a string against numbers, returned -1, and
+  // MatchScore silently read score(-1)=0: Tavli's match end never fired).
+  if (typeof role === "string") {
+    const asEnum = (RoleType as unknown as Record<string, number>)[role];
+    role = (asEnum !== undefined ? asEnum : -1) as RoleType;
+  }
   const val = roleTypeOwner(role);
   // For contextual roles (Mover, Next, etc.) we return a function that reads
   // from the context at eval-time. For concrete player roles (P1…P16) the
@@ -86,15 +94,17 @@ export class MatchScore extends BaseIntFunction {
   public override eval(context: Context): number {
     const pid = this.idPlayerFn.eval(context);
 
-    // Java: if (context.parentContext() != null) return context.parentContext().score(pid);
-    const parentCtx = (context as unknown as { parentContext?: Context }).parentContext;
-    if (parentCtx !== undefined && parentCtx !== null) {
+    // @java MatchScore.java — if (context.parentContext() != null) return
+    // context.parentContext().score(pid); parentContext() is a METHOD on
+    // Context (Context.java:1367); the old property duck-type never matched
+    // and every call silently fell through to UNDEFINED.
+    const parentCtx = context.parentContext?.() ?? null;
+    if (parentCtx !== null) {
       return parentCtx.score(pid);
     }
 
     // Java: else if (context.isAMatch()) return context.score(pid);
-    const isAMatch = (context as unknown as { isAMatch?: () => boolean }).isAMatch;
-    if (typeof isAMatch === "function" && isAMatch.call(context)) {
+    if (context.isAMatch?.()) {
       return context.score(pid);
     }
 

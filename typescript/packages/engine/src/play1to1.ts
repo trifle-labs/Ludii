@@ -31,6 +31,8 @@ import { expandDefines } from "./lud-defines.js";
 import { applyOptions, collectDefaultOptions } from "./lud-options.js";
 import { expandRanges, expandSiteRanges } from "./lud-ranges.js";
 import type { Game } from "./ludemes/Game.js";
+import type { Match as MatchDef } from "./ludemes/game/match/Match.js";
+import { MatchRunner } from "./match/match-runner.js";
 import { ArgCompiler } from "./ludii/compiler/arg/ArgCompiler.js";
 
 /** Lazily-built faithful ArgCompiler (reused across calls; loads reflection once). */
@@ -102,6 +104,26 @@ export function play1to1(source: string, opts?: Play1to1Options): Game {
   const resolved = applyOptions(parsed);
   const ast = expandDefines(resolved, [...getBuiltinDefines()]);
 
+  // @java GameLoader — a `(match ...)` root compiles to a real Match with
+  // full instance chaining (NextInstance, matchScore, per-instance results),
+  // not a collapse onto the first subgame. Requires a subgame resolver;
+  // without one, fall through to the legacy first-subgame collapse below.
+  if (opts?.resolveSubgame) {
+    const matchNode = findMatchNode(ast);
+    if (matchNode !== null) {
+      argCompiler ??= new ArgCompiler();
+      resetCompileFlags();
+      const matchDef = argCompiler.compile<MatchDef>(matchNode, ["game.match.Match"]);
+      if (matchDef == null) throw new Error("play1to1: match compile returned null");
+      const resolver = opts.resolveSubgame;
+      return new MatchRunner(matchDef, (name: string): Game => {
+        const src = resolver(name);
+        if (src == null) throw new Error(`play1to1: could not resolve subgame "${name}"`);
+        return play1to1(src, opts);
+      }) as unknown as Game;
+    }
+  }
+
   // Step 4: Find the (game ...) node (or resolve a match subgame).
   const gameNode = findGameNode(ast, opts?.resolveSubgame);
 
@@ -134,6 +156,24 @@ export function play1to1(source: string, opts?: Play1to1Options): Game {
   }
   if (game == null) throw new Error("play1to1: faithful compile returned null");
   return game;
+}
+
+/**
+ * Locate the first `(match ...)` form in the AST — but only when NO
+ * `(game ...)` form exists (a match file's root has (match …)+(metadata …)).
+ */
+function findMatchNode(root: LudNode): LudList | null {
+  if (!isList(root)) return null;
+  if (listHead(root) === "game") return null;
+  if (listHead(root) === "match") return root;
+  let match: LudList | null = null;
+  for (const item of root.items) {
+    if (isList(item)) {
+      if (listHead(item) === "game") return null;
+      if (listHead(item) === "match" && match === null) match = item;
+    }
+  }
+  return match;
 }
 
 /**

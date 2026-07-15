@@ -21,6 +21,20 @@ import { SeededRng } from "./rng.js";
 import type { State } from "./state.js";
 import type { Trial } from "./trial.js";
 
+/**
+ * @java Core/src/other/context/Context.java — parentContext field, set by the
+ * match-context constructor branch (`new Context(nextGame, nextTrial, rng,
+ * this)`). Instance (subgame) contexts are plain Contexts minted by each
+ * compiled subgame's own Game.start()/apply(), so the enclosing MatchContext
+ * registers the back-pointer here. Non-match contexts are never registered.
+ */
+const PARENT_CONTEXT = new WeakMap<Context, Context>();
+
+/** Register `parent` as the enclosing match context of `child`. */
+export function setParentContext(child: Context, parent: Context): void {
+  PARENT_CONTEXT.set(child, parent);
+}
+
 export class Context {
   public readonly game: Game;
   public readonly state: State;
@@ -316,6 +330,34 @@ export class Context {
   /** Java parity: `Context.rng()`. */
   public getRng(): SeededRng {
     return this.rng;
+  }
+
+  /**
+   * @java Context.subcontext() — the active instance context of a Match.
+   * Base contexts have none; MatchContext overrides.
+   */
+  public subcontext(): Context | null {
+    return null;
+  }
+
+  /**
+   * @java Context.parentContext() — the enclosing Match context for an
+   * instance subcontext. Instance contexts are plain Contexts minted by the
+   * compiled subgame's own start/apply, so the back-pointer lives in a
+   * WeakMap registered by MatchContext rather than a subclass field.
+   */
+  public parentContext(): Context | null {
+    return PARENT_CONTEXT.get(this) ?? null;
+  }
+
+  /** @java Context.isAMatch(). MatchContext overrides to true. */
+  public isAMatch(): boolean {
+    return false;
+  }
+
+  /** @java Context.completedTrials(). MatchContext overrides. */
+  public completedTrials(): readonly Trial[] {
+    return [];
   }
 
   /** Java parity: `Context.trial().ranking()`. */

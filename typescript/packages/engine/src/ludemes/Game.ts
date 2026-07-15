@@ -1093,6 +1093,9 @@ export class Game implements Game {
     let over = false;
     let winner = -1;
     let ranking: readonly number[] | undefined;
+    // @java ByScore.java:63-70 — end-rule finalScore overrides persist to
+    // the state (context.setScore). Collected here, written after Step 3.
+    let endScores: ReadonlyMap<number, number> | undefined;
 
     // @java End.java:249 + RankUtils — losers of a CONTINUING multi-player
     // game arrive as endResult.eliminated (over=false or riding an over
@@ -1117,6 +1120,7 @@ export class Game implements Game {
             over = true;
             winner = phaseEndResult.winner;
             ranking = phaseEndResult.ranking;
+            endScores = phaseEndResult.scores;
           }
         }
       }
@@ -1130,6 +1134,14 @@ export class Game implements Game {
         over = true;
         winner = endResult.winner;
         ranking = endResult.ranking;
+        endScores = endResult.scores;
+      }
+    }
+
+    // @java ByScore.java:63-70 — persist finalScore overrides to the state.
+    if (endScores !== undefined && endScores.size > 0) {
+      for (const [pid, v] of endScores) {
+        newState = newState.withScore(pid, v);
       }
     }
 

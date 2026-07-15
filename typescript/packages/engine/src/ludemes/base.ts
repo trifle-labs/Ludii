@@ -144,6 +144,14 @@ export interface EndResult {
    * Game.apply marks the players inactive before advancing the mover.
    */
   readonly eliminated?: readonly number[];
+  /**
+   * @java ByScore.java:63-70 — `context.setScore(pid, scoreToSet)`: end-rule
+   * finalScore overrides are PERSISTED to the state before ranking. Sparse
+   * pid → final score map; Game.apply writes the entries via withScore so a
+   * match's `result:(score Mover)` (evaluated on the finished instance
+   * context) reads the gammon-aware value (Portes/Plakoto/Fevga SetScoreOf).
+   */
+  readonly scores?: ReadonlyMap<number, number>;
 }
 
 // ---------------------------------------------------------------------------

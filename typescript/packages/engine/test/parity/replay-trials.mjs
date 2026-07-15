@@ -478,6 +478,10 @@ function applySpawnPatch(preCtx, postCtx, recSpawn, game) {
  */
 function candidateMatches(tsMoves, recMove) {
   const { mover, from, to } = recMove;
+  // Match-boundary NextInstance moves (see move-match.mjs findMatchingMove).
+  if (recordedDecisionType(recMove) === 'NextInstance') {
+    return tsMoves.filter(m => m.actions.some(a => a.actionType?.() === 'NextInstance'));
+  }
   if (isPassRecordedMove(recMove)) return tsMoves.filter(m => m.isPass());
   if (isPlacementRecordedMove(recMove)) {
     const exact = tsMoves.filter(m => m.to() === to && (m.mover === mover || mover === 0));

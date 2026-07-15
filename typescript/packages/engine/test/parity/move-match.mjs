@@ -120,6 +120,17 @@ function pickBestCandidate(candidates, recMove) {
 
 export function findMatchingMove(tsMoves, recMove) {
   const { mover, from, to } = recMove;
+
+  // @java game/match/Match.java moves() — at a subgame boundary the only
+  // legal move is the synthetic ActionNextInstance (recorded as
+  // Move=[Move:mover=N,actions=[NextInstance:decision=true]], no from/to).
+  // Match it by action type; the mover check is best-effort (Java's boundary
+  // mover conventions vary by whether the instance rotated past game over).
+  if (recordedDecisionType(recMove) === 'NextInstance') {
+    return tsMoves.find((m) =>
+      m.actions.some((a) => a.actionType?.() === 'NextInstance')) ?? null;
+  }
+
   const isPass = isPassRecordedMove(recMove);
   const isPlacement = !isPass && isPlacementRecordedMove(recMove);
 
