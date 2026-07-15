@@ -129,6 +129,24 @@ export class Select extends Effect {
    *   2. For each site: set context.from = context.to = site, check condition.
    *   3. If no regionTo: emit single ActionSelect(site, site).
    *   4. If regionTo: for each to-site, check conditionTo, emit ActionSelect(site, to).
+   *
+   * @java Select.java:145-149 — levelFrom is computed here and, critically,
+   * mirrored onto levelTo for the no-regionTo case:
+   *   final int levelFrom = !gameUsesStacking ? Constants.UNDEFINED
+   *       : (levelFromFn != null) ? levelFromFn.eval(context) : cs.sizeStack(site, typeFrom) - 1;
+   *   ...
+   *   new ActionSelect(typeFrom, site, levelFrom, null, Constants.UNDEFINED, levelFrom);
+   * TS's `action-select.ts` ActionSelect never carried level info (only
+   * `(from, to)`), so `Move.levelTo()` (move.ts:480-483, itself a documented
+   * prior fix for `(last LevelTo)`) always fell back to its `?? 0` default —
+   * i.e. every `(move Select (from (from) level:(level)) (then (set State
+   * at:(last To) level:(last LevelTo) ...))))` silently wrote level 0 instead
+   * of the mover's own selected level. Es-Sig/Sig wa Duqqan's "TopRightSquare"/
+   * "CentralSquare" activation counters (state incremented once per Sig throw
+   * until reaching the forced-escape threshold) landed on the WRONG stacked
+   * piece's level (typically level 0, the bottom of the stack) whenever more
+   * than one piece occupied the site — corrupting an unrelated piece's state
+   * and eventually producing phantom forced-escape moves / missed passes.
    */
   public override eval(ctx: Context): Move[] {
     // @java Select.eval iterates EXACTLY the compiled from-region. (A legacy
@@ -143,6 +161,14 @@ export class Select extends Effect {
 
     const result: Move[] = [];
 
+    // @java Select.java:421 `gameUsesStacking = game.isStacking();`
+    // Context.game is typed against the lightweight `game.ts` Game facade
+    // (start/moves/apply/over only); the real ludemes/Game.ts class carries
+    // `isStacking()` but isn't in that interface, so duck-type through —
+    // same pattern Game.ts itself uses for its own `usesStacking` flag.
+    const gameUsesStacking =
+      (ctx.game as unknown as { isStacking?: () => boolean }).isStacking?.() === true;
+
     for (const site of sites) {
       if (site < 0) continue;
 
@@ -152,15 +178,26 @@ export class Select extends Effect {
 
       if (!this.condition.eval(ctx)) continue;
 
+      // @java Select.java:145-149
+      const levelFrom = !gameUsesStacking
+        ? -1
+        : this.levelFromFn !== null
+          ? this.levelFromFn.eval(ctx)
+          : ctx.state.stackSize(site) - 1;
+
       if (this.regionTo === null) {
-        // @java Select.java:159-168 — single-site select
+        // @java Select.java:159-168 — single-site select; levelTo mirrors
+        // levelFrom (Java passes `levelFrom` as BOTH the 3rd and 6th ctor arg).
+        const action = new ActionSelect(site, site);
+        action.setLevelFrom(levelFrom);
+        action.setLevelTo(levelFrom);
         result.push(this.withThen(ctx, new Move({
           id: `select:${mover}:${site}:${site}`,
           label: `Select(${site})`,
           siteIndices: [site],
           mover,
           placedOwner: mover,
-          actions: [new ActionSelect(site, site)],
+          actions: [action],
         })));
       } else {
         // @java Select.java:172-215 — from + to select
@@ -170,13 +207,21 @@ export class Select extends Effect {
           (ctx as unknown as { _evalTo?: number })._evalTo = siteTo;
           if (!this.conditionTo.eval(ctx)) continue;
 
+          // @java Select.java:189-190
+          const levelTo = this.levelToFn !== null
+            ? this.levelToFn.eval(ctx)
+            : ctx.state.stackSize(siteTo) - 1;
+
+          const action = new ActionSelect(site, siteTo);
+          action.setLevelFrom(levelFrom);
+          action.setLevelTo(levelTo);
           result.push(this.withThen(ctx, new Move({
             id: `select:${mover}:${site}:${siteTo}`,
             label: `Select(${site}→${siteTo})`,
             siteIndices: [site, siteTo],
             mover,
             placedOwner: mover,
-            actions: [new ActionSelect(site, siteTo)],
+            actions: [action],
           })));
         }
       }

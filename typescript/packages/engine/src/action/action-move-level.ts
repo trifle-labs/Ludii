@@ -51,11 +51,28 @@ abstract class ActionMoveLevelBase extends BaseAction {
       stackSize > 0
         ? state.whoAtSiteLevel(this.fromIndex, sourceLevel)
         : state.who(this.fromIndex);
-    if (movingOwner === 0) return state;
     const movingWhat =
       stackSize > 0
         ? state.whatAtSiteLevel(this.fromIndex, sourceLevel)
         : state.whatAtSite(this.fromIndex);
+    // @java ActionMoveLevelFrom.java:436-475 — the stacking-game apply()
+    // branch has NO owner-based guard at all: it unconditionally does
+    // `containerFrom.remove(...)` then `containerTo.addItemGeneric(...)`
+    // for whatever piece sits at `levelFrom`, regardless of who() (owner
+    // id) — including Neutral-owned pieces (owner=0). The only early-return
+    // in that branch is `if (from == to) return this;` (line 438-439,
+    // already mirrored above). A prior TS-only guard here instead checked
+    // `movingOwner === 0`, wrongly conflating "owner=0 (Neutral piece,
+    // e.g. Ghoula0 in Es-Sig / Sig wa Duqqan (Houmt Taourit))" with
+    // "nothing here." That silently no-op'd the relocation of the Neutral
+    // level during a multi-level ForEachLevel drag-along (MoveGhoula's
+    // ForEachLevel FromTop fromTo — Sig-wa-Duqqan.lud), leaving that level
+    // behind at the source while the owner>0 levels correctly relocated,
+    // corrupting stack height/order and producing a board desync several
+    // plies later (observed divergence at ply≈480). A genuinely-empty
+    // source (no component present at all) is identified by
+    // `movingWhat === 0` (the Java `what` channel), not owner === 0.
+    if (movingWhat === 0) return state;
     const countedLevels = state.countAtSite(this.fromIndex);
     const countBacked = countedLevels > 0 && stackLen <= 1;
     if (countBacked) {

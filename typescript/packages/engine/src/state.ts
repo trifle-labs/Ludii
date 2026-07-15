@@ -1050,7 +1050,18 @@ export class State {
    */
   public stackSize(siteIndex: number): number {
     const stackLen = this.stacks[siteIndex]?.length ?? 0;
-    if ((this.cells[siteIndex] ?? 0) === 0) return stackLen;
+    // @java ContainerStateStacks.sizeStack — a site occupied SOLELY by a
+    // Neutral (owner-0) component (Es-Sig/Sig-family "Ghoula0") is still
+    // occupied: Java's chunk-stack size counter is independent of `who`
+    // (FullOwned.add/addItem never gate on owner>0). The old `cells===0`
+    // gate treated owner-0-occupied indistinguishably from genuinely empty
+    // (both have cells[site]=0), reporting height 0 for a real 1-high Ghoula
+    // pile and breaking every `(is Singleton (Stack) ...)` /
+    // `(where "Ghoula" Neutral)` query built on it. `whats[site]` still
+    // carries the component id when only a Neutral piece sits there — use it
+    // as the second occupancy signal.
+    const occupied = (this.cells[siteIndex] ?? 0) !== 0 || (this.whats[siteIndex] ?? 0) !== 0;
+    if (!occupied) return stackLen;
     return Math.max(stackLen, this.countAt[siteIndex] ?? 0, 1);
   }
 
@@ -1117,7 +1128,18 @@ export class State {
     const target = nextStacks[siteIndex] ?? [];
     const baseOwner = this.cells[siteIndex] ?? 0;
     const baseWhat = this.whatAtSite(siteIndex);
-    if (existingCount > target.length && baseOwner > 0) {
+    // @java ActionAdd.applyStack → ContainerStateStacks.addItem: the base
+    // (first-placed) level of a custom stack is backfilled here from the
+    // flat `cells`/`whats` channel before the new level is pushed on top.
+    // The old `baseOwner > 0` guard assumed a real base level always has a
+    // positive owner, but a Neutral (owner-0) piece is a legitimate base
+    // level too (Es-Sig `(place Stack items:{"Ghoula0" "Stick4" ...})`
+    // stacks the Neutral "Ghoula0" token as level 0, under the players'
+    // sticks). `existingCount` (countAt) is only ever nonzero when
+    // `placePieces` genuinely wrote a piece there, so gating on it alone —
+    // not also on baseOwner>0 — is sufficient and matches Java, where
+    // addItem never conditions on `who`.
+    if (existingCount > target.length) {
       while (target.length < existingCount) target.push(baseOwner);
     }
     target.push(owner);
@@ -1277,14 +1299,36 @@ export class State {
           // comp made owned.positions(comp) key on the player index, so
           // ForEachPiece never found hand pieces whose global comp != pid
           // (Nama's marker entering from hand). Mirrors the flat branch below.
-          if (pid > 0) {
+          // @java FullOwned.add(playerId, componentId, pieceLoc, level, type)
+          // — never gates on playerId>0; a Neutral (owner-0) level is a
+          // perfectly valid registry entry (Sik/Es-Sig/Sig-family's
+          // "Bankor0"/"Ghoula0" tokens, Santorini's building pieces). The
+          // old `pid > 0` guard here was a SEPARATE TS-invented instance of
+          // the same mistake already fixed at the stacked-start replay loop
+          // (Game.ts) and withStackPush's backfill guard: dropping a
+          // Neutral level from the registry makes `(where "Ghoula" Neutral)`
+          // / `(where "Bankor" Neutral)` unable to find it FOREVER once this
+          // registry materializes (no fallback to the raw cells/whats scan
+          // after that point) — surfacing as the piece "racing ahead" with
+          // no drag-back ever happening (Es-Sig) or `WhereGhoula` falling
+          // back to a bogus hand site (Sig wa Duqqan). `ownerStack[lvl]` is
+          // only ever populated by genuine pushes (withStackPush never
+          // stores a placeholder/gap level), so `pid >= 0` is safe.
+          if (pid >= 0) {
             const rawComp = whatStack[lvl];
             const comp = (rawComp !== undefined && rawComp !== 0) ? rawComp : (this.whats[site] || pid);
             entries.push({ pid, comp, site, level: lvl });
           }
         }
-      } else if ((this.cells[site] ?? 0) > 0) {
-        entries.push({ pid: this.cells[site]!, comp: this.whats[site] || this.cells[site]!, site, level: 0 });
+      } else if ((this.cells[site] ?? 0) > 0 || (this.whats[site] ?? 0) > 0) {
+        // A site occupied SOLELY by a Neutral (owner-0) component (no
+        // stacks[] row materialized — e.g. Sig wa Duqqan's single-item
+        // `(place Stack "Ghoula0" (ExternalSite))`, entirely represented in
+        // the flat `cells`/`whats` channel) still needs a registry entry;
+        // `cells[site]===0` alone is ambiguous between "genuinely empty" and
+        // "Neutral piece here" — `whats[site]` disambiguates, matching the
+        // `stackSize()` occupancy fix above.
+        entries.push({ pid: this.cells[site] ?? 0, comp: this.whats[site] || (this.cells[site] ?? 0), site, level: 0 });
       }
     }
     return this.with({ ownedEntries: entries });
