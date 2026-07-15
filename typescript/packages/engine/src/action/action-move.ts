@@ -602,11 +602,23 @@ export class ActionMove extends BaseAction {
     // restore is gated `fromIndex !== toIndex`), so it would silently DROP one
     // marker off a stacked site. Internal-loop tracks (Len Doat, Pachisi) are
     // the only movers that legitimately emit a from == to hop: NextSiteOnTrack
-    // can return the same board index at a later ring position. (The stacking
-    // branch's `if (from == to) return this;` at Java line 487 skips even the
-    // oti update, but that path is unreachable for count-model games.)
+    // can return the same board index at a later ring position.
     if (this.fromIndex === this.toIndex) {
-      let self = this.applyDestAttrs(state, destState, destRotation, destValue);
+      // @java ActionMoveLevelFrom.java:438 / ActionMoveTopPiece.java:487 —
+      // the STACKING branch's `if (from == to) return this;` is a TOTAL
+      // no-op (even onTrackIndices stays put). It IS reachable: a stacking
+      // game (Kawade Kelia) emits a from==to "forced stay" decision on
+      // SetDiceAllEqual whose action carries levelFrom → Java's total no-op
+      // keeps the piece's ring index at its current occurrence. TS's
+      // unconditional maintainTracks advanced site 17's index from ring 11
+      // to the later duplicate at ring 55, corrupting the next TrackSiteMove
+      // resolution (ply 48: to=42 instead of the recorded to=23). Confirmed
+      // by replaying the recorded trial through the REAL Java engine with
+      // instrumented onTrackIndices.
+      if (state.stackingGame) {
+        return state;
+      }
+      const self = this.applyDestAttrs(state, destState, destRotation, destValue);
       return this.maintainTracks(self, movingWhat);
     }
     // When the source carries a stacked count — e.g. a hand seeded with

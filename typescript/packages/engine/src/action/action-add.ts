@@ -111,7 +111,12 @@ export class ActionAdd extends BaseAction {
         Math.max(this.countValue, 1),
       );
     }
-    if (this.onStack) {
+    // @java ActionAdd.java:200,284 — requiresStack = game.isStacking(): the
+    // stacking-push path is gated on the GAME's flag, not the per-action
+    // stack marker. A plain (non stack:true) Add in a stacking game still
+    // pushes a level (Pahada Keliya's centre-site double-capture placed via
+    // a plain Add silently overwrote the existing occupant).
+    if (this.onStack || state.stackingGame) {
       // @java ActionAdd (stacking) calls cs.addItemGeneric(state, to, what, who, …),
       // pushing the COMPONENT and the OWNER into their parallel stack columns in
       // one call. Passing `whatIndex` to withStackPush materializes whatStacks[to]
