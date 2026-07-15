@@ -86,6 +86,28 @@ export class Steps {
    * @java Steps.add(Step): dedup by (from,to); on a duplicate, OR in any new
    * direction bits. On a fresh step, index it by toType and by each set bit.
    */
+  /**
+   * @java Steps.sort() (Steps.java:195-238) — sort every list clockwise from
+   * North: score = PI/2 - atan2(dy,dx) + 0.0001, normalised to [0,2PI). Java
+   * calls this after generateSteps; iteration order matters wherever a
+   * consumer walks neighbours in list order (Mig Mang's Enclose boundary
+   * check diverged on insertion-ordered neighbours).
+   */
+  public sort(): void {
+    const score = (s: Step): number => {
+      const dx = s.to.pt.x - s.from.pt.x;
+      const dy = s.to.pt.y - s.from.pt.y;
+      let sc = Math.PI / 2 - Math.atan2(dy, dx) + 0.0001;
+      while (sc < 0) sc += 2 * Math.PI;
+      return sc;
+    };
+    const cmp = (a: Step, b: Step): number => score(a) - score(b);
+    this.steps.sort(cmp);
+    for (const list of this.inDirectionLists) list.sort(cmp);
+    for (const list of this.toSiteTypeLists) list.sort(cmp);
+    for (const rows of this.toSiteTypeInDirectionLists) for (const list of rows) list.sort(cmp);
+  }
+
   public add(step: Step): void {
     for (const existing of this.steps) {
       if (

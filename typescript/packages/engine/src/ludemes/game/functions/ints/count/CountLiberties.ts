@@ -156,7 +156,12 @@ export class CountLiberties implements IntFunction {
         }
       }
       for (const nb of neighbours) {
-        if (nb >= 0 && nb < boardN && !groupVisited[nb] && (cells[nb] ?? 0) === 0) {
+        // @java CountLiberties.java:157 — a liberty is a site whose COMPONENT
+        // is 0 (cs.what(to)==0), not whose owner is 0: a neutral piece
+        // (owner 0, what>0) is NOT a liberty (Redstone's neutral stones were
+        // counted as breaths, delaying captures).
+        const nbWhat2 = (ctx.state as unknown as { whats?: readonly number[] }).whats?.[nb] ?? (cells[nb] ?? 0);
+        if (nb >= 0 && nb < boardN && !groupVisited[nb] && nbWhat2 === 0) {
           libertySet[nb] = 1;
         }
       }

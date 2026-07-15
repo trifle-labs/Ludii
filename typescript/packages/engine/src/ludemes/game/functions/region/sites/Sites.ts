@@ -649,7 +649,12 @@ export class Sites extends BaseRegionFunction {
                 ? regionWhere.eval(ctx)
                 : [];
             if (process.env.TRACE_AROUND) { const rw = regionWhere as unknown as { role?: unknown; top?: unknown; componentNames?: unknown; component?: { constructor?: { name?: string } }; who?: { eval(c: unknown): number } }; console.error("[around] where:", where?.constructor?.name ?? null, "regionWhere:", regionWhere?.constructor?.name ?? null, "cfg:", JSON.stringify({ role: rw?.role, top: rw?.top, names: rw?.componentNames, comp: rw?.component?.constructor?.name, who: rw?.who ? rw.who.eval(ctx) : null }), "sources:", JSON.stringify(sourceSites).slice(0,80)); }
-            const dist = Math.max(1, distance?.eval(ctx) ?? 1);
+            // @java SitesAround.java:126 — `dist = distance.eval(context)`
+            // with NO floor: distance:0 legally yields only the origin, which
+            // self-exclusion then strips to an EMPTY set (Chucka's uncharged
+            // value-0 pieces must have no throws; the old Math.max(1,…)
+            // fabricated 1-hop targets for them).
+            const dist = distance?.eval(ctx) ?? 1;
             const dirNames = directionNames(directions, ctx);
             const dynType = typeof type === "string" ? type.toLowerCase() : null;
             // includeSelf:True arrives as a raw boolean (Atomic Chess explosion)
@@ -827,7 +832,11 @@ export class Sites extends BaseRegionFunction {
         // TS SitesGroup constructor: (startLocationFn: IntArrayFunction, condition, directionName, isVisibleFn)
         // Build a start-location IntArrayFunction from at or From
         const startFn: IntArrayFunction = at !== null
-          ? { eval(ctx: Context & EvalScratch): number[] { return [at.eval(ctx)]; } }
+          // @java IntArrayFromRegion.java:47-53 — a negative (OFF/UNDEFINED)
+          // int silently yields an EMPTY start set, not a bogus [-1] root
+          // (Bug's (sites Group at:(from)) rooted a group at -1 and
+          // cs.what(-1) reads garbage).
+          ? { eval(ctx: Context & EvalScratch): number[] { const v = at.eval(ctx); return v >= 0 ? [v] : []; } }
           : From !== null
             ? { eval(ctx: Context & EvalScratch): number[] { return From.eval(ctx); } }
             : { eval(_ctx: Context & EvalScratch): number[] { return []; } };
@@ -1738,6 +1747,7 @@ function aroundSites(ctx: Context & EvalScratch, site: number, distance: number,
       group(site: number, name: string): number[];
       steps(site: number, name: string): number[];
       ray(site: number, name: string): number[];
+      radialsByName?(site: number, name: string): number[][];
       viewOf?(kind: string): unknown;
     } | null;
   })._trajectories;
@@ -1772,18 +1782,29 @@ function aroundSites(ctx: Context & EvalScratch, site: number, distance: number,
       if (distance === 1) {
         for (const n of oneStep) out.add(n);
       } else {
-        for (const dirSite of oneStep) {
-          // @java SitesAround distance>1 walks the radial in the REQUESTED
-          // direction. For an explicit wind name use it directly — the
-          // directionBetween re-derivation binned NNW-family winds wrong on
-          // hex boards, so Icebreaker's ship spots
-          // (sites Around (centrePoint) distance:4 NNW) resolved to the E
-          // corner or nothing. Group names (Adjacent/…) still derive the
-          // per-neighbour wind.
-          const isGroup = dir === "All" || dir === "Adjacent" || dir === "Orthogonal" || dir === "Diagonal" || dir === "OffDiagonal";
-          const ray = traj.ray(site, isGroup ? (directionBetween(ctx, site, dirSite) ?? dir) : dir);
-          const n = ray[distance - 1];
-          if (n !== undefined) out.add(n);
+        const isGroup = dir === "All" || dir === "Adjacent" || dir === "Orthogonal" || dir === "Diagonal" || dir === "OffDiagonal";
+        if (isGroup && traj.radialsByName) {
+          // @java SitesAround.java:158-170 — one radial per matching
+          // direction; radial[0]===origin so radial[dist] mirrors Java's
+          // radial.steps()[dist]. The old per-neighbour directionBetween
+          // re-derivation did naive rectangular sign(Δcol)/sign(Δrow) math —
+          // wrong on hex boards (Chucka: neighbours 33/34/30 of site 29 all
+          // aliased to "E", so the radial containing the recorded throw
+          // target 18 was never walked).
+          for (const radial of traj.radialsByName(site, dir)) {
+            const n = radial[distance];
+            if (n !== undefined) out.add(n);
+          }
+        } else {
+          for (const dirSite of oneStep) {
+            // @java SitesAround distance>1 walks the radial in the REQUESTED
+            // direction. For an explicit wind name use it directly — the
+            // directionBetween re-derivation binned NNW-family winds wrong on
+            // hex boards (Icebreaker's NNW ship spots resolved to E/nothing).
+            const ray = traj.ray(site, isGroup ? (directionBetween(ctx, site, dirSite) ?? dir) : dir);
+            const n = ray[distance - 1];
+            if (n !== undefined) out.add(n);
+          }
         }
       }
     }

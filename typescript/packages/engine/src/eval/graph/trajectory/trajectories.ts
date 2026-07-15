@@ -399,6 +399,9 @@ export class TrajectoriesCore {
       for (const from of this.topo.elements(siteType)) {
         const stepsFrom = new Steps(siteType, from.id);
         stepsToFor(from, stepsFrom);
+        // @java Trajectories.java:158-165 — generateSteps() sorts each step
+        // list clockwise-from-North after populating it.
+        stepsFrom.sort();
         (this.stepsArr[siteType] as Steps[])[from.id] = stepsFrom;
       }
     }

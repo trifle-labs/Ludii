@@ -131,8 +131,14 @@ export class ActionAdd extends BaseAction {
       return next;
     }
     const currentWhat = state.whatAtSite(this.toIndex);
-    const currentOwner = state.who(this.toIndex);
-    if (currentWhat === this.whatIndex && currentOwner === this.ownerIndex) {
+    // @java ActionAdd.java:287-315 — the branch discriminant is simply
+    // `currentWhat == 0`: ANY add onto an occupied site takes the else branch
+    // (setSite with UNDEFINED who/what — the EXISTING owner/piece stay
+    // untouched; only count/state/rotation/value update). The old TS
+    // condition (same what AND same owner) let a DIFFERENT player's re-claim
+    // fall through and OVERWRITE the owner (Pula's first-claim-wins rule
+    // broke: a later claim flipped the cell, WINNER_MISMATCH @77).
+    if (currentWhat !== 0) {
       // @java ActionAdd.java:310 — occupied sites accumulate: setSite(.., UNDEFINED,
       //   UNDEFINED, requiresCount ? oldCount + count : 1, ..). The old `|| 1`
       // coerced a real oldCount of 0 into 1, fabricating a seed when a mancala

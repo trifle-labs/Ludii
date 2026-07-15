@@ -607,6 +607,11 @@ export function genQuadhex(layers: number, thirds = false): Graph {
     }
   }
   g.makeFaces();
+  // @java Quadhex.java:73-76 — graph.reorder() canonicalises vertex/edge/cell
+  // ids by ascending y*100+x AFTER makeFaces; every sibling generator here
+  // already calls it. Without it Quathaxx's site ids kept raw six-rotation
+  // insertion order and every recorded move referenced a different cell.
+  g.reorder();
   return g;
 }
 
@@ -683,6 +688,8 @@ function genQuadhexThirds(layers: number): Graph {
   graph.addEdge(save[1]![1]!, save[0]![2]!);
   graph.addEdge(save[1]![2]!, save[0]![0]!);
   graph.makeFaces();
+  // @java Quadhex.java:76 — see genQuadhex above.
+  graph.reorder();
   return graph;
 }
 

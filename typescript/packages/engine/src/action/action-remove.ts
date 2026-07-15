@@ -127,6 +127,17 @@ export class ActionRemove extends BaseAction {
     } else {
       next = state.withCell(this.toIndex, 0).withWhatAt(this.toIndex, 0);
       if (pile > 0) next = next.withCountAt(this.toIndex, 0);
+      // @java ContainerStateStacks.java:704-711 / ContainerFlatState.remove —
+      // remove() clears EVERY channel: setWhat(0) setWho(0) setState(0)
+      // setRotation(0) setValue(0). The TS clear left stale state/rotation/
+      // value behind; a later placement at the site read the ghost attrs
+      // (Paintscape @35: a repainted cell kept the removed piece's state).
+      if (next.stateAtSite(this.toIndex) !== 0) next = next.withStateAt(this.toIndex, 0);
+      if (next.valueAtSite(this.toIndex) !== 0) next = next.withValueAt(this.toIndex, 0);
+      if ((next.rotationAt?.[this.toIndex] ?? 0) !== 0) {
+        const withRot = (next as unknown as { withRotationAt?: (s: number, r: number) => State }).withRotationAt;
+        if (withRot) next = withRot.call(next, this.toIndex, 0);
+      }
     }
     // Drop the removed piece from the per-state track-index structure
     // (Java ActionRemoveTopPiece onTrackIndices block) — only for internal-loop
