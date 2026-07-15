@@ -30,21 +30,27 @@ export class ActionCopy extends BaseAction {
     if (owner === 0 && what === 0) return state; // Truly empty source
     let next = state.withCell(this.toIndex, owner);
     if (what !== 0) next = next.withWhatAt(this.toIndex, what);
-    // @java ActionCopy.java:195-196 -> ActionMoveTopPiece.apply — the copy
-    // carries EVERY piece attribute from the source (state/rotation/value),
-    // not just who/what. Or Thella's hand slot 1 carries state=1; dropping
-    // it made the custodial capture's (!= (state at:between) (state at:
-    // lastTo)) compare 0 vs 0 and the Do ifAfterwards filter rejected every
-    // from=65 placement (the apparent copy-coord "+1 offset").
+    // @java ActionCopy.java:195-196 -> ActionMove.apply — the copy carries
+    // EVERY piece attribute from the source (state/rotation/value), not just
+    // who/what. Or Thella's hand slot 1 carries state=1; dropping it made the
+    // custodial capture's (!= (state at:between) (state at:lastTo)) compare
+    // 0 vs 0 and the Do ifAfterwards filter rejected every from=65 placement
+    // (the apparent copy-coord "+1 offset").
+    //
+    // The writes are UNCONDITIONAL: ActionMove sets the destination's
+    // state/rotation/value straight from the source even when the source
+    // value is 0 (csB.setSite copies csA's fields verbatim). Skipping the
+    // write on srcState==0 left STALE destination state behind: Morra's
+    // round-6 reveal copied a state-1 hand onto site 0, and the next round's
+    // state-0 (zero fingers) copy silently kept state 1, so "SumFingers"
+    // over-counted and neither player's (addScore …) fired on the final ply.
     const srcState = state.stateAtSite(this.fromIndex);
-    if (srcState !== 0) next = next.withStateAt(this.toIndex, srcState);
+    next = next.withStateAt(this.toIndex, srcState);
     const srcValue = state.valueAtSite(this.fromIndex);
-    if (srcValue !== 0) next = next.withValueAt(this.toIndex, srcValue);
+    next = next.withValueAt(this.toIndex, srcValue);
     const srcRot = (state as unknown as { rotationAt?: readonly number[] }).rotationAt?.[this.fromIndex] ?? 0;
-    if (srcRot !== 0) {
-      const withRot = (next as unknown as { withRotationAt?: (s: number, r: number) => State }).withRotationAt;
-      if (withRot) next = withRot.call(next, this.toIndex, srcRot);
-    }
+    const withRot = (next as unknown as { withRotationAt?: (s: number, r: number) => State }).withRotationAt;
+    if (withRot) next = withRot.call(next, this.toIndex, srcRot);
     return next;
   }
   public override actionType(): ActionType {

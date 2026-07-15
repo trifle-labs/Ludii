@@ -18,11 +18,13 @@ export class ActionBet extends BaseAction {
   }
 
   public override apply(state: State): State {
-    // Bet moves chips from a player's amount into the pot.
-    const prevAmount = state.amount(this.player);
-    return state
-      .withAmount(this.player, prevAmount - this.amount)
-      .withPot(state.pot + this.amount);
+    // @java ActionBet.java:84 — `context.state().setAmount(player, bet)`:
+    // the action SETS the player's amount to the bet and never touches the
+    // pot. Pot bookkeeping is the game's own `(then (set Pot (+ (pot)
+    // (amount P))))` consequence (Morra.lud). The old subtract-and-add-to-pot
+    // made `(amount P1)` post-bet garbage, so Morra's `(= "SumFingers"
+    // (amount #1))` score check never fired and the (byScore) end never came.
+    return state.withAmount(this.player, this.amount);
   }
   public override actionType(): ActionType {
     return ActionBet.TYPE;

@@ -96,11 +96,13 @@ describe("state-channel actions", () => {
     assert.equal(after.pot, 11);
   });
 
-  it("ActionBet transfers from amount to pot", () => {
+  it("ActionBet sets the player's amount to the bet (pot untouched)", () => {
+    // @java ActionBet.java:84 — `context.state().setAmount(player, bet)`;
+    // the pot is only moved by the game's own `(set Pot …)` consequence.
     const seeded = new ActionSetAmount(1, 10).apply(emptyState(9));
     const after = new ActionBet(1, 4).apply(seeded);
-    assert.equal(after.amount(1), 6);
-    assert.equal(after.pot, 4);
+    assert.equal(after.amount(1), 4);
+    assert.equal(after.pot, 0);
   });
 
   it("ActionSetTrumpSuit writes trumpSuit", () => {

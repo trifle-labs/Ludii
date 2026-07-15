@@ -1179,11 +1179,40 @@ function replayTrial(trialPath) {
     if (recMove.mover === (game.numPlayers ?? 0) + 1) {
       const decisionActs = recMove.actions.filter(a => a.fields.get('decision') === 'true');
       if (decisionActs.length > 1) {
+        // Match each recorded decision sub-action to the specific per-player
+        // TS move. from/to alone is NOT discriminating for site-less actions
+        // (Morra's Bet acts all report from/to = -1, so the old matcher
+        // grabbed P1's first two bet candidates — P2 never bet and the bet
+        // AMOUNTS were wrong, so `(= "SumFingers" (amount P))` never scored).
+        // Compare the candidate's own decision action fields against the
+        // recorded sub-action: player→who(), bet→value(), what→what(),
+        // state→state(). @java other/model/SimultaneousMove.java — Java pairs
+        // each player's chosen move by construction; field agreement is the
+        // replay-side equivalent.
+        const actFieldsAgree = (act, cand) => {
+          const dec = cand.decisionAction?.() ?? cand.actions[0];
+          if (!dec) return false;
+          const checks = [
+            ['player', 'who'], ['who', 'who'], ['bet', 'value'],
+            ['value', 'value'], ['what', 'what'], ['state', 'state'],
+            ['count', 'count'],
+          ];
+          for (const [field, accessor] of checks) {
+            const recVal = act.fields.get(field);
+            if (recVal === undefined) continue;
+            const fn = dec[accessor];
+            if (typeof fn !== 'function') continue;
+            let got; try { got = fn.call(dec); } catch { continue; }
+            if (Number(recVal) !== Number(got)) return false;
+          }
+          return true;
+        };
         const parts = [];
         for (const act of decisionActs) {
           const aFrom = Number(act.fields.get('from') ?? -1);
           const aTo = Number(act.fields.get('to') ?? -1);
-          const cand = tsMoves.find(m => m.from() === aFrom && m.to() === aTo && !parts.includes(m));
+          const cand = tsMoves.find(m =>
+            m.from() === aFrom && m.to() === aTo && !parts.includes(m) && actFieldsAgree(act, m));
           if (!cand) { parts.length = 0; break; }
           parts.push(cand);
         }
@@ -1191,6 +1220,19 @@ function replayTrial(trialPath) {
           matched = parts[0];
           for (let i = 1; i < parts.length; i += 1) {
             matched = matched.withConsequence(parts[i].actions, parts[i].moveAgain);
+          }
+          // Carry EVERY part's deferred `(then …)` clauses onto the merged
+          // move — withConsequence keeps only parts[0]'s. Java applies each
+          // submove's then after its actions and applyAfterAllMoves thens
+          // after all submoves (@java other/model/SimultaneousMove.java —
+          // topLevelCons; ported in src/ludemes/other/model/
+          // SimultaneousMove.ts:271-305). Dropping them lost P2's
+          // `(addScore P2 1)` in Morra, so scores never reached 3 and the
+          // (byScore) end never fired.
+          for (let i = 1; i < parts.length; i += 1) {
+            for (const dt of (parts[i].deferredThens ?? [])) {
+              matched = matched.withDeferredThen(dt);
+            }
           }
         }
       }

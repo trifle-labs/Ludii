@@ -57,6 +57,7 @@ import { ShootFaithful } from "../nonDecision/effect/ShootFaithful.js";
 import { SlideFaithful } from "../nonDecision/effect/SlideFaithful.js";
 import { StepFaithful } from "../nonDecision/effect/StepFaithful.js";
 import type { Then } from "../nonDecision/effect/Then.js";
+import { applyPostStateThen } from "../nonDecision/effect/Then.js";
 import { Vote } from "../nonDecision/effect/Vote.js";
 import { SetNextPlayer } from "../nonDecision/effect/set/nextPlayer/SetNextPlayer.js";
 import { SetRotation } from "../nonDecision/effect/set/direction/SetRotation.js";
@@ -492,21 +493,26 @@ class BetDecision implements MovesFunction {
     const min = this.range.minFn.eval(ctx);
     const max = this.range.maxFn.eval(ctx);
     const mover = betMover(ctx, player);
-    const thenList = this.thenMoves?.eval(ctx) ?? [];
     const moves: LudiiMove[] = [];
 
     for (let amount = min; amount <= max; amount++) {
-      moves.push(new LudiiMove({
+      let move = new LudiiMove({
         id: `bet:${player}:${amount}`,
         label: `Bet P${player} ${amount}`,
         siteIndices: [],
         mover,
         placedOwner: mover,
         actions: [new ActionBet(player, amount)],
-        then: thenList,
         fromSite: -1,
         toSite: -1,
-      }));
+      });
+      // @java Bet.java:101-103 — `moves.get(j).then().add(then().moves())`:
+      // the consequence is attached for APPLY-TIME evaluation. The old code
+      // pre-evaluated the then at generation time, so Morra's `(set Pot
+      // (+ (pot) (amount P1)))` read the PRE-bet amount/pot and baked stale
+      // SetPot actions into every candidate move.
+      move = applyPostStateThen(this.thenMoves, ctx, move);
+      moves.push(move);
     }
 
     return moves;
