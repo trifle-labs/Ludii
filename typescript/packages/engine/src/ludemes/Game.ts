@@ -652,6 +652,12 @@ export class Game implements Game {
     const initialDiceValues = numDice > 0 ? new Array(numDice).fill(0) : undefined;
 
     let state = new State(1, cells, this.componentLabels, {
+      // @java Board.java — thread the board's declared `use:` type so the
+      // owned registry labels positions correctly (see State.defaultSiteType).
+      defaultSiteType: (() => {
+        const ds = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+        return typeof ds === "function" ? ds() : ds ?? "Cell";
+      })(),
       numPlayers: this.numPlayers,
       whats,
       countAt,
@@ -1381,6 +1387,12 @@ export class Game implements Game {
     if (typeof evalRule.eval !== "function") return;
 
     const state = new State(1, cells, this.componentLabels, {
+      // @java Board.java — thread the board's declared `use:` type so the
+      // owned registry labels positions correctly (see State.defaultSiteType).
+      defaultSiteType: (() => {
+        const ds = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+        return typeof ds === "function" ? ds() : ds ?? "Cell";
+      })(),
       numPlayers: this.numPlayers,
       whats,
       countAt,

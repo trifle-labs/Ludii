@@ -212,6 +212,13 @@ export interface StateOptions {
    * Keyed by SiteType name; arrays indexed by that type's element id.
    */
   readonly typedSites?: ReadonlyMap<string, TypedChannel>;
+  /**
+   * @java game/equipment/container/board/Board.java — the board's declared
+   * `use:` default graph-element type, threaded from Board.defaultSite via
+   * Game.ts. Defaults to "Cell" for boards that don't declare `use:`. The
+   * `owned` registry labels positions with it (@java FullLocation.siteType).
+   */
+  readonly defaultSiteType?: string;
   /** @java State.sitesToRemove() — EndOfTurn-queued capture sites (Frisian). */
   readonly toClear?: ReadonlySet<number>;
   /**
@@ -356,6 +363,8 @@ export class State {
 
   /** Dual-SiteType channels. See {@link StateOptions.typedSites}. */
   public readonly typedSites: ReadonlyMap<string, TypedChannel>;
+  /** @see StateOptions.defaultSiteType */
+  public readonly defaultSiteType: string;
 
   /** @java State.sitesToRemove(). See {@link StateOptions.toClear}. */
   public readonly toClear: ReadonlySet<number>;
@@ -397,7 +406,10 @@ export class State {
             (byComp[e.comp] ??= []).push({
               site: () => e.site,
               level: () => e.level,
-              siteType: () => "Cell",
+              // @java FullLocation.siteType — positions carry the board's
+              // real default type, not a hardcoded Cell (Triple Tangle's
+              // use:Vertex board made every on:Vertex forEach see nothing).
+              siteType: () => this.defaultSiteType,
             });
           }
           return byComp;
@@ -408,6 +420,8 @@ export class State {
     const cells = this.cells;
     const whats = this.whats;
     const stacks = this.stacks;
+    const typedSites = this.typedSites;
+    const defaultSiteType = this.defaultSiteType;
     return {
       positions: (pid: number) => {
         const byComp: Array<Array<{ site(): number; level(): number; siteType(): string }>> = [];
@@ -428,12 +442,24 @@ export class State {
             for (let level = 0; level < st.length; level++) {
               if ((st[level] ?? 0) === pid) {
                 const comp = this.whatAtSiteLevel(s, level);
-                (byComp[comp] ??= []).push({ site: () => s, level: () => level, siteType: () => "Cell" });
+                (byComp[comp] ??= []).push({ site: () => s, level: () => level, siteType: () => defaultSiteType });
               }
             }
           } else if (cells[s] === pid) {
             const comp = whats[s] ?? 0;
-            (byComp[comp] ??= []).push({ site: () => s, level: () => 0, siteType: () => "Cell" });
+            (byComp[comp] ??= []).push({ site: () => s, level: () => 0, siteType: () => defaultSiteType });
+          }
+        }
+        // @java FullOwned.add(playerId, componentId, pieceLoc, type) — the
+        // default-channel scan above never covers typedSites (secondary
+        // Edge/Vertex occupancy on a non-default board), so on:Edge/on:Vertex
+        // forEach branches always saw zero candidates (Triple Tangle).
+        for (const [type, ch] of typedSites) {
+          for (let s = 0; s < ch.who.length; s++) {
+            if ((ch.who[s] ?? 0) === pid) {
+              const comp = ch.what[s] ?? 0;
+              (byComp[comp] ??= []).push({ site: () => s, level: () => 0, siteType: () => type });
+            }
           }
         }
         return byComp;
@@ -533,6 +559,7 @@ export class State {
     this.diceValues = Object.freeze([...(options.diceValues ?? [])]);
     this.diceRolledFaces = Object.freeze([...(options.diceRolledFaces ?? [])]);
     this.typedSites = options.typedSites ?? new Map();
+    this.defaultSiteType = options.defaultSiteType ?? "Cell";
     this.toClear = options.toClear ?? new Set();
     // NOT frozen: the stalemated flags are a CACHE mutated in place by real
     // move generation (@java Game.java:2948 setStalemated), like Java's
@@ -1729,6 +1756,7 @@ export class State {
         diceValues: patch.diceValues ?? this.diceValues,
         diceRolledFaces: patch.diceRolledFaces ?? this.diceRolledFaces,
         typedSites: patch.typedSites ?? this.typedSites,
+        defaultSiteType: patch.defaultSiteType ?? this.defaultSiteType,
         toClear: patch.toClear ?? this.toClear,
         stalemated: patch.stalemated ?? this.stalemated,
         storedState: patch.storedState ?? this.storedState,

@@ -176,7 +176,10 @@ export class TakeControl implements MovesFunction {
       const count = stateAtSite.countAtSite?.(site) ?? 1;
 
       const actionRemove = new ActionRemove({ to: site });
-      const actionAdd = new ActionAdd({ to: site, what: newWhat, count });
+      // @java ActionAdd.java:299 — owned().add uses the resolved newOwner
+      // explicitly; the TS ActionAdd ctor falls back to `owner ?? what` when
+      // omitted, silently owning the re-controlled piece by component index.
+      const actionAdd = new ActionAdd({ to: site, what: newWhat, owner: newOwner, count });
 
       const move = new LudiiMove({
         id: "takeControl",
@@ -225,22 +228,29 @@ export class TakeControl implements MovesFunction {
    * @java TakeControl.eval lines 141-154 — look up newComponentOwned by name+owner.
    */
   private _findEquivalentPiece(what: number, newOwner: number, ctx: Context): number {
+    // @java TakeControl.java:100-176 — context.components(), which the 1:1
+    // port exposes as game.equipment.pieces (1-based). `game.components`
+    // never existed on the real Game class — it was always undefined, so
+    // this lookup silently returned UNDEFINED for every site and
+    // (take Control …) generated ZERO moves (Mini Wars).
     const gameAny = ctx.game as unknown as {
-      components?: Array<{ owner?: number; name?: string; nameWithoutNumber?: string } | null>;
+      equipment?: { pieces?: Array<{ owner: number; name: string; index: number } | null> };
     };
-    const components = gameAny.components;
+    const components = gameAny.equipment?.pieces;
     if (!components) return UNDEFINED;
 
-    const original = components[what];
+    const original = components[what] ?? components.find((c) => c?.index === what) ?? null;
     if (!original) return UNDEFINED;
 
-    const baseName = original.nameWithoutNumber ?? original.name ?? "";
+    // @java Component.getNameWithoutNumber() — strip the trailing owner-style
+    // digit run so per-player pieces sharing a base name match across owners.
+    const baseName = (original.name ?? "").replace(/\d+$/, "") || (original.name ?? "");
     for (let i = 1; i < components.length; i++) {
       const c = components[i];
       if (!c) continue;
-      const cName = c.nameWithoutNumber ?? c.name ?? "";
+      const cName = (c.name ?? "").replace(/\d+$/, "") || (c.name ?? "");
       if (c.owner === newOwner && cName === baseName) {
-        return i;
+        return c.index;
       }
     }
     return UNDEFINED;

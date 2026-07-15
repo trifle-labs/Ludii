@@ -32,6 +32,16 @@ function piecePlacement(piece: Piece | null): { what: IntFunction; owner: number
       eval: (ctx) => {
         const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ name: string; owner: number; index: number }> } })
           .equipment?.pieces ?? [];
+        // @java game/util/moves/Piece.java:69-71 + game/functions/ints/board/
+        // Id.java:200-203 — a bare (piece "Name") always compiles to
+        // Id(name, null), an EXACT full-name match with NO owner-suffix
+        // decomposition (the suffix path is Id.java:170-190's separate
+        // two-arg overload). Without this, a piece whose name legitimately
+        // ends in digits that are NOT an owner (2048's "Square2".."Square2048"
+        // tile values) resolved to the raw numeral: "Square2" -> index 2
+        // (really Square4), desyncing the board from the first tile spawn.
+        const literal = pieces.find((p) => p.name.toLowerCase() === name.toLowerCase());
+        if (literal) return literal.index;
         const exact = pieces.find((p) => `${p.name}${p.owner}`.toLowerCase() === name.toLowerCase());
         const byBase = pieces.find((p) => p.name.toLowerCase() === baseName && (owner === null || p.owner === owner));
         return exact?.index ?? byBase?.index ?? (owner ?? ctx.state.mover);
