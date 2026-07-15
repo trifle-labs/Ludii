@@ -479,8 +479,27 @@ export class ActionMove extends BaseAction {
       // vacated level; count-piles (srcCount>1) keep the 0 (no per-instance
       // state).
       const srcSiteState = srcCount <= 1 ? state.stateAtLevel(this.fromIndex, topLevel) : 0;
-      const topValue =
-        srcArr.length > 0 ? state.valueAtLevel(this.fromIndex, topLevel) : state.valueAtSite(this.fromIndex);
+      // @java ActionMoveTopPiece.java:485-498 (5-arg addItemGeneric — no value
+      // write, ContainerStateStacks.java:278-301's addItem() sets what/who
+      // only, leaving the new level's value at its zero default) applies to
+      // EVERY relocation dispatched through this stacking branch, hand-exit
+      // or not — Constants and this method carry no `levelFrom`. This branch
+      // (a genuine per-level stack source: multi-level, count-pile, or a
+      // materialised destination stack) popped a hand's count-pile top via
+      // `state.valueAtSite(this.fromIndex)` unconditionally, resurfacing the
+      // hand's persisted value-1 "Counter" identity marker on the board the
+      // instant it entered a stack (Thaayam: a Counter exiting hand while
+      // landing on an occupied enemy site pushed a value-1 level here — the
+      // sibling flat branch below already drops hand-exit value via
+      // `fromHandSite`, but this stack branch was untouched, so the same
+      // false "twin" capture-eligibility read `(value Piece at:(to)) = 1`
+      // still fired two branches downstream, corrupting the turn order by
+      // ply 93 in RandomTrial_0).
+      const topValue = state.stackingGame && this.fromHandSite
+        ? 0
+        : srcArr.length > 0
+          ? state.valueAtLevel(this.fromIndex, topLevel)
+          : state.valueAtSite(this.fromIndex);
       const fromRow: number[] = [];
       for (let l = 0; l < topLevel; l++) fromRow.push(state.valueAtLevel(this.fromIndex, l));
       // @java ActionMoveTopPiece non-stacking apply — in a game without stack
@@ -758,7 +777,21 @@ export class ActionMove extends BaseAction {
       // games (Plakoto etc.), so this is a no-op there. Preserve the pre-push
       // levels' values FIRST (the buried piece's value must resurface when
       // the pin later pops).
-      const carriedValue = state.valueTop(this.fromIndex);
+      // @java ActionMoveTopPiece.java:485-498's 5-arg addItemGeneric (no
+      // value write) is what a hand-exit dispatches through when it has no
+      // recorded levelFrom (Thaayam's Counter moves never carry one) — the
+      // Kawasukuts carry-forward above is specifically the levelFrom-tagged
+      // ActionMoveLevelFrom path (see the comment above), which this method
+      // cannot yet distinguish from a plain top-piece push except via the
+      // fromHandSite flag Java also keys the flat branch's drop on below.
+      // Without this gate, a Thaayam Counter exiting hand onto an occupied
+      // enemy site (pushing a level here, not landing on an empty site)
+      // carried its hand value=1 identity marker onto the board — mirroring
+      // the flat branch's already-fixed drop, this stack-push branch was the
+      // remaining unguarded site (RandomTrial_0 ply 12: hand3->22 pushed
+      // value=1 onto the existing stack, later popped at ply 13/85 and
+      // misread as a capturable "twin", desyncing the turn order by ply 93).
+      const carriedValue = state.stackingGame && this.fromHandSite ? 0 : state.valueTop(this.fromIndex);
       {
         const preLevels = Math.max(1, state.stackSize(this.toIndex));
         const row: number[] = [];
