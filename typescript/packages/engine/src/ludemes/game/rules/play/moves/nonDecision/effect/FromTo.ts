@@ -274,6 +274,36 @@ export class FromTo implements MovesFunction {
           ctx._evalTo = origTo;
           continue;
         }
+        // @java MoveUtilities.chainRuleWithAction (MoveUtilities.java:80-121)
+        // prepends the capture effect's actions ahead of the mover's own
+        // ActionMove, so at APPLY time the capture executes FIRST. If the
+        // capture sends the victim BACK ONTO the mover's own `from` site
+        // (HittingCapture -> victim's StartingPoint == the mover's current
+        // site: Gavalata ply 18, Main Pacheh), a plain top-popping ActionMove
+        // chosen below (because `lv` looked like the stack top AT GENERATION
+        // TIME) grabs the just-arrived victim instead of the mover's own
+        // piece — a silent identity swap surfacing plies later. Precompute
+        // the capture (single eval, just moved earlier) so the level-branch
+        // decision can see the hazard.
+        const captureThens: DeferredThen[] = [];
+        let captureActions: import("../../../../../../../action/index.js").Action[] = [];
+        if (this.captureEffect != null &&
+            (this.captureRule == null || this.captureRule.eval(ctx))) {
+          ctx._evalFrom = from;
+          ctx._evalTo = to;
+          const captureMoves = this.captureEffect.eval(ctx);
+          captureActions = captureMoves.flatMap(m => [...m.actions]);
+          // @java chainRuleWithAction(..., decision=false)
+          for (const a of captureActions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+          // @java chainRuleWithAction also chains the capture effect's then()
+          // onto the move's then() list.
+          for (const m of captureMoves) for (const dt of m.deferredThens) captureThens.push(dt);
+          ctx._evalFrom = origFrom;
+          ctx._evalTo = origTo;
+        }
+        const captureReturnsToFrom = captureActions.some(a => {
+          try { return a.to() === from; } catch { return false; }
+        });
         if (this.stack && this.levelFrom !== null) {
           // @java FromTo.java:328-340 — when levelFrom is given, Java creates a
           // SINGLE-LEVEL ActionMove(from, levelFrom, to, …, stack=false) even
@@ -354,7 +384,12 @@ export class FromTo implements MovesFunction {
           // count-backed pile (stacks.length<=1 with countAt>1): ActionMoveLevelFrom's
           // count-pile branch differs from plain ActionMove's, which Ashta-kashte's
           // count-backed level: moves rely on. Gyan's buried piece is a true stack.
-          if (lv >= 0 && lv < fromStackLen - 1 && fromStackLen > 1) {
+          // @java FromTo.java:328-343 bakes levelFrom unconditionally when
+          // present — Java never falls back to a top-pop. Force the explicit-
+          // level path whenever the capture-return hazard is live, even if
+          // `lv` looks like the top at generation time: the prepended capture
+          // will have re-occupied the top by apply time.
+          if (lv >= 0 && (captureReturnsToFrom || (lv < fromStackLen - 1 && fromStackLen > 1))) {
             moveAction = new ActionMoveLevelFrom(from, lv, to);
           } else {
             // Dual-SiteType: stamp the declared types so application routes
@@ -381,30 +416,11 @@ export class FromTo implements MovesFunction {
         }
         actions.push(moveAction);
 
-        // @java FromTo.java:406-414 — capture effect if capture rule passes.
-        // The recorded Java move orders the VICTIM'S relocation FIRST
-        // (Backgammon dec9: Move(25->19) then Move(20->25)): the apply's
-        // (from (to)) names the PRE-move occupant. Appending it after the
-        // attacker's ActionMove made the hit relocate the ATTACKER off the
-        // stack top (P1's piece surfaced on P2's bar). PREPEND.
-        const captureThens: DeferredThen[] = [];
-        if (this.captureEffect != null &&
-            (this.captureRule == null || this.captureRule.eval(ctx))) {
-          ctx._evalFrom = from;
-          ctx._evalTo = to;
-          const captureMoves = this.captureEffect.eval(ctx);
-          const captureActions = captureMoves.flatMap(m => [...m.actions]);
-          // @java chainRuleWithAction(..., decision=false)
-          for (const a of captureActions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
-          actions.unshift(...captureActions);
-          // @java chainRuleWithAction also chains the capture effect's then()
-          // onto the move's then() list — (to X (apply (remove (to)
-          // (then (addScore Mover 1))))) must still accumulate score. Forward
-          // the capture move's deferred thens so Move.apply evaluates them.
-          for (const m of captureMoves) for (const dt of m.deferredThens) captureThens.push(dt);
-          ctx._evalFrom = origFrom;
-          ctx._evalTo = origTo;
-        }
+        // @java FromTo.java:406-414 — capture effect prepended ahead of the
+        // mover's own action so it executes FIRST at apply time (Backgammon
+        // dec9: the victim's relocation precedes the attacker's move). The
+        // eval itself moved above the level-branch decision (see precompute).
+        actions.unshift(...captureActions);
 
         const move = new LudiiMove({
           id: `fromTo:${mover}:${from}:${to}`,
