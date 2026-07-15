@@ -130,8 +130,18 @@ export class Step extends Effect {
    *  - A GROUP direction (Adjacent/Orthogonal/Diagonal/All) steps both halves of
    *    each axis (ray[1] and opposite[1]).
    */
-  private stepTargets(ctx: Context, cellRadials: CellFlatRadials, fromSiteArg?: number): number[] {
-    const directions = this.dirnChoice.eval(ctx);
+  private stepTargets(
+    ctx: Context,
+    cellRadials: CellFlatRadials,
+    fromSiteArg?: number,
+    precomputedDirections?: readonly string[],
+  ): number[] {
+    // @java Step.java:167 — direction resolution happens BEFORE
+    // context.setFrom(from) (line 176); eval() below now resolves directions
+    // first and passes them in here so this method never re-resolves them
+    // AFTER ctx._evalFrom has already been overwritten with this Step's own
+    // `from` (see the comment in eval()).
+    const directions = precomputedDirections ?? this.dirnChoice.eval(ctx);
     const mover = ctx.state.mover;
     const playerDirs = (ctx.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
     // @java Component.getDirn() — the stepping piece's own facing (componentFacing
@@ -279,6 +289,21 @@ export class Step extends Effect {
     const origFrom = (ctx as unknown as { _evalFrom?: number })._evalFrom ?? -1;
     const origTo = (ctx as unknown as { _evalTo?: number })._evalTo ?? -1;
 
+    // @java Step.java:167 — dirnChoice.convertToAbsolute(context) is resolved
+    // BEFORE context.setFrom(from) (line 176). This matters for a NESTED
+    // Step whose direction argument is (from) macro-substituted from an
+    // OUTER Step's own from-site: at direction-resolution time, ctx's
+    // current `from` must still be the OUTER Step's value, not this Step's
+    // own `from` (which Java hasn't "set" into the context yet at that
+    // point). The old code set `ctx._evalFrom = from` BEFORE calling
+    // stepTargets() — which internally resolves dirnChoice — inverting
+    // Java's order. Tandems' second-move mechanic (a nested Step whose
+    // direction depends on the outer Step's from via `("LastDirection"
+    // Cell)` / CanMoveAnotherStone) first diverged at ply 28 (the first move
+    // of a new stone pair) because direction resolution saw the wrong,
+    // already-overwritten `from`.
+    const precomputedDirections = this.dirnChoice.eval(ctx);
+
     (ctx as unknown as { _evalFrom?: number })._evalFrom = from;
 
     // @java Step.java:178 — from condition
@@ -296,7 +321,7 @@ export class Step extends Effect {
     // stepTargets resolves relative directions (FR/FL/Forward via mover facing) and
     // walks one step per direction (ray-only for a single heading; both halves of each
     // axis for a group direction like Adjacent/Orthogonal/Diagonal).
-    for (const to of this.stepTargets(ctx, cellRadials, from)) {
+    for (const to of this.stepTargets(ctx, cellRadials, from, precomputedDirections)) {
       (ctx as unknown as { _evalTo?: number })._evalTo = to;
       if (!this.rule.eval(ctx)) continue;
 

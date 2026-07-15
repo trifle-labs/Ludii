@@ -28,6 +28,32 @@ export class ActionCopy extends BaseAction {
     const owner = state.who(this.fromIndex);
     const what = state.whatAtSite(this.fromIndex);
     if (owner === 0 && what === 0) return state; // Truly empty source
+
+    // @java ActionCopy.apply (ActionCopy.java:198, `final boolean
+    // requiresStack = game.isStacking();`) branches on the GAME's stacking
+    // flag, not a per-action marker: in a stacking game, Copy PUSHES a new
+    // level onto `to` (Java's internal ActionMove.construct moves the source
+    // top to `to`, then csA.addItemGeneric/insert republishes an identical
+    // level back onto `from` — net effect: `from`'s stack height is
+    // unchanged, `to` grows by exactly one level). The TS port always took
+    // the flat withCell/withWhatAt path below regardless of
+    // `state.stackingGame`, so a stacking-game Copy onto an already-occupied
+    // destination overwrote its existing top piece instead of stacking a new
+    // level on top of it (Dig Dig: MOVE_MISMATCH — the recorded Java move
+    // grew the destination stack by one level; the flat TS write left the
+    // stack height unchanged).
+    if (state.stackingGame) {
+      let stackNext = state.withStackPush(this.toIndex, owner, what);
+      const srcState = state.stateAtSite(this.fromIndex);
+      stackNext = stackNext.withStateAt(this.toIndex, srcState);
+      const srcValue = state.valueAtSite(this.fromIndex);
+      stackNext = stackNext.withValueAt(this.toIndex, srcValue);
+      const srcRot = (state as unknown as { rotationAt?: readonly number[] }).rotationAt?.[this.fromIndex] ?? 0;
+      const withRotStack = (stackNext as unknown as { withRotationAt?: (s: number, r: number) => State }).withRotationAt;
+      if (withRotStack) stackNext = withRotStack.call(stackNext, this.toIndex, srcRot);
+      return stackNext;
+    }
+
     let next = state.withCell(this.toIndex, owner);
     if (what !== 0) next = next.withWhatAt(this.toIndex, what);
     // @java ActionCopy.java:195-196 -> ActionMove.apply — the copy carries

@@ -91,26 +91,38 @@ class AllGroups extends BaseBooleanFunction {
     const origTo = typeof ctx.to === "function" ? ctx.to() : -1;
     const origRegion = typeof ctx.region === "function" ? ctx.region() : null;
 
-    const stateCtx = typeof ctx.state === "function" ? ctx.state() : null;
-    const who = stateCtx?.mover ?? 0;
-    const owned = stateCtx && typeof stateCtx.owned === "function" ? stateCtx.owned() : null;
+    // @java Context.state()/Context.game() are always available in Java. The
+    // TS port exposes them as readonly PROPERTIES (context.ts:39-40), not
+    // methods — `typeof ctx.state === "function"` (as this code did) is
+    // therefore always false, so `stateCtx`/`gameCtx` were always null:
+    // `sitesToCheck` stayed empty and AllGroups.eval unconditionally
+    // returned `true` for every (all Groups ...) win-condition check
+    // (Symple: WINNER_MISMATCH @60 — a real multi-territory board was
+    // reported as "all one territory").
+    const who = context.state.mover;
+    // @java State.owned() exposes per-player site lists via
+    // `owned().sites(pid)`. The TS port's `state.owned` getter
+    // (state.ts:392-394) instead exposes `positions(pid)` returning
+    // `{ site(): number; level(): number; siteType(): string }[]` — there is
+    // no `sites(pid): number[]` method on it, so the old
+    // `typeof owned.sites === "function"` guard was checking for an API
+    // that never existed on the TS getter either.
+    const ownedSites = (pid: number): number[] =>
+      context.state.owned.positions(pid).map((p) => p.site());
 
     // Java: We get the minimum set of sites to look.
     const sitesToCheck: number[] = [];
     if (this.groupElementConditionFn !== null) {
-      const gameCtx = typeof ctx.game === "function" ? ctx.game() : null;
-      const playerCount = gameCtx && typeof gameCtx.players === "function"
-        ? (typeof gameCtx.players().size === "function" ? gameCtx.players().size!() : 0)
-        : 0;
+      const playerCount = context.game.numPlayers;
       for (let i = 0; i <= playerCount; i++) {
-        const allSites = owned && typeof owned.sites === "function" ? owned.sites(i) : [];
+        const allSites = ownedSites(i);
         for (let j = 0; j < allSites.length; j++) {
           const site = allSites[j]!;
           if (site < maxIndexElement) sitesToCheck.push(site);
         }
       }
     } else {
-      const moverSites = owned && typeof owned.sites === "function" ? owned.sites(who) : [];
+      const moverSites = ownedSites(who);
       for (let j = 0; j < moverSites.length; j++) {
         const site = moverSites[j]!;
         if (site < maxIndexElement) sitesToCheck.push(site);

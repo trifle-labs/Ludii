@@ -273,16 +273,45 @@ export class Add implements MovesFunction {
         : [];
       const count = this.countFn?.eval(ctx) ?? 1;
 
-      const action = new ActionAdd({
-        to: site,
-        what,
-        owner,
-        count,
-        onStack: this.stack,
-        ...(typedTarget !== null ? { type: typedTarget } : {}),
-        ...(stateVal !== undefined ? { state: stateVal } : {}),
-      });
-      action.setDecision(true);
+      // @java Add.java:208-217/291-300 — a stacking Add with count>1 pushes ONE
+      // stack level per ActionAdd; Java achieves an N-level push by appending
+      // N-1 additional count=1 ActionAdd sub-actions onto the SAME Move (the
+      // `remainingCount` while-loop), not by passing count=N to one ActionAdd.
+      // action-add.ts's onStack branch (withStackPush) only ever pushes a
+      // single level regardless of countValue, so passing count straight
+      // through left the stack (count-1) levels short whenever count>1 and
+      // stack:true (Overflow/Ringo double-sow moves — DEBUG_PLY=16/17 showed
+      // site 2's stack reaching height 2 instead of the required 3).
+      const addActions: ActionAdd[] = [];
+      if (this.stack) {
+        const pushCount = Math.max(count, 1);
+        for (let i = 0; i < pushCount; i++) {
+          addActions.push(new ActionAdd({
+            to: site,
+            what,
+            owner,
+            count: 1,
+            onStack: true,
+            ...(typedTarget !== null ? { type: typedTarget } : {}),
+            ...(stateVal !== undefined ? { state: stateVal } : {}),
+          }));
+        }
+        // @java Add.java:203-204 — only the FIRST ActionAdd is marked as the
+        // decision; the `remainingCount` sub-actions never call setDecision.
+        addActions[0]!.setDecision(true);
+      } else {
+        const action = new ActionAdd({
+          to: site,
+          what,
+          owner,
+          count,
+          onStack: this.stack,
+          ...(typedTarget !== null ? { type: typedTarget } : {}),
+          ...(stateVal !== undefined ? { state: stateVal } : {}),
+        });
+        action.setDecision(true);
+        addActions.push(action);
+      }
 
       moves.push(new Move({
         id: `add:${mover}:${site}`,
@@ -290,7 +319,7 @@ export class Add implements MovesFunction {
         siteIndices: [site],
         mover,
         placedOwner,
-        actions: [...applyActions, action],
+        actions: [...applyActions, ...addActions],
         decisionIndex: applyActions.length,
       }));
     }

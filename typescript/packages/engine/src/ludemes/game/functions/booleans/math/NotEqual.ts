@@ -24,7 +24,25 @@ export class NotEqual implements BooleanFunction {
 
   /** @java NotEqual.eval(Context): valueA.eval(context) != valueB.eval(context) */
   public eval(ctx: Context): boolean {
-    return this.valueA.eval(ctx) !== this.valueB.eval(ctx);
+    // @java NotEqual has TWO overloads, same as Equals (Equals.ts): a plain
+    // IntFunction/IntFunction numeric form and a RegionFunction/RegionFunction
+    // unordered SET form. The reflection compiler duck-types region args into
+    // the int slots, so `number[] !== number[]` is a REFERENCE comparison that
+    // is always true (two distinct array instances), which made
+    // (!= (sites ...) (sites ...)) region-inequality checks unconditionally
+    // report "not equal" even for identical sets — e.g. an (all Different)/
+    // territory-adjacency guard built on (!= Region Region) never rejected the
+    // supposedly-equal case (Sibling: WINNER_MISMATCH @60). Mirror Equals.ts's
+    // Array.isArray + set-comparison fix and negate the result.
+    const a = (this.valueA as { eval(c: Context): number | readonly number[] }).eval(ctx);
+    const b = (this.valueB as { eval(c: Context): number | readonly number[] }).eval(ctx);
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return true;
+      const setB = new Set<number>(b as readonly number[]);
+      for (const x of a as readonly number[]) if (!setB.has(x)) return true;
+      return false;
+    }
+    return a !== b;
   }
 }
 
