@@ -1752,6 +1752,22 @@ export class State {
     const nextWhatStacks =
       patch.whatStacks ??
       (cellsDrivenSync ? syncWhatStacks(this.whatStacks, this.stacks, nextCells) : this.whatStacks);
+    // @java ContainerStateStacks.java:707 (level-less remove) / :731,757-759
+    // (level-aware remove's shift loop) — Java's chunk-based stack keeps
+    // who/what/state/rotation/value together in ONE object, so removing a
+    // piece clears `state` in the very same atomic write as `who`/`what`.
+    // This TS port instead splits them into parallel arrays (`stacks`,
+    // `whatStacks`, `stateStacks`), so a cells-driven resync must slice the
+    // parallel stateStacks column exactly the way syncWhatStacks slices
+    // whatStacks above — otherwise a captured piece's per-level state (e.g.
+    // Aj Sakakil's CapturedPiece/CapturingPiece bookkeeping) survives a
+    // single-level ActionRemove (which only calls withCell/withWhatAt) and
+    // resurfaces when a later piece is pushed onto the same site, corrupting
+    // that piece's own (state at:… level:…) read and silently zeroing its
+    // move list.
+    const nextStateStacks =
+      patch.stateStacks ??
+      (cellsDrivenSync ? syncStateStacks(this.stateStacks, this.stacks, nextCells) : this.stateStacks);
     return new State(
       patch.mover ?? this.mover,
       nextCells,
@@ -1792,7 +1808,7 @@ export class State {
         votes: patch.votes ?? this.votes,
         decided: patch.decided !== undefined ? patch.decided : this.decided,
         valueStacks: patch.valueStacks ?? this.valueStacks,
-        stateStacks: patch.stateStacks ?? this.stateStacks,
+        stateStacks: nextStateStacks,
         numTurn: patch.numTurn ?? this.numTurn,
         numTurnSamePlayer:
           patch.numTurnSamePlayer ?? this.numTurnSamePlayer,
@@ -1887,6 +1903,33 @@ function syncWhatStacks(
       out.push(prevWhat.slice(0, -1));
     } else {
       out.push(prevWhat);
+    }
+  }
+  return out;
+}
+
+// Mirrors syncWhatStacks (above) for the per-level STATE column (@java
+// ContainerStateStacks.java:707,731,757-759 — `state` travels in the same
+// chunk as `who`/`what`, so it must collapse in lockstep here too). Stays
+// `undefined` when the site's stateStacks row was never materialised — most
+// games never touch `(state at:… level:…)`, so there is nothing to resync.
+function syncStateStacks(
+  previousState: readonly (readonly number[])[] | undefined,
+  previousOwner: readonly (readonly number[])[],
+  cells: readonly number[],
+): (readonly number[])[] | undefined {
+  if (previousState === undefined) return undefined;
+  const out: (readonly number[])[] = [];
+  for (let i = 0; i < cells.length; i += 1) {
+    const top = cells[i] ?? 0;
+    const prevOwner = previousOwner[i] ?? [];
+    const prevTop = prevOwner.length > 0 ? (prevOwner[prevOwner.length - 1] ?? 0) : 0;
+    const prevState = previousState[i] ?? [];
+    if (top !== prevTop && top === 0 && prevState.length > 0) {
+      // Owner top removed → drop the parallel per-level state too.
+      out.push(prevState.slice(0, -1));
+    } else {
+      out.push(prevState);
     }
   }
   return out;
