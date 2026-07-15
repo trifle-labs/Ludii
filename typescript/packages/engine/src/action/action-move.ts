@@ -79,6 +79,20 @@ export interface ActionMoveOptions {
    * "StackMove numLevel=N"). Undefined = whole stack.
    */
   readonly numLevel?: number;
+  /**
+   * True when `from` is a level-less source site (Java: hand/off-board
+   * containers have no addressable per-site level, so Game.isStacking()
+   * dispatches the level-less ActionMoveTopPiece stacking branch —
+   * ActionMoveTopPiece.java:485-498 calls the bare 5-arg addItemGeneric,
+   * which never writes a value — ContainerStateStacks.java:278-301).
+   * Board-to-board moves carry an explicit level and dispatch through
+   * ActionMoveLevelFrom's 8-arg addItemGeneric, which DOES preserve the
+   * source value (ActionMoveLevelFrom.java:435-457). In a stacking game
+   * this flag replicates the asymmetry: a value set while a piece sits in
+   * hand (Thaayam's Counter value=1 identity encoding) is dropped the
+   * instant it enters the board, then preserved on every board hop.
+   */
+  readonly fromHandSite?: boolean;
 }
 
 export class ActionMove extends BaseAction {
@@ -102,6 +116,8 @@ export class ActionMove extends BaseAction {
   private readonly numLevel: number | undefined;
   /** @see ActionMoveOptions.toTypedNonDefault */
   private readonly toTypedNonDefault: boolean;
+  /** @see ActionMoveOptions.fromHandSite */
+  private readonly fromHandSite: boolean;
 
   public constructor(options: ActionMoveOptions) {
     super();
@@ -127,6 +143,7 @@ export class ActionMove extends BaseAction {
     this.stackMove = options.stack ?? false;
     this.numLevel = options.numLevel;
     this.toTypedNonDefault = options.toTypedNonDefault ?? false;
+    this.fromHandSite = options.fromHandSite ?? false;
   }
 
   public override apply(state: State): State {
@@ -596,8 +613,15 @@ export class ActionMove extends BaseAction {
       this.stateValue !== ACTION_OFF ? this.stateValue : currentStateFrom;
     const destRotation =
       this.rotationValue !== ACTION_OFF ? this.rotationValue : currentRotationFrom;
+    // @java ActionMoveTopPiece.java:485-498 (5-arg addItemGeneric — no
+    // value write) vs ActionMoveLevelFrom.java:435-457 (8-arg, value
+    // carried): hand-exit moves in a stacking game DROP the piece's value.
     const destValue =
-      this.valueValue !== ACTION_OFF ? this.valueValue : currentValueFrom;
+      this.valueValue !== ACTION_OFF
+        ? this.valueValue
+        : state.stackingGame && this.fromHandSite
+          ? 0
+          : currentValueFrom;
     // Java parity (ActionMoveTopPiece.apply, non-stacking branch): "If the
     // origin is empty we do not apply this action" → `return this;`. An empty
     // source is a silent no-op, not an error. This arises when a hypothetical

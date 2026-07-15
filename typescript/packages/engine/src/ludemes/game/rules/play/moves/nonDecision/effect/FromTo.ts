@@ -455,9 +455,14 @@ export class FromTo implements MovesFunction {
             // route to a typed channel. Compute the decision here (apply() has no
             // Context) and pass it as a flag.
             const toNonDefault = isNonDefaultTyped(ctx, dtt);
+            // @java hand containers have no addressable per-site level — the
+            // signal ActionMoveTopPiece vs ActionMoveLevelFrom dispatch on.
+            // See ActionMoveOptions.fromHandSite (Thaayam value identity).
+            const boardSites = (ctx.game as unknown as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? Number.MAX_SAFE_INTEGER;
+            const fromHandSite = from >= boardSites;
             moveAction = (dft || dtt)
-              ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault })
-              : new ActionMove({ from, to });
+              ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault, fromHandSite })
+              : new ActionMove({ from, to, fromHandSite });
           }
         }
         actions.push(moveAction);
