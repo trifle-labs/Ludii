@@ -207,6 +207,22 @@ export function buildGraphRadials(traj: Trajectories): CellFlatRadials[] {
   const n = traj.numSites;
   const result: CellFlatRadials[] = new Array(n);
 
+  // @java Topology.java preGenerateDirection derives diagonal rays
+  // GEOMETRICALLY per SiteType for square-coordinate boards, not from
+  // literal edge presence. A plain (square N) Vertex board has ZERO diagonal
+  // graph edges, so "Adjacent" below only ever returns the 2 orthogonal
+  // axes — never NE/SW or NW/SE — even when a ruleset's push directions
+  // require diagonals (Tennessee Waltz's sashay push read [] radials and the
+  // whole (then …) cascade silently produced zero actions). Synthesize the 2
+  // missing diagonal axis-pairs from vertex coordinates, but ONLY for
+  // Vertex boards forming a COMPLETE, unmodified square lattice (whole-board
+  // density + orthogonal-edge completeness, checked once up front): a board
+  // carved via (remove (square N) edges:{…}) (Gurvan Xudag) still sits on
+  // lattice coordinates but is NOT complete — synthesizing there introduced
+  // phantom adjacency Java never has (validated as a WINNER_MISMATCH
+  // regression before this guard).
+  const coordMap = traj.kind === "Vertex" ? buildRegularSquareLatticeCoordMap(traj) : undefined;
+
   for (let site = 0; site < n; site++) {
     // Get all distinct radials for the "Adjacent" direction group.
     // Java: radials(type, site).distinctInDirection(Adjacent)
@@ -222,8 +238,121 @@ export function buildGraphRadials(traj: Trajectories): CellFlatRadials[] {
       axes.push({ ray, opposite });
     }
 
+    if (coordMap !== undefined) {
+      const synthesized = synthesizeDiagonalAxes(traj, coordMap, site, axes);
+      if (synthesized !== null) axes.push(...synthesized);
+    }
+
     result[site] = { axes };
   }
 
   return result;
+}
+
+function coordKey(x: number, y: number): string {
+  return `${Math.round(x * 1e6)}:${Math.round(y * 1e6)}`;
+}
+
+/**
+ * Whole-board density+completeness check (see buildGraphRadials doc above).
+ * Returns the coordinate→site map iff the board is a COMPLETE, unmodified
+ * square lattice; otherwise undefined (NO synthesis anywhere on this board).
+ */
+function buildRegularSquareLatticeCoordMap(traj: Trajectories): Map<string, number> | undefined {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  const coordMap = new Map<string, number>();
+  for (let s = 0; s < traj.numSites; s += 1) {
+    const x = traj.xOf(s);
+    const y = traj.yOf(s);
+    if (Number.isNaN(x) || Number.isNaN(y)) return undefined;
+    if (Math.abs(x - Math.round(x)) > 1e-9 || Math.abs(y - Math.round(y)) > 1e-9) return undefined;
+    coordMap.set(coordKey(x, y), s);
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+
+  const rx0 = Math.round(minX), rx1 = Math.round(maxX);
+  const ry0 = Math.round(minY), ry1 = Math.round(maxY);
+
+  // Density: every integer point in the bounding box must be a real site.
+  for (let x = rx0; x <= rx1; x += 1) {
+    for (let y = ry0; y <= ry1; y += 1) {
+      if (!coordMap.has(coordKey(x, y))) return undefined;
+    }
+  }
+
+  // Completeness: every orthogonally-adjacent lattice pair within the box
+  // must have a literal graph edge (a removed edge disqualifies the WHOLE
+  // board — edge removal is a board-wide game-authoring decision).
+  for (let x = rx0; x <= rx1; x += 1) {
+    for (let y = ry0; y <= ry1; y += 1) {
+      const site = coordMap.get(coordKey(x, y));
+      if (site === undefined) continue;
+      for (const [dx, dy] of [[1, 0], [0, 1]] as const) {
+        const nx = x + dx, ny = y + dy;
+        if (nx > rx1 || ny > ry1) continue;
+        const neighbour = coordMap.get(coordKey(nx, ny));
+        if (neighbour === undefined) continue;
+        const axes = traj.distinctRadialsByName(site, "Adjacent");
+        const hasEdge = axes.some((axis) => axis.ray[1] === neighbour)
+          || axes.some((axis) => (axis.opposites[0] ?? [])[1] === neighbour);
+        if (!hasEdge) return undefined;
+      }
+    }
+  }
+
+  return coordMap;
+}
+
+/**
+ * Synthesize the 2 diagonal axis-pairs (NE/SW, NW/SE) for `site` on a
+ * regular square lattice — only when every existing axis at this site is a
+ * strict orthogonal unit step and no diagonals are already present.
+ */
+function synthesizeDiagonalAxes(
+  traj: Trajectories,
+  coordMap: Map<string, number>,
+  site: number,
+  existingAxes: readonly FlatRadial[],
+): FlatRadial[] | null {
+  for (const axis of existingAxes) {
+    const a = axis.ray[0];
+    const b = axis.ray[1];
+    if (a === undefined || b === undefined) continue; // degenerate ray (isolated site) is fine
+    const dx = traj.xOf(b) - traj.xOf(a);
+    const dy = traj.yOf(b) - traj.yOf(a);
+    const isUnitOrtho =
+      (Math.abs(dx - 1) < 1e-9 && Math.abs(dy) < 1e-9) ||
+      (Math.abs(dx + 1) < 1e-9 && Math.abs(dy) < 1e-9) ||
+      (Math.abs(dx) < 1e-9 && Math.abs(dy - 1) < 1e-9) ||
+      (Math.abs(dx) < 1e-9 && Math.abs(dy + 1) < 1e-9);
+    if (!isUnitOrtho) return null; // not a square lattice at this site — untouched
+  }
+  if (existingAxes.length > 2) return null; // diagonals already present — untouched
+
+  const buildDiagonalRay = (dx: number, dy: number): number[] => {
+    const ray = [site];
+    let x = traj.xOf(site);
+    let y = traj.yOf(site);
+    for (;;) {
+      x += dx;
+      y += dy;
+      const next = coordMap.get(coordKey(x, y));
+      if (next === undefined) break;
+      ray.push(next);
+    }
+    return ray;
+  };
+
+  const synthesized: FlatRadial[] = [];
+  const neRay = buildDiagonalRay(1, 1);
+  const swRay = buildDiagonalRay(-1, -1);
+  if (neRay.length > 1 || swRay.length > 1) synthesized.push({ ray: neRay, opposite: swRay });
+  const nwRay = buildDiagonalRay(-1, 1);
+  const seRay = buildDiagonalRay(1, -1);
+  if (nwRay.length > 1 || seRay.length > 1) synthesized.push({ ray: nwRay, opposite: seRay });
+
+  return synthesized.length > 0 ? synthesized : null;
 }

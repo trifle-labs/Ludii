@@ -771,17 +771,58 @@ export class Graph {
   public removeFacesByIndex(indices: readonly number[]): void {
     const drop = new Set(indices.filter((i) => i >= 0 && i < this.flist.length));
     if (drop.size === 0) return;
+
+    const edgeKeyOf = (a: number, b: number): string => (a < b ? `${a}:${b}` : `${b}:${a}`);
+
+    // @java Graph.removeFace(fid, trimEdges) — Remove.java:129 defaults
+    // trimEdges TRUE, and Graph.java:1638-1698 removes every edge orphaned by
+    // the removal (bordering NO surviving face after unlinking), renumbering
+    // the edge index space. TS previously kept ALL edges (adjacency among
+    // surviving faces is unaffected), which shifted every edge index at/after
+    // the first removed corner relative to Java's — Allemande's recorded
+    // Select at edge 112 was TS edge 116, so no ply-0 move ever matched.
+    // Candidate edges: every boundary edge of every face being removed.
+    const candidateKeys = new Set<string>();
+    for (const f of this.flist) {
+      if (!drop.has(f.id)) continue;
+      const vs = f.vertices;
+      for (let n = 0; n < vs.length; n += 1) {
+        candidateKeys.add(edgeKeyOf(vs[n] as number, vs[(n + 1) % vs.length] as number));
+      }
+    }
+
     this.flist = this.flist
       .filter((f) => !drop.has(f.id))
       .map((f, i) => ({ id: i, vertices: f.vertices, cx: f.cx, cy: f.cy }));
-    // @java Graph.removeFace(fid, removeOrphans) trims edges orphaned by the
-    // removal, so Java's perimeter (traced over boundary EDGES) never runs
-    // through the removed area. TS keeps the edges (adjacency among surviving
-    // faces is unaffected) but must RETRACE the perimeter from the surviving
-    // faces — the stale ring bulged around the removed cells, corner scoring
-    // peaked on orphan vertices touching no face, and every side of Shafran
-    // Chess' clipped hexagon came back empty (the pawn's promotion-zone
-    // moveAgain then never fired).
+
+    if (candidateKeys.size > 0) {
+      const survivingKeys = new Set<string>();
+      for (const f of this.flist) {
+        const vs = f.vertices;
+        for (let n = 0; n < vs.length; n += 1) {
+          survivingKeys.add(edgeKeyOf(vs[n] as number, vs[(n + 1) % vs.length] as number));
+        }
+      }
+      const orphaned = new Set<string>();
+      for (const k of candidateKeys) {
+        if (!survivingKeys.has(k)) orphaned.add(k);
+      }
+      if (orphaned.size > 0) {
+        const kept = this.elist.filter((e) => !orphaned.has(edgeKeyOf(e.a, e.b)));
+        if (kept.length !== this.elist.length) {
+          this.elist = kept.map((e, i) => ({ id: i, a: e.a, b: e.b }));
+          this.edgeKey.clear();
+          for (const e of this.elist) {
+            this.edgeKey.set(edgeKeyOf(e.a, e.b), e.id);
+          }
+        }
+      }
+    }
+
+    // @java Graph.removeFace: even with edges trimmed above, the perimeter
+    // must be RETRACED from the surviving faces — the stale ring bulged
+    // around the removed cells (Shafran Chess' clipped hexagon lost every
+    // side). Purely face-vertex based; unaffected by the trim.
     this.recomputePerimeterFromFaces();
   }
 

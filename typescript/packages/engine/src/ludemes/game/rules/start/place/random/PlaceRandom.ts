@@ -310,12 +310,20 @@ export class PlaceRandom {
           const cid = (realType === "Cell" || realType === "Vertex")
             ? ((context as unknown as { containerId?(): number[] }).containerId?.()?.[site] ?? 0)
             : 0;
-          // @java container state occupancy check; the start-rule context
-          // lacks the containerState() escape hatch — fall back to ctx.state.
+          // @java PlaceRandom.java:238-276 — Java's containerState is a LIVE
+          // mutable object, so the occupancy check sees placements made by
+          // earlier iterations of the same (start …) rule. TS's ctx.state /
+          // containerState() are a snapshot frozen BEFORE the start rules
+          // ran, so a ForEachValue wrapping N PlaceRandom calls drew WITH
+          // replacement (Zombego: countAt[39]=3 in hand). Prefer the live
+          // ctx._startState bridge Game.ts builds for start-rule reads.
+          const startState = (context as unknown as { _startState?: { what(site: number): number } })._startState;
           const csFn = (context as unknown as { containerState?(cid: number): { what(site: number, type: string): number } }).containerState;
-          const occupied = typeof csFn === "function"
-            ? csFn.call(context, cid).what(site, realType) !== 0
-            : ((context.state as unknown as { what(s: number): number }).what(site) !== 0);
+          const occupied = startState && typeof startState.what === "function"
+            ? startState.what(site) !== 0
+            : typeof csFn === "function"
+              ? csFn.call(context, cid).what(site, realType) !== 0
+              : ((context.state as unknown as { what(s: number): number }).what(site) !== 0);
           if (occupied) {
             sites.splice(index, 1);
           }
@@ -358,12 +366,20 @@ export class PlaceRandom {
           const cid = realType === "Cell"
             ? ((context as unknown as { containerId?(): number[] }).containerId?.()?.[site] ?? 0)
             : 0;
-          // @java container state occupancy check; the start-rule context
-          // lacks the containerState() escape hatch — fall back to ctx.state.
+          // @java PlaceRandom.java:238-276 — Java's containerState is a LIVE
+          // mutable object, so the occupancy check sees placements made by
+          // earlier iterations of the same (start …) rule. TS's ctx.state /
+          // containerState() are a snapshot frozen BEFORE the start rules
+          // ran, so a ForEachValue wrapping N PlaceRandom calls drew WITH
+          // replacement (Zombego: countAt[39]=3 in hand). Prefer the live
+          // ctx._startState bridge Game.ts builds for start-rule reads.
+          const startState = (context as unknown as { _startState?: { what(site: number): number } })._startState;
           const csFn = (context as unknown as { containerState?(cid: number): { what(site: number, type: string): number } }).containerState;
-          const occupied = typeof csFn === "function"
-            ? csFn.call(context, cid).what(site, realType) !== 0
-            : ((context.state as unknown as { what(s: number): number }).what(site) !== 0);
+          const occupied = startState && typeof startState.what === "function"
+            ? startState.what(site) !== 0
+            : typeof csFn === "function"
+              ? csFn.call(context, cid).what(site, realType) !== 0
+              : ((context.state as unknown as { what(s: number): number }).what(site) !== 0);
           if (occupied) {
             sites.splice(index, 1);
           }
