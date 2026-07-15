@@ -130,13 +130,20 @@ export class TrackSiteFirstTrack extends BaseIntFunction {
     }
 
     if (track === null) {
-      const boardTracks = (typeof ctxAny.game === "function")
-        ? ctxAny.game().board().tracks()
-        : null;
-      if (boardTracks === null || boardTracks.size() === 0)
+      // @java TrackSiteFirstTrack.java:112-117 — falls back to
+      // context.game().board().tracks().get(0) when no track matched above
+      // (e.g. Papan Dakon's two tracks are both player-owned, so neither the
+      // name/owner branches nor the `owner() === 0` shared-track branch ever
+      // matches). `context.game` is a property, not a method, on this port's
+      // Context, so `typeof ctxAny.game === "function"` was always false and
+      // this fallback always returned UNDEFINED — silently invalidating the
+      // `to` site of the ludeme that needed it (Papan Dakon's store-refill
+      // move never got generated). `tracks` above is already the faithful
+      // equivalent of board().tracks(), fetched via context.tracks().
+      if (tracks.length === 0)
         return UNDEFINED; // no track at all.
       else
-        track = boardTracks.get(0);
+        track = tracks[0]!;
     }
 
     // Get first site.

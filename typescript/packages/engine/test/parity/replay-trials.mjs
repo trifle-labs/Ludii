@@ -948,7 +948,14 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
       const after = game.apply(ctx, cand).state;
       for (const [site, dv] of recDelta) {
         if (site < 0 || site >= nSites) continue;
-        const got = after.countAtSite(site) - ctx.state.countAtSite(site);
+        // Stack-mechanic sowing games (O An Quan, Ceelkoqyuqkoqiji) keep real
+        // per-level data in state.stacks[site]; state.countAt[site] stays 0 for
+        // them, so every candidate scored 0 here and this tier silently
+        // degenerated to "pick candidates[0]" — the wrong dual-direction sow
+        // branch. stackSize() is the Java-parity ContainerState.sizeStack read.
+        const got = (typeof after.stackSize === 'function')
+          ? after.stackSize(site) - ctx.state.stackSize(site)
+          : after.countAtSite(site) - ctx.state.countAtSite(site);
         if (got === dv) score += 1;
       }
     } catch {

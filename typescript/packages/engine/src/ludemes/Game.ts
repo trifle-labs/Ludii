@@ -1073,11 +1073,23 @@ export class Game implements Game {
 
     const mover = context.state.mover;
 
+    // @java Game.java:3039-3044 — before applying a Pass, if the passing
+    // player's stalemated flag is not already set, Game.applyInternal() calls
+    // computeStalemated(context) on the REAL (uncloned) context/rng to verify
+    // the pass was actually forced. This can consume genuine RNG draws from
+    // stochastic ludemes probed while checking for legal moves (e.g. a Hop
+    // capture's SitesRandom side-effect draw) even though the probed move
+    // itself is discarded — see computeStalemated() below for details.
+    let baseState = context.state;
+    if (move.isPass() && !baseState.stalemated[mover]) {
+      baseState = this.computeStalemated(baseState, context as Context1to1);
+    }
+
     // Step 1: Clear pending state then apply move actions.
     // @java Game.java:3047 — state.rebootPending() before every move.apply()
     // This ensures each apply() starts with a clean pending set; ActionSetPending
     // in the current move may re-add to it.
-    let newState = move.applyTo(context.state.withPendingClear(), context.rng);
+    let newState = move.applyTo(baseState.withPendingClear(), context.rng);
 
     // Step 1a: Evaluate deferred (then …) consequences against the post-move
     // state and fold their actions + moveAgain into the applied move.
@@ -1938,31 +1950,30 @@ export class Game implements Game {
   }
 
   /**
-   * Update the stalemated flag for the new mover.
-   * @java Game.java — computeStalemated(Context)
+   * Update the stalemated flag for the mover in the given state.
+   * @java Game.java:3298-3327 — computeStalemated(Context)
    *
-   * Temporarily builds a context for the new mover and checks if they have
-   * any legal moves. Updates state.stalemated[newMover] accordingly.
+   * Builds a temporary Context1to1 sharing the SAME (real, uncloned) rng as
+   * baseCtx and checks whether the mover has any legal moves, via the same
+   * generic moves-list fallback Java uses (Moves.java:283 movesIterator /
+   * Moves.java:320 canMove — the base-class implementation just calls
+   * eval(context).moves() on the real context; there is no cloned/TempContext
+   * RNG isolation anywhere in this path). This means the legal-move probe can
+   * consume genuine RNG draws from stochastic ludemes (e.g. a Hop capture's
+   * SitesRandom side-effect, or a race game's dice roll) even though the
+   * winning candidate move itself is discarded — this is surprising but is
+   * exactly Java's behaviour, and Suffragetto's recorded trials depend on it
+   * bit-for-bit (see the Pass-triggered call site in apply() above).
    *
-   * IMPORTANT: Uses a CLONED rng so that dice rolling during the stalemated
-   * check does NOT advance the real RNG. Java's applyInternal does NOT call
-   * computeStalemated on every apply — it only does so lazily (when a pass is
-   * played without the stalemated flag being set). In the TS 1:1 path we call
-   * it eagerly but MUST isolate the RNG so that race/escape games (which roll
-   * dice in (do (roll) next:...)) don't consume extra RNG values here and
-   * desync the dice sequence for the next real move.
-   * @java game/Game.java:3044 — computeStalemated called only on unexpected pass
+   * Only called from apply() when a Pass is about to be applied and the
+   * passing player's stalemated flag is not already set — mirroring the
+   * gating condition at Game.java:3039-3044.
    */
   private computeStalemated(state: State, baseCtx: Context1to1): State {
-    const newMover = state.mover;
-    // Build a temporary context for the new mover to check for legal moves.
-    // Clone the RNG so that (roll) inside the stalemated check does NOT consume
-    // values from the real RNG stream — Java's Do.eval() in the stalemated path
-    // operates on a TempContext with its own cloned RNG state, so dice rolled
-    // here must not advance the authoritative RNG.
-    const tempTrial = baseCtx.trial;
-    const clonedRng = baseCtx.rng.clone();
-    const tempCtx = new Context(this, state, tempTrial, clonedRng) as Context1to1;
+    const mover = state.mover;
+    // Share baseCtx's REAL rng (not a clone) — see doc comment above for why
+    // this is Java-faithful and required for byte-exact RNG-consumption parity.
+    const tempCtx = new Context(this, state, baseCtx.trial, baseCtx.rng) as Context1to1;
     tempCtx._radials = baseCtx._radials;
     tempCtx._trajectories = baseCtx._trajectories;
     tempCtx._evalTo = -1;
@@ -1973,6 +1984,6 @@ export class Game implements Game {
     const legalMoves = playForMover.moves.eval(tempCtx);
     const isStalemated = legalMoves.length === 0;
 
-    return state.withStalemated(newMover, isStalemated);
+    return state.withStalemated(mover, isStalemated);
   }
 }

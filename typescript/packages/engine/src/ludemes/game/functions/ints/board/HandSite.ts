@@ -14,6 +14,12 @@ import { BaseIntFunction } from "../BaseIntFunction.js";
 import { compileFlags } from "../../../../../ludii/compiler/compile-flags.js";
 import type { JavaIntFunction } from "../IntFunction.js";
 
+/** Narrow accessor for Context.player() (the ForEach-Player loop variable),
+ *  without pulling in the full Context type surface here. */
+interface PlayerReader {
+  player(): number;
+}
+
 /** Java parity: Constants.OFF = -1 */
 const OFF = -1;
 
@@ -179,6 +185,15 @@ function evalPlayer(playerId: JavaIntFunction | string | number, context: Contex
   const numPlayers = ctx.game?.numPlayers ?? ctx.game?.players?.().count() ?? 2;
   switch (playerId) {
     case "Mover": return mover;
+    // @java Id.java:75-76 — `if (who == RoleType.Player) return context.player();`
+    // reads the ForEach-Player loop variable (context.player()/setPlayer), not
+    // the current mover. Without this case, `(handSite Player)` fell through
+    // to the default branch's "Pn" regex (no match) and silently returned
+    // `mover`, misdirecting per-player captures (e.g. Khutka Boia's 4-seed
+    // auto-capture rule, which iterates `(forEach Player (forEach Site
+    // (sites Player) ...))`) to whichever player happened to be the mover
+    // instead of the loop's player.
+    case "Player": return (context as unknown as PlayerReader).player();
     case "Next": return (mover % numPlayers) + 1;
     case "Prev": return ((mover + numPlayers - 2) % numPlayers) + 1;
     case "Shared":

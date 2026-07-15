@@ -25,6 +25,7 @@
 import {
   isIdent,
   isList,
+  isNumber,
   isString,
   type LudIdent,
   type LudList,
@@ -427,6 +428,18 @@ function stripOptions(node: LudNode): LudNode {
 }
 
 function substitute(node: LudNode, option: OptionInfo): LudNode {
+  // @java Expander.expandOption performs raw substring replacement on the
+  // whole source text before tokenizing, so `<Tag:arg>` markers embedded
+  // inside quoted string literals (e.g. a track direction spec) are
+  // substituted the same as bare-ident placeholders. The AST walk below
+  // only sees strings as opaque leaves, so without this branch such
+  // markers are left unresolved (see Tchoukaillon's "<Start:end>,W" track).
+  if (isString(node)) {
+    const replaced = substituteInString(node.value, option);
+    return replaced === node.value
+      ? node
+      : { kind: "string", value: replaced, range: node.range };
+  }
   if (!isList(node)) return node;
   const out: LudNode[] = [];
   let changed = false;
@@ -452,6 +465,33 @@ function substitute(node: LudNode, option: OptionInfo): LudNode {
     items: out,
     range: node.range,
   };
+}
+
+function substituteInString(value: string, option: OptionInfo): string {
+  let out = value;
+  for (const argName of option.args) {
+    const marker = `<${option.tag}:${argName}>`;
+    if (!out.includes(marker)) continue;
+    const text = tokenText(option.values[option.args.indexOf(argName)]);
+    if (text !== null) out = out.split(marker).join(text);
+  }
+  const bareMarker = `<${option.tag}>`;
+  if (out.includes(bareMarker)) {
+    const text = tokenText(option.values[0]);
+    if (text !== null) out = out.split(bareMarker).join(text);
+  }
+  return out;
+}
+
+/** Only single-token number/ident values can be embedded in string text
+ *  (mirrors play1to1.ts's resolveRangePlaceholders, which has the same
+ *  single-token restriction for `..<Tag>` range bounds). */
+function tokenText(tokens: readonly LudNode[] | undefined): string | null {
+  if (!tokens || tokens.length !== 1) return null;
+  const tok = tokens[0]!;
+  if (isNumber(tok)) return String(tok.value);
+  if (isIdent(tok)) return tok.name;
+  return null;
 }
 
 function resolvePlaceholder(
