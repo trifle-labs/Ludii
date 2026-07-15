@@ -30,6 +30,7 @@ import { SitesHiddenValue } from "./hidden/SitesHiddenValue.js";
 import { SitesHiddenWhat } from "./hidden/SitesHiddenWhat.js";
 import { SitesHiddenWho } from "./hidden/SitesHiddenWho.js";
 import { SitesIncident } from "./incidents/SitesIncident.js";
+import { SitesSupport } from "./index/SitesSupport.js";
 import { SitesLineOfSight } from "./lineOfSight/SitesLineOfSight.js";
 import { SitesStart } from "./piece/SitesStart.js";
 import { perimeterVertexRings, cornersFromPerimeterTyped } from "./simple/corner-sites.js";
@@ -483,10 +484,9 @@ export class Sites extends BaseRegionFunction {
         })();
       }
       case "Support":
-        // @java SitesSupport — not yet ported
-        return new (class extends BaseRegionFunction {
-          override eval(_ctx: Context & EvalScratch): number[] { return []; }
-        })();
+        // @java SitesSupport(SiteType, IntFunction) — sites supporting a piece
+        // stacked directly above them (Spargo/Spirit's Shibumi pyramids).
+        return new SitesSupport(elementType, index);
       default:
         throw new Error(`Sites(): A SitesIndexType is not implemented: ${regionType}`);
     }
