@@ -28,6 +28,12 @@ export function isPlacementRecordedMove(recMove) {
   // Select(site,site)), so the bomb is never clicked, (set Var 1) never runs,
   // and the Loss end rule never fires. Match Select by from+to like Remove.
   if (recordedDecisionType(recMove) === 'Select') return false;
+  // A genuine self-loop Move decision (e.g. Tsun K'i landing a piece back on
+  // its own site) ALSO records from == to, but it is not a placement either
+  // — it must match a TS Move by from+to, not to-only (which would pick an
+  // arbitrary same-`to` move from a different `from`, silently desyncing
+  // stack composition). Exclude it like Remove/Select.
+  if (recordedDecisionType(recMove) === 'Move') return false;
   // from == to is the canonical Java placement marker
   if (recMove.from === recMove.to) return true;
   // Or the DECISION action is an Add (a true placement/drop). A capturing
