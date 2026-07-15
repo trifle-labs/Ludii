@@ -38,6 +38,13 @@ export class Intersection extends BaseRegionFunction {
 
   /** @java Intersection.eval(Context) — sites.and(region2) / chained and over regions */
   public override eval(ctx: Context): number[] {
+    // @java Core/src/game/util/equipment/Region.java:198-202,319-321 — Java's
+    // Region is BitSet-backed; sites() walks nextSetBit() so intersection
+    // output is ALWAYS ascending. Order matters downstream: FromTo.eval
+    // (FromTo.java:195,210) draws context.rng() once per candidate in
+    // iteration order, so Shogun's (apply (set Value … (value Random …)))
+    // baked different RNG values per piece when TS preserved the first
+    // operand's arbitrary order.
     if (this.regions !== null) {
       if (this.regions.length === 0) return [];
       let acc = new Set<number>(this.regions[0]!.eval(ctx));
@@ -45,11 +52,11 @@ export class Intersection extends BaseRegionFunction {
         const next = new Set<number>(this.regions[i]!.eval(ctx));
         acc = new Set<number>([...acc].filter((site) => next.has(site)));
       }
-      return [...acc];
+      return [...acc].sort((a, b) => a - b);
     }
     const first = this.region1!.eval(ctx);
     const second = new Set(this.region2!.eval(ctx));
-    return first.filter((s) => second.has(s));
+    return first.filter((s) => second.has(s)).sort((a, b) => a - b);
   }
 
   /** @java Intersection.isStatic() */

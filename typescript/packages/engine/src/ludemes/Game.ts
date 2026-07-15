@@ -1498,6 +1498,13 @@ export class Game implements Game {
           // (Backgammon's 5-checker points), while a DIFFERENT component or
           // owner is a genuine new level (PlaceCustomStack's Hex-then-Disc —
           // Seesaw).
+          // NOTE: Java (ActionAdd.java:200,284,324-337) pushes a real level
+          // per call even for same-piece repeats in Stacking games; TS's
+          // count-pile model (countAt + height-1 stacks) is a deliberate
+          // engine-wide representation, and switching placement to real
+          // levels regressed the entire backgammon family (Backgammon/
+          // Plakoto/Dubblets MOVE_MISMATCH) — the Murus Gallicus fix must
+          // instead live where piles are CONSUMED. Keep the merge.
           if (last.what === what && last.owner === owner) {
             countAt[site] = (countAt[site] ?? 0) + 1;
             return;
@@ -1509,11 +1516,46 @@ export class Game implements Game {
         // the SAME piece here (King And Courtesan: (place "Disc1" …) then
         // (place Stack "Disc1" (sites Bottom)) marks the royals as 2-high),
         // the push grows the pile instead of overwriting it back to 1.
-        stackedStaging.set(site, [{ what, owner, count, state: stateValue, value }]);
         if (cells[site] === owner && whats[site] === what && owner !== 0) {
+          stackedStaging.set(site, [{ what, owner, count, state: stateValue, value }]);
           countAt[site] = (countAt[site] ?? 0) + 1;
           return;
         }
+        // @java ActionAdd.apply/applyStack (ActionAdd.java:200,284,324-337):
+        // in a genuine Stacking game every placement — flat `place` or
+        // `place Stack` — routes through the SAME ActionAdd and pushes a new
+        // level, even when a DIFFERENT piece already occupies the site. A
+        // prior FLAT placement of a different piece here (Diaballik:
+        // (place "Disc2" (sites Top)) then (place Stack "Ball2" (sites
+        // {45}))) is really level 0 of the eventual 2-level stack, not a
+        // piece to discard: the unconditional overwrite silently deleted the
+        // Disc, so when the Ball later threw away the site went empty
+        // instead of leaving the Disc behind.
+        if (
+          (this as unknown as { usesStacking?: boolean }).usesStacking === true &&
+          whats[site] !== 0 &&
+          whats[site] !== what &&
+          cells[site] !== 0
+        ) {
+          stackedStaging.set(site, [
+            {
+              what: whats[site]!,
+              owner: cells[site]!,
+              count: countAt[site] || 1,
+              state: stateAt[site] ?? UNDEFINED,
+              value: valueAt[site] ?? UNDEFINED,
+            },
+            { what, owner, count, state: stateValue, value },
+          ]);
+          cells[site] = owner;
+          whats[site] = what;
+          countAt[site] = 1;
+          if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+          if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
+          if (value !== UNDEFINED) valueAt[site] = value;
+          return;
+        }
+        stackedStaging.set(site, [{ what, owner, count, state: stateValue, value }]);
         cells[site] = owner;
         whats[site] = what;
         countAt[site] = 1;

@@ -282,7 +282,20 @@ export class Ahead extends BaseIntFunction {
       return site;
     }
     if (topology) {
-      const radialList = topology.trajectories().radials(realType, site, directionName);
+      // @java Ahead.java:177 — topology.trajectories().radials(...) is
+      // unconditional in Java (always a live Trajectories). TS's deferred-
+      // then re-entrant context (Then.ts evalDeferredThens) can reach here
+      // with a topology whose trajectories() lacks .radials — the throw was
+      // swallowed by Then.ts's catch, silently dropping the ENTIRE rest of
+      // the consequence chain (Vanguard's Goat/Ram bounce: only the base
+      // Step applied, the bounce continuation and Dot cleanup vanished).
+      // Guard like the identical lookup above instead of throwing.
+      const trajObj2 = typeof (topology as { trajectories?: unknown }).trajectories === "function"
+        ? (topology as { trajectories: () => { radials?: (t: unknown, s: number, d: string) => Array<{ steps(): Array<{ id(): number }> }> } }).trajectories()
+        : null;
+      const radialList = trajObj2 && typeof trajObj2.radials === "function"
+        ? trajObj2.radials(realType, site, directionName)
+        : [];
       for (const radial of radialList) {
         const steps = radial.steps();
         for (let toIdx = 1; toIdx < steps.length && toIdx <= distance; toIdx++) {

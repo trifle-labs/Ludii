@@ -175,6 +175,14 @@ export class Do implements MovesFunction {
           mover: ctx.state.mover,
           placedOwner: ctx.state.mover,
           actions: [...priorActions, new ActionPass()],
+          // @java Do.java:136-146 — the prior's own (then …) is folded into
+          // preM before prependPreMoves reuses it, so the forced pass carries
+          // it too. Every other construction path above threads
+          // priorDeferred; omitting it here silently dropped the prior's
+          // nested consequence (Set Dilth' ply 250: the 3rd-circuit
+          // (then (remove …)) never ran, the scored piece stayed on site 22,
+          // and TS offered an illegal move where Java records a forced pass).
+          deferredThens: [...priorDeferred],
           moveAgain: false,
           decisionIndex: priorActions.length,
         }));

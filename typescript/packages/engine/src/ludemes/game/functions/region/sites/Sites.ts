@@ -970,13 +970,24 @@ export class Sites extends BaseRegionFunction {
               : Number.MAX_SAFE_INTEGER;
             const traj = (ctx as unknown as { _trajectories?: { radialsByName(site: number, dir: string): number[][] } })._trajectories;
             if (!traj) return [];
-            const dirNames = directionNames(directions ?? null, ctx);
             const out: number[] = [];
             const seen = new Set<number>();
             const add = (site2: number): void => { if (!seen.has(site2)) { seen.add(site2); out.push(site2); } };
             const oldTo = ctx._evalTo;
+            const oldFrom = ctx._evalFrom;
             for (const loc of origins) {
               if (loc < 0) continue;
+              // @java SitesDirection.java:113-127 — direction resolution
+              // happens PER-loc, passing that loc's own TopologyElement
+              // directly, because category tokens (Diagonal/Orthogonal/…)
+              // resolve differently per site on irregular boards.
+              // Difference.eval mirrors this by reading ctx._evalFrom, so it
+              // must be rebound to the current loc here: Morpharaoh's Cairo
+              // dual board resolved "Diagonal" with the OUTER Results-bound
+              // from (site 40, ['SSE','E']) instead of the nested origin
+              // (site 39, ['SSW','NNW','W']) — empty region, wrong legality.
+              ctx._evalFrom = loc;
+              const dirNames = directionNames(directions ?? null, ctx);
               if (asBool(includedFn, ctx, false)) add(loc);
               for (const dn of dirNames) {
                 for (const ray of traj.radialsByName(loc, dn)) {

@@ -82,10 +82,14 @@ export class ActionRemove extends BaseAction {
       }
       return nx.withStackPop(this.toIndex, this.level);
     }
-    // @java ActionRemoveTopPiece (stacking branch): pop the TOP level and
-    // update the FullOwned registry at that level. Only live once the game
-    // materialized the registry (per-level stacks exist).
-    if (state.ownedEntries !== undefined && (state.stacks[this.toIndex]?.length ?? 0) > 1) {
+    // @java ContainerStateStacks.java:694-711 — remove() pops only the TOP
+    // stack level, unconditionally; there is no registry-presence gate. The
+    // old `ownedEntries !== undefined` conjunct sent registry-less states to
+    // the flat fallback below, which WIPED the whole site instead of popping
+    // one level (Buffa de Baldrac ply 315: a 2-high pile lost both checkers
+    // to a single hit). withOwnedRemoveLevel no-ops safely when the registry
+    // is unmaterialized.
+    if ((state.stacks[this.toIndex]?.length ?? 0) > 1) {
       const lvl = (state.stacks[this.toIndex]?.length ?? 1) - 1;
       const own = state.stackAt(this.toIndex, lvl);
       const wht = state.whatAtSiteLevel(this.toIndex, lvl);
