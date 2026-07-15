@@ -104,8 +104,12 @@ describe("State stacks", () => {
   });
 
   it("withCell to 0 clears the stack", () => {
+    // @java emptiness is WHAT-based (ContainerState.what(site)==0): clearing
+    // the owner alone leaves a Neutral-owned component occupying the site
+    // (Es-Sig's Ghoula), so a real clear zeroes the component channel too —
+    // exactly what every engine clear path (action-remove etc.) does.
     const s = new State(1, [0, 0], ["X", "O"]).withStackPush(0, 1);
-    const cleared = s.withCell(0, 0);
+    const cleared = s.withCell(0, 0).withWhatAt(0, 0);
     assert.equal(cleared.stackSize(0), 0);
   });
 
