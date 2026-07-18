@@ -261,7 +261,7 @@ export class Sow extends Effect {
     // what-less pit, which then failed ActionMove's pile-merge `what` check and
     // silently dropped a redistributed hand seed (Mwambulula ply 42/60).
     const seedOwner = seedWhat > 0
-      ? (ctx.game.equipment?.pieces?.find((p) => p.index === seedWhat)?.owner ?? 0)
+      ? Number((ctx.state.componentLabels[seedWhat] ?? "").match(/(\d+)$/)?.[1] ?? 0) || 0
       : 0;
 
     let numSeedSowed = 0;
