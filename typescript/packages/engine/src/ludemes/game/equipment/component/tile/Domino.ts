@@ -73,7 +73,7 @@ export class Domino extends Component {
   }
 
   /** @java Domino.clone() */
-  public clone(): Domino {
+  public override clone(): Domino {
     return new Domino(
       this.name() ?? "",
       this.role(),
