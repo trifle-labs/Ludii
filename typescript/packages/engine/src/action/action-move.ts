@@ -618,11 +618,29 @@ export class ActionMove extends BaseAction {
         let fo = state.withFlatOwnedMaterialized();
         const capturedOwner = fo.cellAt(this.toIndex).owner;
         const capturedWhat = fo.whatAtSite(this.toIndex);
-        fo = fo.withFlatOwnedRemove(mOwner, mWhat || mOwner, this.fromIndex);
+        // @java ActionMoveTopPiece.java:378-390 — the mover leaves its
+        // registry list ONLY when the source pile is a single piece
+        // (count == 1); a count-pile move (At-Tab's `(count at:(from))`
+        // king piles) just decrements count and owned() is untouched.
+        const fromCount = fo.countAtSite(this.fromIndex);
+        if (fromCount <= 1) {
+          fo = fo.withFlatOwnedRemove(mOwner, mWhat || mOwner, this.fromIndex);
+        }
         if (capturedOwner > 0 && (!fo.requiresCountGame || capturedWhat !== mWhat)) {
           fo = fo.withFlatOwnedRemove(capturedOwner, capturedWhat || capturedOwner, this.toIndex);
         }
-        fo = fo.withFlatOwnedAdd(mOwner, mWhat || mOwner, this.toIndex);
+        // @java ActionMoveTopPiece.java:433-447 — the mover is appended at
+        // `to` only when the DESTINATION count becomes 1 after the write
+        // (merging onto an existing same-piece pile increments count and
+        // leaves the registry alone: the site was appended when the pile
+        // first formed).
+        const toCountPre = fo.countAtSite(this.toIndex);
+        const postCount = capturedWhat === mWhat && toCountPre > 0
+          ? (fo.requiresCountGame ? toCountPre + 1 : 1)
+          : 1;
+        if (postCount === 1) {
+          fo = fo.withFlatOwnedAdd(mOwner, mWhat || mOwner, this.toIndex);
+        }
         state = fo;
       }
     }
