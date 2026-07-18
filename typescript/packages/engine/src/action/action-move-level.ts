@@ -103,16 +103,52 @@ abstract class ActionMoveLevelBase extends BaseAction {
     const countBacked = countedLevels > 0 && stackLen <= 1 && !hasRealPerLevelState;
     if (countBacked) {
       const fromCount = countedLevels;
+      // @java ActionMoveLevelFrom.java:462-471 — owned().add(to) / owned().
+      // remove(from) run UNCONDITIONALLY in Java's stacking apply(); Java has
+      // no "count-backed" special case at all (ContainerStateStacks has no
+      // separate count channel — every relocation, including one TS
+      // represents as a countAt pile for a hand of identical pieces, is a
+      // genuine per-level push/pop in Java). This branch (a TS-only
+      // representation optimization for homogeneous count piles — see the
+      // countedLevels>0/stackLen<=1 gate above) returned early on both exit
+      // paths WITHOUT ever touching state.ownedEntries, unlike the sibling
+      // non-count-backed branch below (lines 182-186, itself a prior fix for
+      // Monkey Queen/King And Courtesan). The moment ownedEntries
+      // materializes (any earlier ForEachPiece query), every relocation
+      // through THIS branch silently desynced the registry: the source
+      // site's entry was never removed (stale ghost) and the destination
+      // never got one (invisible to ForEachPiece) — exactly the Maya
+      // family's `(place Stack "StickN" (handSite PN) count:5)` hand piles
+      // collapsing to Pass-only late in the game (Aj Sakakil MOVE_MISMATCH
+      // @71: TS offered only Pass despite occupied hand pieces still on the
+      // board) once enough hand-pile relocations had run. Materialize once
+      // (no-op if already live) and mirror the FROM/TO merge-vs-replace
+      // distinction used by action-move.ts's stacking-merge fix so a
+      // same-owner/same-component pile landing (genuine height increment,
+      // preserved registrations) is never confused with a replace/empty
+      // landing (fresh single level-0 registration).
+      let base = state.withOwnedMaterialized();
+      if (base.ownedEntries !== undefined) {
+        if (fromCount > 1) {
+          base = base.withOwnedRemoveLevel(movingOwner, movingWhat, this.fromIndex, fromCount - 1);
+        } else {
+          base = base.withOwnedSiteCleared(this.fromIndex);
+        }
+      }
       const destStackLen = state.stacks[this.toIndex]?.length ?? 0;
       const stackIntoDestination =
         state.stackSize(this.toIndex) > 0 &&
         (destStackLen > 1 || state.whatAtSite(this.toIndex) !== movingWhat);
       if (stackIntoDestination) {
-        let next = state.withCountAt(this.fromIndex, Math.max(0, fromCount - 1));
+        let next = base.withCountAt(this.fromIndex, Math.max(0, fromCount - 1));
         if (fromCount === 1) {
           next = next.withCell(this.fromIndex, 0).withWhatAt(this.fromIndex, 0);
         }
-        return next.withStackPush(this.toIndex, movingOwner, movingWhat);
+        next = next.withStackPush(this.toIndex, movingOwner, movingWhat);
+        if (next.ownedEntries !== undefined) {
+          next = next.withOwnedAdd(movingOwner, movingWhat, this.toIndex, next.stackSize(this.toIndex) - 1);
+        }
+        return next;
       }
       // @java ContainerStateStacks.addItem always appends one item, so the
       // destination height grows by exactly 1. A count-backed pile keeps its
@@ -128,7 +164,7 @@ abstract class ActionMoveLevelBase extends BaseAction {
       // site holds real content (cells set), else 0 for a drained/empty site
       // (whose lone stacks[] entry is a stale representative, not a live seed).
       const toBase = (state.cells[this.toIndex] ?? 0) === 0 ? 0 : state.stackSize(this.toIndex);
-      let next = state
+      let next = base
         .withCountAt(this.fromIndex, Math.max(0, fromCount - 1))
         .withCountAt(this.toIndex, toBase + 1);
       if ((next.cells[this.toIndex] ?? 0) === 0) {
@@ -142,6 +178,22 @@ abstract class ActionMoveLevelBase extends BaseAction {
       }
       if (fromCount === 1 && (stackLen <= 1 || stackLen === fromCount)) {
         next = next.withCell(this.fromIndex, 0).withWhatAt(this.fromIndex, 0);
+      }
+      // @java ActionMoveLevelFrom.java:462-471 (see comment above) — this is
+      // the count-backed pile's "merge into an existing pile of the same
+      // owner/component, or start fresh on an empty/different destination"
+      // exit. Mirror action-move.ts's isStackingMerge test: a pre-occupied
+      // same-owner/same-component destination (toBase>0, matching owner+what
+      // — guaranteed here since stackIntoDestination's `whatAtSite(to) !==
+      // movingWhat` case already routed to the OTHER branch above) survives
+      // with its existing registrations and gets one more entry at the new
+      // top level; an empty destination gets a fresh single level-0 entry.
+      if (next.ownedEntries !== undefined) {
+        if (toBase > 0) {
+          next = next.withOwnedAdd(movingOwner, movingWhat, this.toIndex, toBase);
+        } else {
+          next = next.withOwnedSiteCleared(this.toIndex).withOwnedAdd(movingOwner, movingWhat, this.toIndex, 0);
+        }
       }
       return next;
     }

@@ -405,11 +405,45 @@ export class ActionMove extends BaseAction {
     // level) never materialises whatStacks, but a plain Move off it must
     // still pop the TOP piece only — the flat branch below wipes the site.
     const fromOwnerStackLen = state.stacks[this.fromIndex]?.length ?? 0;
+    // @java ContainerStateStacks.addItem always APPENDS a new level for a
+    // stacking-game destination, regardless of whether the arriving/existing
+    // pieces share a component (homogeneous stacks never materialise
+    // whatStacks — see above). The destination-side gate mirrored only
+    // `toWhatStack`, so a real multi-level HOMOGENEOUS destination pile
+    // (e.g. Aj Sakakil's capture-and-carry stack: a capturing Stick pushed
+    // onto a captured enemy Stick via THIS branch, producing a genuine
+    // 2-level `stacks[to]` with no `whatStacks[to]`) fell through to the
+    // flat/countAt branch below on the NEXT relocation touching that site.
+    // That flat branch hard-codes the registry add at level 0 on a
+    // non-merge landing, silently dropping the already-registered buried
+    // level(s) from `owned()` — ForEachPiece then queried only the buried
+    // (captured, state=2) piece's level, whose move template matches
+    // neither the FreePiece nor CapturingPiece disjunct, yielding zero
+    // moves for the true top (capturing) piece (MOVE_MISMATCH ply 71).
+    // @java ContainerStateStacks.addItem (ContainerStateStacks.java:278-301)
+    // ALWAYS appends a new level for ANY relocation onto a stacking-game
+    // container — there is no "first capture takes a flat shortcut, later
+    // ones push a real level" special case in Java. The earlier draft of
+    // this gate only routed here once the destination was ALREADY multi-high
+    // (`stacks[to].length > 1` / `stackSize(to) > 1`), so the FIRST capture
+    // landing that grows a site from height 1 to 2 (Aj Sakakil ply 70: a
+    // capturing Stick lands on a lone defender, `stacks[7]` still empty,
+    // `stackSize(7)` still 1 pre-move) still fell through to the flat/countAt
+    // branch below, which can only carry ONE scalar `state` value per site —
+    // the captured/capturing per-level state distinction the game's `(set
+    // State at: level:)` macros rely on was collapsed, and the buried
+    // (captured) piece's level was the only one ever registered in
+    // `owned()`, whose move template matches neither disjunct (zero moves,
+    // MOVE_MISMATCH ply 71). For a genuinely stacking game, always take the
+    // real per-level push branch — it already degrades gracefully to a
+    // single-level push when both endpoints are flat (verified: `srcArr`/
+    // `toWhatStack` empty fall back to the flat cell/what/owner reads).
     if (
       this.fromIndex !== this.toIndex &&
       ((fromWhatStack !== undefined && fromWhatStack.length > 0) ||
         (toWhatStack !== undefined && toWhatStack.length > 0) ||
-        fromOwnerStackLen > 1)
+        fromOwnerStackLen > 1 ||
+        state.stackingGame)
     ) {
       // Identify the moving TOP piece and how to remove it from the source.
       // The source falls into three shapes and the ORIGINAL code (topLevel =
@@ -614,13 +648,56 @@ export class ActionMove extends BaseAction {
     // @java ActionMoveTopPiece (non-stacking): owned remove at from, add at
     // to — only live once the registry is materialized (stacking game);
     // fromTo victim relocations between flat sites must keep it in sync.
+    //
+    // This block runs for every relocation that falls through the
+    // whatStack-aware branch above (397-601) — including a STACKING game's
+    // homogeneous same-owner/same-component pile MERGE (the countAt bump at
+    // line ~973 below), because a homogeneous pile never materialises
+    // whatStacks (see the "HOMOGENEOUS per-level stack" comment above) and so
+    // never satisfies that branch's gate. Blindly clearing `to`'s registry
+    // and re-adding a single level-0 entry — correct for a genuine
+    // replace/capture landing — instead DROPPED every already-registered
+    // piece of a same-owner pile the moment a second (or third...) piece
+    // joined it: `owned()` permanently lost the buried piece(s) from the
+    // moment of the merge, corrupting every later ForEachPiece query touching
+    // that site (Pahada Keliya's `count:2` team piles losing an ally the
+    // instant a second own piece joined an occupied home site — MOVE_MISMATCH
+    // ply 112/134 — and the Aj family's `(place Stack … count:5)` hand piles
+    // collapsing to a single registered stick after the first merge —
+    // late-game movegen down to Pass only). @java
+    // ContainerStateStacks.addItem (ContainerStateStacks.java:278-301) always
+    // APPENDS a new level and FullOwned.add always APPENDS a new registry
+    // entry — a same-owner/same-component landing is genuinely one more
+    // physical piece/level in Java, never a "replace"; only a different
+    // component (or an empty destination) replaces/starts fresh. Mirror the
+    // merge test from the `destHeight`/countAt-bump branch below (line ~959)
+    // exactly: pre-existing registrations at `to` survive a merge, and the
+    // new piece registers at the next level (the pre-move height). The same
+    // asymmetry applies to `from`: a homogeneous count-backed pile
+    // (`stackSize(from) > 1`) only loses its TOP piece, not every
+    // registration at that site.
     if (state.ownedEntries !== undefined && this.fromIndex !== this.toIndex) {
       const mOwner = state.cellAt(this.fromIndex).owner;
       const mWhat = state.whatAtSite(this.fromIndex);
       if (mOwner > 0) {
-        state = state.withOwnedSiteCleared(this.fromIndex);
-        state = state.withOwnedSiteCleared(this.toIndex);
-        state = state.withOwnedAdd(mOwner, mWhat || mOwner, this.toIndex, 0);
+        const fromHeight = state.stackSize(this.fromIndex);
+        if (fromHeight > 1) {
+          state = state.withOwnedRemoveLevel(mOwner, mWhat || mOwner, this.fromIndex, fromHeight - 1);
+        } else {
+          state = state.withOwnedSiteCleared(this.fromIndex);
+        }
+        const destHeight = state.stackSize(this.toIndex);
+        const isStackingMerge =
+          state.stackingGame &&
+          destHeight > 0 &&
+          state.who(this.toIndex) === mOwner &&
+          state.whatAtSite(this.toIndex) === mWhat;
+        if (isStackingMerge) {
+          state = state.withOwnedAdd(mOwner, mWhat || mOwner, this.toIndex, destHeight);
+        } else {
+          state = state.withOwnedSiteCleared(this.toIndex);
+          state = state.withOwnedAdd(mOwner, mWhat || mOwner, this.toIndex, 0);
+        }
       }
     }
     // @java Core/src/other/action/move/move/ActionMoveTopPiece.java:382-447

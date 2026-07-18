@@ -1420,8 +1420,31 @@ export class State {
       const ownerStack = this.stacks[site] ?? [];
       const whatStack = this.whatStacks[site] ?? [];
       if (ownerStack.length > 0) {
-        for (let lvl = 0; lvl < ownerStack.length; lvl++) {
-          const pid = ownerStack[lvl] ?? 0;
+        // @java ContainerStateStacks has no separate "count" channel — every
+        // physical piece is its own genuine chunk-stack level, so Java's
+        // FullOwned registry always carries one entry PER PHYSICAL PIECE.
+        // TS's hybrid countAt[] channel can compress a homogeneous pile
+        // (`place Stack … count:N`, or repeated same-owner/same-component
+        // Adds) into a single `stacks[site]` array entry with countAt=N — the
+        // same compressed shape that withStackPush's own backfill (`while
+        // (target.length < existingCount) target.push(baseOwner)`, above)
+        // already expands back out to genuine levels the moment ANY new
+        // piece is pushed there. Materializing straight from `ownerStack`'s
+        // raw length undercounts that pile by (N - ownerStack.length)
+        // entries — e.g. a `(place Stack "StickN" (handSite PN) count:5)`
+        // hand pile materialized as 1 entry instead of 5 — silently dropping
+        // the other N-1 physical pieces from `owned()` for every ForEachPiece
+        // move-generation query from the moment the registry first
+        // materializes onward (Aj Sakakil family's late-game movegen
+        // collapse; Pahada Keliya's `count:2` starting piles losing their
+        // second ally piece from the registry). Backfill exactly like
+        // withStackPush does: the "virtual" extra levels share the base
+        // (first-placed) owner/component, matching the homogeneous-pile
+        // shape countAt-backing only ever represents.
+        const trueHeight = Math.max(ownerStack.length, this.countAt[site] ?? 0);
+        for (let lvl = 0; lvl < trueHeight; lvl++) {
+          const inRange = lvl < ownerStack.length;
+          const pid = inRange ? (ownerStack[lvl] ?? 0) : (ownerStack[ownerStack.length - 1] ?? 0);
           // When the level has no explicit whatStack entry (e.g. a hand piece
           // initialised as stacks[s]=[owner], whatStack[]=[]), fall back to the
           // site's component index whats[site] — NOT the owner pid. Using pid as
@@ -1444,7 +1467,7 @@ export class State {
           // only ever populated by genuine pushes (withStackPush never
           // stores a placeholder/gap level), so `pid >= 0` is safe.
           if (pid >= 0) {
-            const rawComp = whatStack[lvl];
+            const rawComp = inRange ? whatStack[lvl] : whatStack[whatStack.length - 1];
             const comp = (rawComp !== undefined && rawComp !== 0) ? rawComp : (this.whats[site] || pid);
             entries.push({ pid, comp, site, level: lvl });
           }
