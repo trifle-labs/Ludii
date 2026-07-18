@@ -98,7 +98,7 @@ abstract class ActionMoveLevelBase extends BaseAction {
     // site's container is a stacking one, so it must never be treated
     // as count-backed.
     const hasRealPerLevelState =
-      (state.stateStacks?.[this.fromIndex]?.length ?? 0) > 0 ||
+      (state.stateStacks?.[this.fromIndex]?.some((v) => v !== 0) ?? false) ||
       (state.valueStacks?.[this.fromIndex]?.length ?? 0) > 0;
     const countBacked = countedLevels > 0 && stackLen <= 1 && !hasRealPerLevelState;
     if (countBacked) {

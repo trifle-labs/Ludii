@@ -449,16 +449,32 @@ export class Sites extends BaseRegionFunction {
             const state = ctx.state;
             const n = state.cells.length;
             const result: number[] = [];
-            // @java SitesState — site local state == val. state.stateValue(i)
-            // is the accessor; `stateAt` is the raw array field (not callable),
-            // so the old stateAt?.(i) threw `stateAt is not a function`,
-            // aborting (count Sites in:(sites State N)) — Reversi's per-move
-            // score-setting then never ran and byScore saw 0/0.
-            const sv = (state as unknown as { stateValue?(i: number): number; stateAt?: readonly number[] });
+            // @java SitesState — site local state == val. ContainerState.state
+            // (site, type) is the level-less accessor; on a stacking container
+            // (ContainerStateStacks) that reads the TOP of the site's chunk
+            // stack, not a separate flat channel (mirrors State.stateTop's own
+            // @java citation, and action-set-state.ts's level-less write path,
+            // which targets stateStacks[site][size-1] once state.stackingGame
+            // is true). The old state.stateValue(i) read ONLY the flat
+            // stateAt[] scalar: once N-Mesh's Edge stack:True connector Add
+            // flipped the game-wide stackingGame flag on, its Cell "dead
+            // piece" (set State at:site 1) markers were written into
+            // stateStacks and never seen here, so (sites State Cell 1) always
+            // returned [] and (count Pieces … in:(sites State Cell 1)) stayed
+            // 0 — the Scoring define's byScore comparison saw a false 0==0 tie
+            // every game and always resolved to `(result Next Win)` instead of
+            // Java's real by-score winner (N-Mesh WINNER_MISMATCH).
+            // `stateValue` is kept as the fallback for states/objects that
+            // don't expose `stateTop` (non-Full State callers); `stateAt` is
+            // kept as the last-resort raw-array fallback (Reversi regression
+            // guard above).
+            const sv = (state as unknown as { stateTop?(i: number): number; stateValue?(i: number): number; stateAt?: readonly number[] });
             for (let i = 0; i < n; i++) {
-              const s = typeof sv.stateValue === "function"
-                ? sv.stateValue(i)
-                : (Array.isArray(sv.stateAt) ? (sv.stateAt[i] ?? 0) : 0);
+              const s = typeof sv.stateTop === "function"
+                ? sv.stateTop(i)
+                : typeof sv.stateValue === "function"
+                  ? sv.stateValue(i)
+                  : (Array.isArray(sv.stateAt) ? (sv.stateAt[i] ?? 0) : 0);
               if (s === val) result.push(i);
             }
             return result;
