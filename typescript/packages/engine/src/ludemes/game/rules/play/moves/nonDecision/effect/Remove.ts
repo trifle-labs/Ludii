@@ -110,7 +110,26 @@ export class Remove implements MovesFunction {
       // @java ActionRemove carries the LEVEL: (remove X level:0) removes the
       // BOTTOM of a stack (and shifts the rest down), not the whole pile —
       // Complica trims a full column by removing level 0. Pass it through.
-      const lvl = this.levelFn != null ? this.levelFn.eval(ctx) : undefined;
+      // @java Remove.java:127-129 — `level = (levelFn != null) ?
+      // levelFn.eval(context) : cs.sizeStack(loc)-1; level = level<0?0:level;
+      // level = (!isStacking() || sizeStack(loc)==level+1) ? UNDEFINED :
+      // level;` — an explicit level: is COLLAPSED back to level-less
+      // (UNDEFINED) whenever it names the stack's CURRENT top (or the game
+      // isn't stacking at all), routing to the clean, level-less
+      // `ContainerGraphStateStacks.remove(state,site,type)` overload (zeroes
+      // what/who/state/rotation/value at the top). Only a genuinely NON-top
+      // level: routes through the dirty, shift-loop `remove(state,site,
+      // level,type)` overload, which never clears `state` at the vacated
+      // index. TS previously passed every explicit level: straight through,
+      // so a top-level `(remove X level:(level))` (Boolik's drain of its own
+      // CapturingPiece) took the dirty path when Java's runtime check would
+      // have routed it clean — leaving a stray, stale `state` at the top that
+      // resurfaced once the site regrew (Boolik ply97/ply116).
+      const rawLvl = this.levelFn != null ? this.levelFn.eval(ctx) : ctx.state.stackSize(loc) - 1;
+      const clampedLvl = rawLvl < 0 ? 0 : rawLvl;
+      const lvl = !ctx.state.stackingGame || ctx.state.stackSize(loc) === clampedLvl + 1
+        ? undefined
+        : clampedLvl;
       const mkRemove = () => applyNow
         ? new ActionRemove({
             to: loc,
