@@ -125,6 +125,15 @@ export function pieceComponent(piece: Piece | null): IntFunction {
       eval: (ctx: Context) => {
         const pieces = (ctx.game as unknown as { equipment?: { pieces?: Array<{ name: string; owner: number; index: number }> } })
           .equipment?.pieces ?? [];
+        // @java game/functions/ints/board/Id.java:194-198 — the plain-name
+        // branch of Id.eval is a literal `component.name().equals(nameComponent)`
+        // scan. Game.ts's owner-suffix pass (mirrors Game.java:2545-2565) has
+        // already baked the owner digit into equipment.pieces[].name by this
+        // point ("Dot0", "Queen1"), so try that exact match first, like
+        // AddFaithful.ts's `literal` check — otherwise the reconstruct-suffix
+        // fallback below double-applies the digit and misses.
+        const literal = pieces.find((p) => p.name.toLowerCase() === name.toLowerCase());
+        if (literal) return literal.index;
         const exact = pieces.find((p) => `${p.name}${p.owner}`.toLowerCase() === name.toLowerCase());
         const byBase = pieces.find((p) => p.name.toLowerCase() === baseName && (owner === null || p.owner === owner));
         return exact?.index ?? byBase?.index ?? (owner ?? ctx.state.mover);
