@@ -356,6 +356,20 @@ export class ActionMove extends BaseAction {
       // oti=0 and NextSiteOnTrack returns OFF, forcing a spurious Pass. A no-op
       // for mancala (full-loop tracks allocate no onTrackIndices — the guard in
       // maintainTracks short-circuits when oti is undefined).
+      // @java ActionMoveN.java:289-295 — a count-move maintains owned() with
+      // ITS OWN rules, distinct from ActionMoveTopPiece: remove(from) only
+      // when the source pile fully drains (count → 0), and add(to)
+      // UNCONDITIONALLY — Java appends even when the site is already listed,
+      // so repeated merges accumulate duplicate entries; reproduce that
+      // verbatim (it is the traversal order (forEach Piece) observes). No
+      // capture-remove exists on this path (ActionMoveN never displaces a
+      // different piece). No-ops until the registry is materialized.
+      if (movedWhat > 0 && movedOwner > 0 && s.flatOwned !== undefined) {
+        if (fromNew === 0) {
+          s = s.withFlatOwnedRemove(movedOwner, movedWhat, this.fromIndex);
+        }
+        s = s.withFlatOwnedAdd(movedOwner, movedWhat, this.toIndex);
+      }
       return this.maintainTracks(s, movedWhat);
     }
     // Genuine per-level stack at the source — a distinct-piece stack (Tower of
