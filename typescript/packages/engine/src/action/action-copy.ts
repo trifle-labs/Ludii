@@ -43,7 +43,21 @@ export class ActionCopy extends BaseAction {
     // grew the destination stack by one level; the flat TS write left the
     // stack height unchanged).
     if (state.stackingGame) {
+      // @java ActionCopy.java:195-221 — `actionMove.apply(...)` (the
+      // underlying ActionMove/ActionMoveTopPiece push) already calls
+      // `context.state().owned().add(who, what, to, sizeStack(to)-1, typeTo)`
+      // as part of relocating the top piece onto `to`; this port's
+      // `withStackPush` is that same push without the registry side effect,
+      // so replicate it here at the new level (the pre-push height, matching
+      // `sizeStack(to)-1` post-push) — the `from` side needs no registry
+      // change (Java's own `owned().add(..., from, ...)` at line 215/220
+      // merely restores what the intervening ActionMove.apply had removed;
+      // net effect on `from`'s registration is a no-op).
+      const preHeight = state.stackSize(this.toIndex);
       let stackNext = state.withStackPush(this.toIndex, owner, what);
+      if (state.ownedEntries !== undefined && owner > 0) {
+        stackNext = stackNext.withOwnedAdd(owner, what || owner, this.toIndex, preHeight);
+      }
       const srcState = state.stateAtSite(this.fromIndex);
       stackNext = stackNext.withStateAt(this.toIndex, srcState);
       const srcValue = state.valueAtSite(this.fromIndex);
@@ -56,6 +70,24 @@ export class ActionCopy extends BaseAction {
 
     let next = state.withCell(this.toIndex, owner);
     if (what !== 0) next = next.withWhatAt(this.toIndex, what);
+    // @java ActionCopy.java:195-204 — Java's `actionMove.apply(...)`
+    // (the underlying ActionMove/ActionMoveTopPiece relocation the board
+    // writes above stand in for) already performs the FlatCellOnlyOwned
+    // bookkeeping for `to` as part of that relocation: remove any captured
+    // piece's registration there, then append the mover's own. Replicate
+    // that here (`from`'s registration is untouched — Java's own
+    // `owned().add(..., from, ...)` at line 204 only restores what the
+    // intervening move had removed, a net no-op). No-ops until a flat
+    // board-to-board move first materializes the registry, same gating
+    // convention as ActionAdd/ActionRemove.
+    if (state.flatOwned !== undefined && owner > 0) {
+      const capturedOwner = state.cellAt(this.toIndex).owner;
+      const capturedWhat = state.whatAtSite(this.toIndex);
+      if (capturedOwner > 0) {
+        next = next.withFlatOwnedRemove(capturedOwner, capturedWhat || capturedOwner, this.toIndex);
+      }
+      next = next.withFlatOwnedAdd(owner, what || owner, this.toIndex);
+    }
     // @java ActionCopy.java:195-196 -> ActionMove.apply — the copy carries
     // EVERY piece attribute from the source (state/rotation/value), not just
     // who/what. Or Thella's hand slot 1 carries state=1; dropping it made the

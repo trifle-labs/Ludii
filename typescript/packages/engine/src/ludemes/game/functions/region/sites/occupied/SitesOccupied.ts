@@ -401,14 +401,31 @@ export class SitesOccupied extends BaseRegionFunction {
       // filter cannot distinguish a hand entry from a board entry there.
       const positions = ctx.state.owned.positions(whoId);
       const seen = new Set<number>();
-      for (const comp of positions) {
+      for (let compIdx = 0; compIdx < positions.length; compIdx++) {
+        const comp = positions[compIdx];
         if (comp === undefined) continue;
+        // @java Owned.positions(pid) is indexed BY component id
+        // (other/state/owned/Owned.java — `positions[componentId]`), so the
+        // array index itself IS the component/`what` value each Location in
+        // `comp` belongs to; use it directly for the component filter below.
+        // The previous code re-derived `w` from `ctx.state.whats[site]` — the
+        // site's flat TOP-of-stack `what` only — instead of the level the
+        // registry entry actually names. For a buried same-owner piece under
+        // a different top piece (Seesaw's `(sites Occupied by:Mover
+        // component:"Hex" top:False)`, where the Hex tile sits at level 0
+        // under the mover's own Disc at level 1), `whats[site]` reported the
+        // Disc's component, which fails the "Hex" filter, so the site was
+        // wrongly dropped even though the registry correctly holds a
+        // level-0 Hex entry for it. Checking `whatOk(compIdx)` once per
+        // component — matching every OTHER stacking-aware branch here
+        // (Enemy/NonMover use `whatRow?.[lvl]`, the level-specific `what`) —
+        // fixes this without changing behavior when no component filter is
+        // set (`whatOk` is then true for any index).
+        if (!whatOk(compIdx)) continue;
         for (const loc of comp) {
           const site = loc.site();
           if (site < 0 || site >= scanN) continue;
           if (seen.has(site)) continue;
-          const w = ctx.state.whats[site] ?? whoId;
-          if (!whatOk(w)) continue;
           seen.add(site);
           sitesOccupied.push(site);
         }

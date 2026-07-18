@@ -94,6 +94,28 @@ export class Add implements MovesFunction {
       compileFlags.usesCount = true;
     }
     this.stack = options.stack ?? false;
+    // @java Add.java:465-466 — gameFlags() |= GameType.Stacking when onStack
+    // (stack:True) is set: a stacking Add compiles the WHOLE game as
+    // GameType.Stacking, exactly like the sibling Step/Slide/Hop/FromTo
+    // ludemes' own `stack:`/`levelFrom:` options already do here (see their
+    // constructors). This was the one stacking-producing ludeme option that
+    // never propagated to compileFlags.usesStacking, so a game whose ONLY
+    // stacking signal is `(add … stack:True)` (Veloop's per-site 2-level
+    // "Placement" piles) compiled with state.stackingGame=false: ActionAdd's
+    // own onStack flag still routed the action through the stacking push path
+    // (action-add.ts gates on `this.onStack || state.stackingGame`), but
+    // every OTHER stacking-aware code path that gates strictly on
+    // state.stackingGame (the owned-registry choice between
+    // FullOwned/ownedEntries and FlatCellOnlyOwned/flatOwned, and
+    // SitesOccupied's `top && stackingGame` post-filter) wrongly treated the
+    // game as flat. A later plain (non stack:True) Add onto a site already
+    // tracked by flatOwned (materialized by an earlier flat board-to-board
+    // Move) never re-registered there, so `(sites Occupied by:…)`'s
+    // registry-based scan permanently under-counted a player's occupied
+    // sites (Veloop (Hex)/(Square) MOVE_MISMATCH).
+    if (this.stack) {
+      compileFlags.usesStacking = true;
+    }
     this.thenClause = options.then ?? null;
     this.toCondition = options.condition ?? null;
     this.applyEffect = options.applyEffect ?? null;

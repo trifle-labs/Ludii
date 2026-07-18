@@ -381,6 +381,24 @@ export class ActionMove extends BaseAction {
         }
         s = s.withFlatOwnedAdd(movedOwner, movedWhat, this.toIndex);
       }
+      // @java ActionMoveN.java:289-295 — the SAME owned() bookkeeping applies
+      // verbatim to a stacking game's FullOwned/`ownedEntries` registry (the
+      // `flatOwned` block above only materializes for non-stacking, non-typed
+      // boards). Panchi sets GameType.Stacking via its hand `(place Stack …
+      // count:5)`, so its capture macro's board->hand relocation
+      // ("CaptureEnemyPiece": (fromTo (from (to)) (to (handSite (who at:(to))))
+      // count:(count at:(to)))) runs THIS transferCount path — and without this
+      // block the captured piece's board-site registration in `ownedEntries`
+      // was never cleared: ForEachPiece.owned.positions(mover) kept offering
+      // the vacated site as a source long after an opponent's piece occupied
+      // it (Panchi trial 1 ply 146: from=54, a site owned by the opponent,
+      // surfaced as mover=1's move source).
+      if (movedWhat > 0 && movedOwner > 0 && s.ownedEntries !== undefined) {
+        if (fromNew === 0) {
+          s = s.withOwnedSiteCleared(this.fromIndex);
+        }
+        s = s.withOwnedAdd(movedOwner, movedWhat, this.toIndex, 0);
+      }
       return this.maintainTracks(s, movedWhat);
     }
     // Genuine per-level stack at the source — a distinct-piece stack (Tower of

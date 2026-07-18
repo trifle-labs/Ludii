@@ -142,11 +142,24 @@ export class FromTo implements MovesFunction {
     for (const from of sitesFrom) {
       if (from <= OFF) continue;
 
-      // @java FromTo.java:186-187 — check source occupancy. Mancala captures
-      // use count:N on seed pits, which have counts but no component `what`.
-      let hasSource = this.countFn !== null && !this.stack
-        ? ctx.state.count(from) > 0
-        : ctx.state.what(from) > 0;
+      // @java FromTo.java:183-185 — `if (cs.what(from, realTypeFrom) <= 0)
+      // continue;` is the ONLY source-occupancy gate Java applies, and it is
+      // unconditional (not branched on countFn/stack). The prior TS logic
+      // swapped to a count-ONLY check whenever countFn != null, which broke
+      // ordinary piece-based captures whose `count:` merely computes how many
+      // pieces to relocate (Panchi's "CaptureEnemyPiece": (fromTo (from (to))
+      // (to (handSite …)) count:(count at:(to))) captures a single Pawn —
+      // cs.what(from) > 0 but countAt(from) = 0, since only the HAND pile is
+      // countAt-backed): the capture's own FromTo silently produced zero
+      // moves every time, so a captured piece was overwritten by the outer
+      // move but never routed back to hand — hand occupancy hit 0 too soon
+      // and blocked re-entry (Panchi trial 0 ply 98 / trial 1 ply 69
+      // MOVE_MISMATCH). OR the two checks: what > 0 covers ordinary
+      // component-based sources (matches Java exactly); the count > 0
+      // fallback preserves the count-only seed-pit games (mancala captures
+      // with no component `what`) this branch was originally added for.
+      let hasSource = ctx.state.what(from) > 0
+        || (this.countFn !== null && !this.stack && ctx.state.count(from) > 0);
       // Dual-SiteType (@java cs.what(from, type)): a piece on a typed channel
       // (Guerrilla's Cell counters) is a valid source too.
       if (!hasSource) {
@@ -159,7 +172,9 @@ export class FromTo implements MovesFunction {
 
       ctx._evalFrom = from;
 
-      if (this.fromCondition != null && !this.fromCondition.eval(ctx)) continue;
+      if (this.fromCondition != null && !this.fromCondition.eval(ctx)) {
+        continue;
+      }
 
       const sitesTo: number[] = (this.regionTo != null)
         ? this.regionTo.eval(ctx)
