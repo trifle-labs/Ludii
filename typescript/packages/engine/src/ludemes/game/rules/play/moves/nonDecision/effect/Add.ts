@@ -272,6 +272,27 @@ export class Add implements MovesFunction {
         ? this.applyEffect.eval(ctx).flatMap((move) => [...move.actions])
         : [];
       const count = this.countFn?.eval(ctx) ?? 1;
+      // @java Add.java:160-163 — `count` is evaluated once and, if < 1, eval()
+      // returns an EMPTY Moves list: no ActionAdd is ever constructed. TS
+      // previously fell through and built one anyway. For a non-constant
+      // count: (e.g. Chiana wa Kunja's per-site `(add (piece (id "Seed"
+      // Mover)) (to (handSite Shared)) count:(count at:(site)))`, evaluated
+      // once per forEach'd site along a sow's path) an empty in-between site
+      // legitimately yields count=0 — Java silently skips it, but TS still
+      // built an ActionAdd(count:0). ActionAdd.apply()'s empty-site branch
+      // stamps who/what unconditionally (matching ActionAdd.java:292's
+      // setSite, which writes who/what regardless of count) — so this
+      // zero-count "add" still overwrote the hand site's component tag with
+      // whichever player merely sowed past an empty site, even though no
+      // seed was ever captured. A later REAL capture by the other player then
+      // hit ActionAdd's "occupied site" branch (currentWhat!==0, matching
+      // Java: existing owner/piece stay untouched) and inherited that
+      // phantom, wrong owner instead of its own — corrupting the eventual
+      // hand-to-board redistribution's stamped ownership (Chiana wa Kunja
+      // ply 110: board site 54 came back owner=2 instead of the mover's own
+      // 1, confirmed absent in JVM ground truth — DumpProbe shows the hand
+      // site staying who=0/count=0 for every ply where TS showed pollution).
+      if (count < 1) continue;
 
       // @java Add.java:208-217/291-300 — a stacking Add with count>1 pushes ONE
       // stack level per ActionAdd; Java achieves an N-level push by appending

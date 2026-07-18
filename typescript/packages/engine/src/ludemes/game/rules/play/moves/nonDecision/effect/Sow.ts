@@ -251,6 +251,18 @@ export class Sow extends Effect {
     const actions: Action[] = [];
     // @java pits carry the Seed component while seeded — propagate it with the sow.
     const seedWhat = ctx.state.whatAtSite(start) > 0 ? ctx.state.whatAtSite(start) : 0;
+    // @java ActionMoveTopPiece.java:422,495 — who = (what < 1) ? 0 :
+    // context.components()[what].owner(). Sow.java's per-hole ActionMove.construct
+    // calls (Sow.java:217,277) never pass an owner override, so the "who" stamped
+    // on a sown-into site is the SOWN PIECE's own declared component owner, not
+    // the current mover. For a Shared-role Seed piece (Mwambulula, Khutka Boia,
+    // …) this is the constant Shared owner; using `mover` instead let a stale
+    // mover-derived owner corrupt `whatAtSite()`'s cells-owner fallback on a
+    // what-less pit, which then failed ActionMove's pile-merge `what` check and
+    // silently dropped a redistributed hand seed (Mwambulula ply 42/60).
+    const seedOwner = seedWhat > 0
+      ? (ctx.game.equipment?.pieces?.find((p) => p.index === seedWhat)?.owner ?? 0)
+      : 0;
 
     let numSeedSowed = 0;
     let lastTo = start;
@@ -289,7 +301,7 @@ export class Sow extends Effect {
           // @java a self-drop is ActionMove(start→start): net-zero, but it still
           // consumes one seed from the origin pool. Per-seed transfer keeps the
           // origin drain incremental (and idempotent on re-application).
-          actions.push(new ActionSowSeed(start, start, mover, seedWhat));
+          actions.push(new ActionSowSeed(start, start, seedOwner, seedWhat));
           lastTo = start;
         }
         numDone++;
@@ -349,7 +361,7 @@ export class Sow extends Effect {
             // @java Sow.java emits an ActionMove(start→to) per dropped seed; the
             // per-seed transfer decrements the origin and increments the hole,
             // and no-ops on an already-drained origin (ActionMoveTopPiece guard).
-            actions.push(new ActionSowSeed(start, to, mover, seedWhat));
+            actions.push(new ActionSowSeed(start, to, seedOwner, seedWhat));
             lastTo = to;
           }
           numDone++;
@@ -446,6 +458,26 @@ export class Sow extends Effect {
         for (const a of m.actions) finalActions.push(a);
         rollingState = m.applyTo(rollingState, ctx.rng);
         if (m.moveAgain) moveAgain = true;
+        // @java Sow.java:358-360 — moves.get(j).then().add(then().moves())
+        // attaches this then as a deferred consequence, so a move `m` the
+        // then-generator returns can carry its OWN nested (then …) chain that
+        // Java's generic Move.apply()/then() recursion resolves. Whyo's
+        // round-reset — (forEach Site (union P1 P2) (fromTo …) (then (and {
+        // addScore… (if (< (var) 0) (and { removeAll addFour })) }))) —
+        // attaches the score/reset cascade onto EACH swept move via
+        // ForEachSite's own then-fold (dt=1 per move). This loop evaluates
+        // then() eagerly at generation time and applied only m's bare
+        // actions, silently dropping that nested chain (the post-round board
+        // never got refilled: 48 seeds stayed on the board/stores instead of
+        // the expected 96 after the reset's Remove+Add). Same bug class as
+        // the capture loop above (Sow.java:304-308) — fold the deferred
+        // thens here too.
+        if (m.deferredThens && m.deferredThens.length > 0) {
+          const folded = evalDeferredThens(evalCtx, rollingState as never, m);
+          for (const a of folded.extraActions) finalActions.push(a);
+          rollingState = folded.state as never;
+          if (folded.moveAgain) moveAgain = true;
+        }
       }
     }
 
