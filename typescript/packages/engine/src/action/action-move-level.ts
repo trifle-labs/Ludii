@@ -237,10 +237,30 @@ abstract class ActionMoveLevelBase extends BaseAction {
     let pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
     pushed = pushed.withOwnedAdd(movingOwner, movingWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
     if (carryValue !== 0) pushed = pushed.withValueAt(this.toIndex, carryValue);
-    if (carryState !== 0) {
-      pushed = pushed.withStateAt(this.toIndex, carryState);
-      // @java addItemGeneric's stateVal overload — the state rides on the
-      // NEW top level of the destination's per-level column too.
+    // @java ContainerStateStacks.addItem(state,site,what,who,stateVal,
+    // rotationVal,value,game) (Core/src/other/state/stacking/
+    // ContainerStateStacks.java:332-360) — chunkStacks[...].setState(trialState,
+    // stateVal) runs UNCONDITIONALLY on every per-level push, even when
+    // stateVal is the default 0. Gating this write on `carryState !== 0` left
+    // a destination site's STALE flat stateAt[] scalar (from a PREVIOUS
+    // occupant with nonzero state, e.g. a CapturedPiece state=2 that later
+    // vacated the site — Java's own per-level remove(state,site,level,
+    // graphElement) at ContainerStateStacks.java:715-737 doesn't zero the
+    // vacated slot's state either, but that's harmless in Java because the
+    // slot is bounds-checked out of existence by the shrunk `size()` and the
+    // NEXT push always overwrites it via setState() before any read can see
+    // it) leak into a freshly-arrived piece whose true state is 0, via
+    // `stateAtLevel`'s empty-per-level-row fallback to the flat scalar
+    // (state.ts:1607-1611). Aj Sakakil/A K'aak'il/Aj Sayil/Aj Sina'anil/Bul's
+    // shared piece-move rule gates FreePiece(state 0) vs CapturingPiece
+    // (state 1) on `(state at:(from) level:(level))`; a hand piece entering a
+    // previously-vacated board site inherited the departed occupant's stale
+    // state 2 (CapturedPiece) and matched neither branch, producing zero
+    // legal moves for it forever after.
+    pushed = pushed.withStateAt(this.toIndex, carryState);
+    // @java addItemGeneric's stateVal overload — the state rides on the
+    // NEW top level of the destination's per-level column too.
+    {
       const newLevel = pushed.stackSize(this.toIndex) - 1;
       if (newLevel >= 0) pushed = pushed.withStateAtLevel(this.toIndex, newLevel, carryState);
     }

@@ -639,7 +639,16 @@ export class ActionMove extends BaseAction {
         s3 = s3.withValueStackRow(this.fromIndex, fromRow);
         s3 = s3.withValueStackRow(this.toIndex, []);
         s3 = s3.withOwnedAdd(topOwner, topWhat, this.toIndex, 0);
-        if (srcSiteState !== 0) s3 = s3.withStateAt(this.toIndex, srcSiteState);
+        // @java ContainerStateStacks.addItem (ContainerStateStacks.java:332-360)
+        // — setState(trialState, stateVal) runs UNCONDITIONALLY, even for the
+        // default 0. Gating this write on `srcSiteState !== 0` (same bug class
+        // fixed in action-move-level.ts's per-level branch) let a destination
+        // that previously held a piece with nonzero state (e.g. a CapturedPiece,
+        // state=2) keep that STALE flat stateAt[] value after the old occupant
+        // vacated; a freshly-arriving piece with true state 0 then inherited it,
+        // matching neither Aj-family FreePiece(0) nor CapturingPiece(1) disjunct
+        // and producing zero legal moves for it forever after.
+        s3 = s3.withStateAt(this.toIndex, srcSiteState);
         return this.maintainTracks(s3, topWhat);
       }
       const toBase: number[] = [];
@@ -669,8 +678,14 @@ export class ActionMove extends BaseAction {
       // activation check reads (state at:55 level:1) after P3 pushes onto
       // P1's occupied gate — the flat-only write left stateStacks[55][1]=0
       // and ply 90 offered only Pass.
-      if (srcSiteState !== 0) {
-        pushed = pushed.withStateAt(this.toIndex, srcSiteState);
+      // @java ContainerStateStacks.addItem (ContainerStateStacks.java:332-360)
+      // — setState(trialState, stateVal) runs UNCONDITIONALLY, even for the
+      // default 0 (same bug class as the destFlatOccupied branch above and
+      // action-move-level.ts's per-level push): a stale nonzero flat
+      // stateAt[to] left behind by a since-departed occupant must be
+      // overwritten by every fresh arrival, not just a nonzero one.
+      pushed = pushed.withStateAt(this.toIndex, srcSiteState);
+      {
         const newTopLevel = pushed.stackSize(this.toIndex) - 1;
         if (newTopLevel >= 0) pushed = pushed.withStateAtLevel(this.toIndex, newTopLevel, srcSiteState);
       }

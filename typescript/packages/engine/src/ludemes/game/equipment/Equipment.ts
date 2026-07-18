@@ -1084,6 +1084,30 @@ export class Equipment extends BaseLudeme {
           paths: () => tileC.paths?.call(component) ?? [],
         }
         : {};
+      // @java Component.isDomino()/getValue()/getValue2()/isDoubleDomino() —
+      // Domino.java overrides these on the base Component default-false/OFF
+      // implementations (Domino.java per Domino.ts port). The plain surface
+      // object dropped them the same way it dropped the Tile accessors above,
+      // so FromTo.evalLargePiece's domino-specific footprint-validity branch
+      // (FromTo.java ~lines 500-510: `else if (!csTo.isPlayable(loc) &&
+      // moveNumber() > 0)`) never saw isDomino()===true and fell through to
+      // the strict non-domino containment check instead, rejecting every
+      // domino placement whose second footprint cell wasn't already inside
+      // `newSitesTo` (dominoes/Block ply 0: MOVE_MISMATCH, only Pass offered).
+      const dominoC = component as unknown as {
+        isDomino?: () => boolean;
+        getValue?: () => number;
+        getValue2?: () => number;
+        isDoubleDomino?: () => boolean;
+      };
+      const dominoExtras = typeof dominoC.isDomino === "function"
+        ? {
+          isDomino: () => dominoC.isDomino!.call(component),
+          getValue: () => dominoC.getValue?.call(component) ?? 0,
+          getValue2: () => dominoC.getValue2?.call(component) ?? 0,
+          isDoubleDomino: () => dominoC.isDoubleDomino?.call(component) ?? false,
+        }
+        : {};
       pieces.push(Object.freeze({
         name: component.name() ?? "",
         owner: component.owner(),
@@ -1095,6 +1119,7 @@ export class Equipment extends BaseLudeme {
         flips: flips ?? undefined,
         getFlips: () => flips ?? null,
         ...tileExtras,
+        ...dominoExtras,
       }));
     }
     return Object.freeze(pieces);

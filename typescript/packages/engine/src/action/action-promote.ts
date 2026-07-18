@@ -64,13 +64,29 @@ export class ActionPromote extends BaseAction {
     // (cs.setSite(..., level)) — refresh the per-level what column too, or a
     // promoted commander (Bashni CounterStar) is invisible to the per-level
     // ForEachPiece scan and the top:True filter.
+    //
+    // @java ActionPromote.java:149-192 — when `game.isStacking()`, apply()
+    // ALWAYS does a top-level remove()+addItemGeneric() (pop the old top,
+    // push the new component), regardless of the stack's height: a
+    // single-item stack (sizeStack==1, e.g. MensaSpiel's initial `(place
+    // Stack "Starter2" … count:3)` seeding) still gets its per-level
+    // whatStacks/stacks row refreshed. The prior `os.length > 1` guard only
+    // refreshed genuine multi-level stacks, leaving a single-level site's
+    // whatStacks entry stale after promotion (flat `whats[]` was correctly
+    // written, but `whatAtSiteLevel` prefers the stale per-level entry once
+    // materialized — see state.ts:869-894 — which then poisoned
+    // `withOwnedMaterialized()`'s later scan of that site with the OLD
+    // component, e.g. MensaSpiel Starter2→Cone2 leaving the owned registry
+    // reading Starter2 forever after a same-turn promotion).
     const ws = (s2 as unknown as { whatStacks: readonly (readonly number[])[] }).whatStacks[this.toIndex];
     const os = (s2 as unknown as { stacks: readonly (readonly number[])[] }).stacks[this.toIndex];
-    if ((os?.length ?? 0) > 1) {
-      const top = (os!.length) - 1;
-      const nextWs = (ws !== undefined && ws.length > 0) ? [...ws] : [...os!];
+    const rowLen = Math.max(os?.length ?? 0, ws?.length ?? 0);
+    if (state.stackingGame && rowLen >= 1) {
+      const top = rowLen - 1;
+      const baseOwner = state.who(this.toIndex);
+      const nextWs = (ws !== undefined && ws.length >= rowLen) ? [...ws] : [...(ws ?? []), ...new Array(rowLen - (ws?.length ?? 0)).fill(0)];
       nextWs[top] = this.whatValue;
-      const nextOs = [...os!];
+      const nextOs = (os !== undefined && os.length >= rowLen) ? [...os] : [...(os ?? []), ...new Array(rowLen - (os?.length ?? 0)).fill(baseOwner)];
       if (this.whoValue > 0) nextOs[top] = this.whoValue;
       s2 = (s2 as unknown as { with(p: object): State }).with({ whatStacks: replaceRow((s2 as unknown as { whatStacks: readonly (readonly number[])[] }).whatStacks, this.toIndex, nextWs), stacks: replaceRow((s2 as unknown as { stacks: readonly (readonly number[])[] }).stacks, this.toIndex, nextOs) });
     }

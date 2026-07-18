@@ -106,6 +106,17 @@ export interface StateOptions {
   /** Per-site value (Java: ContainerState.value[i]). */
   readonly valueAt?: readonly number[];
   /**
+   * Per-site "playable" bit for boardless line-of-play games (Java:
+   * ContainerFlatState.playable, a HashedBitSet allocated only when
+   * `game.isBoardless()`; other games leave it null and `isPlayable()`
+   * always returns true — @java ContainerFlatState.java isPlayable/
+   * setPlayable). Defaults false everywhere; only the boardless-dominoes
+   * bootstrap (centre site) and the post-placement `lineOfPlayDominoes`
+   * recompute (@java BaseAction.java:220-306) ever set bits true, and only
+   * games that consult `(sites LineOfPlay)` ever read this field.
+   */
+  readonly playableAt?: readonly boolean[];
+  /**
    * Per-site cost / graph weight (Java: Topology element `cost`). Set once by
    * the `(set Cost …)` start rule on weighted-graph games (Onek Rong, Radran,
    * OddEvenTree) and read by `(cost …)`; it never changes during play, so it
@@ -353,6 +364,8 @@ export class State {
   /** See {@link StateOptions.residualStateAt}. */
   public readonly residualStateAt: readonly number[];
   public readonly valueAt: readonly number[];
+  /** See {@link StateOptions.playableAt}. */
+  public readonly playableAt: readonly boolean[];
   public readonly costAt: readonly number[];
   public readonly rotationAt: readonly number[];
   public readonly countAt: readonly number[];
@@ -599,6 +612,7 @@ export class State {
     this.stateAt = Object.freeze(fillSlot(options.stateAt, n, 0));
     this.residualStateAt = Object.freeze(fillSlot(options.residualStateAt, n, 0));
     this.valueAt = Object.freeze(fillSlot(options.valueAt, n, 0));
+    this.playableAt = Object.freeze(fillBoolSlot(options.playableAt, n));
     this.costAt = Object.freeze(fillSlot(options.costAt, n, 0));
     this.rotationAt = Object.freeze(fillSlot(options.rotationAt, n, 0));
     this.countAt = Object.freeze(
@@ -1694,6 +1708,10 @@ export class State {
   }
   public valueAtSite(siteIndex: number): number {
     return this.valueAt[siteIndex] ?? 0;
+  }
+  /** @java ContainerFlatState.isPlayable(int) */
+  public isPlayableAtSite(siteIndex: number): boolean {
+    return this.playableAt[siteIndex] ?? false;
   }
   public costAtSite(siteIndex: number): number {
     return this.costAt[siteIndex] ?? 0;
