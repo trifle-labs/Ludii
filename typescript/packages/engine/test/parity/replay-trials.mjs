@@ -896,6 +896,33 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     if (candidates.length === 1) return candidates[0];
   }
 
+  // Disambiguate by SCORE consequences. Tank Tactics' "Shoot" and "Trade"
+  // both compile to a Select over the identical `(sites Occupied by:Enemy
+  // container:"Board") ∩ (sites Distance from:(from) (range 1 state))`
+  // domain, so two candidates share mover/from/to/actions and differ ONLY in
+  // their deferred then (Shoot: `(set Value at:(last To) …)`; Trade:
+  // `(addScore (player (who at:(last To))) 1)`) — invisible pre-apply.
+  // Java records the exact SetScore consequence, so hypothetically apply each
+  // candidate and prefer the one whose resulting per-player scores match.
+  const recSetScores = recMove.actions
+    .filter((a) => a.actionType === 'SetScore')
+    .map((a) => [Number(a.fields.get('player')), Number(a.fields.get('score')), a.fields.get('add') === 'true']);
+  if (recSetScores.length > 0) {
+    const before = ctx.state.scores ?? [];
+    const expected = [...before];
+    for (const [p2, v, add] of recSetScores) {
+      if (Number.isFinite(p2) && p2 < expected.length) expected[p2] = add ? (expected[p2] ?? 0) + v : v;
+    }
+    const byScore = candidates.filter((cand) => {
+      try {
+        const after = game.apply(ctx, cand)?.state?.scores ?? [];
+        return expected.every((v, i) => (after[i] ?? 0) === v);
+      } catch { return false; }
+    });
+    if (byScore.length > 0 && byScore.length < candidates.length) candidates = byScore;
+    if (candidates.length === 1) return candidates[0];
+  }
+
   // Disambiguate by GAME-VAR consequences. Dual-direction sow games emit two
   // identical Select moves per pit via (or (if (!= 2 (var "Direction")) [CCW])
   // (if (!= 1 (var "Direction")) [CW])) — both branches fire while Direction

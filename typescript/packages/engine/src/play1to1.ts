@@ -90,6 +90,51 @@ function resolveRangePlaceholders(source: string): string {
   });
 }
 
+/**
+ * Textually resolve `"DefineName"` tokens that appear as a range bound
+ * (`"DefineName"..N`, `N.."DefineName"`, `"DefineName".."OtherDefine"`) BEFORE
+ * the range pre-pass. @java Expander.expand runs expandDefines() BEFORE
+ * expandRanges()/expandSiteRanges() ("Do after expanding defines, as external
+ * defines could have ranges" — Language/src/parser/Expander.java:118-124), so
+ * a numeric `(define "Entry" 87)` used as a track-range bound
+ * (`{"Entry".."EndInnerTrack" End}`, Mehen.lud) is already a plain `87..1`
+ * numeric range by the time Java expands ranges. This engine's expandDefines
+ * runs on the parsed AST AFTER parseLud(expandSiteRanges(expandRanges(...))),
+ * so the raw text still has `"Entry".."EndInnerTrack"` when expandSiteRanges
+ * runs. expandSiteRanges treats ANY `".."` between two quoted strings as a
+ * board-coordinate range (letter + row number); "Entry"/"EndInnerTrack" have
+ * no numeric row suffix (`parseInt("ntry")` = NaN), so its row loop never
+ * executes and it silently deletes the whole `"Entry".."EndInnerTrack"` span
+ * — the track's Integer[] collapses to just `[End]` (-2), so `buildTrack`
+ * never resolves site 87 onto the "NormalTrack"/"OppositeTrack" and every
+ * `AdvanceOn` move generator finds no track elements (Mehen ply 3/7
+ * MOVE_MISMATCH: TS offers only Pass where Java plays Move 87->83).
+ * Resolving simple numeric defines textually here — mirroring the existing
+ * resolveRangePlaceholders() option-placeholder pre-pass immediately above —
+ * lets `{"Entry".."EndInnerTrack" End}` become `{87..1 End}` before
+ * expandSiteRanges runs, so it correctly falls through to the numeric
+ * expandRanges() path instead.
+ */
+function resolveDefineRangePlaceholders(source: string): string {
+  if (!/"\s*\.\./.test(source) && !/\.\.\s*"/.test(source)) return source;
+  const valueText = new Map<string, string>();
+  const defineRe = /\(define\s+"([^"]+)"\s+(-?\d+)\s*\)/g;
+  let dm: RegExpExecArray | null;
+  while ((dm = defineRe.exec(source)) !== null) {
+    valueText.set(dm[1]!, dm[2]!);
+  }
+  if (valueText.size === 0) return source;
+  return source
+    .replace(/"([^"]+)"(\s*\.\.)/g, (whole, name: string, suffix: string) => {
+      const v = valueText.get(name);
+      return v !== undefined ? `${v}${suffix}` : whole;
+    })
+    .replace(/(\.\.\s*)"([^"]+)"/g, (whole, prefix: string, name: string) => {
+      const v = valueText.get(name);
+      return v !== undefined ? `${prefix}${v}` : whole;
+    });
+}
+
 export function play1to1(source: string, opts?: Play1to1Options): Game {
   // Step 0: Java text pre-pass — expand `m..n` number ranges and `"A1".."C3"` site
   // ranges before lexing (@java Expander.expand; the lexer would otherwise produce a
@@ -98,7 +143,7 @@ export function play1to1(source: string, opts?: Play1to1Options): Game {
   // bound may be an option placeholder — Mutant Y^3's `{0..<Board:aTri>}`. The
   // lexer mangles `..<` beyond recovery, so resolve single-token placeholder
   // bounds textually here (complex values still go through the AST option pass).
-  const preRanged = resolveRangePlaceholders(source);
+  const preRanged = resolveDefineRangePlaceholders(resolveRangePlaceholders(source));
   // Step 1–3: Parse, apply options, expand defines.
   const parsed = parseLud(expandSiteRanges(expandRanges(preRanged)));
   const resolved = applyOptions(parsed);
