@@ -636,7 +636,14 @@ export class ActionMove extends BaseAction {
         // registry list ONLY when the source pile is a single piece
         // (count == 1); a count-pile move (At-Tab's `(count at:(from))`
         // king piles) just decrements count and owned() is untouched.
-        const fromCount = fo.countAtSite(this.fromIndex);
+        // The count conditions only apply where Java's csFrom.count() is a
+        // REAL pile count — requiresCount games (At-Tab's king piles). For
+        // everything else Java's flat branch sees count==1 and always
+        // removes/adds; TS's countAtSite can read >1 there because stacked
+        // STARTS are modeled as count piles (Pahada Keliya), and trusting it
+        // wrongly kept the source registered (ply-1 movegen divergence,
+        // bisect-confirmed to the count-conditional change).
+        const fromCount = fo.requiresCountGame ? fo.countAtSite(this.fromIndex) : 1;
         if (fromCount <= 1) {
           fo = fo.withFlatOwnedRemove(mOwner, mWhat || mOwner, this.fromIndex);
         }
@@ -648,7 +655,7 @@ export class ActionMove extends BaseAction {
         // (merging onto an existing same-piece pile increments count and
         // leaves the registry alone: the site was appended when the pile
         // first formed).
-        const toCountPre = fo.countAtSite(this.toIndex);
+        const toCountPre = fo.requiresCountGame ? fo.countAtSite(this.toIndex) : 0;
         const postCount = capturedWhat === mWhat && toCountPre > 0
           ? (fo.requiresCountGame ? toCountPre + 1 : 1)
           : 1;
