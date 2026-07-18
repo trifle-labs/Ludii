@@ -106,7 +106,7 @@ export class ForEachDie extends NonDecision {
       } | null;
       game?(): {
         getHandDice(idx: number): { index(): number };
-        handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number }>;
+        handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number; faces(): readonly number[] }>;
       };
       pipCount?(): number;
       setPipCount?(v: number): void;
@@ -160,7 +160,7 @@ export class ForEachDie extends NonDecision {
         : (v: number) => { (context as unknown as { _evalPips?: number })._evalPips = v; };
       const gameFns = typeof ctxJava.game === "function" ? ctxJava.game() : (context.game as unknown as {
         getHandDice(idx: number): { index(): number };
-        handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number }>;
+        handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number; faces(): readonly number[] }>;
       });
       const sitesFromFn = typeof ctxJava.sitesFrom === "function"
         ? () => ctxJava.sitesFrom!()
@@ -216,12 +216,24 @@ export class ForEachDie extends NonDecision {
               for (const dice of gameFns.handDice()) {
                 if ((temp - 1) < dice.getNumFaces()) {
                   const siteFrom = sitesFromFn()[dice.index()] ?? 0;
+                  // @java ActionUpdateDice(loc, temp-1) — Java stores the FACE
+                  // INDEX (temp-1) in the site-state channel; on apply,
+                  // ActionUpdateDice.java resolves the actual rearmed die
+                  // value as `component.getFaces()[newState]`
+                  // (Core/src/other/action/die/ActionUpdateDice.java apply()),
+                  // i.e. faces[temp-1] — NOT `temp` itself. For a standard d6
+                  // (faces {1..6}) these coincide (faces[temp-1] === temp),
+                  // which hid this gap for e.g. Backgammon; for a custom-face
+                  // die (Pagade Kayi Ata's `faces:{1 3 4 6 8 10 12 16}`) they
+                  // diverge, so passing `temp` verbatim rearmed doubles to the
+                  // WRONG value and starved move generation of the correct
+                  // replay distance (moves() never reached the recorded
+                  // destination under a rearmed double).
+                  const faces = dice.faces();
+                  const rearmValue = faces[temp - 1] ?? temp;
                   for (let loc = siteFrom; loc < siteFrom + dice.numLocs(); loc++) {
-                    // @java ActionUpdateDice(loc, temp-1): global site + face
-                    // INDEX, currentDice = faces[temp-1] = the pip `temp`.
                     // Engine dice-value mode: (dieIndex, faceIndex, value).
-                    if (process.env.TRACE_DICE) console.error(`[rearm] ply=${(globalThis as Record<string, unknown>).__PLY} temp=${temp} dice=${JSON.stringify((context.state as unknown as { diceValues?: readonly number[] }).diceValues)} stack=${new Error().stack?.split("\n")[3]?.trim().slice(0,80)}`);
-                    newActions.push(new ActionUpdateDice(loc - siteFrom, temp - 1, temp));
+                    newActions.push(new ActionUpdateDice(loc - siteFrom, temp - 1, rearmValue));
                   }
                 }
               }

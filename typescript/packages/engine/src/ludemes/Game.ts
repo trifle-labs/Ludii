@@ -564,16 +564,17 @@ export class Game implements Game {
     return n > 0 ? n : 1;
   }
 
-  public handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number }> {
+  public handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number; faces(): readonly number[] }> {
     const specs = this.equipment.diceSpecs;
     if (specs.length === 0) return [];
     const idx = 1 + this.equipment.hands.length;
-    const numFaces = specs[0]?.faces.length ?? 6;
-    return [{ index: () => idx, getNumFaces: () => numFaces, numLocs: () => specs.length }];
+    const diceFaces = specs[0]?.faces ?? [1, 2, 3, 4, 5, 6];
+    const numFaces = diceFaces.length;
+    return [{ index: () => idx, getNumFaces: () => numFaces, numLocs: () => specs.length, faces: () => diceFaces }];
   }
 
   /** @java Game.getHandDice(int) */
-  public getHandDice(i: number): { index(): number; getNumFaces(): number; numLocs(): number } {
+  public getHandDice(i: number): { index(): number; getNumFaces(): number; numLocs(): number; faces(): readonly number[] } {
     return this.handDice()[i]!;
   }
 
@@ -1834,10 +1835,28 @@ export class Game implements Game {
           // share the same component. Callers that need every level
           // individually addressable opt out of the merge via neverMergeStack.
           if (!_neverMergeStack && last.what === what && last.owner === owner) {
-            countAt[site] = (countAt[site] ?? 0) + 1;
+            // @java ActionAdd.java:200,284,324-337 — repeat calls at the SAME
+            // (what, owner) push one real level each. When `last` IS the
+            // base/flat level (levels.length === 1), that pile's height is
+            // tracked by the flat `countAt[site]` scalar (Backgammon's
+            // 5-checker points). But when `last` is a level ABOVE the base
+            // (levels.length > 1, e.g. Myles: (place Stack "Disc1" 21
+            // count:4) then (place Stack "Disc2" 21 count:3) — Disc2's repeat
+            // calls onto its own freshly-pushed level), `countAt[site]` still
+            // belongs to the UNRELATED base pile (Disc1's count of 4) and
+            // must not be touched: incrementing it here corrupted Disc1's
+            // tracked height (4 -> 6) so withStackPush's backfill later
+            // materialized 6 phantom Disc1 levels instead of 4 (9-level
+            // stack instead of 7 at site 21). Track the non-base pile's own
+            // repeat count on the entry itself instead.
+            if (levels.length === 1) {
+              countAt[site] = (countAt[site] ?? 0) + 1;
+            } else {
+              last.count = (last.count ?? 1) + 1;
+            }
             return;
           }
-          levels.push({ what, owner, count, state: stateValue, value });
+          levels.push({ what, owner, count: 1, state: stateValue, value });
           return;
         }
         // First stacking call at this site. If a FLAT placement already put
@@ -2074,13 +2093,29 @@ export class Game implements Game {
   }
 
   private componentByName(name: string): { index(): number; role(): { equals(role: string): boolean } } | null {
-    const direct = this.equipment.pieces.find((piece) => `${piece.name}${piece.owner}` === name);
+    // @java Game.java:547-550 — getComponent(nameC) is a plain exact-name
+    // lookup: `return mapComponent.get(nameC);`. The map is built at
+    // Game.java:2617-2622 (`mapComponent.put(equip.name(), equip)`) using
+    // each component's FINAL name, which by that point already has its
+    // owning player's index appended (Game.java:2545-2565, "We add the
+    // index of the owner at the end of the name of each component" —
+    // mirrored by Game.ts's prepareFaithfulEquipment). There is no
+    // name+owner reconstruction in Java's algorithm: exact match must be
+    // tried first. Re-concatenating an ALREADY-suffixed piece's own name
+    // with its own owner (the old `direct` check) is not faithful and, for
+    // double-digit owners, can coincidentally collide with a DIFFERENT
+    // player's real suffixed name — e.g. piece "Disc1" (owner 1):
+    // "Disc1"+"1" === "Disc11", colliding with player 11's actual "Disc11"
+    // piece — which broke 16-player games such as Pagade Kayi Ata
+    // (Sixteen-handed). `bySuffix` (bare-name + owner reconstructed from the
+    // QUERY string) is kept as a fallback for components whose name isn't
+    // suffixed yet.
+    const byName = this.equipment.pieces.find((piece) => piece.name === name);
     const suffix = name.match(/^(.*?)(\d+)$/);
     const bySuffix = suffix
       ? this.equipment.pieces.find((piece) => piece.name === suffix[1] && piece.owner === Number(suffix[2]))
       : undefined;
-    const byName = this.equipment.pieces.find((piece) => piece.name === name);
-    const piece = direct ?? bySuffix ?? byName;
+    const piece = byName ?? bySuffix;
     if (piece === undefined) return null;
     const role = piece.owner === 0 ? "Neutral" : `P${piece.owner}`;
     return {
@@ -2180,8 +2215,29 @@ export class Game implements Game {
     tempCtx._evalValue = 0;
 
     const playForMover = this.getPlayForMover(tempCtx);
-    const legalMoves = playForMover.moves.eval(tempCtx);
-    const isStalemated = legalMoves.length === 0;
+    // @java Game.java:3300-3328 — computeStalemated(Context): for
+    // alternating-move games (isAlternatingMoveGame(), the overwhelming
+    // majority, incl. Buffa de Baldrac), Java calls the CHEAP
+    // `phase.play().moves().canMove(context)` — Moves.canMove()'s default is
+    // a lazy "at least one move" iterator, and effect wrappers such as
+    // MaxMoves override canMove() to delegate straight to their un-maximized
+    // candidate set (MaxMoves.java:237-243: "Don't care about max moves
+    // here"), deliberately bypassing the expensive/recursive
+    // max-replay-count search. Calling eval() here unconditionally (as this
+    // code previously did) instead recurses through MaxMoves.eval ->
+    // Game.apply -> computeStalemated -> MaxMoves.eval without bound whenever
+    // a MaxMoves-wrapped game's own replay-count search applies a Pass move
+    // with the stalemated flag still unset (Buffa de Baldrac: RangeError
+    // "Maximum call stack size exceeded" mid-trial). Only simultaneous-move
+    // games fall back to a full moves() computation, matching Java's `else`
+    // branch (`game.moves(context)`, Game.java:3323-3328).
+    const movesFn = playForMover.moves as unknown as {
+      canMove?(c: Context1to1): boolean;
+      eval(c: Context1to1): Move[];
+    };
+    const isStalemated = this.modeRecord.mode() === "Alternating"
+      ? !(typeof movesFn.canMove === "function" ? movesFn.canMove(tempCtx) : movesFn.eval(tempCtx).length > 0)
+      : movesFn.eval(tempCtx).length === 0;
 
     return state.withStalemated(mover, isStalemated);
   }

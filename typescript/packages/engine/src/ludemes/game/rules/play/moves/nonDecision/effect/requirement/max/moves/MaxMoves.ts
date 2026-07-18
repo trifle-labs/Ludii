@@ -174,6 +174,29 @@ export class MaxMoves implements MovesFunction {
     return maxReplay;
   }
 
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxMoves.java — canMove(Context)
+   *
+   * Java parity (MaxMoves.canMove, lines 237-243):
+   *   "Don't care about max moves here; as soon as we have at least 1 move,
+   *    we know that we can move (even if that one may not be the max move!)"
+   *   return moves.canMove(context);
+   *
+   * Delegates straight to the un-maximized candidate set, deliberately
+   * bypassing eval()'s replay-count maximization (which applies every
+   * candidate via ctx.game.apply(), each of which may itself trigger
+   * Game.computeStalemated() for a Pass — see Game.ts computeStalemated()).
+   * Without this override, the inherited default canMove() (eval().length>0)
+   * would call THIS class's own eval(), and a computeStalemated() probe run
+   * from inside eval()'s recursion would recurse into eval() again without
+   * bound (Buffa de Baldrac: RangeError "Maximum call stack size exceeded").
+   */
+  public canMove(ctx: Context): boolean {
+    const inner = this.moves as unknown as { canMove?(c: Context): boolean; eval(c: Context): Move[] };
+    if (typeof inner.canMove === "function") return inner.canMove(ctx);
+    return inner.eval(ctx).length > 0;
+  }
+
   /** @java MaxMoves.isStatic() → delegates */
   public isStatic(): boolean {
     return (this.moves as unknown as { isStatic?: () => boolean }).isStatic?.() ?? false;
