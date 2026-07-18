@@ -81,7 +81,20 @@ class AllGroups extends BaseBooleanFunction {
     };
 
     const topology = typeof ctx.topology === "function" ? ctx.topology() : null;
-    const typeName = this.type ?? "Cell";
+    // @java game/functions/booleans/all/groups/AllGroups.java:275 (preprocess):
+    // `type = SiteType.use(type, game)` resolves a null/omitted SiteType to the
+    // board's declared default site type (`game.board().defaultSite()`), not a
+    // hardcoded "Cell". The TS AllGroups.preprocess() below is a no-op (and is
+    // never invoked by this port's compiler anyway), so `this.type` stays null
+    // for `(all Groups Orthogonal of: If:)` calls with no explicit SiteType
+    // (e.g. Symple.lud, whose board declares `use:Vertex`). Falling back to
+    // "Cell" here made `maxIndexElement` = topology.getGraphElements("Cell").length
+    // (324 for a 19x19-vertex square board) instead of 361 Vertex sites, so any
+    // group seeded at a Vertex index >= 324 was silently dropped from
+    // `sitesToCheck` and its `if:` group condition was never checked — letting
+    // illegal moves (violating Symple's "at most 1 grey neighbor per group"
+    // constraint) remain in the move list. Resolve the same way at eval time.
+    const typeName = this.type ?? context.board().defaultSite();
     const maxIndexElement = topology && typeof topology.getGraphElements === "function"
       ? topology.getGraphElements(typeName).length
       : 0;

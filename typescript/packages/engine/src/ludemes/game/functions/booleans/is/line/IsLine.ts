@@ -109,6 +109,19 @@ export class IsLine implements BooleanFunction {
   public eval(ctx: Context): boolean {
     const origTo = ctx._evalTo;
     try {
+      // @java IsLine.java:186-187 `if (context.game().isStacking()) return
+      // evalStack(context);` — stacking games use an entirely different
+      // algorithm (evalStack) where the pivot itself is gated only on piece
+      // identity (scanned across every stack level), never on the "If"
+      // condition; only ray-walked neighbour sites are condition-gated
+      // (IsLine.java:1029,1073). A cancelled/"dead pair" placement (stack
+      // height 2) is still a valid pivot as long as two further live
+      // neighbours complete the line — the flat path below wrongly requires
+      // the condition to hold AT the pivot too, so it silently drops every
+      // moveAgain a cancel-placement should grant (Dig Dig ply 19/31).
+      const isStacking = (ctx.game as unknown as { isStacking?: () => boolean }).isStacking?.() ?? false;
+      if (isStacking) return this.evalStack(ctx);
+
       const pivots = this.pivots(ctx);
       const throughnum = this.throughHowMuchFn?.eval(ctx) ?? 1;
       for (const pivot of pivots) {
@@ -276,6 +289,94 @@ export class IsLine implements BooleanFunction {
       }
     }
     return count;
+  }
+
+  /**
+   * @java game/functions/booleans/is/line/IsLine.java:718-1095 `evalStack(Context)`.
+   * Only the `through` pivot is consulted (unlike the flat path, `throughAny`
+   * is never referenced inside Java's evalStack). Piece presence at a site is
+   * checked across every stack level (or only the top when `top:True`); the
+   * "If" condition is evaluated at ray-walked neighbour sites only, never at
+   * the pivot itself (IsLine.java:975-995 has no `condition.eval` call).
+   */
+  private evalStack(ctx: Context): boolean {
+    const pivot = this.throughFn !== null ? this.throughFn.eval(ctx) : IsLine.lastToDefault.eval(ctx);
+    // @java IsLine.java:722-723 — `if (locn == Constants.UNDEFINED) return false;` (UNDEFINED === -1).
+    if (pivot < 0) return false;
+
+    const top = this.topFn.eval(ctx);
+    const targets = this.targetWhats(ctx, pivot, null);
+
+    // @java IsLine.java:759-761 — `if (len == 1) return true;` unconditionally,
+    // before any pivot/piece check.
+    const len = this.lengthFn.eval(ctx);
+    if (len === 1) return true;
+    if (len <= 0) return false;
+
+    const byLevel = this.byLevelFn.eval(ctx);
+    const throughnum = this.throughHowMuchFn?.eval(ctx) ?? 1;
+    if (byLevel) return this.evalByLevel(ctx, pivot, len, targets, throughnum);
+
+    const exact = this.exactFn.eval(ctx);
+    const state = ctx.state;
+
+    // @java IsLine.java:1008-1026 (mirrored for the pivot at 975-989) —
+    // `top:True` checks only the top-of-stack `what`; otherwise every level
+    // of the site's stack is scanned for a matching piece.
+    const hasTarget = (site: number): boolean => {
+      if (top) return targets.has(state.whatAtSite(site));
+      const size = state.stackSize(site);
+      for (let level = 0; level < size; level++) {
+        if (targets.has(state.whatAtSiteLevel(site, level))) return true;
+      }
+      return false;
+    };
+
+    // @java IsLine.java:970-995 — pivot must contain a matching piece
+    // somewhere in its stack; NOT gated on the "If" condition.
+    if (!hasTarget(pivot)) return false;
+
+    const axes = this.selectedRays(ctx, pivot);
+    for (const { ray, opposites } of axes) {
+      // @java IsLine.java:1001-1040 — forward ray, `ray[0]` is the pivot
+      // itself (Trajectories.distinctRadialsByName), so walk from index 1.
+      let count = 1;
+      for (let i = 1; i < ray.length; i++) {
+        const site = ray[i];
+        if (site === undefined) break;
+        ctx._evalTo = site;
+        if (hasTarget(site) && this.conditionFn.eval(ctx)) {
+          count++;
+          if (!exact && count === len) return true;
+        } else {
+          break;
+        }
+      }
+
+      // @java IsLine.java:1042-1091 — opposite ray(s), continuing the count
+      // from the forward walk.
+      if (opposites.length > 0) {
+        for (const opposite of opposites) {
+          let oppositeCount = count;
+          for (let i = 1; i < opposite.length; i++) {
+            const site = opposite[i];
+            if (site === undefined) break;
+            ctx._evalTo = site;
+            if (hasTarget(site) && this.conditionFn.eval(ctx)) {
+              oppositeCount++;
+              if (!exact && oppositeCount === len) return true;
+            } else {
+              break;
+            }
+          }
+          if (oppositeCount === len) return true;
+        }
+      } else if (count === len) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private evalByLevel(
