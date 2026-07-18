@@ -863,7 +863,15 @@ export class ActionMove extends BaseAction {
       state.stackingGame &&
       this.fromIndex !== this.toIndex &&
       movingOwner !== 0 &&
-      state.who(this.toIndex) > 0 &&
+      state.whatAtSite(this.toIndex) !== 0 &&
+      // @java ActionMoveTopPiece.java:484-516 — the stacking branch is
+      // UNCONDITIONAL (csTo.addItemGeneric always pushes); occupancy must
+      // be judged by whatAtSite (a real component present), not who>0. A
+      // Neutral-owned occupant (who=0, what>0) — e.g. Chukaray's Neutral
+      // "Stick0" markers covering every site at start — was wrongly
+      // treated as empty and OVERWRITTEN instead of pushed onto
+      // (MOVE_MISMATCH ply 15/59: P2 landing on neutral site 22 wiped the
+      // marker instead of stacking above it).
       // @java ActionMoveTopPiece.java:484-516 — the push-a-level branch fires
       // for ANY occupied destination whose top differs (owner OR component);
       // a same-owner different-piece landing stacks too (AlmaTafl's tower).

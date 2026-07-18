@@ -71,9 +71,33 @@ export class ActionRemove extends BaseAction {
     }
     // @java ActionRemove with an explicit LEVEL on a real stack removes ONLY
     // that level and shifts the rest down (withStackPop(level)) — NOT the whole
-    // pile. (remove X level:0) trims a full column's bottom (Complica). Gated on
-    // a multi-piece stack so the default level-less remove is unchanged.
-    if (this.level >= 0 && (state.stacks[this.toIndex]?.length ?? 0) > 1) {
+    // pile. (remove X level:0) trims a full column's bottom (Complica).
+    //
+    // A materialised length-1 `stacks[toIndex]` is only a GENUINE single
+    // per-level piece when no countAt pile multiplier rides behind it — a
+    // hand seeded with `(place Stack "disc" (handSite) count:N)`, or a board
+    // site several identical pieces merged onto, stores its pieces as ONE
+    // stack marker plus countAt=N (@java ActionMoveTopPiece's count-pile
+    // shape, documented in action-move.ts). Gating strictly on `> 1` here
+    // left that length-1-but-countAt>1 case (and a genuine length-1 stack
+    // with no countAt residue) falling through to the flat-clear fallback
+    // below, which cleared only cells/whats/countAt and never touched
+    // `state.stacks[toIndex]` — a stale single-level entry (e.g. Neutral's
+    // owner-0 marker) survived and a LATER stacking Move's unconditional
+    // `withStackPush` at that site read the ghost array and appended onto
+    // it, producing a spurious extra level (Chukaray MOVE_MISMATCH ply
+    // 100/211: a piece resurfaced several sites behind where Java expected
+    // it, after a Neutral "Stick0" marker was supposedly stripped by
+    // `(remove (to) level:0)`). Excluding the countAt>1 pile case keeps
+    // Udat Pagada's `(forEach Level (to) FromTop (remove (to) level:(level)))`
+    // — which fires N times over an N-deep hand-entry countAt pile — routed
+    // through the pile-decrement fallback below instead of draining the
+    // whole pile on the first call (WINNER_MISMATCH: the other N-1 pieces
+    // would otherwise vanish along with the first, and TS reported the
+    // trial not-over at Java's recorded win ply).
+    const toStackLen = state.stacks[this.toIndex]?.length ?? 0;
+    const isCountPile = toStackLen === 1 && state.countAtSite(this.toIndex) > 1;
+    if (this.level >= 0 && toStackLen > 0 && !isCountPile) {
       let nx = state;
       // The removed level's component id, read before the level is popped,
       // so the track-index structure can drop it — mirrors the flat-clear
@@ -88,6 +112,11 @@ export class ActionRemove extends BaseAction {
         nx = nx.withOwnedRemoveLevel(own, wht, this.toIndex, this.level);
       }
       nx = nx.withStackPop(this.toIndex, this.level);
+      // @java cs.remove maintains the count channel; clear it when the pop
+      // empties the site (same fix as the sibling level-less branch below).
+      if (nx.stackSize(this.toIndex) === 0 && nx.countAtSite(this.toIndex) > 0) {
+        nx = nx.withCountAt(this.toIndex, 0);
+      }
       const oti = nx.onTrackIndices;
       const loc = nx.trackLocToIndex;
       if (oti !== undefined && loc !== undefined && removedLevelWhat !== 0) {
