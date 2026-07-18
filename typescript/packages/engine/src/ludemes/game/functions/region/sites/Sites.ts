@@ -668,36 +668,38 @@ export class Sites extends BaseRegionFunction {
               out.push(site);
             };
 
+            // @java SitesAround.java:148-171 — the `if:`/dynType filters
+            // apply ONLY to the radial neighbour sites, not the origin.
             for (const s of sourceSites) {
               if (s < 0) continue;
-              if (include) add(s);
-              for (const n of aroundSites(ctx, s, dist, dirNames, typeLoc)) add(n);
+              for (const n of aroundSites(ctx, s, dist, dirNames, typeLoc)) {
+                if (seen.has(n)) continue;
+                if (dynType !== null && !dynamicRegionAccepts(ctx, n, dynType)) continue;
+                if (condition !== null) {
+                  const oldTo = ctx._evalTo;
+                  ctx._evalTo = n;
+                  const ok = condition.eval(ctx);
+                  ctx._evalTo = oldTo;
+                  if (!ok) continue;
+                }
+                add(n);
+              }
             }
 
-            // @java SitesAround.java:183-188 — with includeSelf false, EVERY
-            // origin site is removed from the result, including origin sites
-            // that entered as neighbours of OTHER origin sites (a multi-site
-            // origin region is mutually adjacent: Archworm's worm cells all
-            // neighbour each other, so the "around the worm" set wrongly
-            // contained the worm itself and the no-Pieces filter always failed).
-            const selfExcluded = include
-              ? out
-              : (() => {
-                  const src = new Set(sourceSites);
-                  return out.filter((site) => !src.has(site));
-                })();
-
-            const filtered = dynType === null ? selfExcluded : selfExcluded.filter((site) => dynamicRegionAccepts(ctx, site, dynType));
-            if (condition === null) return filtered;
-
-            const oldTo = ctx._evalTo;
-            const conditioned: number[] = [];
-            for (const site of filtered) {
-              ctx._evalTo = site;
-              if (condition.eval(ctx)) conditioned.push(site);
+            // @java SitesAround.java:177-188 — includeSelf bypasses BOTH the
+            // `if:` condition and the dynType filter: origin sites are
+            // appended (include=true) or stripped (include=false)
+            // UNCONDITIONALLY after the filtered neighbour loop, regardless
+            // of whether they'd satisfy `if:`/dynType themselves (Throngs'
+            // `(sites Around (from) if:(is Empty (to)) includeSelf:True)`
+            // must still offer the origin as a "stay put" destination even
+            // though the origin is occupied by the piece being moved).
+            if (include) {
+              for (const s of sourceSites) if (s >= 0) add(s);
+              return out;
             }
-            ctx._evalTo = oldTo;
-            return conditioned;
+            const src = new Set(sourceSites);
+            return out.filter((site) => !src.has(site));
           }
         })();
       default:

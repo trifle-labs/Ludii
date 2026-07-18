@@ -425,7 +425,20 @@ export class FromTo implements MovesFunction {
           // replicate (narrowing here avoids regressing Ashta-kashte's top-level
           // level: moves while still fixing Gyan's buried-piece move).
           const lv = this.levelFrom !== null ? this.levelFrom.eval(ctx) : -1;
-          const fromStackLen = ctx.state.stacks[from]?.length ?? 0;
+          // @java ContainerState.sizeStack() is count-aware: a count-backed
+          // pile (Tsun K'i's `(place Stack … count:8)`) reports its full
+          // height via countAt, not the raw per-level array length. Reading
+          // ctx.state.stacks[from].length directly returns 1 for a
+          // homogeneous count-backed pile even when it holds several pieces,
+          // making the multi-ENTRY check below always false and permanently
+          // routing count-backed per-level moves through the top-popping
+          // ActionMove — which loses per-level ownership once the pile
+          // becomes heterogeneous (e.g. a captured piece landing back on its
+          // own site), corrupting stack composition several plies before it
+          // surfaces as a MOVE_MISMATCH. ctx.state.stackSize() (src/state.ts)
+          // is the count-aware equivalent already used by ForEachLevel.ts's
+          // sibling fix for the same class of bug.
+          const fromStackLen = ctx.state.stackSize(from);
           // Require a genuine multi-ENTRY stack (distinct pieces per level), not a
           // count-backed pile (stacks.length<=1 with countAt>1): ActionMoveLevelFrom's
           // count-pile branch differs from plain ActionMove's, which Ashta-kashte's
