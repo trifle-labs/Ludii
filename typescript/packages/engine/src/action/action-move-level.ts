@@ -233,6 +233,27 @@ abstract class ActionMoveLevelBase extends BaseAction {
     // And Courtesan king/courtesan exchange).
     let s2 = state.withOwnedMaterialized();
     s2 = s2.withOwnedRemoveLevel(movingOwner, movingWhat, this.fromIndex, sourceLevel);
+    // @java ContainerGraphStateStacks.java:1003-1044 — the level-based
+    // `remove(state, site, level, type)` shift-loop copies who/what/state/
+    // rotation/value down for every index below `level`, but only clears
+    // who/what at the OLD TOP physical index (`stackSize - 1`) afterwards —
+    // that index's `state` is simply never written again, regardless of
+    // which `level` was actually removed (even removing the literal top
+    // leaves its own pre-existing state exactly as it was, since the loop
+    // then has zero iterations). TS's stack model instead splices the
+    // per-level arrays down, losing that stale value entirely — stash it in
+    // the shadow `residualStateAt` channel (see its doc comment in
+    // state.ts) before the splice runs. Only a LATER hand-exit push landing
+    // on this exact physical depth (action-move.ts's stacking-push branch)
+    // ever consults the stash, mirroring the one Java dispatch that can
+    // resurface it (ContainerStateStacks.java:278-301,
+    // ActionMoveTopPiece.java:485-498); ordinary reads never see it, so
+    // this cannot regress any other level-based relocation.
+    const oldTopLevel = stackSize - 1;
+    const preClearState = oldTopLevel >= 0 ? state.stateAtLevel(this.fromIndex, oldTopLevel) : 0;
+    if (state.stackingGame && preClearState !== 0) {
+      s2 = s2.withResidualStateAtLevel(this.fromIndex, oldTopLevel, preClearState);
+    }
     const popped = s2.withStackPop(this.fromIndex, sourceLevel);
     let pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
     pushed = pushed.withOwnedAdd(movingOwner, movingWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
@@ -262,7 +283,25 @@ abstract class ActionMoveLevelBase extends BaseAction {
     // NEW top level of the destination's per-level column too.
     {
       const newLevel = pushed.stackSize(this.toIndex) - 1;
-      if (newLevel >= 0) pushed = pushed.withStateAtLevel(this.toIndex, newLevel, carryState);
+      if (newLevel >= 0) {
+        pushed = pushed.withStateAtLevel(this.toIndex, newLevel, carryState);
+        // @java ContainerStateStacks.addItem's unconditional setState (cited
+        // above) means this physical depth now holds FRESH, authoritative
+        // state data in Java too — any residual stashed by an EARLIER vacate
+        // at this exact physical depth (see the vacate-side stash above, and
+        // action-remove.ts's mirror for ActionRemoveLevel) is now stale/moot.
+        // Leaving it un-cleared let it wrongly resurface at a LATER hand-entry
+        // that lands on this same depth after a further pop empties the site
+        // again — Java's own physical byte was already overwritten cleanly
+        // here (and stays that way, since a level-less no-shift removal of a
+        // size-1 stack never touches it again either), but TS's shadow
+        // channel kept the older, now-superseded value alive (Boolik site2:
+        // a captured piece's residual state=2 stashed at ply70 falsely
+        // reappeared under a fresh hand-entry at ply96, even though an
+        // intervening clean push+pop at ply88/89 had already legitimately
+        // reset that depth to state 0 in both engines).
+        pushed = pushed.withResidualStateAtLevel(this.toIndex, newLevel, 0);
+      }
     }
     if (carryRotation !== 0) pushed = pushed.withRotationAt(this.toIndex, carryRotation);
     // Clear the vacated source's flat channels only when the pop emptied it — a

@@ -575,7 +575,7 @@ export class ActionMove extends BaseAction {
         // (ContainerStateStacks.java:278-301, ActionMoveTopPiece.java:485-498).
         const preClearState = popped.stateAtSite(this.fromIndex);
         if (state.stackingGame && !this.fromHandSite && preClearState !== 0) {
-          popped = popped.withResidualStateAt(this.fromIndex, preClearState);
+          popped = popped.withResidualStateAtLevel(this.fromIndex, topLevel, preClearState);
         }
         if (preClearState !== 0) popped = popped.withStateAt(this.fromIndex, 0);
         if (popped.valueAtSite(this.fromIndex) !== 0) popped = popped.withValueAt(this.fromIndex, 0);
@@ -702,10 +702,46 @@ export class ActionMove extends BaseAction {
       // action-move-level.ts's per-level push): a stale nonzero flat
       // stateAt[to] left behind by a since-departed occupant must be
       // overwritten by every fresh arrival, not just a nonzero one.
-      pushed = pushed.withStateAt(this.toIndex, srcSiteState);
-      {
-        const newTopLevel = pushed.stackSize(this.toIndex) - 1;
-        if (newTopLevel >= 0) pushed = pushed.withStateAtLevel(this.toIndex, newTopLevel, srcSiteState);
+      // @java ActionMoveTopPiece.java:485-498 — a stacking-game hand exit
+      // with no explicit state dispatches through the state-less
+      // addItemGeneric (ContainerStateStacks.java:278-301: incrementSize
+      // then the size-less setWhat/setWho overloads only — state/rotation/
+      // value are never written). If an EARLIER level-based board vacate at
+      // this exact physical depth left a residual (see the shadow-channel
+      // citation on `residualStateAt` in state.ts and the stash in
+      // action-move-level.ts), that residual is what this new occupant
+      // silently inherits in Java; consume it here instead of the
+      // freshly-computed (usually 0, since a hand count-pile's srcSiteState
+      // is always 0) srcSiteState. Scoped to stackingGame && fromHandSite &&
+      // srcSiteState === 0 (this branch never carries an explicit
+      // stateValue — see the sibling flat branch's `this.stateValue ===
+      // ACTION_OFF` gate), so every other caller/game is unaffected.
+      const newTopLevel = pushed.stackSize(this.toIndex) - 1;
+      const pushResidual = state.stackingGame && this.fromHandSite && srcSiteState === 0 && newTopLevel >= 0
+        ? state.residualStateAtLevel(this.toIndex, newTopLevel)
+        : 0;
+      const pushSrcSiteState = pushResidual !== 0 ? pushResidual : srcSiteState;
+      pushed = pushed.withStateAt(this.toIndex, pushSrcSiteState);
+      if (newTopLevel >= 0) {
+        pushed = pushed.withStateAtLevel(this.toIndex, newTopLevel, pushSrcSiteState);
+        // @java ContainerStateStacks.addItem's unconditional setState (cited
+        // above) means THIS physical depth now holds fresh, authoritative
+        // state data in Java too, regardless of whether THIS particular push
+        // was the fromHandSite dispatch that consults/consumes the residual
+        // above. Clearing only when `pushResidual !== 0` (the old code) left
+        // a stale shadow value in place whenever an ordinary board-to-board
+        // push (not a hand exit) landed on this exact depth: Boolik's site2
+        // level-0 slot had a CapturedPiece residual state=2 stashed by an
+        // earlier capture drag-along vacate (this same file's sibling vacate
+        // branch above / action-move-level.ts's vacate-side stash), then a
+        // later board-to-board push here (not a hand exit, so `pushResidual`
+        // was forced to 0 and never cleared the stale entry) legitimately
+        // wrote a clean state=0 into this depth; a further hand-entry after
+        // the site emptied again wrongly resurfaced the long-superseded
+        // residual=2, because only an unconditional check here — not the
+        // hand-exit-gated one above — actually invalidates it.
+        const staleResidual = state.residualStateAtLevel(this.toIndex, newTopLevel);
+        if (staleResidual !== 0) pushed = pushed.withResidualStateAtLevel(this.toIndex, newTopLevel, 0);
       }
       return this.maintainTracks(pushed, topWhat);
     }
@@ -1216,10 +1252,30 @@ export class ActionMove extends BaseAction {
     // unaffected — the residual simply stays unused and gets overwritten by
     // Java's own defaults on any other write path.
     const residual = state.stackingGame && this.fromHandSite && this.stateValue === ACTION_OFF
-      ? state.residualStateAtSite(this.toIndex)
+      ? state.residualStateAtLevel(this.toIndex, 0)
       : 0;
     next = this.applyDestAttrs(next, residual !== 0 ? residual : destState, destRotation, destValue);
-    if (residual !== 0) next = next.withResidualStateAt(this.toIndex, 0);
+    // @java ContainerStateStacks.addItem's unconditional setState (see the
+    // identical citation in action-move-level.ts's push side) means this
+    // physical depth (site.toIndex, level 0 — the only level this flat/
+    // non-per-level path ever writes) now holds FRESH, authoritative state
+    // data in Java too, regardless of whether THIS particular write was the
+    // fromHandSite dispatch that consults the residual above. Clearing only
+    // when `residual !== 0` (the old code) left a stale shadow value in
+    // place whenever an ordinary board-to-board move — not a hand exit —
+    // landed on this exact depth: Boolik's site2 level-0 slot had a
+    // CapturedPiece residual state=2 stashed by an earlier capture
+    // drag-along vacate (action-move-level.ts's vacate-side stash), then a
+    // later board-to-board relocation (not a hand exit, so `residual` above
+    // was forced to 0 and never cleared the stale entry) legitimately wrote
+    // a clean state=0 into this depth; a further hand-entry after the site
+    // emptied again wrongly resurfaced the long-superseded residual=2,
+    // because only THIS unconditional check (not the hand-exit-gated one
+    // above) actually invalidates it.
+    if (state.stackingGame) {
+      const staleResidual = state.residualStateAtLevel(this.toIndex, 0);
+      if (staleResidual !== 0) next = next.withResidualStateAtLevel(this.toIndex, 0, 0);
+    }
     next = this.transferHidden(next, state, fromCount <= 1);
     return this.maintainTracks(next, movingWhat);
   }

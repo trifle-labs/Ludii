@@ -68,12 +68,16 @@ export class ActionSetState extends BaseAction {
       if (this.levelIndex >= state.stackSize(this.toIndex)) return state;
       // @java ActionSetState.java:107-121 — a successful level write means the
       // real Java chunk at this site now holds fresh, authoritative content;
-      // any shadow residual stashed by a PRIOR levelFrom vacate (see the
-      // per-level-stack branch of ActionMove) is now stale/moot and must not
-      // resurface for a LATER hand-entry landing here (Aj family + Bul run
-      // their own explicit `(set State …)` cleanup — see UnsetCapturingPiece
-      // — after a capture, exactly to prevent this).
-      return state.withStateAtLevel(this.toIndex, this.levelIndex, this.stateValue).withResidualStateAt(this.toIndex, 0);
+      // any shadow residual stashed by a PRIOR levelFrom vacate at this exact
+      // physical depth (see the per-level-stack branch of ActionMove) is now
+      // stale/moot and must not resurface for a LATER hand-entry landing here
+      // (Aj family + Bul run their own explicit `(set State …)` cleanup —
+      // see UnsetCapturingPiece — after a capture, exactly to prevent this).
+      // Scoped to the exact level written: other levels of the same site may
+      // carry their OWN, independent stashed residual (Boolik's site2: level
+      // 0 and level 1 go dirty at different plies and must not clobber each
+      // other's shadow entry).
+      return state.withStateAtLevel(this.toIndex, this.levelIndex, this.stateValue).withResidualStateAtLevel(this.toIndex, this.levelIndex, 0);
     }
     // @java ActionSetState.java:107-121 — stacking game, level == UNDEFINED:
     // Java still calls `cs.setSite(...)`, which bottoms out in
@@ -95,10 +99,14 @@ export class ActionSetState extends BaseAction {
     // `size > 0` guard: the write silently no-ops.
     if (state.stackingGame) {
       const size = state.stackSize(this.toIndex);
-      if (size <= 0) return state.withResidualStateAt(this.toIndex, 0);
-      return state.withStateAtLevel(this.toIndex, size - 1, this.stateValue).withResidualStateAt(this.toIndex, 0);
+      // @java ChunkStack.setState(val): `if (type >= 2 && size > 0)` — an
+      // empty site's level-less SetState is a true Java no-op (no chunk
+      // write at all), so no residual is invalidated here either; any
+      // previously-stashed shadow entry stays exactly as it was.
+      if (size <= 0) return state;
+      return state.withStateAtLevel(this.toIndex, size - 1, this.stateValue).withResidualStateAtLevel(this.toIndex, size - 1, 0);
     }
-    return state.withStateAt(this.toIndex, this.stateValue).withResidualStateAt(this.toIndex, 0);
+    return state.withStateAt(this.toIndex, this.stateValue).withResidualStateAtLevel(this.toIndex, 0, 0);
   }
 
   public override actionType(): ActionType {

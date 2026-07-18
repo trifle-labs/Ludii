@@ -111,6 +111,27 @@ export class ActionRemove extends BaseAction {
         const wht = nx.whatAtSiteLevel(this.toIndex, this.level);
         nx = nx.withOwnedRemoveLevel(own, wht, this.toIndex, this.level);
       }
+      // @java ActionRemoveLevel.java:196 → cs.remove(state, to, level, type),
+      // which bottoms out in the SAME `ContainerGraphStateStacks.java:1003-1044`
+      // shift-loop as ActionMoveLevelFrom's vacate side (see action-move-level.ts):
+      // who/what/state/rotation/value shift down for every index below `level`,
+      // but only who/what get explicitly cleared at the OLD TOP physical index
+      // (`stackSize - 1`) afterwards — that index's `state` is simply never
+      // written again, regardless of which `level` was actually removed. TS's
+      // stack model instead splices the per-level arrays down, losing that stale
+      // value entirely — stash it in the shadow `residualStateAt` channel (see
+      // its doc comment in state.ts) before the splice runs, so a LATER
+      // hand-exit push landing on this exact physical depth can resurface it
+      // (Boolik: `(remove (last From) level:(level))` in RemoveCapturedPieces
+      // leaves a captured piece's state=2 marker stale at the vacated top
+      // physical depth; a later re-entering piece pushed there by
+      // `EnterAPiece` must see that stale state=2, not a clean 0, or it is
+      // wrongly treated as a FreePiece with a legal move Java has none for).
+      const oldTopLevel = nx.stackSize(this.toIndex) - 1;
+      const preClearState = oldTopLevel >= 0 ? nx.stateAtLevel(this.toIndex, oldTopLevel) : 0;
+      if (nx.stackingGame && preClearState !== 0) {
+        nx = nx.withResidualStateAtLevel(this.toIndex, oldTopLevel, preClearState);
+      }
       nx = nx.withStackPop(this.toIndex, this.level);
       // @java cs.remove maintains the count channel; clear it when the pop
       // empties the site (same fix as the sibling level-less branch below).

@@ -82,27 +82,49 @@ export interface StateOptions {
   /** Per-site state value (Java: ContainerState.state[i]). */
   readonly stateAt?: readonly number[];
   /**
-   * Shadow copy of a site's `state` value at the instant a level-based board
-   * vacate (ActionMoveLevelFrom's per-level `remove`) clears the VISIBLE
-   * `stateAt` slot to 0. @java ContainerGraphStateStacks.java:1003-1044 — the
-   * Edge/Vertex level-based `remove` only clears the chunk's who/what; the
-   * `state` int of that reused, fixed-size chunk is left exactly as it was,
-   * but Java's own `state()` accessor is bounds-checked against `sizeStack`
-   * so nothing can observe it while the slot sits outside the stack's current
-   * bounds — only a LATER piece landing on that exact physical slot (which
-   * brings the level back in bounds) inherits it, and only if that landing
-   * goes through the state-less `addItemGeneric` used for hand/off-board
-   * entries (ContainerStateStacks.java:278-301, ActionMoveTopPiece.java:485-
-   * 498). This array exists purely so that one specific consumer — the
-   * hand-entry write path in ActionMove's flat branch — can recover that
-   * otherwise-unobservable value; ordinary reads (`stateAtSite`,
+   * Shadow copy of a site's per-level `state` value at the instant a
+   * level-based board vacate (ActionMoveLevelFrom's per-level `remove`)
+   * clears the VISIBLE `stateAt`/`stateStacks` slot to 0. @java
+   * ContainerGraphStateStacks.java:1003-1044 — the Edge/Vertex level-based
+   * `remove` shift-loop copies who/what/state/rotation/value down for every
+   * index below the removed level, but only who/what are explicitly cleared
+   * at the OLD TOP physical index afterwards (via the size-less
+   * `setWhat`/`setWho` overloads, HashedChunkStack.java) — that index's
+   * `state` is simply never written again and keeps whatever it held before
+   * this call. Java's own `state()`/`setState(...,level)` accessors are both
+   * bounds-checked against the stack's current (shrunk) `size()`
+   * (HashedChunkStack.setState: `if (level >= internalState.size()) return;`)
+   * so nothing can observe or even overwrite that stale value while its
+   * level sits outside the stack's current bounds — not even a LATER
+   * explicit `(set State at: level:)` cleanup aimed at that exact level
+   * silently no-ops. Only a LATER piece landing on that exact physical depth
+   * (which brings the level back in bounds) inherits it, and only if that
+   * landing goes through the state-less `addItemGeneric` used for
+   * hand/off-board entries (ContainerStateStacks.java:278-301,
+   * ActionMoveTopPiece.java:485-498).
+   *
+   * Keyed by (site, level) rather than a single scalar per site: a site can
+   * accumulate MULTIPLE independently-stale physical depths over a sequence
+   * of vacates before any of them is ever consumed by a later hand-exit push
+   * (Boolik RandomTrial_1 site2: level 0 and level 1 both go dirty across
+   * plies 22-26, level 0 is cleanly overwritten by an intervening
+   * state-carrying board push at ply 45, and level 1's stale CapturingPiece
+   * state (1) survives untouched all the way to ply 48's hand-exit push,
+   * which lands exactly on level 1). A single per-site scalar cannot
+   * represent two simultaneously-dirty depths without one clobbering the
+   * other's stash.
+   *
+   * This array exists purely so that specific consumers — the hand-entry
+   * write paths in ActionMove's flat and per-level-stack push branches — can
+   * recover that otherwise-unobservable value; ordinary reads (`stateAtSite`,
    * `stateAtLevel`, `stateTop`) never consult it, so it cannot leak into any
-   * other game's move generation the way directly leaving `stateAt` dirty
-   * would (A K'aak'il / Aj Sakakil / Aj Sayil / Aj Sina'anil / Bul all share
-   * Boolik's own captured/capturing per-piece `state` semantics and read
-   * `state at:… level:…` at sites that had just been vacated).
+   * other game's move generation the way directly leaving `stateAt`/
+   * `stateStacks` dirty would (A K'aak'il / Aj Sakakil / Aj Sayil / Aj
+   * Sina'anil / Bul all share Boolik's own captured/capturing per-piece
+   * `state` semantics and read `state at:… level:…` at sites that had just
+   * been vacated).
    */
-  readonly residualStateAt?: readonly number[];
+  readonly residualStateAt?: readonly (readonly number[])[];
   /** Per-site value (Java: ContainerState.value[i]). */
   readonly valueAt?: readonly number[];
   /**
@@ -362,7 +384,7 @@ export class State {
   public readonly whatStacks: readonly (readonly number[])[];
   public readonly stateAt: readonly number[];
   /** See {@link StateOptions.residualStateAt}. */
-  public readonly residualStateAt: readonly number[];
+  public readonly residualStateAt: readonly (readonly number[])[];
   public readonly valueAt: readonly number[];
   /** See {@link StateOptions.playableAt}. */
   public readonly playableAt: readonly boolean[];
@@ -610,7 +632,7 @@ export class State {
     // distinct-piece stack explicitly seeds it. Frozen levels mirror `stacks`.
     this.whatStacks = Object.freeze(fillWhatStacks(options.whatStacks, n));
     this.stateAt = Object.freeze(fillSlot(options.stateAt, n, 0));
-    this.residualStateAt = Object.freeze(fillSlot(options.residualStateAt, n, 0));
+    this.residualStateAt = options.residualStateAt ?? [];
     this.valueAt = Object.freeze(fillSlot(options.valueAt, n, 0));
     this.playableAt = Object.freeze(fillBoolSlot(options.playableAt, n));
     this.costAt = Object.freeze(fillSlot(options.costAt, n, 0));
@@ -1730,18 +1752,22 @@ export class State {
     return this.with({ stateAt: next });
   }
   /**
-   * Read-only accessor for {@link StateOptions.residualStateAt}. Deliberately
-   * NOT consulted by `stateAtSite`/`stateAtLevel`/`stateTop` — only the
-   * hand-entry write path in ActionMove's flat branch reads it.
+   * Read-only accessor for {@link StateOptions.residualStateAt}, keyed by
+   * the exact physical (site, level) depth. Deliberately NOT consulted by
+   * `stateAtSite`/`stateAtLevel`/`stateTop` — only the hand-entry write
+   * paths in ActionMove's flat and per-level-stack push branches read it.
    */
-  public residualStateAtSite(siteIndex: number): number {
-    return this.residualStateAt[siteIndex] ?? 0;
+  public residualStateAtLevel(siteIndex: number, level: number): number {
+    return this.residualStateAt[siteIndex]?.[level] ?? 0;
   }
   /** Writer for {@link StateOptions.residualStateAt}. */
-  public withResidualStateAt(siteIndex: number, value: number): State {
+  public withResidualStateAtLevel(siteIndex: number, level: number, value: number): State {
     this.requireSite(siteIndex);
-    const next = [...this.residualStateAt];
-    next[siteIndex] = value;
+    const next = this.residualStateAt.map((r) => [...r]);
+    const row = next[siteIndex] ?? [];
+    while (row.length <= level) row.push(0);
+    row[level] = value;
+    next[siteIndex] = row;
     return this.with({ residualStateAt: next });
   }
   public withValueAt(siteIndex: number, value: number): State {
