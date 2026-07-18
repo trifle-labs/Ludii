@@ -193,9 +193,15 @@ const WALL_CLOCK_MS = process.env.WALL_CLOCK_MS
 const startWall = Date.now();
 
 // ---------------------------------------------------------------------------
-// LRU game cache (avoid re-compiling the same .lud repeatedly)
+// LRU game cache (avoid re-compiling the same .lud repeatedly). BOUNDED: the
+// corpus walk visits each game's trials adjacently, so a tiny LRU captures all
+// the reuse. An unbounded map retained EVERY compiled game for the whole run —
+// with recent topology work pushing boardless games (Trax, Andantino, Ringo)
+// to ~1GB each, 24-shard sweeps accumulated >6GB live heap and OOM'd (V8
+// "Reached heap limit" in shards 6/7 at trial 64 with zero JS frames).
 // ---------------------------------------------------------------------------
-const gameCache = new Map(); // ludPath → {game} | {error}
+const GAME_CACHE_MAX = 2;
+const gameCache = new Map(); // ludPath → {game} | {error}; Map iter order = LRU order
 
 // One-time index of every <basename>.lud under Common/res/lud. Ludii
 // periodically re-categorises games (moves a .lud to a new sub-folder), so a
@@ -277,7 +283,12 @@ function resolveSubgameSrc(name) {
 function loadGame(gameRelPath, trialPath) {
   // gameRelPath is like "../Common/res/lud/board/hunt/Bagh Bandi.lud"
   const absPath = resolveGamePath(gameRelPath, trialPath);
-  if (gameCache.has(absPath)) return gameCache.get(absPath);
+  if (gameCache.has(absPath)) {
+    const hit = gameCache.get(absPath);
+    gameCache.delete(absPath); // refresh recency
+    gameCache.set(absPath, hit);
+    return hit;
+  }
 
   let result;
   try {
@@ -293,6 +304,9 @@ function loadGame(gameRelPath, trialPath) {
     result = { error: e };
   }
   gameCache.set(absPath, result);
+  while (gameCache.size > GAME_CACHE_MAX) {
+    gameCache.delete(gameCache.keys().next().value);
+  }
   return result;
 }
 
@@ -1503,6 +1517,22 @@ for (const trialPath of allTrials) {
   recordResult(result.bucket, result);
   perTrialResults.push(result);
   processed++;
+
+  // MEM_TRACE=1: per-trial live-heap report (after a forced GC when node runs
+  // with --expose-gc) — for hunting cross-trial retention that OOMs long
+  // sharded sweeps without pointing at any single game.
+  if (process.env.MEM_TRACE) {
+    if (globalThis.gc) globalThis.gc();
+    const mu = process.memoryUsage();
+    console.error(`[MEM] ${processed} heapUsed=${(mu.heapUsed / 1048576).toFixed(0)}MB rss=${(mu.rss / 1048576).toFixed(0)}MB ${relative(ENGINE_ROOT, trialPath)}`);
+    // HEAP_SNAP=<n>: dump a V8 heap snapshot after trial n for retainer
+    // analysis (open in Chrome DevTools or grep the node_names).
+    if (Number(process.env.HEAP_SNAP) === processed) {
+      const { writeHeapSnapshot } = await import('node:v8');
+      const snapPath = writeHeapSnapshot();
+      console.error(`[MEM] heap snapshot: ${snapPath}`);
+    }
+  }
 
   if (verbose) {
     console.log(`[${result.bucket}] ${result.game ?? trialPath} (ply=${result.ply ?? result.plyReplayed ?? '?'})`);
