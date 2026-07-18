@@ -1692,9 +1692,25 @@ export class Game implements Game {
             },
             { what, owner, count, state: stateValue, value },
           ]);
-          cells[site] = owner;
-          whats[site] = what;
-          countAt[site] = 1;
+          // @java ActionAdd.applyStack backfills a stack's bottom level from
+          // the flat cells/whats/countAt channel (ContainerStateStacks) BEFORE
+          // pushing the new top level (see withStackPush). Overwriting
+          // cells[site]/whats[site]/countAt[site] to the INCOMING piece here
+          // (as this branch previously did) made that backfill read the
+          // incoming piece for BOTH the backfilled level 0 AND the freshly
+          // pushed level 1 — the stackedStaging-consuming push loop only ever
+          // pushes levels[1..] (assuming levels[0], the EXISTING piece, is
+          // already reflected in the flat channel), so overwriting here erased
+          // the existing piece's identity from the per-level `what` column
+          // entirely (Diaballik: Ball1 stacking onto Disc1 at site 3 produced
+          // whatStacks=[Ball,Ball] instead of [Disc,Ball]; a later pop of the
+          // top (the Ball being thrown away) left site 3 still reading "Ball"
+          // at height 1 instead of exposing the Disc, so the mover-owned-Disc
+          // `(from ...)` filter never re-admitted the site — MOVE_MISMATCH).
+          // Leave cells/whats/countAt untouched: they already hold the
+          // EXISTING piece's correct data, which withStackPush's backfill
+          // needs. state/rotation/value for the TOP piece are still applied
+          // below since those channels are not read by that backfill.
           if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
           if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
           if (value !== UNDEFINED) valueAt[site] = value;

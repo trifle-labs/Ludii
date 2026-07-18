@@ -591,18 +591,51 @@ export class ActionMove extends BaseAction {
     ) {
       const mOwner = state.cellAt(this.fromIndex).owner;
       const mWhat = state.whatAtSite(this.fromIndex) || mOwner;
+      // @java ActionMoveTopPiece.java:490 csFrom.remove(...) pops only ONE
+      // piece off the source; it does NOT wipe the whole pile. Two source
+      // shapes share this branch (mirrors the sibling per-level-stack
+      // branch's (A)/(B)/(C) split above):
+      //   - a genuine multi-level stack (stacks[from].length > 1) — pop the
+      //     top LEVEL only;
+      //   - a flat count-pile (stacks=[owner], countAt=N>1 — Murus
+      //     Gallicus's 2-high towers, Fenix's "generals") — decrement the
+      //     count by one, keeping the marker so the remaining N-1 pieces
+      //     stay in place.
+      // Unconditionally wiping the whole source here (old code,
+      // withStackRemoveAll unconditional) destroyed the remaining piece(s):
+      // MoveTower's recorded move dispatches TWO sibling actions sharing the
+      // same `from` (one per tower half) — the first (this branch) wiped the
+      // ENTIRE 2-high tower via withStackRemoveAll, so the second (a
+      // stack:true whole-relocate action) then found an already-empty
+      // source and silently no-op'd, losing one of the mover's 16 pieces
+      // (Murus Gallicus RandomTrial_0 ply 6, surfacing as a MOVE_MISMATCH at
+      // ply 12).
+      const srcArr = state.stacks[this.fromIndex] ?? [];
+      const srcCount = state.countAtSite(this.fromIndex);
+      const topLevel = srcArr.length > 0 ? srcArr.length - 1 : 0;
       let s2 = state.withOwnedMaterialized();
-      s2 = s2.withOwnedSiteCleared(this.fromIndex);
-      // Vacate from COMPLETELY (stacks/whatStacks/cells/whats/count) — a
-      // manual cell clear leaves a ghost stacks[] level at the old site.
-      s2 = s2.withStackRemoveAll(this.fromIndex);
+      s2 = s2.withOwnedRemoveLevel(mOwner, mWhat, this.fromIndex, topLevel);
       const toBaseV: number[] = [];
       for (let l = 0; l < s2.stackSize(this.toIndex); l++) toBaseV.push(s2.valueAtLevel(this.toIndex, l));
+      if (srcArr.length > 1) {
+        s2 = s2.withStackPop(this.fromIndex);
+        if (s2.stackSize(this.fromIndex) === 0 && s2.countAtSite(this.fromIndex) > 0) {
+          s2 = s2.withCountAt(this.fromIndex, 0);
+        }
+      } else if (srcCount > 1) {
+        s2 = s2.withCountAt(this.fromIndex, srcCount - 1);
+      } else {
+        // Vacate from COMPLETELY (stacks/whatStacks/cells/whats/count) — a
+        // manual cell clear leaves a ghost stacks[] level at the old site.
+        s2 = s2.withStackRemoveAll(this.fromIndex);
+      }
       s2 = s2.withStackPush(this.toIndex, mOwner, mWhat);
       // @java addItemGeneric — the plain push does NOT carry the mover's
       // value; the new top level reads 0 (oracle: Fenix s28=[1,0]).
       s2 = s2.withValueStackRow(this.toIndex, [...toBaseV, 0]);
-      s2 = s2.withValueStackRow(this.fromIndex, []);
+      if (srcArr.length <= 1 && srcCount <= 1) {
+        s2 = s2.withValueStackRow(this.fromIndex, []);
+      }
       s2 = s2.withOwnedAdd(mOwner, mWhat, this.toIndex, s2.stackSize(this.toIndex) - 1);
       return this.maintainTracks(s2, mWhat);
     }
