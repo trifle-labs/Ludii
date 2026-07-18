@@ -194,6 +194,17 @@ export class ActionRemove extends BaseAction {
       const wht = state.whatAtSiteLevel(this.toIndex, lvl);
       let nx = state.withOwnedRemoveLevel(own, wht, this.toIndex, lvl);
       nx = nx.withStackPop(this.toIndex);
+      // @java ContainerStateStacks.java:693-712 — the level-less remove
+      // zeroes state/rotation/VALUE at the vacated top slot, not just
+      // who/what. withStackPop only splices per-level rows when they are
+      // materialized; a stack:True game whose state came from ActionAdd's
+      // scalar channel (Paintscape) never materializes them, so the flat
+      // stateAt/valueAt scalars — the stateAtLevel/stateTop fallbacks —
+      // survived removal and a relocated piece inherited the previous
+      // occupant's state (spurious 6-matching-sites score @35/@39). No-op
+      // for genuinely materialized per-level stacks.
+      if (nx.stateAtSite(this.toIndex) !== 0) nx = nx.withStateAt(this.toIndex, 0);
+      if (nx.valueAtSite(this.toIndex) !== 0) nx = nx.withValueAt(this.toIndex, 0);
       // @java cs.remove maintains the count channel; clear it when the pop
       // empties the site (see Game.apply flush note).
       if (nx.stackSize(this.toIndex) === 0 && nx.countAtSite(this.toIndex) > 0) {
