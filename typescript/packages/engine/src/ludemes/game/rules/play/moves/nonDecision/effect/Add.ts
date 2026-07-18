@@ -37,6 +37,16 @@ interface AddOptions {
    * writes the typed channel. Null/"Cell" ⇒ ordinary cell placement.
    */
   readonly siteType?: "Cell" | "Vertex" | "Edge" | null;
+  /**
+   * @java To.level() — a `to`-clause `level:N` argument (`Add.java`'s own
+   * `level` field, set from `to.level()` in the constructor). Non-null
+   * routes `eval()`'s ActionAdd construction through a level-aware insert
+   * (see action-add.ts's `setLevel`/apply()) instead of a plain top push.
+   * Only `board/space/line/Ringo.lud`'s `AddDisc` uses this in the whole
+   * `.lud` corpus (confirmed via a full scan of `Common/res/lud/**\/*.lud`
+   * for `(move Add ... (to ... level: ...))`).
+   */
+  readonly level?: IntFunction | null;
 }
 
 export class Add implements MovesFunction {
@@ -72,6 +82,9 @@ export class Add implements MovesFunction {
 
   /** @java To.type — graph-element type of the target sites. */
   private readonly siteType: "Cell" | "Vertex" | "Edge" | null;
+
+  /** @java Add.java — `level` field, set from `to.level()`. */
+  private readonly level: IntFunction | null;
 
   /**
    * @java game/rules/play/moves/nonDecision/effect/Add.java — constructor
@@ -120,6 +133,7 @@ export class Add implements MovesFunction {
     this.toCondition = options.condition ?? null;
     this.applyEffect = options.applyEffect ?? null;
     this.siteType = options.siteType ?? null;
+    this.level = options.level ?? null;
   }
 
   /**
@@ -325,11 +339,19 @@ export class Add implements MovesFunction {
       // through left the stack (count-1) levels short whenever count>1 and
       // stack:true (Overflow/Ringo double-sow moves — DEBUG_PLY=16/17 showed
       // site 2's stack reaching height 2 instead of the required 3).
+      // @java Add.java's level==null ternary — a `to`-clause `level:N` sends
+      // EVERY ActionAdd built for this site (including the `remainingCount`
+      // sub-actions) through the level-aware insert path in action-add.ts's
+      // apply(), each carrying the SAME evaluated level (Add.java's
+      // region-iteration path re-passes `level.eval(context)` unchanged to
+      // every remainingCount sub-action too, ~lines 277-282).
+      const lv = this.level !== null ? this.level.eval(ctx) : null;
+
       const addActions: ActionAdd[] = [];
       if (this.stack) {
         const pushCount = Math.max(count, 1);
         for (let i = 0; i < pushCount; i++) {
-          addActions.push(new ActionAdd({
+          const action = new ActionAdd({
             to: site,
             what,
             owner,
@@ -337,7 +359,9 @@ export class Add implements MovesFunction {
             onStack: true,
             ...(typedTarget !== null ? { type: typedTarget } : {}),
             ...(stateVal !== undefined ? { state: stateVal } : {}),
-          }));
+          });
+          if (lv !== null) action.setLevel(lv);
+          addActions.push(action);
         }
         // @java Add.java:203-204 — only the FIRST ActionAdd is marked as the
         // decision; the `remainingCount` sub-actions never call setDecision.
@@ -352,6 +376,7 @@ export class Add implements MovesFunction {
           ...(typedTarget !== null ? { type: typedTarget } : {}),
           ...(stateVal !== undefined ? { state: stateVal } : {}),
         });
+        if (lv !== null) action.setLevel(lv);
         action.setDecision(true);
         addActions.push(action);
       }

@@ -229,7 +229,7 @@ export class TakeControl implements MovesFunction {
    */
   private _findEquivalentPiece(what: number, newOwner: number, ctx: Context): number {
     // @java TakeControl.java:100-176 — context.components(), which the 1:1
-    // port exposes as game.equipment.pieces (1-based). `game.components`
+    // port exposes as game.equipment.pieces. `game.components`
     // never existed on the real Game class — it was always undefined, so
     // this lookup silently returned UNDEFINED for every site and
     // (take Control …) generated ZERO moves (Mini Wars).
@@ -239,13 +239,31 @@ export class TakeControl implements MovesFunction {
     const components = gameAny.equipment?.pieces;
     if (!components) return UNDEFINED;
 
-    const original = components[what] ?? components.find((c) => c?.index === what) ?? null;
+    // @java TakeControl.java:141 — `context.components()[what]`. Java's
+    // components() array is 1-based with a null sentinel at index 0, so
+    // array position == component `.index`. The TS `equipment.pieces` array
+    // is 0-based and DENSE (no leading sentinel): pieces[k].index === k+1.
+    // Direct `components[what]` therefore reads one slot past the intended
+    // component (e.g. what=45 "Motorbike0" resolved to pieces[45], which is
+    // ".index=46" i.e. "Speeder0") — and since that slot is never nullish,
+    // the `??` fallback to the correct `.find(index===what)` lookup never
+    // fired. This silently reassigned captured pieces to the WRONG unit type
+    // (e.g. a recruited/recaptured Motorbike became a Speeder), which then
+    // fed the wrong terrain-exclusion rules into HumanMove/VehicleMove and
+    // produced MOVE_MISMATCH several plies later (Mini Wars).
+    const original = components.find((c) => c?.index === what) ?? null;
     if (!original) return UNDEFINED;
 
     // @java Component.getNameWithoutNumber() — strip the trailing owner-style
     // digit run so per-player pieces sharing a base name match across owners.
     const baseName = (original.name ?? "").replace(/\d+$/, "") || (original.name ?? "");
-    for (let i = 1; i < components.length; i++) {
+    // @java TakeControl.java:144 — `for (indexComponent = 1; indexComponent <
+    // context.components().length; indexComponent++)` walks every REAL
+    // component (Java's index 0 is the null sentinel, so starting at 1 is
+    // correct there). TS's `pieces` array has no sentinel, so the equivalent
+    // walk must start at 0 — starting at 1 skipped `pieces[0]` (component
+    // index 1, e.g. "Base1") as a possible match.
+    for (let i = 0; i < components.length; i++) {
       const c = components[i];
       if (!c) continue;
       const cName = (c.name ?? "").replace(/\d+$/, "") || (c.name ?? "");

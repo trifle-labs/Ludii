@@ -143,9 +143,32 @@ export class ActionAdd extends BaseAction {
       // upper pieces were popped, (forEach Piece) could not identify the remaining
       // piece by component and generated no move (forced pass). withStackPush sets
       // whats[to] from `what` too, so the separate withWhatAt is redundant.
-      let next = state.withStackPush(this.toIndex, this.ownerIndex, this.whatIndex);
-      // @java ActionAdd (stacking): owned().add at the new top level.
-      next = next.withOwnedAdd(this.ownerIndex, this.whatIndex, this.toIndex, next.stackSize(this.toIndex) - 1);
+      // @java Add.java's `level` field (set from a `to`-clause's own
+      // `level:` argument, non-null only for board/space/line/Ringo.lud's
+      // `AddDisc`) routes construction through `ActionInsert` instead of
+      // `ActionAdd` (Core/src/game/rules/play/moves/nonDecision/effect/
+      // Add.java, level==null ternary at ~lines 178-183/277-282); the
+      // insert then shifts every existing level >= the requested one up by
+      // one instead of always appending to the top
+      // (Core/src/other/action/move/ActionInsert.java:118-142). `level`
+      // stays ACTION_UNDEFINED for every other Add — the TS MVE otherwise
+      // has no way to distinguish "no level: given" (plain top push) from
+      // "level:0 given" (insert below), so this reuses the existing but
+      // previously-dead `level` field instead of adding a new one.
+      const hasExplicitLevel = this.level !== ACTION_UNDEFINED;
+      let next: State;
+      if (hasExplicitLevel && this.level < state.stackSize(this.toIndex)) {
+        next = state.withStackInsert(this.toIndex, this.level, this.ownerIndex, this.whatIndex);
+        // @java ActionInsert.apply, level < sizeStack branch — shift every
+        // owned() entry at `toIndex` with level >= this.level up by one,
+        // THEN register the newly inserted piece at exactly `this.level`.
+        next = next.withOwnedShiftUp(this.toIndex, this.level);
+        next = next.withOwnedAdd(this.ownerIndex, this.whatIndex, this.toIndex, this.level);
+      } else {
+        next = state.withStackPush(this.toIndex, this.ownerIndex, this.whatIndex);
+        // @java ActionAdd (stacking): owned().add at the new top level.
+        next = next.withOwnedAdd(this.ownerIndex, this.whatIndex, this.toIndex, next.stackSize(this.toIndex) - 1);
+      }
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
         next = next.withStateAt(this.toIndex, this.stateValue);
       }

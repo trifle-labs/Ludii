@@ -1107,6 +1107,34 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     if (candidates.length === 1) return candidates[0];
   }
 
+  // Disambiguate by SetState consequences. A ludeme-defined `state` field
+  // written via `(then (set State at:... ...))` can encode an amount that
+  // exists ONLY in the deferred consequence (Chopsticks' 8-way TransferPoints
+  // macro: `(TransferPoints 1 0 1)` .. `(TransferPoints 1 0 4)` all compile to
+  // a plain Select sharing (mover,from,to) and differ ONLY in the transfer
+  // amount baked into their `(then (set State ...))`). Neither the decision
+  // action (recordedDecisionState only inspects Add/Move) nor any Move/Add/
+  // Remove action (recordedCountDelta) carries that amount, so every tier
+  // above sees nothing and this fell through to an arbitrary `candidates[0]`.
+  // Java's trial format records the exact resulting value via non-decision
+  // SetState actions; hypothetically apply each candidate and prefer the one
+  // whose resulting stateAtSite reproduces every recorded SetState.
+  const recSetStates = recMove.actions
+    .filter((a) => a.actionType === 'SetState' && a.fields.get('decision') !== 'true')
+    .map((a) => [Number(a.fields.get('to')), Number(a.fields.get('state'))])
+    .filter(([site, val]) => Number.isFinite(site) && Number.isFinite(val));
+  if (recSetStates.length > 0) {
+    const byState2 = candidates.filter((cand) => {
+      try {
+        const after = game.apply(ctx, cand)?.state;
+        if (!after || typeof after.stateAtSite !== 'function') return false;
+        return recSetStates.every(([site, val]) => after.stateAtSite(site) === val);
+      } catch { return false; }
+    });
+    if (byState2.length > 0 && byState2.length < candidates.length) candidates = byState2;
+    if (candidates.length === 1) return candidates[0];
+  }
+
   // One-ply LOOKAHEAD tie-breaker: variants tying on every observable of THIS
   // ply (Fanorona's two 20→21 captures both removing {19}) can still differ in
   // their consequences (the chain probe's moveAgain); the recorded trial is

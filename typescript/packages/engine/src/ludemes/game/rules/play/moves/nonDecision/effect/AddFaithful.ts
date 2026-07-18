@@ -86,6 +86,13 @@ export class AddFaithful extends Add {
       // @java To.type() — a non-default graph-element target (Edge/Vertex)
       // routes the placement to that element's occupancy layer.
       siteType: to?.siteType() ?? null,
+      // @java Add.java constructor — `level = to.level();`. Previously
+      // dropped entirely: AddFaithful never read `to.levelFn()`, so a
+      // `(to ... level:N ...)` clause (Ringo's AddDisc) silently compiled
+      // away, and Add.ts always pushed the new piece onto the TOP of the
+      // stack instead of inserting it below the existing occupant (Java's
+      // ActionInsert semantics for level < sizeStack).
+      level: to?.levelFn() ?? null,
     });
   }
 }

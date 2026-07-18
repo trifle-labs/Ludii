@@ -1393,6 +1393,82 @@ export class State {
   }
 
   /**
+   * @java `ActionInsert.apply()` (Core/src/other/action/move/
+   * ActionInsert.java:118-142) — inserts a new level BELOW the current top
+   * when `level < sizeStack(siteIndex)`, splicing the new owner/what in at
+   * `level` and pushing every existing level at or above it up by one,
+   * rather than always appending to the top like {@link withStackPush}
+   * (which is Java's plain `ActionAdd`/onStack path — used when a `to`
+   * clause carries no `level:` argument at all). `level >= sizeStack`
+   * degenerates to a plain push, matching Java's `level == sizeStack`
+   * branch. Only the owner/component stack columns are handled here; the
+   * caller is responsible for the parallel owned()-registry shift via
+   * {@link withOwnedShiftUp} + {@link withOwnedAdd}, exactly as
+   * `ActionInsert.apply()` itself calls both `cs.insert(...)` and
+   * `context.state().owned()...` separately.
+   *
+   * Ported for `board/space/line/Ringo.lud`'s `AddDisc` move — the only
+   * `.lud` in the corpus whose `(move Add ... (to ... level:N ...))` uses a
+   * genuine non-default level (confirmed via a full-corpus scan of
+   * `Common/res/lud/**\/*.lud`).
+   */
+  public withStackInsert(siteIndex: number, level: number, owner: number, what?: number): State {
+    if (siteIndex < 0 || siteIndex >= this.cells.length) {
+      throw new RangeError(
+        `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
+      );
+    }
+    if (!Number.isInteger(owner) || owner < 0) {
+      throw new Error(`owner must be a non-negative integer; got ${owner}.`);
+    }
+    const sizeStack = this.stackSize(siteIndex);
+    // @java ActionInsert.apply — `level == sizeStack`: plain top push
+    // (Core/src/other/action/move/ActionInsert.java:120-128).
+    if (level >= sizeStack) {
+      return this.withStackPush(siteIndex, owner, what);
+    }
+    // @java ActionInsert.apply, `level < sizeStack` branch
+    // (Core/src/other/action/move/ActionInsert.java:130-142). Backfill each
+    // existing per-level owner/component from the materialised `stacks`/
+    // `whatStacks` columns when present, else from the flat `cells`/`whats`
+    // top (the un-materialized single-occupant case — Ringo's Ring piece,
+    // placed via a plain `(place ...)`, never goes through withStackPush
+    // before its first AddDisc, so `stacks[siteIndex]`/`whatStacks[siteIndex]`
+    // are still empty and every existing level collapses to the one visible
+    // occupant, matching `stackSize`'s own `Math.max(stackLen, countAt, 1)`
+    // singleton reading).
+    const baseOwner = this.cells[siteIndex] ?? 0;
+    const baseWhat = this.whatAtSite(siteIndex);
+    const prevOwners = this.stacks[siteIndex] ?? [];
+    const prevWhats = this.whatStacks[siteIndex] ?? [];
+    const ownersCol: number[] = [];
+    const whatsCol: number[] = [];
+    for (let lvl = 0; lvl < sizeStack; lvl++) {
+      ownersCol.push(prevOwners[lvl] ?? baseOwner);
+      whatsCol.push(prevWhats[lvl] ?? baseWhat);
+    }
+    ownersCol.splice(level, 0, owner);
+    whatsCol.splice(level, 0, what ?? owner);
+
+    const nextStacks = this.stacks.map((s, i) => (i === siteIndex ? ownersCol : s));
+    const nextWhatStacks = this.whatStacks.map((s, i) => (i === siteIndex ? whatsCol : s));
+    const nextCells = [...this.cells];
+    nextCells[siteIndex] = ownersCol[ownersCol.length - 1] ?? 0;
+    const nextWhats = [...this.whats];
+    nextWhats[siteIndex] = whatsCol[whatsCol.length - 1] ?? 0;
+    const nextCounts = [...this.countAt];
+    nextCounts[siteIndex] = 0;
+
+    return this.with({
+      cells: nextCells,
+      stacks: nextStacks,
+      whatStacks: nextWhatStacks,
+      whats: nextWhats,
+      countAt: nextCounts,
+    });
+  }
+
+  /**
    * Java parity: `ContainerStateStacks.remove(siteIndex, level)`. Pops one
    * level (top by default) and refreshes the visible top owner/component.
    */
@@ -1566,6 +1642,25 @@ export class State {
       const e = next[i]!;
       if (e.site === site && e.level > level) next[i] = { ...e, level: e.level - 1 };
     }
+    return this.with({ ownedEntries: next });
+  }
+
+  /**
+   * @java FullOwned — the shift-up half of `ActionInsert.apply()`'s
+   * level<sizeStack branch (Core/src/other/action/move/ActionInsert.java:
+   * 130-142): `for (lvl = sizeStack-1; lvl >= level; lvl--) { owned().
+   * removeNoUpdate(...lvl...); owned().add(...lvl+1...); }`. That
+   * remove-then-add-at-lvl+1 loop is net equivalent to incrementing the
+   * level of every owned() entry at `site` whose level is >= `fromLevel` by
+   * exactly one (each displaced level moves up to make room for the newly
+   * inserted piece at `fromLevel`). Called by {@link withStackInsert}'s
+   * caller alongside {@link withOwnedAdd} for the new piece itself.
+   */
+  public withOwnedShiftUp(site: number, fromLevel: number): State {
+    if (this.ownedEntries === undefined) return this;
+    const next = this.ownedEntries.map((e) =>
+      e.site === site && e.level >= fromLevel ? { ...e, level: e.level + 1 } : e,
+    );
     return this.with({ ownedEntries: next });
   }
 
