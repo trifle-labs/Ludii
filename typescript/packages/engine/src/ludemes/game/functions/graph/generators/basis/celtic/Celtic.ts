@@ -174,6 +174,20 @@ export class Celtic extends Basis {
       }
     }
 
+    // @java Board.java:187 — graph.measure(boardless) re-measures the FINAL
+    // graph (after the whole generator/operator chain) once eval() returns.
+    // The rounded-corner pass above adds new boundary vertices/edges/faces
+    // (Celtic.java:205-277) AFTER the makeFaces()-time perimeter trace at
+    // line 86 already ran, so `graph.perimeter`/`perimeterRingList` here are
+    // still the PRE-rounding boundary — the new corner vertices/edges are
+    // silently absent from (sites Outer Edge)/(sites Outer Vertex) and any
+    // outer-boundary-dependent legality (Celticator's wall placement) reads
+    // a stale/incomplete perimeter. Re-run the trace now that the boundary
+    // is final; reorder()'s existing remap logic then keeps it consistent
+    // with the post-reorder vertex ids exactly as it already does for a
+    // pre-rounding perimeter.
+    graph.measurePerimeter();
+
     graph.reorder();
 
     return graph;

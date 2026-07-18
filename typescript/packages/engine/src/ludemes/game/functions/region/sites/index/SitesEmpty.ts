@@ -30,24 +30,34 @@ interface ContainerStateLike {
  * types, so every element reads 0 → the full element set is returned).
  */
 /**
- * True when `type` is a NON-default graph element (Edge/Vertex on a board whose
- * default site type is something else). Only then does occupancy live in the
- * separate typedSites layer; when `type` equals the board default the element is
- * stored in the default container (cells[] in the TS flat model), e.g. a
- * `use:Edge` board keeps its edges there and the ordinary cell path is correct.
+ * True when `type` is a NON-default graph element (Cell/Edge/Vertex on a board
+ * whose default site type is something else). Only then does occupancy live in
+ * the separate typedSites layer; when `type` equals the board default the
+ * element is stored in the default container (cells[] in the TS flat model),
+ * e.g. a `use:Edge` board keeps its edges there and the ordinary cell path is
+ * correct.
+ *
+ * @java Board.java's `use:` declaration picks a single "default" SiteType for
+ * a board (Board.defaultSite()); Java's per-type ContainerState always keeps
+ * an independently-addressable region for EVERY SiteType, including Cell —
+ * Cell is not privileged. A `use:Vertex` board (Triple Tangle) genuinely
+ * stores its Cell occupancy in the typed channel, exactly as an Edge/Vertex
+ * would on a Cell-default board; excluding "Cell" here left `(sites Empty
+ * Cell)` scanning the flat cells[] array (which holds this board's actual
+ * default type, Vertex, data) instead of the typed Cell channel.
  */
-export function isNonDefaultTyped(context: Context, type: string | null): type is "Edge" | "Vertex" {
-	if (type !== "Edge" && type !== "Vertex") return false;
+export function isNonDefaultTyped(context: Context, type: string | null): type is "Cell" | "Edge" | "Vertex" {
+	if (type !== "Cell" && type !== "Edge" && type !== "Vertex") return false;
 	const def = (context as unknown as { board?: () => { defaultSite?: () => string } })
 		.board?.()?.defaultSite?.() ?? "Cell";
 	return type !== def;
 }
 
-export function emptyTypedSites(context: Context, type: "Edge" | "Vertex"): number[] {
+export function emptyTypedSites(context: Context, type: "Cell" | "Edge" | "Vertex"): number[] {
 	const topo = (context as unknown as { topology?: () => unknown }).topology?.() as
-		| { edges?: () => Array<{ index(): number }>; vertices?: () => Array<{ index(): number }> }
+		| { edges?: () => Array<{ index(): number }>; vertices?: () => Array<{ index(): number }>; cells?: () => Array<{ index(): number }> }
 		| undefined;
-	const elems = type === "Edge" ? topo?.edges?.() : topo?.vertices?.();
+	const elems = type === "Edge" ? topo?.edges?.() : type === "Vertex" ? topo?.vertices?.() : topo?.cells?.();
 	if (!elems) return [];
 	const state = context.state;
 	const out: number[] = [];

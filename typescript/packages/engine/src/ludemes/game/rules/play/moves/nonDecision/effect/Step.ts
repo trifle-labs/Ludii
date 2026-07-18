@@ -117,6 +117,25 @@ export class Step extends Effect {
   // -------------------------------------------------------------------------
 
   /**
+   * Whether this Step's from-site lives on a graph-element type OTHER than
+   * the board's default (play) SiteType — e.g. an Edge piece stepping on a
+   * `use:Vertex` board (Triple Tangle's Edge-to-Edge move). Returns the
+   * typed tag, or null when the from-site is on the ordinary default/play
+   * channel.
+   *
+   * @java Topology's per-type trajectories/radials cover EVERY SiteType, but
+   * the TS port's `ctx._radials` flat array is built only for the board's
+   * default type (Board.java has no such restriction — ContainerState keeps
+   * an independently-addressable region per SiteType). Indexing that array
+   * with a typed (non-default) site number is meaningless.
+   */
+  private resolveFromTypeTag(ctx: Context): string | null {
+    const playTypeName = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? null;
+    const rawTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? this.declaredFromType;
+    return rawTag && playTypeName && rawTag !== playTypeName ? rawTag : null;
+  }
+
+  /**
    * Resolve this Step's directions to the set of one-step destination sites from
    * `cellRadials`, deduplicated.
    *
@@ -165,9 +184,7 @@ export class Step extends Effect {
     // that type's adjacency — use the alternate trajectories VIEW as a local
     // (never mutate ctx._trajectories; a leak corrupts later evaluations).
     const baseTraj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
-    const playTypeName = (ctx as unknown as { board?: () => { defaultSite?: () => string } }).board?.()?.defaultSite?.() ?? null;
-    const rawTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? this.declaredFromType;
-    const fromTypeTag = rawTag && playTypeName && rawTag !== playTypeName ? rawTag : null;
+    const fromTypeTag = this.resolveFromTypeTag(ctx);
     this._fromTypeTag = fromTypeTag;
     const traj = fromTypeTag && baseTraj && typeof (baseTraj as unknown as { viewOf?: unknown }).viewOf === "function"
       ? (baseTraj as unknown as { viewOf(k: string): Trajectories }).viewOf(fromTypeTag)
@@ -313,8 +330,17 @@ export class Step extends Effect {
       return [];
     }
 
-    const cellRadials = radials[from];
-    if (!cellRadials) return [];
+    // @java a typed (non-default-SiteType) from-site has no entry in the
+    // default-type `radials` array (see resolveFromTypeTag) — gating on it
+    // here made every typed Step (Triple Tangle's Edge-to-Edge/Cell-to-Cell
+    // steps on its use:Vertex board) return zero moves before stepTargets()
+    // ever ran its typed-trajectories-VIEW resolution. Only bail on a
+    // missing radials entry for an ordinary default-type from-site; a typed
+    // from-site gets an empty placeholder and relies on stepTargets()'s
+    // typed `traj` view for real adjacency.
+    const fromTypeTagEarly = this.resolveFromTypeTag(ctx);
+    const cellRadials: CellFlatRadials = fromTypeTagEarly ? { axes: [] } : radials[from]!;
+    if (!fromTypeTagEarly && !cellRadials) return [];
 
     const result: Move[] = [];
 
@@ -409,11 +435,16 @@ export class Step extends Effect {
 
     const result: Move[] = [];
 
+    // @java see eval()'s matching comment — a typed from-region has no entry
+    // in the default-type `radials` array; only bail on a missing entry for
+    // an ordinary default-type region.
+    const fromTypeTagEarly = this.resolveFromTypeTag(ctx);
+
     for (const from of froms) {
       if (from < 0) continue;
 
-      const cellRadials = radials[from];
-      if (!cellRadials) continue;
+      const cellRadials: CellFlatRadials = fromTypeTagEarly ? { axes: [] } : radials[from]!;
+      if (!fromTypeTagEarly && !cellRadials) continue;
 
       (ctx as unknown as { _evalFrom?: number })._evalFrom = from;
 
