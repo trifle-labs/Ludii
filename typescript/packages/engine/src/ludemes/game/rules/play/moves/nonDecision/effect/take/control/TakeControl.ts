@@ -165,6 +165,9 @@ export class TakeControl implements MovesFunction {
       const stateAtSite = ctx.state as unknown as {
         whatAtSite?: (s: number) => number;
         countAtSite?: (s: number) => number;
+        stateAtSite?: (s: number) => number;
+        valueAtSite?: (s: number) => number;
+        rotationAt?: readonly number[];
       };
       const what = stateAtSite.whatAtSite?.(site) ?? 0;
       if (what === 0) continue;
@@ -174,12 +177,43 @@ export class TakeControl implements MovesFunction {
       if (newWhat === UNDEFINED) continue;
 
       const count = stateAtSite.countAtSite?.(site) ?? 1;
+      // @java TakeControl.java:134-139,158 — Java reads `state`, `rotation`,
+      // and `value` off the OLD piece BEFORE building the remove/add pair,
+      // then forwards all three into `new ActionAdd(type, site, newWhat,
+      // count, state, rotation, value, null)`. This TS port previously
+      // omitted them, so `ActionAdd` (action-add.ts) left state/rotation/value
+      // untouched — i.e. whatever the immediately-preceding `ActionRemove`
+      // had already zeroed (action-remove.ts's flat full-clear branch zeroes
+      // state/value/rotation on every remove). Mini Wars' "BuyMove" recruit
+      // macro chains `copy:True` (which correctly carries the hand template's
+      // `value` onto the board, action-copy.ts:105-108) immediately followed
+      // by `(take Control of:All by:Mover at:(last To))` to re-own the piece
+      // — that re-own silently wiped the just-copied `value` back to 0 for
+      // every recruited unit. `AttackMove`'s damage resolution
+      // (`(set Value at:(last To) (max 0 (- (value Piece at:(last To))
+      // damage))))` then always read the target's HP as 0, so its `next:` HP
+      // check `(if (= (value Piece at:(last To)) 0) (remove (last To)) ...)`
+      // fired every single time, removing units that Java's engine (whose
+      // TakeControl preserves value) correctly kept alive — the removed
+      // piece then vanished from `(sites Occupied by:...)`, producing zero
+      // legal moves for it on a later ply (Mini Wars MOVE_MISMATCH).
+      const preState = stateAtSite.stateAtSite?.(site) ?? 0;
+      const preValue = stateAtSite.valueAtSite?.(site) ?? 0;
+      const preRotation = stateAtSite.rotationAt?.[site] ?? 0;
 
       const actionRemove = new ActionRemove({ to: site });
       // @java ActionAdd.java:299 — owned().add uses the resolved newOwner
       // explicitly; the TS ActionAdd ctor falls back to `owner ?? what` when
       // omitted, silently owning the re-controlled piece by component index.
-      const actionAdd = new ActionAdd({ to: site, what: newWhat, owner: newOwner, count });
+      const actionAdd = new ActionAdd({
+        to: site,
+        what: newWhat,
+        owner: newOwner,
+        count,
+        state: preState,
+        rotation: preRotation,
+        value: preValue,
+      });
 
       const move = new LudiiMove({
         id: "takeControl",

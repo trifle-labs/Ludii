@@ -172,6 +172,28 @@ export class ActionAdd extends BaseAction {
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
         next = next.withStateAt(this.toIndex, this.stateValue);
       }
+      // @java ActionAdd.java:329,332 (applyStack) — `addItemGeneric(...)` is
+      // followed by an explicit setSite-equivalent write of state/rotation/
+      // value whenever any of the three is != Constants.UNDEFINED:
+      // `(rotation == UNDEFINED) ? 0 : rotation, (value == UNDEFINED) ? 0 :
+      // value`. This TS stacking branch wrote state but never rotation or
+      // value — every stacking-game Add silently dropped both. Mini Wars
+      // (a stacking game per its hand-pile containers) recruits units via
+      // `(take Control of:All by:Mover at:(last To))`, whose ActionAdd now
+      // forwards the copied piece's `value` (its combat HP), but this branch
+      // discarded it: the recruited unit's value stayed 0, so the very first
+      // `AttackMove` against it always computed post-damage value as
+      // `(max 0 (- 0 damage)) = 0` and the `next:` HP check
+      // `(if (= (value Piece at:(last To)) 0) (remove (last To)) ...)`
+      // removed a unit Java correctly kept alive — the piece then vanished
+      // from `(sites Occupied by:...)`, producing zero legal moves for it on
+      // a later ply (MOVE_MISMATCH).
+      if (this.valueValue !== ACTION_OFF && this.valueValue !== ACTION_UNDEFINED) {
+        next = next.withValueAt(this.toIndex, this.valueValue);
+      }
+      if (this.rotationValue !== ACTION_OFF && this.rotationValue !== ACTION_UNDEFINED) {
+        next = next.withRotationAt(this.toIndex, this.rotationValue);
+      }
       // @java ActionAdd.java:348 (applyStack) + :313 (apply, fall-through) —
       // a stacking-game Add genuinely calls updateTrackIndices TWICE (once
       // per call site). OnTrackIndices.add is a true `+= count` increment
@@ -214,6 +236,21 @@ export class ActionAdd extends BaseAction {
       if (this.stateValue !== ACTION_OFF && this.stateValue !== ACTION_UNDEFINED) {
         next = next.withStateAt(this.toIndex, this.stateValue);
       }
+      // @java ActionAdd.java:310 — the occupied-site branch's setSite call
+      // passes UNDEFINED for who/what (leaving the existing owner/piece
+      // untouched) but still writes state, rotation, AND value on every
+      // call. The TS port only ever wrote state here — rotation/value were
+      // silently dropped on every re-Add to an already-occupied site (e.g.
+      // Mini Wars' `(take Control ...)` re-ownership cycle, whose ActionAdd
+      // targets the piece's own now-Neutral-then-Mover site, which is
+      // "occupied" from ActionAdd's point of view since the piece itself is
+      // still there when the Add fires).
+      if (this.rotationValue !== ACTION_OFF && this.rotationValue !== ACTION_UNDEFINED) {
+        next = next.withRotationAt(this.toIndex, this.rotationValue);
+      }
+      if (this.valueValue !== ACTION_OFF && this.valueValue !== ACTION_UNDEFINED) {
+        next = next.withValueAt(this.toIndex, this.valueValue);
+      }
       // @java ActionAdd.java:313 — apply() unconditionally calls
       // updateTrackIndices at the end, including the occupied-site
       // (non-stacking accumulate) branch.
@@ -248,6 +285,26 @@ export class ActionAdd extends BaseAction {
     // rotation; set it on placement so pieces start with the declared rotation.
     if (this.rotationValue !== ACTION_OFF && this.rotationValue !== ACTION_UNDEFINED) {
       next = next.withRotationAt(this.toIndex, this.rotationValue);
+    }
+    // @java ActionAdd.java:292 — cs.setSite(.., state, rotation, (game.hasDominoes()
+    // ? 1 : value), type). The new-piece flat branch wrote state and rotation but
+    // never value, so EVERY non-stacking Add silently zeroed the placed piece's
+    // value field. Mini Wars recruits units via a `copy:True` ActionCopy (which
+    // correctly preserves the hand template's value, e.g. 40) immediately followed
+    // in the same `then` chain by `(take Control of:All by:Mover at:(last To))` —
+    // a Remove+Add re-ownership cycle whose Add takes this exact branch (the site
+    // is briefly Neutral/unowned, so currentWhat resolves through the "new piece"
+    // path). Losing value here meant every recruited unit boarded with value=0, so
+    // the very first AttackMove against it computed post-damage value as
+    // `(max 0 (- 0 damage)) = 0`, and the `next:` HP check `(if (= (value Piece
+    // at:(last To)) 0) (remove (last To)) ...)` removed a unit Java kept alive —
+    // the piece then vanished from `(sites Occupied by:...)`, leaving zero legal
+    // moves for it on a later ply (MOVE_MISMATCH). `hasDominoes()` is a
+    // domino-specific override with no TS equivalent state flag and no bearing on
+    // any currently-ported game; omitted here to stay faithful to the general
+    // (non-domino) case rather than invent an unported special-case.
+    if (this.valueValue !== ACTION_OFF && this.valueValue !== ACTION_UNDEFINED) {
+      next = next.withValueAt(this.toIndex, this.valueValue);
     }
     // Large-piece footprint: every covered cell (anchor included) gets count=1
     // and no owner, matching Java applyLargePiece (removeFromEmpty + setCount).

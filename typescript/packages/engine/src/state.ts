@@ -1273,7 +1273,7 @@ export class State {
    * had a `what` stack leave {@link whatStacks} empty — zero change for the
    * existing owner-stacking games.
    */
-  public withStackPush(siteIndex: number, owner: number, what?: number): State {
+  public withStackPush(siteIndex: number, owner: number, what?: number, value?: number): State {
     if (siteIndex < 0 || siteIndex >= this.cells.length) {
       throw new RangeError(
         `siteIndex ${siteIndex} out of range [0, ${this.cells.length}).`,
@@ -1342,6 +1342,29 @@ export class State {
         nextStateStacksPush = copy;
       }
     }
+    // @java ContainerStateStacks.addItem(state, site, what, who, stateVal,
+    // rotationVal, value, game) / addItemGeneric — a stacked push threads its
+    // own per-level value in the SAME call (chunkStacks[...].setValue). Mirror
+    // the state-stacks materialisation above: once a site has (or gains) a
+    // second level, its per-level value column must exist so `valueAtLevel`/
+    // `valueTop` stop silently falling back to the flat (level-0-only)
+    // `valueAt` channel for every level above the base.
+    let nextValueStacksPush: (readonly number[])[] | undefined;
+    {
+      const vs = this.valueStacks?.[siteIndex];
+      if (vs !== undefined && vs.length > 0) {
+        const copy = (this.valueStacks ?? []).map((r) => [...r]);
+        copy[siteIndex] = [...(copy[siteIndex] ?? []), value ?? 0];
+        nextValueStacksPush = copy;
+      } else if (target.length > 1) {
+        const copy = (this.valueStacks ?? []).map((r) => [...r]);
+        const row: number[] = [];
+        for (let lvl = 0; lvl < target.length - 1; lvl++) row.push(this.valueAtLevel(siteIndex, lvl));
+        row.push(value ?? 0);
+        copy[siteIndex] = row;
+        nextValueStacksPush = copy;
+      }
+    }
     const nextCells = [...this.cells];
     nextCells[siteIndex] = owner;
     const existing = this.whatStacks[siteIndex];
@@ -1380,6 +1403,7 @@ export class State {
         whats: nextWhats,
         countAt: nextCounts,
         ...(nextStateStacksPush !== undefined ? { stateStacks: nextStateStacksPush } : {}),
+        ...(nextValueStacksPush !== undefined ? { valueStacks: nextValueStacksPush } : {}),
       });
     }
     const nextWhats = [...this.whats];
@@ -1389,6 +1413,7 @@ export class State {
       stacks: nextStacks,
       whats: nextWhats,
       ...(nextStateStacksPush !== undefined ? { stateStacks: nextStateStacksPush } : {}),
+      ...(nextValueStacksPush !== undefined ? { valueStacks: nextValueStacksPush } : {}),
     });
   }
 

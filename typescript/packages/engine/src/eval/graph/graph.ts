@@ -848,77 +848,21 @@ export class Graph {
     }
 
     // @java Graph.removeFace: even with edges trimmed above, the perimeter
-    // must be RETRACED from the surviving faces — the stale ring bulged
-    // around the removed cells (Shafran Chess' clipped hexagon lost every
-    // side). Purely face-vertex based; unaffected by the trim.
-    this.recomputePerimeterFromFaces();
-  }
-
-  /**
-   * Retrace the board perimeter from the CURRENT face list: a boundary edge
-   * borders exactly one face; walk boundary edges into closed rings and keep
-   * every ring not contained in another (holes from interior removals are
-   * dropped, matching @java MeasureGraph.measurePerimeter's outer-cycle pick).
-   */
-  private recomputePerimeterFromFaces(): void {
-    if (this.flist.length === 0) return;
-    const edgeCount = new Map<string, number>();
-    const key = (a: number, b: number): string => (a < b ? `${a}:${b}` : `${b}:${a}`);
-    for (const f of this.flist) {
-      const vs = f.vertices;
-      for (let n = 0; n < vs.length; n += 1) {
-        const k = key(vs[n] as number, vs[(n + 1) % vs.length] as number);
-        edgeCount.set(k, (edgeCount.get(k) ?? 0) + 1);
-      }
-    }
-    // Boundary adjacency: vertex -> neighbours over single-face edges.
-    const nbors = new Map<number, number[]>();
-    for (const [k, c] of edgeCount) {
-      if (c !== 1) continue;
-      const [a, b] = k.split(":").map(Number) as [number, number];
-      (nbors.get(a) ?? nbors.set(a, []).get(a)!).push(b);
-      (nbors.get(b) ?? nbors.set(b, []).get(b)!).push(a);
-    }
-    const visited = new Set<string>();
-    const rings: number[][] = [];
-    for (const [start, startNbors] of nbors) {
-      for (const first of startNbors) {
-        if (visited.has(`${start}:${first}`)) continue;
-        const ring = [start];
-        let prev = start;
-        let cur = first;
-        visited.add(`${start}:${first}`);
-        let guard = nbors.size * 4;
-        while (cur !== start && guard-- > 0) {
-          ring.push(cur);
-          const nb = nbors.get(cur) ?? [];
-          const nxt = nb.find((n) => n !== prev && !visited.has(`${cur}:${n}`));
-          if (nxt === undefined) break;
-          visited.add(`${cur}:${nxt}`);
-          prev = cur;
-          cur = nxt;
-        }
-        if (cur === start && ring.length >= 3) rings.push(ring);
-      }
-    }
-    if (rings.length === 0) return;
-    // Drop rings contained in another ring (holes).
-    const poly = (ring: readonly number[]): [number, number][] =>
-      ring.map((vid) => {
-        const v = this.vlist[vid] as GVertex;
-        return [v.x, v.y] as [number, number];
-      });
-    const outer = rings.filter((ringA) => {
-      const a = this.vlist[ringA[0] as number] as GVertex;
-      for (const ringB of rings) {
-        if (ringB === ringA) continue;
-        if (pointInPolygon(a.x, a.y, poly(ringB))) return false;
-      }
-      return true;
-    });
-    if (outer.length === 0) return;
-    this.perimeterRings = outer.map((r) => [...r]);
-    this.perimeterVerts = [...new Set(outer.flat())];
+    // must be RETRACED — the stale ring bulged around the removed cells
+    // (Shafran Chess' clipped hexagon lost every side). Route through the
+    // same angle-sorted half-edge walk `measurePerimeter()` uses at initial
+    // construction (@java MeasureGraph.measurePerimeter's leftmost-vertex +
+    // clockwise-turn trace) rather than the face-boundary-edge walk this used
+    // to call: that walk followed an arbitrary unvisited neighbour at any
+    // vertex where two boundary loops meet (a "pinch" vertex created by
+    // cutting a board corner, e.g. Bizingo's `(remove (tri 13) cells:{…})`),
+    // so it silently dropped every face on the branch it didn't take —
+    // Bizingo's site 19 fell out of `(sites Outer)`, letting `SurroundedThrall`
+    // skip its Outer-phase-1 guard and fire a capture Java never allows.
+    // `measurePerimeter()` walks from full edge topology (elist/vlist, already
+    // trimmed of orphaned edges above) exactly as Java's `followPerimeterClockwise`
+    // does, so it resolves pinch vertices the same way Java does.
+    this.measurePerimeter();
   }
 
   /**

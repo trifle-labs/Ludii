@@ -138,7 +138,22 @@ function wherePlayerFn(indexPlayer: unknown, role: unknown): never {
   }
   const r = (role ?? indexPlayer) as string | null;
   return {
-    eval(ctx: { state: { mover: number }; game: { numPlayers: number } }): number {
+    eval(ctx: { state: { mover: number }; game: { numPlayers: number }; _evalPlayer?: number }): number {
+      // @java RoleType.Player — "Placeholder for iterator over all players,
+      // e.g. from end.ForEach" (RoleType.java:119-121). Resolved via
+      // context.player() (PlayersIndices.java:127-129, mirrored in the TS
+      // port at ludemes/other/PlayersIndices.ts's own "Player" case). Mini
+      // Wars' end rule `(forEach NonMover if:("IsOffBoard" (where "Base"
+      // Player)) (result Player Loss))` relies on `Player` inside the `if:`
+      // resolving to ForEach.ts's per-iteration `ctx._evalPlayer` (the pid
+      // currently being tested), NOT the mover. Without this case the
+      // fallthrough below returned `ctx.state.mover` for every iterated pid,
+      // so the loop only ever asked "is the MOVER's Base off board?" — never
+      // true for the mover itself — and the Loss condition could never fire
+      // for the actual eliminated NonMover, leaving the game undecided
+      // forever (WINNER_MISMATCH: recorded games end in NaturalEnd once a
+      // Base is captured, tsWinner stayed -1).
+      if (r === "Player") return ctx._evalPlayer ?? ctx.state.mover;
       if (r === "Mover") return ctx.state.mover;
       if (r === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
       if (r === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;

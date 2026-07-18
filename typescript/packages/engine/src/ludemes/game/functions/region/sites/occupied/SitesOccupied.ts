@@ -20,7 +20,7 @@ type RoleType =
   | "Mover" | "Next" | "Enemy" | "Friend" | "NonMover"
   | "All" | "Neutral" | "Shared"
   | "P1" | "P2" | "P3" | "P4" | "P5" | "P6" | "P7" | "P8"
-  | "Team1" | "Team2" | "Team3" | "Team4";
+  | "Team1" | "Team2" | "Team3" | "Team4" | "TeamMover";
 
 function roleToIntFunction(role: RoleType | null): IntFunction {
   return {
@@ -319,6 +319,42 @@ export class SitesOccupied extends BaseRegionFunction {
         }
       } else {
         idPlayers.add(teamIndex);
+      }
+      for (let i = 0; i < scanN; i++) {
+        const owner = cells[i] ?? 0;
+        if (owner > 0 && idPlayers.has(owner)) {
+          if (whatOk(whats[i] ?? 0)) {
+            sitesOccupied.push(i);
+          }
+        }
+      }
+    } else if (role === "TeamMover") {
+      // @java PlayersIndices.java:290,536 (getIdPlayers, RoleType.TeamMover)
+      // — when game.requiresTeams(), collect every pid on the mover's OWN
+      // team (state.getTeam(mover)); otherwise just {mover}. Mirrors the
+      // Team1-4 branch above but resolves the team index dynamically from
+      // the current mover instead of a fixed literal. Without this branch
+      // "TeamMover" fell to roleToIntFunction's -1 default and the
+      // `role === "All" || whoId < 0` catch-all below returned every
+      // occupied site for every player instead of just the mover's team —
+      // Chonpa's (end (if ("AllPiecesOnCentre" TeamMover) ...)) macro
+      // expands to (= 1 (count Sites in:(sites Occupied by:TeamMover
+      // top:False))), which can then never see exactly 1 site (all pieces
+      // of all 4 players are almost never down to a single shared site), so
+      // TS's end condition never fires (tsWinner=-1) even though Java's
+      // (and the recorded trial's) same condition does.
+      const mover = ctx.state.mover;
+      const teamOf = (ctx.game as unknown as { teamOf?: readonly (number | null)[] }).teamOf ?? [];
+      let requiresTeams = false;
+      for (let p = 1; p < teamOf.length; p++) if ((teamOf[p] ?? 0) > 0) { requiresTeams = true; break; }
+      const idPlayers = new Set<number>();
+      if (requiresTeams) {
+        const moverTeam = teamOf[mover] ?? 0;
+        for (let pid = 1; pid <= ctx.game.numPlayers; pid++) {
+          if ((teamOf[pid] ?? 0) === moverTeam) idPlayers.add(pid);
+        }
+      } else {
+        idPlayers.add(mover);
       }
       for (let i = 0; i < scanN; i++) {
         const owner = cells[i] ?? 0;

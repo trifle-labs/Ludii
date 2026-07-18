@@ -1247,7 +1247,22 @@ export class ActionMove extends BaseAction {
     // marker off a stacked site. Internal-loop tracks (Len Doat, Pachisi) are
     // the only movers that legitimately emit a from == to hop: NextSiteOnTrack
     // can return the same board index at a later ring position.
-    if (this.fromIndex === this.toIndex) {
+    //
+    // @java ActionMoveTopPiece.java — the ONLY `from == to` shortcut in the
+    // whole class is the stacking branch's plain numeric check (line 487); the
+    // non-stacking branch below it has none at all. Java's csFrom/csTo dispatch
+    // through a per-type parameter (`csFrom.what(from, typeFrom)` /
+    // `csTo.addItemGeneric(..., typeTo)`) to genuinely separate backing arrays
+    // per SiteType, so a same-NUMBER cross-type move (e.g. Cell 9 -> Vertex 9,
+    // Triple Tangle's "MoveCellToVertex") is an ordinary remove-then-add with
+    // no identity-move risk — the two sites never alias. Gating this shortcut
+    // on siteTypeFrom === siteTypeTo restricts it to genuine same-site moves,
+    // matching that implicit Java behavior; without the type check, a
+    // cross-type same-index move fell into the "self-move restore" branch
+    // below and silently no-opped (source never cleared, destination never
+    // written) instead of falling through to the ordinary typed-channel
+    // remove/add path already handled further down.
+    if (this.fromIndex === this.toIndex && this.siteTypeFrom === this.siteTypeTo) {
       // @java ActionMoveLevelFrom.java:438 / ActionMoveTopPiece.java:487 —
       // the STACKING branch's `if (from == to) return this;` is a TOTAL
       // no-op (even onTrackIndices stays put). It IS reachable: a stacking

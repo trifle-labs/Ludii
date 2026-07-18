@@ -28,10 +28,7 @@ export class CountPieces implements IntFunction {
    * TS: ctx._evalSite = site (Java context.site() → TS ctx._evalSite).
    */
   private readonly ifCondition: BooleanFunction | null;
-  /**
-   * @java type — SiteType; flat-state substrate, see pattern #5.
-   * Stored but eval behaviour is substrate-independent in the flat state.
-   */
+  /** @java CountPieces.type — Cell/Edge/Vertex; dispatches to that type's own channel. */
   private readonly siteType: string | null;
 
   public constructor(
@@ -92,6 +89,22 @@ export class CountPieces implements IntFunction {
         }
       }
       return count;
+    }
+
+    // @java CountPieces.java:136-145,147,174,189 — an explicit, genuinely
+    // non-default SiteType (e.g. `(count Pieces Edge #1)` on a use:Vertex
+    // board) dispatches through that type's OWN ContainerState
+    // (`cs.who(site, realType)` / `cs.what(site, realType)` / `cs.count(site,
+    // realType)`), not the flat default-type substrate — same pattern as
+    // Who.ts / SitesIncident.whoOf(). Falling back to the flat channel
+    // silently counted zero (or the wrong owner) for every Cell/Edge piece:
+    // Triple Tangle's win check `(+ (count Pieces Vertex #1) (count Pieces
+    // Edge #1) (count Pieces Cell #1))` only ever saw the Vertex term, so a
+    // player with pieces still on Cell/Edge sites was misjudged as already
+    // reduced to 0-1 pieces (premature/wrong-player win).
+    if (this.siteType !== null) {
+      const ch = ctx.state.typedSites.get(this.siteType);
+      if (ch) return this.evalTyped(ctx, ch);
     }
 
     const cells = ctx.state.cells;
@@ -250,6 +263,64 @@ export class CountPieces implements IntFunction {
     }
     ctx._evalSite = origSite;
     return n;
+  }
+
+  /**
+   * @java CountPieces.java:147,150-190 — non-default-SiteType branch
+   * (`context.containerState(cid)` dispatched by `realType`). Typed channels
+   * are not currently materialised as stacks in TS state, so this mirrors
+   * the flat channel's non-stacking (`else`) path only — the same subset
+   * CountPieces.java's typed dispatch reduces to for a non-stacking game.
+   */
+  private evalTyped(ctx: Context, ch: { who: readonly number[]; what: readonly number[]; count: readonly number[] }): number {
+    const n = ch.who.length;
+    const origSite = ctx._evalSite;
+
+    let allowedSites: Set<number> | null = null;
+    if (this.whereFn) allowedSites = new Set(this.whereFn.eval(ctx));
+
+    const labels = ctx.state.componentLabels;
+    const nameMatches = (what: number): boolean => {
+      if (this.pieceName == null) return true;
+      const label = labels[what] ?? "";
+      return label === this.pieceName || (label.startsWith(this.pieceName) && /^\d+$/.test(label.slice(this.pieceName.length)));
+    };
+
+    if (this.isAll) {
+      let total = 0;
+      for (let i = 0; i < n; i++) {
+        if (allowedSites && !allowedSites.has(i)) continue;
+        if (this.ifCondition !== null) {
+          ctx._evalSite = i;
+          if (!this.ifCondition.eval(ctx)) continue;
+        }
+        const c = ch.count[i] ?? 0;
+        const what = ch.what[i] ?? 0;
+        if (c > 0) {
+          if (nameMatches(what)) total += c;
+        } else if (what !== 0 || (ch.who[i] ?? 0) !== 0) {
+          if (nameMatches(what || (ch.who[i] ?? 0))) total++;
+        }
+      }
+      ctx._evalSite = origSite;
+      return total;
+    }
+
+    const pid = this.whoFn.eval(ctx);
+    let n2 = 0;
+    for (let i = 0; i < n; i++) {
+      if (allowedSites && !allowedSites.has(i)) continue;
+      if (this.ifCondition !== null) {
+        ctx._evalSite = i;
+        if (!this.ifCondition.eval(ctx)) continue;
+      }
+      if (ch.who[i] === pid && nameMatches(ch.what[i] || pid)) {
+        const c = ch.count[i] ?? 0;
+        n2 += c > 0 ? c : 1;
+      }
+    }
+    ctx._evalSite = origSite;
+    return n2;
   }
 }
 

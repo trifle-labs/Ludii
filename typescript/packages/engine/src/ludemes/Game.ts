@@ -879,7 +879,15 @@ export class Game implements Game {
         const lv = levels[li]!;
         if (lv.owner < 0) continue;
         for (let c = 0; c < Math.max(1, lv.count); c += 1) {
-          state = state.withStackPush(site, lv.owner, lv.what);
+          // @java ActionAdd.applyStack (ActionAdd.java:324-334) threads a
+          // start-placed level's value into the SAME addItemGeneric call
+          // that pushes it (chunkStacks[...].setValue) — a stacked pyramid
+          // piece (e.g. Rithmomachia's Square/Triangle/Disc value:NN levels)
+          // otherwise reads back level value 0 from valueAtLevel/valueTop for
+          // every level above the base, breaking every value-comparing
+          // capture ludeme (Multiplication/Division/Addition/Subtraction
+          // WithDistance) for stacked start pieces.
+          state = state.withStackPush(site, lv.owner, lv.what, lv.value !== UNDEFINED ? lv.value : undefined);
           state = state.withOwnedAdd(lv.owner, lv.what, site, state.stackSize(site) - 1);
           if (lv.state !== UNDEFINED) state = state.withStateAt(site, lv.state);
         }
@@ -1911,7 +1919,21 @@ export class Game implements Game {
           // individually-addressable level, even when two adjacent draws
           // share the same component. Callers that need every level
           // individually addressable opt out of the merge via neverMergeStack.
-          if (!_neverMergeStack && last.what === what && last.owner === owner) {
+          // @java ActionAdd.applyStack (ActionAdd.java:324-334) — a call
+          // carrying an explicit per-piece value ALWAYS routes through the
+          // generic addItemGeneric(..., value, ...) overload, which threads
+          // that exact value into the newly pushed level's own chunk column
+          // (never merged into a neighbour's). Rithmomachia's pyramids place
+          // the SAME component name back-to-back with DIFFERENT tier values
+          // ((place Stack "Square2" 119 value:64) (place Stack "Square2" 119
+          // value:49)) — collapsing those into one count-pile silently
+          // dropped the second tier's value (count-pile levels have no
+          // per-copy value channel), corrupting every value-comparing
+          // capture ludeme for that tier. Only merge when both calls are
+          // genuinely value-less (Backgammon's checkers) or share the exact
+          // same explicit value; anything else must materialise its own level.
+          const sameValue = last.value === value || (last.value === UNDEFINED && value === UNDEFINED);
+          if (!_neverMergeStack && last.what === what && last.owner === owner && sameValue) {
             // @java ActionAdd.java:200,284,324-337 — repeat calls at the SAME
             // (what, owner) push one real level each. When `last` IS the
             // base/flat level (levels.length === 1), that pile's height is
