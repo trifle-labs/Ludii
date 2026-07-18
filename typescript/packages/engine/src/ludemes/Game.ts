@@ -1256,6 +1256,33 @@ export class Game implements Game {
             .withCell(site, 0).withWhatAt(site, 0).withCountAt(site, 0)
             .withCell(toSite, who).withWhatAt(toSite, what)
             .withCountAt(toSite, cnt > 0 ? cnt : 1);
+          // @java Core/src/other/action/move/ActionMove.java (owned-registry
+          // bookkeeping shared by every board-to-board relocation) — a
+          // pyramidal drop is just another single-piece, non-capturing
+          // board->board move (the `toSite` empty-guard above rules out a
+          // capture/merge here) and must keep the piece-position registry
+          // (Owned) in sync exactly like ActionMove.apply() does for a
+          // regular move (see action-move.ts lines ~1004-1026 / ~1041-1079,
+          // the same two registry-channel branches, mirrored here). Without
+          // this, `applyPyramidalDrop`'s direct cell/what mutation (above)
+          // desyncs `owned`/`flatOwned` from the live board — any later
+          // `(sites Occupied by:Mover)` move-generation candidate built from
+          // the stale registry then silently omits real occupied sites (or
+          // offers ghost ones), e.g. Spline+ ply 62 missing the from=8
+          // candidate after an earlier drop relocated a piece into site 8
+          // without registering it.
+          if (who > 0) {
+            if (newState.ownedEntries !== undefined) {
+              newState = newState.withOwnedSiteCleared(site);
+              newState = newState.withOwnedSiteCleared(toSite);
+              newState = newState.withOwnedAdd(who, what || who, toSite, 0);
+            } else if (!newState.stackingGame && newState.typedSites.size === 0) {
+              let fo = newState.withFlatOwnedMaterialized();
+              fo = fo.withFlatOwnedRemove(who, what || who, site);
+              fo = fo.withFlatOwnedAdd(who, what || who, toSite);
+              newState = fo;
+            }
+          }
           pieceDropped = true;
           break;
         }

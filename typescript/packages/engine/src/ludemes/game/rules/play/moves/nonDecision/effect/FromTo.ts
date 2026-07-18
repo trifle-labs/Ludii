@@ -528,13 +528,35 @@ export class FromTo implements MovesFunction {
             // (Guerrilla Vertex board) are unchanged.
             const dft = this.declaredFromType;
             const dtt = this.declaredToType;
+            // @java Equipment.containerId() (Equipment.java:69/762-777/871-873)
+            // — a per-site array recording which CONTAINER each global site
+            // index belongs to; the board is always container 0, every hand
+            // (and any other non-board container) is a distinct nonzero id.
+            // Ported 1:1 as `Equipment.containerId(): number[] | null`
+            // (Equipment.ts:1251-1252). This is the authoritative "is this a
+            // board site" test — robust to any container layout — used below
+            // to keep the typed-channel routing decision (isNonDefaultTyped,
+            // which compares a DECLARED site type against the BOARD's own
+            // default type) scoped to genuine on-board sites only.
+            const containerIds = (ctx.game as unknown as { equipment?: { containerId?: () => (number[] | null) } }).equipment?.containerId?.() ?? null;
+            const isBoardSite = (site: number): boolean => containerIds === null || site < 0 || site >= containerIds.length || containerIds[site] === 0;
             // @java csTo is the Edge/Vertex ContainerState ONLY when the to-type is
             // a genuinely NON-DEFAULT graph element on this board. On a `use:Vertex`
             // board a `(to Vertex …)` names the DEFAULT element (written to cells[]),
             // so a Cell→Vertex relocation (Guerrilla's hand→Vertex marker) must NOT
             // route to a typed channel. Compute the decision here (apply() has no
             // Context) and pass it as a flag.
-            const toNonDefault = isNonDefaultTyped(ctx, dtt);
+            //
+            // Forced false when `to` is NOT a board site (a hand, dice, or
+            // other non-board container): the TS flat model stores every such
+            // container's occupancy in the SAME flat cells[]/whats[] arrays as
+            // the board (appended index range, confirmed by inspection), never
+            // in the typedSites side-channel, regardless of what type keyword
+            // the ludeme happens to declare — see the fromNonDefault citation
+            // below (the destination-side analogue; a "to hand" case, e.g. a
+            // captured piece returned to a typed hand reference, would
+            // otherwise be wrongly routed the same way the source was).
+            const toNonDefault = !isBoardSite(to) ? false : isNonDefaultTyped(ctx, dtt);
             // @java symmetric counterpart: csFrom is the Cell/Edge/Vertex
             // ContainerState ONLY when the from-type is a genuinely NON-DEFAULT
             // graph element on this board. `"MoveCellToVertex"` on a `use:Vertex`
@@ -543,11 +565,60 @@ export class FromTo implements MovesFunction {
             // (Vertex) layer at the from-index instead of the typed Cell channel,
             // silently no-opping the relocation (empty-source guard) and leaving
             // the source Cell entry uncleared.
-            const fromNonDefault = isNonDefaultTyped(ctx, dft);
-            // @java hand containers have no addressable per-site level — the
-            // signal ActionMoveTopPiece vs ActionMoveLevelFrom dispatch on.
-            // See ActionMoveOptions.fromHandSite (Thaayam value identity).
-            const boardSites = (ctx.game as unknown as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? Number.MAX_SAFE_INTEGER;
+            //
+            // Forced false when `from` is NOT a board site (a hand, dice, or
+            // other non-board container — @java game/equipment/container/
+            // other/Hand.java:103-124: a Hand's own topology is ALWAYS built
+            // with `SiteType.Cell` regardless of the game's board `use:`
+            // choice, and it is its own Container distinct from the board;
+            // Equipment.containerId() is exactly the field Java itself uses to
+            // route a site to its owning ContainerState — see citation above):
+            // Quarto's Select/Place move declares `(from Cell (last From))`
+            // sourcing a `(hand Shared size:16)` piece on a `use:Vertex`
+            // board — `dft` is explicitly "Cell", so `isNonDefaultTyped(ctx,
+            // "Cell")` compared it against the BOARD's default type (Vertex)
+            // and wrongly returned true, routing the hand-site read through
+            // `state.whoTyped('Cell', from)`/`whatTyped(...)` — the
+            // typedSites channel, which nothing ever populates for a hand
+            // (hand data lives in the flat cells[]/whats[] arrays, see the
+            // Hand.java citation above). That read back 0/0, tripping
+            // ActionMove.apply's empty-source no-op guard (`movingOwner ===
+            // 0 && movingWhat === 0 → return state`) and silently dropping
+            // EVERY Place move: the board's flat cells[] stayed all-zero and
+            // the hand's flat slots stayed at their untouched start values
+            // for the whole trial (confirmed via a DEBUG_END dump), while the
+            // unrelated flatOwned registry bookkeeping (action-move.ts:1004-
+            // 1080, which reads `state.cellAt`/`whatAtSite` unconditionally,
+            // never gated on this flag) correctly tracked placements — the
+            // registry/board split this produced masked every downstream
+            // win-condition check (`(is Line 4 … (state at:(to)) …)` etc. all
+            // read an always-empty board), producing WINNER_MISMATCH instead
+            // of a MOVE_MISMATCH (RandomTrial_0/_1, both trials, immediately
+            // after the final recorded move).
+            //
+            // An earlier draft of this fix used a numeric threshold
+            // (`board.numSites`, later `board.containerSpan`) instead of the
+            // real per-site container id. Both were wrong: `board.numSites`
+            // ("vertices for vertex-play boards" — BoardSurface.numSites's own
+            // doc comment) undercounts a dual-type board that plays BOTH Cell
+            // and Vertex elements on the SAME container (Triple Tangle: 18
+            // board sites all container 0, no hand at all — a genuine
+            // `board.numSites`-vs-`board.containerSpan` gap exists there in
+            // principle but wasn't even the discriminator; the real culprit
+            // was that this whole numeric-threshold approach conflates "past
+            // the board's own site count" with "in a different container",
+            // which only coincide for single-type boards) — and
+            // `EquipmentSurface.handSiteBase`, it turns out, belongs to an
+            // entirely different, unused `Equipment` class than the one
+            // `ctx.game.equipment` actually is at runtime (`Equipment.ts`'s
+            // `Equipment` class, constructed via the 1:1 ludeme-object
+            // compiler `play1to1` — confirmed by inspecting a live compiled
+            // Quarto instance: `equipment.handSiteBase` is `undefined`,
+            // `equipment.containerId()` is the real, populated field).
+            // `containerId()` sidesteps both problems: it is the literal
+            // per-site container assignment Java itself computes, not a
+            // derived numeric boundary.
+            const fromNonDefault = !isBoardSite(from) ? false : isNonDefaultTyped(ctx, dft);
             // @java FromTo.java:328-340 — Java's ActionMoveTopPiece-vs-
             // ActionMoveLevelFrom choice is a STATIC, ludeme-syntax decision
             // keyed on whether `level:` is present on the `(from …)` term at
@@ -572,7 +643,7 @@ export class FromTo implements MovesFunction {
             // Java, whose TO-side addItemGeneric properly CARRIES the source's
             // own state (ActionMoveLevelFrom's 7-arg addItemGeneric), so they
             // must not be treated as state-less hand entries.
-            const fromHandSite = from >= boardSites && this.levelFrom === null;
+            const fromHandSite = !isBoardSite(from) && this.levelFrom === null;
             moveAction = (dft || dtt)
               ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault, fromTypedNonDefault: fromNonDefault, fromHandSite })
               : new ActionMove({ from, to, fromHandSite });

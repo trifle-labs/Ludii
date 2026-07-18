@@ -919,7 +919,22 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     let tied = false;
     // Captures may be DEFERRED thens (not in cand.actions at generation) —
     // when the action scan sees nothing, diff the hypothetically applied
-    // occupancy instead (Fanorona's approach/withdrawal variants).
+    // occupancy instead (Fanorona's approach/withdrawal variants). A captured
+    // site does not always end up EMPTY afterward: a capture-by-landing (the
+    // mover's own piece slides onto the captured site, e.g. a chess-style
+    // Move-onto-enemy) leaves the site OCCUPIED — just by a different owner.
+    // Tenjiku Shogi's Lion "DoubleStep" (`Common/res/lud/board/war/
+    // replacement/checkmate/shogi/Tenjiku Shogi.lud`'s "CaptureEnemy" macro,
+    // eagerly folded into the second hop's deferred `(then (step ...))`
+    // continuation) is exactly this: the second hop's target square keeps a
+    // piece on it (the Lion itself), so the old after.who(i)===0 test never
+    // matched, every one of the Lion's 8 same-shaped or-branch candidates
+    // scored 0, and the tier fell through to the arbitrary candidates[0]
+    // pick — silently landing the Lion on the wrong square (ply 221 of
+    // RandomTrial_0) without capturing the enemy piece the recorded move
+    // actually removed. Comparing OWNER instead of occupancy catches both
+    // shapes: who(i) becoming 0 (old case) and who(i) becoming the mover
+    // (new case) both satisfy "no longer belongs to the original owner".
     const removesOf = (cand) => {
       const direct = tsMoveRemoveSites(cand);
       if (direct.size > 0) return direct;
@@ -928,7 +943,8 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
         const gone = new Set();
         const n = ctx.state.cells?.length ?? 0;
         for (let i = 0; i < n; i += 1) {
-          if (ctx.state.who(i) > 0 && after.who(i) === 0 && i !== cand.from()) gone.add(i);
+          const beforeWho = ctx.state.who(i);
+          if (beforeWho > 0 && after.who(i) !== beforeWho && i !== cand.from()) gone.add(i);
         }
         return gone;
       } catch { return direct; }
