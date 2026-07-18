@@ -46,6 +46,20 @@ export class ActionPromote extends BaseAction {
       s2 = s2.withOwnedRemoveLevel(oldOwner, oldWhat, this.toIndex, lvl);
       s2 = s2.withOwnedAdd(this.whoValue > 0 ? this.whoValue : oldOwner, this.whatValue, this.toIndex, lvl);
     }
+    // @java ActionPromote — FlatCellOnlyOwned remove-swap(old comp) +
+    // add(new comp), same site (a promotion never changes location). See
+    // ActionMove's parity block for the registry's provenance.
+    if (s2.flatOwned !== undefined) {
+      const oldWhat = state.whatAtSite(this.toIndex);
+      const oldOwner = state.who(this.toIndex);
+      if (oldOwner > 0) {
+        s2 = s2.withFlatOwnedRemove(oldOwner, oldWhat || oldOwner, this.toIndex);
+      }
+      const newOwner = this.whoValue > 0 ? this.whoValue : oldOwner;
+      if (newOwner > 0) {
+        s2 = s2.withFlatOwnedAdd(newOwner, this.whatValue, this.toIndex);
+      }
+    }
     // @java ActionPromote on a stacking container promotes the TOP level
     // (cs.setSite(..., level)) — refresh the per-level what column too, or a
     // promoted commander (Bashni CounterStar) is invisible to the per-level

@@ -125,6 +125,18 @@ export class ActionRemove extends BaseAction {
     if (state.ownedEntries !== undefined) {
       state = state.withOwnedSiteCleared(this.toIndex);
     }
+    // @java Core/src/other/action/move/remove/ActionRemoveTopPiece.java:191-213
+    // — owned().remove(owner, pieceIdx, to, type), a FlatCellOnlyOwned
+    // remove-swap (FlatCellOnlyOwned.java:185-197). Keeps the flat registry
+    // (see ActionMove's parity block) from going stale when a piece is
+    // captured via an explicit Remove action rather than an overwriting
+    // Move — e.g. a `(then (remove (to)))` capture sequence.
+    if (state.flatOwned !== undefined) {
+      const removedOwner = state.cellAt(this.toIndex).owner;
+      if (removedOwner > 0) {
+        state = state.withFlatOwnedRemove(removedOwner, removedWhat || removedOwner, this.toIndex);
+      }
+    }
     // Removing from a multi-piece pile (Java: a stacked site, e.g. Bagh goat
     // stacks) leaves the remainder in place; only when the count is exhausted
     // does the site become empty. Plain single pieces (count 0/1) are cleared.

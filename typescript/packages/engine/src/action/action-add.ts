@@ -235,6 +235,15 @@ export class ActionAdd extends BaseAction {
         if (loc >= 0) next = next.withCountAt(loc, 1);
       }
     }
+    // @java ActionAdd.java:299 — owned().add(owner, what, to, type), the
+    // FlatCellOnlyOwned append for a genuinely new (non-stacking) piece.
+    // No-ops until a flat board-to-board move first materializes the
+    // registry (see ActionMove's parity block); keeps it from going stale
+    // afterwards for games that also drop pieces from hand (Let's Catch
+    // the Lion / Monkey Queen).
+    if (state.flatOwned !== undefined) {
+      next = next.withFlatOwnedAdd(this.ownerIndex, this.whatIndex, this.toIndex);
+    }
     // @java ActionAdd.java:313 — apply() unconditionally calls
     // updateTrackIndices at the end (new-piece / empty-site branch too).
     next = updateTrackIndices(next, this.whatIndex, this.countValue, this.toIndex);

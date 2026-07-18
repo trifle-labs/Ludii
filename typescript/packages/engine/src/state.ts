@@ -136,6 +136,22 @@ export interface StateOptions {
    * Fenix's recorded trials depend on.
    */
   readonly ownedEntries?: readonly OwnedEntry[];
+  /**
+   * @java Core/src/other/state/owned/FlatCellOnlyOwned.java — the per-
+   * (player,component) position list Java's OwnedFactory selects for
+   * Cell-only, NON-stacking board games. Keyed by `${pid}:${comp}`.
+   * Unlike `ownedEntries` (FullOwned: order-preserving remove, used for
+   * stacking games), FlatCellOnlyOwned.remove is a REMOVE-SWAP (swap the
+   * removed entry with the list's last entry, then truncate) — "Since
+   * order doesn't matter" per Java's own comment, EXCEPT when a
+   * move-generation ludeme draws from the RNG once per candidate in
+   * (forEach Piece) iteration order (Shogun's per-move piece-value
+   * reroll), where the resulting draw order is externally observable.
+   * `undefined` until the first flat board-to-board move materializes it
+   * (see State.withFlatOwnedMaterialized); the lazy `owned` ascending scan
+   * serves games that never touch this path.
+   */
+  readonly flatOwned?: ReadonlyMap<string, readonly number[]>;
   /** @java GameType.Stacking — compiled-tree flag; plain moves PUSH levels. */
   readonly stackingGame?: boolean;
   /** stack:True MOVE ludemes compiled (per-level plain-move pushes). */
@@ -331,6 +347,8 @@ export class State {
   public readonly prev: number;
   /** @java FullOwned registry; see {@link StateOptions.ownedEntries}. */
   public readonly ownedEntries?: readonly OwnedEntry[];
+  /** @java FlatCellOnlyOwned registry; see {@link StateOptions.flatOwned}. */
+  public readonly flatOwned?: ReadonlyMap<string, readonly number[]>;
   /** @java GameType.Stacking; see {@link StateOptions.stackingGame}. */
   public readonly stackingGame: boolean;
   /** See {@link StateOptions.stackMovesGame}. */
@@ -393,6 +411,34 @@ export class State {
     positions(pid: number): Array<Array<{ site(): number; level(): number; siteType(): string }>>;
     mapCompIndex(pid: number, compId: number): number;
   } {
+    // @java FlatCellOnlyOwned — once the flat (non-stacking) registry is
+    // live, positions come from it VERBATIM, remove-swap perturbation
+    // included: this is the exact traversal order (forEach Piece) sees in
+    // Java, which matters whenever a per-candidate RNG-consuming move
+    // template (Shogun's `(apply (set Value ... (value Random ...)))`
+    // reroll) is baked into move generation — a different traversal order
+    // draws the SAME logical candidate from a DIFFERENT RNG offset.
+    const flat = this.flatOwned;
+    if (flat !== undefined) {
+      return {
+        positions: (pid: number) => {
+          const byComp: Array<Array<{ site(): number; level(): number; siteType(): string }>> = [];
+          for (const [key, sites] of flat) {
+            const sep = key.indexOf(":");
+            const ePid = Number(key.slice(0, sep));
+            if (ePid !== pid) continue;
+            const comp = Number(key.slice(sep + 1));
+            byComp[comp] = sites.map((s) => ({
+              site: () => s,
+              level: () => 0,
+              siteType: () => this.defaultSiteType,
+            }));
+          }
+          return byComp;
+        },
+        mapCompIndex: (_pid: number, compId: number) => compId,
+      };
+    }
     // @java FullOwned — once the registry is live (stacking game), positions
     // come from it VERBATIM, stale ghosts included (Fenix's recorded moves
     // are generated from one).
@@ -545,6 +591,7 @@ export class State {
     this.next = options.next ?? 0;
     this.prev = options.prev ?? 0;
     this.ownedEntries = options.ownedEntries;
+    this.flatOwned = options.flatOwned;
     this.stackingGame = options.stackingGame ?? false;
     this.stackMovesGame = options.stackMovesGame ?? false;
     this.requiresCountGame = options.requiresCountGame ?? false;
@@ -1362,6 +1409,68 @@ export class State {
   }
 
   /**
+   * @java Core/src/other/state/owned/FlatCellOnlyOwned.java constructor +
+   * OwnedFactory — materialize the flat (non-stacking) per-(player,
+   * component) position registry from the CURRENT board, in ascending site
+   * order. Java always materializes FlatCellOnlyOwned at game start (order
+   * then determined by the `(place ...)` evaluation order); scanning
+   * ascending here is the faithful equivalent for the common case where a
+   * game's start placements enumerate sites in ascending order (verified
+   * for Shogun: Pawn1's initial registry is exactly [0,1,2,3,5,6,7]).
+   * Lazily triggered on the first flat board-to-board move/removal instead
+   * of eagerly at start, so games that never exercise those actions keep
+   * paying zero cost and never risk a partially-hooked, stale registry.
+   */
+  public withFlatOwnedMaterialized(): State {
+    if (this.flatOwned !== undefined) return this;
+    const map = new Map<string, number[]>();
+    for (let s = 0; s < this.cells.length; s++) {
+      const pid = this.cells[s] ?? 0;
+      if (pid <= 0) continue;
+      const comp = this.whats[s] || pid;
+      const key = `${pid}:${comp}`;
+      const arr = map.get(key);
+      if (arr) arr.push(s);
+      else map.set(key, [s]);
+    }
+    return this.with({ flatOwned: map });
+  }
+
+  /**
+   * @java FlatCellOnlyOwned.java:185-197 `remove(playerId, componentId,
+   * pieceLoc, type)` — "Since order doesn't matter, we'll do a remove-swap":
+   * find `site` in the (pid, comp) list, overwrite it with the list's LAST
+   * element, then drop the last slot. No-ops (including a missing site)
+   * exactly as Java's `indexOf(...) >= 0` guard does.
+   */
+  public withFlatOwnedRemove(pid: number, comp: number, site: number): State {
+    if (this.flatOwned === undefined) return this;
+    const key = `${pid}:${comp}`;
+    const arr = this.flatOwned.get(key);
+    if (arr === undefined) return this;
+    const idx = arr.indexOf(site);
+    if (idx < 0) return this;
+    const next = arr.slice();
+    const lastIdx = next.length - 1;
+    next[idx] = next[lastIdx]!;
+    next.pop();
+    const nextMap = new Map(this.flatOwned);
+    if (next.length > 0) nextMap.set(key, next);
+    else nextMap.delete(key);
+    return this.with({ flatOwned: nextMap });
+  }
+
+  /** @java FlatCellOnlyOwned.java `add(playerId, componentId, pieceLoc, type)` — plain append. */
+  public withFlatOwnedAdd(pid: number, comp: number, site: number): State {
+    if (this.flatOwned === undefined) return this;
+    const key = `${pid}:${comp}`;
+    const nextMap = new Map(this.flatOwned);
+    const arr = nextMap.get(key);
+    nextMap.set(key, arr ? [...arr, site] : [site]);
+    return this.with({ flatOwned: nextMap });
+  }
+
+  /**
    * @java ContainerState.value(site, level, type) — per-level piece value.
    * Unmaterialized sites: level 0 carries the flat valueAt; higher levels 0.
    */
@@ -1801,6 +1910,7 @@ export class State {
         next: patch.next ?? this.next,
         prev: patch.prev ?? this.prev,
         ownedEntries: patch.ownedEntries ?? this.ownedEntries,
+        flatOwned: patch.flatOwned ?? this.flatOwned,
         stackingGame: patch.stackingGame ?? this.stackingGame,
         stackMovesGame: patch.stackMovesGame ?? this.stackMovesGame,
         requiresCountGame: patch.requiresCountGame ?? this.requiresCountGame,

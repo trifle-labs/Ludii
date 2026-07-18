@@ -577,6 +577,34 @@ export class ActionMove extends BaseAction {
         state = state.withOwnedAdd(mOwner, mWhat || mOwner, this.toIndex, 0);
       }
     }
+    // @java Core/src/other/action/move/move/ActionMoveTopPiece.java:382-447
+    // (non-stacking Cell-only branch) — FlatCellOnlyOwned bookkeeping: the
+    // mover is remove-swapped out of its own registry list, any captured
+    // piece at `to` is remove-swapped out of ITS owner's list, then the
+    // mover is appended to its list at `to` (FlatCellOnlyOwned.add is a
+    // plain append; remove is a remove-swap — see
+    // FlatCellOnlyOwned.java:185-197). Order matters: (forEach Piece)
+    // iterates this exact list order, and a per-candidate RNG-consuming move
+    // template (Shogun's `(apply (set Value ... (value Random ...)))`
+    // reroll) observes it on the next move-generation pass. Gated off
+    // stacking games (ownedEntries/FullOwned above already covers them) and
+    // typedSites boards (Edge/Vertex secondary occupancy this registry does
+    // not model — those keep the ascending lazy scan).
+    if (!state.stackingGame && state.typedSites.size === 0 && this.fromIndex !== this.toIndex) {
+      const mOwner = state.cellAt(this.fromIndex).owner;
+      const mWhat = state.whatAtSite(this.fromIndex);
+      if (mOwner > 0) {
+        let fo = state.withFlatOwnedMaterialized();
+        const capturedOwner = fo.cellAt(this.toIndex).owner;
+        const capturedWhat = fo.whatAtSite(this.toIndex);
+        fo = fo.withFlatOwnedRemove(mOwner, mWhat || mOwner, this.fromIndex);
+        if (capturedOwner > 0 && (!fo.requiresCountGame || capturedWhat !== mWhat)) {
+          fo = fo.withFlatOwnedRemove(capturedOwner, capturedWhat || capturedOwner, this.toIndex);
+        }
+        fo = fo.withFlatOwnedAdd(mOwner, mWhat || mOwner, this.toIndex);
+        state = fo;
+      }
+    }
     // @java GameType.Stacking — in a stacking game a plain move landing on an
     // OCCUPIED site pushes a level (ActionMoveTopPiece on a stacking
     // container); the count-merge below is flat-game semantics and built
