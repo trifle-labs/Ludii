@@ -27,6 +27,7 @@ import { resolveRelativeDir, isSingleDir } from "../../../../../util/directions/
 import { applyPostStateThen } from "./Then.js";
 import { Move } from "../../../../../../../move.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
+import { ActionMoveLevelFrom } from "../../../../../../../action/action-move-level.js";
 import type { BooleanFunction, DirectionsFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
 import { Effect } from "./Effect.js";
 import type { ThenLike } from "../../Moves.js";
@@ -338,7 +339,27 @@ export class Step extends Effect {
           actions.push(a);
         }
       }
-      const moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never, stack: this.stack } : { from, to, stack: this.stack });
+      // @java Step.java:199-217 — when levelFrom is undefined (no explicit
+      // stack: flag) but the whole game isStacking(), Java still computes
+      // `level = containerStates()[0].sizeStack(from,type)-1` and routes
+      // through ActionMove.construct() (@java ActionMove.java:34-58), which
+      // returns ActionMoveLevelFrom whenever levelFrom>=0 — never the plain
+      // top-piece action. The TS port always built a level-less ActionMove
+      // here regardless of state.stackingGame, so a Step off a count-backed
+      // pile (King And Courtesan's Disc: 2-high royal stack represented as
+      // stacks.length<=1 with countAt>1) fell through ActionMove's flat
+      // vacate-all branch instead of popping one level, desyncing the
+      // exchange move. Narrowly scoped to the count-backed-pile shape so
+      // genuine multi-level stacks (Kos, Santorini) keep using ActionMove.
+      let moveAction: Action;
+      const __fromStackLen = ctx.state.stacks[from]?.length ?? 0;
+      const __fromCountAt = ctx.state.countAtSite(from);
+      if (!this._fromTypeTag && !this.stack && ctx.state.stackingGame && __fromStackLen <= 1 && __fromCountAt > 1) {
+        const lvl = ctx.state.stackSize(from) - 1;
+        moveAction = new ActionMoveLevelFrom(from, lvl, to);
+      } else {
+        moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never, stack: this.stack } : { from, to, stack: this.stack });
+      }
       moveAction.setDecision(true);
       actions.push(moveAction);
 

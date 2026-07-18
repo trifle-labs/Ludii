@@ -142,8 +142,22 @@ abstract class ActionMoveLevelBase extends BaseAction {
     // activation.
     const carryState = state.stateAtLevel(this.fromIndex, sourceLevel);
     const carryRotation = state.rotationAtSite(this.fromIndex);
-    const popped = state.withStackPop(this.fromIndex, sourceLevel);
+    // @java ActionMoveLevelFrom.java:462-471 — owned().remove(...) then
+    // owned().add(...): the per-level relocation updates the FullOwned
+    // registry alongside the container arrays. The TS port only patched
+    // stacks[]/whatStacks[] here and never touched state.ownedEntries, so
+    // once the registry materializes (any earlier ForEachPiece / stacking
+    // action) a piece relocated through this per-level path silently
+    // vanishes from `owned()` at its new site while the stale entry at
+    // the old (site, level) — after the compaction below — points at
+    // whatever level shifted into its slot, corrupting subsequent
+    // ForEachPiece move generation (Monkey Queen queen-move split, King
+    // And Courtesan king/courtesan exchange).
+    let s2 = state.withOwnedMaterialized();
+    s2 = s2.withOwnedRemoveLevel(movingOwner, movingWhat, this.fromIndex, sourceLevel);
+    const popped = s2.withStackPop(this.fromIndex, sourceLevel);
     let pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
+    pushed = pushed.withOwnedAdd(movingOwner, movingWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
     if (carryValue !== 0) pushed = pushed.withValueAt(this.toIndex, carryValue);
     if (carryState !== 0) {
       pushed = pushed.withStateAt(this.toIndex, carryState);
