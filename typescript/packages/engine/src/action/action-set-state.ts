@@ -75,6 +75,29 @@ export class ActionSetState extends BaseAction {
       // — after a capture, exactly to prevent this).
       return state.withStateAtLevel(this.toIndex, this.levelIndex, this.stateValue).withResidualStateAt(this.toIndex, 0);
     }
+    // @java ActionSetState.java:107-121 — stacking game, level == UNDEFINED:
+    // Java still calls `cs.setSite(...)`, which bottoms out in
+    // HashedChunkStack.setState(trialState, val) (no level) →
+    // ChunkStack.setState(val): `if (type >= 2 && size > 0)
+    // state.setChunk(size - 1, val)`. A level-less SetState in a stacking
+    // game writes the TOP of the site's chunk stack (index stackSize-1) — it
+    // is NOT a separate flat channel, and it is NOT level 0. Routing it
+    // through the flat-only `withStateAt` left `stateStacks[site]`
+    // unmaterialized; a LATER per-level read at level 0 (`stateAtLevel`) then
+    // fell back to that flat scalar and incorrectly saw the just-arrived TOP
+    // piece's flag as if it were the untouched BOTTOM piece's own state
+    // (Pahada Keliya ply240: P1 pushes onto P3's occupied site87, `(set
+    // State at:87 1)` with no level must tag P1's own new top level, leaving
+    // P3's level-0 state at its true untouched 0 — the corrupted read later
+    // propagated through a long chain of plain carries and produced a false
+    // ally-value decrement, which cascaded into a false move-legality
+    // rejection). size <= 0 (nothing on the site yet) mirrors Java's
+    // `size > 0` guard: the write silently no-ops.
+    if (state.stackingGame) {
+      const size = state.stackSize(this.toIndex);
+      if (size <= 0) return state.withResidualStateAt(this.toIndex, 0);
+      return state.withStateAtLevel(this.toIndex, size - 1, this.stateValue).withResidualStateAt(this.toIndex, 0);
+    }
     return state.withStateAt(this.toIndex, this.stateValue).withResidualStateAt(this.toIndex, 0);
   }
 
