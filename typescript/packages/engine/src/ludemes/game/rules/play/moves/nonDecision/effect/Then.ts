@@ -143,17 +143,30 @@ export function evalDeferredThens(
       // consequent via `consequent.eval(context)` in the SAME context WITHOUT
       // calling setFrom/setTo — so `(from)`/`(to)` inside a `(then …)` read
       // whatever the generating context had bound (e.g. ForEach Piece's origin).
+      // The ambient binding ALWAYS wins: every generator that temporarily rebinds
+      // context.from()/to() during its own per-site iteration (Sow.java:167-168,
+      // 223, 353-354; Select.java:127-128,153,220-221; Step.java:155,176,240,
+      // 269,285,334) explicitly restores the original value before returning, so
+      // by the time a decision's own then() runs, context.from() is back to
+      // whatever it was BEFORE this decision — never the decision's own chosen
+      // site. Bao's relay-sow `count:` branches on `(= 2 (count at:(from)))`;
+      // preferring mFrom (the just-selected pit) over the ambient -1 took the
+      // wrong branch and under-sowed the second lap. `mFrom` is only a
+      // last-resort fallback for when the ambient value itself is genuinely
+      // absent (null/undefined) — `-1`/OFF is a legitimate ambient value, not an
+      // absent one, and must NOT fall through to mFrom.
       // A from-less consequence (SetVar, Note, …) reports from()/to() = -1; the
       // old code clobbered _evalFrom to that -1, so `(set Var "From" (from))` in
       // Conflagration's Shakattrition stored From=-1 instead of the piece's cell.
       // The step condition `(!= (var "From") (to))` then failed to exclude the
       // origin, inflating "DestinationGroupSize" and generating phantom singleton
       // steps (P2's contained lone piece looked mobile, so `(no Moves Next)`
-      // never fired). Preserve the source binding whenever the move has no real
-      // from/to; a move that DOES move a piece still overrides it (unchanged).
+      // never fired). Re-verified this fix does not regress that trial (see
+      // 01-bao.md validation notes) — the ambient _evalFrom src carries at that
+      // ForEach Piece consequence was already the per-piece origin, not -1.
       const mFrom = m.from();
       const mTo = m.to();
-      postCtx._evalFrom = mFrom >= 0 ? mFrom : (src._evalFrom ?? mFrom);
+      postCtx._evalFrom = src._evalFrom ?? mFrom;
       // @java EvalContext.java:26-27 — context.to() is an ITERATOR variable
       // defaulting to Constants.OFF (-1). Every generator (Step.java:239-240,
       // FromTo.java:427-428, Add.java:343-344, Sow.java:353-354,
