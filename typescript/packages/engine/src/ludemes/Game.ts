@@ -226,7 +226,7 @@ function playerDirsFromPlayers(players: GamePlayers): Map<number, number> | unde
   return dirs.size > 0 ? dirs : undefined;
 }
 
-function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, Map<number, number>> | undefined {
+function staticMapsFromEquipment(equipment: GameEquipmentSurface, numPlayers: number): Map<string, Map<number, number>> | undefined {
   const pending = (equipment.board as unknown as { _pendingMaps?: Map<string, Map<number, number>> })._pendingMaps;
   if (pending && pending.size > 0) return pending;
 
@@ -243,7 +243,13 @@ function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, M
   // an equipment-derived eval context instead of {}.
   const topo = board.topology ?? board.topologyAdapter ?? null;
   const evalCtx = {
-    game: { width: board.width ?? 0, height: board.height ?? 0, equipment },
+    // @java Id.eval (game/functions/ints/board/Id.java) resolves RoleType.Shared/
+    // All/Each via ctx.game.numPlayers()+1 — without numPlayers here, (id "X"
+    // Shared) pair keys/values in (map ...) resolved to NaN-owner lookups that
+    // never matched any piece, so Id.eval fell through to -1 and every such pair
+    // got dropped (2048's "Promotion"/"Score" maps compiled empty; mapEntry
+    // silently returned the unmapped key, so merges never promoted the tile).
+    game: { width: board.width ?? 0, height: board.height ?? 0, equipment, numPlayers },
     board: () => equipment.board,
     topology: () => topo,
   };
@@ -258,6 +264,7 @@ function staticMapsFromEquipment(equipment: GameEquipmentSurface): Map<string, M
     defaultSite?: (() => string) | string;
   };
   const gameForMap = {
+    numPlayers,
     board: () => ({
       defaultSite: () => (typeof boardForMap.defaultSite === "function"
         ? boardForMap.defaultSite()
@@ -478,7 +485,7 @@ export class Game implements Game {
 
     // Extract static map table from equipment (compiled from (map ...) equipment items).
     // @java game/equipment/other/Map.java — Equipment.maps() lookup table
-    const staticMaps = staticMapsFromEquipment(equipment);
+    const staticMaps = staticMapsFromEquipment(equipment, this.numPlayers);
     if (staticMaps && staticMaps.size > 0) {
       this._maps = staticMaps;
     }

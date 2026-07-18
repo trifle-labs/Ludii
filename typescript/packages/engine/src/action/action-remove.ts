@@ -133,7 +133,23 @@ export class ActionRemove extends BaseAction {
     // one level (Buffa de Baldrac ply 315: a 2-high pile lost both checkers
     // to a single hit). withOwnedRemoveLevel no-ops safely when the registry
     // is unmaterialized.
-    if ((state.stacks[this.toIndex]?.length ?? 0) > 1) {
+    //
+    // A length-1 `stacks[]` entry is ambiguous the same way the explicit-level
+    // branch above disambiguates it: a countAt-backed pile marker (mancala pit,
+    // hand-entry pile) vs a genuine last piece of a real per-level stack. Gating
+    // strictly on `> 1` sent the latter through the flat/countAt fallback below,
+    // which clears cells/whats/countAt but never calls withStackPop — a stale
+    // length-1 `stacks[]` entry survived underneath a reported-empty site. A
+    // second same-site ActionRemove in the same Move (Ex Nihilo's `(remove (last
+    // To) count:(size Stack at:(last To)))` draining a real 2-high stack) then
+    // left that residual level for a following `(add … stack:True)` to push onto,
+    // yielding a 2-high stack where Java's unconditional top-pop gives 1 (Ex
+    // Nihilo MOVE_MISMATCH: a spurious `copy:True` candidate kept satisfying the
+    // `(= (size Stack at:(last To)) (size Stack at:…))` guard it should have
+    // failed, so the priority's real branch never got a chance to fire).
+    const toStackLen2 = state.stacks[this.toIndex]?.length ?? 0;
+    const isCountPile2 = toStackLen2 === 1 && state.countAtSite(this.toIndex) > 1;
+    if (toStackLen2 > 1 || (toStackLen2 === 1 && !isCountPile2)) {
       const lvl = (state.stacks[this.toIndex]?.length ?? 1) - 1;
       const own = state.stackAt(this.toIndex, lvl);
       const wht = state.whatAtSiteLevel(this.toIndex, lvl);
