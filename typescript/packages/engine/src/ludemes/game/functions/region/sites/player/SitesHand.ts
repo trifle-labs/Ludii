@@ -93,23 +93,41 @@ export class SitesHand extends BaseRegionFunction {
       return [];
     }
 
-    // @java SitesHand — find hand container for this player
-    const base = g.equipment?.handSiteFor?.(pid, 0);
-    if (base === undefined || base < 0) return [];
-
-    // @java SitesHand — return all sites in the hand container
+    // @java SitesHand.eval — for (final Container c : context.containers()) {
+    //   if (c.isHand()) { if (role == RoleType.Shared || c.owner() == pid) { ... return sites; } } }
+    // ctx.containers() (unlike equipment.hands/handSiteFor) already matches
+    // Java's Dice.isHand()==true override (Dice.java) faithfully — it
+    // includes a synthetic Dice container with isHand()=true whenever the
+    // game declares (dice ...) equipment. Routing through it (instead of
+    // equipment.hands, which excludes Dice containers) lets
+    // (sites Hand Shared) see dice sites when a game has no separate
+    // (hand ...) ludeme (e.g. Li'b el-Merafib's WinningCommonCondition
+    // union, which only declares a Dice container).
     // @java the Shared hand is stored with owner 0 (the shared/neutral
     // convention) even though RoleType.Shared resolves pid = numPlayers+1;
     // match either so (sites Hand Shared) sees both slots (Odd: size 2).
-    const hand = g.equipment?.hands?.find?.((hs: { owner: number; size: number }) =>
-      hs.owner === pid || (pid === numPlayers + 1 && hs.owner === 0));
-    const size = hand?.size ?? 1;
+    const isSharedRole = this.role === "Shared" || this.role === "All";
+    const containers = ctx.containers();
+    const sitesFrom = ctx.sitesFrom();
 
-    const sites: number[] = [];
-    for (let i = 0; i < size; i++) {
-      sites.push(base + i);
+    for (let id = 0; id < containers.length; id++) {
+      const c = containers[id]!;
+      if (!c.isHand()) continue;
+      const owner = c.owner();
+      if (!(isSharedRole || owner === pid || (pid === numPlayers + 1 && owner === 0))) continue;
+
+      const size = c.numSites();
+      const base = sitesFrom[id];
+      if (base === undefined) return [];
+
+      const sites: number[] = [];
+      for (let i = 0; i < size; i++) {
+        sites.push(base + i);
+      }
+      return sites;
     }
-    return sites;
+
+    return [];
   }
 
   /** @java SitesHand.isStatic() */

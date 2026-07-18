@@ -131,8 +131,14 @@ export class ForEach extends EndRule implements EndRuleFunction {
       // @java ForEach.eval — skip non-mover when Mover
       if (this.roleType === "mover" && pid !== mover) continue;
 
-      // @java ForEach.eval:107-108 — skip inactive players
-      // (1:1 path has no per-player active flags — skip this check for now)
+      // @java ForEach.eval:107-109 — skip inactive players ("Do nothing if
+      // the player is not active."). Without this, an already-eliminated
+      // player (e.g. lost earlier via a (result Player Loss) rule) is still
+      // treated as eligible to satisfy a later globally-true
+      // (result Player Win) condition, so the loop picks the eliminated
+      // player (lowest pid) instead of the lowest ACTIVE pid as winner.
+      const stActive = (ctx.state as unknown as { activePlayer?: (p: number) => boolean });
+      if (!(stActive.activePlayer?.(pid) ?? true)) continue;
 
       // @java ForEach.eval:112 — context.setPlayer(pid)
       ctx._evalPlayer = pid;

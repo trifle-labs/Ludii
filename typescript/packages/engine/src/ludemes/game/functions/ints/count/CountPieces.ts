@@ -75,10 +75,38 @@ export class CountPieces implements IntFunction {
       allowedSites = new Set(this.whereFn.eval(ctx));
     }
 
+    // @java CountPieces — the optional component-name filter selects the
+    // matching components ((count Pieces P1 "DoubleCounter")). It was
+    // IGNORED: Game of Solomon's two-kings draw fired with zero kings on
+    // the board. Label match: "DoubleCounter1" starts with "DoubleCounter"
+    // (and NOT with "Counter" — prefix match is owner-digit tolerant and
+    // name-exact).
+    const labels = ctx.state.componentLabels;
+    const whats = ctx.state.whats;
+    const whatStacks = ctx.state.whatStacks;
+    const nameMatches = (what: number): boolean => {
+      if (this.pieceName == null) return true;
+      const label = labels[what] ?? "";
+      return label === this.pieceName || (label.startsWith(this.pieceName) && /^\d+$/.test(label.slice(this.pieceName.length)));
+    };
+
     if (this.isAll) {
       // Count all pieces — board seeds (countAt, owner 0 for Shared) + owned
       // single pieces + hand-slot stacks.
       // For stacking games, sum all non-zero stack levels.
+      // @java CountPieces.java:75-76,104-113 — role defaults to RoleType.All
+      // only when NEITHER role NOR "of" is supplied ((count Pieces "Disc2"))
+      // compiles with an implicit All role — but the component-name filter
+      // (componentIds, built from `name`) is applied REGARDLESS of role, so
+      // it still restricts the count to components whose name matches
+      // "Disc2". This isAll branch previously ignored `pieceName` entirely
+      // and summed every piece of every type/owner on the board, so
+      // `(!= (count Pieces "Disc2") (count Pieces "Disc1"))` compared two
+      // identical whole-board totals and was always false. Hordes Realm's
+      // `(and (= (var "StalemateIn") 0) (!= (count Pieces "Disc2") (count
+      // Pieces "Disc1")))` stalemate-Pass branch therefore never fired
+      // (ply 26/37 MOVE_MISMATCH — TS kept generating Reinforce/
+      // FirstColumnAttack moves instead of the forced Pass).
       let total = 0;
       for (let i = 0; i < totalN; i++) {
         if (allowedSites && !allowedSites.has(i)) continue;
@@ -97,25 +125,40 @@ export class CountPieces implements IntFunction {
             // 4-seed hole, making OneSingleCounterPerPlayer wrongly true -> the sweep
             // emptied the board -> premature BetweenRounds (Gifia + ~42 two-row games).
             if (stack.length === 1 && (countAt[i] ?? 0) > 1) {
-              total += countAt[i]!;
+              const what = whatStacks[i]?.[0] ?? (whats[i] || stack[0]!);
+              if (nameMatches(what)) total += countAt[i]!;
             } else {
-              total += stack.filter(o => o !== 0).length;
+              for (let lvl = 0; lvl < stack.length; lvl++) {
+                const owner = stack[lvl];
+                if (!owner) continue;
+                const what = whatStacks[i]?.[lvl] ?? (lvl === stack.length - 1 ? (whats[i] || owner) : owner);
+                if (nameMatches(what)) total++;
+              }
             }
           } else {
             const c = countAt[i] ?? 0;
-            if (c > 0) total += c;
+            const what = whatsArr?.[i] ?? 0;
+            if (c > 0) {
+              if (nameMatches(what)) total += c;
+            }
             // @java CountPieces All counts by COMPONENT presence (what != 0),
             // not owner: Affinage's stones are NEUTRAL (owner 0, colour in the
             // site state), so the owner test skipped every piece and the
             // odd-neutral-territory parity read 0 == 0 everywhere — phantom
             // flip moves kept (no Moves Next) false and the game never ended.
-            else if (((whatsArr?.[i] ?? 0) !== 0) || (cells[i] ?? 0) !== 0) total++;
+            else if (what !== 0 || (cells[i] ?? 0) !== 0) {
+              if (nameMatches(what || (cells[i] ?? 0))) total++;
+            }
           }
         } else {
           // Hand slot: countAt[i] pieces
           const c = countAt[i] ?? 0;
-          if (c > 0) total += c;
-          else if (((whatsArr?.[i] ?? 0) !== 0) || (cells[i] ?? 0) !== 0) total++;
+          const what = whatsArr?.[i] ?? 0;
+          if (c > 0) {
+            if (nameMatches(what)) total += c;
+          } else if (what !== 0 || (cells[i] ?? 0) !== 0) {
+            if (nameMatches(what || (cells[i] ?? 0))) total++;
+          }
         }
       }
       ctx._evalSite = origSite;
@@ -123,20 +166,6 @@ export class CountPieces implements IntFunction {
     }
 
     const pid = this.whoFn.eval(ctx);
-    // @java CountPieces — the optional component-name filter selects the
-    // matching components ((count Pieces P1 "DoubleCounter")). It was
-    // IGNORED: Game of Solomon's two-kings draw fired with zero kings on
-    // the board. Label match: "DoubleCounter1" starts with "DoubleCounter"
-    // (and NOT with "Counter" — prefix match is owner-digit tolerant and
-    // name-exact).
-    const labels = ctx.state.componentLabels;
-    const whats = ctx.state.whats;
-    const whatStacks = ctx.state.whatStacks;
-    const nameMatches = (what: number): boolean => {
-      if (this.pieceName == null) return true;
-      const label = labels[what] ?? "";
-      return label === this.pieceName || (label.startsWith(this.pieceName) && /^\d+$/.test(label.slice(this.pieceName.length)));
-    };
     let n = 0;
     for (let i = 0; i < totalN; i++) {
       if (allowedSites && !allowedSites.has(i)) continue;

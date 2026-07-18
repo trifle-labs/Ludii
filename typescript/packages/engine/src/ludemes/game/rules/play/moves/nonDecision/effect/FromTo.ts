@@ -511,6 +511,27 @@ export class FromTo implements MovesFunction {
             moveAction = (dft || dtt)
               ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault, fromTypedNonDefault: fromNonDefault, fromHandSite })
               : new ActionMove({ from, to, fromHandSite });
+            // @java FromTo.java:289-327 — even when this branch falls through
+            // to the plain top-popping ActionMove (levelFrom either absent or
+            // equal to the current top), Java UNCONDITIONALLY stamps the
+            // popped level via `actionMove.setLevelFrom(cs.sizeStack(from,
+            // typeFrom) - 1)` (or `levelFrom.eval(context)` directly at
+            // FromTo.java:328-343 when an explicit level: was given). TS's
+            // plain ActionMove left levelFromValue at its ACTION_UNDEFINED
+            // (-1) default here, so `.levelFrom()` reported -1 even for a
+            // genuine top-of-stack decision — Puluc's ply31 (RandomTrial_0.txt
+            // line 50: from=5,levelFrom=2 while stackSize=3, i.e. level 2 IS
+            // the top) lost this metadata, which starves the parity harness's
+            // byLevel disambiguation tier (recordedDecisionLevelFrom /
+            // tsMoveDecisionLevelFrom in replay-trials.mjs) of the signal it
+            // needs to pick the correct same-from/to candidate, so a later,
+            // less-precise tier picks the wrong stack-level candidate and
+            // desyncs stateStacks[5] (MOVE_MISMATCH @38). This assignment is
+            // PURE METADATA: ActionMove.apply() (action-move.ts) never reads
+            // levelFrom()/levelFromValue, so it cannot change which piece is
+            // actually moved or any state mutation — only what `.levelFrom()`
+            // reports afterward, matching Java's always-populated field.
+            moveAction.setLevelFrom(lv >= 0 ? lv : fromStackLen - 1);
           }
         }
         actions.push(moveAction);
