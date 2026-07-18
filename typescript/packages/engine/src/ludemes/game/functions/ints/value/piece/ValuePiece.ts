@@ -76,8 +76,33 @@ export class ValuePiece extends BaseIntFunction {
     // valueAt[site] (Java ContainerState.value(site, type)). The Java-shaped
     // context methods below are absent on the engine Context.
     if (typeof (context as unknown as { containerId?: unknown }).containerId !== "function") {
-      const st = context.state as unknown as { valueAt?: readonly number[]; value?: (s: number) => number };
+      const st = context.state as unknown as {
+        valueAt?: readonly number[];
+        value?: (s: number) => number;
+        valueAtLevel?: (s: number, level: number) => number;
+        valueTop?: (s: number) => number;
+      };
       if (typeof st.value === "function") return st.value(location);
+      // @java ContainerState.value(site, level, type) vs value(site, type) —
+      // Java's stacking container always resolves an unspecified level to the
+      // TOP of the site's chunk stack (there is only one per-site value
+      // channel). The engine's flat State keeps a SEPARATE per-level
+      // `valueStacks` channel that stacking moves (ActionMove's stack=true
+      // branch, action-move.ts) write via withValueStackRow — once a site's
+      // stack is materialized, `valueAt[site]` is never resynced and goes
+      // stale. Reading the raw flat array here desynced from that write,
+      // so `(value Piece at:(last To))` returned 0 for a freshly-landed
+      // stacked piece whose value the move itself had already carried,
+      // making MensaSpiel's "Captured" macro fire on a non-capture (ply 7 of
+      // board/war/replacement/eliminate/all/MensaSpiel). valueTop()/
+      // valueAtLevel() already fall back to the flat channel when no
+      // per-level array is materialized, so this is a strict superset of the
+      // old read for non-stacking games.
+      const levelVal = this.level.eval(context);
+      if (levelVal !== UNDEFINED && typeof st.valueAtLevel === "function") {
+        return st.valueAtLevel(location, levelVal);
+      }
+      if (typeof st.valueTop === "function") return st.valueTop(location);
       return st.valueAt?.[location] ?? UNDEFINED;
     }
 
