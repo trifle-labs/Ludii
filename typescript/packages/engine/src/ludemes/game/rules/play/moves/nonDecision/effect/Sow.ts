@@ -205,16 +205,7 @@ export class Sow extends Effect {
     if (start < 0) return [];
     const count = this.countFn?.eval(ctx) ?? ctx.state.count(start);
     if (process.env.TRACE_SOW) console.error(`[sow] start=${start} count=${count}`);
-    // @java Sow.java:165-192,226 — there is NO count<=0 early return. Java
-    // always builds `move` (empty actions when count<=0) and adds it to
-    // moves.moves(), and ALWAYS runs the captureRule/captureEffect loop
-    // below when both are non-null, regardless of count. The main per-hole
-    // sowing loop (Sow.java:226 `if (numSeedSowed < count)`) is simply
-    // skipped when count<=0 — it does not abort the whole eval(). Bailing
-    // out here entirely dropped the capture/moveAgain evaluation for
-    // zero-seed sows (Khutka Boia ply 138-141: a Select on an empty-after-
-    // bonus-drain pit must still evaluate `apply:` to decide moveAgain vs.
-    // the relay-ending fromTo capture).
+    if (count <= 0) return [];
     const numPerHoleDefault = () => this.numPerHoleFn?.eval(ctx) ?? 1;
 
     const mover = ctx.state.mover;
@@ -284,19 +275,7 @@ export class Sow extends Effect {
     // the capture rule `(= (count at:(to)) 2/3)` reads the empty origin and does
     // not fire. `lastTo` below tracks the ACTUAL landing site (for the sow
     // action); `ctxTo` faithfully tracks Java's frozen context.to for capture.
-    // @java Sow.java:175 `final int origTo = context.to();` — captured at
-    // method entry, BEFORE the origin branch or main sow loop touch it.
-    // context.setTo() is only called (a) inside the origin.eval()==true
-    // branch (Sow.java:221, sets to `start`) or (b) inside the main sow loop
-    // (Sow.java:235, per hole). When origin is false/absent AND the main
-    // loop is skipped (count<=0), context.to() is left completely untouched
-    // at origTo — NOT reset to `start`. Defaulting ctxTo to `start`
-    // unconditionally fabricated a `(to)` binding Java never sets, which fed
-    // a wrong site into the `apply:` clause's `(is Occupied (NextHoleFrom
-    // (to) …))` checks on a zero-seed sow (Khutka Boia ply 138-141: TS chose
-    // the wrong moveAgain/fromTo-capture branch because `(to)` = 7 (start)
-    // instead of Java's real -1/inherited value).
-    let ctxTo = _sowSavedTo ?? -1;
+    let ctxTo = start;
 
     // @java Sow.java:194-197 — find index i in track for start
     let i = 0;
@@ -328,17 +307,6 @@ export class Sow extends Effect {
         numDone++;
         numSeedSowed++;
       }
-      // @java Sow.java:221 `context.setTo(start)` fires unconditionally when
-      // origin fires, independent of whether the main sowing loop below runs
-      // afterward. The main loop (if it runs) re-freezes `ctxTo` on its own
-      // first iteration (line ~348), so this assignment only matters — and
-      // must be correct — when origin alone consumes the whole `count`
-      // (e.g. a single-seed origin:True sow, Ako Okwe's count===1 case): the
-      // local `ctxTo` mirror was left at its pre-origin default (no longer
-      // unconditionally `start` since the Khutka Boia fix above), so the
-      // capture rule's `(to)` read the wrong, stale/frozen site instead of
-      // the origin hole Java actually froze context.to on.
-      ctxTo = start;
       (ctx as unknown as { _evalTo?: number })._evalTo = start;
     }
 
