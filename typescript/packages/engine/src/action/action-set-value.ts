@@ -31,6 +31,27 @@ export class ActionSetValue extends BaseAction {
 
   public override apply(state: State): State {
     if (this.toIndex < 0) return state;
+    // @java Core/src/other/state/stacking/ContainerStateStacks.java:490-555
+    // setSite(level==UNDEFINED) — Java's stacking container has a SINGLE
+    // per-level chunk representation (no separate flat/per-level split);
+    // `chunkStacks[site].setValue(...)` always updates the top chunk in
+    // place, so the "current value" of a site is never split across two
+    // channels. TS's hybrid valueAt[] (flat) / valueStacks[] (per-level,
+    // materialized lazily — see state.ts withValueStackRow/valueTop) must
+    // therefore be kept in lockstep: once a per-level row exists at this
+    // site, its TOP entry IS the authoritative current value, exactly like
+    // withStackPop already re-splices valueStacks alongside stacks/whatStacks
+    // (state.ts:1300-1310) to avoid the same class of desync. Without this,
+    // a flat-only write here leaves a stale top-of-stack entry that a later
+    // per-level read (state.valueTop()/valueAtLevel(), used by e.g.
+    // ValuePiece.eval() and any subsequent same-site relocation's carry
+    // logic in action-move.ts) will see instead of the value just set here.
+    const vs = state.valueStacks?.[this.toIndex];
+    if (vs !== undefined && vs.length > 0) {
+      const row = [...vs];
+      row[row.length - 1] = this.valueValue;
+      state = state.withValueStackRow(this.toIndex, row);
+    }
     return state.withValueAt(this.toIndex, this.valueValue);
   }
 

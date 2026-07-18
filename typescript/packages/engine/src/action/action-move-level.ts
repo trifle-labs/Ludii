@@ -74,7 +74,33 @@ abstract class ActionMoveLevelBase extends BaseAction {
     // `movingWhat === 0` (the Java `what` channel), not owner === 0.
     if (movingWhat === 0) return state;
     const countedLevels = state.countAtSite(this.fromIndex);
-    const countBacked = countedLevels > 0 && stackLen <= 1;
+    // @java Core/src/other/state/container/ContainerStateFactory.java:80-138
+    // — Java picks the container's state representation ONCE per game,
+    // exclusively based on `game.isStacking()`: a stacking container
+    // becomes ContainerStateStacks (per-level chunks, no separate count
+    // field — see the fix below), a non-stacking one becomes
+    // ContainerFlatState/ContainerFlatVertexState/etc (flat, with an
+    // optional maxCountVal chunk when `game.requiresCount()`). A single
+    // game's container is never both. TS's hybrid countAt[] channel is
+    // seeded to 1 for every `place Stack` placement (see Game.ts "First
+    // stacking call at this site"), so a genuinely per-level site (one
+    // with a real stateStacks/valueStacks column — per-level state that
+    // only a genuinely-stacking site would carry) can ALSO have
+    // countedLevels>0/stackLen<=1 at setup, wrongly routing it into the
+    // countBacked branch below. That branch's `withCountAt` bookkeeping
+    // has no concept of per-level state and drops it. Sahkku's Marker
+    // carries per-level state (its activation flag) from ply 1, so
+    // countBacked incorrectly fired for its very first move (ply 10:
+    // recorded 28->25 pip=3 had no matching TS candidate — the
+    // countBacked branch's early return before reaching the per-level
+    // carry code below silently produced a different, non-matching
+    // action). A real per-level column is definitive evidence this
+    // site's container is a stacking one, so it must never be treated
+    // as count-backed.
+    const hasRealPerLevelState =
+      (state.stateStacks?.[this.fromIndex]?.length ?? 0) > 0 ||
+      (state.valueStacks?.[this.fromIndex]?.length ?? 0) > 0;
+    const countBacked = countedLevels > 0 && stackLen <= 1 && !hasRealPerLevelState;
     if (countBacked) {
       const fromCount = countedLevels;
       const destStackLen = state.stacks[this.toIndex]?.length ?? 0;
@@ -174,6 +200,32 @@ abstract class ActionMoveLevelBase extends BaseAction {
       if (carryValue !== 0) pushed = pushed.withValueAt(this.fromIndex, 0);
       if (carryState !== 0) pushed = pushed.withStateAt(this.fromIndex, 0);
       if (carryRotation !== 0) pushed = pushed.withRotationAt(this.fromIndex, 0);
+      // @java Java's per-level stacking container has no separate "count"
+      // channel — a stacking site's occupancy is derived directly from
+      // its stack size: ContainerStateStacks.java addItem() recomputes
+      // `isEmpty = (chunkStacks[site-offset].size() == 0)` after every
+      // push/pop and toggles the `empty` bit set accordingly (Core/src/
+      // other/state/stacking/ContainerStateStacks.java:440-448), and
+      // isEmptyCell() (BaseContainerStateStacking.java:225) just reads
+      // that bit. TS's hybrid countAt[] field (added to unify flat count-backed
+      // piles like mancala with per-level stacks — see Game.ts "First
+      // stacking call at this site", which seeds countAt[site]=1 for
+      // EVERY `place Stack` placement) is only kept in sync by the
+      // countBacked branch above; this per-level pop path never touches
+      // it. A residual countAt surviving the pop makes
+      // isOccupiedSite()/isEmptySite() misreport a fully-vacated site as
+      // occupied forever (they treat any nonzero countAt as occupancy
+      // regardless of whats/stacks — state.ts isOccupiedSite()). Sahkku:
+      // the pioneer Marker starts at site 14 (countAt seeded 1 at setup)
+      // and moves away; with countAt[14] stuck at 1, `(to (...)
+      // if:(is Empty (to)))` rejected site 14 forever after, so no other
+      // home-row Marker could ever step onto it — every remaining Marker
+      // was permanently trapped (ply 17/31 MOVE_MISMATCH: recorded
+      // 13->14 had zero matching TS candidates). Clear it in lockstep
+      // with the other per-site channels cleared above.
+      if (pushed.countAtSite(this.fromIndex) !== 0) {
+        pushed = pushed.withCountAt(this.fromIndex, 0);
+      }
     }
     // @java ActionMoveLevelFrom.java:474 updateOnTrackIndices — after relocating the
     // piece (remove level / addItemGeneric) Java keeps the onTrackIndices structure in
