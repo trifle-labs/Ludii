@@ -442,7 +442,27 @@ export class State {
     // template (Shogun's `(apply (set Value ... (value Random ...)))`
     // reroll) is baked into move generation — a different traversal order
     // draws the SAME logical candidate from a DIFFERENT RNG offset.
-    const flat = this.flatOwned;
+    //
+    // ActionMove's FlatCellOnlyOwned maintenance block (action-move.ts) only
+    // keeps this registry in sync while `typedSites.size === 0` — it stops
+    // updating the instant a board gains its first typed (Edge/Vertex)
+    // occupant, per that block's own comment ("Gated off ... typedSites
+    // boards ... those keep the ascending lazy scan"). But a Cell-only piece
+    // move can materialize `flatOwned` BEFORE any typed site exists (e.g.
+    // Celticator: a pawn Step can be the very first move, before either
+    // player has placed a wall on an Edge). Once a wall is later placed,
+    // typedSites.size flips to >0 and every subsequent pawn Step stops
+    // updating the frozen registry — but this getter kept reading the STALE
+    // Map unconditionally, so ForEachPiece iterated pawns at their
+    // long-vacated starting squares (Celticator ply 22: `flatOwned[1:1]`
+    // stayed `[3]` forever after the first wall, even though the pawn had
+    // long since moved to site 6, silently killing every one of its Step
+    // moves whenever the ghost square's own direction set happened to be
+    // empty). Re-check the SAME condition the writer uses here: once
+    // `typedSites.size > 0`, ignore the now-unmaintained flatOwned and fall
+    // through to the always-fresh ascending scan below, exactly as the
+    // writer's own comment already promises.
+    const flat = this.typedSites.size === 0 ? this.flatOwned : undefined;
     if (flat !== undefined) {
       return {
         positions: (pid: number) => {

@@ -40,6 +40,14 @@ export interface ActionMoveOptions {
    */
   readonly toTypedNonDefault?: boolean;
   /**
+   * True when `fromType` is a genuinely NON-DEFAULT graph element on this
+   * board (symmetric counterpart of {@link toTypedNonDefault}). Gates
+   * reading/clearing the MOVER off the typed channel instead of the flat
+   * default-type layer. Computed by the caller via
+   * `isNonDefaultTyped(context, fromType)`.
+   */
+  readonly fromTypedNonDefault?: boolean;
+  /**
    * Non-stacking N-seed transfer (Java `ActionMoveN`, FromTo.java 348). When
    * set, `apply` moves `count` seeds from→to by adjusting the per-site counts
    * (mancala model) instead of relocating a single piece. The resulting state
@@ -116,6 +124,8 @@ export class ActionMove extends BaseAction {
   private readonly numLevel: number | undefined;
   /** @see ActionMoveOptions.toTypedNonDefault */
   private readonly toTypedNonDefault: boolean;
+  /** @see ActionMoveOptions.fromTypedNonDefault */
+  private readonly fromTypedNonDefault: boolean;
   /** @see ActionMoveOptions.fromHandSite */
   private readonly fromHandSite: boolean;
 
@@ -143,6 +153,7 @@ export class ActionMove extends BaseAction {
     this.stackMove = options.stack ?? false;
     this.numLevel = options.numLevel;
     this.toTypedNonDefault = options.toTypedNonDefault ?? false;
+    this.fromTypedNonDefault = options.fromTypedNonDefault ?? false;
     this.fromHandSite = options.fromHandSite ?? false;
   }
 
@@ -727,11 +738,29 @@ export class ActionMove extends BaseAction {
       s2 = s2.withOwnedAdd(mOwner, mWhat, this.toIndex, s2.stackSize(this.toIndex) - 1);
       return this.maintainTracks(s2, mWhat);
     }
-    const movingOwner = state.cellAt(this.fromIndex).owner;
+    // @java a cross-type move whose SOURCE is a non-default graph element
+    // (symmetric counterpart of the toTypedNonDefault destination branch
+    // below) must be READ from that element's typed channel, not the flat
+    // default-type layer — csFrom is the Cell/Edge/Vertex ContainerState
+    // that actually holds the piece. `"MoveCellToVertex"` (`(move (from
+    // Cell) (to Vertex …))`) on Triple Tangle's `use:Vertex` board relocates
+    // a piece OFF a non-default Cell; reading `state.cellAt(fromIndex)`
+    // here read the flat/default Vertex layer at that numeric index instead
+    // (unrelated data, usually empty), so `movingOwner`/`movingWhat` came
+    // back 0/0 and the move silently no-op'd via the empty-source guard just
+    // below — the piece was never actually relocated (nor was the source
+    // Cell channel ever cleared), corrupting state invisibly several plies
+    // before a MOVE_MISMATCH surfaced downstream (RandomTrial_0 ply 14,
+    // RandomTrial_1 ply 13).
+    const movingOwner = this.fromTypedNonDefault
+      ? state.whoTyped(this.siteTypeFrom, this.fromIndex)
+      : state.cellAt(this.fromIndex).owner;
     // Preserve the moving piece's component identity (Java: ContainerState
     // carries `what` with the piece, not just its owner). Read it before the
     // source site is cleared.
-    const movingWhat = state.whatAtSite(this.fromIndex);
+    const movingWhat = this.fromTypedNonDefault
+      ? state.whatTyped(this.siteTypeFrom, this.fromIndex)
+      : state.whatAtSite(this.fromIndex);
     // The piece's stored state, rotation and value all travel with it (Java
     // ActionMoveTopPiece lines 399-419): for each, an explicit value on the
     // move wins, otherwise the source site's current value is carried to the
@@ -746,9 +775,15 @@ export class ActionMove extends BaseAction {
     // returned a permanently-stale 0 for any site with a materialized
     // per-level row, dropping the mover's "activated" flag every time it
     // moved again (Sik/Es-Sig/Sig wa Duqqan stick-dice family).
-    const currentStateFrom = state.stateTop(this.fromIndex);
-    const currentRotationFrom = state.rotationAtSite(this.fromIndex);
-    const currentValueFrom = state.valueAtSite(this.fromIndex);
+    const currentStateFrom = this.fromTypedNonDefault
+      ? state.stateTyped(this.siteTypeFrom, this.fromIndex)
+      : state.stateTop(this.fromIndex);
+    const currentRotationFrom = this.fromTypedNonDefault
+      ? state.rotationTyped(this.siteTypeFrom, this.fromIndex)
+      : state.rotationAtSite(this.fromIndex);
+    const currentValueFrom = this.fromTypedNonDefault
+      ? state.valueTyped(this.siteTypeFrom, this.fromIndex)
+      : state.valueAtSite(this.fromIndex);
     const destState =
       this.stateValue !== ACTION_OFF ? this.stateValue : currentStateFrom;
     const destRotation =
@@ -804,9 +839,23 @@ export class ActionMove extends BaseAction {
     // `(place … "Hand" count:N)` from which pieces are placed one at a time —
     // move a single piece out and leave the rest, so the site stays occupied
     // until exhausted. A plain piece (count 0 or 1) is cleared as before.
-    const fromCount = state.countAtSite(this.fromIndex);
+    const fromCount = this.fromTypedNonDefault
+      ? state.countTyped(this.siteTypeFrom, this.fromIndex)
+      : state.countAtSite(this.fromIndex);
     let next = state;
-    if (fromCount > 1) {
+    if (this.fromTypedNonDefault) {
+      // Clear the source's typed channel entry — csFrom.remove on the
+      // Cell/Edge/Vertex ContainerState (see the movingOwner/movingWhat
+      // read above for why the flat clear below is wrong here).
+      if (fromCount > 1) {
+        next = next.withTypedSite(this.siteTypeFrom, this.fromIndex, movingOwner, movingWhat, fromCount - 1);
+      } else {
+        next = next.withTypedSite(this.siteTypeFrom, this.fromIndex, 0, 0, 0);
+        if (currentStateFrom !== 0) next = next.withTypedAttr(this.siteTypeFrom, this.fromIndex, "state", 0);
+        if (currentRotationFrom !== 0) next = next.withTypedAttr(this.siteTypeFrom, this.fromIndex, "rotation", 0);
+        if (currentValueFrom !== 0) next = next.withTypedAttr(this.siteTypeFrom, this.fromIndex, "value", 0);
+      }
+    } else if (fromCount > 1) {
       next = next.withCountAt(this.fromIndex, fromCount - 1);
     } else {
       next = next.withCell(this.fromIndex, 0);
@@ -818,20 +867,39 @@ export class ActionMove extends BaseAction {
       if (currentValueFrom !== 0) next = next.withValueAt(this.fromIndex, 0);
     }
     // @java a cross-type move whose DESTINATION is a non-default graph element
-    // (Edge/Vertex) writes the relocated piece into that element's typed channel
-    // — csTo is the Edge/Vertex ContainerState, not the flat Cell layer. Quoridor's
-    // wall `(move (from (handSite Mover)) (to Edge (difference (sites Empty Edge) …)))`
+    // writes the relocated piece into that element's typed channel — csTo is
+    // the Edge/Vertex/Cell ContainerState, not the flat default-type layer.
+    // Java's per-type ContainerState always keeps an independently-addressable
+    // region for EVERY SiteType, including Cell (Cell is not privileged) — see
+    // isNonDefaultTyped's doc comment (SitesEmpty.ts). Quoridor's wall
+    // `(move (from (handSite Mover)) (to Edge (difference (sites Empty Edge) …)))`
     // relocates a Rectangle from the Cell hand onto an Edge; the flat destination
     // path below does `withCell(edgeIndex)` and threw "siteIndex out of range"
     // because an edge index exceeds the cells range. The source (a Cell hand) was
     // already cleared above; write the destination in the typed channel and return.
-    // Gated on the destination being Edge/Vertex AND differing from the source type
-    // so same-type graph moves (handled by the typed path above) and ordinary
-    // Cell→Cell moves are untouched.
+    // Gated on the destination being genuinely non-default (toTypedNonDefault,
+    // computed by the caller via isNonDefaultTyped) AND differing from the
+    // source type, so same-type graph moves (handled by the typed path above)
+    // and ordinary default-type moves are untouched.
+    //
+    // Originally this also required `this.siteTypeTo === "Edge" ||
+    // "Vertex"`, excluding "Cell" — but on a `use:Vertex` board (Triple
+    // Tangle) Cell IS a genuinely non-default typed channel exactly like
+    // Edge/Vertex would be on a Cell-default board. `"MoveVertexToCell"`
+    // (`(move (from Vertex) (to Cell …))`) relocates a piece from the
+    // default Vertex layer onto a non-default Cell; excluding "Cell" here
+    // sent it through the flat write below instead, silently landing the
+    // piece in the flat/default (Vertex) array at the numeric Cell index —
+    // a "ghost" piece invisible to (sites Empty Cell)/typed[Cell] reads.
+    // The piece never became a legal source for the follow-up Cell-Cell/
+    // Vertex-Cell moves that reference it, producing a MOVE_MISMATCH several
+    // plies later (RandomTrial_0 ply 7, RandomTrial_1 ply 13). Dropping the
+    // Edge/Vertex restriction and relying solely on toTypedNonDefault (which
+    // already encodes "is this genuinely a non-default element on this
+    // board") fixes Cell destinations symmetrically with Edge/Vertex ones.
     if (
       this.toTypedNonDefault &&
-      this.siteTypeTo !== this.siteTypeFrom &&
-      (this.siteTypeTo === "Edge" || this.siteTypeTo === "Vertex")
+      this.siteTypeTo !== this.siteTypeFrom
     ) {
       let s2 = next.withTypedSite(this.siteTypeTo, this.toIndex, movingOwner, movingWhat, 1);
       // Carry the moving piece's state/rotation/value to the destination element.

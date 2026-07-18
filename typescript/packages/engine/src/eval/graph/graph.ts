@@ -59,6 +59,23 @@ export interface GFace {
   /** Centroid coordinates. */
   readonly cx: number;
   readonly cy: number;
+  /**
+   * Monotonic face-creation order — @java Vertex.addFace appends each face
+   * to a vertex's `faces` ArrayList of object references at creation time,
+   * and (for incrementally-built graphs — the only construction path any
+   * generator uses) that per-vertex order is NEVER re-sorted afterwards, so
+   * it survives face id renumbering (`reorder`/`reorderFaces`) untouched.
+   * `id` does NOT capture this: `reorder()` renumbers ids by final spatial
+   * position, discarding creation order. `seq` is assigned once, only at
+   * the two sites a face object is first created (`makeFaces`,
+   * `findOrAddFace`), and is carried through unchanged by every subsequent
+   * copy/filter/remap. It is the sort key `graph-element.ts` uses to build
+   * each vertex's `faces` list in Java's true incidence order — see
+   * Face.stepsTo's diagonal tie-break (Face.java:320-325, strict
+   * `dist < bestDistance`), which is decided by whichever candidate face
+   * appears FIRST in `vertex.faces()`.
+   */
+  readonly seq: number;
 }
 
 const hypot = (dx: number, dy: number): number => Math.sqrt(dx * dx + dy * dy);
@@ -224,6 +241,14 @@ export class Graph {
   private vlist: GVertex[] = [];
   private elist: GEdge[] = [];
   private flist: GFace[] = [];
+  /**
+   * Next `GFace.seq` value — assigned once at each of the two sites a NEW
+   * face object is created (`makeFaces`, `findOrAddFace`) and never reused;
+   * every other flist rebuild (reorder, filter, remap, transform) carries
+   * the existing `seq` of each surviving face through unchanged. See
+   * `GFace.seq` doc comment.
+   */
+  private faceSeq = 0;
   /** Undirected edge-key → edge id, for dedup. */
   private edgeKey = new Map<string, number>();
   /**
@@ -363,8 +388,9 @@ export class Graph {
     out.edgeKey = new Map(this.edgeKey);
     out.flist = this.flist.map((f) => {
       const [cx, cy] = fn(f.cx, f.cy);
-      return { id: f.id, vertices: f.vertices, cx, cy };
+      return { id: f.id, vertices: f.vertices, cx, cy, seq: f.seq };
     });
+    out.faceSeq = this.faceSeq;
     out.perimeterVerts = [...this.perimeterVerts];
     out.perimeterRings = this.perimeterRings.map((r) => [...r]);
     out.pivotIds = new Map(this.pivotIds);
@@ -635,6 +661,7 @@ export class Graph {
 
   public makeFaces(): void {
     this.flist = [];
+    this.faceSeq = 0;
     if (this.elist.length === 0) return;
 
     // Sorted adjacency: for each vertex, neighbour ids ordered by edge angle.
@@ -698,6 +725,7 @@ export class Graph {
         vertices: [...cyc],
         cx: cx / cyc.length,
         cy: cy / cyc.length,
+        seq: this.faceSeq++,
       });
     };
     for (let s = 0; s < this.vlist.length; s += 1) {
@@ -793,7 +821,7 @@ export class Graph {
 
     this.flist = this.flist
       .filter((f) => !drop.has(f.id))
-      .map((f, i) => ({ id: i, vertices: f.vertices, cx: f.cx, cy: f.cy }));
+      .map((f, i) => ({ id: i, vertices: f.vertices, cx: f.cx, cy: f.cy, seq: f.seq }));
 
     if (candidateKeys.size > 0) {
       const survivingKeys = new Set<string>();
@@ -935,6 +963,7 @@ export class Graph {
       vertices: [...vertIds],
       cx: cx / vertIds.length,
       cy: cy / vertIds.length,
+      seq: this.faceSeq++,
     });
     return true;
   }
@@ -1074,6 +1103,7 @@ export class Graph {
           vertices: f.vertices.map((v) => remap[v] as number),
           cx: f.cx,
           cy: f.cy,
+          seq: f.seq,
         }));
   }
 
@@ -1141,6 +1171,7 @@ export class Graph {
         vertices: f.vertices.map((v) => remap[v] as number),
         cx: f.cx,
         cy: f.cy,
+        seq: f.seq,
       }));
       faces.sort((a, b) => (a.cy * 100 + a.cx) - (b.cy * 100 + b.cx));
       this.flist = faces.map((f, i) => ({
@@ -1148,6 +1179,7 @@ export class Graph {
         vertices: f.vertices,
         cx: f.cx,
         cy: f.cy,
+        seq: f.seq,
       }));
     }
   }
@@ -1171,6 +1203,7 @@ export class Graph {
       vertices: f.vertices,
       cx: f.cx,
       cy: f.cy,
+      seq: f.seq,
     }));
   }
 

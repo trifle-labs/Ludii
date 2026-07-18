@@ -455,6 +455,15 @@ export class FromTo implements MovesFunction {
             // route to a typed channel. Compute the decision here (apply() has no
             // Context) and pass it as a flag.
             const toNonDefault = isNonDefaultTyped(ctx, dtt);
+            // @java symmetric counterpart: csFrom is the Cell/Edge/Vertex
+            // ContainerState ONLY when the from-type is a genuinely NON-DEFAULT
+            // graph element on this board. `"MoveCellToVertex"` on a `use:Vertex`
+            // board (Triple Tangle) sources from the non-default Cell channel;
+            // without this flag ActionMove.apply read/cleared the flat/default
+            // (Vertex) layer at the from-index instead of the typed Cell channel,
+            // silently no-opping the relocation (empty-source guard) and leaving
+            // the source Cell entry uncleared.
+            const fromNonDefault = isNonDefaultTyped(ctx, dft);
             // @java hand containers have no addressable per-site level — the
             // signal ActionMoveTopPiece vs ActionMoveLevelFrom dispatch on.
             // See ActionMoveOptions.fromHandSite (Thaayam value identity).
@@ -485,7 +494,7 @@ export class FromTo implements MovesFunction {
             // must not be treated as state-less hand entries.
             const fromHandSite = from >= boardSites && this.levelFrom === null;
             moveAction = (dft || dtt)
-              ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault, fromHandSite })
+              ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault, fromTypedNonDefault: fromNonDefault, fromHandSite })
               : new ActionMove({ from, to, fromHandSite });
           }
         }

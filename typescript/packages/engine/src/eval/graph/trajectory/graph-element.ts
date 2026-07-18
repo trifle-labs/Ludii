@@ -199,13 +199,44 @@ export class GraphTopology {
     }
 
     // Faces — vertices in polygon order, edges between consecutive vertices.
+    //
+    // `graph.faces` iterates in canonical id order (Java `reorder(Cell)`'s
+    // centroid-score renumbering) — that IS the correct order for
+    // `this.faceEls` (board cell indices the recorded trials reference) and
+    // for `face.vertices`/`face.edges` (a face's own boundary is unaffected
+    // by renumbering). It is NOT, however, the order Java incident faces
+    // appear in at a shared VERTEX: `Vertex.addFace` (Vertex.java:161-174)
+    // appends each face to a plain `List<Face>` of object references as
+    // faces are incrementally created, and — for every board generator,
+    // which all build graphs incrementally — that per-vertex list is never
+    // re-sorted afterwards (`Vertex.sortFaces` only runs from
+    // `Graph.assemble`, itself only reachable from two constructors no
+    // generator uses; confirmed by instrumentation). So `vertex.faces()`
+    // reflects face CREATION order, immune to later id renumbering, while
+    // `graph.faces` here reflects final CANONICAL order. Collecting
+    // `(face, f.seq)` per vertex and sorting by `seq` before assigning
+    // `v.faces` reproduces Java's true incidence order without disturbing
+    // `faceEls`/`face.vertices`/`face.edges`, which must stay in canonical
+    // order. This matters for `Face.stepsTo`'s diagonal tie-break
+    // (Face.java:320-325, strict `dist < bestDistance`): at an exact
+    // geometric tie, whichever candidate face is first in `vertex.faces()`
+    // wins, and only creation order reproduces Java's winner (e.g. Celtic's
+    // rounded-corner faces, where two triangular corner faces sharing a
+    // lattice vertex are created in perimeter-walk order, not final
+    // spatial order).
+    const vertexFaceEntries = new Map<number, { face: FaceEl; seq: number }[]>();
     for (const f of graph.faces) {
       const face = new FaceEl(f.id, { x: f.cx, y: f.cy, z: 0 });
       for (const vid of f.vertices) {
         const v = this.verts[vid];
         if (v) {
           face.vertices.push(v);
-          v.faces.push(face);
+          let entries = vertexFaceEntries.get(vid);
+          if (!entries) {
+            entries = [];
+            vertexFaceEntries.set(vid, entries);
+          }
+          entries.push({ face, seq: f.seq });
         }
       }
       const k = f.vertices.length;
@@ -222,6 +253,12 @@ export class GraphTopology {
         }
       }
       this.faceEls.push(face);
+    }
+    for (const v of this.verts) {
+      const entries = vertexFaceEntries.get(v.id);
+      if (!entries) continue;
+      entries.sort((p, q) => p.seq - q.seq);
+      for (const e of entries) v.faces.push(e.face);
     }
   }
 

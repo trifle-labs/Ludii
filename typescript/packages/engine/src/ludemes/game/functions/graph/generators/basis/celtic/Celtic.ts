@@ -26,15 +26,104 @@ function angleDifference(
   return Math.atan2(ux * -vy + uy * vx, ux * vx + uy * vy);
 }
 
-/** @java main.math.Vector — signed polygon area, used only to normalise winding. */
-function signedArea(poly: readonly (readonly [number, number])[]): number {
-  let area = 0;
-  for (let i = 0; i < poly.length; i += 1) {
-    const [x1, y1] = poly[i] as [number, number];
-    const [x2, y2] = poly[(i + 1) % poly.length] as [number, number];
-    area += x1 * y2 - x2 * y1;
+/**
+ * @java MeasureGraph.createNextPerimeter(Graph, BitSet) +
+ * MeasureGraph.followPerimeterClockwise(Vertex) — MeasureGraph.java:170-275.
+ *
+ * A faithful local port of Java's perimeter walk (leftmost vertex, then a
+ * clockwise follow using each vertex's edges sorted by compass angle —
+ * Vertex.sortEdges(), Vertex.java:281-309). `graph.perimeterRingList` is
+ * NOT used here: it is derived from `eval/graph/graph.ts`'s own face-based
+ * perimeter detection (the outer face's boundary cycle), a different
+ * algorithm from Java's that is not guaranteed to start at the same vertex
+ * or walk in the same rotational order.
+ *
+ * That distinction matters here specifically because the corner-rounding
+ * loop below is visit-order-sensitive: at an exact geometric tie between two
+ * candidate rounded-corner faces sharing a lattice vertex (equidistant from
+ * a diagonal line — Face.stepsTo's strict `dist < bestDistance`,
+ * Face.java:320-325, keeps whichever candidate was added to the vertex's
+ * face list FIRST), the order this loop creates the two triangular corner
+ * faces in determines the tie-break winner. Only Java's exact traversal
+ * order reproduces Java's tie-break; matching mere overall winding
+ * direction (as a signed-area normalisation would) does not.
+ */
+function followPerimeterClockwiseJava(graph: Graph): number[] {
+  const verts = graph.vertices;
+  if (verts.length === 0) return [];
+
+  const byId = new Map<number, { x: number; y: number }>();
+  for (const v of verts) byId.set(v.id, v);
+
+  // @java Vertex.sortEdges (Vertex.java:281-309) — each vertex's incident
+  // edges, sorted ascending by compass angle to the far endpoint.
+  const nbrs = new Map<number, { other: number; edgeId: number }[]>();
+  for (const v of verts) nbrs.set(v.id, []);
+  for (const e of graph.edges) {
+    nbrs.get(e.a)!.push({ other: e.b, edgeId: e.id });
+    nbrs.get(e.b)!.push({ other: e.a, edgeId: e.id });
   }
-  return area / 2;
+  for (const [vid, list] of nbrs) {
+    const v = byId.get(vid)!;
+    list.sort((p, q) => {
+      const pv = byId.get(p.other)!;
+      const qv = byId.get(q.other)!;
+      const da = Math.atan2(pv.y - v.y, pv.x - v.x);
+      const db = Math.atan2(qv.y - v.y, qv.x - v.x);
+      return da - db;
+    });
+  }
+
+  // @java MeasureGraph.createNextPerimeter — leftmost vertex, strict `<`
+  // (first vertex encountered at the minimum x wins ties).
+  let startId = -1;
+  let minX = 1_000_000;
+  for (const v of verts) {
+    if (v.x < minX) {
+      startId = v.id;
+      minX = v.x;
+    }
+  }
+  const start = byId.get(startId)!;
+  const startNbrs = nbrs.get(startId)!;
+  if (startNbrs.length === 0) return [startId];
+
+  // @java MeasureGraph.followPerimeterClockwise — starting edge closest to
+  // straight up (atan2(dx,-dy) minimised, strict `<`).
+  let bestIdx = 0;
+  let bestAngle = 1_000_000;
+  for (let i = 0; i < startNbrs.length; i += 1) {
+    const to = byId.get(startNbrs[i]!.other)!;
+    const dx = to.x - start.x;
+    const dy = to.y - start.y;
+    const angle = Math.atan2(dx, -dy);
+    if (angle < bestAngle) {
+      bestAngle = angle;
+      bestIdx = i;
+    }
+  }
+
+  const ring: number[] = [];
+  let vertexId = startId;
+  let prevId = startId;
+  let cur = startNbrs[bestIdx]!;
+
+  for (;;) {
+    ring.push(vertexId);
+    prevId = vertexId;
+    vertexId = cur.other;
+
+    const vNbrs = nbrs.get(vertexId)!;
+    const i = vNbrs.findIndex((e) => e.edgeId === cur.edgeId);
+    for (let n = 1; n < vNbrs.length; n += 1) {
+      cur = vNbrs[(i + n) % vNbrs.length]!;
+      if (cur.other !== prevId) break;
+    }
+
+    if (vertexId === startId) break;
+  }
+
+  return ring;
 }
 
 /** @java game/functions/graph/generators/basis/celtic/Celtic.java */
@@ -86,19 +175,12 @@ export class Celtic extends Basis {
     graph.makeFaces();
 
     // @java Celtic.java:173-175 — MeasureGraph.measurePerimeter + perimeters().get(0).
-    // Only the first perimeter ring is used, matching Java exactly.
-    const ring = graph.perimeterRingList[0];
-    if (ring && ring.length > 0) {
-      // TS perimeter tracing direction is not guaranteed to match Java's
-      // followPerimeterClockwise; normalise winding the same way
-      // Graph.cornerVertices() does so the angleDifference signs below match
-      // Java's convex/flat/concave classification.
-      let list = [...ring];
-      const poly0: [number, number][] = list.map((vid) => {
-        const v = graph.vertices[vid]!;
-        return [v.x, v.y];
-      });
-      if (signedArea(poly0) < 0) list = list.reverse();
+    // Only the first perimeter ring is used, matching Java exactly. Built via
+    // a faithful local port of Java's traversal (see followPerimeterClockwiseJava
+    // above) rather than graph.perimeterRingList — see that function's doc
+    // comment for why the two are not interchangeable here.
+    const list = followPerimeterClockwiseJava(graph);
+    if (list.length > 0) {
       const pt = (vid: number): [number, number] => {
         const v = graph.vertices[vid]!;
         return [v.x, v.y];
