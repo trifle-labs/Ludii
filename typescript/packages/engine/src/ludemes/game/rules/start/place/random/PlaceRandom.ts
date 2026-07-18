@@ -462,7 +462,13 @@ export class PlaceRandom {
       const index = context.rng.nextInt(toPlace.length);
       const what = toPlace[index];
       if (what === undefined) break;
-      this.placePieces(context, site, what, 1, state, OFF, value, true, realType);
+      // @java PlaceRandom.java:358-359 — the Count[]-driven constructor sets
+      // `stack = true`, so gameFlags() ORs in GameType.Stacking and every one
+      // of these shuffled draws is a genuinely distinct, individually
+      // addressable level (Chex's hand of 8 Pawns commonly shuffles two+
+      // Pawns adjacent). neverMergeStack keeps a run of same-piece draws from
+      // collapsing into a single count-pile entry.
+      this.placePieces(context, site, what, 1, state, OFF, value, true, realType, true);
       toPlace.splice(index, 1);
     }
   }
@@ -481,10 +487,11 @@ export class PlaceRandom {
     value: number,
     onStack: boolean,
     type: string,
+    neverMergeStack?: boolean,
   ): void {
     (context as unknown as {
-      placePieces?(site: number, what: number, count: number, state: number, rotation: number, value: number, onStack: boolean, type: string | null): void;
-    }).placePieces?.(site, what, count, state, rotation, value, onStack, type);
+      placePieces?(site: number, what: number, count: number, state: number, rotation: number, value: number, onStack: boolean, type: string | null, neverMergeStack?: boolean): void;
+    }).placePieces?.(site, what, count, state, rotation, value, onStack, type, neverMergeStack);
   }
 
   //-------------------------------------------------------------------------

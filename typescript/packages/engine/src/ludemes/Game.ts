@@ -1588,6 +1588,7 @@ export class Game implements Game {
         value: number,
         onStack: boolean,
         type: string | null,
+        neverMergeStack?: boolean,
       ) => void;
     };
     // @java the start rules evaluate on a full Context with the board topology
@@ -1673,7 +1674,7 @@ export class Game implements Game {
     };
     const playType = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
     const playTypeName = typeof playType === "function" ? playType() : playType ?? null;
-    ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type) => {
+    ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type, _neverMergeStack) => {
       if (process.env.TRACE_PLACE && site === 19) console.error("[place] site 19 what", what, new Error().stack?.split("\n").slice(2,5).join(" | "));
       // @java per-type ContainerStates: an EXPLICIT type differing from the
       // play type routes to the typed channel (Guerrilla Checkers places
@@ -1707,7 +1708,15 @@ export class Game implements Game {
           // levels regressed the entire backgammon family (Backgammon/
           // Plakoto/Dubblets MOVE_MISMATCH) — the Murus Gallicus fix must
           // instead live where piles are CONSUMED. Keep the merge.
-          if (last.what === what && last.owner === owner) {
+          // @java PlaceRandom.java:358-359 — `if(stack) flags |= GameType
+          // .Stacking;` for the Count[]-driven hand-shuffle constructor
+          // (Chex's `(place Random {Count[]…} (handSite N))`), so
+          // Start.placePieces ALWAYS routes each shuffled draw through
+          // ActionAdd.applyStack (ActionAdd.java:200,284,324-337) as a real,
+          // individually-addressable level, even when two adjacent draws
+          // share the same component. Callers that need every level
+          // individually addressable opt out of the merge via neverMergeStack.
+          if (!_neverMergeStack && last.what === what && last.owner === owner) {
             countAt[site] = (countAt[site] ?? 0) + 1;
             return;
           }
