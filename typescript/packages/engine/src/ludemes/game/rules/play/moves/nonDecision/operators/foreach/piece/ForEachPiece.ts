@@ -458,9 +458,17 @@ function buildCompIndices(
       if (items.length === 0) {
         result.push(e);
       } else {
-        // Item name matching — use escape hatch for getNameWithoutNumber
-        const name = (comp as unknown as { getNameWithoutNumber?(): string | null; name?: string }).getNameWithoutNumber?.()
-          ?? (comp as unknown as { name?: string }).name;
+        // Item name matching — use escape hatch for getNameWithoutNumber.
+        // @java Component.getNameWithoutNumber() strips the trailing digits;
+        // faithful-path piece surfaces are plain {name, owner, index} objects
+        // WITHOUT that method, and since the Game.java:2545-2565 owner-suffix
+        // pass landed their raw `name` carries the owner digits ("Counter1"),
+        // so the bare fallback stopped matching (forEach Piece "Counter")
+        // (Lasca ply-0 movegen collapse). Replicate the digit-strip on the
+        // raw string instead of trusting it verbatim.
+        const rawName = (comp as unknown as { getNameWithoutNumber?(): string | null; name?: string }).getNameWithoutNumber?.()
+          ?? (comp as unknown as { name?: string }).name?.replace(/\d+$/, "");
+        const name = rawName;
         if (name !== null && name !== undefined && items.includes(name)) {
           result.push(e);
         }

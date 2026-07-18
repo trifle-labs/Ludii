@@ -480,7 +480,14 @@ export class Game implements Game {
     const maxComponentIndex = equipment.pieces.reduce((max, piece) => Math.max(max, piece.index), 0);
     this.componentLabels = new Array(maxComponentIndex + 1).fill("");
     for (const piece of equipment.pieces) {
-      this.componentLabels[piece.index] = `${piece.name}${piece.owner}`;
+      // The Game.java:2545-2565 owner-suffix pass now renames components to
+      // name+owner at create time, so a piece that already carries its owner
+      // suffix must not be suffixed AGAIN here ("Counter1" -> "Counter11"
+      // desynced every label-driven owner parse after the pass landed).
+      // Pieces the pass skips (Domino/Die, 1-player non-Neutral) keep the
+      // historical append.
+      const alreadySuffixed = piece.name.endsWith(String(piece.owner));
+      this.componentLabels[piece.index] = alreadySuffixed ? piece.name : `${piece.name}${piece.owner}`;
     }
 
     // Extract static map table from equipment (compiled from (map ...) equipment items).
