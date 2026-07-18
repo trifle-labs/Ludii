@@ -81,6 +81,28 @@ export interface StateOptions {
   readonly whats?: readonly number[];
   /** Per-site state value (Java: ContainerState.state[i]). */
   readonly stateAt?: readonly number[];
+  /**
+   * Shadow copy of a site's `state` value at the instant a level-based board
+   * vacate (ActionMoveLevelFrom's per-level `remove`) clears the VISIBLE
+   * `stateAt` slot to 0. @java ContainerGraphStateStacks.java:1003-1044 — the
+   * Edge/Vertex level-based `remove` only clears the chunk's who/what; the
+   * `state` int of that reused, fixed-size chunk is left exactly as it was,
+   * but Java's own `state()` accessor is bounds-checked against `sizeStack`
+   * so nothing can observe it while the slot sits outside the stack's current
+   * bounds — only a LATER piece landing on that exact physical slot (which
+   * brings the level back in bounds) inherits it, and only if that landing
+   * goes through the state-less `addItemGeneric` used for hand/off-board
+   * entries (ContainerStateStacks.java:278-301, ActionMoveTopPiece.java:485-
+   * 498). This array exists purely so that one specific consumer — the
+   * hand-entry write path in ActionMove's flat branch — can recover that
+   * otherwise-unobservable value; ordinary reads (`stateAtSite`,
+   * `stateAtLevel`, `stateTop`) never consult it, so it cannot leak into any
+   * other game's move generation the way directly leaving `stateAt` dirty
+   * would (A K'aak'il / Aj Sakakil / Aj Sayil / Aj Sina'anil / Bul all share
+   * Boolik's own captured/capturing per-piece `state` semantics and read
+   * `state at:… level:…` at sites that had just been vacated).
+   */
+  readonly residualStateAt?: readonly number[];
   /** Per-site value (Java: ContainerState.value[i]). */
   readonly valueAt?: readonly number[];
   /**
@@ -328,6 +350,8 @@ export class State {
    */
   public readonly whatStacks: readonly (readonly number[])[];
   public readonly stateAt: readonly number[];
+  /** See {@link StateOptions.residualStateAt}. */
+  public readonly residualStateAt: readonly number[];
   public readonly valueAt: readonly number[];
   public readonly costAt: readonly number[];
   public readonly rotationAt: readonly number[];
@@ -553,6 +577,7 @@ export class State {
     // distinct-piece stack explicitly seeds it. Frozen levels mirror `stacks`.
     this.whatStacks = Object.freeze(fillWhatStacks(options.whatStacks, n));
     this.stateAt = Object.freeze(fillSlot(options.stateAt, n, 0));
+    this.residualStateAt = Object.freeze(fillSlot(options.residualStateAt, n, 0));
     this.valueAt = Object.freeze(fillSlot(options.valueAt, n, 0));
     this.costAt = Object.freeze(fillSlot(options.costAt, n, 0));
     this.rotationAt = Object.freeze(fillSlot(options.rotationAt, n, 0));
@@ -1606,6 +1631,21 @@ export class State {
     next[siteIndex] = value;
     return this.with({ stateAt: next });
   }
+  /**
+   * Read-only accessor for {@link StateOptions.residualStateAt}. Deliberately
+   * NOT consulted by `stateAtSite`/`stateAtLevel`/`stateTop` — only the
+   * hand-entry write path in ActionMove's flat branch reads it.
+   */
+  public residualStateAtSite(siteIndex: number): number {
+    return this.residualStateAt[siteIndex] ?? 0;
+  }
+  /** Writer for {@link StateOptions.residualStateAt}. */
+  public withResidualStateAt(siteIndex: number, value: number): State {
+    this.requireSite(siteIndex);
+    const next = [...this.residualStateAt];
+    next[siteIndex] = value;
+    return this.with({ residualStateAt: next });
+  }
   public withValueAt(siteIndex: number, value: number): State {
     this.requireSite(siteIndex);
     const next = [...this.valueAt];
@@ -1894,6 +1934,7 @@ export class State {
         // an orphaned component column behind.
         whatStacks: nextWhatStacks,
         stateAt: patch.stateAt ?? this.stateAt,
+        residualStateAt: patch.residualStateAt ?? this.residualStateAt,
         valueAt: patch.valueAt ?? this.valueAt,
         costAt: patch.costAt ?? this.costAt,
         rotationAt: patch.rotationAt ?? this.rotationAt,

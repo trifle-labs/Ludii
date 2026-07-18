@@ -448,7 +448,28 @@ export class ActionMove extends BaseAction {
         if (popped.cellAt(this.fromIndex).owner !== 0) popped = popped.withCell(this.fromIndex, 0);
         if (popped.whatAtSite(this.fromIndex) !== 0) popped = popped.withWhatAt(this.fromIndex, 0);
         if (srcCount === 1 && popped.countAtSite(this.fromIndex) !== 0) popped = popped.withCountAt(this.fromIndex, 0);
-        if (popped.stateAtSite(this.fromIndex) !== 0) popped = popped.withStateAt(this.fromIndex, 0);
+        // @java ContainerGraphStateStacks.java:1003-1044 — the Edge/Vertex
+        // LEVEL-BASED remove (used by ActionMoveLevelFrom.java:449 for every
+        // board-to-board per-level relocation; `fromHandSite` is false exactly
+        // then) only clears the vacated chunk's who/what — its `state` int is
+        // left exactly as it was, invisible to ordinary reads only because
+        // Java's `state()` accessor is bounds-checked against `sizeStack`.
+        // Stash the about-to-be-cleared value in the shadow
+        // `residualStateAt` channel (never read by `stateAtSite`/
+        // `stateAtLevel`/`stateTop`) before clearing the VISIBLE `stateAt` —
+        // this keeps every normal read byte-identical to before (no
+        // regression risk for A K'aak'il/Aj Sakakil/Aj Sayil/Aj Sina'anil/Bul,
+        // whose own captured/capturing per-piece `state` semantics query
+        // `state at:… level:…` at freshly-vacated sites and must see 0
+        // there). Only ActionMoveTopPiece's state-less hand-entry write path
+        // (the flat branch below) ever consults the stash, mirroring the one
+        // Java call site that can actually resurface it
+        // (ContainerStateStacks.java:278-301, ActionMoveTopPiece.java:485-498).
+        const preClearState = popped.stateAtSite(this.fromIndex);
+        if (state.stackingGame && !this.fromHandSite && preClearState !== 0) {
+          popped = popped.withResidualStateAt(this.fromIndex, preClearState);
+        }
+        if (preClearState !== 0) popped = popped.withStateAt(this.fromIndex, 0);
         if (popped.valueAtSite(this.fromIndex) !== 0) popped = popped.withValueAt(this.fromIndex, 0);
       }
       // @java ActionMoveLevelFrom.java:343-347 — the relocated piece CARRIES
@@ -926,7 +947,23 @@ export class ActionMove extends BaseAction {
       // keeping the victim's pile count left a phantom 2-pile.
       next = next.withCountAt(this.toIndex, 1);
     }
-    next = this.applyDestAttrs(next, destState, destRotation, destValue);
+    // @java ActionMoveTopPiece.java:485-498 — a stacking-game hand exit with
+    // no explicit state (Constants.UNDEFINED) dispatches through the 5-arg
+    // addItemGeneric, which never writes the destination's state chunk at
+    // all (ContainerStateStacks.java:278-301). If a PRIOR occupant's
+    // levelFrom vacate stashed a residual for this exact site (see the
+    // shadow-channel citation in the per-level-stack branch above), that
+    // residual is what this new occupant silently inherits in Java; consume
+    // it here instead of writing the freshly-computed (usually 0) destState.
+    // The channel is scoped to this exact dispatch (stackingGame &&
+    // fromHandSite && no explicit state), so every other caller/game is
+    // unaffected — the residual simply stays unused and gets overwritten by
+    // Java's own defaults on any other write path.
+    const residual = state.stackingGame && this.fromHandSite && this.stateValue === ACTION_OFF
+      ? state.residualStateAtSite(this.toIndex)
+      : 0;
+    next = this.applyDestAttrs(next, residual !== 0 ? residual : destState, destRotation, destValue);
+    if (residual !== 0) next = next.withResidualStateAt(this.toIndex, 0);
     next = this.transferHidden(next, state, fromCount <= 1);
     return this.maintainTracks(next, movingWhat);
   }

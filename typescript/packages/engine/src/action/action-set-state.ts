@@ -66,9 +66,16 @@ export class ActionSetState extends BaseAction {
       // materializing a phantom entry that desynced stacks vs stateStacks
       // and surfaced ~1000 plies later (Aj family + Bul).
       if (this.levelIndex >= state.stackSize(this.toIndex)) return state;
-      return state.withStateAtLevel(this.toIndex, this.levelIndex, this.stateValue);
+      // @java ActionSetState.java:107-121 — a successful level write means the
+      // real Java chunk at this site now holds fresh, authoritative content;
+      // any shadow residual stashed by a PRIOR levelFrom vacate (see the
+      // per-level-stack branch of ActionMove) is now stale/moot and must not
+      // resurface for a LATER hand-entry landing here (Aj family + Bul run
+      // their own explicit `(set State …)` cleanup — see UnsetCapturingPiece
+      // — after a capture, exactly to prevent this).
+      return state.withStateAtLevel(this.toIndex, this.levelIndex, this.stateValue).withResidualStateAt(this.toIndex, 0);
     }
-    return state.withStateAt(this.toIndex, this.stateValue);
+    return state.withStateAt(this.toIndex, this.stateValue).withResidualStateAt(this.toIndex, 0);
   }
 
   public override actionType(): ActionType {

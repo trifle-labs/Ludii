@@ -472,7 +472,31 @@ export class FromTo implements MovesFunction {
             // signal ActionMoveTopPiece vs ActionMoveLevelFrom dispatch on.
             // See ActionMoveOptions.fromHandSite (Thaayam value identity).
             const boardSites = (ctx.game as unknown as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? Number.MAX_SAFE_INTEGER;
-            const fromHandSite = from >= boardSites;
+            // @java FromTo.java:328-340 — Java's ActionMoveTopPiece-vs-
+            // ActionMoveLevelFrom choice is a STATIC, ludeme-syntax decision
+            // keyed on whether `level:` is present on the `(from …)` term at
+            // all, not on whether the popped level happens to be the current
+            // stack top at runtime. A K'aak'il's board-or-hand move ludeme
+            // declares `(from (from) level:(level) if:…)` — `level:` IS
+            // syntactically present — so Java ALWAYS builds ActionMoveLevelFrom
+            // for it, even for a hand-site source, even though it pops what is
+            // currently the hand pile's top (matching the `lv >= fromStackLen -
+            // 1` narrowing above that keeps this on the plain, top-popping
+            // ActionMove for OTHER practical reasons — Ashta-kashte). Boolik's
+            // dedicated "EnterAPiece" = `(from (handSite Mover))` has NO
+            // `level:` at all (`this.levelFrom === null` unconditionally for
+            // that ludeme), so Java genuinely builds the level-less
+            // ActionMoveTopPiece there. `fromHandSite` feeds ActionMove's
+            // state-less/residual-prone hand-entry branches (action-move.ts) —
+            // those branches must fire ONLY for a genuine ActionMoveTopPiece
+            // dispatch. Requiring `this.levelFrom === null` here keeps Boolik's
+            // EnterAPiece unchanged (levelFrom is always null for it) while
+            // correcting A K'aak'il/Aj Sayil/Aj Sakakil/Bul's `level:`-bearing
+            // hand moves — those genuinely go through ActionMoveLevelFrom in
+            // Java, whose TO-side addItemGeneric properly CARRIES the source's
+            // own state (ActionMoveLevelFrom's 7-arg addItemGeneric), so they
+            // must not be treated as state-less hand entries.
+            const fromHandSite = from >= boardSites && this.levelFrom === null;
             moveAction = (dft || dtt)
               ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault, fromHandSite })
               : new ActionMove({ from, to, fromHandSite });
