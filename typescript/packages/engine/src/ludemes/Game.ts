@@ -46,6 +46,7 @@ import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
 import { ActionRemove } from "../action/action-remove.js";
 import { Gravity } from "./game/rules/meta/Gravity.js";
 import { Automove } from "./game/rules/meta/Automove.js";
+import { NoRepeat } from "./game/rules/meta/no/repeat/NoRepeat.js";
 import { SetTeam } from "./game/rules/start/set/players/SetTeam.js";
 import type { Action } from "../action/index.js";
 import { evalDeferredThens } from "./game/rules/play/moves/nonDecision/effect/Then.js";
@@ -383,6 +384,15 @@ export class Game implements Game {
   public readonly usesGravity: boolean;
   /** @java (meta (automove)) present — forced-unique-move chaining in moves(). */
   public readonly usesAutomove: boolean;
+  /**
+   * @java game/rules/meta/no/repeat/NoRepeat.java — the `.type` of any
+   * `(meta (no Repeat <type>))` meta-rule, or null if absent. Only
+   * `"PositionalInTurn"` is enforced (see {@link passesNoRepeat});
+   * `Positional`/`Situational`/`SituationalInTurn` remain unimplemented
+   * no-ops, same as before this field existed — those cover the Go-family
+   * superko games and are intentionally out of scope here.
+   */
+  public readonly noRepeatType: string | null;
 
   /**
    * Team membership: `teamOf[pid]` is the 1-based team index of player `pid`,
@@ -460,6 +470,16 @@ export class Game implements Game {
     // @java Automove.eval — context.game().metaRules().setAutomove(true);
     // detected like usesGravity: presence in the compiled meta rules.
     this.usesAutomove = (rules.meta?.rules ?? []).some(r => r instanceof Automove);
+    // @java NoRepeat.eval — context.game().metaRules().setRepetitionType(type).
+    // Detected like usesGravity/usesAutomove: presence in the compiled meta
+    // rules, off the actual (meta (no Repeat ...)) ludeme instance so we can
+    // read its `.type`.
+    {
+      const noRepeatRule = (rules.meta?.rules ?? []).find(
+        (r): r is NoRepeat => r instanceof NoRepeat,
+      );
+      this.noRepeatType = noRepeatRule ? noRepeatRule.type : null;
+    }
     // @java SetTeam.eval — ActionAddPlayerToTeam(teamId, pid). Harvest the
     // static team membership from the (set Team …) start rules.
     {
@@ -933,6 +953,50 @@ export class Game implements Game {
   }
 
   /**
+   * @java game/rules/meta/no/repeat/NoRepeat.java — apply(Context, Move).
+   * True if `move` does NOT reach a within-turn position already seen
+   * (only the PositionalInTurn case is implemented — see noRepeatType).
+   * Pass moves are always exempt. Shared by both {@link moves} (the
+   * top-level legal-move filter) and Moves.canMove() (the `(can Move ...)`
+   * ludeme, via the optional Game.passesNoRepeat hook it duck-types
+   * against) — Java's NoRepeat.apply is likewise consulted from both
+   * Trial.setLegalMoves AND Moves.canMove(context), and Football Chess's
+   * `(then (if (can Move (...)) (moveAgain)))` kick-chain continuation
+   * depends on the LATTER: without it, `(can Move ...)` sees an
+   * already-played-this-turn repeat kick as a legal candidate, wrongly
+   * concludes the chain can continue, and sets moveAgain — stranding the
+   * mover on a turn Java has already ended.
+   */
+  public passesNoRepeat(context: Context, move: Move): boolean {
+    if (this.noRepeatType !== "PositionalInTurn") return true;
+    if (move.isPass()) return true;
+    const ctx = context as Context1to1;
+    // @java NoRepeat.java — move.apply(context, true) / hash / undo. The TS
+    // port has no undo; simulate on a scratch context/rng clone instead so
+    // the real trial/state/rng are never touched by a discarded probe.
+    // apply() never mutates its input context, but move.applyTo() DOES
+    // mutate a SeededRng in place, so the clone keeps this discarded probe
+    // from consuming/perturbing the real game's RNG sequence.
+    const scratchCtx = ctx.withRng(ctx.rng.clone()) as Context1to1;
+    const resultCtx = this.apply(scratchCtx, move) as Context1to1;
+    // @java NoRepeat.java:91 — PositionalInTurn checks
+    // context.trial().previousStateWithinATurn().contains(context.state().stateHash()).
+    // `stateHash()` (State.java:198,283) is mover-EXCLUSIVE (container states
+    // + scores only) — unlike this port's `state.hash()`, which is the
+    // mover-INCLUSIVE `fullHash()`-equivalent. Simulating a candidate move
+    // via `this.apply()` above recursively resolves ITS OWN nested `then`
+    // (deferred-then) chain, including any kick-chain-continuation check,
+    // which can legitimately rotate the mover within this single probe —
+    // so a mover-inclusive hash would spuriously never match even when the
+    // underlying board position is identical to one already visited this
+    // turn. `positionalHash()` (mirrors `stateHash()`) and the dedicated
+    // `previousPositionalTurnHashes` array (populated the same way Java
+    // gates it in Game.java:3151-3162, see Game.apply below) avoid that.
+    const hash = resultCtx.state.positionalHash();
+    return !ctx.trial.previousPositionalTurnHashes.includes(hash);
+  }
+
+  /**
    * @java game/Game.java — moves(context)
    *
    * Returns legal moves for the current state.
@@ -962,6 +1026,20 @@ export class Game implements Game {
     if (this.usesAutomove) {
       for (let i = 0; i < generated.length; i++) {
         generated[i] = this.resolveAutomoveChain(ctx, generated[i]!);
+      }
+    }
+
+    // @java Trial.java:292-301 (Trial.setLegalMoves) / Game.java:2943 —
+    // NoRepeat.apply(context, move) filters the final legal-move list right
+    // before the stalemated-flag cache write below, so the cached flag
+    // reflects the POST-filter move count exactly like Java. Scoped to
+    // PositionalInTurn only (see noRepeatType derivation in the
+    // constructor and {@link passesNoRepeat}); Positional/Situational/
+    // SituationalInTurn remain unimplemented no-ops — out of scope here
+    // (Go-family superko etc.).
+    if (this.noRepeatType === "PositionalInTurn" && generated.length > 0) {
+      for (let i = generated.length - 1; i >= 0; i--) {
+        if (!this.passesNoRepeat(ctx, generated[i]!)) generated.splice(i, 1);
       }
     }
 
@@ -1425,6 +1503,14 @@ export class Game implements Game {
     // Key: only use state.next if it was SET by the CURRENT MOVE's actions.
     // This avoids picking up a stale next-player from a previous (then (moveAgain)).
     let advanced = stateAfterPhase;
+    // @java Game.java:3145-3178 — the post-apply previousState /
+    // previousStateWithinATurn bookkeeping clears-vs-appends the within-turn
+    // history based on whether the mover actually changed. Hoisted here so
+    // Step 8 (trial.saveState) below can call trial.newTurn() at exactly the
+    // same turn boundary Java detects, whether or not the game declares
+    // `(meta (no Repeat PositionalInTurn))` — previousStatesWithinATurn is
+    // otherwise-inert bookkeeping for games that never consult it.
+    let turnChanged = false;
     if (!over) {
       // Find the ActionSetNextPlayer in the current move's actions, if any.
       // @java Game.java:3195 — the "next" override from ActionSetNextPlayer
@@ -1471,6 +1557,7 @@ export class Game implements Game {
       // @java ludeme-game.ts — advanced = phased.withMover(nextMover).withNext(0)
       advanced = advanced.withNext(0);
       if (nextMover !== newState.mover) {
+        turnChanged = true;
         // @java Game.java:3207 reinitNumTurnSamePlayer() — new turn: bump
         // numTurn, reset the same-player move counter.
         advanced = advanced.withNewTurn().withNumTurnSamePlayer(0);
@@ -1505,7 +1592,23 @@ export class Game implements Game {
     const finalWinner = over ? winner : -1;
     let trial = context.trial.withMove(appliedMove, over, finalWinner);
     if (ranking !== undefined) trial = trial.withRanking(ranking);
+    // @java Game.java:3145-3178 — state.mover() == state.prev() (same player
+    // continues) appends to previousStateWithinATurn; a genuine new turn
+    // CLEARS it first. trial.newTurn() (previously implemented but never
+    // called anywhere — see trial.ts) performs that clear; call it here,
+    // before saveState() appends the freshly-applied state's hash, so the
+    // within-turn history never leaks across a turn boundary.
+    if (turnChanged) trial = trial.newTurn();
     trial = trial.saveState(advanced);
+    // @java Game.java:3151-3162 — usesNoRepeatPositionalInTurn(): a SEPARATE
+    // mover-exclusive (State.stateHash()-equivalent) within-turn history,
+    // distinct from the mover-inclusive `previousStatesWithinATurn` above
+    // (fullHash-equivalent; serves SituationalInTurn / IsRepeat / IsCycle /
+    // Do-requirement consumers instead). Only PositionalInTurn NoRepeat is
+    // ported so far, so this is gated on that; inert for every other game.
+    if (this.noRepeatType === "PositionalInTurn") {
+      trial = trial.savePositionalTurnHash(advanced.positionalHash(), !turnChanged);
+    }
 
     const newCtx = new Context(this, advanced, trial, context.rng) as Context1to1;
     newCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;

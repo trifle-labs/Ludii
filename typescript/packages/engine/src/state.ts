@@ -1080,6 +1080,43 @@ export class State {
     return h >>> 0;
   }
 
+  /**
+   * Java parity: `State.stateHash()` (other/state/State.java:283) — "Includes
+   * container states and scores" (field comment at State.java:198), and
+   * DELIBERATELY EXCLUDES mover/active/pending, unlike {@link hash} (this
+   * port's `fullHash()`-equivalent, which XORs those in). Used by
+   * `Game.java:3145-3178` (`usesNoRepeatPositionalInGame`/`InTurn` history
+   * bookkeeping) and `NoRepeat.java:91,101` (Positional/PositionalInTurn
+   * comparisons), as opposed to `fullHash()` (mover-inclusive), used for the
+   * Situational/SituationalInTurn variants. See Game.passesNoRepeat and
+   * Trial.savePositionalTurnHash.
+   */
+  public positionalHash(): number {
+    let h = 0x811c9dc5;
+    const mix = (n: number): void => {
+      h ^= n & 0xff;
+      h = Math.imul(h, 0x01000193);
+      h ^= (n >>> 8) & 0xff;
+      h = Math.imul(h, 0x01000193);
+      h ^= (n >>> 16) & 0xff;
+      h = Math.imul(h, 0x01000193);
+      h ^= (n >>> 24) & 0xff;
+      h = Math.imul(h, 0x01000193);
+    };
+    for (const c of this.cells) mix(c);
+    for (const s of this.scores) mix(s);
+    for (const v of this.valuesPlayer) mix(v);
+    if (this.typedSites.size > 0) {
+      for (const type of [...this.typedSites.keys()].sort()) {
+        const ch = this.typedSites.get(type)!;
+        for (const w of ch.who) mix(w);
+        for (const w of ch.what) mix(w);
+        for (const c of ch.count) mix(c);
+      }
+    }
+    return h >>> 0;
+  }
+
   // -------------------------------------------------------------------------
   // @java other/state/container/ContainerState.java — the canonical accessor
   // names. STATE CONVERGENCE chunk 1 (PROJECT_COMPLETION Update 62): consumers

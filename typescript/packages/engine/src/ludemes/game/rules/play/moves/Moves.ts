@@ -223,10 +223,18 @@ export abstract class Moves implements MovesFunction {
 
   /**
    * @java Moves.canMove(Context)
-   * Returns true if there is at least one legal move in the given context.
+   * Returns true if there is at least one legal move in the given context
+   * that also passes NoRepeat (Java: `NoRepeat.apply(c, m) && NoSuicide.apply(c,
+   * m)`; NoSuicide is not ported, so it is treated as always-true here,
+   * matching pre-existing behaviour for every game that doesn't declare
+   * `(meta (no Repeat ...))`).
    */
   public canMove(ctx: Context): boolean {
     const generated = this.eval(ctx);
+    const game = ctx.game as { passesNoRepeat?(c: Context, m: Move): boolean };
+    if (typeof game.passesNoRepeat === "function") {
+      return generated.some(m => game.passesNoRepeat!(ctx, m));
+    }
     return generated.length > 0;
   }
 }

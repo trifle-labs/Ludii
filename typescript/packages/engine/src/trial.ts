@@ -29,6 +29,7 @@ export interface TrialOptions {
   readonly numInitialPlacementMoves?: number;
   readonly previousStates?: readonly number[];
   readonly previousStatesWithinATurn?: readonly number[];
+  readonly previousPositionalTurnHashes?: readonly number[];
   readonly ranking?: readonly number[];
 }
 
@@ -39,6 +40,17 @@ export class Trial {
   public readonly numInitialPlacementMoves: number;
   public readonly previousStates: readonly number[];
   public readonly previousStatesWithinATurn: readonly number[];
+  /**
+   * Java parity: `Game.java:3151-3162` — `usesNoRepeatPositionalInTurn()`
+   * within-turn history, tracked with `State.stateHash()`-equivalent
+   * (mover-EXCLUSIVE) hashes. Kept as a dedicated array, distinct from
+   * `previousStatesWithinATurn` above (mover-INCLUSIVE `fullHash()`-
+   * equivalent, matching Java's SituationalInTurn / IsRepeat / IsCycle /
+   * Do-requirement consumers), so this addition cannot regress any other
+   * game or ludeme. See `state.positionalHash()` and
+   * `Game.passesNoRepeat`/`Game.apply`.
+   */
+  public readonly previousPositionalTurnHashes: readonly number[];
   public readonly ranking: readonly number[];
 
   /**
@@ -85,6 +97,9 @@ export class Trial {
     this.previousStatesWithinATurn = Object.freeze([
       ...(opts.previousStatesWithinATurn ?? []),
     ]);
+    this.previousPositionalTurnHashes = Object.freeze([
+      ...(opts.previousPositionalTurnHashes ?? []),
+    ]);
     this.ranking = Object.freeze([...(opts.ranking ?? [])]);
   }
 
@@ -97,6 +112,7 @@ export class Trial {
       numInitialPlacementMoves: this.numInitialPlacementMoves,
       previousStates: this.previousStates,
       previousStatesWithinATurn: this.previousStatesWithinATurn,
+      previousPositionalTurnHashes: this.previousPositionalTurnHashes,
       ranking: this.ranking,
     });
     // Carry forward _startingPos (immutable starting positions, never changes during play).
@@ -116,6 +132,29 @@ export class Trial {
       numInitialPlacementMoves: this.numInitialPlacementMoves,
       previousStates: [...this.previousStates, hash],
       previousStatesWithinATurn: [...this.previousStatesWithinATurn, hash],
+      previousPositionalTurnHashes: this.previousPositionalTurnHashes,
+      ranking: this.ranking,
+    });
+    t._startingPos = this._startingPos;
+    return t;
+  }
+
+  /**
+   * Java parity: `Game.java:3151-3162` — `usesNoRepeatPositionalInTurn()`
+   * within-turn bookkeeping. `positionalHash` is `State.stateHash()`-
+   * equivalent (mover-exclusive). When `sameMover` is true (Java:
+   * `state.mover() == state.prev()`) the hash is appended to the
+   * within-turn history; otherwise the turn has passed to a new mover and
+   * the history resets to just this hash (Java: `.clear()` then `.add()`).
+   */
+  public savePositionalTurnHash(positionalHash: number, sameMover: boolean): Trial {
+    const t = new Trial(this.moves, this.over, this.winner, {
+      numInitialPlacementMoves: this.numInitialPlacementMoves,
+      previousStates: this.previousStates,
+      previousStatesWithinATurn: this.previousStatesWithinATurn,
+      previousPositionalTurnHashes: sameMover
+        ? [...this.previousPositionalTurnHashes, positionalHash]
+        : [positionalHash],
       ranking: this.ranking,
     });
     t._startingPos = this._startingPos;
@@ -132,6 +171,7 @@ export class Trial {
       numInitialPlacementMoves: this.numInitialPlacementMoves,
       previousStates: this.previousStates,
       previousStatesWithinATurn: [],
+      previousPositionalTurnHashes: this.previousPositionalTurnHashes,
       ranking: this.ranking,
     });
     t._startingPos = this._startingPos;
@@ -143,6 +183,7 @@ export class Trial {
       numInitialPlacementMoves: this.numInitialPlacementMoves,
       previousStates: this.previousStates,
       previousStatesWithinATurn: this.previousStatesWithinATurn,
+      previousPositionalTurnHashes: this.previousPositionalTurnHashes,
       ranking,
     });
     t._startingPos = this._startingPos;

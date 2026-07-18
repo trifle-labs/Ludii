@@ -44,6 +44,16 @@ export interface Game {
    * forced pass may omit it, and callers fall back to {@link moves}.
    */
   legalMovesRaw?(context: Context): readonly Move[];
+  /**
+   * Java parity: `game/rules/meta/no/repeat/NoRepeat.java` — `apply(Context,
+   * Move)`, consulted from both `Trial.setLegalMoves` (the top-level legal
+   * move filter, ported inside {@link moves}) and `Moves.canMove(Context)`
+   * (the `(can Move ...)` ludeme's own per-candidate predicate, ported in
+   * `ludemes/game/rules/play/moves/Moves.ts`). Optional: implementations
+   * without a `(meta (no Repeat ...))` port simply omit it, and callers
+   * fall back to treating every candidate as non-repeating.
+   */
+  passesNoRepeat?(context: Context, move: Move): boolean;
   apply(context: Context, move: Move): Context;
   over(context: Context): boolean;
   /**

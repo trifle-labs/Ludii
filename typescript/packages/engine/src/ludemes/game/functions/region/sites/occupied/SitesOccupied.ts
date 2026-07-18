@@ -368,8 +368,69 @@ export class SitesOccupied extends BaseRegionFunction {
           }
         }
       }
+    } else if (whoId > 0) {
+      // @java default, whoId>0 — SitesOccupied.java:144-160: with NO specific
+      // components, Java scans context.state().owned().sites(pid) /
+      // .positions(pid) — the maintained per-(player,component) registry —
+      // NOT a live cell scan. ActionMoveN's asymmetric registry bookkeeping
+      // (unconditional add on the `to` side, single remove only when the
+      // `from` side fully drains to 0 — ported verbatim in action-move.ts's
+      // transferCount branch, @java ActionMoveN.java:289-295) can leave
+      // STALE entries for sites a piece has since fully vacated; Java's
+      // occupied-set faithfully includes them, and downstream rules may
+      // legally depend on that staleness. There is no live-cell cross-check
+      // here for non-stacking games — the `top` post-filter below applies
+      // ONLY `if (top && isStacking())` (SitesOccupied.java:224-234), same
+      // as Java. India's RandomTrial_0/_1 (a hand-drop rule that lands on a
+      // site the raw board shows empty but the registry still lists as
+      // occupied) depend on exactly this stale-registry inclusion; the prior
+      // live cells[]/stacks[] scan here always agreed with the raw board and
+      // never reproduced it (MOVE_MISMATCH @ply32/37).
+      //
+      // `scanN` (computed above) already encodes the same board-vs-every-
+      // container bound Java's `loc.siteType().equals(type)` filter enforces
+      // here: `boardN` for a non-Cell-play board (Vertex/Edge — hand
+      // containers are ALWAYS Cell-type in Java, so they never qualify
+      // there), and `cells.length` (board+hand) for a Cell-play board (India
+      // needs its own hand site included in this same scan, subtracted back
+      // out by the caller's own region arithmetic). Bounding on `scanN`
+      // directly rather than trusting each Location's own `siteType()` is
+      // deliberate: the TS `owned` getter's unmaterialized live-scan
+      // fallback (state.ts) mistags every entry — including hand-container
+      // entries — with the board's own play SiteType, so a `siteType()`-based
+      // filter cannot distinguish a hand entry from a board entry there.
+      const positions = ctx.state.owned.positions(whoId);
+      const seen = new Set<number>();
+      for (const comp of positions) {
+        if (comp === undefined) continue;
+        for (const loc of comp) {
+          const site = loc.site();
+          if (site < 0 || site >= scanN) continue;
+          if (seen.has(site)) continue;
+          const w = ctx.state.whats[site] ?? whoId;
+          if (!whatOk(w)) continue;
+          seen.add(site);
+          sitesOccupied.push(site);
+        }
+      }
+      // @java top && isStacking() post-filter (SitesOccupied.java:224-234) —
+      // narrow to sites whose TOP owner is whoId; a buried same-owner piece
+      // under a different top owner no longer counts.
+      if (this.top && ctx.state.stackingGame) {
+        for (let i = sitesOccupied.length - 1; i >= 0; i--) {
+          const site = sitesOccupied[i]!;
+          const stack = stacks[site];
+          const topOwner = stack && stack.length > 0 ? (stack[stack.length - 1] ?? 0) : (cells[site] ?? 0);
+          if (topOwner !== whoId) sitesOccupied.splice(i, 1);
+        }
+      }
     } else {
-      // @java default — specific player (whoId)
+      // @java default, whoId<=0 — preserve the prior live-cell-scan
+      // behavior; registry membership for player 0 is not well-defined for
+      // this generic numeric path (whoId is neither a recognized RoleType
+      // handled by a dedicated branch above nor a positive player id), and
+      // the dedicated Neutral/All branches above already cover the common
+      // zero/negative-owner cases.
       for (let i = 0; i < scanN; i++) {
         const stack = stacks[i];
         // @java top:False on stacks — the owned positions cover EVERY level:
