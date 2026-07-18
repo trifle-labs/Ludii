@@ -405,34 +405,49 @@ export class Hop extends Effect {
                     break;
                   }
 
-                  // @java: goRule passed — valid landing
-                  const key = `${from}:${afterHurdleTo}`;
-                  if (!seen.has(key)) {
-                    seen.add(key);
-                    const actions: Action[] = [];
+                  // @java Hop.java:313 — `if (stopRule == null)`: goRule passing
+                  // (an empty/valid "pass-through" landing) only emits a plain
+                  // jump move when there is NO stopRule. When a stopRule IS
+                  // present (e.g. Xiang Hex's Pao cannon: `(to if:(is Empty
+                  // (to)) (apply if:(IsEnemyAt (to)) (remove (to))))`, whose
+                  // goRule="is Empty" gates continued walking and whose
+                  // stopRule="IsEnemyAt" gates the ONLY valid landing), empty
+                  // squares beyond the hurdle must be silently walked over —
+                  // NOT treated as landable — and only the first occupied site
+                  // (checked via stopRule, above) can end the walk. Emitting a
+                  // move here unconditionally made the cannon "capture" onto
+                  // every empty square beyond its screen instead of only the
+                  // first enemy piece (site18's Pao generated 45/54/63/72
+                  // beyond the blocker at 36 that Java correctly excludes).
+                  if (this.stopRule === null) {
+                    const key = `${from}:${afterHurdleTo}`;
+                    if (!seen.has(key)) {
+                      seen.add(key);
+                      const actions: Action[] = [];
 
-                    // Apply sideEffect on hurdle pieces
-                    for (let hi = 0; hi < hurdleLocs.length - fromMinHurdle; hi++) {
-                      const hurdleLoc = hurdleLocs[hi]!;
-                      (ctx as unknown as { _evalBetween?: number })._evalBetween = hurdleLoc;
-                      if (this.sideEffect !== null) {
-                        const sideMoves = this.sideEffect.eval(ctx);
-                        for (const sm of sideMoves) for (const a of sm.actions) {
+                      // Apply sideEffect on hurdle pieces
+                      for (let hi = 0; hi < hurdleLocs.length - fromMinHurdle; hi++) {
+                        const hurdleLoc = hurdleLocs[hi]!;
+                        (ctx as unknown as { _evalBetween?: number })._evalBetween = hurdleLoc;
+                        if (this.sideEffect !== null) {
+                          const sideMoves = this.sideEffect.eval(ctx);
+                          for (const sm of sideMoves) for (const a of sm.actions) {
+              (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+              actions.push(a);
+            }
+                        }
+                      }
+
+                      if (this.stopEffect !== null) {
+                        const stopMoves = this.stopEffect.eval(ctx);
+                        for (const sm of stopMoves) for (const a of sm.actions) {
               (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
               actions.push(a);
             }
                       }
-                    }
 
-                    if (this.stopEffect !== null) {
-                      const stopMoves = this.stopEffect.eval(ctx);
-                      for (const sm of stopMoves) for (const a of sm.actions) {
-              (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
-              actions.push(a);
-            }
+                      result.push(this.buildMove("jump", from, afterHurdleTo, mover, actions, hurdleLocs.slice(0, hurdleLocs.length - fromMinHurdle)));
                     }
-
-                    result.push(this.buildMove("jump", from, afterHurdleTo, mover, actions, hurdleLocs.slice(0, hurdleLocs.length - fromMinHurdle)));
                   }
 
                   // @java: check distance limit

@@ -45,7 +45,16 @@ export class Equals implements BooleanFunction {
 /** @java game/types/play/RoleType.java — RoleType.toIntFunction(role) */
 function roleToIntFunction(role: string): IntFunction {
   if (/^P\d+$/.test(role)) { const v = Number(role.slice(1)); return { eval: () => v }; }
-  if (role === "Neutral" || role === "Shared") return { eval: () => 0 };
+  if (role === "Neutral") return { eval: () => 0 };
+  // @java Id.java:117 (also :161) — RoleType.Shared has owner Constants.NOBODY
+  // (not > 0), so RoleType.toIntFunction (RoleType.java:190-196) resolves it
+  // dynamically via `new Id(null, Shared)`, whose eval() returns numPlayers+1
+  // — NOT 0. Grouping Shared with Neutral here made (= (who at:X) Shared)
+  // spuriously true whenever X was an empty/unowned site (who()==0), the
+  // mirror-image bug of the one in NotEqual.ts.
+  if (role === "Shared") {
+    return { eval: (ctx: Context): number => (ctx.game as unknown as { numPlayers: number }).numPlayers + 1 };
+  }
   return {
     eval: (ctx: Context): number => {
       const numPlayers = (ctx.game as unknown as { numPlayers: number }).numPlayers;

@@ -246,17 +246,32 @@ export class ForEachDirection extends Effect {
       // @java dirnChoice.convertToAbsolute(realType, fromV, component,
       // newDirection, null, ctx) — thread the derived heading to the compiled
       // directions resolver via context scratch (see ArgCompiler resolver).
-      const COMPASS8Pre: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
-      const preFacing = newDirection !== null && newDirection in COMPASS8Pre ? COMPASS8Pre[newDirection] : undefined;
+      // @java RelativeDirection.java / CompassDirection.java — newDirection can be
+      // any of the 16 hex-rotated winds (a rotated hex board's supported
+      // directions are named NNE/ENE/ESE/.../NNW, not just the 8 principal
+      // points). resolveRelativeDir's `facingOverride` is in 45deg units
+      // (0=N..7=NW) but internally doubles it (`facing16 = facingDir*2 % 16`,
+      // RelativeDirection.ts:364) to index the 16-point COMPASS16_CW ring, so
+      // the 8 secondary winds map to the HALF-integer units between the
+      // primary ones. The old 8-entry-only map left `preFacing`/`facing`
+      // undefined whenever newDirection was one of these secondary winds
+      // (e.g. Xiang Hex's Ma horse: leg step ENE/WNW), silently falling back
+      // to the stale/absent override and resolving {FR FL} of:All against the
+      // wrong heading (site4's leg-to-8 step is ENE but bent as if N),
+      // producing wrong/duplicate/missing destinations.
+      const COMPASS16: Record<string, number> = {
+        N: 0, NNE: 0.5, NE: 1, ENE: 1.5, E: 2, ESE: 2.5, SE: 3, SSE: 3.5,
+        S: 4, SSW: 4.5, SW: 5, WSW: 5.5, W: 6, WNW: 6.5, NW: 7, NNW: 7.5,
+      };
+      const preFacing = newDirection !== null && newDirection in COMPASS16 ? COMPASS16[newDirection] : undefined;
       const scratchCtx = context as unknown as { _dirFacingOverride?: number };
       const origOverride = scratchCtx._dirFacingOverride;
       if (preFacing !== undefined) scratchCtx._dirFacingOverride = preFacing;
       const rawDirections = this.dirnChoice.eval(context);
       scratchCtx._dirFacingOverride = origOverride;
-      const COMPASS8: Record<string, number> = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
       const mover = context.state.mover;
       const playerDirs = (context.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs;
-      const facing = newDirection !== null && newDirection in COMPASS8 ? COMPASS8[newDirection] : undefined;
+      const facing = newDirection !== null && newDirection in COMPASS16 ? COMPASS16[newDirection] : undefined;
       const directions = rawDirections.flatMap((d) => {
         const rel = resolveRelativeDir(d, mover, playerDirs, facing);
         if (Array.isArray(rel)) return rel;

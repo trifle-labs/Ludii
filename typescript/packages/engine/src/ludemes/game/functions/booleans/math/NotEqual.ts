@@ -49,7 +49,18 @@ export class NotEqual implements BooleanFunction {
 /** @java game/types/play/RoleType.java — RoleType.toIntFunction(role) */
 function roleToIntFunction(role: string): IntFunction {
   if (/^P\d+$/.test(role)) { const v = Number(role.slice(1)); return { eval: () => v }; }
-  if (role === "Neutral" || role === "Shared") return { eval: () => 0 };
+  if (role === "Neutral") return { eval: () => 0 };
+  // @java Id.java:117 (also :161) — RoleType.Shared has owner Constants.NOBODY
+  // (not > 0), so RoleType.toIntFunction (RoleType.java:190-196) resolves it
+  // dynamically via `new Id(null, Shared)`, whose eval() returns numPlayers+1
+  // — NOT 0. Grouping Shared with Neutral here made (!= (who at:X) Shared)
+  // spuriously false whenever X was an empty/unowned site (who()==0), which
+  // incorrectly blocked slide/step moves onto empty squares for pieces using
+  // a "not a Shared-owned piece" guard (e.g. Qi Guo Xiangxi's "NotaKing"
+  // macro on General/Deputy General/Officer).
+  if (role === "Shared") {
+    return { eval: (ctx: Context): number => (ctx.game as unknown as { numPlayers: number }).numPlayers + 1 };
+  }
   return {
     eval: (ctx: Context): number => {
       const numPlayers = (ctx.game as unknown as { numPlayers: number }).numPlayers;
