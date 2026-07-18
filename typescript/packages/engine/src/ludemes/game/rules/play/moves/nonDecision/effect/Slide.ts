@@ -15,6 +15,7 @@ import type { BooleanFunction, IntFunction, MovesFunction } from "../../../../..
 import type { Move } from "../../../../../../../move.js";
 import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
+import { ActionMoveLevelFrom } from "../../../../../../../action/action-move-level.js";
 import { ActionAdd } from "../../../../../../../action/action-add.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
 
@@ -172,6 +173,14 @@ export class Slide implements MovesFunction {
     ctx._evalFrom = from;
     this._rotFromSite = from;
 
+    // @java Slide.java:202-206 — resolve the explicit from-level (if any)
+    // once per eval(), before fromCondition/limit are evaluated.
+    const levelFrom = this.levelFromFn == null ? UNDEFINED_CONST : this.levelFromFn.eval(ctx);
+    if (this.levelFromFn != null && levelFrom < UNDEFINED_CONST) {
+      ctx._evalFrom = origFrom;
+      return [];
+    }
+
     if (this.fromCondition != null && !this.fromCondition.eval(ctx)) {
       ctx._evalFrom = origFrom;
       return [];
@@ -250,7 +259,7 @@ export class Slide implements MovesFunction {
         // end the slide or the pawn double-step never generates).
         if (this.stopRule != null && this.stopRule.eval(ctx)) {
           if (min <= toIdx) {
-            const move = this.buildMove(ctx, from, to, toIdx, betweenSites, mover, radial);
+            const move = this.buildMove(ctx, from, to, toIdx, betweenSites, mover, radial, levelFrom);
             if (this.toRule == null || this.toRule.eval(ctx)) {
               moves.push(this.withThen(ctx, move));
             }
@@ -264,7 +273,7 @@ export class Slide implements MovesFunction {
 
         // @java Slide.java:303-372 — if min reached, emit move
         if (min <= toIdx) {
-          const move = this.buildMove(ctx, from, to, toIdx, betweenSites, mover, radial);
+          const move = this.buildMove(ctx, from, to, toIdx, betweenSites, mover, radial, levelFrom);
           if (this.toRule == null || this.toRule.eval(ctx)) {
             moves.push(this.withThen(ctx, move));
           }
@@ -298,9 +307,20 @@ export class Slide implements MovesFunction {
     betweenSites: number[],
     mover: number,
     radial: Radial,
+    levelFrom: number,
   ): LudiiMove {
+    // @java Slide.java:233/240/259-266 — an explicit, defined from-level
+    // (levelFrom != UNDEFINED) on a non-`stack:True` slide is a genuinely
+    // explicit level ("Slide a piece at a specific level"): route through
+    // ActionMoveLevelFrom exactly as FromTo.ts already does, so the action
+    // (and the recorded-trial level-disambiguation tier in the parity
+    // harness) tags the correct stack level instead of defaulting to the
+    // top of the stack.
+    const useExplicitLevel = levelFrom !== UNDEFINED_CONST && !this.stack;
     const actions: import("../../../../../../../action/index.js").Action[] = [
-      new ActionMove({ from, to, stack: this.stack }),
+      useExplicitLevel
+        ? new ActionMoveLevelFrom(from, levelFrom, to)
+        : new ActionMove({ from, to, stack: this.stack }),
     ];
     actions[0]!.setDecision(true);
 

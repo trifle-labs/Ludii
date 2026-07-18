@@ -56,12 +56,37 @@ export class ActionSowSeed extends BaseAction {
     // give is a no-op. This is what makes a re-applied sow idempotent (Java
     // relies on the same guard when Do/Move re-applies the sow per next-move).
     if (state.countAtSite(this.fromIndex) <= 0) return state;
+    // @java Sow.java:257-280 + ActionMoveTopPiece.apply:~420-460 — a self-
+    // referential hop (a full-loop track's sow wrapping back onto its own
+    // origin, `to === from`) reads the origin's PRE-drain state
+    // (`currentStateFrom`, captured before `csFrom.remove()` clears it) and
+    // re-writes it onto the destination via the "state==UNDEFINED → carry
+    // currentStateFrom" branch — which for `to===from` nets out to the site's
+    // own state surviving the drain/redeposit round-trip. An ordinary
+    // (non-self) hop never imports the origin's state onto a DIFFERENT site —
+    // Sow.java deliberately bakes an explicit `toState` (the destination's own
+    // pre-hop state) into every hop where `startState != toState`, precisely
+    // to block that carry. Net Java behavior: a hop's destination keeps its
+    // own pre-hop state UNLESS destination === origin, in which case the
+    // origin's pre-hop state is preserved across the hop. TS's plain
+    // decrement/increment via ActionAddCount has no such carry — a self-loop
+    // hop's state clear (below, count→0) was never restored, so a site's
+    // "state" marker (e.g. Khutka Boia's captured-hole owner tag, set by a
+    // prior `(set State at:X N)`) silently vanished the instant a sow looped
+    // back onto its own origin, desyncing a later `(state at:site)` capture
+    // check and — via the missing capture's own trailing `(set State …)`
+    // sub-action — `Move.toAfterSubsequents()`'s "last To" for the next
+    // decision's `PlayFromNextLastHole` region.
+    const preHopFromState = this.fromIndex === this.toIndex ? state.stateAtSite(this.fromIndex) : 0;
     // @java per-seed transfer: origin -1 (removed at count 0), target +1. Reuse
     // ActionAddCount's count/owner/what/state bookkeeping for each half so the
     // "count → 0 clears what/state" and "seed component stamping" semantics stay
     // identical to a normal sow deposit.
     let s = new ActionAddCount(this.fromIndex, -1, this.seedOwner, this.seedWhat).apply(state);
     s = new ActionAddCount(this.toIndex, 1, this.seedOwner, this.seedWhat).apply(s);
+    if (this.fromIndex === this.toIndex && preHopFromState !== 0 && s.stateAtSite(this.toIndex) !== preHopFromState) {
+      s = s.withStateAt(this.toIndex, preHopFromState);
+    }
     return s;
   }
 

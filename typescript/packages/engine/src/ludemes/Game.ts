@@ -851,6 +851,7 @@ export class Game implements Game {
       requiresCountGame:
         ((this as unknown as { usesStacking?: boolean }).usesStacking !== true &&
           (this.equipment.hands.length > 0 ||
+            this.equipment.diceSpecs.length > 0 ||
             (this as unknown as { usesCount?: boolean }).usesCount === true)) ||
         undefined,
     });
@@ -2013,6 +2014,7 @@ export class Game implements Game {
         const requiresCount =
           (this as unknown as { usesStacking?: boolean }).usesStacking !== true &&
           (this.equipment.hands.length > 0 ||
+            this.equipment.diceSpecs.length > 0 ||
             (this as unknown as { usesCount?: boolean }).usesCount === true);
         countAt[site] = requiresCount ? (countAt[site] ?? 0) + count : 1;
         if (stateValue !== UNDEFINED) stateAt[site] = stateValue;

@@ -192,8 +192,25 @@ export class ActionRemove extends BaseAction {
       const lvl = (state.stacks[this.toIndex]?.length ?? 1) - 1;
       const own = state.stackAt(this.toIndex, lvl);
       const wht = state.whatAtSiteLevel(this.toIndex, lvl);
+      // Drop the removed piece from the per-state track-index structure
+      // (Java ActionRemoveTopPiece onTrackIndices block, Core/src/other/action/
+      // move/remove/ActionRemoveTopPiece.java) — this branch is the genuine
+      // per-level real-stack pop (unlike its siblings above and below, which
+      // already carry this call); omitting it here left a stale, never-
+      // decremented ring-index entry for every removal that lands here (e.g.
+      // a lone piece escaping/bearing off a track site with no countAt pile
+      // behind it), corrupting `TrackSiteMove`'s internal-loop disambiguation
+      // for any later piece sharing one of the track's duplicate sites.
+      const removedLevelWhat2 = wht;
+      const oti2 = state.onTrackIndices;
+      const loc2 = state.trackLocToIndex;
       let nx = state.withOwnedRemoveLevel(own, wht, this.toIndex, lvl);
       nx = nx.withStackPop(this.toIndex);
+      if (oti2 !== undefined && loc2 !== undefined && removedLevelWhat2 !== 0) {
+        nx = nx.withOnTrackIndices(
+          maintainOnTrackIndicesForRemove(oti2, loc2, removedLevelWhat2, this.toIndex),
+        );
+      }
       // @java ContainerStateStacks.java:693-712 — the level-less remove
       // zeroes state/rotation/VALUE at the vacated top slot, not just
       // who/what. withStackPop only splices per-level rows when they are

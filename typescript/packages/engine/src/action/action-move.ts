@@ -798,7 +798,35 @@ export class ActionMove extends BaseAction {
         // (the flat branch below) ever consults the stash, mirroring the one
         // Java call site that can actually resurface it
         // (ContainerStateStacks.java:278-301, ActionMoveTopPiece.java:485-498).
-        const preClearState = popped.stateAtSite(this.fromIndex);
+        //
+        // @java ContainerStateStacks.state(site, level, type) — the value to
+        // stash is the vacated PHYSICAL LEVEL's own per-level state, read
+        // BEFORE this pop's splice runs (mirrors action-move-level.ts's
+        // sibling `state.stateAtLevel(this.fromIndex, oldTopLevel)`, read
+        // from the pre-pop `state` argument, not the post-pop local). The
+        // previous `popped.stateAtSite(this.fromIndex)` read (a) the FLAT
+        // scalar, which a genuinely per-level site (its captured/capturing
+        // state written only via explicit `(set State at: level:)` writes,
+        // e.g. Puluc's "CaptureMove") never keeps in sync with the true
+        // per-level column, and (b) read it from `popped`, i.e. AFTER
+        // `withStackPop` above had already spliced the very level being
+        // vacated out of the per-level array — so both the accessor and the
+        // timing were wrong. `stateAtLevel` degrades to the identical flat
+        // read whenever no per-level column exists (or `topLevel` is 0), so
+        // this is a strict generalisation, not a behaviour change, for every
+        // site that lacks a materialised per-level state column. Puluc: a
+        // capturing piece's own drag-along "then" move
+        // (`CapturedPiecesFollowCapturingPiece`) relocates the CapturedPiece
+        // left at the site via this exact single-piece branch (its explicit
+        // `level:(level)` compiles to a plain ActionMove here, not
+        // ActionMoveLevelFrom, once the primary decision move has already
+        // popped the one level above it) — the flat/post-pop read always saw
+        // 0, so the stash never fired, so the piece's true CapturedPiece
+        // state=2 was lost; a hand-entry landing on that exact vacated
+        // physical depth 6 plies later inherited a wrong FreePiece(0)
+        // instead of Java's stale CapturedPiece(2), offering a real move
+        // where Java is forced to Pass (RandomTrial_0.txt ply 57).
+        const preClearState = state.stateAtLevel(this.fromIndex, topLevel);
         if (state.stackingGame && !this.fromHandSite && preClearState !== 0) {
           popped = popped.withResidualStateAtLevel(this.fromIndex, topLevel, preClearState);
         }
