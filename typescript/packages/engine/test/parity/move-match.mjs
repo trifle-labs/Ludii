@@ -80,13 +80,21 @@ export function recordedDecisionType(recMove) {
 function scoreCandidateActions(tsMove, recMove) {
   const tsActs = tsMove.actions ?? tsMove._actions ?? [];
   const sig = (a) => {
-    const out = { t: null, to: null, from: null, state: null, what: null, level: null };
+    const out = { t: null, to: null, from: null, state: null, what: null, level: null, fromType: null, toType: null };
     try { const t = a.actionType?.(); out.t = t == null ? null : String(t); } catch { /* ignore */ }
     try { const v = a.to?.(); if (typeof v === 'number') out.to = v; } catch { /* ignore */ }
     try { const v = a.from?.(); if (typeof v === 'number') out.from = v; } catch { /* ignore */ }
     try { const v = a.state?.(); if (typeof v === 'number') out.state = v; } catch { /* ignore */ }
     try { const v = a.what?.(); if (typeof v === 'number') out.what = v; } catch { /* ignore */ }
     try { const v = a.level?.(); if (typeof v === 'number') out.level = v; } catch { /* ignore */ }
+    // Dual-SiteType boards (e.g. Triple Tangle's `use:Vertex` board) share one
+    // numeric index space across Cell/Edge/Vertex — Cell 4, Edge 4 and Vertex 4
+    // are three DIFFERENT sites. Without fromType()/toType() in the signature,
+    // a Cell→Cell and a Cell→Vertex candidate sharing from=6,to=4 score
+    // identically and tie, so pickBestCandidate's "keep first" rule can pick
+    // the wrong-typed one, corrupting the typed-channel state.
+    try { const v = a.fromType?.(); if (typeof v === 'string') out.fromType = v; } catch { /* ignore */ }
+    try { const v = a.toType?.(); if (typeof v === 'string') out.toType = v; } catch { /* ignore */ }
     return out;
   };
   const tsSigs = tsActs.map(sig);
@@ -95,6 +103,11 @@ function scoreCandidateActions(tsMove, recMove) {
     const num = (k) => (ra.fields.has(k) ? Number(ra.fields.get(k)) : null);
     const rTo = num('to'); const rFrom = num('from'); const rState = num('state');
     const rWhat = num('what'); const rLevel = num('level');
+    // Move records carry typeFrom/typeTo; Add records carry a single `type`
+    // (the placed site's type — used for both, since a placement has no
+    // separate source site).
+    const rFromType = ra.fields.get('typeFrom') ?? ra.fields.get('type') ?? null;
+    const rToType = ra.fields.get('typeTo') ?? ra.fields.get('type') ?? null;
     let best = 0;
     for (const s of tsSigs) {
       if (s.t !== ra.actionType) continue;
@@ -104,6 +117,8 @@ function scoreCandidateActions(tsMove, recMove) {
       if (rState !== null && s.state === rState) pts += 1;
       if (rWhat !== null && s.what === rWhat) pts += 1;
       if (rLevel !== null && s.level === rLevel) pts += 1;
+      if (rFromType !== null && s.fromType === rFromType) pts += 1;
+      if (rToType !== null && s.toType === rToType) pts += 1;
       if (pts > best) best = pts;
     }
     score += best;

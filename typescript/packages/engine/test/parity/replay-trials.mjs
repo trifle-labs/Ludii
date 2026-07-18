@@ -490,6 +490,55 @@ function applySpawnPatch(preCtx, postCtx, recSpawn, game) {
  * consequence (e.g. a sow `(or … "TrackCW" … "TrackCCW" …)` emits two moves
  * 15→15 that sow in opposite directions).
  */
+// Extract the recorded site type(s) for a movement action ('Move') or
+// placement action ('Add') if present in the trial file. Java's Move records
+// carry `typeFrom=X`/`typeTo=Y`; Add records carry a single `type=Z` (used
+// as both, since a placement has no separate source site). Returns null
+// when the recorded action has no type fields at all (default-type-only
+// boards, where from/to already uniquely identify a site).
+function recordedActionSiteTypes(recMove, actionType) {
+  for (const a of recMove.actions) {
+    if (a.actionType !== actionType) continue;
+    const typeFrom = a.fields.get('typeFrom') ?? a.fields.get('type') ?? null;
+    const typeTo = a.fields.get('typeTo') ?? a.fields.get('type') ?? null;
+    if (typeFrom || typeTo) return { typeFrom, typeTo };
+  }
+  return null;
+}
+
+// Narrow a candidate list to those whose site-relocating action's TS site
+// type(s) (fromType()/toType()) match the trial file's recorded
+// typeFrom/typeTo (or single `type` for placements). On a board where more
+// than one SiteType shares the numeric index space — e.g. Triple Tangle's
+// `use:Vertex` board, where Cell 4, Edge 4 and Vertex 4 are three genuinely
+// DIFFERENT sites — from()/to() alone are ambiguous: a Cell→Cell move and a
+// Cell→Vertex move can both report from=6,to=4. Every other tier here (and
+// in move-match.mjs's scoreCandidateActions) scores purely on numeric
+// from/to/state/what/level and ties on exactly this case, so the
+// tie-break-keeps-first rule below picks an ARBITRARY (often wrong-typed)
+// candidate — silently corrupting the typed-channel state several plies
+// before a genuine MOVE_MISMATCH surfaces downstream. Only the recorded
+// typeFrom/typeTo disambiguates it, and it is ground truth straight from the
+// Java trial file, so this filter runs first, ahead of every heuristic tier.
+function narrowByRecordedSiteType(cands, recMove, actionType) {
+  if (cands.length <= 1) return cands;
+  const rec = recordedActionSiteTypes(recMove, actionType);
+  if (!rec) return cands;
+  const matches = cands.filter((m) => {
+    for (const a of m.actions ?? []) {
+      try {
+        if (typeof a.actionType !== 'function' || a.actionType() !== actionType) continue;
+        if (typeof a.fromType !== 'function' || typeof a.toType !== 'function') continue;
+        if (rec.typeFrom !== null && a.fromType() !== rec.typeFrom) continue;
+        if (rec.typeTo !== null && a.toType() !== rec.typeTo) continue;
+        return true;
+      } catch { /* ignore malformed action */ }
+    }
+    return false;
+  });
+  return matches.length > 0 ? matches : cands;
+}
+
 function candidateMatches(tsMoves, recMove) {
   const { mover, from, to } = recMove;
   // Match-boundary NextInstance moves (see move-match.mjs findMatchingMove).
@@ -499,10 +548,12 @@ function candidateMatches(tsMoves, recMove) {
   if (isPassRecordedMove(recMove)) return tsMoves.filter(m => m.isPass());
   if (isPlacementRecordedMove(recMove)) {
     const exact = tsMoves.filter(m => m.to() === to && (m.mover === mover || mover === 0));
-    return exact.length > 0 ? exact : tsMoves.filter(m => m.to() === to);
+    const tier = exact.length > 0 ? exact : tsMoves.filter(m => m.to() === to);
+    return narrowByRecordedSiteType(tier, recMove, 'Add');
   }
   const exact = tsMoves.filter(m => m.from() === from && m.to() === to && (m.mover === mover || mover === 0));
-  return exact.length > 0 ? exact : tsMoves.filter(m => m.from() === from && m.to() === to);
+  const tier = exact.length > 0 ? exact : tsMoves.filter(m => m.from() === from && m.to() === to);
+  return narrowByRecordedSiteType(tier, recMove, 'Move');
 }
 
 /**
@@ -670,6 +721,71 @@ function tsMovePromotionPiece(move) {
   return null;
 }
 
+// The source stack level a recorded move's DECISION Move action reads from
+// (Java: ActionMoveLevelFrom.levelFrom(), trial format's `[Move:...,
+// levelFrom=N,...,decision=true]` field). Stacking-race games (Tsun K'i,
+// Chonpa) compile `(forEach Level (site))` inside `(sites Occupied by:Mover
+// top:False)`, which iterates EVERY level at a qualifying site — including
+// levels owned by the OTHER player, since occupancy is checked per-site, not
+// per-level (Java's own move generator applies no per-level ownership
+// filter here, ground-truthed via JVM replay). That produces several
+// same-from/to candidates that differ ONLY in which stack level they
+// relocate; the recorded levelFrom is the sole field that names Java's
+// choice. Returns null when the recorded decision action carries no
+// levelFrom (every non-stacking-level ply), so this tier is a no-op there.
+//
+// Deliberately does NOT read levelTo: ActionMoveLevelFrom.levelTo() always
+// returns Java's GROUND_LEVEL sentinel (0) regardless of the real
+// destination level — Java never emits `levelTo=` in the trial format for
+// this action, so comparing it would just compare a Java constant against
+// whatever TS's own (unrelated) levelTo() clamp happens to compute,
+// injecting noise. Also deliberately does NOT use the aggregate
+// Move.levelFrom()/levelTo() accessors (src/move.ts): those clamp an
+// undefined level to 0, so a structurally level-agnostic candidate (a plain
+// ActionMove with no level component at all) reads as "level 0" and
+// false-matches a genuine recorded levelFrom=0 — this is what made an
+// earlier attempt at this tier (comparing the clamped Move-level accessors
+// against both levelFrom AND levelTo) regress Tsun K'i/Chonpa further:
+// wrong-level picks corrupted the mixed-owner stacks these games rely on.
+// Reading the decision action's OWN levelFrom() directly keeps
+// level-agnostic candidates at `null`, so they're correctly excluded
+// whenever the recorded ply names a specific level, and this tier is
+// inert (returns null candidates unfiltered) for every other game.
+function recordedDecisionLevelFrom(recMove) {
+  for (const a of recMove.actions) {
+    if (a.actionType !== 'Move' || a.fields.get('decision') !== 'true') continue;
+    if (!a.fields.has('levelFrom')) continue;
+    const lf = Number(a.fields.get('levelFrom'));
+    if (Number.isFinite(lf)) return lf;
+  }
+  return null;
+}
+
+// The stack level a TS candidate's piece-relocation Move action reads from
+// (ActionMoveLevelFrom.levelFrom()). Mirrors recordedDecisionLevelFrom, but
+// does NOT gate on isDecision(): unlike a recorded/reconstructed Move (whose
+// actions carry the trial-format `decision=true` flag Java itself wrote),
+// isDecision() on a freshly-generated TS candidate (game.moves()) is never
+// set to true on any of its actions — it appears to be populated only when
+// reconstructing a Move from serialized/trial data, not during live move
+// generation. Every ActionMove-family action (level-tagged or not) exposes
+// levelFrom(), using a `-1` sentinel when no level was specified (verified
+// via DEBUG_LEVELTIER instrumentation against the actual dist build); a
+// level-agnostic plain ActionMove reports lf=-1 uniformly. Returns null for
+// -1 (never for null), so it never spuriously ties a genuine recorded
+// levelFrom=0.
+function tsMoveDecisionLevelFrom(move) {
+  for (const a of move.actions ?? []) {
+    try {
+      if (typeof a.actionType !== 'function' || a.actionType() !== 'Move') continue;
+      if (typeof a.levelFrom !== 'function') continue;
+      const lf = a.levelFrom();
+      if (Number.isFinite(lf) && lf >= 0) return lf;
+    } catch { /* ignore malformed action */ }
+  }
+  return null;
+}
+
 /**
  * Among several from/to-equivalent candidates, pick the one whose applied
  * per-site count delta best matches the recorded move's seed distribution.
@@ -757,6 +873,20 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
   if (recPromote !== null) {
     const byPromotion = candidates.filter((c) => tsMovePromotionPiece(c) === recPromote);
     if (byPromotion.length > 0) candidates = byPromotion;
+    if (candidates.length === 1) return candidates[0];
+  }
+
+  // Disambiguate stacking-race moves that share mover/from/to but relocate
+  // DIFFERENT stack levels (Tsun K'i, Chonpa: `(forEach Level (site))` over
+  // a `(sites Occupied by:Mover top:False)` domain offers one candidate per
+  // level present at the site, including levels owned by the other player).
+  // Prefer the candidate whose decision action reads the recorded levelFrom.
+  // No-op (recLevelFrom stays null) for the vast majority of plies that
+  // carry no level information at all.
+  const recLevelFrom = recordedDecisionLevelFrom(recMove);
+  if (recLevelFrom !== null) {
+    const byLevel = candidates.filter((c) => tsMoveDecisionLevelFrom(c) === recLevelFrom);
+    if (byLevel.length > 0) candidates = byLevel;
     if (candidates.length === 1) return candidates[0];
   }
 
