@@ -186,8 +186,17 @@ export class FromTo implements MovesFunction {
       // Add.ts's large-piece path. Without this a pentomino move filled only the
       // anchor (Pentomino's (no Moves) end never fired; the L-tile in L Game).
       const lpWhat = ctx.state.whatAtSite(from);
-      const largePiece = (ctx.game as unknown as { equipment?: { pieces?: Array<{ index: number; walks?: readonly (readonly string[])[]; isDomino?: () => boolean }> } })
-        .equipment?.pieces?.find((p) => p.index === lpWhat && p.walks && p.walks.length > 0);
+      type DominoPieceSurface = {
+        index: number;
+        walks?: readonly (readonly string[])[];
+        isDomino?: () => boolean;
+        getValue?: () => number;
+        getValue2?: () => number;
+        isDoubleDomino?: () => boolean;
+      };
+      const equipmentPieces = (ctx.game as unknown as { equipment?: { pieces?: readonly DominoPieceSurface[] } })
+        .equipment?.pieces;
+      const largePiece = equipmentPieces?.find((p) => p.index === lpWhat && p.walks && p.walks.length > 0);
       if (largePiece?.walks) {
         const walks = largePiece.walks;
         const nbPossibleStates = walks.length * 4;
@@ -206,21 +215,61 @@ export class FromTo implements MovesFunction {
           const c = currentLocs[i];
           if (c !== undefined) newSitesTo.add(c);
         }
-        // @java largePiece.isDomino() — equipment pieces resolve to plain objects
-        // (no isDomino method) for tiles, so this is false and the non-domino test
-        // applies; a true Domino would need csTo.isPlayable + trial().moveNumber(),
-        // which no board→board domino-move game in scope uses.
+        // @java FromTo.java:472 largePiece.isDomino() — Equipment.ts now
+        // forwards isDomino()/getValue()/getValue2()/isDoubleDomino() from the
+        // real Domino component, so this resolves true for dominoes games.
         const isDomino = typeof largePiece.isDomino === "function" && largePiece.isDomino();
+        // @java FromTo.java:480 `context.trial().moveNumber() > 0` — ply 0
+        // (the very first domino) skips the isPlayable gate entirely, since
+        // the line-of-play bitset only seeds a single centre cell
+        // (State.java:1059-1060 / Game.ts start()) that can't itself cover
+        // an 8-cell footprint.
+        const moveNumber = (ctx.trial as unknown as { moveNumber?: number; numMoves?: number }).moveNumber
+          ?? (ctx.trial as unknown as { numMoves?: number }).numMoves
+          ?? 0;
+        // @java ActionMoveTopPiece.java:1410-1457 — thread the board geometry
+        // and per-component pip/walk data an isDomino placement needs at
+        // APPLY time (pip-value writes + full line-of-play recompute).
+        // `apply(state)` has no Context, so this is baked into the action here
+        // where ctx is still in scope.
+        const boardGeom = (ctx.game as unknown as {
+          equipment?: { board?: { width: number; height: number; numSites: number } };
+        }).equipment?.board;
+        const lineOfPlay = isDomino
+          ? {
+            boardWidth: boardGeom?.width ?? 0,
+            boardHeight: boardGeom?.height ?? 0,
+            numSites: boardGeom?.numSites ?? ctx.state.cells.length,
+            components: new Map(
+              (equipmentPieces ?? [])
+                .filter((p) => p.walks && p.walks.length > 0 && typeof p.isDomino === "function" && p.isDomino())
+                .map((p) => [
+                  p.index,
+                  {
+                    value: p.getValue?.() ?? 0,
+                    value2: p.getValue2?.() ?? 0,
+                    isDoubleDomino: p.isDoubleDomino?.() ?? false,
+                    walks: p.walks!,
+                  },
+                ]),
+            ),
+          }
+          : undefined;
         for (const to of newSitesTo) {
           if (to <= OFF) continue;
           for (let st = 0; st < nbPossibleStates; st++) {
             const locs = AddEffect.locsLargePiece(ctx, to, st, walks);
             if (locs.length === 0) continue;
-            // @java valid iff every footprint cell is a to-site / own-cell / from-anchor.
+            // @java valid iff every footprint cell is a to-site / own-cell /
+            // from-anchor (non-domino tiles), or is-playable (dominoes,
+            // FromTo.java:480: `!csTo.isPlayable(loc) && moveNumber()>0`).
             let valid = true;
-            if (!isDomino) {
-              for (const loc of locs) {
+            for (const loc of locs) {
+              if (!isDomino) {
                 if (!newSitesTo.has(loc) && loc !== from) { valid = false; break; }
+              } else if (!ctx.state.isPlayableAtSite(loc) && moveNumber > 0) {
+                valid = false;
+                break;
               }
             }
             // @java (from != to || localState != state) — skip the identity no-op.
@@ -230,7 +279,7 @@ export class FromTo implements MovesFunction {
             // footprint — self-overlap is fine (clearing precedes laying). Omitting
             // clearFootprint left the old body cells count=1 (phantom occupancy),
             // which corrupted (sites Empty) on later plies (the earlier regression).
-            const action = new ActionMove({ from, to, state: st, footprint: locs, clearFootprint: currentLocs });
+            const action = new ActionMove({ from, to, state: st, footprint: locs, clearFootprint: currentLocs, lineOfPlay });
             const move = new LudiiMove({
               id: `move:${mover}:${from}:${to}:${st}`,
               label: `Move(${from}->${to},r${st})`,
@@ -431,26 +480,42 @@ export class FromTo implements MovesFunction {
           // shared site) relocated the WRONG piece. Route an explicit, in-range
           // levelFrom through ActionMoveLevelFrom; otherwise (no level / -1) keep
           // the top-pop ActionMove unchanged.
-          // Only route through ActionMoveLevelFrom when the level is genuinely
-          // NON-TOP (a piece buried under others on a shared site — Gyan
-          // Chaupar's P2 at level 0 under P3). When the level IS the stack top
-          // (or the site is a single piece), the plain top-popping ActionMove is
-          // equivalent and must be kept: it routes through ActionMove's full
-          // count-pile/ownedEntries handling that ActionMoveLevelFrom does not
-          // replicate (narrowing here avoids regressing Ashta-kashte's top-level
-          // level: moves while still fixing Gyan's buried-piece move).
+          // Route through ActionMoveLevelFrom for ANY explicit, in-range level
+          // on a genuine multi-ENTRY stack (distinct pieces per level), whether
+          // or not that level happens to be the current top. @java
+          // FromTo.java:328-343 / ActionMove.construct (levelFrom>=0 branch)
+          // dispatch to ActionMoveLevelFrom purely on whether `level:` is
+          // SYNTACTICALLY present — a STATIC, ludeme-syntax decision, never
+          // conditioned on whether the popped level equals the runtime stack
+          // top. Collapsing a top-level `level:` move to a plain top-popping
+          // ActionMove (as this code used to do) diverges from Java's dirty,
+          // explicit-level `remove(state,site,level,type)` overload, which
+          // clears what/who at the vacated top but leaves `state` physically
+          // stale there (Common/src/main/collections/ChunkStack.java: per-level
+          // accessors are guarded by `level < size`, so a stale byte written
+          // while size was larger becomes visible again once the stack regrows
+          // to that depth) — Boolik's "CapturedPiecesFollowCapturingPiece"
+          // `(forEach Level … FromTop (fromTo (from (last From) level:(level))
+          // (to (last To))))` drains a 3-level stack top-down via 3 separate
+          // ActionMoveLevelFrom relocations (levelFrom=2,1,0); the first of
+          // those has levelFrom EQUAL to the then-current top, so it was
+          // wrongly routed to plain ActionMove here, silently losing the
+          // faithful stale-state residue and desyncing site2 several plies
+          // later when the site regrew (ply244/RandomTrial_1.txt).
+          //
+          // Require a genuine multi-ENTRY stack (distinct pieces per level), not
+          // a count-backed pile (stacks.length<=1 with countAt>1):
+          // ActionMoveLevelFrom's count-pile branch differs from plain
+          // ActionMove's, which Ashta-kashte's count-backed level: moves rely
+          // on — that case is excluded by `fromStackLen > 1` alone, independent
+          // of whether `lv` is the top. Keep the capture-return hazard escape
+          // hatch (Gavalata/Main Pacheh): even on a single-entry site
+          // (fromStackLen<=1) a HittingCapture can re-occupy `from`'s top
+          // between generation and apply time, so force the explicit-level
+          // path there regardless of fromStackLen.
           const lv = this.levelFrom !== null ? this.levelFrom.eval(ctx) : -1;
           const fromStackLen = ctx.state.stacks[from]?.length ?? 0;
-          // Require a genuine multi-ENTRY stack (distinct pieces per level), not a
-          // count-backed pile (stacks.length<=1 with countAt>1): ActionMoveLevelFrom's
-          // count-pile branch differs from plain ActionMove's, which Ashta-kashte's
-          // count-backed level: moves rely on. Gyan's buried piece is a true stack.
-          // @java FromTo.java:328-343 bakes levelFrom unconditionally when
-          // present — Java never falls back to a top-pop. Force the explicit-
-          // level path whenever the capture-return hazard is live, even if
-          // `lv` looks like the top at generation time: the prepended capture
-          // will have re-occupied the top by apply time.
-          if (lv >= 0 && (captureReturnsToFrom || (lv < fromStackLen - 1 && fromStackLen > 1))) {
+          if (lv >= 0 && (captureReturnsToFrom || fromStackLen > 1)) {
             moveAction = new ActionMoveLevelFrom(from, lv, to);
           } else {
             // Dual-SiteType: stamp the declared types so application routes

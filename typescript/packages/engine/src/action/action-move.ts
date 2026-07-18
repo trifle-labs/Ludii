@@ -101,6 +101,164 @@ export interface ActionMoveOptions {
    * instant it enters the board, then preserved on every board hop.
    */
   readonly fromHandSite?: boolean;
+  /**
+   * Dominoes line-of-play data (@java ActionMoveTopPiece.java:1410-1457,
+   * gated there by `context.game().usesLineOfPlay() && containerId[to]==0`).
+   * When set, `apply` — after laying the new footprint — (a) writes the
+   * placed domino's pip values onto its own 8-cell footprint (locs[0..3] =
+   * getValue(), locs[4..7] = getValue2()) and (b) fully recomputes the
+   * `playableAt` bitset from scratch: clear every board site, then for every
+   * occupied board site replay {@link lineOfPlayDominoesFlat} on its
+   * WEST/EAST edges (always) and NORTH/SOUTH edges (if that site's own
+   * component isDoubleDomino). Computed by the caller (FromTo.ts, which has
+   * Context) since `apply(state)` does not.
+   */
+  readonly lineOfPlay?: {
+    readonly boardWidth: number;
+    readonly boardHeight: number;
+    readonly numSites: number;
+    readonly components: ReadonlyMap<
+      number,
+      { value: number; value2: number; isDoubleDomino: boolean; walks: readonly (readonly string[])[] }
+    >;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Dominoes line-of-play helpers
+// ---------------------------------------------------------------------------
+
+type Compass = "N" | "E" | "S" | "W";
+
+/**
+ * @java Component.locs(Context, int, int, Topology) — turtle-walk footprint
+ * of a large piece, reimplemented here (self-contained, no Context) purely
+ * from board width/height so ActionMove.apply can recompute EVERY occupied
+ * domino's footprint without a Context. Mirrors Add.ts's locsLargePiece
+ * fallback stepper exactly (row/col arithmetic — Block's boardless Square
+ * topology has no custom trajectories to consult).
+ */
+function locsLargePieceFlat(
+  from: number,
+  state: number,
+  walks: readonly (readonly string[])[],
+  W: number,
+  H: number,
+): number[] {
+  const ORTHO: readonly Compass[] = ["N", "E", "S", "W"];
+  const indexWalk = Math.floor(state / 4) % walks.length;
+  const walk = walks[indexWalk];
+  if (!walk) return [];
+  let dirIdx = state % 4;
+  const stepTo = (site: number, dir: Compass): number => {
+    const col = site % W;
+    const row = Math.floor(site / W);
+    switch (dir) {
+      case "E": return col + 1 < W ? site + 1 : -1;
+      case "W": return col - 1 >= 0 ? site - 1 : -1;
+      case "N": return row + 1 < H ? site + W : -1;
+      case "S": return row - 1 >= 0 ? site - W : -1;
+    }
+  };
+  const out: number[] = [from];
+  let cur = from;
+  for (const step of walk) {
+    if (step === "F") {
+      const to = stepTo(cur, ORTHO[dirIdx]!);
+      if (to < 0) return [];
+      cur = to;
+      if (!out.includes(cur)) out.push(cur);
+    } else if (step === "R") {
+      dirIdx = (dirIdx + 1) % 4;
+    } else if (step === "L") {
+      dirIdx = (dirIdx + 3) % 4;
+    }
+  }
+  return out;
+}
+
+/** 90°-left of a compass direction (@java DirectionFacing.left().left()). */
+function leftOf(d: Compass): Compass {
+  return d === "N" ? "W" : d === "W" ? "S" : d === "S" ? "E" : "N";
+}
+/** 90°-right of a compass direction (@java DirectionFacing.right().right()). */
+function rightOf(d: Compass): Compass {
+  return d === "N" ? "E" : d === "E" ? "S" : d === "S" ? "W" : "N";
+}
+function stepFlat(site: number, dir: Compass, W: number, H: number): number {
+  const col = site % W;
+  const row = Math.floor(site / W);
+  switch (dir) {
+    case "E": return col + 1 < W ? site + 1 : -1;
+    case "W": return col - 1 >= 0 ? site - 1 : -1;
+    case "N": return row + 1 < H ? site + W : -1;
+    case "S": return row - 1 >= 0 ? site - W : -1;
+  }
+}
+
+/**
+ * @java BaseAction.java:220-306 lineOfPlayDominoes(Context, site1, site2,
+ * dirn, doubleDomino, leftOrientation) — walks up to 4 steps radially from
+ * both edge cells `site1`/`site2` in direction `dirn`; while both stepped
+ * cells stay empty, marks both playable, and (for a non-double domino, on
+ * the first two steps) opens one extra 90°-rotated cell on each side. Board
+ * geometry replaces Java's `topology.trajectories().radials(...)` — Block's
+ * boardless Square grid has no custom trajectory table, only row/col steps.
+ */
+function lineOfPlayDominoesFlat(
+  playable: boolean[],
+  isEmpty: (site: number) => boolean,
+  site1: number,
+  site2: number,
+  dirn: Compass,
+  doubleDomino: boolean,
+  leftOrientation: boolean,
+  W: number,
+  H: number,
+): void {
+  let cur1 = site1;
+  let cur2 = site2;
+  for (let i = 1; i < 5; i++) {
+    const to1 = stepFlat(cur1, dirn, W, H);
+    const to2 = stepFlat(cur2, dirn, W, H);
+    if (to1 < 0 || to2 < 0) return;
+    if (!isEmpty(to1) || !isEmpty(to2)) return;
+    playable[to1] = true;
+    playable[to2] = true;
+    if (!doubleDomino && i < 3) {
+      const leftD = leftOf(dirn);
+      const rightD = rightOf(dirn);
+      if (leftOrientation) {
+        const l1 = stepFlat(site1, leftD, W, H);
+        if (l1 >= 0 && isEmpty(l1)) playable[l1] = true;
+        const l2 = stepFlat(site2, rightD, W, H);
+        if (l2 >= 0 && isEmpty(l2)) playable[l2] = true;
+      } else {
+        const r1 = stepFlat(site1, rightD, W, H);
+        if (r1 >= 0 && isEmpty(r1)) playable[r1] = true;
+        const r2 = stepFlat(site2, leftD, W, H);
+        if (r2 >= 0 && isEmpty(r2)) playable[r2] = true;
+      }
+    }
+    cur1 = to1;
+    cur2 = to2;
+  }
+}
+
+/**
+ * @java BaseAction.getDirnDomino(int side, int state) — fixed lookup table:
+ * which absolute compass direction a domino's given side (0=West,1=North,
+ * 2=East,3=South, as labelled for state 0) opens toward once rotated to
+ * `state`.
+ */
+const DIRN_DOMINO: readonly (readonly Compass[])[] = [
+  ["W", "N", "E", "S"], // side 0 (WEST at state 0)
+  ["N", "E", "S", "W"], // side 1 (NORTH at state 0)
+  ["E", "S", "W", "N"], // side 2 (EAST at state 0)
+  ["S", "W", "N", "E"], // side 3 (SOUTH at state 0)
+];
+function getDirnDomino(side: number, state: number): Compass {
+  return DIRN_DOMINO[side]![state % 4]!;
 }
 
 export class ActionMove extends BaseAction {
@@ -128,6 +286,8 @@ export class ActionMove extends BaseAction {
   private readonly fromTypedNonDefault: boolean;
   /** @see ActionMoveOptions.fromHandSite */
   private readonly fromHandSite: boolean;
+  /** @see ActionMoveOptions.lineOfPlay */
+  private readonly lineOfPlay: ActionMoveOptions["lineOfPlay"];
 
   public constructor(options: ActionMoveOptions) {
     super();
@@ -155,6 +315,7 @@ export class ActionMove extends BaseAction {
     this.toTypedNonDefault = options.toTypedNonDefault ?? false;
     this.fromTypedNonDefault = options.fromTypedNonDefault ?? false;
     this.fromHandSite = options.fromHandSite ?? false;
+    this.lineOfPlay = options.lineOfPlay;
   }
 
   public override apply(state: State): State {
@@ -304,8 +465,72 @@ export class ActionMove extends BaseAction {
       if (this.stateValue !== ACTION_OFF) {
         next = next.withStateAt(this.toIndex, this.stateValue);
       }
+      // @java ActionMoveTopPiece.java:1416-1418 — `countTo = (usesLineOfPlay()
+      // ? piece.index() : 1)`. Non-anchor domino body cells carry no
+      // what/who at all (only the anchor does, above), so for line-of-play
+      // (dominoes) games the piece's IDENTITY on those cells is recoverable
+      // ONLY via this count field — IsPipsMatch's countCell(loc) equality
+      // check (which domino occupies two neighbouring border cells) depends
+      // on it. Non-domino large pieces (Pentomino/L-Game) keep the uniform
+      // count=1 occupancy marker.
+      const footprintCountValue = this.lineOfPlay ? movingWhat : 1;
       for (const loc of this.footprint) {
-        if (loc >= 0) next = next.withCountAt(loc, 1);
+        if (loc >= 0) next = next.withCountAt(loc, footprintCountValue);
+      }
+      // @java ActionMoveTopPiece.java:1410-1457 — gated by
+      // `context.game().usesLineOfPlay() && containerId[to] == 0`; when this
+      // is a dominoes line-of-play move (this.lineOfPlay set by FromTo.ts,
+      // which has the Context this apply() lacks):
+      if (this.lineOfPlay) {
+        const { boardWidth: W, boardHeight: H, numSites, components } = this.lineOfPlay;
+        // @java lines 1421-1428 — pip-value writes on the just-placed piece's
+        // own footprint: locs[0..3] = getValue(), locs[4..7] = getValue2().
+        const placedComp = components.get(movingWhat);
+        if (placedComp) {
+          for (let i = 0; i < this.footprint.length; i++) {
+            const loc = this.footprint[i];
+            if (loc === undefined || loc < 0) continue;
+            next = next.withValueAt(loc, i < 4 ? placedComp.value : placedComp.value2);
+          }
+        }
+        // @java lines 1434-1457 — full playable-bitset recompute: clear every
+        // site, then for every occupied board site replay lineOfPlayDominoes
+        // on its WEST/EAST edges (always) and NORTH/SOUTH edges (if that
+        // site's own component isDoubleDomino).
+        const playable = new Array<boolean>(numSites).fill(false);
+        // @java ContainerState.isEmpty(site) — a large piece's body cells carry
+        // only setCount(loc,1) (no what/who: ActionMove.applyLargePiece), so
+        // occupancy must go through State.isEmptySite (what OR stack OR count),
+        // not a bare whatAtSite()===0 check (which only the ANCHOR cell sets).
+        const isEmpty = (site: number): boolean => next.isEmptySite(site);
+        for (let i = 0; i < numSites; i++) {
+          const w = next.whatAtSite(i);
+          if (w === 0) continue;
+          const comp = components.get(w);
+          if (!comp) continue;
+          const st = next.stateAtSite(i);
+          const locsAt = locsLargePieceFlat(i, st, comp.walks, W, H);
+          if (locsAt.length < 8) continue;
+          // @java getDirnDomino(0, state) / getDirnDomino(2, state) — WEST/EAST
+          // edges always opened.
+          lineOfPlayDominoesFlat(
+            playable, isEmpty, locsAt[0]!, locsAt[1]!, getDirnDomino(0, st), false, true, W, H,
+          );
+          lineOfPlayDominoesFlat(
+            playable, isEmpty, locsAt[7]!, locsAt[6]!, getDirnDomino(2, st), false, false, W, H,
+          );
+          if (comp.isDoubleDomino) {
+            // @java getDirnDomino(1, state) / getDirnDomino(3, state) —
+            // NORTH/SOUTH edges additionally opened for a double.
+            lineOfPlayDominoesFlat(
+              playable, isEmpty, locsAt[2]!, locsAt[5]!, getDirnDomino(1, st), true, true, W, H,
+            );
+            lineOfPlayDominoesFlat(
+              playable, isEmpty, locsAt[3]!, locsAt[4]!, getDirnDomino(3, st), true, true, W, H,
+            );
+          }
+        }
+        next = next.withPlayableAll(playable);
       }
       return next;
     }

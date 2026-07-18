@@ -58,6 +58,42 @@ export class CountPieces implements IntFunction {
    * @java If — evaluated after context.setSite(site) (TS: ctx._evalSite = site).
    */
   public eval(ctx: Context): number {
+    // @java CountPieces.java:87-88 — `if (name != null && name.equals("Bag"))
+    // return context.state().remainingDominoes().size();`. "Bag" is not a
+    // component-name filter; it is the domino draw-pile size. Java keeps a
+    // real persistent bag field (State.java:176/2111, seeded by
+    // Game.java:2703-2705, decremented by ActionAdd.java:299-301 the instant
+    // a domino is first placed anywhere — board or hand). TS has no
+    // persistent bag field, so recompute the same on-demand complement set
+    // TakeDomino.ts uses: every domino component id not currently occupying
+    // any board or hand site.
+    if (this.pieceName === "Bag") {
+      const components = typeof ctx.components === "function" ? ctx.components() : null;
+      if (!components) return 0;
+      const containers = ctx.containers();
+      const sitesFrom = ctx.sitesFrom();
+      let totalSites = 0;
+      for (let id = 0; id < containers.length; id++) {
+        const base = sitesFrom[id];
+        if (base === undefined) continue;
+        const end = base + containers[id]!.numSites();
+        if (end > totalSites) totalSites = end;
+      }
+      const placedIds = new Set<number>();
+      for (let s = 0; s < totalSites; s++) {
+        const w = ctx.state.whatAtSite(s);
+        if (w !== 0) placedIds.add(w);
+      }
+      let count = 0;
+      for (let id = 1; id < components.length; id++) {
+        const comp = components[id] as { isDomino?: () => boolean } | undefined;
+        if (comp && typeof comp.isDomino === "function" && comp.isDomino() && !placedIds.has(id)) {
+          count++;
+        }
+      }
+      return count;
+    }
+
     const cells = ctx.state.cells;
     const whatsArr = (ctx.state as unknown as { whats?: readonly number[] }).whats;
     const stacks = ctx.state.stacks;

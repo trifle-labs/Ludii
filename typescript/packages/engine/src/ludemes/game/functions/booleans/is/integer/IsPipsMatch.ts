@@ -13,6 +13,44 @@ import type { Context } from "../../../../../../context.js";
 import { BaseBooleanFunction } from "../../BaseBooleanFunction.js";
 import type { IntFunction } from "../../../../../base.js";
 import { LastTo } from "../../../ints/last/LastTo.js";
+import { Add as AddEffect } from "../../../../rules/play/moves/nonDecision/effect/Add.js";
+
+type Compass = "N" | "E" | "S" | "W";
+const ORTHO_DIRS: readonly Compass[] = ["N", "E", "S", "W"];
+
+/**
+ * Single bounded step from `site` in compass direction `dir`, or -1 if it
+ * would leave the board. @java identical row/col arithmetic to the stepper
+ * duplicated in action-move.ts's lineOfPlayDominoesFlat / Add.ts's
+ * locsLargePiece fallback (Block's boardless Square topology has no custom
+ * trajectory table to consult — `context.topology().trajectories()` is not
+ * implemented in this port, so the orthogonal-neighbour/radial walks below
+ * use the same row/col fallback Add.ts and action-move.ts already rely on,
+ * rather than the (non-functional here) Java `Topology.trajectories()` API).
+ */
+function stepFlat(site: number, dir: Compass, W: number, H: number): number {
+  const col = site % W;
+  const row = Math.floor(site / W);
+  switch (dir) {
+    case "E": return col + 1 < W ? site + 1 : -1;
+    case "W": return col - 1 >= 0 ? site - 1 : -1;
+    case "N": return row + 1 < H ? site + W : -1;
+    case "S": return row - 1 >= 0 ? site - W : -1;
+  }
+}
+
+/** Every cell stepping outward from `site` in `dir` until off-board (excludes `site` itself). */
+function rayFrom(site: number, dir: Compass, W: number, H: number): number[] {
+  const out: number[] = [];
+  let cur = site;
+  for (;;) {
+    const next = stepFlat(cur, dir, W, H);
+    if (next < 0) break;
+    out.push(next);
+    cur = next;
+  }
+  return out;
+}
 
 /**
  * Detects whether the pips of a domino match its neighbours.
@@ -39,119 +77,77 @@ export class IsPipsMatch extends BaseBooleanFunction {
    */
   public override eval(context: Context): boolean {
     const site = this.siteFn.eval(context);
-
-    // Escape-hatch typed context API
-    const ctx = context as unknown as {
-      containerId?: () => number[];
-      containerState?: (cid: number) => {
-        what?: (idx: number, type: string) => number;
-        valueCell?: (idx: number) => number;
-        isEmpty?: (idx: number, type: string) => boolean;
-        isOccupied?: (idx: number) => boolean;
-        countCell?: (idx: number) => number;
-        state?: (idx: number, type: string) => number;
-      };
-      components?: () => Array<{
-        isDomino?: () => boolean;
-        locs?: (ctx: Context, site: number, state: number, topology: unknown) => number[];
-        owner?: () => number;
-      }>;
-      topology?: () => {
-        cells?: () => Array<{ index?: () => number }>;
-        trajectories?: () => {
-          steps?: (
-            type: string,
-            fromIdx: number,
-            toType: string,
-            dir: string,
-          ) => Array<{ to?: () => { id?: () => number } }>;
-          radials?: (
-            type: string,
-            fromIdx: number,
-            dir: string,
-          ) => Array<{
-            steps?: () => Array<{ id?: () => number }>;
-          }>;
-        };
-      };
-      trial?: { moveNumber?: () => number };
-    };
-
-    const containerIdArr = typeof ctx.containerId === "function" ? ctx.containerId() : null;
-    const cid = (containerIdArr && containerIdArr.length > site) ? (containerIdArr[site] ?? 0) : 0;
-
-    const cs = typeof ctx.containerState === "function" ? ctx.containerState(cid) : null;
-    if (!cs) return true;
+    const state = context.state;
 
     // Java: final int what = cs.what(site, SiteType.Cell);
-    const what = typeof cs.what === "function" ? cs.what(site, "Cell") : 0;
+    const what = state.whatAtSite(site);
 
     // Java: if (what == 0) return true;
     if (what === 0) {
       return true;
     }
 
-    const components = typeof ctx.components === "function" ? ctx.components() : null;
+    // Call bound to `context` (not destructured) — components() reads `this.game`.
+    const components = typeof context.components === "function" ? context.components() : null;
     if (!components || what < 0 || what >= components.length) return true;
-    const component = components[what];
+    const component = components[what] as {
+      isDomino?: () => boolean;
+      walks?: readonly (readonly string[])[];
+    } | undefined;
     if (!component) return true;
-
-    const topology = typeof ctx.topology === "function" ? ctx.topology() : null;
 
     // Java: if (!component.isDomino()) return true;
     if (typeof component.isDomino !== "function" || !component.isDomino()) {
       return true;
     }
 
-    // Java: final int state = cs.state(site, SiteType.Cell);
-    const state = typeof cs.state === "function" ? cs.state(site, "Cell") : 0;
+    const boardGeom = (context.game as unknown as {
+      equipment?: { board?: { width: number; height: number } };
+    }).equipment?.board;
+    const W = boardGeom?.width ?? 0;
+    const H = boardGeom?.height ?? 0;
+
+    // Java: final int stateAt = cs.state(site, SiteType.Cell);
+    const stateAt = state.stateAtSite(site);
 
     // Java: final TIntArrayList locs = component.locs(context, site, state, context.topology());
-    const locs: number[] = (typeof component.locs === "function")
-      ? component.locs(context, site, state, topology)
+    // No custom trajectory table for a boardless Square grid — the row/col
+    // fallback stepper (same one action-move.ts's lineOfPlayDominoesFlat and
+    // Add.ts's locsLargePiece already use) replaces Topology.trajectories().
+    const locs: number[] = component.walks
+      ? AddEffect.locsLargePiece(context, site, stateAt, component.walks)
       : [];
 
     const locsAroundOccupied: number[] = [];
 
-    const trajectories = (topology && typeof topology.trajectories === "function")
-      ? topology.trajectories()
-      : null;
-
     for (let li = 0; li < locs.length; li++) {
       const loc = locs[li]!;
-      const value = typeof cs.valueCell === "function" ? cs.valueCell(loc) : 0;
+      const value = state.valueAtSite(loc);
 
       // Java: steps(SiteType.Cell, cell.index(), SiteType.Cell, AbsoluteDirection.Orthogonal)
-      const steps = (trajectories && typeof trajectories.steps === "function")
-        ? trajectories.steps("Cell", loc, "Cell", "Orthogonal")
-        : [];
-
-      for (const step of steps) {
-        const stepToObj = typeof step.to === "function" ? step.to() : null;
-        const stepTo = stepToObj !== null
-          ? (typeof (stepToObj as unknown as { id?: () => number }).id === "function"
-            ? (stepToObj as unknown as { id: () => number }).id()
-            : -1)
-          : -1;
+      for (const dir of ORTHO_DIRS) {
+        const stepTo = stepFlat(loc, dir, W, H);
         if (stepTo < 0) continue;
 
         if (locs.includes(stepTo)) continue; // We do not check in the domino itself
 
-        const valueTo = typeof cs.valueCell === "function" ? cs.valueCell(stepTo) : 0;
-        const empty = typeof cs.isEmpty === "function" ? cs.isEmpty(stepTo, "Cell") : true;
+        const valueTo = state.valueAtSite(stepTo);
+        const empty = state.isEmptySite(stepTo);
         if (!empty && valueTo !== value) {
           return false;
         }
 
-        if (typeof cs.isOccupied === "function" && cs.isOccupied(stepTo)) {
+        // Java: cs.isOccupied(to) — component-based occupancy (what != 0),
+        // matching State.isOccupiedSite (what OR stack OR count).
+        if (!empty) {
           locsAroundOccupied.push(stepTo);
         }
       }
     }
 
     // Java: if (context.trial().moveNumber() > 1)
-    const trial = context.trial as unknown as { moveNumber?: () => number };
-    const moveNumber = typeof trial.moveNumber === "function" ? trial.moveNumber() : 0;
+    const trial = context.trial as unknown as { moveNumber?: number; numMoves?: number };
+    const moveNumber = trial.moveNumber ?? trial.numMoves ?? 0;
 
     if (moveNumber > 1) {
       // Not for the first domino
@@ -160,19 +156,13 @@ export class IsPipsMatch extends BaseBooleanFunction {
       for (let i = 0; i < locsAroundOccupied.length; i++) {
         const cellIIdx = locsAroundOccupied[i]!;
 
-        const radials = (trajectories && typeof trajectories.radials === "function")
-          ? trajectories.radials("Cell", cellIIdx, "Orthogonal")
-          : [];
-
         const nbors: number[] = [cellIIdx];
 
-        for (const radial of radials) {
-          const radialSteps = typeof radial.steps === "function" ? radial.steps() : [];
-          // Java: for (int j = 1; j < radial.steps().length; j++)
-          for (let j = 1; j < radialSteps.length; j++) {
-            const stepId = typeof radialSteps[j]?.id === "function"
-              ? (radialSteps[j] as { id: () => number }).id()
-              : -1;
+        for (const dir of ORTHO_DIRS) {
+          const ray = rayFrom(cellIIdx, dir, W, H);
+          // Java: for (int j = 1; j < radial.steps().length; j++) — ray[]
+          // already excludes the site itself (radial.steps()[0]).
+          for (const stepId of ray) {
             if (locsAroundOccupied.includes(stepId)) {
               nbors.push(stepId);
             }
@@ -181,8 +171,12 @@ export class IsPipsMatch extends BaseBooleanFunction {
             return false;
           }
           if (nbors.length === 2) {
-            const c0 = typeof cs.countCell === "function" ? cs.countCell(nbors[0]!) : 0;
-            const c1 = typeof cs.countCell === "function" ? cs.countCell(nbors[1]!) : 0;
+            // Java: cs.countCell(nbors[i]) — for line-of-play games the count
+            // field carries the occupying domino's component index on every
+            // footprint cell (ActionMoveTopPiece.java:1416-1418), so this
+            // compares "do these two border cells belong to the same domino".
+            const c0 = state.countAtSite(nbors[0]!);
+            const c1 = state.countAtSite(nbors[1]!);
             okMatch = (c0 === c1);
           }
         }

@@ -1776,6 +1776,16 @@ export class State {
     next[siteIndex] = value;
     return this.with({ valueAt: next });
   }
+  /**
+   * Bulk writer for the whole `playableAt` bitset — used by the dominoes
+   * line-of-play recompute (@java ActionMoveTopPiece.java:1410-1457, which
+   * clears every board site's playable bit then re-derives it from scratch
+   * after each placement) to replace the array in one `with()` instead of
+   * one single-site copy per site.
+   */
+  public withPlayableAll(next: readonly boolean[]): State {
+    return this.with({ playableAt: [...next] });
+  }
   public withCostAt(siteIndex: number, value: number): State {
     this.requireSite(siteIndex);
     const next = [...this.costAt];
@@ -2060,6 +2070,12 @@ export class State {
         stateAt: patch.stateAt ?? this.stateAt,
         residualStateAt: patch.residualStateAt ?? this.residualStateAt,
         valueAt: patch.valueAt ?? this.valueAt,
+        // @java ContainerFlatState's dominoes-only `playable` bitset — the
+        // field/StateOptions/constructor wiring already existed, but `with()`
+        // silently dropped any `playableAt` patch (missing pass-through),
+        // so withPlayableAll's bulk write below was a no-op until this line
+        // was added. See {@link StateOptions.playableAt}.
+        playableAt: patch.playableAt ?? this.playableAt,
         costAt: patch.costAt ?? this.costAt,
         rotationAt: patch.rotationAt ?? this.rotationAt,
         countAt: patch.countAt ?? this.countAt,

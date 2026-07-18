@@ -650,6 +650,24 @@ export class Game implements Game {
   }
 
   /**
+   * @java Game.java:994-997 — `public boolean isBoardless() { return
+   * board().isBoardless(); }`. Delegates to the board's own isBoardless()
+   * (GameBoardSurface.isBoardless, Equipment.ts board Proxy) which is already
+   * implemented — this method itself was simply missing, so every duck-typed
+   * caller (SitesLineOfPlay.ts's `typeof game.isBoardless === "function"`
+   * check) always saw `undefined` and silently treated every game — boardless
+   * or not — as non-boardless, taking the wrong (Centre / around-occupied)
+   * branch instead of the real line-of-play isPlayable bitset branch
+   * (dominoes/Block: candidate anchor sites came from a 1-cell-adjacency
+   * heuristic instead of the true up-to-4-step line-of-play radial, so the
+   * recorded move `from=1705,to=844` was never offered).
+   */
+  public isBoardless(): boolean {
+    const b = this.equipment.board as unknown as { isBoardless?: () => boolean };
+    return typeof b.isBoardless === "function" && b.isBoardless();
+  }
+
+  /**
    * @java Game.players()
    */
   public players(): GamePlayers {
@@ -773,6 +791,36 @@ export class Game implements Game {
     const numDice = this.equipment.diceSpecs.length;
     const initialDiceValues = numDice > 0 ? new Array(numDice).fill(0) : undefined;
 
+    // @java State.java:1059-1060 — `if (game.isBoardless() &&
+    // containerStates[0].isEmpty(centre)) containerStates[0].setPlayable(this,
+    // centre, true);` seeds the single board-centre cell as the line-of-play
+    // bootstrap so the very first domino has somewhere to land (dominoes/Block
+    // ply 0: with no seed, `(sites LineOfPlay)` — SitesLineOfPlay.java's
+    // boardless branch just scans `cs.isPlayable(index)` with nothing ever
+    // set — returned empty, and every board site failed FromTo.java:480's
+    // `!csTo.isPlayable(loc) && moveNumber()>0` check... except moveNumber()
+    // ===0 short-circuits that check true regardless, so ply 0 wasn't
+    // actually blocked by the missing seed; it matters starting ply 1+, once
+    // `(sites LineOfPlay)` must return real playable anchors derived from the
+    // ply-0 placement's own recompute). Gated on hasDominoes (mirrors
+    // SitesLineOfPlay.java's own `missingRequirement` — this bitset is
+    // meaningless for non-dominoes boardless games).
+    const bootstrapPlayableAt = (() => {
+      if (!this.isBoardless()) return undefined;
+      const hasDominoes = this.equipment.pieces.some(
+        (p) => typeof (p as unknown as { isDomino?: () => boolean }).isDomino === "function"
+          && (p as unknown as { isDomino: () => boolean }).isDomino(),
+      );
+      if (!hasDominoes) return undefined;
+      const W = this.equipment.board.width;
+      const H = this.equipment.board.height;
+      const centre = Math.floor(H / 2) * W + Math.floor(W / 2);
+      if (centre < 0 || centre >= totalSites || cells[centre] !== 0) return undefined;
+      const arr = new Array<boolean>(totalSites).fill(false);
+      arr[centre] = true;
+      return arr;
+    })();
+
     let state = new State(1, cells, this.componentLabels, {
       // @java Board.java — thread the board's declared `use:` type so the
       // owned registry labels positions correctly (see State.defaultSiteType).
@@ -789,6 +837,7 @@ export class Game implements Game {
       // @java (place … rotation:N) initial facings (Ploy).
       rotationAt: rotAt.some((r) => r !== 0) ? rotAt : undefined,
       valueAt: hasNonZeroValue ? valueAt : undefined,
+      playableAt: bootstrapPlayableAt,
       scores: hasNonZeroScores ? scores : undefined,
       amounts: hasNonZeroAmounts ? amounts : undefined,
       costAt: hasNonZeroCost ? costAt : undefined,

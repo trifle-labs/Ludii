@@ -45,10 +45,6 @@ export class SitesLineOfPlay extends BaseRegionFunction {
    *   for each index in 0..numSites: if cs.isPlayable(index) sites.add(index)
    */
   public override eval(ctx: Context & EvalScratch): number[] {
-    const ctxAny = ctx as unknown as {
-      _playableSites?: readonly boolean[];
-    };
-
     const game = ctx.game as unknown as {
       isBoardless?: () => boolean;
       equipment?: { containers?: Array<{ numSites: number }> };
@@ -126,22 +122,20 @@ export class SitesLineOfPlay extends BaseRegionFunction {
     }
 
     // @java boardless: for (int index = 0; index < numSite; index++) if (cs.isPlayable(index)) sites.add(index)
-    if (ctxAny._playableSites) {
-      const result: number[] = [];
-      for (let i = 0; i < ctxAny._playableSites.length; i++) {
-        if (ctxAny._playableSites[i]) result.push(i);
-      }
-      return result;
-    }
-
-    // fallback for boardless without playable set
+    // Real line-of-play bitset (@java ContainerState.isPlayable — State.ts's
+    // playableAt, bootstrapped at the board centre in Game.start() and
+    // recomputed after every domino placement in ActionMove.apply's
+    // lineOfPlay branch). The old `ctxAny._playableSites` field was never
+    // written anywhere — this boardless branch was dead code that fell
+    // through to the "every empty site is playable" fallback below, which
+    // over-generated ply-1+ anchor candidates from arbitrary empty board
+    // cells instead of the true up-to-4-step-radial-adjacent set.
     const numSite = game.equipment?.containers?.[0]?.numSites ?? ctx.state.cells.length;
-    const sites: number[] = [];
+    const result: number[] = [];
     for (let i = 0; i < numSite; i++) {
-      if (!ctx.state.isEmptySite(i)) continue; // only empty => playable
-      sites.push(i);
+      if (ctx.state.isPlayableAtSite(i)) result.push(i);
     }
-    return sites;
+    return result;
   }
 
   /** @java SitesLineOfPlay.isStatic() — false */
