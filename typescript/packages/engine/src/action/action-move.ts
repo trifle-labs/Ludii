@@ -485,9 +485,40 @@ export class ActionMove extends BaseAction {
       // gate on that pair instead so a real Neutral piece (topWhat > 0) is
       // never mistaken for an empty site.
       if (topOwner === 0 && topWhat === 0) return state;
-      // @java ActionMoveTopPiece (stacking): owned remove at the from-top
-      // level, add at the to-top level after the push.
-      let popped = state.withOwnedRemoveLevel(topOwner, topWhat, this.fromIndex, topLevel);
+      // @java ActionMoveTopPiece (stacking) apply(): `csFrom.remove(...)` pops
+      // the physical top level FIRST, then `context.state().owned().remove(
+      // ownerFrom, what, from, csFrom.sizeStack(from, typeFrom), typeFrom)`
+      // (ActionMoveTopPiece.java:511) targets the registry level equal to
+      // sizeStack(from) READ AFTER that pop — numerically the old top index
+      // (pre-pop height − 1). `topLevel` above is derived from the raw
+      // `stacks[]` array length, which a count-backed pile (e.g. Bagh
+      // Bandi/Batti/Guti/Bagha Guti/Sher Bakar's `(place Stack "Goat2" 6
+      // count:8)` 8-goat piles) compresses to a single representative array
+      // entry — `topLevel` is always 0 there regardless of the pile's true
+      // height. state.ts's `withOwnedMaterialized` (this same stacking-pile
+      // relocation change) backfills FullOwned registry entries at every
+      // TRUE physical level 0..count-1 for such piles (its own `trueHeight =
+      // Math.max(ownerStack.length, countAt)`), so passing the compressed
+      // `topLevel`=0 into `withOwnedRemoveLevel` deletes an arbitrary
+      // BOTTOM registry entry instead of the true top (count-1) — and
+      // because `withOwnedRemoveLevel` decrements every OTHER entry's level
+      // by one whenever its level exceeds the removed level (Java's
+      // FullOwned.remove cascade, ContainerState registry parity), this
+      // wrongly shifts every still-live entry at the site down by one
+      // level on every relocation. `top:True` (ForEachPiece.ts's `stackSize
+      // !== level + 1` filter) desyncs after a handful of such relocations,
+      // making `forEach Piece top:True` resolve to the wrong source site
+      // (MOVE_MISMATCH by ply 6-10 in Bagh Bandi's 8-goat piles). Java's
+      // `sizeStack(from)` POST-pop is exactly `state.stackSize(this.
+      // fromIndex) - 1` computed PRE-pop here (stackSize already folds
+      // countAt in via `Math.max(stackLen, countAt, 1)`, mirroring the
+      // sibling ADD call three lines below this block that already keys off
+      // `stackSize(to) - 1`): use it for the registry removal level while
+      // leaving `topLevel` (and the flat/count-pile-tolerant topOwner/
+      // topWhat/topValue/srcSiteState reads that already fall back
+      // correctly at level 0) untouched.
+      const registryFromLevel = state.stackSize(this.fromIndex) - 1;
+      let popped = state.withOwnedRemoveLevel(topOwner, topWhat, this.fromIndex, registryFromLevel);
       if (multiStack) {
         popped = popped.withStackPop(this.fromIndex);
         // @java cs maintains the count channel; clear residue when the pop

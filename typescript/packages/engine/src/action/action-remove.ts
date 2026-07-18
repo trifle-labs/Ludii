@@ -183,10 +183,54 @@ export class ActionRemove extends BaseAction {
     // The removed piece's component id, read before the site is cleared, so the
     // track-index structure can drop it (Java ActionRemoveTopPiece: `pieceIdx`).
     const removedWhat = state.whatAtSite(this.toIndex);
+    // Removing from a multi-piece pile (Java: a stacked site, e.g. Bagh goat
+    // stacks) leaves the remainder in place; only when the count is exhausted
+    // does the site become empty. Plain single pieces (count 0/1) are cleared.
+    // In a flat (non-stacking) game `clearAll` is set: `(remove)` wipes the
+    // whole site (mancala pit clear), matching Java's ContainerFlatState.remove.
+    // @java ContainerFlatState.remove (ContainerFlatState.java:740-747) —
+    // setSite(site, 0,0,0,0,0,0): a FLAT remove clears the WHOLE site, count
+    // included (T'oki's line capture wipes a 2-pile with ONE Remove). A
+    // STACKING game's piles (Backgammon points, (place Stack count:N)) go
+    // through ContainerStackingState instead: one piece per remove. Read the
+    // pile size now — before any registry/flatOwned mutation below, neither of
+    // which touches countAt — so it can also gate the registry-clear-vs-pop
+    // choice immediately following.
+    const pile = state.countAtSite(this.toIndex);
+    const partialCountPileDecrement = state.stackingGame && pile > this.countValue;
     // Registry maintenance for the flat clear (@java owned().remove(owner,
     // pieceIdx, to, type) — level-less).
     if (state.ownedEntries !== undefined) {
-      state = state.withOwnedSiteCleared(this.toIndex);
+      if (partialCountPileDecrement) {
+        // @java ContainerStateStacks has no separate "count" channel — every
+        // physical piece is its own registry level, so a level-less remove on
+        // a count-backed pile (e.g. a tiger's `(remove (to))` capturing ONE
+        // goat out of an 8-goat pile) still only pops ONE physical piece, not
+        // the whole pile. `withOwnedSiteCleared` (the `else` arm below) is
+        // only correct once the pile is fully drained; firing it unconditionally
+        // wiped every still-live registered goat at the site even though
+        // `pile - countValue` physically remained (countAt correctly dropped,
+        // cells/what left untouched three lines below) — every later
+        // `forEach Piece top:True` query then found nothing registered there
+        // and the remaining goats became permanently unmovable (Bagh Bandi/
+        // Bagh Batti/Bagh Guti/Bagha Guti/Sher Bakar MOVE_MISMATCH, the ply
+        // right after each game's first capture). Remove exactly `countValue`
+        // entries at level 0 (mirrors action-move.ts's stacking relocation
+        // convention): `withOwnedRemoveLevel`'s built-in cascade shifts the
+        // remaining same-site entries down by one each call, so the site
+        // keeps exactly `pile - countValue` live entries, always with one
+        // pinned at level 0 — the invariant context.ts's `sizeStack`
+        // (deliberately flat=1 for these count-backed hunt/mancala families)
+        // and the `top:True` filter both depend on.
+        const owner = state.cellAt(this.toIndex).owner;
+        let nx = state;
+        for (let i = 0; i < this.countValue; i++) {
+          nx = nx.withOwnedRemoveLevel(owner, removedWhat || owner, this.toIndex, 0);
+        }
+        state = nx;
+      } else {
+        state = state.withOwnedSiteCleared(this.toIndex);
+      }
     }
     // @java Core/src/other/action/move/remove/ActionRemoveTopPiece.java:191-213
     // — owned().remove(owner, pieceIdx, to, type), a FlatCellOnlyOwned
@@ -200,19 +244,8 @@ export class ActionRemove extends BaseAction {
         state = state.withFlatOwnedRemove(removedOwner, removedWhat || removedOwner, this.toIndex);
       }
     }
-    // Removing from a multi-piece pile (Java: a stacked site, e.g. Bagh goat
-    // stacks) leaves the remainder in place; only when the count is exhausted
-    // does the site become empty. Plain single pieces (count 0/1) are cleared.
-    // In a flat (non-stacking) game `clearAll` is set: `(remove)` wipes the
-    // whole site (mancala pit clear), matching Java's ContainerFlatState.remove.
-    // @java ContainerFlatState.remove (ContainerFlatState.java:740-747) —
-    // setSite(site, 0,0,0,0,0,0): a FLAT remove clears the WHOLE site, count
-    // included (T'oki's line capture wipes a 2-pile with ONE Remove). A
-    // STACKING game's piles (Backgammon points, (place Stack count:N)) go
-    // through ContainerStackingState instead: one piece per remove.
-    const pile = state.countAtSite(this.toIndex);
     let next: State;
-    if (state.stackingGame && pile > this.countValue) {
+    if (partialCountPileDecrement) {
       next = state.withCountAt(this.toIndex, pile - this.countValue);
     } else {
       next = state.withCell(this.toIndex, 0).withWhatAt(this.toIndex, 0);
