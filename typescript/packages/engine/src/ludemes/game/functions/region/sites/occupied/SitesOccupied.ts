@@ -64,14 +64,18 @@ function roleToIntFunction(role: RoleType | null): IntFunction {
         // Neutral branch, so (sites Occupied by:Neutral) returned ALL occupied
         // sites (Feed the Ducks: the single neutral breadcrumb became all 25
         // pieces → a 600-move explosion). whoId 0 routes to the Neutral branch
-        // (owner===0 && what!=0). NOTE: Shared is intentionally NOT mapped —
-        // Shared pieces carry owner numPlayers+1 (not 0) and the Neutral branch
-        // checks owner===0, so Shared keeps falling to the whoId<0 ("All") path
-        // it already used (Traffic Lights' (sites Occupied by:Shared
-        // component:"Square") — all pieces are Shared, so all-occupied is right
-        // there). Mapping Shared→0 regressed it; a faithful Shared=numPlayers+1
-        // path is a separate change with its own eval branch.
+        // (owner===0 && what!=0).
         case "Neutral": return 0;
+        // @java game/functions/ints/board/Id.java:117 — case Shared: return
+        // context.game().players().count() + 1. Previously unmapped (fell to
+        // -1), so eval's `role === "All" || whoId < 0` catch-all fired first
+        // and (sites Occupied by:Shared) returned every occupied site
+        // (Neutral ground pieces included), not just the Shared ones
+        // (Hackenbush: the ground line's Neutral edges 0-5 counted as legal
+        // Remove targets alongside the 10 real Shared edges 6-15, so TS never
+        // reached the true final stalemate Java hits after edge 15 is
+        // removed — WINNER_MISMATCH, tsOver=false).
+        case "Shared": return ctx.game.numPlayers + 1;
         default: return -1;
       }
     }
@@ -333,11 +337,32 @@ export class SitesOccupied extends BaseRegionFunction {
           }
         }
       }
-    } else if (role === "Neutral" || role === "Shared") {
+    } else if (role === "Neutral") {
       // @java RoleType.Neutral — neutral pieces (owner=0, what!=0)
       for (let i = 0; i < scanN; i++) {
         const owner = cells[i] ?? 0;
         if (owner === 0 && (whats[i] ?? 0) !== 0) {
+          if (whatOk(whats[i] ?? 0)) {
+            sitesOccupied.push(i);
+          }
+        }
+      }
+    } else if (role === "Shared") {
+      // @java RoleType.Shared — owner===numPlayers+1. A dedicated branch (not
+      // the generic default below) because that branch's occupancy guard is
+      // `owner === whoId && (whoId > 0 || what !== 0)` — for whoId > 0 it
+      // trusts owner alone, which per-player pieces satisfy (Remove resets
+      // owner to 0). 2048's Shared "Square*" tiles don't: a merge/slide's
+      // (remove (site)) clears `what` but leaves the stale owner=numPlayers+1
+      // behind, so the generic branch kept counting the emptied site as
+      // occupied (2048's post-merge (sites Occupied by:Shared) — used by the
+      // "CanSlide" macro — still listed the vacated site, masking a real
+      // empty gap and dropping a legal slide direction: MOVE_MISMATCH).
+      // Requiring what!==0 unconditionally, like the Neutral branch, sidesteps
+      // the stale-owner cell instead of trusting it.
+      for (let i = 0; i < scanN; i++) {
+        const owner = cells[i] ?? 0;
+        if (owner === whoId && (whats[i] ?? 0) !== 0) {
           if (whatOk(whats[i] ?? 0)) {
             sitesOccupied.push(i);
           }

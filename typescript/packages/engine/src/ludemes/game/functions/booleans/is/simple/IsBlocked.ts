@@ -3,9 +3,7 @@
 import type { Context } from "../../../../../../context.js";
 import type { BooleanFunction, RegionFunction } from "../../../../../base.js";
 import {
-  type BoardLike,
   ownerAt,
-  adjacentSites,
   directionalNeighbours,
   connectionTargets,
   rolePlayer,
@@ -70,7 +68,6 @@ export class IsBlocked implements BooleanFunction {
         : this.numberFn.eval(ctx);
     if (required <= 1) return false;
 
-    const board = (ctx.game as unknown as { equipment: { board: BoardLike } }).equipment.board;
     // @java originalRegion = sitesRegions.get(0); iterate its sites as flood seeds.
     const originalRegion = targets[0]!;
     const otherRegions = targets.slice(1).map((sites) => new Set(sites));
@@ -89,9 +86,10 @@ export class IsBlocked implements BooleanFunction {
       const stack = [from];
       while (stack.length > 0) {
         const site = stack.pop()!;
-        const neighbours = this.dirName !== null
-          ? directionalNeighbours(ctx, site, this.dirName)
-          : adjacentSites(board, site);
+        // @java IsBlocked.java:104-105 — dirnChoice defaults to
+        // AbsoluteDirection.Adjacent (never "All"), same as IsConnected;
+        // see IsConnected.ts's directionalNeighbours() fix.
+        const neighbours = directionalNeighbours(ctx, site, this.dirName ?? "Adjacent");
         for (const to of neighbours) {
           if (group.has(to)) continue;
           // @java own-OR-empty traversal: who == cs.who(to) || cs.what(to) == 0.

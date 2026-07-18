@@ -47,7 +47,20 @@ function piecePlacement(piece: Piece | null): { what: IntFunction; owner: number
         return exact?.index ?? byBase?.index ?? (owner ?? ctx.state.mover);
       },
     },
-    owner: owner ?? -1,
+    // @java game/util/moves/Piece.java:69-71 — the ludeme's own `owner`
+    // field is only ever set from an explicit (piece "Name" Owner) second
+    // argument, never derived from the name string. A bare (piece "Name")
+    // must return the sentinel (-1) here too, like the other two branches
+    // above, so Add.ts resolves the REAL owner via equipment.pieces[what].owner
+    // (the piece actually matched by the closure above). Returning the raw
+    // ownerSuffix(name) instead wrongly treated a name's trailing digits as
+    // an owner number even when they are part of the literal name (2048's
+    // "Square4" tile — ownerSuffix("Square4")=4 got written straight into
+    // cells[] as the placed piece's OWNER, corrupting a Shared tile (whose
+    // true owner is numPlayers+1) to owner=4; masked while (sites Occupied
+    // by:Shared) used the pre-fix All/isOccupiedSite catch-all, exposed once
+    // that lookup started trusting owner===whoId directly).
+    owner: -1,
     ...(piece.state() ? { state: piece.state()! } : {}),
   };
 }

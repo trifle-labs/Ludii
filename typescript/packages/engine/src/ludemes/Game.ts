@@ -152,6 +152,63 @@ function prepareFaithfulEquipment(equipment: GameEquipmentSurface, players: Game
   };
 
   equipment.createItems!(gameStub);
+
+  // @java Game.java:2545-2565 — "We add the index of the owner at the end
+  // of the name of each component." Runs once, immediately after
+  // Equipment.createItems(this), BEFORE mapComponent gets built (Game.java:
+  // 2617-2622) — so Game.getComponent(name) sees the SUFFIXED names below,
+  // not the bare declared ones. Never ported: multiple same-named pieces
+  // (e.g. Yavalanchor's (piece "Marker" Each) + (piece "Marker" Shared),
+  // all three literally named "Marker") collided in componentByName's plain
+  // name search, which silently picks the FIRST "Marker" (P1's) for
+  // (place "Marker" (handSite Shared)) instead of the Shared one — the
+  // Shared hand marker started the game owned by P1, not numPlayers+1
+  // (WINNER_MISMATCH once (sites Occupied by:Shared) started trusting owner).
+  {
+    const playerCount = players.count();
+    const comps = typeof equipment.components === "function" ? equipment.components() : null;
+    if (Array.isArray(comps)) {
+      const staticRoleOwner = staticRoleOwnerForNaming;
+      for (let i = 1; i < comps.length; i++) {
+        const component = comps[i] as unknown as {
+          name?: () => string | null;
+          setName?: (name: string) => void;
+          role?: () => string | null;
+        } | null;
+        if (!component || typeof component.name !== "function" || typeof component.setName !== "function") continue;
+        const componentName = component.name();
+        if (componentName === null || componentName === undefined) continue;
+        if (componentName.includes("Domino") || componentName.includes("Die")) continue;
+        const role = typeof component.role === "function" ? component.role() : null;
+        const staticOwner = staticRoleOwner(role);
+        if (staticOwner === null) continue;
+        if (playerCount !== 1) {
+          // Neutral or P1..P16/Team1..Team16 all get suffixed.
+          component.setName(componentName + staticOwner);
+        } else if (role === "Neutral") {
+          // @java Game.java:2561-2564 — 1-player (puzzle) games only suffix
+          // Neutral; P1's own pieces stay bare (no ambiguity to resolve).
+          component.setName(componentName + staticOwner);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * @java RoleType.java:19-127 — the STATIC per-enum-value owner (not
+ * Item.owner(), which resolves Shared/All dynamically to numPlayers+1).
+ * Neutral=0; P1..P16=1..16; Team1..Team16=1..16; every other role (Shared/
+ * All/Each/Mover/Next/Prev/NonMover/Enemy/Friend/Ally/Player/TeamMover) is
+ * Constants.NOBODY=0 and is intentionally excluded (returns null) here.
+ */
+function staticRoleOwnerForNaming(role: string | null): number | null {
+  if (role === "Neutral") return 0;
+  const p = /^P(\d+)$/.exec(role ?? "");
+  if (p) return Number(p[1]);
+  const t = /^Team(\d+)$/.exec(role ?? "");
+  if (t) return Number(t[1]);
+  return null;
 }
 
 function startRulesFromRules(rules: Rules): readonly StartRule[] {

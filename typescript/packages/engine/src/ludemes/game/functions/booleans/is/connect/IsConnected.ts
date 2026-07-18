@@ -45,7 +45,18 @@ export function adjacentSites(board: BoardLike, site: number): number[] {
 export function directionalNeighbours(ctx: Context, site: number, dirName: string): number[] {
   const groups: Record<string, readonly string[]> = {
     All: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
-    Adjacent: ["N", "NE", "E", "SE", "S", "SW", "W", "NW"],
+    // @java IsConnected.java:110-111 / IsBlocked.java:104-105 — the DEFAULT
+    // direction when none is given is AbsoluteDirection.Adjacent, NOT All.
+    // Adjacent means "whatever edges this board's graph actually has at this
+    // site" (Topology.trajectories().steps(type,site,type,Adjacent)) — for a
+    // plain square board (Gonnect's `(board (square N) use:Vertex)`) that is
+    // the 4 orthogonal edges only; verified directly against the JVM
+    // (TopoProbe: Adjacent -> {97,85,71,83} == Orthogonal, distinct from
+    // Diagonal -> {98,72,70,96}). This static fallback list is only reached
+    // when ctx._trajectories is unavailable (see below); keep it aligned
+    // with Orthogonal so a degenerate/no-trajectories context still matches
+    // Java's square-board Adjacent semantics instead of silently becoming All.
+    Adjacent: ["N", "E", "S", "W"],
     Orthogonal: ["N", "E", "S", "W"],
     Diagonal: ["NE", "SE", "SW", "NW"],
   };
@@ -327,9 +338,16 @@ export class IsConnected implements BooleanFunction {
     const stack = [from];
     while (stack.length > 0) {
       const site = stack.pop()!;
-      for (const next of this.dirName !== null
-        ? directionalNeighbours(ctx, site, this.dirName)
-        : adjacentSites(board, site)) {
+      // @java IsConnected.java:110-111 — dirnChoice defaults to
+      // AbsoluteDirection.Adjacent (never "All") when no `directions`
+      // ludeme is given. Gonnect's bare `(is Connected Mover)` used the
+      // old adjacentSites() helper here, which unions EVERY radial axis
+      // (orthogonal AND diagonal) unconditionally — on a square Vertex
+      // board that is 8-connectivity, not Java's 4-connectivity Adjacent,
+      // so two diagonally-touching groups were wrongly treated as one
+      // connected group, firing the win many plies before the real
+      // (orthogonal) connection actually formed (WINNER_MISMATCH).
+      for (const next of directionalNeighbours(ctx, site, this.dirName ?? "Adjacent")) {
         if (visited.has(next)) continue;
         visited.add(next);
         // @java IsConnected.eval:203 — new group member iff same owner as `from`.

@@ -9,6 +9,7 @@
 
 import type { Context } from "../../../../../../context.js";
 import type { RegionFunction } from "../../../../../base.js";
+import { compileFlags } from "../../../../../../ludii/compiler/compile-flags.js";
 
 /** Java parity: Constants.OFF = -1 */
 const OFF = -1;
@@ -216,6 +217,18 @@ export class PlaceRandom {
       this.countFn = intConstant(1);
       this.where = where;
       this.stack = true;
+      // @java PlaceRandom.java:141 `stack = true;` (Count[] constructor) feeds
+      // gameFlags():358-359 `if(stack) flags |= GameType.Stacking;` — a hand
+      // shuffle-pile built from (place Random Count[] (handSite N)) IS a
+      // genuine Ludii stacking container, unconditionally. The compiled-tree
+      // reflection path never harvested this, so Chex's `usesStacking`/
+      // `state.stackingGame` stayed false: action-move.ts's owned-registry
+      // dispatch (gated on !state.stackingGame) then materialised the FLAT
+      // (single-level) registry for hand-exit moves, permanently losing any
+      // piece whose hand-pile pop was instead routed through the per-level
+      // stack branch — King2's post-draw position vanished from move
+      // generation the moment BOTH registries coexisted (MOVE_MISMATCH).
+      compileFlags.usesStacking = true;
       this.type = siteType ?? null;
       this.stateFn = intConstant(OFF);
       this.valueFn = intConstant(OFF);
@@ -246,6 +259,10 @@ export class PlaceRandom {
       this.where = where;
       this.counts = counts;
       this.stack = true;
+      // @java PlaceRandom.java:167 `stack = true;` (String[]/IntFunction[]
+      // constructor) — same gameFlags():358-359 Stacking OR as the Count[]
+      // constructor above; see the comment there.
+      compileFlags.usesStacking = true;
       this.stateFn = stateFn ?? intConstant(OFF);
       this.valueFn = valueFn ?? intConstant(OFF);
       this.randPiecOrderFn = booleanConstant(false);
