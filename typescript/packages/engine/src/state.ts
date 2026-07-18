@@ -1320,6 +1320,26 @@ export class State {
         const copy = (this.stateStacks ?? []).map((r) => [...r]);
         copy[siteIndex] = [...(copy[siteIndex] ?? []), 0];
         nextStateStacksPush = copy;
+      } else if (target.length > 1) {
+        // @java HashedChunkStack.setState(trialState, val) (Core/src/other/
+        // state/zhash/HashedChunkStack.java:526-530) only ever writes level
+        // `size-1` (the just-pushed top); every pre-existing level's state is
+        // stored independently from the moment it was created and is NEVER
+        // touched by a later push. TS's flat-scalar/materialised-array
+        // duality means a site's sole existing occupant's state lives only
+        // in the flat `stateAt[siteIndex]` channel until a second level
+        // forces materialisation — that transition must backfill level 0
+        // (and any other pre-existing levels) from stateAtLevel (which
+        // itself falls back to the flat channel for level 0), not zero-fill
+        // them, or the first occupant's true state (e.g. Chonpa's "paired"
+        // state=1 marker) is silently erased the instant a second piece
+        // stacks on top of it.
+        const copy = (this.stateStacks ?? []).map((r) => [...r]);
+        const row: number[] = [];
+        for (let lvl = 0; lvl < target.length - 1; lvl++) row.push(this.stateAtLevel(siteIndex, lvl));
+        row.push(0);
+        copy[siteIndex] = row;
+        nextStateStacksPush = copy;
       }
     }
     const nextCells = [...this.cells];
