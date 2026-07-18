@@ -147,9 +147,27 @@ export class ActionRemove extends BaseAction {
     // Nihilo MOVE_MISMATCH: a spurious `copy:True` candidate kept satisfying the
     // `(= (size Stack at:(last To)) (size Stack at:…))` guard it should have
     // failed, so the priority's real branch never got a chance to fire).
+    //
+    // The `toStackLen2===1 && !isCountPile2` disjunct is still ambiguous for a
+    // FLAT (non-stacking) game: `state.stacks[site]` carries a length-1
+    // "level 0" convenience entry for EVERY occupied site there too — not just
+    // genuine per-level stacks — and a lone piece with no pile behind it
+    // (countAt===1, e.g. At-Tab wa-d-Dukk's un-kinged Marker) fails the
+    // `isCountPile2` test the same way a real single-level stack piece does.
+    // That misrouted a flat game's ordinary single-piece capture through this
+    // stacking-pop branch, which pops `stacks[]`/`countAt` but — unlike the
+    // flat-clear branch below — never calls `withFlatOwnedRemove`, orphaning a
+    // stale entry in `state.flatOwned` for the captured piece (At-Tab
+    // MOVE_MISMATCH ply 267: the ghost entry produced a duplicated bogus
+    // from/to candidate at the ghost's site, while Java's actual capturer had
+    // no legal move and recorded a Pass). `state.stackingGame` is the same
+    // `@java Game.java:946 isStacking()` / `GameType.Stacking` flag other
+    // stacking/flat dispatch points in this file (line 197) and action-move.ts
+    // already gate on — the faithful signal for "this container is really
+    // ContainerStateStacks, not ContainerFlatState" — so require it here too.
     const toStackLen2 = state.stacks[this.toIndex]?.length ?? 0;
     const isCountPile2 = toStackLen2 === 1 && state.countAtSite(this.toIndex) > 1;
-    if (toStackLen2 > 1 || (toStackLen2 === 1 && !isCountPile2)) {
+    if (state.stackingGame && (toStackLen2 > 1 || (toStackLen2 === 1 && !isCountPile2))) {
       const lvl = (state.stacks[this.toIndex]?.length ?? 1) - 1;
       const own = state.stackAt(this.toIndex, lvl);
       const wht = state.whatAtSiteLevel(this.toIndex, lvl);
