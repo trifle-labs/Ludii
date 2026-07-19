@@ -222,6 +222,27 @@ export class ActionRemove extends BaseAction {
       // for genuinely materialized per-level stacks.
       if (nx.stateAtSite(this.toIndex) !== 0) nx = nx.withStateAt(this.toIndex, 0);
       if (nx.valueAtSite(this.toIndex) !== 0) nx = nx.withValueAt(this.toIndex, 0);
+      // @java ContainerStateStacks.java:693-712 / ContainerGraphStateStacks.
+      // java:969-997 — the level-less remove() unconditionally calls
+      // setState(state, 0) on the vacated physical chunk BEFORE decrementing
+      // size, for both the Cell and Edge/Vertex overloads (unlike its
+      // explicit-level sibling above, whose shift-loop leaves the OLD TOP's
+      // `state` untouched and instead stashes it in `residualStateAt`). Any
+      // shadow residual previously stashed at this exact physical depth
+      // (`lvl`, the pre-pop top index) by an earlier explicit-level vacate is
+      // therefore stale/moot in Java too — this level-less remove genuinely
+      // overwrote that physical byte with 0 — and must be cleared here, else
+      // a LATER hand-entry push landing on this same physical depth wrongly
+      // resurfaces the older, now-superseded value instead of the fresh 0
+      // Java's own unconditional setState left behind (Boolik RandomTrial_0
+      // ply 131 / RandomTrial_1 ply 116: a CapturedPiece state=2 residual
+      // stashed by an earlier `(remove … level:(level))` survived an
+      // intervening clean level-less remove at the same physical depth and
+      // falsely resurfaced under a later hand-entry push, wrongly keeping the
+      // fresh arrival immobile and hiding a legal move Java actually has).
+      if (nx.residualStateAtLevel(this.toIndex, lvl) !== 0) {
+        nx = nx.withResidualStateAtLevel(this.toIndex, lvl, 0);
+      }
       // @java cs.remove maintains the count channel; clear it when the pop
       // empties the site (see Game.apply flush note).
       if (nx.stackSize(this.toIndex) === 0 && nx.countAtSite(this.toIndex) > 0) {
