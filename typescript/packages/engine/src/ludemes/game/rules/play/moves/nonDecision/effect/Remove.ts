@@ -118,30 +118,35 @@ export class Remove implements MovesFunction {
       // collapses to level-less (UNDEFINED) whenever it names the stack's
       // CURRENT top (or the game isn't stacking at all) at evaluation time,
       // routing to the clean, level-less remove instead of the dirty,
-      // shift-loop explicit-level remove. NARROWLY scoped here (wave-15c,
-      // see boolik3-open.md lead #3, following the revert of the blanket
-      // version in 87c88c9ce2/043e85554c): only applied when BOTH (a) this
-      // Remove's level: argument is structurally the enclosing loop's own
-      // `(level)` iterator (`this.levelFn instanceof Level`, not some other
-      // expression that merely happens to evaluate to the same number), AND
-      // (b) this Remove is evaluated directly inside that loop's own FromTop
-      // generator body (`ctx._inForEachLevelFromTop`, set by
-      // ForEachLevel.ts's eval()) — i.e. exactly the `RemoveCapturedPieces`
-      // (Boolik.lud line 55) / Pahada-Keliya-capture-handler
-      // (`Pahada Keliya.lud` line ~93) idiom: `(forEach Level ... FromTop
-      // (... (remove ... level:(level)) ...))`. A standalone `(remove X
-      // level:(level))` that is NOT nested in a ForEachLevel...FromTop body
-      // (e.g. Pahada Keliya's own track-end self-removal, `Pahada
-      // Keliya.lud` line 75) is deliberately left on the unconditional
-      // dirty explicit-level path below, byte-for-byte unchanged from
-      // before this fix — the blanket version of this collapse (applied to
-      // every Remove node regardless of nesting) regressed elsewhere and
-      // was reverted; this narrower gate never touches that code path.
-      if (
-        rawLvl !== undefined &&
-        this.levelFn instanceof Level &&
-        (ctx as unknown as { _inForEachLevelFromTop?: boolean })._inForEachLevelFromTop === true
-      ) {
+      // shift-loop explicit-level remove. This is a pure runtime/value-based
+      // check in Java (Remove.java:127-129 reads the *current* stackSize,
+      // not anything about how the level: argument was written), so it
+      // applies uniformly to every Remove node — Java draws no distinction
+      // between a `(remove X level:(level))` written inside a `(forEach
+      // Level ... FromTop ...)` body and a standalone one.
+      //
+      // wave-16 (boolik5): this used to be gated to ONLY the
+      // `RemoveCapturedPieces`-style idiom (`this.levelFn instanceof Level`
+      // AND `ctx._inForEachLevelFromTop === true`, set by
+      // ForEachLevel.ts's eval()) after the unconditional/blanket version of
+      // this same collapse (87c88c9ce2, reverted as 043e85554c) was found to
+      // regress Pahada Keliya / Tayam Sonalu / Pachih. That narrow gate
+      // under-fired: Boolik's own standalone self-remove (Boolik.lud line
+      // 119, `(move Remove (from) level:(level))`, NOT inside a ForEachLevel
+      // FromTop body) never collapsed even when the removed level named the
+      // site's current (and only) occupant, leaving a stale flat
+      // state/value scalar behind that later leaked into a fresh piece
+      // pushed onto the same site (see boolik3-open.md / boolik4.md for the
+      // full ply117→ply121→ply132 trace). Re-widening back to the literal
+      // Java condition — still scoped to `this.levelFn instanceof Level`
+      // (only the enclosing loop's own `(level)` iterator ever collapses;
+      // an explicit numeric/other-expression level: never does, matching
+      // Java's structure exactly) but WITHOUT the ForEachLevelFromTop
+      // requirement — fixes Boolik (both random trials reach OUTCOME_OK)
+      // and, on re-validation against the current HEAD (several other
+      // Remove/state fixes have landed in the meantime), no longer
+      // regresses Pahada Keliya, Tayam Sonalu, or Pachih.
+      if (rawLvl !== undefined && this.levelFn instanceof Level) {
         const clampedLvl = rawLvl < 0 ? 0 : rawLvl;
         lvl = (!ctx.state.stackingGame || ctx.state.stackSize(loc) === clampedLvl + 1)
           ? undefined
