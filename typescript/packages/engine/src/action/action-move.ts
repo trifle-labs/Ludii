@@ -419,8 +419,26 @@ export class ActionMove extends BaseAction {
         s2 = s2.withOwnedRemoveAll(fromOwners[i]!, fromWhats[i]!, this.fromIndex);
       }
       const baseLevelTo = s2.stackSize(this.toIndex);
-      // @java ActionMoveStacking carries each level's VALUE to the landing
-      // levels (previousValueFrom round-trip); plain pushes do not.
+      // @java ActionMoveStacking.java:316-347 — an explicit stack:true action
+      // (Move.toString()'s "stack=true" flag; ActionMoveStacking, NOT the
+      // plain-Move-lands-on-occupied-cell merge path a few branches below in
+      // this file) ALWAYS carries each moved level's own VALUE to its
+      // landing level (previousValueFrom round-trip) — this holds whether
+      // the source is an already-multi-level stack relocating whole OR a
+      // flat single piece (one-level stack), and regardless of whether the
+      // destination was already occupied. Confirmed via a live JVM
+      // site-provenance trace (Fenix RandomTrial_0.txt ply 47: a flat val=1
+      // Soldier at site 63 does `63>54 stack=true` onto an ALREADY-OCCUPIED
+      // val=1 site 54, landing as [1,1] — NOT zeroed — the mover's own value
+      // rides along even though the destination had a piece). The
+      // zero-a-genuinely-new-level "addItemGeneric" rule (oracle: Fenix
+      // General s28=[1,0]) applies only to the OTHER, non-stack-flagged
+      // Move-that-happens-to-land-on-an-occupied-cell code path below
+      // (RandomTrial_1.txt ply 3's `27>28`, a plain decision-only Move with
+      // no stack=true) — conflating the two here previously double-zeroed
+      // whole-stack relocations built from single-level hops and broke
+      // Fenix RandomTrial_0 ply 105 (JVM probe:
+      // fenix-jvm-probe-ply105-trial0.log, replayCounts=[7,7,7,7,7,7]).
       const fromValues: number[] = [];
       for (let i = 0; i < fromOwners.length; i++) fromValues.push(state.valueAtLevel(this.fromIndex, i));
       const toRowBase: number[] = [];
@@ -924,9 +942,30 @@ export class ActionMove extends BaseAction {
       }
       const toBase: number[] = [];
       for (let l = 0; l < popped.stackSize(this.toIndex); l++) toBase.push(popped.valueAtLevel(this.toIndex, l));
+      // @java ContainerStateStacks.addItem (ContainerStateStacks.java:332-360,
+      // 5-arg addItemGeneric overload — no value write) — a genuinely NEW
+      // level defaults its value to 0. `topValue` above is the SOURCE's own
+      // already-established value; carrying it verbatim into a fresh landing
+      // level is only correct for a pure relocation of an already-stacked
+      // level (`multiStack`, whole-stack move — the value already existed,
+      // it's just moving house) or a single flat piece landing on an EMPTY
+      // destination (`toBase.length===0` — no addItem "new level" push
+      // happens in Java there at all, it's a plain cell move that must keep
+      // its own value, e.g. a Fenix Soldier's value:1 riding along an
+      // ordinary Step to an empty square). A single flat piece landing on an
+      // ALREADY-OCCUPIED destination (toBase.length>0) is a genuine MERGE —
+      // Fenix's "climb onto a friendly piece to build a General/King" — and
+      // must default its new level to 0 regardless of the mover's own value,
+      // or that value duplicates onto every merged level (two successive
+      // Soldier merges left Fenix's King at valueStacks[48]=[1,1,1] instead
+      // of Java's confirmed [1,0,0], JVM-probe
+      // validation-results/wave16/fenix-jvm-probe-ply17.log — the very same
+      // quirk the `fromOwners`/`fromWhats` stack:True branch above and the
+      // sibling `mOwner`/`mWhat` single-push branch below already handle).
+      const landingValue = multiStack || toBase.length === 0 ? topValue : 0;
       let pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
       pushed = pushed.withValueStackRow(this.fromIndex, fromRow);
-      pushed = pushed.withValueStackRow(this.toIndex, [...toBase, topValue]);
+      pushed = pushed.withValueStackRow(this.toIndex, [...toBase, landingValue]);
       // @java ContainerState.value(site, type) returns the TOP level's value; the
       // flat valueAt channel (which ValuePiece's level-less read consults) must
       // track the new stack top after this relocation. The destFlatOccupied
@@ -938,7 +977,7 @@ export class ActionMove extends BaseAction {
       // (is In 0 <track segment containing 0>) fired a false MadeACompleteCircuit
       // win). Keep both the source and destination flat values consistent with
       // their remaining stack tops (0 when the source drained empty).
-      if (pushed.valueAtSite(this.toIndex) !== topValue) pushed = pushed.withValueAt(this.toIndex, topValue);
+      if (pushed.valueAtSite(this.toIndex) !== landingValue) pushed = pushed.withValueAt(this.toIndex, landingValue);
       const fromTopValue = fromRow.length > 0 ? (fromRow[fromRow.length - 1] ?? 0) : 0;
       if (pushed.valueAtSite(this.fromIndex) !== fromTopValue) pushed = pushed.withValueAt(this.fromIndex, fromTopValue);
       pushed = pushed.withOwnedAdd(topOwner, topWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);

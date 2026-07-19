@@ -16,7 +16,39 @@
 
 import type { Context } from "../../../../../../../../../../context.js";
 import type { Move } from "../../../../../../../../../../move.js";
+import type { State } from "../../../../../../../../../../state.js";
 import type { BooleanFunction, MovesFunction } from "../../../../../../../../../base.js";
+
+/**
+ * @java Move.java:499-592 — Move.apply()'s store-gated EndOfTurn flush
+ * (the mechanism `getActionsWithConsequences`/`getMoveWithConsequences`
+ * exercises via an isolated single-hop simulation). Pure, read-only
+ * re-derivation of the (site, level) pairs the flush would materialize,
+ * for VALUE-SUMMATION purposes only — mirrors Game.ts's real Step 1b flush
+ * (which performs the actual removal for real turn-ending applies) without
+ * touching state: groups queued `sitesToRemove` entries by site and assigns
+ * ascending levels (0, 1, 2, ...) per repeat — a stacked victim (e.g. a
+ * Fenix King occupying 3 levels) queues 3 entries for its site — clamped to
+ * the site's current stack depth, mirroring Java's per-site queued-count
+ * clamp (`Math.min(queued, stackSize)`).
+ *
+ * NOTE: intentionally narrow — only meaningful for games using deferred
+ * `at:EndOfTurn` stacked captures (Fenix); for any other game `sites` is
+ * empty and this returns `[]`.
+ */
+function flushValueTuples(state: State, sites: readonly number[]): Array<{ site: number; level: number }> {
+  if (sites.length === 0) return [];
+  const counts = new Map<number, number>();
+  for (const site of sites) counts.set(site, (counts.get(site) ?? 0) + 1);
+  const tuples: Array<{ site: number; level: number }> = [];
+  for (const [site, queued] of counts.entries()) {
+    const cap = state.ownedEntries !== undefined ? Math.min(queued, state.stackSize(site)) : queued;
+    for (let level = 0; level < cap; level++) {
+      tuples.push({ site, level });
+    }
+  }
+  return tuples;
+}
 
 /**
  * @java game/rules/play/moves/nonDecision/effect/requirement/max/moves/MaxMoves.java
@@ -86,13 +118,39 @@ export class MaxMoves implements MovesFunction {
         replayCount[i] = this._getReplayCount(newCtx, 1, withValue);
       } else {
         // @java MaxMoves.java:91-104 — the OUTER eval sums the PER-LEVEL
-        // value cs.value(site, LEVEL, type); NonApplied removes carry
-        // levelTo=0 (oracle javap + action dump).
+        // value cs.value(site, LEVEL, type) over
+        // `m.getActionsWithConsequences(context)` — NOT the candidate's raw
+        // static actions. getActionsWithConsequences (Move.java:456-476) runs
+        // an isolated single-hop simulation whose store-gated flush
+        // (Move.java:499-592) materializes any already-queued
+        // `sitesToRemove` (deferred at:EndOfTurn captures inherited from
+        // earlier hops in THIS turn) into explicit per-level Removes — but
+        // ONLY when this candidate's own isolated simulation does NOT itself
+        // force a same-mover continuation (containsReplayAction ==
+        // "no SetNextPlayer for the mover" == our turningOver, read off
+        // newCtx.state.prev/mover post-apply). The flush operates on the
+        // POST-applyTo queue, i.e. the pre-existing pending sites MERGED
+        // with this move's own newly-queued site(s) — so a terminal hop's
+        // own capture is counted TWICE: once via the flush, once via its
+        // still-attached raw (non-applied) action. Replica-confirmed
+        // against a live JVM probe (Fenix RandomTrial_1 ply 17):
+        // validation-results/wave16/fenix-jvm-probe-ply17.log.
         let numCaptureWithValue = 0;
+        const ownSites: number[] = [];
         for (const action of m.actions) {
           if (action.actionType() === "Remove") {
             const lvl = (action as { levelTo?: () => number }).levelTo?.() ?? 0;
-            numCaptureWithValue += ctx.state.valueAtLevel(action.to(), lvl >= 0 ? lvl : 0);
+            const level = lvl >= 0 ? lvl : 0;
+            numCaptureWithValue += ctx.state.valueAtLevel(action.to(), level);
+            ownSites.push(action.to());
+          }
+        }
+        const newState = newCtx.state as unknown as { mover: number; prev: number };
+        const turningOver = newState.prev !== newState.mover;
+        const pending = ctx.state.sitesToRemove ?? [];
+        if (turningOver && (pending.length > 0 || ownSites.length > 0)) {
+          for (const t of flushValueTuples(ctx.state, [...pending, ...ownSites])) {
+            numCaptureWithValue += ctx.state.valueAtLevel(t.site, t.level);
           }
         }
         replayCount[i] = this._getReplayCount(newCtx, numCaptureWithValue, withValue);
@@ -153,13 +211,28 @@ export class MaxMoves implements MovesFunction {
       } else {
         // @java getReplayCount (RUNNING BINARY, javap-verified) — the
         // RECURSION reads the TWO-ARG cs.value(site, type) = TOP-of-stack
-        // value; a stacked victim whose top was pushed valueless scores 0
-        // here. This asymmetry vs the outer per-level read is what ranks
-        // Fenix's 47>65 chain (6) above 47>29 (4) — replica-confirmed.
+        // value over `nm.getActionsWithConsequences(contextCopy)`, same
+        // isolated-flush mechanism as eval() above (see its comment), just
+        // with the level-agnostic TOP-of-stack value channel instead of the
+        // per-level one. A stacked victim whose top was pushed valueless
+        // scores 0 here. This asymmetry vs the outer per-level read is what
+        // ranks Fenix's 47>65 chain (6) above 47>29 (4) — replica-confirmed
+        // against a live JVM probe: validation-results/wave16/
+        // fenix-jvm-probe-ply17.log.
         let numCaptureWithValue = 0;
+        const ownSites: number[] = [];
         for (const action of nm.actions) {
           if (action.actionType() === "Remove") {
             numCaptureWithValue += ctx.state.valueTop(action.to());
+            ownSites.push(action.to());
+          }
+        }
+        const newState = newCtx.state as unknown as { mover: number; prev: number };
+        const turningOver = newState.prev !== newState.mover;
+        const pending = ctx.state.sitesToRemove ?? [];
+        if (turningOver && (pending.length > 0 || ownSites.length > 0)) {
+          for (const t of flushValueTuples(ctx.state, [...pending, ...ownSites])) {
+            numCaptureWithValue += ctx.state.valueTop(t.site);
           }
         }
         replayCounts[i] = this._getReplayCount(newCtx, count + numCaptureWithValue, withValue);
