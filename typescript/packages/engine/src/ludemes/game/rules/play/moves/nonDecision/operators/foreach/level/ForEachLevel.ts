@@ -124,6 +124,24 @@ export class ForEachLevel extends Effect {
     // …) lost every capture because (level) collapsed to 0. Save/restore to avoid
     // leaking the iterator value to the surrounding scope.
     const savedLevel = (context as unknown as { _evalLevel?: number })._evalLevel;
+    // Narrow marker (TS-native, no Java equivalent field — Java re-derives this
+    // structurally at compile time via Remove.java:127-129's runtime
+    // sizeStack(loc)==level+1 check, which is only reachable meaningfully when
+    // Remove's `level:` argument is itself the enclosing loop's `(level)`
+    // iterator): true while directly inside THIS loop's own generator
+    // evaluation, iff this loop counts FromTop. Consumed by
+    // `Remove.ts`/`RemoveFaithful.ts` to scope the top-of-stack explicit-level
+    // collapse (@java Remove.java:127-129) to exactly the
+    // `RemoveCapturedPieces`/Pahada-Keliya-capture-handler idiom — a `remove`
+    // nested directly in a `(forEach Level ... FromTop ...)` body, keyed to
+    // that loop's own `(level)` — and NOT to standalone/non-loop-nested
+    // `(remove ... level:(level))` calls (see boolik3-open.md wave-15). Nested
+    // ForEachLevel loops correctly shadow/restore this per their own
+    // direction, matching dynamic scoping of `(level)` itself.
+    const savedInForEachLevelFromTop = (context as unknown as { _inForEachLevelFromTop?: boolean })
+      ._inForEachLevelFromTop;
+    (context as unknown as { _inForEachLevelFromTop?: boolean })._inForEachLevelFromTop =
+      this.stackDirection === "FromTop";
     // @java if (stackDirection.equals(StackDirection.FromBottom))
     if (this.stackDirection === "FromBottom") {
       for (let level = 0; level < stackSize; level++) {
@@ -144,6 +162,8 @@ export class ForEachLevel extends Effect {
       }
     }
     (context as unknown as { _evalLevel?: number })._evalLevel = savedLevel;
+    (context as unknown as { _inForEachLevelFromTop?: boolean })._inForEachLevelFromTop =
+      savedInForEachLevelFromTop;
 
     // @java context.setTo(savedTo);
     context._evalTo = savedTo;

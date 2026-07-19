@@ -15,6 +15,7 @@ import { applyPostStateThen, type Then } from "./Then.js";
 import { ActionRemoveNonApplied } from "../../../../../../../action/action-remove-non-applied.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { Move as LudiiMove } from "../../../../../../../move.js";
+import { Level } from "../../../../../functions/ints/iterator/Level.js";
 
 /** OFF constant matching Java's Constants.OFF = -1 */
 const OFF = -1;
@@ -110,7 +111,42 @@ export class Remove implements MovesFunction {
       // @java ActionRemove carries the LEVEL: (remove X level:0) removes the
       // BOTTOM of a stack (and shifts the rest down), not the whole pile —
       // Complica trims a full column by removing level 0. Pass it through.
-      const lvl = this.levelFn != null ? this.levelFn.eval(ctx) : undefined;
+      const rawLvl = this.levelFn != null ? this.levelFn.eval(ctx) : undefined;
+      let lvl = rawLvl;
+      // @java Remove.java:127-129 — `level = (!isStacking() ||
+      // sizeStack(loc)==level+1) ? UNDEFINED : level` — an explicit level:
+      // collapses to level-less (UNDEFINED) whenever it names the stack's
+      // CURRENT top (or the game isn't stacking at all) at evaluation time,
+      // routing to the clean, level-less remove instead of the dirty,
+      // shift-loop explicit-level remove. NARROWLY scoped here (wave-15c,
+      // see boolik3-open.md lead #3, following the revert of the blanket
+      // version in 87c88c9ce2/043e85554c): only applied when BOTH (a) this
+      // Remove's level: argument is structurally the enclosing loop's own
+      // `(level)` iterator (`this.levelFn instanceof Level`, not some other
+      // expression that merely happens to evaluate to the same number), AND
+      // (b) this Remove is evaluated directly inside that loop's own FromTop
+      // generator body (`ctx._inForEachLevelFromTop`, set by
+      // ForEachLevel.ts's eval()) — i.e. exactly the `RemoveCapturedPieces`
+      // (Boolik.lud line 55) / Pahada-Keliya-capture-handler
+      // (`Pahada Keliya.lud` line ~93) idiom: `(forEach Level ... FromTop
+      // (... (remove ... level:(level)) ...))`. A standalone `(remove X
+      // level:(level))` that is NOT nested in a ForEachLevel...FromTop body
+      // (e.g. Pahada Keliya's own track-end self-removal, `Pahada
+      // Keliya.lud` line 75) is deliberately left on the unconditional
+      // dirty explicit-level path below, byte-for-byte unchanged from
+      // before this fix — the blanket version of this collapse (applied to
+      // every Remove node regardless of nesting) regressed elsewhere and
+      // was reverted; this narrower gate never touches that code path.
+      if (
+        rawLvl !== undefined &&
+        this.levelFn instanceof Level &&
+        (ctx as unknown as { _inForEachLevelFromTop?: boolean })._inForEachLevelFromTop === true
+      ) {
+        const clampedLvl = rawLvl < 0 ? 0 : rawLvl;
+        lvl = (!ctx.state.stackingGame || ctx.state.stackSize(loc) === clampedLvl + 1)
+          ? undefined
+          : clampedLvl;
+      }
       const mkRemove = () => applyNow
         ? new ActionRemove({
             to: loc,
