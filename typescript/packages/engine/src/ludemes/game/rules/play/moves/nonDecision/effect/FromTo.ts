@@ -15,7 +15,7 @@ import type { Move } from "../../../../../../../move.js";
 import { applyPostStateThen, type Then } from "./Then.js";
 import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
 import { ActionMove } from "../../../../../../../action/action-move.js";
-import { ActionMoveLevelFrom } from "../../../../../../../action/action-move-level.js";
+import { ActionMoveLevelFrom, ActionMoveLevelTo, ActionMoveLevelFromLevelTo } from "../../../../../../../action/action-move-level.js";
 import { ActionCopy } from "../../../../../../../action/action-copy.js";
 import { ActionRemove } from "../../../../../../../action/action-remove.js";
 import { ActionSetRotation } from "../../../../../../../action/action-set-rotation.js";
@@ -414,7 +414,38 @@ export class FromTo implements MovesFunction {
         const captureReturnsToFrom = captureActions.some(a => {
           try { return a.to() === from; } catch { return false; }
         });
-        if (this.stack && this.levelFrom !== null) {
+        // @java FromTo.java:233-269 — `levelTo != null` is checked FIRST,
+        // ahead of (and independent of) the `stack` flag: an explicit
+        // destination level always wins, only the `!stack` sub-case matters
+        // for the ported corpus (no census game combines `stack:True` with a
+        // `(to … level:)` directive, so the `stack` sub-branch at line
+        // 271-287 — ActionMove.construct(..., stack=true) with a forced
+        // setLevelFrom(0) — is left unhandled and falls through unchanged
+        // to the existing `this.stack` branch below). Within `!stack`:
+        // `levelFrom == null` builds an ActionMove with levelFrom=UNDEFINED,
+        // levelTo=X, which ActionMove.construct's static levelFrom>=0/
+        // levelTo>=0 test (ActionMove.java:79-134) routes to
+        // ActionMoveLevelTo alone; Java then does `actionMove.setLevelFrom(
+        // cs.sizeStack(from)-1)` afterward purely as move metadata (the
+        // class already defaults its own vacate-level to the CURRENT top
+        // when none is recorded — ActionMoveLevelTo has no fromLevel
+        // constructor arg at all), which TS's ActionMoveLevelBase.apply()
+        // already mirrors via its `sourceLevel` fallback (fromLevelIndex
+        // undefined -> stackSize-1), so no extra call is needed here.
+        // `levelFrom != null` (both directives present — Ringo's MoveDisc:
+        // `(from (from) level:(level)) (to … level:0 …)`) routes to
+        // ActionMoveLevelFromLevelTo, whose apply() (shared with
+        // ActionMoveLevelTo via ActionMoveLevelBase) performs a genuine
+        // insert-and-shift at the destination — see action-move-level.ts.
+        if (this.levelTo !== null && !this.stack) {
+          const lvTo = this.levelTo.eval(ctx);
+          if (this.levelFrom !== null) {
+            const lvFrom = this.levelFrom.eval(ctx);
+            moveAction = new ActionMoveLevelFromLevelTo(from, lvFrom, to, lvTo);
+          } else {
+            moveAction = new ActionMoveLevelTo(from, to, lvTo);
+          }
+        } else if (this.stack && this.levelFrom !== null) {
           // @java FromTo.java:328-340 — when levelFrom is given, Java creates a
           // SINGLE-LEVEL ActionMove(from, levelFrom, to, …, stack=false) even
           // with stack:True; the stack flag only governs whole-stack moves when

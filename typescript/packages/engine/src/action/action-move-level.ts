@@ -255,8 +255,47 @@ abstract class ActionMoveLevelBase extends BaseAction {
       s2 = s2.withResidualStateAtLevel(this.fromIndex, oldTopLevel, preClearState);
     }
     const popped = s2.withStackPop(this.fromIndex, sourceLevel);
-    let pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
-    pushed = pushed.withOwnedAdd(movingOwner, movingWhat, this.toIndex, pushed.stackSize(this.toIndex) - 1);
+    // @java ActionMoveLevelFromLevelTo.java:440-478 (and its levelFrom==null
+    // sibling, ActionMoveLevelTo.java:437-473) — the `requiresStack` branch's
+    // `containerTo.insertCell(state, to, levelTo, what, who, ...)` splices
+    // the mover into the destination stack AT levelTo, shifting every
+    // existing physical level >= levelTo up by one, rather than always
+    // appending on top like the plain top-pop ActionMoveLevelFrom path
+    // above. It also runs the SAME owned()-registry shift-loop as
+    // ActionInsert.apply() (`for (i = sizeStack-1; i >= levelTo; i--) {
+    // owned().remove(...,i,...); owned().add(...,i+1,...); }` then
+    // `owned().add(what, to, levelTo, ...)` for the arriving piece) —
+    // byte-identical in shape to the ActionInsert/ActionAdd case the Ringo
+    // "AddDisc" fix (commit f6a4c960a0) already introduced withStackInsert/
+    // withOwnedShiftUp for. `levelToValue` (a BaseAction field populated by
+    // the ActionMoveLevelTo/ActionMoveLevelFromLevelTo constructors; stays
+    // ACTION_UNDEFINED/-1 for a plain ActionMoveLevelFrom with no
+    // destination-level directive) mirrors Java's static levelTo!=null
+    // ludeme-syntax test (FromTo.java:230-266 checks `levelTo != null`
+    // unconditionally, independent of the runtime stack depth). Ringo's
+    // "MoveDisc" — `(from (from) level:(level)) (to ... level:0 if:...)` —
+    // is the corpus's only live exerciser: the disc drops BELOW the ring it
+    // lands on (levelTo=0), shifting the ring up to level 1, rather than
+    // landing on top of it as the old unconditional top-push always did.
+    const hasExplicitToLevel =
+      state.stackingGame && this.levelToValue >= 0 && this.levelToValue < popped.stackSize(this.toIndex);
+    let pushed: State;
+    // The level the mover actually lands at — levelToValue for a genuine
+    // insert, else the new physical top (matches the pre-existing top-push
+    // formula unchanged). Threads through to the per-level state/value carry
+    // writes below so they stamp the CORRECT depth rather than assuming the
+    // mover is always the new top.
+    let newLevel: number;
+    if (hasExplicitToLevel) {
+      pushed = popped.withStackInsert(this.toIndex, this.levelToValue, movingOwner, movingWhat);
+      pushed = pushed.withOwnedShiftUp(this.toIndex, this.levelToValue);
+      pushed = pushed.withOwnedAdd(movingOwner, movingWhat, this.toIndex, this.levelToValue);
+      newLevel = this.levelToValue;
+    } else {
+      pushed = popped.withStackPush(this.toIndex, movingOwner, movingWhat);
+      newLevel = pushed.stackSize(this.toIndex) - 1;
+      pushed = pushed.withOwnedAdd(movingOwner, movingWhat, this.toIndex, newLevel);
+    }
     if (carryValue !== 0) pushed = pushed.withValueAt(this.toIndex, carryValue);
     // @java ContainerStateStacks.addItem(state,site,what,who,stateVal,
     // rotationVal,value,game) (Core/src/other/state/stacking/
@@ -280,9 +319,12 @@ abstract class ActionMoveLevelBase extends BaseAction {
     // legal moves for it forever after.
     pushed = pushed.withStateAt(this.toIndex, carryState);
     // @java addItemGeneric's stateVal overload — the state rides on the
-    // NEW top level of the destination's per-level column too.
+    // mover's own landing level of the destination's per-level column too
+    // (levelToValue for a genuine insert — see `newLevel` above — not
+    // always the new physical top: an insert-below-top leaves the true top
+    // occupied by a pre-existing, shifted-up piece whose own per-level
+    // state must NOT be overwritten with the mover's carried state).
     {
-      const newLevel = pushed.stackSize(this.toIndex) - 1;
       if (newLevel >= 0) {
         pushed = pushed.withStateAtLevel(this.toIndex, newLevel, carryState);
         // @java ContainerStateStacks.addItem's unconditional setState (cited
