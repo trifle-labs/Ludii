@@ -2012,6 +2012,14 @@ export class State {
       : this.with({ votes });
   }
   /**
+   * @java Game.java:3012-3014 — reset the one-shot `isDecided` flag alone
+   * (votes/propositions untouched), as Game.apply() does at the top of every
+   * move application.
+   */
+  public withDecided(decided: string | null): State {
+    return this.with({ decided });
+  }
+  /**
    * Java parity: `State.reinitNumTurnSamePlayer()` — begin a new turn, bumping
    * `numTurn` by one. Called when the player to move differs from the player
    * who just moved (or the move was a swap).

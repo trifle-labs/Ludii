@@ -1317,7 +1317,7 @@ export class Game implements Game {
     // the new state.
     let baseState = context.state;
     if (baseState.decided !== null) {
-      baseState = baseState.with({ decided: null });
+      baseState = baseState.withDecided(null);
     }
 
     // @java Game.java:3039-3044 — before applying a Pass, if the passing
