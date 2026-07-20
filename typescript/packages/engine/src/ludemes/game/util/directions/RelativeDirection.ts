@@ -472,9 +472,21 @@ export function isSingleDir(dirName: string): boolean {
     case "SSW": case "WSW": case "WNW": case "NNW":
     case "NORTH": case "SOUTH": case "EAST": case "WEST":
     case "NORTHEAST": case "NORTHWEST": case "SOUTHEAST": case "SOUTHWEST":
+    // @java AbsoluteDirection.java:344-383 — CW/CCW/In/Out are individual
+    // single-heading members of the enum, each with its own matches() case;
+    // ONLY the separate `Rotational` member (line 335-343) is the paired
+    // group that expands to {CW,CCW,In,Out}. Treating CW/CCW/In/Out as
+    // bidirectional axes (falling to the default branch below) made
+    // Step.stepTargets() push BOTH a requested CW ray AND its CCW
+    // "opposite" (or In's Out), so a state-conditional
+    // `(if (= (state at:(from)) 0) CW CCW)` pawn on a circular board (e.g.
+    // Shatranj ar-Rumiya) generated illegal moves in the direction NOT
+    // selected by the condition, plus spurious diagonal-capture candidates
+    // derived from that wrong intermediate site (ar-Rumiya ply 104 MOVE_MISMATCH).
+    case "CW": case "CCW": case "IN": case "OUT":
       return true;
     default:
-      return false; // Adjacent / Orthogonal / Diagonal / All → bidirectional axes
+      return false; // Adjacent / Orthogonal / Diagonal / All / Rotational → bidirectional axes
   }
 }
 
