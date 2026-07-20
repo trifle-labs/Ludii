@@ -850,11 +850,42 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
   // value; the engine offers prev/next candidates at the same site,
   // indistinguishable by from/to. Match the value — an arbitrary pick
   // accumulated wrong facings and Ploy's relative directions diverged.
-  const recRot = recMove.actions?.find((a) => a.actionType === 'SetRotation')?.fields?.get('rotation') ?? null;
+  const recRotAction = recMove.actions?.find((a) => a.actionType === 'SetRotation') ?? null;
+  const recRot = recRotAction?.fields?.get('rotation') ?? null;
   if (recRot !== null) {
     const byRot = candidates.filter((c) =>
       c.actions.some((a) => a.actionType() === 'SetRotation' && typeof a.rotation === 'function' && String(a.rotation()) === recRot));
-    if (byRot.length > 0) candidates = byRot;
+    if (byRot.length > 0) {
+      candidates = byRot;
+    } else {
+      // Deferred (`then`) SetRotation consequences are invisible pre-apply:
+      // Kriegsspiel's "PlacementMove" (Kriegsspiel.lud:745-758) is a bare
+      // `(move (from)(to) (then (set Rotation (to (last To)) #1 …)))`
+      // instantiated once per facing {0,2,4,6} — every variant's pre-apply
+      // action list is an identical plain ActionMove(from>to), so the scan
+      // above (which reads c.actions) always comes up empty and the ply fell
+      // through to an arbitrary candidates[0] (rotation 0), permanently
+      // losing the piece's true facing for the rest of the trial. Mirrors
+      // the recSetStates/recSetVars/recSetScores tiers below: hypothetically
+      // apply each candidate and prefer the one whose resulting site
+      // rotation matches Java's recorded value.
+      const site = Number(recRotAction.fields.get('to'));
+      const rotType = recRotAction.fields.get('type') ?? null;
+      if (Number.isFinite(site)) {
+        const expected = Number(recRot);
+        const byAppliedRot = candidates.filter((cand) => {
+          try {
+            const after = game.apply(ctx, cand)?.state;
+            if (!after) return false;
+            const got = (rotType && rotType !== 'Cell' && typeof after.rotationTyped === 'function')
+              ? after.rotationTyped(rotType, site)
+              : after.rotationAtSite?.(site);
+            return got === expected;
+          } catch { return false; }
+        });
+        if (byAppliedRot.length > 0 && byAppliedRot.length < candidates.length) candidates = byAppliedRot;
+      }
+    }
     if (candidates.length === 1) return candidates[0];
   }
 
