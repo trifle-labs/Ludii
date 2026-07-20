@@ -207,6 +207,43 @@ export interface StateOptions {
    * serves games that never touch this path.
    */
   readonly flatOwned?: ReadonlyMap<string, readonly number[]>;
+  /**
+   * @java Core/src/other/action/move/ActionMoveN.java:289-295 (unconditional
+   * `context.state().owned().add(who, what, to, typeTo)`) vs.
+   * Core/src/other/action/move/move/ActionMoveTopPiece.java:442-448 (its
+   * TO-side add is GUARDED to fire only on the empty->occupied transition).
+   * ActionMoveN's own owned-index add has NO such guard — every count-move
+   * landing on an ALREADY-occupied flat site appends a second, stale-prone
+   * entry to Core/src/other/state/owned/FlatVertexOnlyOwned's per-site list
+   * (its own `add()` never dedups: "the same site should never occur more
+   * than once anyway" per that class's doc comment, an assumption ActionMoveN
+   * violates). A single later drain only ever removes ONE such entry
+   * (FlatVertexOnlyOwned.remove is a single indexOf+swap), so one stale
+   * "occupied" entry can survive a site's live count going back to 0 —
+   * `game/functions/booleans/no/pieces/NoPieces.java` scans this SAME owned
+   * index (not live counts) and reports the site as still occupied. Kiuthi
+   * RandomTrial_1's BetweenRounds redistribution hits exactly this: two
+   * separate count-moves deposit onto row site 8 in immediate succession
+   * (count 0->1, then 1->3) before it is later fully drained back to 0 by
+   * ordinary single-seed sow hops — the extra registry entry never clears,
+   * `(no Pieces All)` (the BetweenRounds<->Sowing phase gate) never
+   * re-evaluates true, and both players stall on forced Passes until
+   * NaturalEnd draws the trial (winner=0), diverging from the TS port's
+   * live-count-only occupancy check (which correctly sees the site empty).
+   * `flatSurplus` reproduces JUST this one quirk: keyed by site, it counts
+   * how many EXTRA stale owned-index entries a site has accumulated via
+   * ActionMoveN-equivalent deposits onto an already-occupied site (see
+   * `action-move.ts`'s `transferCount` branch, the TS ActionMoveN mirror).
+   * It is never decremented — mirroring FlatVertexOnlyOwned.remove()'s single
+   * indexOf+swap: a full physical clear accounts for exactly one list entry,
+   * leaving any surplus correctly stale, exactly matching Java. Scoped
+   * separately from the general-purpose `flatOwned`/`ownedEntries`
+   * registries (whose materialization is shared, wide-blast-radius move-
+   * generation-ordering machinery this deliberately avoids perturbing);
+   * `undefined`/absent means "no site has ever had a surplus", so every game
+   * that never exercises this exact path is byte-identical to before.
+   */
+  readonly flatSurplus?: ReadonlyMap<number, number>;
   /** @java GameType.Stacking — compiled-tree flag; plain moves PUSH levels. */
   readonly stackingGame?: boolean;
   /** stack:True MOVE ludemes compiled (per-level plain-move pushes). */
@@ -408,6 +445,8 @@ export class State {
   public readonly ownedEntries?: readonly OwnedEntry[];
   /** @java FlatCellOnlyOwned registry; see {@link StateOptions.flatOwned}. */
   public readonly flatOwned?: ReadonlyMap<string, readonly number[]>;
+  /** @java ActionMoveN unguarded owned-add quirk; see {@link StateOptions.flatSurplus}. */
+  public readonly flatSurplus?: ReadonlyMap<number, number>;
   /** @java GameType.Stacking; see {@link StateOptions.stackingGame}. */
   public readonly stackingGame: boolean;
   /** See {@link StateOptions.stackMovesGame}. */
@@ -673,6 +712,7 @@ export class State {
     this.prev = options.prev ?? 0;
     this.ownedEntries = options.ownedEntries;
     this.flatOwned = options.flatOwned;
+    this.flatSurplus = options.flatSurplus;
     this.stackingGame = options.stackingGame ?? false;
     this.stackMovesGame = options.stackMovesGame ?? false;
     this.requiresCountGame = options.requiresCountGame ?? false;
@@ -1752,6 +1792,26 @@ export class State {
   }
 
   /**
+   * @java Core/src/other/action/move/ActionMoveN.java:289-295's unguarded
+   * `owned().add(who, what, to, typeTo)` — see {@link StateOptions.flatSurplus}
+   * for the full mechanism. Called by action-move.ts's `transferCount` branch
+   * (the TS ActionMoveN mirror) whenever an N-seed deposit lands on a site
+   * that was ALREADY occupied before the deposit — i.e. the exact case where
+   * Java's unconditional add diverges from every other action class's
+   * empty->occupied-guarded add. Increment-only; never decremented (see the
+   * field doc for the invariant proof). Unlike `withFlatOwnedAdd`, this is
+   * NOT gated on prior materialization — it lazily starts an empty map on
+   * first use, since it has no separate "materialize eagerly" concept to
+   * stay consistent with (its only reader, NoPieces.ts, treats an absent
+   * entry as 0, identical to a materialized-but-zero one).
+   */
+  public withFlatSurplusIncrement(site: number): State {
+    const nextMap = new Map(this.flatSurplus ?? []);
+    nextMap.set(site, (nextMap.get(site) ?? 0) + 1);
+    return this.with({ flatSurplus: nextMap });
+  }
+
+  /**
    * @java ContainerState.value(site, level, type) — per-level piece value.
    * Unmaterialized sites: level 0 carries the flat valueAt; higher levels 0.
    */
@@ -2240,6 +2300,7 @@ export class State {
         prev: patch.prev ?? this.prev,
         ownedEntries: patch.ownedEntries ?? this.ownedEntries,
         flatOwned: patch.flatOwned ?? this.flatOwned,
+        flatSurplus: patch.flatSurplus ?? this.flatSurplus,
         stackingGame: patch.stackingGame ?? this.stackingGame,
         stackMovesGame: patch.stackMovesGame ?? this.stackMovesGame,
         requiresCountGame: patch.requiresCountGame ?? this.requiresCountGame,

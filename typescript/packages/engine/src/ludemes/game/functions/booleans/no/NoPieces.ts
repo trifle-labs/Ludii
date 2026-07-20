@@ -169,6 +169,28 @@ export class NoPieces implements BooleanFunction {
       : null;
     const scan = whereSites ?? Array.from({ length: boardSize }, (_, i) => i);
 
+    // TS-scoping decision (NOT a @java-sourced rule): the flatSurplus
+    // consultation below is diagnosed and validated ONLY for phase-gate-style
+    // `(no Pieces All in:(union (sites Top) (sites Bottom)))` scans (Kiuthi's
+    // "NoPieceOnBoard") — a STATIC `in:` region evaluated once per call.
+    // Awagagae's "NoFreePiece" uses a DYNAMIC, per-site-filtered `in:` region
+    // — `(forEach (sites Board) if:(and (not (is In (site) CapturedP1)) ...))`
+    // — re-evaluated live against remembered captured-hole lists. Consulting
+    // flatSurplus there surfaced an UNRELATED, pre-existing TS bug: a chained
+    // same-ply `(fromTo (from handSite) (to (sites Empty)) count:N>1)` pair
+    // (Awagagae's "leftover seed scatter") can resolve BOTH deposits onto the
+    // SAME first-empty site instead of two distinct empty sites, which then
+    // (only once flatSurplus started being consulted) permanently poisoned
+    // "NoFreePiece" for the rest of the trial (MOVE_MISMATCH ply 177/345).
+    // That double-deposit bug is real but orthogonal to Kiuthi's Java
+    // ActionMoveN parity fix and out of this task's scope to root-cause here
+    // — excluding dynamically-filtered `in:` regions keeps the flatSurplus
+    // consultation scoped to the one construct it was diagnosed against.
+    const whereFnCtorName = this.whereFn !== null
+      ? (this.whereFn as unknown as { constructor: { name: string } }).constructor.name
+      : null;
+    const surplusEligibleRegion = whereFnCtorName !== "ForEachSite";
+
     for (const site of scan) {
       if (site < 0 || site >= cells.length) continue;
       const stackRow = state.stacks[site];
@@ -189,7 +211,31 @@ export class NoPieces implements BooleanFunction {
       // Flat site: a piece is present when count>0 or what>0 (a count-only
       // mancala seed has who=0 and is matched by the All neutral id).
       const occupied = (state.countAt[site] ?? 0) > 0 || (state.whats[site] ?? 0) > 0;
-      if (!occupied) continue;
+      if (!occupied) {
+        // @java Core/src/other/action/move/ActionMoveN.java:289-295's
+        // unguarded `owned().add(to)` (see State.flatSurplus's doc, and
+        // action-move.ts's `transferCount` branch, the TS ActionMoveN
+        // mirror) can leave ONE stale "occupied" entry in Java's owned index
+        // for a site that has since been fully, physically drained — Java's
+        // NoPieces.eval() scans that INDEX, not live counts, and still
+        // treats the site as occupied. Kiuthi RandomTrial_1's BetweenRounds
+        // redistribution deposits twice onto the same row site before it is
+        // later fully drained by ordinary sow hops; without this, the
+        // Sowing<->BetweenRounds phase gate (`(no Pieces All)`) fires one
+        // evaluation too early, both players stall on forced Passes, and
+        // NaturalEnd draws the trial — diverging from Java's forced-Pass
+        // stall to the SAME draw only by coincidence of ply timing, so a
+        // WINNER_MISMATCH surfaces whenever the timing doesn't coincide.
+        // Scoped to idPlayers.has(0) (the neutral/Shared bucket only role
+        // "All" ever adds — see PlayersIndices.getIdPlayers, the only role
+        // this quirk is confirmed for) and allowedWhats===null (a
+        // `name`-filtered scan can't identify the phantom component, since
+        // the surplus counter carries no component identity, so it is left
+        // untouched rather than risk a false match).
+        const surplus = state.flatSurplus?.get(site) ?? 0;
+        if (surplus > 0 && idPlayers.has(0) && allowedWhats === null && surplusEligibleRegion) return false;
+        continue;
+      }
       const who = cells[site] ?? 0;
       if (!idPlayers.has(who)) continue;
       if (allowedWhats !== null && !allowedWhats.has(state.whats[site] ?? 0)) continue;

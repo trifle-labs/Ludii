@@ -593,7 +593,14 @@ export class ActionMove extends BaseAction {
       if (fromNew === 0 && (s.stateAt[this.fromIndex] ?? 0) !== 0) {
         s = s.withStateAt(this.fromIndex, 0);
       }
-      const toNew = Math.max(0, s.countAtSite(this.toIndex) + n);
+      // @java Core/src/other/action/move/ActionMoveN.java:289-295 — read the
+      // TO-site's live count BEFORE this deposit, to detect exactly the case
+      // where Java's unconditional `owned().add(to)` diverges from every
+      // other action class's empty->occupied-guarded add (see
+      // {@link State.withFlatSurplusIncrement} / StateOptions.flatSurplus for
+      // the full mechanism and Kiuthi RandomTrial_1 provenance).
+      const toCountBeforeDeposit = s.countAtSite(this.toIndex);
+      const toNew = Math.max(0, toCountBeforeDeposit + n);
       s = s.withCountAt(this.toIndex, toNew);
       const toOwner = toNew > 0 ? movedOwner : 0;
       if ((s.cells[this.toIndex] ?? 0) !== toOwner) {
@@ -623,6 +630,32 @@ export class ActionMove extends BaseAction {
           s = s.withFlatOwnedRemove(movedOwner, movedWhat, this.fromIndex);
         }
         s = s.withFlatOwnedAdd(movedOwner, movedWhat, this.toIndex);
+      }
+      // @java Core/src/other/action/move/ActionMoveN.java:289-295 vs.
+      // Core/src/other/action/move/move/ActionMoveTopPiece.java:442-448 — the
+      // `flatOwned`/`ownedEntries` registries above are shared, wide-scope
+      // move-generation-ordering machinery that stays dormant (undefined)
+      // for most mancala games (Kiuthi's own sow hops run through
+      // action-sow-seed.ts, which never materializes either registry). This
+      // narrow, always-on counter reproduces JUST the one observable
+      // consequence Java's unconditional add has beyond move-gen ordering:
+      // NoPieces.java scanning the owned index (not live counts) still sees
+      // an occupied site after it has been fully, physically drained. Only
+      // increments — never on the from-side, and never decremented (see
+      // State.withFlatSurplusIncrement's doc for the invariant proof).
+      //
+      // Deliberately NOT gated on `movedOwner > 0`: Java's real owner bucket
+      // for a Shared piece (Item.java: owner()==numPlayers+1 for
+      // RoleType.Shared/All, e.g. Kiuthi's "Seed") is a genuine non-zero
+      // owned-index bucket, but the TS `movedOwner` local above (parsed from
+      // a per-player component-label suffix) reads 0 for such a piece — that
+      // 0 means "no per-player suffix", not "no owner bucket at all" in
+      // Java's model. `(no Pieces All)` (the only role this quirk is known
+      // to affect — Kiuthi's Sowing<->BetweenRounds phase gate) scans EVERY
+      // owned-index bucket regardless of number, so which bucket the stale
+      // entry lives in is irrelevant here; only whether one exists at all.
+      if (movedWhat > 0 && toCountBeforeDeposit > 0) {
+        s = s.withFlatSurplusIncrement(this.toIndex);
       }
       // @java ActionMoveN.java:289-295 — the SAME owned() bookkeeping applies
       // verbatim to a stacking game's FullOwned/`ownedEntries` registry (the
