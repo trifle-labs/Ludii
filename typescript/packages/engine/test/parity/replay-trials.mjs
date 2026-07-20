@@ -1153,6 +1153,86 @@ function chooseMatch(tsMoves, recMove, ctx, game, nextRecMove = null) {
     if (candidates.length === 1) return candidates[0];
   }
 
+  // Disambiguate by REMEMBERED-VALUE consequences. Two or-branches sharing an
+  // identical primary action can differ ONLY in a deferred `(remember Value
+  // ...)` / `(forget Value ...)` consequence — invisible in cand.actions() at
+  // generation time, since deferredThens only materialize on apply (mirrors
+  // the recSetVars/recSetStates hypothetical-apply pattern). Kriegsspiel.lud's
+  // "BurnBridgeMove" (line 279) and "DemolishBridgeMove" (line 145) both offer
+  // an identical Select(from,to) candidate at a bridge site, and
+  // "BuildEntrenchmentMove" (line 92) contributes 4 more (one per rotation
+  // {0,2,4,6}) sharing the same to-region — 6 tied candidates, verified via
+  // an independent JVM probe (context.game().moves(context)) to ALSO number
+  // 6 in Java at this exact state (907 total legal moves in both engines).
+  // Java's trial records the exact RememberValue/ForgetValue delta
+  // (RandomTrial_0 ply 1260: RememberValue name=Fires2 value=774), so
+  // hypothetically apply each candidate and prefer the one whose resulting
+  // remembered-value list reproduces it. Picking an arbitrary tied candidate
+  // left "Fires2" empty, so the later self-referential FireSpreadMoves phase
+  // never found a site to select — MOVE_MISMATCH (ply 1411/2131).
+  const recRememberDeltas = recMove.actions
+    .filter((a) => a.actionType === 'RememberValue' || a.actionType === 'ForgetValue')
+    .map((a) => [a.actionType, a.fields.get('name') || '', Number(a.fields.get('value'))]);
+  if (recRememberDeltas.length > 0) {
+    const byRemember = candidates.filter((cand) => {
+      try {
+        const after = game.apply(ctx, cand)?.state;
+        if (!after || typeof after.rememberedFor !== 'function') return false;
+        return recRememberDeltas.every(([kind, name, value]) => {
+          const beforeList = (typeof ctx.state.rememberedFor === 'function') ? ctx.state.rememberedFor(name) : [];
+          const afterList = after.rememberedFor(name);
+          const beforeCount = beforeList.filter((v) => v === value).length;
+          const afterCount = afterList.filter((v) => v === value).length;
+          return kind === 'RememberValue'
+            ? afterCount === beforeCount + 1
+            : afterCount === Math.max(0, beforeCount - 1);
+        });
+      } catch { return false; }
+    });
+    if (byRemember.length > 0 && byRemember.length < candidates.length) candidates = byRemember;
+    if (candidates.length === 1) return candidates[0];
+  }
+
+  // Disambiguate by REMEMBERED-VALUE consequences. Two or-branches sharing an
+  // identical primary action can differ ONLY in a deferred `(remember Value
+  // ...)` / `(forget Value ...)` consequence — invisible in cand.actions() at
+  // generation time, since deferredThens only materialize on apply (mirrors
+  // the recSetVars/recSetStates hypothetical-apply pattern). Kriegsspiel.lud's
+  // "BurnBridgeMove" (line 279) and "DemolishBridgeMove" (line 145) both offer
+  // an identical Select(from,to) candidate at a bridge site, and
+  // "BuildEntrenchmentMove" (line 92) contributes 4 more (one per rotation
+  // {0,2,4,6}) sharing the same to-region — 6 tied candidates, verified via
+  // an independent JVM probe (context.game().moves(context)) to ALSO number
+  // 6 in Java at this exact state (907 total legal moves in both engines).
+  // Java's trial records the exact RememberValue/ForgetValue delta
+  // (RandomTrial_0 ply 1260: RememberValue name=Fires2 value=774), so
+  // hypothetically apply each candidate and prefer the one whose resulting
+  // remembered-value list reproduces it. Picking an arbitrary tied candidate
+  // left "Fires2" empty, so the later self-referential FireSpreadMoves phase
+  // never found a site to select — MOVE_MISMATCH (ply 1411/2131).
+  const recRememberDeltas = recMove.actions
+    .filter((a) => a.actionType === 'RememberValue' || a.actionType === 'ForgetValue')
+    .map((a) => [a.actionType, a.fields.get('name') || '', Number(a.fields.get('value'))]);
+  if (recRememberDeltas.length > 0) {
+    const byRemember = candidates.filter((cand) => {
+      try {
+        const after = game.apply(ctx, cand)?.state;
+        if (!after || typeof after.rememberedFor !== 'function') return false;
+        return recRememberDeltas.every(([kind, name, value]) => {
+          const beforeList = (typeof ctx.state.rememberedFor === 'function') ? ctx.state.rememberedFor(name) : [];
+          const afterList = after.rememberedFor(name);
+          const beforeCount = beforeList.filter((v) => v === value).length;
+          const afterCount = afterList.filter((v) => v === value).length;
+          return kind === 'RememberValue'
+            ? afterCount === beforeCount + 1
+            : afterCount === Math.max(0, beforeCount - 1);
+        });
+      } catch { return false; }
+    });
+    if (byRemember.length > 0 && byRemember.length < candidates.length) candidates = byRemember;
+    if (candidates.length === 1) return candidates[0];
+  }
+
   // Disambiguate by SetState consequences. A ludeme-defined `state` field
   // written via `(then (set State at:... ...))` can encode an amount that
   // exists ONLY in the deferred consequence (Chopsticks' 8-way TransferPoints
