@@ -83,12 +83,30 @@ export class Priority implements MovesFunction {
   }
 
   /**
-   * @java Priority.java:103-109 — canMove check
-   * Returns true if any list can move.
+   * @java Priority.java:103-113 — canMove(Context)
+   *
+   * Java:
+   *   for (final Moves moves : list) {
+   *     if (moves.canMove(context)) return true;
+   *   }
+   *   return false;
+   *
+   * WAVE-16 LAZY-CANMOVE FIX: this used to call `moveGen.eval(ctx).length >
+   * 0`, which forces a FULL eval() of the taken list entry even when that
+   * entry is itself an Or/If/Priority whose OWN canMove() could resolve
+   * lazily (stopping at the first sub-branch with a legal move, without
+   * evaluating the rest). Delegating to the sub-node's polymorphic
+   * `canMove()` (falling back to eval().length>0 only for leaf ludemes with
+   * no override, exactly matching Java's own default Moves.canMove()
+   * behaviour) restores the short-circuit chain end-to-end. See
+   * MaxMoves.ts's canMove() for the same dispatch idiom already established
+   * in this codebase.
    */
   public canMove(ctx: Context): boolean {
     for (const moveGen of this.list) {
-      if (moveGen.eval(ctx).length > 0) return true;
+      const fn = moveGen as unknown as { canMove?(c: Context): boolean; eval(c: Context): Move[] };
+      const can = typeof fn.canMove === "function" ? fn.canMove(ctx) : fn.eval(ctx).length > 0;
+      if (can) return true;
     }
     return false;
   }

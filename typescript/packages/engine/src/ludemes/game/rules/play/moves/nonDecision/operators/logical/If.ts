@@ -111,11 +111,35 @@ export class If implements MovesFunction {
   // -------------------------------------------------------------------------
 
   /**
-   * @java If.canMove(Context)
+   * @java If.java:150-159 — canMove(Context)
+   *
+   * Java:
+   *   if (cond.eval(context)) return list.canMove(context);
+   *   else if (elseList != null) return elseList.canMove(context);
+   *   return false;
+   *
+   * WAVE-16 LAZY-CANMOVE FIX: this used to call `this.list.eval(ctx).length
+   * > 0` / `this.elseList.eval(ctx).length > 0`, forcing a full eval() of
+   * the taken branch even when that branch is itself an Or/Priority/If
+   * whose own canMove() could stop early. Delegating to the branch's
+   * polymorphic canMove() (falling back to eval().length>0 for leaf
+   * ludemes with no override — Java's own base-class default) restores
+   * Java's lazy short-circuit chain.
+   *
+   * NOTE (wave16 verification): wave15's fenix-suffragetto-open.md, Target
+   * 2, attributed Suffragetto's java-ply-254 RNG desync to this exact gap
+   * (Suffragetto's "SameTurn" If wraps an Or of a capturing MoveHop chain
+   * vs. a bare Pass). That specific desync is already closed as of commit
+   * 42158a431e ("Suffragetto Pass-path stalemated probe on the REAL rng"),
+   * confirmed via byte-identical SitesRandom-draw traces at that ply with
+   * and without this If.canMove() fix. This override remains a correct,
+   * faithful Java port kept for general correctness; it does not move
+   * Suffragetto's current ply-2761 MOVE_MISMATCH. See wave16 validation
+   * notes.
    */
   public canMove(ctx: Context): boolean {
-    if (this.cond.eval(ctx)) return this.list.eval(ctx).length > 0;
-    else if (this.elseList !== null) return this.elseList.eval(ctx).length > 0;
+    if (this.cond.eval(ctx)) return ifCanMoveOf(this.list, ctx);
+    else if (this.elseList !== null) return ifCanMoveOf(this.elseList, ctx);
     return false;
   }
 
@@ -206,4 +230,19 @@ export class If implements MovesFunction {
 
     return text;
   }
+}
+
+/**
+ * @java Moves.canMove(Context) — the base-class dispatch a sub-ludeme falls
+ * back to when it has no `canMove()` override of its own (Java: the
+ * abstract `Moves` class's own canMove() eagerly evaluates via
+ * movesIterator()/eval(); TS's leaf ludemes mirror that eager fallback).
+ * Used by If.canMove() to delegate polymorphically to whichever ludeme is
+ * in the taken branch, exactly matching Java's `list.canMove(context)` /
+ * `elseList.canMove(context)` recursive dispatch (If.java:150-159). See
+ * MaxMoves.ts's canMove() for the same established idiom.
+ */
+function ifCanMoveOf(node: MovesFunction, ctx: Context): boolean {
+  const fn = node as unknown as { canMove?(c: Context): boolean; eval(c: Context): Move[] };
+  return typeof fn.canMove === "function" ? fn.canMove(ctx) : fn.eval(ctx).length > 0;
 }

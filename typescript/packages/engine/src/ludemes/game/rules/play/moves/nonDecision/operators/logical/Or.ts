@@ -105,6 +105,60 @@ export class Or implements MovesFunction {
   // -------------------------------------------------------------------------
 
   /**
+   * @java Or.java:74-141 — movesIterator(Context)/canMoveConditionally(...)
+   *
+   * Java's `Or` has no `canMove(Context)` override of its own — it inherits
+   * the base `Moves.canMove()`, which in Java is
+   * `movesIterator(context).canMoveConditionally(predicate)`. Crucially,
+   * `Or` DOES override `movesIterator()`, and its custom iterator's
+   * `canMoveConditionally()` (Or.java:122-138) is genuinely lazy: it tries
+   * list entries strictly in order, stopping at the FIRST entry whose own
+   * `canMoveConditionally(predicate)` succeeds, and never visits later
+   * entries at all if an earlier one does:
+   *
+   *   while (true) {
+   *     if (itr.canMoveConditionally(predicate)) return true;
+   *     if (list.length <= listIdx) return false;
+   *     itr = list[listIdx++].movesIterator(context);
+   *   }
+   *
+   * WAVE-16 LAZY-CANMOVE FIX: TS's `Or` previously had no `canMove()`
+   * override either, but TS's base `Moves.canMove()` default is
+   * `this.eval(ctx).length > 0` (not a lazy iterator) — and `Or.eval()`
+   * unions EVERY list entry's eval() unconditionally. That evaluated (and
+   * fired the side effects of) every branch, not just the first
+   * non-empty/predicate-passing one. This override restores Java's
+   * first-branch-wins short-circuit directly: delegate to each entry's own
+   * polymorphic `canMove()` (or eval().length>0 for a leaf ludeme with no
+   * override, matching Java's own base-class default) in list order,
+   * stopping at the first one that returns true.
+   *
+   * NOTE (wave16 verification): wave15's fenix-suffragetto-open.md, Target
+   * 2, attributed Suffragetto's java-ply-254 RNG desync to exactly this gap
+   * (this `Or`'s list being `[(if mover=P1 (MoveHop ...) (MoveHop ...)),
+   * (move Pass)]`). Instrumented side-by-side SitesRandom-draw traces
+   * (java-side dump4_252_255.log vs TS SR_TRACE) show the two are ALREADY
+   * byte-identical at that ply (call-sequence regionLen 20,20,21,20 on both
+   * sides) — that specific desync was already closed by commit 42158a431e
+   * ("Suffragetto Pass-path stalemated probe on the REAL rng"), which
+   * predates this change. This `canMove()` override is still a correct,
+   * faithful port of Java's Or semantics (kept for general correctness /
+   * other call sites), but it does NOT move Suffragetto's current
+   * ply-2761 MOVE_MISMATCH — confirmed byte-identical replay output with
+   * and without this fix. See wave16 validation notes.
+   */
+  public canMove(ctx: Context): boolean {
+    for (const moveGen of this.list) {
+      const fn = moveGen as unknown as { canMove?(c: Context): boolean; eval(c: Context): Move[] };
+      const can = typeof fn.canMove === "function" ? fn.canMove(ctx) : fn.eval(ctx).length > 0;
+      if (can) return true;
+    }
+    return false;
+  }
+
+  // -------------------------------------------------------------------------
+
+  /**
    * @java Or.canMoveTo(Context, int)
    */
   public canMoveTo(context: Context, target: number): boolean {
