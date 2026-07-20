@@ -2371,6 +2371,15 @@ function fillStacks(
   cells: readonly number[],
 ): (readonly number[])[] {
   if (source !== undefined) {
+    // Fast path: `source` was already frozen by a prior call to this
+    // function (State.with()'s pass-through case, i.e. this derivation
+    // never touched stacks). Object.freeze here always freezes every
+    // element too, so an already-frozen `source` needs no re-copy.
+    // syncStacks() always hands in a fresh unfrozen array, so cells-driven
+    // updates still fall through to the defensive copy below.
+    if (Object.isFrozen(source) && source.length === cells.length) {
+      return source as (readonly number[])[];
+    }
     return source.map((s) => Object.freeze([...s]));
   }
   return cells.map((c) => Object.freeze(c === 0 ? [] : [c]));
@@ -2388,6 +2397,10 @@ function fillWhatStacks(
   n: number,
 ): (readonly number[])[] {
   if (source !== undefined) {
+    // Fast path: see fillStacks above — same reasoning for whatStacks.
+    if (Object.isFrozen(source) && source.length === n) {
+      return source as (readonly number[])[];
+    }
     const out = source.map((s) => Object.freeze([...s]));
     while (out.length < n) out.push(Object.freeze([]));
     return out;
@@ -2402,6 +2415,18 @@ function fillHidden(
   rows: number,
   cols: number,
 ): boolean[][] {
+  // Fast path: pass-through of an already-frozen hiddenForPlayer grid (most
+  // with() derivations never touch hidden info). The only fresh-grid
+  // producer, State.withHidden, always copies each row before mutating, so
+  // a frozen `source` is safe to hand back directly.
+  if (
+    source !== undefined &&
+    Object.isFrozen(source) &&
+    source.length === rows &&
+    (rows === 0 || (source[0]?.length ?? -1) === cols)
+  ) {
+    return source as boolean[][];
+  }
   const out: boolean[][] = [];
   for (let r = 0; r < rows; r += 1) {
     const src = source?.[r];
