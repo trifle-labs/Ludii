@@ -40,10 +40,29 @@ export class ActionPromote extends BaseAction {
     let s2 = state.withCell(this.toIndex, this.whoValue).withWhatAt(this.toIndex, this.whatValue);
     // @java ActionPromote: owned remove(old comp at top level) + add(new).
     if (s2.ownedEntries !== undefined) {
-      const lvl = Math.max(0, (s2.stacks[this.toIndex]?.length ?? 1) - 1);
+      const preLen = state.stacks[this.toIndex]?.length ?? 1;
+      const lvl = Math.max(0, preLen - 1);
       const oldWhat = state.whatAtSiteLevel(this.toIndex, lvl) || state.whatAtSite(this.toIndex);
       const oldOwner = (state.stacks[this.toIndex]?.length ?? 0) > 0 ? state.stackAt(this.toIndex, lvl) : state.who(this.toIndex);
-      s2 = s2.withOwnedRemoveLevel(oldOwner, oldWhat, this.toIndex, lvl);
+      // @java ActionPromote.java:154-174 (stacking branch) — cs.remove()
+      // pops the promoted piece off the top FIRST, then Java only calls
+      // owned().remove(previousOwner, oldWhat, to, sizeStack, type) when
+      // cs.sizeStack(to,type) != 0 POST-pop — i.e. only when something
+      // remains underneath (a genuine multi-level stack, preLen>1).
+      // When the promoted piece was the site's ONLY occupant (preLen===1,
+      // so the post-pop size is 0), that guard is false and Java SKIPS
+      // the removal entirely, permanently leaving the OLD component's
+      // owned-registry entry stale at this site. Unconditionally
+      // removing here (as before) over-cleans relative to Java: Short
+      // Assize's promoted Pawn's stale registry entry must survive so a
+      // later ghost "Forward" step candidate from that site (now
+      // legitimately re-occupied by an unrelated piece) is generated —
+      // see Step.ts's facingOverride fix, which depends on this ghost
+      // still being registered (RandomTrial_1 ply 87 recMove
+      // mover=2,from=1,to=9 and ply 406 recMove mover=1,from=63,to=55).
+      if (preLen > 1) {
+        s2 = s2.withOwnedRemoveLevel(oldOwner, oldWhat, this.toIndex, lvl);
+      }
       s2 = s2.withOwnedAdd(this.whoValue > 0 ? this.whoValue : oldOwner, this.whatValue, this.toIndex, lvl);
     }
     // @java ActionPromote — FlatCellOnlyOwned remove-swap(old comp) +

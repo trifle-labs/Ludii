@@ -217,6 +217,45 @@ export class Step extends Effect {
         const tok = what > 0 ? compFacing[what] : undefined;
         if (tok !== undefined && tok !== null && tok in COMPASS8) facingOverride = COMPASS8[tok];
       }
+      // @java Directions.java:456-470 (component==null branch). The TS
+      // port's per-component `dirn`/componentFacing table (above) is
+      // never actually populated by the compiler (Game.ts only fills it
+      // from a `piece.dirn` field nothing ever sets), so the branch
+      // above is presently dead for every game — including ones with
+      // explicit (player <Dir>) declarations / presets like
+      // ("TwoPlayersNorthSouth"), where Java WOULD have baked a facing
+      // into every component at compile time (Game.java:2574-2588).
+      // Java's facingDirection is derived from `component =
+      // context.components()[cs.what(fromSite)]` — i.e. from whichever
+      // REAL component currently occupies fromSite on the board — NOT
+      // from which player's Owned-registry entry is being iterated.
+      // Two consequences fall out of the SAME rule:
+      //  (a) fromSite is empty (what<1) — e.g. a promotion-ghost's
+      //      stale Owned-registry entry whose piece has since moved
+      //      away (see action-promote.ts) — component==null, so Java
+      //      defaults straight to North.
+      //  (b) fromSite is currently occupied by an ENEMY piece — e.g.
+      //      the SAME kind of stale ghost entry, but the vacated site
+      //      has since been reoccupied by an opposing piece (Short
+      //      Assize RandomTrial_1 ply 406: Pawn1's ghost registry
+      //      still lists site 63 after promoting-and-moving-away, but
+      //      King2 has since walked onto 63; Java's "Forward" for
+      //      this ghost move resolves using King2's South facing —
+      //      i.e. the OCCUPANT's owner, not the ghost's own owner —
+      //      producing recMove 63->55, not 63->71-off-board) — Java
+      //      uses that occupant's own facing (its owner's
+      //      playerDirs), never the mover's.
+      // ctx.state.who(fromSite) — the owner recorded at fromSite —
+      // mirrors cs.who(fromSite)/component.owner() for whichever real
+      // piece (if any) is there right now. For an ordinary move the
+      // piece at its own from-site is always the mover's own, so
+      // who(fromSite)===mover and this reduces to the previous
+      // playerDirs.get(mover) fallback — ordinary Chess/Shatranj/
+      // Chex/Tenjiku moves are unaffected (keep-greens preserved).
+      if (facingOverride === undefined && fromSite >= 0 && playerDirs && playerDirs.size > 0) {
+        const whoAtSite = ctx.state.who(fromSite);
+        facingOverride = whoAtSite > 0 ? (playerDirs.get(whoAtSite) ?? COMPASS8.N) : COMPASS8.N;
+      }
     }
     // Dual-SiteType: a piece iterated on a NON-play element type moves on
     // that type's adjacency — use the alternate trajectories VIEW as a local
