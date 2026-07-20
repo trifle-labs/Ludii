@@ -390,13 +390,28 @@ function recordedDiceStates(recMove) {
   // action nor a die-use bookkeeping action. (Without this, a first-move-after-
   // opponent-doubles like Quinze Tablas — [roll×3, AllEqual, Move, UseDie,
   // rearm×3] — would feed the RNG 6 states and roll the wrong 3 faces.)
+  //
+  // Some games trigger the roll from a `(move Select (from (sites "DiceHand"))
+  // (then (and (roll) (moveAgain))))` ludeme (e.g. Pagade Kayi Ata (Sixteen-
+  // handed)) instead of a bare `(do (roll) next:move)`. There, the recorded
+  // move's own decision action is a self-referential `Select` (from===to,
+  // choosing the dice-hand site to trigger the roll) that PRECEDES the roll's
+  // SetStateAndUpdateDice run. That leading Select carries no die state of
+  // its own, so skip it before scanning for the roll segment — but only when
+  // it is truly the trigger decision (self-referential from===to), not an
+  // actual board move that happens to be named "Select".
   const leading = [];
+  let sawRollState = false;
   for (const a of recMove.actions) {
     if (a.actionType === 'SetStateAndUpdateDice') {
       leading.push(a);
+      sawRollState = true;
       continue;
     }
     if (a.actionType === 'SetDiceAllEqual') continue;
+    if (!sawRollState && a.actionType === 'Select' && String(recMove.from) === String(recMove.to)) {
+      continue; // leading dice-hand "trigger roll" decision — not a die state
+    }
     break; // first real move/decision ends the roll segment
   }
   const dice = leading
