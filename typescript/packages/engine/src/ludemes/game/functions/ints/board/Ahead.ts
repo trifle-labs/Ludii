@@ -270,12 +270,24 @@ export class Ahead extends BaseIntFunction {
     // passed through verbatim, radialsByName(site, "Forward") found nothing
     // and Currierspiel's forced Opening double-steps degraded to from==to.
     {
+      // @java Directions.java:472-478 — `facingDirection` is rotated FR-wise
+      // `cs.rotation(site, graphType)` times BEFORE the relative token is
+      // resolved (the piece's own stored rotation, e.g. Ploy/Kriegsspiel's
+      // Artillery facing set via `(set Rotation)`/`(rotate)`). Without this,
+      // Ahead always resolved against the UNROTATED default facing, so once
+      // an Artillery piece's rotation went non-zero mid-game, Kriegsspiel's
+      // `(ahead (from))` shoot-target region silently kept using the stale
+      // N-facing ray instead of the piece's actual facing.
+      const rotationSteps = realType === "Cell"
+        ? context.state.rotationAtSite(site)
+        : context.state.rotationTyped(realType, site);
       const relResolved = resolveRelativeDir(
         directionName,
         context.state.mover,
         (context.game as unknown as { _playerDirs?: Map<number, number> })._playerDirs,
         undefined,
         (context as unknown as { _trajectories?: { supportedAdjacentDirNamesPlay?: () => readonly string[] } })._trajectories?.supportedAdjacentDirNamesPlay?.(),
+        rotationSteps,
       );
       if (relResolved !== null && relResolved !== undefined) {
         directionName = Array.isArray(relResolved) ? (relResolved[0] ?? directionName) : relResolved;
