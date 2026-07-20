@@ -795,6 +795,20 @@ export class ArgCompiler {
         : (containerNode && isNumber(containerNode) && Number((containerNode as { value: unknown }).value) === 0
           ? null
           : (containerNode ? "Hand" : null));
+      // @java SitesOccupied.java:79-108,182-195 — container: also accepts an
+      // IntFunction container INDEX ((sites Occupied by:Neutral
+      // container:(mover)) — Kriegsspiel's BridgePlacement "from" scan of the
+      // mover's own Square-hand). `by:`/`container:` are ORTHOGONAL fields in
+      // Java: who owns the piece vs. which container is scanned. The
+      // containerName-only "Hand" flag above discards this IntFunction value,
+      // so the eval-time hand branch fell back to reusing whoId (from `by:`)
+      // to pick which hand to scan — broken whenever `by:` and `container:`
+      // name different players (Kriegsspiel's by:Neutral container:(mover):
+      // whoId=0, but no hand has owner 0, so the scan always returned empty
+      // and Actions never got past a forced Pass at ply 242).
+      const containerIndexFn = containerNode && !isString(containerNode) && !isNumber(containerNode)
+        ? this.compileMaybe(containerNode, [parseJavaType("game.functions.ints.IntFunction")], env)
+        : null;
       const componentsNode = parsed.argsIn.find((arg) => arg.parameterName === "components")?.node;
       let componentNames = componentsNode && isList(componentsNode)
         ? (componentsNode.items as readonly unknown[]).filter((it) => isString(it as never)).map((it) => (it as { value: string }).value)
@@ -825,7 +839,7 @@ export class ArgCompiler {
         "Occupied" as never,
         byFn as never,
         byRole as never,
-        null,
+        containerIndexFn as never,
         containerName as never,
         componentFn as never,
         null,

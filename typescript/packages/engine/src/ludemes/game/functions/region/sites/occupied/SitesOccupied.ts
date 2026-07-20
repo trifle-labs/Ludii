@@ -116,6 +116,14 @@ export class SitesOccupied extends BaseRegionFunction {
   private readonly containerName: string | null;
   /** @java SitesOccupied.componentsNames — component-name filter. */
   private readonly componentNames: readonly string[] | null;
+  /**
+   * @java SitesOccupied.containerId — the IntFunction form of `container:`
+   * (e.g. `container:(mover)`), evaluated INDEPENDENTLY of `who`/`role`
+   * (SitesOccupied.java:79-108,182-195). When present it selects which hand
+   * to scan by container index; when absent, the legacy owner-based hand
+   * selection (below) is preserved verbatim for callers still relying on it.
+   */
+  private readonly containerIndexFn: IntFunction | null;
 
   public constructor(
     who: IntFunction | null,
@@ -129,6 +137,7 @@ export class SitesOccupied extends BaseRegionFunction {
     siteType: string | null = null,
     containerName: string | null = null,
     componentNames: readonly string[] | null = null,
+    containerIndexFn: IntFunction | null = null,
   ) {
     super();
     this.who = by ?? who ?? roleToIntFunction(role);
@@ -138,6 +147,7 @@ export class SitesOccupied extends BaseRegionFunction {
     this.siteType = siteType;
     this.containerName = containerName;
     this.componentNames = componentNames;
+    this.containerIndexFn = containerIndexFn;
   }
 
   /**
@@ -190,13 +200,35 @@ export class SitesOccupied extends BaseRegionFunction {
       const sitesFrom = typeof gameAny.sitesFrom === "function" ? gameAny.sitesFrom() : null;
       const hands = eq.hands ?? [];
       if (sitesFrom === null || hands.length === 0) return [];
+      // @java SitesOccupied.java:117-123,182-195 — `cid` (from `container:`)
+      // and `whoId` (from `by:`) are evaluated SEPARATELY: cid selects WHICH
+      // container the scan is bounded to, whoId filters WHOSE pieces qualify.
+      // When the compiler resolved an actual `container:` IntFunction (e.g.
+      // `container:(mover)`), use IT to pick the hand — NOT whoId, which is
+      // broken for `by:Neutral container:(mover)` (Kriegsspiel's
+      // BridgePlacement scan of the mover's own Neutral "Square" pile: whoId
+      // is 0, but no hand has owner 0, so the legacy owner-based selection
+      // below always returned empty). Fall back to the legacy owner-based
+      // hand selection when no container IntFunction was supplied, preserving
+      // prior behaviour for every other caller of the string "Hand" form
+      // (e.g. Teeko/Tic-Tac-Chess's by:Mover container:(mover), where owner
+      // selection already happened to agree with container selection).
+      const containerIdx = this.containerIndexFn !== null ? this.containerIndexFn.eval(ctx) : null;
       const out: number[] = [];
       for (let h = 0; h < hands.length; h++) {
         const hand = hands[h]!;
-        if (hand.owner !== whoId) continue;
+        if (containerIdx !== null) {
+          if (containerIdx !== 1 + h) continue;
+        } else if (hand.owner !== whoId) {
+          continue;
+        }
         const base = sitesFrom[1 + h] ?? -1;
         if (base < 0) continue;
         for (let i = base; i < base + hand.size; i++) {
+          // @java SitesOccupied.java:143-180 — the owner filter still applies
+          // even when the container was selected independently; only skip it
+          // on the legacy owner-selected path (already implied there).
+          if (containerIdx !== null && (cells[i] ?? 0) !== whoId) continue;
           const what = ctx.state.what(i);
           if (what <= 0) continue;
           if (this.componentNames !== null) {

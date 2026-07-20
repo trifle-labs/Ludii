@@ -561,6 +561,11 @@ export class Sites extends BaseRegionFunction {
         // @java return new SitesOccupied(by, By, container, Container, component, Component, components, top, on);
         const byFn = by !== null ? resolveIntFn(by) : null;
         const roleVal = (By !== null ? (By as string) : null) as unknown as null;
+        // @java SitesOccupied.java:79-108 — `container` (an IntFunction site-
+        // container INDEX, e.g. (mover)) and `by`/`role` (the owner) are
+        // orthogonal fields; container must be threaded through independently
+        // rather than collapsed into the coarse containerName ("Hand") flag.
+        const containerIndexFn = _container !== null ? resolveIntFn(_container) : null;
         // @java container:"Hand" + components:{names} restrict the scan
         return new SitesOccupied(
           byFn,
@@ -574,6 +579,7 @@ export class Sites extends BaseRegionFunction {
           on,
           _Container,
           (_components && _components.length > 0 ? _components : (_Component !== null ? [_Component] : null)),
+          containerIndexFn,
         );
       }
       default:

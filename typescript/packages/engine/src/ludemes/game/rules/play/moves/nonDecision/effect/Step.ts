@@ -136,6 +136,44 @@ export class Step extends Effect {
   }
 
   /**
+   * The DECLARED graph-element type to report on the constructed ActionMove's
+   * fromType()/toType(), independent of whether it happens to equal the
+   * board's own default/play SiteType.
+   *
+   * @java Step.java:121 — `type = (from == null) ? null : from.type();` is
+   * set directly from the ludeme's declared `(from <SiteType>)` with NO
+   * "equals the board's default → null" gating. A SEPARATE local `realType`
+   * (Step.java:160,278 — `type != null ? type : board().defaultSite()`) is
+   * computed ONLY for topology/trajectory lookups; the raw, non-defaulted
+   * `type` is what Java actually passes to
+   * `ActionMove.construct(type, from, level, type, to, ...)` (Step.java:206,
+   * 220), so Java's Move.fromType()/toType() (ActionMoveTopPiece.java:893-901
+   * — stored/returned directly, no fallback) always reports the declared
+   * type, even when it equals the board's default.
+   *
+   * resolveFromTypeTag() above nulls that SAME raw tag when it equals the
+   * play type, but that nulling exists ONLY to pick the flat-default-radials
+   * array vs the typed-trajectories VIEW in stepTargets() — a genuinely
+   * separate concern from what gets reported on the Action. Sharing the
+   * nulled value for both purposes made a Vertex-declared `(move Step (from
+   * Vertex) …)` on a `use:Vertex` board (Vertex IS the default there —
+   * Triple Tangle) construct its ActionMove with no explicit type, falling
+   * through to ActionMove's own hardcoded `"Cell"` default (action-move.ts)
+   * and misreporting a genuine Vertex1→Vertex0 move as Cell1→Cell0. That
+   * false label made it indistinguishable from an unrelated, genuine
+   * Cell1→Cell0 FromTo move at the same numeric indices, so the parity
+   * harness's type-keyed candidate disambiguation (narrowByRecordedSiteType)
+   * could no longer tell them apart and picked the wrong one — whose own,
+   * otherwise-correct `then` consequence then removed the wrong Edge,
+   * corrupting the board (Triple Tangle RandomTrial_1, ply 191, surfacing as
+   * a MOVE_MISMATCH three plies later at ply 194).
+   */
+  private resolveReportType(ctx: Context): string | null {
+    const rawTag = (ctx as unknown as { _evalFromType?: string | null })._evalFromType ?? this.declaredFromType;
+    return rawTag ?? null;
+  }
+
+  /**
    * Resolve this Step's directions to the set of one-step destination sites from
    * `cellRadials`, deduplicated.
    *
@@ -186,6 +224,7 @@ export class Step extends Effect {
     const baseTraj = (ctx as unknown as { _trajectories?: Trajectories | null })._trajectories ?? null;
     const fromTypeTag = this.resolveFromTypeTag(ctx);
     this._fromTypeTag = fromTypeTag;
+    this._reportTypeTag = this.resolveReportType(ctx);
     const traj = fromTypeTag && baseTraj && typeof (baseTraj as unknown as { viewOf?: unknown }).viewOf === "function"
       ? (baseTraj as unknown as { viewOf(k: string): Trajectories }).viewOf(fromTypeTag)
       : baseTraj;
@@ -286,6 +325,11 @@ export class Step extends Effect {
    */
   /** Dual-SiteType tag captured per-eval (typed-channel steps). */
   private _fromTypeTag: string | null = null;
+  /**
+   * Declared graph-element type captured per-eval, for ActionMove
+   * fromType()/toType() reporting only — see resolveReportType().
+   */
+  private _reportTypeTag: string | null = null;
 
   public override eval(ctx: Context): Move[] {
     if (this.startRegionFn !== null) return this.evalRegion(ctx);
@@ -384,7 +428,7 @@ export class Step extends Effect {
         const lvl = ctx.state.stackSize(from) - 1;
         moveAction = new ActionMoveLevelFrom(from, lvl, to);
       } else {
-        moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never, stack: this.stack } : { from, to, stack: this.stack });
+        moveAction = new ActionMove(this._reportTypeTag ? { from, to, fromType: this._reportTypeTag as never, toType: this._reportTypeTag as never, stack: this.stack } : { from, to, stack: this.stack });
       }
       moveAction.setDecision(true);
       actions.push(moveAction);
@@ -465,7 +509,7 @@ export class Step extends Effect {
           actions.push(a);
         }
         }
-        const moveAction = new ActionMove(this._fromTypeTag ? { from, to, fromType: this._fromTypeTag as never, toType: this._fromTypeTag as never, stack: this.stack } : { from, to, stack: this.stack });
+        const moveAction = new ActionMove(this._reportTypeTag ? { from, to, fromType: this._reportTypeTag as never, toType: this._reportTypeTag as never, stack: this.stack } : { from, to, stack: this.stack });
         moveAction.setDecision(true);
         actions.push(moveAction);
 

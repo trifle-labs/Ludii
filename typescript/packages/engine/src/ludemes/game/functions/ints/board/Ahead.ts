@@ -88,7 +88,16 @@ export class Ahead extends BaseIntFunction {
     // @java Ahead.java:74 — stepsFn = (steps == null) ? new IntConstant(1) : steps;
     // (@Opt @Name steps is absent in e.g. Fanorona's (ahead (to) SameDirection)).
     this.stepsFn = steps ?? ({ eval: () => 1 } as unknown as JavaIntFunction);
-    this.dirnChoice = directions;
+    // @java Ahead.java:70-72 — dirnChoice = (directions != null)
+    //   ? directions.directionsFunctions()
+    //   : new Directions(RelativeDirection.Forward, null, null, null);
+    // (@Opt directions is absent in e.g. Kriegsspiel's bare (ahead (from))
+    // used throughout the Actions-phase Artillery/Cavalry move rules). Without
+    // this default, dirnChoice stayed null/undefined and eval() crashed
+    // dereferencing it (TypeError reading 'getRelativeDirections') the first
+    // time an Actions-phase move rule was generated — game.moves() threw and
+    // no moves at all were produced for the rest of the trial.
+    this.dirnChoice = directions ?? ("Forward" as unknown as AheadDirectionsFunction);
   }
 
   /**
