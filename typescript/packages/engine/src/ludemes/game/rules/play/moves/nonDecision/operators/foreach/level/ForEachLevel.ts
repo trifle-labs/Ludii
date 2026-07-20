@@ -121,9 +121,22 @@ export class ForEachLevel extends Effect {
     // iteration (mirroring ForEachPiece) so (who at:s level:(level)) and
     // (fromTo (from … level:(level))) resolve the CURRENT stack level instead of
     // always 0 — the Pachisi-family capture-return (forEach Level (last To) FromTop
-    // …) lost every capture because (level) collapsed to 0. Save/restore to avoid
-    // leaking the iterator value to the surrounding scope.
-    const savedLevel = (context as unknown as { _evalLevel?: number })._evalLevel;
+    // …) lost every capture because (level) collapsed to 0.
+    //
+    // @java ForEachLevel.java:89-102 — Java's loop calls context.setLevel(level)
+    // on every iteration but NEVER restores the site's prior level afterward
+    // (only context.setTo(savedTo)/context.setSite(originSiteValue) are restored
+    // below); confirmed by inspection — no `savedLevel`/setLevel(saved) call
+    // exists anywhere in the Java source. A leaked level is intentional/relied
+    // upon: FromTo.java reads levelFrom.eval(context) to build its ActionMove
+    // BEFORE ever invoking a nested captureEffect (chainRuleWithAction runs
+    // strictly after — FromTo.java:264 vs :407), so by the time this loop's own
+    // leak could matter to a SIBLING move's from-level read, that read has
+    // already happened. TS previously saved/restored this field defensively;
+    // doing so was unfaithful and masked the real ordering requirement, which
+    // is enforced in FromTo.ts by caching levelFrom's value before the capture
+    // effect runs (see FromTo.ts's levelFromValue citation) rather than by
+    // sandboxing this loop's own iterator.
     // Narrow marker (TS-native, no Java equivalent field — Java re-derives this
     // structurally at compile time via Remove.java:127-129's runtime
     // sizeStack(loc)==level+1 check, which is only reachable meaningfully when
@@ -161,7 +174,6 @@ export class ForEachLevel extends Effect {
         moves.moves().push(...generatedMoves);
       }
     }
-    (context as unknown as { _evalLevel?: number })._evalLevel = savedLevel;
     (context as unknown as { _inForEachLevelFromTop?: boolean })._inForEachLevelFromTop =
       savedInForEachLevelFromTop;
 

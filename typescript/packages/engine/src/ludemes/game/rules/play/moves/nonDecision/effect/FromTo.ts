@@ -395,6 +395,23 @@ export class FromTo implements MovesFunction {
         // piece — a silent identity swap surfacing plies later. Precompute
         // the capture (single eval, just moved earlier) so the level-branch
         // decision can see the hazard.
+        //
+        // @java FromTo.java:264/303 — levelFrom.eval(context) is read while
+        // constructing the base ActionMove, chronologically BEFORE
+        // MoveUtilities.chainRuleWithAction (FromTo.java:407) ever runs the
+        // capture effect. Java's captureEffect (e.g. a nested `(forEach Level
+        // (to) ...)`) is free to mutate context.level() because levelFrom has
+        // ALREADY been read and baked into the action by the time it runs.
+        // Cache the value here, before the capture-effect precompute below
+        // touches ctx, so a leak from the capture effect's own ForEachLevel
+        // (which does NOT restore context.level() — ForEachLevel.java:110-111)
+        // can't corrupt this read. Reading a stale/leaked context.level() here
+        // picked the WRONG stacked piece to move (Aj T'iwil ply44: a 2-height
+        // team-shared stack's own top piece, level 1, was silently swapped for
+        // its teammate's piece at level 0 whenever CaptureMove's ForEachLevel
+        // ran a single-level capture on the destination first and left
+        // context.level() at 0).
+        const levelFromValue = this.levelFrom !== null ? this.levelFrom.eval(ctx) : null;
         const captureThens: DeferredThen[] = [];
         let captureActions: import("../../../../../../../action/index.js").Action[] = [];
         if (this.captureEffect != null &&
@@ -440,7 +457,7 @@ export class FromTo implements MovesFunction {
         if (this.levelTo !== null && !this.stack) {
           const lvTo = this.levelTo.eval(ctx);
           if (this.levelFrom !== null) {
-            const lvFrom = this.levelFrom.eval(ctx);
+            const lvFrom = levelFromValue as number;
             moveAction = new ActionMoveLevelFromLevelTo(from, lvFrom, to, lvTo);
           } else {
             moveAction = new ActionMoveLevelTo(from, to, lvTo);
@@ -456,7 +473,7 @@ export class FromTo implements MovesFunction {
           // seeds into the first hole (Ceelkoqyuqkoqiji/O An Quan/Laomuzhu/
           // Yucebao diverged from ply 0). Route through ActionMoveLevelFrom,
           // whose count-backed branch moves exactly one seed per call.
-          const lv = this.levelFrom.eval(ctx);
+          const lv = levelFromValue as number;
           moveAction = new ActionMoveLevelFrom(from, lv, to);
         } else if (this.stack) {
           // @java FromTo.java:346-360 — stackingGame||stack with a count is an
@@ -544,7 +561,7 @@ export class FromTo implements MovesFunction {
           // (fromStackLen<=1) a HittingCapture can re-occupy `from`'s top
           // between generation and apply time, so force the explicit-level
           // path there regardless of fromStackLen.
-          const lv = this.levelFrom !== null ? this.levelFrom.eval(ctx) : -1;
+          const lv = levelFromValue !== null ? levelFromValue : -1;
           const fromStackLen = ctx.state.stacks[from]?.length ?? 0;
           if (lv >= 0 && (captureReturnsToFrom || fromStackLen > 1)) {
             moveAction = new ActionMoveLevelFrom(from, lv, to);
