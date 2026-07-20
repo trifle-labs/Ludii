@@ -1308,6 +1308,18 @@ export class Game implements Game {
 
     const mover = context.state.mover;
 
+    // @java Game.java:3012-3014 — "If a decision was done previously we
+    // reset it." isDecided is a one-shot flag: Priority branches gated by
+    // `(is Decided "X")` only see it true for the ONE move-generation phase
+    // immediately after ActionVote resolves a majority vote; the instant
+    // ANY move is applied afterwards (regardless of which move), Game.apply()
+    // unconditionally clears it back to Constants.UNDEFINED before computing
+    // the new state.
+    let baseState = context.state;
+    if (baseState.decided !== null) {
+      baseState = baseState.with({ decided: null });
+    }
+
     // @java Game.java:3039-3044 — before applying a Pass, if the passing
     // player's stalemated flag is not already set, Game.applyInternal() calls
     // computeStalemated(context) on the REAL (uncloned) context/rng to verify
@@ -1315,7 +1327,6 @@ export class Game implements Game {
     // stochastic ludemes probed while checking for legal moves (e.g. a Hop
     // capture's SitesRandom side-effect draw) even though the probed move
     // itself is discarded — see computeStalemated() below for details.
-    let baseState = context.state;
     if (move.isPass() && !baseState.stalemated[mover]) {
       baseState = this.computeStalemated(baseState, context as Context1to1);
     }
