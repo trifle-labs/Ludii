@@ -986,16 +986,33 @@ export class ActionMove extends BaseAction {
       // happens in Java there at all, it's a plain cell move that must keep
       // its own value, e.g. a Fenix Soldier's value:1 riding along an
       // ordinary Step to an empty square). A single flat piece landing on an
-      // ALREADY-OCCUPIED destination (toBase.length>0) is a genuine MERGE —
-      // Fenix's "climb onto a friendly piece to build a General/King" — and
-      // must default its new level to 0 regardless of the mover's own value,
-      // or that value duplicates onto every merged level (two successive
-      // Soldier merges left Fenix's King at valueStacks[48]=[1,1,1] instead
-      // of Java's confirmed [1,0,0], JVM-probe
-      // validation-results/wave16/fenix-jvm-probe-ply17.log — the very same
-      // quirk the `fromOwners`/`fromWhats` stack:True branch above and the
-      // sibling `mOwner`/`mWhat` single-push branch below already handle).
-      const landingValue = multiStack || toBase.length === 0 ? topValue : 0;
+      // ALREADY-OCCUPIED destination is only a genuine "combine" MERGE when
+      // the pre-existing occupant is the MOVER'S OWN piece — Fenix's "climb
+      // onto a friendly piece to build a General/King" (JVM-confirmed
+      // valueStacks[48]=[1,0,0], not [1,1,1] — the sole justification 05dc-
+      // 96cb42 gave for zeroing here) — and must default its new level to 0
+      // regardless of the mover's own value, or that value duplicates onto
+      // every merged level. Landing on an OPPONENT's (or a Neutral) occupant
+      // via this same per-level push branch is a DIFFERENT Java code path
+      // entirely with no "combine" semantics — Java's addItemGeneric still
+      // writes no value for the truly-new level, but the games that reach
+      // this branch while capturing (level:(level)-tagged race games in the
+      // Kawasukuts family — Owasokotz, Tsaydithl, Kawasukuts itself — whose
+      // gates legitimately hold a captured piece underneath the mover after
+      // a HittingCapture) rely on the flat/level-less `(value Piece
+      // at:(where "Marker" Mover))` read landing on the MOVER's own value,
+      // not a stale 0: zeroing here made a fresh entrant's start-gate value
+      // read back 0, and `(is In 0 <track segment near start>)` fired a
+      // false `MadeACompleteCircuit` win one ply after entering the board
+      // (Kawasukuts RandomTrial_1, WINNER_MISMATCH at ply 4 — the very bug
+      // class the surviving comment below this block already documents
+      // fixing once; 05dc96cb42 reintroduced it by widening the zero to
+      // every occupied landing instead of only same-owner ones). Gate the
+      // zero on `prevToOwner === topOwner` (a genuine same-owner merge) so
+      // Fenix's climb and Kawasukuts-family captures both read correctly.
+      const prevToOwner = popped.cellAt(this.toIndex).owner;
+      const landingValue =
+        multiStack || toBase.length === 0 || prevToOwner !== topOwner ? topValue : 0;
       let pushed = popped.withStackPush(this.toIndex, topOwner, topWhat);
       pushed = pushed.withValueStackRow(this.fromIndex, fromRow);
       pushed = pushed.withValueStackRow(this.toIndex, [...toBase, landingValue]);
