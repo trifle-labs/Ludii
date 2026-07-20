@@ -93,6 +93,13 @@ export class EdgeEl implements GElement {
     public readonly va: VertexEl,
     public readonly vb: VertexEl,
     public readonly pt: Pt3,
+    /**
+     * @java Edge.curved() — true only for a ring's tangential-arc edges (see
+     * `Graph.addEdge`'s `curved` param / `GEdge.curved` doc comment). Carried
+     * through 1:1 from the source `GEdge`; consumed by
+     * `Trajectories.setCircularDirections`'s curved-edge-only CW/CCW guard.
+     */
+    public readonly curved: boolean = false,
   ) {}
 
   public pivot(): VertexEl | null {
@@ -191,7 +198,7 @@ export class GraphTopology {
         y: (va.pt.y + vb.pt.y) / 2,
         z: 0,
       };
-      const edge = new EdgeEl(e.id, va, vb, mid);
+      const edge = new EdgeEl(e.id, va, vb, mid, e.curved ?? false);
       this.edgeEls.push(edge);
       edgeByKey.set(key(e.a, e.b), edge);
       va.edges.push(edge);
@@ -266,6 +273,27 @@ export class GraphTopology {
     if (siteType === SiteType.Vertex) return this.verts;
     if (siteType === SiteType.Edge) return this.edgeEls;
     return this.faceEls;
+  }
+
+  /**
+   * @java Graph.findEdge(idA, idB, curved) — linear scan of the underlying
+   * vertex-vertex edge list for one whose two endpoint ids match `idA`/`idB`
+   * (unordered) and, when `curvedOnly`, whose `Edge.curved()` is true.
+   * Faithful to Java's literal id lookup: Trajectories.setCircularDirections
+   * calls this with `from.id()`/`step.to().id()` for elements of ANY
+   * SiteType (Vertex, Edge, or Cell) — Java's single shared `graph.edges`
+   * list is keyed purely by vertex ids, so a Cell (Face) id is matched
+   * against those same vertex ids with no remapping (see
+   * `Trajectories.java:566`). Returns null when no such edge exists.
+   */
+  public findEdge(idA: number, idB: number, curvedOnly = false): EdgeEl | null {
+    for (const edge of this.edgeEls) {
+      const matches =
+        (edge.va.id === idA && edge.vb.id === idB) ||
+        (edge.va.id === idB && edge.vb.id === idA);
+      if (matches && (!curvedOnly || edge.curved)) return edge;
+    }
+    return null;
   }
 
   /** Mean edge length — @java Graph.averageEdgeLength(). */

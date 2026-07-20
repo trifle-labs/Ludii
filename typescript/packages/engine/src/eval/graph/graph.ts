@@ -50,6 +50,18 @@ export interface GEdge {
   /** Endpoint vertex ids (unordered). */
   readonly a: number;
   readonly b: number;
+  /**
+   * @java Edge.curved() = (tangentA != null && tangentB != null) — true only
+   * for the tangential-arc edges a concentric/circular generator lays around
+   * a ring (its "concentric edges around rings (curved)" pass); the
+   * "perpendicular edges between rings" pass and every other generator leave
+   * this unset (Java: both tangents null). TS does not model the tangent
+   * vectors themselves (never consumed independently of curved()), only the
+   * derived boolean — see {@link Graph.addEdge}. Consumed by
+   * `Trajectories.setCircularDirections`'s curved-edge-only CW/CCW guard
+   * (@java Trajectories.java:498-583, `graph.findEdge(from,to,true)==null`).
+   */
+  readonly curved?: boolean;
 }
 
 export interface GFace {
@@ -384,7 +396,7 @@ export class Graph {
       const [x, y] = fn(v.x, v.y);
       return v.z !== undefined ? { id: v.id, x, y, z: v.z } : { id: v.id, x, y };
     });
-    out.elist = this.elist.map((e) => ({ id: e.id, a: e.a, b: e.b }));
+    out.elist = this.elist.map((e) => (e.curved ? { id: e.id, a: e.a, b: e.b, curved: true } : { id: e.id, a: e.a, b: e.b }));
     out.edgeKey = new Map(this.edgeKey);
     out.flist = this.flist.map((f) => {
       const [cx, cy] = fn(f.cx, f.cy);
@@ -483,14 +495,23 @@ export class Graph {
     return -1;
   }
 
-  /** Add an undirected edge between two vertex ids (deduplicated). */
-  public addEdge(a: number, b: number): number {
+  /**
+   * Add an undirected edge between two vertex ids (deduplicated). `curved`
+   * mirrors Java's `Graph.findOrAddEdge(vertIdA, vertIdB, tangentA,
+   * tangentB)` overload — set true only by a ring's tangential-arc pass. Java
+   * dedups purely on the vertex-id pair regardless of curved-ness (its own
+   * "TODO: Match should include tangents?" comment, Graph.java ~1004), so —
+   * exactly like Java — whichever pass creates the edge FIRST decides its
+   * curved flag; a later call with a different `curved` value on the same
+   * pair is a no-op (returns the existing edge unchanged).
+   */
+  public addEdge(a: number, b: number, curved = false): number {
     if (a === b) return -1;
     const key = a < b ? `${a}:${b}` : `${b}:${a}`;
     const existing = this.edgeKey.get(key);
     if (existing !== undefined) return existing;
     const id = this.elist.length;
-    this.elist.push({ id, a, b });
+    this.elist.push(curved ? { id, a, b, curved: true } : { id, a, b });
     this.edgeKey.set(key, id);
     return id;
   }
@@ -498,6 +519,27 @@ export class Graph {
   public hasEdge(a: number, b: number): boolean {
     const key = a < b ? `${a}:${b}` : `${b}:${a}`;
     return this.edgeKey.has(key);
+  }
+
+  /**
+   * @java Graph.findEdge(idA, idB, curved) — the vertex-id-pair edge lookup
+   * Trajectories.setCircularDirections uses to gate CW/CCW tagging on a
+   * genuine curved (tangential-arc) edge. Returns the edge id, or -1 when no
+   * edge joins `a`/`b` (or one exists but its curved-ness doesn't match).
+   * Faithful to Java's literal id lookup: `a`/`b` are matched against the
+   * VERTEX ids stored on this graph's (vertex-vertex) edge list regardless of
+   * what site type the caller's own ids denote — Java's Trajectories passes
+   * Cell/Edge/Vertex element ids straight through to this same vertex-edge
+   * table (see Trajectories.java:566: `graph.findEdge(from.id(),
+   * step.to().id(), true)`), so this must not attempt any Cell/Vertex
+   * remapping either.
+   */
+  public findEdge(a: number, b: number, curvedOnly = false): number {
+    const key = a < b ? `${a}:${b}` : `${b}:${a}`;
+    const id = this.edgeKey.get(key);
+    if (id === undefined) return -1;
+    if (curvedOnly && !this.elist[id]?.curved) return -1;
+    return id;
   }
 
   /** Mean edge length, used by operators that auto-connect nearby vertices. */
@@ -838,7 +880,7 @@ export class Graph {
       if (orphaned.size > 0) {
         const kept = this.elist.filter((e) => !orphaned.has(edgeKeyOf(e.a, e.b)));
         if (kept.length !== this.elist.length) {
-          this.elist = kept.map((e, i) => ({ id: i, a: e.a, b: e.b }));
+          this.elist = kept.map((e, i) => (e.curved ? { id: i, a: e.a, b: e.b, curved: true } : { id: i, a: e.a, b: e.b }));
           this.edgeKey.clear();
           for (const e of this.elist) {
             this.edgeKey.set(edgeKeyOf(e.a, e.b), e.id);
@@ -1010,11 +1052,11 @@ export class Graph {
     if (newV.length === this.vlist.length && survivingEdges.length === this.elist.length)
       return; // nothing to trim — leave ids untouched
     this.vlist = newV;
-    this.elist = survivingEdges.map((e, i) => ({
-      id: i,
-      a: remap[e.a] as number,
-      b: remap[e.b] as number,
-    }));
+    this.elist = survivingEdges.map((e, i) => (
+      e.curved
+        ? { id: i, a: remap[e.a] as number, b: remap[e.b] as number, curved: true }
+        : { id: i, a: remap[e.a] as number, b: remap[e.b] as number }
+    ));
     this.edgeKey.clear();
     for (const e of this.elist) {
       const key = e.a < e.b ? `${e.a}:${e.b}` : `${e.b}:${e.a}`;
@@ -1080,6 +1122,7 @@ export class Graph {
     const remapped = this.elist.map((e) => ({
       a: remap[e.a] as number,
       b: remap[e.b] as number,
+      curved: e.curved,
     }));
     const midScore = (e: { a: number; b: number }): number => {
       const va = this.vlist[e.a] as GVertex;
@@ -1089,7 +1132,7 @@ export class Graph {
       return my * 100 + mx;
     };
     remapped.sort((e1, e2) => midScore(e1) - midScore(e2));
-    this.elist = remapped.map((e, i) => ({ id: i, a: e.a, b: e.b }));
+    this.elist = remapped.map((e, i) => (e.curved ? { id: i, a: e.a, b: e.b, curved: true } : { id: i, a: e.a, b: e.b }));
     this.edgeKey.clear();
     for (const e of this.elist) {
       const key = e.a < e.b ? `${e.a}:${e.b}` : `${e.b}:${e.a}`;

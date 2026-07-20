@@ -102,7 +102,13 @@ export class ConcentricCircle extends Basis {
       for (const s of samples[ring] as Sample[])
         graph.addVertex(s.x, s.y);
 
-    // Create concentric edges around rings (curved arcs — straight in TS Graph)
+    // Create concentric edges around rings (curved arcs — straight in TS
+    // Graph, but flagged `curved:true` — @java ConcentricCircle.java:212-241
+    // "Create concentric edges around rings (curved)",
+    // `graph.findOrAddEdge(vertexA, vertexB, tangentA, tangentB)`. The
+    // tangent vectors themselves are never consumed independently of
+    // `Edge.curved()` (@java Edge.java:135-141, tangentA!=null&&tangentB!=
+    // null), so only the derived boolean is ported — see Graph.addEdge.
     for (let ring = 0; ring <= numRings; ring += 1) {
       const rs = samples[ring] as Sample[];
       const ringSize = rs.length;
@@ -112,11 +118,13 @@ export class ConcentricCircle extends Basis {
         const sB = rs[(n + 1) % ringSize] as Sample;
         const vA = graph.findVertex(sA.x, sA.y);
         const vB = graph.findVertex(sB.x, sB.y);
-        if (vA >= 0 && vB >= 0 && vA !== vB) graph.addEdge(vA, vB);
+        if (vA >= 0 && vB >= 0 && vA !== vB) graph.addEdge(vA, vB, true);
       }
     }
 
-    // Create perpendicular edges between rings
+    // Create perpendicular edges between rings (NOT curved — @java
+    // ConcentricCircle.java:243-274 "Create perpendicular edges between
+    // rings (not curved)", plain `graph.findOrAddEdge(vertexA, vertexB)`).
     for (let ring = 0; ring < numRings; ring += 1) {
       const cellsThisRing = Math.abs(this.cellsPerRing[ring] ?? 0);
       if (cellsThisRing < 2) continue;
@@ -206,7 +214,9 @@ export class ConcentricCircle extends Basis {
       for (const s of samples[ring] as Sample[])
         graph.addVertex(s.x, s.y);
 
-    // Create concentric edges around rings (curved arcs — straight in TS)
+    // Create concentric edges around rings (curved arcs — straight in TS,
+    // flagged `curved:true` — @java ConcentricCircle.java:391-429, same
+    // tangent-based `findOrAddEdge` as generateForCells above).
     for (let ring = 1; ring < numRings; ring += 1) {
       const vpr = vertsPerRing[ring] ?? 0;
       if (vpr < 2) continue;
@@ -218,7 +228,7 @@ export class ConcentricCircle extends Basis {
         const sB = rs[(n + 1) % ringSize] as Sample;
         const vA = graph.findVertex(sA.x, sA.y);
         const vB = graph.findVertex(sB.x, sB.y);
-        if (vA >= 0 && vB >= 0 && vA !== vB) graph.addEdge(vA, vB);
+        if (vA >= 0 && vB >= 0 && vA !== vB) graph.addEdge(vA, vB, true);
       }
     }
 

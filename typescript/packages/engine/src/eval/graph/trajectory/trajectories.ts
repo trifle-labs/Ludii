@@ -584,6 +584,16 @@ export class TrajectoriesCore {
             stepsFrom.addInDirection(AbsoluteDirection.Out, step);
             stepsFrom.addInDirection(AbsoluteDirection.Rotational, step);
           } else {
+            // @java Trajectories.java:498-583 — only tag CW/CCW when a
+            // genuine CURVED (tangential-arc) graph edge directly connects
+            // `from` and `step.to`: `final Edge curvedEdge =
+            // graph.findEdge(from.id(), step.to().id(), true); if
+            // (curvedEdge == null) continue;`. Without this guard, a step
+            // that reaches its target only via a face-adjacency relationship
+            // (e.g. across a `(remove … cells:{…})` graph-surgery seam on a
+            // concentric board) gets spuriously tagged CW/CCW/Rotational even
+            // though Java declines to call it a rotational step at all.
+            if (this.topo.findEdge(from.id, step.to.id, true) === null) continue;
             const side = whichSide(
               step.to.pt.x, step.to.pt.y,
               from.pt.x, from.pt.y,

@@ -41,10 +41,11 @@ export class ConcentricTarget extends Basis {
         graph.addVertex(x, y);
       }
 
-      // Create edges around this ring
+      // Create edges around this ring — curved (@java ConcentricTarget.java
+      // ~165-172: `graph.addEdge(vertexA, vertexB, tangentA, tangentB)`).
       for (let va = baseV; va < graph.vertices.length; va += 1) {
         const vb = va < graph.vertices.length - 1 ? va + 1 : baseV;
-        graph.addEdge(va, vb);
+        graph.addEdge(va, vb, true);
       }
     }
 
