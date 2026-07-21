@@ -1,0 +1,330 @@
+// @java Core/src/game/rules/play/moves/nonDecision/effect/take/control/TakeControl.java
+
+/**
+ * Modifies the owner of some pieces on the board.
+ *
+ * @java game/rules/play/moves/nonDecision/effect/take/control/TakeControl.java
+ *
+ * Java parity (TakeControl.eval):
+ *   1. Resolve newOwner (byFn) and owner (ofFn).
+ *   2. Collect all sites owned by `owner` (or all players if RoleType.All).
+ *   3. Optionally filter to an at/to region.
+ *   4. For each owned site: emit ActionRemove + ActionAdd with a piece
+ *      belonging to newOwner that has the same name.
+ *
+ * NOTE: coverage-only transliteration; not registered in the 1:1 moves registry.
+ */
+
+import type { Context } from "../../../../../../../../../context.js";
+import type { Move } from "../../../../../../../../../move.js";
+import type { IntFunction, MovesFunction, RegionFunction } from "../../../../../../../../base.js";
+import { ActionAdd } from "../../../../../../../../../action/action-add.js";
+import { ActionRemove } from "../../../../../../../../../action/action-remove.js";
+import { Move as LudiiMove } from "../../../../../../../../../move.js";
+
+/** Java parity: Constants.OFF = -1 */
+const OFF = -1;
+/** Java parity: Constants.UNDEFINED = -1 */
+const UNDEFINED = -1;
+
+/** @java game/types/board/SiteType.java — minimal subset */
+export type SiteType = "Cell" | "Edge" | "Vertex";
+
+/** @java game/types/play/RoleType.java — minimal subset */
+export type RoleType = string;
+
+/**
+ * @java game/rules/play/moves/nonDecision/effect/take/control/TakeControl.java
+ *
+ * Modifies the owner of pieces at one or more sites by replacing them with
+ * equivalent pieces belonging to a different player.
+ *
+ * Java parity:
+ *   public final class TakeControl extends Effect
+ *   eval(Context): collect owned sites, emit remove+add pairs to re-own them.
+ */
+export class TakeControl implements MovesFunction {
+  /** The role of the player whose pieces to take. @java TakeControl.ownerRole */
+  private readonly ownerRole: RoleType | null;
+
+  /** Function yielding the owner player index. @java TakeControl.ownerFn */
+  private readonly ownerFn: IntFunction | null;
+
+  /** The role of the player who gains control. @java TakeControl.newOwnerRole */
+  private readonly newOwnerRole: RoleType | null;
+
+  /** Function yielding the new-owner player index. @java TakeControl.newOwnerFn */
+  private readonly newOwnerFn: IntFunction | null;
+
+  /** Single site to operate on (optional). @java TakeControl.region (IntFunction branch) */
+  private readonly atFn: IntFunction | null;
+
+  /** Region of sites to operate on (optional). @java TakeControl.region (RegionFunction branch) */
+  private readonly toRegion: RegionFunction | null;
+
+  /** Graph element type. @java TakeControl.type */
+  private readonly type: SiteType | null;
+
+  /** Optional subsequent moves (the `then` clause). */
+  private readonly thenMoves: MovesFunction | null;
+
+  /**
+   * @java TakeControl(RoleType of, IntFunction Of, RoleType by, IntFunction By,
+   *   IntFunction at, RegionFunction to, SiteType type, Then then)
+   */
+  public constructor(
+    ownerRole: RoleType | null,
+    ownerFn: IntFunction | null,
+    newOwnerRole: RoleType | null,
+    newOwnerFn: IntFunction | null,
+    atFn: IntFunction | null,
+    toRegion: RegionFunction | null,
+    type: SiteType | null,
+    thenMoves: MovesFunction | null = null,
+  ) {
+    this.ownerRole = ownerRole;
+    this.ownerFn = ownerFn;
+    this.newOwnerRole = newOwnerRole;
+    this.newOwnerFn = newOwnerFn;
+    this.atFn = atFn;
+    this.toRegion = toRegion;
+    this.type = type;
+    this.thenMoves = thenMoves;
+  }
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/take/control/TakeControl.java — eval(Context)
+   *
+   * Java parity (TakeControl.eval lines 100-175):
+   *   1. Resolve newOwner and owner indices.
+   *   2. Collect owned sites (all players if ownerRole=="All").
+   *   3. Filter to the region if one is specified.
+   *   4. For each site: find the equivalent piece for newOwner, emit remove+add.
+   */
+  public eval(ctx: Context): Move[] {
+    const moves: Move[] = [];
+
+    // Resolve owner player index.
+    let owner = UNDEFINED;
+    if (this.ownerFn != null) {
+      owner = this.ownerFn.eval(ctx);
+    } else if (this.ownerRole != null) {
+      owner = this._resolveRole(this.ownerRole, ctx);
+    }
+
+    // Resolve new owner player index.
+    let newOwner = UNDEFINED;
+    if (this.newOwnerFn != null) {
+      newOwner = this.newOwnerFn.eval(ctx);
+    } else if (this.newOwnerRole != null) {
+      newOwner = this._resolveRole(this.newOwnerRole, ctx);
+    }
+
+    // Collect owned sites. @java context.state().owned().sites(pid) — the TS
+    // State has no callable owned registry here; scan the flat owner channel
+    // (equivalent for owner-holding sites). The old owned?.sites call threw
+    // ("not a function") and the swallowed error killed the enclosing then
+    // (Mini Wars' capture-conversion never ran).
+    const ownedSites: number[] = [];
+    const ownedOf = (pid: number): number[] => {
+      const st = ctx.state as unknown as { cells: readonly number[]; whats: readonly number[] };
+      const out: number[] = [];
+      for (let s2 = 0; s2 < st.cells.length; s2++) {
+        if ((st.cells[s2] ?? 0) === pid && (st.whats[s2] ?? 0) !== 0) out.push(s2);
+      }
+      return out;
+    };
+    const numPlayers = this._numPlayers(ctx);
+
+    if (this.ownerRole === "All") {
+      for (let pid = 0; pid <= numPlayers; pid++) {
+        ownedSites.push(...ownedOf(pid));
+      }
+    } else {
+      ownedSites.push(...ownedOf(owner));
+    }
+
+    // Filter to region if specified.
+    let filteredSites = ownedSites;
+    if (this.atFn != null || this.toRegion != null) {
+      let regionSites: number[];
+      if (this.atFn != null) {
+        regionSites = [this.atFn.eval(ctx)];
+      } else {
+        regionSites = this.toRegion!.eval(ctx);
+      }
+      const regionSet = new Set(regionSites);
+      filteredSites = ownedSites.filter((s) => regionSet.has(s));
+    }
+
+    const mover = ctx.state.mover;
+
+    for (const site of filteredSites) {
+      // Java parity: look up the component at this site and find an
+      // equivalent one belonging to newOwner.
+      const stateAtSite = ctx.state as unknown as {
+        whatAtSite?: (s: number) => number;
+        countAtSite?: (s: number) => number;
+        stateAtSite?: (s: number) => number;
+        valueAtSite?: (s: number) => number;
+        rotationAt?: readonly number[];
+      };
+      const what = stateAtSite.whatAtSite?.(site) ?? 0;
+      if (what === 0) continue;
+
+      // Find the equivalent piece for newOwner.
+      const newWhat = this._findEquivalentPiece(what, newOwner, ctx);
+      if (newWhat === UNDEFINED) continue;
+
+      const count = stateAtSite.countAtSite?.(site) ?? 1;
+      // @java TakeControl.java:134-139,158 — Java reads `state`, `rotation`,
+      // and `value` off the OLD piece BEFORE building the remove/add pair,
+      // then forwards all three into `new ActionAdd(type, site, newWhat,
+      // count, state, rotation, value, null)`. This TS port previously
+      // omitted them, so `ActionAdd` (action-add.ts) left state/rotation/value
+      // untouched — i.e. whatever the immediately-preceding `ActionRemove`
+      // had already zeroed (action-remove.ts's flat full-clear branch zeroes
+      // state/value/rotation on every remove). Mini Wars' "BuyMove" recruit
+      // macro chains `copy:True` (which correctly carries the hand template's
+      // `value` onto the board, action-copy.ts:105-108) immediately followed
+      // by `(take Control of:All by:Mover at:(last To))` to re-own the piece
+      // — that re-own silently wiped the just-copied `value` back to 0 for
+      // every recruited unit. `AttackMove`'s damage resolution
+      // (`(set Value at:(last To) (max 0 (- (value Piece at:(last To))
+      // damage))))` then always read the target's HP as 0, so its `next:` HP
+      // check `(if (= (value Piece at:(last To)) 0) (remove (last To)) ...)`
+      // fired every single time, removing units that Java's engine (whose
+      // TakeControl preserves value) correctly kept alive — the removed
+      // piece then vanished from `(sites Occupied by:...)`, producing zero
+      // legal moves for it on a later ply (Mini Wars MOVE_MISMATCH).
+      const preState = stateAtSite.stateAtSite?.(site) ?? 0;
+      const preValue = stateAtSite.valueAtSite?.(site) ?? 0;
+      const preRotation = stateAtSite.rotationAt?.[site] ?? 0;
+
+      const actionRemove = new ActionRemove({ to: site });
+      // @java ActionAdd.java:299 — owned().add uses the resolved newOwner
+      // explicitly; the TS ActionAdd ctor falls back to `owner ?? what` when
+      // omitted, silently owning the re-controlled piece by component index.
+      const actionAdd = new ActionAdd({
+        to: site,
+        what: newWhat,
+        owner: newOwner,
+        count,
+        state: preState,
+        rotation: preRotation,
+        value: preValue,
+      });
+
+      const move = new LudiiMove({
+        id: "takeControl",
+        label: `takeControl:${site}`,
+        siteIndices: [site],
+        mover,
+        placedOwner: newOwner > 0 ? newOwner : mover,
+        actions: [actionRemove, actionAdd],
+        fromSite: site,
+        toSite: site,
+      });
+      moves.push(move);
+    }
+
+    return moves;
+  }
+
+  /**
+   * Resolve a RoleType string to a player index.
+   * @java RoleType.toIntFunction evaluated against context.
+   */
+  private _resolveRole(role: RoleType, ctx: Context): number {
+    const mover = ctx.state.mover;
+    switch (role) {
+      case "Mover": return mover;
+      case "Next": {
+        // Java parity: context.state().next() — use _evalPlayer or fall back to mover+1
+        return (ctx.state as unknown as { next: number }).next ?? mover;
+      }
+      case "Prev": {
+        return (ctx.state as unknown as { prev: number }).prev ?? mover;
+      }
+      default: {
+        // P1, P2, etc.
+        const m = role.match(/^P(\d+)$/);
+        if (m) return parseInt(m[1]!, 10);
+        return mover;
+      }
+    }
+  }
+
+  /**
+   * Find the piece index for a player that is equivalent (same name) to the
+   * given piece belonging to the original owner.
+   *
+   * @java TakeControl.eval lines 141-154 — look up newComponentOwned by name+owner.
+   */
+  private _findEquivalentPiece(what: number, newOwner: number, ctx: Context): number {
+    // @java TakeControl.java:100-176 — context.components(), which the 1:1
+    // port exposes as game.equipment.pieces. `game.components`
+    // never existed on the real Game class — it was always undefined, so
+    // this lookup silently returned UNDEFINED for every site and
+    // (take Control …) generated ZERO moves (Mini Wars).
+    const gameAny = ctx.game as unknown as {
+      equipment?: { pieces?: Array<{ owner: number; name: string; index: number } | null> };
+    };
+    const components = gameAny.equipment?.pieces;
+    if (!components) return UNDEFINED;
+
+    // @java TakeControl.java:141 — `context.components()[what]`. Java's
+    // components() array is 1-based with a null sentinel at index 0, so
+    // array position == component `.index`. The TS `equipment.pieces` array
+    // is 0-based and DENSE (no leading sentinel): pieces[k].index === k+1.
+    // Direct `components[what]` therefore reads one slot past the intended
+    // component (e.g. what=45 "Motorbike0" resolved to pieces[45], which is
+    // ".index=46" i.e. "Speeder0") — and since that slot is never nullish,
+    // the `??` fallback to the correct `.find(index===what)` lookup never
+    // fired. This silently reassigned captured pieces to the WRONG unit type
+    // (e.g. a recruited/recaptured Motorbike became a Speeder), which then
+    // fed the wrong terrain-exclusion rules into HumanMove/VehicleMove and
+    // produced MOVE_MISMATCH several plies later (Mini Wars).
+    const original = components.find((c) => c?.index === what) ?? null;
+    if (!original) return UNDEFINED;
+
+    // @java Component.getNameWithoutNumber() — strip the trailing owner-style
+    // digit run so per-player pieces sharing a base name match across owners.
+    const baseName = (original.name ?? "").replace(/\d+$/, "") || (original.name ?? "");
+    // @java TakeControl.java:144 — `for (indexComponent = 1; indexComponent <
+    // context.components().length; indexComponent++)` walks every REAL
+    // component (Java's index 0 is the null sentinel, so starting at 1 is
+    // correct there). TS's `pieces` array has no sentinel, so the equivalent
+    // walk must start at 0 — starting at 1 skipped `pieces[0]` (component
+    // index 1, e.g. "Base1") as a possible match.
+    for (let i = 0; i < components.length; i++) {
+      const c = components[i];
+      if (!c) continue;
+      const cName = (c.name ?? "").replace(/\d+$/, "") || (c.name ?? "");
+      if (c.owner === newOwner && cName === baseName) {
+        return c.index;
+      }
+    }
+    return UNDEFINED;
+  }
+
+  /** Helper: get the number of players from context. */
+  private _numPlayers(ctx: Context): number {
+    // @java context.game().players().count() — game.players is the compiled
+    // Players ludeme (a function), so `.count` was undefined and this always
+    // returned 2 (broke multi-player logic for >2 players). Use the numeric
+    // accessor (same fix as SetValuePlayer).
+    const n = (ctx.game as unknown as { numPlayers?: number }).numPlayers;
+    return typeof n === "number" && n > 0 ? n : 2;
+  }
+
+  /** @java TakeControl.isStatic() → false */
+  public isStatic(): boolean {
+    return false;
+  }
+
+  /** @java TakeControl.toEnglish() */
+  public toEnglish(): string {
+    return "take control of the pieces";
+  }
+}

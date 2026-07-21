@@ -1,0 +1,587 @@
+// @java Core/src/game/rules/start/place/random/PlaceRandom.java
+
+/**
+ * Places pieces randomly in a specified container.
+ *
+ * @java game/rules/start/place/random/PlaceRandom.java
+ * @author Eric.Piette
+ */
+
+import type { Context } from "../../../../../../context.js";
+import type { RegionFunction } from "../../../../../base.js";
+import { compileFlags } from "../../../../../../ludii/compiler/compile-flags.js";
+
+/** Java parity: Constants.OFF = -1 */
+const OFF = -1;
+/** Java parity: Constants.UNDEFINED = -1 */
+const UNDEFINED = -1;
+
+/**
+ * Minimal interface for an int-valued function.
+ * @java game/functions/ints/IntFunction.java — eval(Context)
+ */
+interface JavaIntFunction {
+  eval(context: Context): number;
+  preprocess?(game: unknown): void;
+  missingRequirement?(game: unknown): boolean;
+  willCrash?(game: unknown): boolean;
+  gameFlags?(game: unknown): number;
+  writesEvalContextRecursive?(): Set<number>;
+  readsEvalContextRecursive?(): Set<number>;
+  concepts?(game: unknown): Set<number>;
+  toEnglish?(game: unknown): string;
+}
+
+/**
+ * Minimal interface for a boolean constant.
+ * @java game/functions/booleans/BooleanConstant.java — eval(Context)
+ */
+interface JavaBooleanConstant {
+  eval(context: Context): boolean;
+  preprocess?(game: unknown): void;
+  gameFlags?(game: unknown): number;
+  writesEvalContextRecursive?(): Set<number>;
+  readsEvalContextRecursive?(): Set<number>;
+  concepts?(game: unknown): Set<number>;
+}
+
+/**
+ * Minimal interface for a Count object.
+ * @java game/util/math/Count.java
+ */
+interface JavaCount {
+  item(): string;
+  count(): JavaIntFunction;
+}
+
+/** Constant int function. @java game/functions/ints/IntConstant.java */
+function intConstant(val: number): JavaIntFunction {
+  return {
+    eval: (_ctx: Context) => val,
+    preprocess: () => {},
+    missingRequirement: () => false,
+    willCrash: () => false,
+    gameFlags: () => 0,
+    writesEvalContextRecursive: () => new Set(),
+    readsEvalContextRecursive: () => new Set(),
+    concepts: () => new Set(),
+    toEnglish: () => String(val),
+  };
+}
+
+/** Boolean constant false. @java game/functions/booleans/BooleanConstant.java */
+function booleanConstant(val: boolean): JavaBooleanConstant {
+  return {
+    eval: (_ctx: Context) => val,
+    preprocess: () => {},
+    gameFlags: () => 0,
+    writesEvalContextRecursive: () => new Set(),
+    readsEvalContextRecursive: () => new Set(),
+    concepts: () => new Set(),
+  };
+}
+
+function isJavaIntFunction(value: unknown): value is JavaIntFunction {
+  return typeof value === "object"
+    && value !== null
+    && typeof (value as JavaIntFunction).eval === "function";
+}
+
+function isJavaCountArray(value: unknown, argCount: number, where: unknown): value is JavaCount[] {
+  return Array.isArray(value)
+    && argCount <= 3
+    && isJavaIntFunction(where)
+    && (
+      value.length === 0
+      || (
+        typeof (value[0] as JavaCount | undefined)?.item === "function"
+        && typeof (value[0] as JavaCount | undefined)?.count === "function"
+      )
+    );
+}
+
+/**
+ * Places pieces randomly in a specified container.
+ *
+ * @java game/rules/start/place/random/PlaceRandom.java
+ */
+export class PlaceRandom {
+  /** @java PlaceRandom.region */
+  private readonly region: RegionFunction;
+
+  /** @java PlaceRandom.item */
+  private readonly item: string[] | null;
+
+  /** @java PlaceRandom.countFn */
+  private readonly countFn: JavaIntFunction;
+
+  /** @java PlaceRandom.valueFn */
+  private readonly valueFn: JavaIntFunction;
+
+  /** @java PlaceRandom.stateFn */
+  private readonly stateFn: JavaIntFunction;
+
+  /** @java PlaceRandom.stack */
+  private readonly stack: boolean;
+
+  /** @java PlaceRandom.where */
+  private readonly where: JavaIntFunction | null;
+
+  /** @java PlaceRandom.pieces */
+  private readonly pieces: string[] | null;
+
+  /** @java PlaceRandom.counts */
+  private readonly counts: JavaIntFunction[] | null;
+
+  /** @java PlaceRandom.type */
+  private type: string | null;
+
+  /** @java PlaceRandom.randPiecOrderFn */
+  private readonly randPiecOrderFn: JavaBooleanConstant;
+
+  // Sentinel null-region for stack constructors (no SitesBoard in TS)
+  private static readonly NULL_REGION: RegionFunction = {
+    eval: (_ctx: never) => [],
+  };
+
+  // @java new SitesBoard(type) — all board sites [0..numSites). PlaceRandom's
+  // constructor 1 defaults a null region to this (place the pieces anywhere on
+  // the board); NULL_REGION's [] would place nothing (Quantum Leap / Shut Off
+  // His Lights started with an empty board -> only a pass).
+  private static readonly SITES_BOARD: RegionFunction = {
+    eval: (ctx: never) => {
+      const board = ((ctx as unknown as { game?: { equipment?: { board?: { numSites?: number } } } }).game)?.equipment?.board;
+      const n = board?.numSites ?? (ctx as unknown as { state: { cells: readonly number[] } }).state.cells.length;
+      return Array.from({ length: n }, (_, i) => i);
+    },
+  };
+
+  /**
+   * Random placement of pieces within a region.
+   *
+   * @java PlaceRandom(RegionFunction, String[], IntFunction, IntFunction, IntFunction, SiteType, BooleanConstant)
+   */
+  public constructor(
+    region: RegionFunction | null,
+    item: string[],
+    count?: JavaIntFunction | null,
+    value?: JavaIntFunction | null,
+    state?: JavaIntFunction | null,
+    type?: string | null,
+    randPiecOrder?: JavaBooleanConstant | null,
+  );
+
+  /**
+   * Random stack placement to a specific site.
+   *
+   * @java PlaceRandom(String[], IntFunction[], IntFunction, IntFunction, IntFunction, SiteType)
+   */
+  public constructor(
+    pieces: string[],
+    count: JavaIntFunction[] | null,
+    value: JavaIntFunction | null,
+    state: JavaIntFunction | null,
+    where: JavaIntFunction,
+    type?: string | null,
+  );
+
+  /**
+   * Random stack placement using Count[] items.
+   *
+   * @java PlaceRandom(Count[], IntFunction, SiteType)
+   */
+  public constructor(
+    items: JavaCount[],
+    where: JavaIntFunction,
+    type?: string | null,
+  );
+
+  public constructor(
+    region: RegionFunction | null | string[] | JavaCount[],
+    item: string[] | JavaIntFunction[] | null | JavaIntFunction,
+    count: JavaIntFunction | null | string = null,
+    value: JavaIntFunction | null = null,
+    state: JavaIntFunction | null = null,
+    type: string | null = null,
+    randPiecOrder: JavaBooleanConstant | null = null,
+  ) {
+    // Dispatch based on Java constructor arity and argument shapes.
+    if (isJavaCountArray(region, arguments.length, item)) {
+      // Constructor 3: (Count[], IntFunction, SiteType)
+      const items = region as JavaCount[];
+      const where = item as JavaIntFunction;
+      const siteType = count as string | null | undefined;
+
+      this.region = PlaceRandom.NULL_REGION;
+      this.item = null;
+      this.countFn = intConstant(1);
+      this.where = where;
+      this.stack = true;
+      // @java PlaceRandom.java:141 `stack = true;` (Count[] constructor) feeds
+      // gameFlags():358-359 `if(stack) flags |= GameType.Stacking;` — a hand
+      // shuffle-pile built from (place Random Count[] (handSite N)) IS a
+      // genuine Ludii stacking container, unconditionally. The compiled-tree
+      // reflection path never harvested this, so Chex's `usesStacking`/
+      // `state.stackingGame` stayed false: action-move.ts's owned-registry
+      // dispatch (gated on !state.stackingGame) then materialised the FLAT
+      // (single-level) registry for hand-exit moves, permanently losing any
+      // piece whose hand-pile pop was instead routed through the per-level
+      // stack branch — King2's post-draw position vanished from move
+      // generation the moment BOTH registries coexisted (MOVE_MISMATCH).
+      compileFlags.usesStacking = true;
+      this.type = siteType ?? null;
+      this.stateFn = intConstant(OFF);
+      this.valueFn = intConstant(OFF);
+      this.randPiecOrderFn = booleanConstant(false);
+
+      this.pieces = new Array<string>(items.length);
+      this.counts = new Array<JavaIntFunction>(items.length);
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (it !== undefined) {
+          this.pieces[i] = it.item();
+          this.counts[i] = it.count();
+        }
+      }
+    } else if (Array.isArray(region) && isJavaIntFunction(state)) {
+      // Constructor 2: (String[], IntFunction[], IntFunction, IntFunction, IntFunction, SiteType)
+      const pieces = region as string[];
+      const counts = item as JavaIntFunction[] | null;
+      const valueFn = count as JavaIntFunction | null;
+      const stateFn = value;
+      const where = state;
+      const siteType = type;
+
+      this.region = PlaceRandom.NULL_REGION;
+      this.item = null;
+      this.countFn = intConstant(1);
+      this.pieces = pieces;
+      this.where = where;
+      this.counts = counts;
+      this.stack = true;
+      // @java PlaceRandom.java:167 `stack = true;` (String[]/IntFunction[]
+      // constructor) — same gameFlags():358-359 Stacking OR as the Count[]
+      // constructor above; see the comment there.
+      compileFlags.usesStacking = true;
+      this.stateFn = stateFn ?? intConstant(OFF);
+      this.valueFn = valueFn ?? intConstant(OFF);
+      this.randPiecOrderFn = booleanConstant(false);
+      this.type = siteType ?? null;
+    } else {
+      // Constructor 1: (RegionFunction | null, String[], IntFunction, IntFunction, IntFunction, SiteType, BooleanConstant)
+      const regionFn = region as RegionFunction | null;
+      const items = item as string[];
+      const countFn = count as JavaIntFunction | null;
+      const valueFn = value;
+      const stateFn = state;
+      const siteType = type;
+
+      // Java: this.region = (region == null ? new SitesBoard(type) : region);
+      this.region = regionFn ?? PlaceRandom.SITES_BOARD;
+      this.countFn = countFn ?? intConstant(1);
+      this.item = items;
+      this.where = null;
+      this.pieces = null;
+      this.counts = null;
+      this.stack = false;
+      this.stateFn = stateFn ?? intConstant(OFF);
+      this.valueFn = valueFn ?? intConstant(OFF);
+      this.randPiecOrderFn = randPiecOrder ?? booleanConstant(false);
+      this.type = siteType ?? null;
+    }
+  }
+
+  //-------------------------------------------------------------------------
+
+  /**
+   * @java PlaceRandom.eval(Context)
+   */
+  public eval(context: Context): void {
+    if (this.stack) {
+      this.evalStack(context);
+    } else if (this.randPiecOrderFn.eval(context)) {
+      // Java: random piece order path
+      const realType = this.type ?? (context as unknown as { board(): { defaultSite(): string } }).board?.().defaultSite?.() ?? "Cell";
+      const sitesArr = (this.region.eval as (ctx: never) => number[])(context as never);
+      const sites = sitesArr.slice(); // mutable copy
+
+      const items = (this.item ?? []).slice(); // mutable copy
+
+      for (let iter = 0; iter < items.length - 1; iter++) {
+        const randomIndex = context.rng.nextInt(Math.max(1, items.length));
+        const spliced = items.splice(randomIndex, 1);
+        const it = spliced[0];
+        if (it === undefined) continue;
+
+        const component = (context.game as unknown as { getComponent(name: string): { index(): number } | null }).getComponent(it);
+        if (component === null) {
+          throw new Error(`Component ${JSON.stringify(this.item)} is not defined.`);
+        }
+
+        const what = component.index();
+
+        // remove the non empty sites in that region
+        for (let index = sites.length - 1; index >= 0; index--) {
+          const site = sites[index];
+          if (site === undefined) continue;
+          const cid = (realType === "Cell" || realType === "Vertex")
+            ? ((context as unknown as { containerId?(): number[] }).containerId?.()?.[site] ?? 0)
+            : 0;
+          // @java PlaceRandom.java:238-276 — Java's containerState is a LIVE
+          // mutable object, so the occupancy check sees placements made by
+          // earlier iterations of the same (start …) rule. TS's ctx.state /
+          // containerState() are a snapshot frozen BEFORE the start rules
+          // ran, so a ForEachValue wrapping N PlaceRandom calls drew WITH
+          // replacement (Zombego: countAt[39]=3 in hand). Prefer the live
+          // ctx._startState bridge Game.ts builds for start-rule reads.
+          const startState = (context as unknown as { _startState?: { what(site: number): number } })._startState;
+          const csFn = (context as unknown as { containerState?(cid: number): { what(site: number, type: string): number } }).containerState;
+          const occupied = startState && typeof startState.what === "function"
+            ? startState.what(site) !== 0
+            : typeof csFn === "function"
+              ? csFn.call(context, cid).what(site, realType) !== 0
+              : ((context.state as unknown as { what(s: number): number }).what(site) !== 0);
+          if (occupied) {
+            sites.splice(index, 1);
+          }
+        }
+
+        const state = this.stateFn.eval(context);
+        const value = this.valueFn.eval(context);
+
+        const countN = this.countFn.eval(context);
+        for (let i = 0; i < countN; i++) {
+          const emptySites = sites.slice();
+          if (emptySites.length === 0) break;
+          const siteIdx = context.rng.nextInt(emptySites.length);
+          const site = emptySites[siteIdx];
+          if (site === undefined) break;
+          const pos = sites.indexOf(site);
+          if (pos >= 0) sites.splice(pos, 1);
+          this.placePieces(context, site, what, 1, state, OFF, value, false, realType);
+        }
+      }
+    } else {
+      // Java: standard path — iterate items
+      const realType = this.type ?? (context as unknown as { board(): { defaultSite(): string } }).board?.().defaultSite?.() ?? "Cell";
+
+      for (const it of (this.item ?? [])) {
+        const sitesArr = (this.region.eval as (ctx: never) => number[])(context as never);
+        const sites = sitesArr.slice(); // mutable copy
+
+        const component = (context.game as unknown as { getComponent(name: string): { index(): number } | null }).getComponent(it);
+        if (component === null) {
+          throw new Error(`Component ${this.item} is not defined.`);
+        }
+
+        const what = component.index();
+
+        // remove the non empty sites in that region
+        for (let index = sites.length - 1; index >= 0; index--) {
+          const site = sites[index];
+          if (site === undefined) continue;
+          const cid = realType === "Cell"
+            ? ((context as unknown as { containerId?(): number[] }).containerId?.()?.[site] ?? 0)
+            : 0;
+          // @java PlaceRandom.java:238-276 — Java's containerState is a LIVE
+          // mutable object, so the occupancy check sees placements made by
+          // earlier iterations of the same (start …) rule. TS's ctx.state /
+          // containerState() are a snapshot frozen BEFORE the start rules
+          // ran, so a ForEachValue wrapping N PlaceRandom calls drew WITH
+          // replacement (Zombego: countAt[39]=3 in hand). Prefer the live
+          // ctx._startState bridge Game.ts builds for start-rule reads.
+          const startState = (context as unknown as { _startState?: { what(site: number): number } })._startState;
+          const csFn = (context as unknown as { containerState?(cid: number): { what(site: number, type: string): number } }).containerState;
+          const occupied = startState && typeof startState.what === "function"
+            ? startState.what(site) !== 0
+            : typeof csFn === "function"
+              ? csFn.call(context, cid).what(site, realType) !== 0
+              : ((context.state as unknown as { what(s: number): number }).what(site) !== 0);
+          if (occupied) {
+            sites.splice(index, 1);
+          }
+        }
+
+        const state = this.stateFn.eval(context);
+        const value = this.valueFn.eval(context);
+
+        const countN = this.countFn.eval(context);
+        for (let i = 0; i < countN; i++) {
+          const emptySites = sites.slice();
+          if (emptySites.length === 0) break;
+          const siteIdx = context.rng.nextInt(emptySites.length);
+          const site = emptySites[siteIdx];
+          if (site === undefined) break;
+          const pos = sites.indexOf(site);
+          if (pos >= 0) sites.splice(pos, 1);
+          this.placePieces(context, site, what, 1, state, OFF, value, false, realType);
+        }
+      }
+    }
+  }
+
+  //-------------------------------------------------------------------------
+
+  /**
+   * @java PlaceRandom.evalStack(Context)
+   */
+  private evalStack(context: Context): void {
+    const realType = this.type ?? (context as unknown as { board(): { defaultSite(): string } }).board?.().defaultSite?.() ?? "Cell";
+    const site = this.where!.eval(context);
+    const toPlace: number[] = [];
+
+    const piecesArr = this.pieces ?? [];
+    for (let i = 0; i < piecesArr.length; i++) {
+      const piece = piecesArr[i];
+      if (piece === undefined) continue;
+      // @java evalStack: context.components()[k].name().equals(piece). Java's
+      // Component.name() returns the owner-suffixed name (e.g. "Pawn1"); the TS
+      // components() elements store the base name + owner separately, so resolve
+      // the suffixed piece string to its component index via getComponent — the
+      // same resolver (componentByName) the non-stack eval path uses above.
+      const component = (context.game as unknown as { getComponent(name: string): { index(): number } | null }).getComponent(piece);
+      if (component === null) continue;
+      const pieceIndex = component.index();
+      if (this.counts === null) {
+        toPlace.push(pieceIndex);
+      } else {
+        const countsEntry = this.counts[i];
+        if (countsEntry !== undefined) {
+          const c = countsEntry.eval(context);
+          for (let j = 0; j < c; j++) {
+            toPlace.push(pieceIndex);
+          }
+        }
+      }
+    }
+
+    const state = this.stateFn.eval(context);
+    const value = this.valueFn.eval(context);
+
+    while (toPlace.length > 0) {
+      const index = context.rng.nextInt(toPlace.length);
+      const what = toPlace[index];
+      if (what === undefined) break;
+      // @java PlaceRandom.java:358-359 — the Count[]-driven constructor sets
+      // `stack = true`, so gameFlags() ORs in GameType.Stacking and every one
+      // of these shuffled draws is a genuinely distinct, individually
+      // addressable level (Chex's hand of 8 Pawns commonly shuffles two+
+      // Pawns adjacent). neverMergeStack keeps a run of same-piece draws from
+      // collapsing into a single count-pile entry.
+      this.placePieces(context, site, what, 1, state, OFF, value, true, realType, true);
+      toPlace.splice(index, 1);
+    }
+  }
+
+  /**
+   * Delegate to Start.placePieces via context escape hatch.
+   * @java other/rules/start/Start.placePieces(Context, int, int, int, int, int, int, boolean, SiteType)
+   */
+  private placePieces(
+    context: Context,
+    site: number,
+    what: number,
+    count: number,
+    state: number,
+    rotation: number,
+    value: number,
+    onStack: boolean,
+    type: string,
+    neverMergeStack?: boolean,
+  ): void {
+    (context as unknown as {
+      placePieces?(site: number, what: number, count: number, state: number, rotation: number, value: number, onStack: boolean, type: string | null, neverMergeStack?: boolean): void;
+    }).placePieces?.(site, what, count, state, rotation, value, onStack, type, neverMergeStack);
+  }
+
+  //-------------------------------------------------------------------------
+
+  /** @java PlaceRandom.isStatic() */
+  public isStatic(): boolean {
+    return false;
+  }
+
+  /** @java PlaceRandom.preprocess(Game) */
+  public preprocess(game: unknown): void {
+    (this.region as unknown as { preprocess?(g: unknown): void }).preprocess?.(game);
+
+    // Java: type = SiteType.use(type, game)
+    if (this.type === null && (game as unknown as { defaultSiteType?(): string }).defaultSiteType) {
+      (this as unknown as { type: string }).type = (game as unknown as { defaultSiteType(): string }).defaultSiteType();
+    }
+
+    this.where?.preprocess?.(game);
+
+    if (this.counts !== null) {
+      for (const func of this.counts) {
+        func.preprocess?.(game);
+      }
+    }
+
+    this.randPiecOrderFn.preprocess?.(game);
+
+    this.countFn.preprocess?.(game);
+    this.stateFn.preprocess?.(game);
+    this.valueFn.preprocess?.(game);
+  }
+
+  /** @java PlaceRandom.missingRequirement(Game) */
+  public missingRequirement(_game: unknown): boolean {
+    return false;
+  }
+
+  /** @java PlaceRandom.willCrash(Game) */
+  public willCrash(_game: unknown): boolean {
+    return false;
+  }
+
+  /** @java PlaceRandom.writesEvalContextRecursive() */
+  public writesEvalContextRecursive(): Set<number> {
+    const result = new Set<number>();
+    if (this.where !== null) {
+      for (const v of this.where.writesEvalContextRecursive?.() ?? []) result.add(v);
+    } else {
+      for (const v of (this.region as unknown as { writesEvalContextRecursive?(): Set<number> }).writesEvalContextRecursive?.() ?? []) result.add(v);
+    }
+    if (this.counts !== null) {
+      for (const func of this.counts) {
+        for (const v of func.writesEvalContextRecursive?.() ?? []) result.add(v);
+      }
+    }
+    for (const v of this.randPiecOrderFn.writesEvalContextRecursive?.() ?? []) result.add(v);
+    for (const v of this.countFn.writesEvalContextRecursive?.() ?? []) result.add(v);
+    for (const v of this.stateFn.writesEvalContextRecursive?.() ?? []) result.add(v);
+    for (const v of this.valueFn.writesEvalContextRecursive?.() ?? []) result.add(v);
+    return result;
+  }
+
+  /** @java PlaceRandom.readsEvalContextRecursive() */
+  public readsEvalContextRecursive(): Set<number> {
+    const result = new Set<number>();
+    if (this.where !== null) {
+      for (const v of this.where.readsEvalContextRecursive?.() ?? []) result.add(v);
+    } else {
+      for (const v of (this.region as unknown as { readsEvalContextRecursive?(): Set<number> }).readsEvalContextRecursive?.() ?? []) result.add(v);
+    }
+    if (this.counts !== null) {
+      for (const func of this.counts) {
+        for (const v of func.readsEvalContextRecursive?.() ?? []) result.add(v);
+      }
+    }
+    for (const v of this.randPiecOrderFn.readsEvalContextRecursive?.() ?? []) result.add(v);
+    for (const v of this.countFn.readsEvalContextRecursive?.() ?? []) result.add(v);
+    for (const v of this.stateFn.readsEvalContextRecursive?.() ?? []) result.add(v);
+    for (const v of this.valueFn.readsEvalContextRecursive?.() ?? []) result.add(v);
+    return result;
+  }
+
+  /** @java PlaceRandom.toEnglish(Game) */
+  public toEnglish(game: unknown): string {
+    const regionString = (this.region as unknown as { toEnglish?(g: unknown): string }).toEnglish?.(game) ?? "";
+    const valueString = this.valueFn ? ` with value ${this.valueFn}` : "";
+    const stateString = this.stateFn ? ` with state ${this.stateFn}` : "";
+    const countStr = this.countFn.toEnglish?.(game) ?? String(this.countFn);
+    const typeName = (this.type ?? "cell").toLowerCase();
+    return `randomly place ${countStr} ${JSON.stringify(this.item)} within ${typeName} ${regionString}${valueString}${stateString}`;
+  }
+}

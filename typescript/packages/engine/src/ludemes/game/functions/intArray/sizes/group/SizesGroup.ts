@@ -1,0 +1,342 @@
+// @java Core/src/game/functions/intArray/sizes/group/SizesGroup.java
+
+/**
+ * Returns an array of the sizes of all the groups on the board.
+ *
+ * @java game/functions/intArray/sizes/group/SizesGroup.java
+ *
+ * Java parity: SizesGroup performs a connected-component traversal over all
+ * sites owned by the specified player(s). For each unvisited starting site a
+ * BFS/flood-fill is run along the given direction set, collecting group members
+ * that satisfy the ownership/condition predicate. The size of each group ≥ min
+ * is appended to the result array.
+ *
+ * The optional `isVisible` condition checks 3D coverage via topology
+ * trajectories (Upward direction) — this path requires APIs not available in
+ * the lightweight context.ts Context and falls back to `false` (no coverage
+ * check) when those APIs are absent.
+ *
+ * TS parity notes:
+ *  - Direction traversal uses ctx.game topology when available via the
+ *    any-typed topology() accessor present on other/context/Context.ts.
+ *  - When topology is not available, adjacency falls back to the game's
+ *    width/height grid neighbours.
+ *  - ContainerState.who/what are read via state.cells/state.whats.
+ *  - `isVisible` path requires topology.trajectories().steps() with
+ *    Upward direction — stubbed to always return [] when unavailable.
+ */
+
+import type { Context } from "../../../../../../context.js";
+import type { EvalScratch, BooleanFunction, IntFunction } from "../../../../../base.js";
+import { BaseIntArrayFunction } from "../../BaseIntArrayFunction.js";
+
+/** Sentinel value for "no who" (all-pieces mode). */
+const ALL_WHO = -1;
+
+/**
+ * @java game.functions.intArray.sizes.group.SizesGroup
+ */
+export class SizesGroup extends BaseIntArrayFunction {
+  /** @java SizesGroup — private SiteType type (null = use game default) */
+  private readonly siteType: string | null;
+
+  /** @java SizesGroup — private final IntFunction whoFn */
+  private readonly whoFn: IntFunction;
+
+  /** @java SizesGroup — private final IntFunction minFn */
+  private readonly minFn: IntFunction;
+
+  /** @java SizesGroup — private final BooleanFunction condition */
+  private readonly condition: BooleanFunction | null;
+
+  /** @java SizesGroup — private final DirectionsFunction dirnChoice */
+  private readonly directions: string;
+
+  /** @java SizesGroup — private final boolean allPieces */
+  private readonly allPieces: boolean;
+
+  /** @java SizesGroup — private final BooleanFunction isVisibleFn */
+  private readonly isVisibleFn: BooleanFunction | null;
+
+  /**
+   * @java SizesGroup(SiteType, Direction, RoleType, IntFunction, BooleanFunction, IntFunction, BooleanFunction)
+   *
+   * @param siteType   Graph element type ("Cell", "Vertex", "Edge", or null for default).
+   * @param directions Direction set name ("Adjacent" | "Orthogonal" | ...).
+   * @param whoFn      Player index function (evaluates to ALL_WHO when allPieces).
+   * @param minFn      Minimum group size to include.
+   * @param condition  Optional membership condition (null → use ownership).
+   * @param allPieces  When true, includes pieces of all players.
+   * @param isVisibleFn Optional 3D visibility condition.
+   */
+  public constructor(
+    siteType: string | null,
+    directions: string,
+    whoFn: IntFunction,
+    minFn: IntFunction,
+    condition: BooleanFunction | null,
+    allPieces: boolean,
+    isVisibleFn: BooleanFunction | null,
+  ) {
+    super();
+    this.siteType = siteType;
+    this.directions = directions;
+    // @java minFn = (min == null) ? new IntConstant(0) : min
+    this.minFn = (minFn == null || typeof (minFn as unknown as { eval?: unknown }).eval !== "function")
+      ? { eval: () => 0 }
+      : minFn;
+    this.condition = condition;
+    this.isVisibleFn = isVisibleFn;
+    // @java whoFn = (of != null) ? of : RoleType.toIntFunction(role). The
+    // reflection compiler delivers a bare role (e.g. Mover) as a RAW string in
+    // the whoFn slot, not an IntFunction — coerce it (the raw-literal trap). A
+    // missing role / All / Shared means all-pieces mode.
+    let resolvedAllPieces = allPieces;
+    let resolvedWho: IntFunction = whoFn;
+    if (whoFn == null || typeof (whoFn as unknown as { eval?: unknown }).eval !== "function") {
+      const roleName = whoFn == null ? null : String(whoFn);
+      if (roleName == null || roleName === "All" || roleName === "Shared") {
+        resolvedAllPieces = true;
+        resolvedWho = { eval: () => ALL_WHO };
+      } else {
+        resolvedWho = roleToIntFunction(roleName);
+      }
+    }
+    this.whoFn = resolvedWho;
+    this.allPieces = resolvedAllPieces;
+  }
+
+  /**
+   * @java SizesGroup.eval(Context)
+   *
+   * BFS connected-component traversal returning the size of each group.
+   */
+  public override eval(ctx: Context & EvalScratch): number[] {
+    const sizes: number[] = [];
+
+    const who = this.allPieces ? ALL_WHO : this.whoFn.eval(ctx);
+    const min = this.minFn.eval(ctx);
+    const cells = ctx.state.cells;
+    const n = cells.length;
+
+    // @java isVisibleFn — 3-D (Shibumi pyramid) visibility. A ball is hidden if
+    // a higher-indexed ball sits at the same (x,y); a link between two balls is
+    // blocked when they SHARE >= 2 occupied upward supports. Mirrors SitesGroup.
+    const isVis =
+      this.isVisibleFn !== null &&
+      (this.isVisibleFn as unknown as { eval(c: Context): boolean }).eval(ctx) === true;
+    type El3D = { index(): number; centroid3D(): { x(): number; y(): number; z(): number }; neighbours(): Array<{ index(): number; centroid3D(): { x(): number; y(): number; z(): number } }> };
+    const topoEls: El3D[] | undefined = isVis
+      ? (ctx as unknown as { topology?: () => { getGraphElements(t: string): El3D[] } }).topology?.()?.getGraphElements("Vertex")
+      : undefined;
+    const whatAt = (s: number): number =>
+      (ctx.state as unknown as { whatAtSite?(n: number): number }).whatAtSite?.(s) ?? (ctx.state.whats[s] ?? 0);
+    // @java covered: a higher-indexed occupied vertex at the same (x,y) hides `s`.
+    const isCovered = (s: number): boolean => {
+      if (!isVis || !topoEls) return false;
+      const el = topoEls[s];
+      if (!el) return false;
+      const x = el.centroid3D().x(), y = el.centroid3D().y();
+      for (const o of topoEls) {
+        if (o.index() <= s) continue;
+        const oc = o.centroid3D();
+        if (oc.x() === x && oc.y() === y && whatAt(o.index()) !== 0) return true;
+      }
+      return false;
+    };
+    // @java locnUpwards/indexUpwards — occupied neighbours strictly above.
+    const occupiedUpward = (s: number): number[] => {
+      if (!isVis || !topoEls) return [];
+      const el = topoEls[s];
+      if (!el) return [];
+      const z = el.centroid3D().z();
+      const out: number[] = [];
+      for (const nb of el.neighbours()) {
+        if (nb.centroid3D().z() > z + 1e-4 && whatAt(nb.index()) !== 0) out.push(nb.index());
+      }
+      return out;
+    };
+
+    // Collect starting sites.
+    const sitesToCheck: number[] = [];
+    if (this.allPieces) {
+      for (let i = 0; i < n; i++) {
+        if (cells[i] !== 0 || (ctx.state.whats[i] ?? 0) !== 0) sitesToCheck.push(i);
+      }
+    } else {
+      for (let i = 0; i < n; i++) {
+        if (this._whoAt(ctx, i) === who) sitesToCheck.push(i);
+      }
+    }
+
+    // BFS / flood-fill.
+    const sitesChecked = new Set<number>();
+    const origFrom = ctx._evalFrom;
+    const origTo   = ctx._evalTo;
+
+    for (const from of sitesToCheck) {
+      if (sitesChecked.has(from)) continue;
+
+      // @java fromCovered — a hidden seed cannot start a visible group.
+      if (isVis && isCovered(from)) continue;
+
+      // Check if `from` qualifies.
+      ctx._evalFrom = from;
+      const fromQualifies = this._qualifies(ctx, from, who);
+      if (!fromQualifies) continue;
+
+      // BFS from this seed.
+      const group: number[] = [from];
+      const explored = new Set<number>([from]);
+      let i = 0;
+
+      while (i < group.length) {
+        const site = group[i]!;
+        ctx._evalFrom = site;
+        const locnUpwards = isVis ? occupiedUpward(site) : [];
+        const neighbours = this._neighbours(ctx, site, n);
+
+        for (const to of neighbours) {
+          if (explored.has(to)) continue;
+          // @java isVisible: skip covered neighbours and links blocked by >= 2
+          // shared upward supports.
+          if (isVis) {
+            if (isCovered(to)) continue;
+            const indexUpwards = occupiedUpward(to);
+            let shared = 0;
+            for (const u of indexUpwards) if (locnUpwards.includes(u)) shared += 1;
+            if (shared >= 2) continue;
+          }
+          ctx._evalTo = to;
+          if (this._qualifies(ctx, to, who)) {
+            group.push(to);
+            explored.add(to);
+          }
+        }
+        i++;
+      }
+
+      if (group.length >= min) sizes.push(group.length);
+      for (const s of group) sitesChecked.add(s);
+    }
+
+    ctx._evalFrom = origFrom;
+    ctx._evalTo   = origTo;
+    return sizes;
+  }
+
+  /** @java ContainerState.who(site) fallback. */
+  private _whoAt(ctx: Context & EvalScratch, site: number): number {
+    return ctx.state.who(site);
+  }
+
+  /**
+   * True if `site` is a valid member of the current group.
+   * @java SizesGroup.eval — group-membership predicate.
+   */
+  private _qualifies(ctx: Context & EvalScratch, site: number, who: number): boolean {
+    const siteWho = this._whoAt(ctx, site);
+    const siteWhat = ctx.state.whats[site] ?? 0;
+
+    if (this.condition !== null) {
+      return this.condition.eval(ctx);
+    }
+    if (this.allPieces) {
+      return siteWho !== 0 || siteWhat !== 0;
+    }
+    return siteWho === who;
+  }
+
+  /**
+   * Returns the neighbouring site indices for `site` according to the
+   * direction set. Uses the topology trajectories when available, otherwise
+   * falls back to grid adjacency.
+   * @java SizesGroup.eval — topology.trajectories().steps(type, site, type, dir)
+   */
+  private _neighbours(ctx: Context & EvalScratch, site: number, n: number): number[] {
+    const ctxAny = ctx as unknown as Record<string, unknown>;
+
+    // Attempt to use topology trajectories (full 1:1 context path).
+    // @java topology.trajectories().steps(type, site, type, direction). The TS
+    // topology.trajectories() is the 2-arg Trajectories (group(site, dirName));
+    // the prior 4-arg call shifted args so directionByName saw a number, returned
+    // [], and EVERY group collapsed to a singleton — wrong (sizes Group) on every
+    // graph board. Use traj.group with the resolved connection direction.
+    if (typeof ctxAny["topology"] === "function") {
+      try {
+        const topology = (ctxAny["topology"] as () => unknown)() as {
+          trajectories(): { group?(s: number, d: string): number[] } | null;
+        };
+        const traj = topology.trajectories();
+        if (traj && typeof traj.group === "function") {
+          return traj.group(site, this.directions);
+        }
+      } catch {
+        // fall through to grid fallback
+      }
+    }
+
+    // Grid adjacency fallback (square board).
+    const w = ctx.game.width;
+    const h = ctx.game.height;
+    const result: number[] = [];
+    const col = site % w;
+    const row = Math.floor(site / w);
+
+    const dirs = this.directions.toLowerCase();
+    const useOrth = dirs === "orthogonal" || dirs === "adjacent";
+    const useDiag = dirs === "diagonal"   || dirs === "adjacent";
+
+    if (useOrth) {
+      const orth = [
+        [row - 1, col], [row + 1, col],
+        [row, col - 1], [row, col + 1],
+      ];
+      for (const [r, c] of orth) {
+        if (r !== undefined && c !== undefined && r >= 0 && r < h && c >= 0 && c < w) {
+          const idx = r * w + c;
+          if (idx >= 0 && idx < n) result.push(idx);
+        }
+      }
+    }
+    if (useDiag) {
+      const diag = [
+        [row - 1, col - 1], [row - 1, col + 1],
+        [row + 1, col - 1], [row + 1, col + 1],
+      ];
+      for (const [r, c] of diag) {
+        if (r !== undefined && c !== undefined && r >= 0 && r < h && c >= 0 && c < w) {
+          const idx = r * w + c;
+          if (idx >= 0 && idx < n) result.push(idx);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  public override toString(): string {
+    return "Groups()";
+  }
+}
+
+/**
+ * @java RoleType.toIntFunction — resolve a role name to a player-id function.
+ * Mirrors the canonical helper used by SetScore et al.
+ */
+function roleToIntFunction(role: string): IntFunction {
+  if (/^P\d+$/.test(role)) {
+    const pid = Number(role.slice(1));
+    return { eval: () => pid };
+  }
+  if (role === "Neutral") return { eval: () => 0 };
+  return {
+    eval: (ctx) => {
+      if (role === "Mover") return ctx.state.mover;
+      if (role === "Next") return (ctx.state.mover % ctx.game.numPlayers) + 1;
+      if (role === "Prev") return ((ctx.state.mover - 2 + ctx.game.numPlayers) % ctx.game.numPlayers) + 1;
+      if (role === "Player") return (ctx as unknown as { _evalPlayer?: number })._evalPlayer ?? ctx.state.mover;
+      return 0;
+    },
+  };
+}

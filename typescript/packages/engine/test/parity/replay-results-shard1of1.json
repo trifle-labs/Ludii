@@ -1,0 +1,20 @@
+{
+  "summary": {
+    "totalTrials": 0,
+    "elapsed_s": 0,
+    "buckets": {
+      "COMPILE_FAIL": 0,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 0,
+      "WINNER_MISMATCH": 0,
+      "OUTCOME_OK": 0,
+      "REPLAY_OK_NO_OUTCOME": 0
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [],
+    "MOVE_MISMATCH": []
+  },
+  "exampleMismatches": [],
+  "perTrial": []
+}

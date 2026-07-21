@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ludii browser migration demo</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 56rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      .demo-controls {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+      }
+      .demo-controls label {
+        font-weight: 600;
+      }
+      .demo-controls select,
+      .demo-controls input[type="number"] {
+        padding: 0.35rem 0.5rem;
+        font-size: 1rem;
+        border: 1px solid #8c959f;
+        border-radius: 6px;
+      }
+      .demo-layout {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      }
+      .demo-source {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .demo-source textarea {
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.85rem;
+        width: 100%;
+        min-height: 16rem;
+        padding: 0.5rem;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        box-sizing: border-box;
+      }
+      .demo-source button {
+        align-self: flex-start;
+        padding: 0.5rem 1rem;
+        font-size: 1rem;
+        cursor: pointer;
+        border-radius: 8px;
+        border: 1px solid #8c959f;
+        background: #f6f8fa;
+      }
+      .demo-source button:hover {
+        background: #eaecef;
+      }
+      .demo-error {
+        color: #cf222e;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.85rem;
+        white-space: pre-wrap;
+      }
+      .demo-hex-panel {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      @media (max-width: 50rem) {
+        .demo-layout {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Ludii TypeScript browser demo</h1>
+    <p>
+      Pick a built-in game, or paste a <code>.lud</code> definition
+      below and click <em>Load game</em>. The compiler understands
+      tic-tac-toe (square board, line win) and Hex (diamond board,
+      connection win) — see
+      <code>typescript/packages/engine/src/lud-compiler.ts</code>.
+    </p>
+    <div class="demo-controls">
+      <label for="gameSelect">Game</label>
+      <select id="gameSelect">
+        <option value="lud" selected>From .lud source</option>
+        <option value="tic-tac-toe">Tic-Tac-Toe (built-in)</option>
+        <option value="hex">Hex (built-in)</option>
+      </select>
+      <span id="hexPanel" class="demo-hex-panel" style="display: none">
+        <label for="hexSize">Size</label>
+        <input id="hexSize" type="number" min="2" max="19" value="7" />
+      </span>
+    </div>
+    <div class="demo-layout">
+      <div id="ludPanel" class="demo-source">
+        <label for="ludSource"><strong>.lud source</strong></label>
+        <textarea id="ludSource" spellcheck="false"></textarea>
+        <button type="button" id="loadGame">Load game</button>
+      </div>
+      <div id="board"></div>
+    </div>
+    <p class="demo-error" id="error" aria-live="polite"></p>
+    <!-- Resolve workspace bare specifiers when served statically (no bundler):
+         serve the typescript/packages directory, e.g.
+         `python3 -m http.server` from typescript/packages, then open
+         /browser-player/demo/index.html -->
+    <script type="importmap">
+      {
+        "imports": {
+          "@ludii/typescript-engine": "/engine/dist/src/index.js",
+          "@ludii/typescript-language": "/language/dist/src/index.js"
+        }
+      }
+    </script>
+    <script type="module" src="../dist/src/demo.js"></script>
+  </body>
+</html>

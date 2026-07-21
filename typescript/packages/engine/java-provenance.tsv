@@ -1,0 +1,103 @@
+ts_location	java_path	symbol	java_exists
+typescript/packages/engine/src/action/action-add-count.ts:1	(none)	— TS-only, mancala seed-count semantics	n/a
+typescript/packages/engine/src/action/action-noop.ts:1	(none)	— TS-only wrapper for ActionType.Noop enum member; no dedicated Java class	n/a
+typescript/packages/engine/src/lud-compiler.ts:1	(none)	— TS-only routing/dispatch layer	n/a
+typescript/packages/engine/src/eval/split-mix64.ts:1	Common/lib/Trove4j_ApacheCommonsRNG.jar		true
+typescript/packages/engine/src/lud-defines.ts:1	Common/src/main/grammar/Define.java	Define	true
+typescript/packages/engine/src/eval/graph/trajectory/math.ts:1	Common/src/main/math/MathRoutines.java	MathRoutines	true
+typescript/packages/engine/src/api.ts:1	Core/src/game/API.java	API	true
+typescript/packages/engine/src/dice-game.ts:1	Core/src/game/Game.java	Game (TS template subset)	true
+typescript/packages/engine/src/flat-board-game.ts:1	Core/src/game/Game.java	Game (TS template subset)	true
+typescript/packages/engine/src/game.ts:1	Core/src/game/Game.java	Game	true
+typescript/packages/engine/src/hex-game.ts:1	Core/src/game/Game.java	Game (TS template subset)	true
+typescript/packages/engine/src/stack-game.ts:1	Core/src/game/Game.java	Game (TS template subset)	true
+typescript/packages/engine/src/step-game.ts:1	Core/src/game/Game.java	Game (TS template subset)	true
+typescript/packages/engine/src/tri-game.ts:1	Core/src/game/Game.java	Game (TS template subset)	true
+typescript/packages/engine/src/alternating-mode.ts:1	Core/src/game/mode/Mode.java	Mode	true
+typescript/packages/engine/src/action/site-type.ts:1	Core/src/game/types/board/SiteType.java	SiteType	true
+typescript/packages/engine/src/eval/graph/trajectory/absolute-direction.ts:1	Core/src/game/util/directions/AbsoluteDirection.java	AbsoluteDirection	true
+typescript/packages/engine/src/eval/graph/trajectory/absolute-direction.ts:103	Core/src/game/util/directions/AbsoluteDirection.java	specific	true
+typescript/packages/engine/src/eval/graph/trajectory/graph-element.ts:3	Core/src/game/util/graph/Edge.java	Edge	true
+typescript/packages/engine/src/eval/graph/trajectory/graph-element.ts:4	Core/src/game/util/graph/Face.java	Face	true
+typescript/packages/engine/src/eval/graph/trajectory/graph-element.ts:1	Core/src/game/util/graph/GraphElement.java	GraphElement	true
+typescript/packages/engine/src/eval/graph/trajectory/radial.ts:1	Core/src/game/util/graph/Radial.java	Radial	true
+typescript/packages/engine/src/eval/graph/trajectory/radial.ts:2	Core/src/game/util/graph/Radials.java	Radials	true
+typescript/packages/engine/src/eval/graph/trajectory/step.ts:1	Core/src/game/util/graph/Step.java	Step	true
+typescript/packages/engine/src/eval/graph/trajectory/step.ts:2	Core/src/game/util/graph/Steps.java	Steps	true
+typescript/packages/engine/src/eval/graph/trajectory/trajectories.ts:1	Core/src/game/util/graph/Trajectories.java	Trajectories	true
+typescript/packages/engine/src/eval/graph/trajectory/graph-element.ts:2	Core/src/game/util/graph/Vertex.java	Vertex	true
+typescript/packages/engine/src/action/action.ts:1	Core/src/other/action/Action.java	Action	true
+typescript/packages/engine/src/action/action-type.ts:1	Core/src/other/action/ActionType.java	ActionType	true
+typescript/packages/engine/src/action/action.ts:2	Core/src/other/action/BaseAction.java	BaseAction	true
+typescript/packages/engine/src/action/action-set-trump-suit.ts:1	Core/src/other/action/cards/ActionSetTrumpSuit.java	ActionSetTrumpSuit	true
+typescript/packages/engine/src/action/action-set-dice-all-equal.ts:1	Core/src/other/action/die/ActionSetDiceAllEqual.java	ActionSetDiceAllEqual	true
+typescript/packages/engine/src/action/action-roll-dice.ts:1	Core/src/other/action/die/ActionUpdateDice.java	ActionUpdateDice	true
+typescript/packages/engine/src/action/action-update-dice.ts:1	Core/src/other/action/die/ActionUpdateDice.java	ActionUpdateDice	true
+typescript/packages/engine/src/action/action-use-die.ts:1	Core/src/other/action/die/ActionUseDie.java	ActionUseDie	true
+typescript/packages/engine/src/action/action-set-cost.ts:1	Core/src/other/action/graph/ActionSetCost.java	ActionSetCost	true
+typescript/packages/engine/src/action/action-set-phase.ts:1	Core/src/other/action/graph/ActionSetPhase.java	ActionSetPhase	true
+typescript/packages/engine/src/action/action-set-hidden.ts:1	Core/src/other/action/hidden/ActionSetHidden.java	ActionSetHidden	true
+typescript/packages/engine/src/action/action-set-hidden.ts:2	Core/src/other/action/hidden/ActionSetHiddenCount.java	ActionSetHiddenCount	true
+typescript/packages/engine/src/action/action-set-hidden.ts:3	Core/src/other/action/hidden/ActionSetHiddenRotation.java	ActionSetHiddenRotation	true
+typescript/packages/engine/src/action/action-set-hidden.ts:4	Core/src/other/action/hidden/ActionSetHiddenState.java	ActionSetHiddenState	true
+typescript/packages/engine/src/action/action-set-hidden.ts:5	Core/src/other/action/hidden/ActionSetHiddenValue.java	ActionSetHiddenValue	true
+typescript/packages/engine/src/action/action-set-hidden.ts:6	Core/src/other/action/hidden/ActionSetHiddenWhat.java	ActionSetHiddenWhat	true
+typescript/packages/engine/src/action/action-set-hidden.ts:7	Core/src/other/action/hidden/ActionSetHiddenWho.java	ActionSetHiddenWho	true
+typescript/packages/engine/src/action/action-add.ts:1	Core/src/other/action/move/ActionAdd.java	ActionAdd	true
+typescript/packages/engine/src/action/action-copy.ts:1	Core/src/other/action/move/ActionCopy.java	ActionCopy	true
+typescript/packages/engine/src/action/action-insert.ts:1	Core/src/other/action/move/ActionInsert.java	ActionInsert	true
+typescript/packages/engine/src/action/action-move-n.ts:1	Core/src/other/action/move/ActionMoveN.java	ActionMoveN	true
+typescript/packages/engine/src/action/action-move.ts:2	Core/src/other/action/move/ActionMoveN.java	ActionMoveN	true
+typescript/packages/engine/src/action/action-promote.ts:1	Core/src/other/action/move/ActionPromote.java	ActionPromote	true
+typescript/packages/engine/src/action/action-select.ts:1	Core/src/other/action/move/ActionSelect.java	ActionSelect	true
+typescript/packages/engine/src/action/action-stack-move.ts:1	Core/src/other/action/move/ActionSubStackMove.java	ActionSubStackMove	true
+typescript/packages/engine/src/action/action-move.ts:1	Core/src/other/action/move/move/ActionMove.java	ActionMove	true
+typescript/packages/engine/src/action/action-move-level.ts:1	Core/src/other/action/move/move/ActionMoveLevelFrom.java	ActionMoveLevelFrom	true
+typescript/packages/engine/src/action/action-move-level.ts:3	Core/src/other/action/move/move/ActionMoveLevelFromLevelTo.java	ActionMoveLevelFromLevelTo	true
+typescript/packages/engine/src/action/action-move-level.ts:2	Core/src/other/action/move/move/ActionMoveLevelTo.java	ActionMoveLevelTo	true
+typescript/packages/engine/src/action/action-move-stacking.ts:1	Core/src/other/action/move/move/ActionMoveStacking.java	ActionMoveStacking	true
+typescript/packages/engine/src/action/action-move-top-piece.ts:1	Core/src/other/action/move/move/ActionMoveTopPiece.java	ActionMoveTopPiece	true
+typescript/packages/engine/src/action/action-remove.ts:1	Core/src/other/action/move/remove/ActionRemove.java	ActionRemove	true
+typescript/packages/engine/src/action/action-remove-level.ts:1	Core/src/other/action/move/remove/ActionRemoveLevel.java	ActionRemoveLevel	true
+typescript/packages/engine/src/action/action-remove-non-applied.ts:1	Core/src/other/action/move/remove/ActionRemoveNonApplied.java	ActionRemoveNonApplied	true
+typescript/packages/engine/src/action/action-remove-top-piece.ts:1	Core/src/other/action/move/remove/ActionRemoveTopPiece.java	ActionRemoveTopPiece	true
+typescript/packages/engine/src/action/action-forfeit.ts:1	Core/src/other/action/others/ActionForfeit.java	ActionForfeit	true
+typescript/packages/engine/src/action/action-next-instance.ts:1	Core/src/other/action/others/ActionNextInstance.java	ActionNextInstance	true
+typescript/packages/engine/src/action/action-note.ts:1	Core/src/other/action/others/ActionNote.java	ActionNote	true
+typescript/packages/engine/src/action/action-pass.ts:1	Core/src/other/action/others/ActionPass.java	ActionPass	true
+typescript/packages/engine/src/action/action-propose.ts:1	Core/src/other/action/others/ActionPropose.java	ActionPropose	true
+typescript/packages/engine/src/action/action-set-value-of-player.ts:1	Core/src/other/action/others/ActionSetValueOfPlayer.java	ActionSetValueOfPlayer	true
+typescript/packages/engine/src/action/action-swap.ts:1	Core/src/other/action/others/ActionSwap.java	ActionSwap	true
+typescript/packages/engine/src/action/action-vote.ts:1	Core/src/other/action/others/ActionVote.java	ActionVote	true
+typescript/packages/engine/src/action/action-reset.ts:1	Core/src/other/action/puzzle/ActionReset.java	ActionReset	true
+typescript/packages/engine/src/action/action-set-value-puzzle.ts:1	Core/src/other/action/puzzle/ActionSet.java	ActionSet	true
+typescript/packages/engine/src/action/action-toggle.ts:1	Core/src/other/action/puzzle/ActionToggle.java	ActionToggle	true
+typescript/packages/engine/src/action/action-add-player-to-team.ts:1	Core/src/other/action/state/ActionAddPlayerToTeam.java	ActionAddPlayerToTeam	true
+typescript/packages/engine/src/action/action-bet.ts:1	Core/src/other/action/state/ActionBet.java	ActionBet	true
+typescript/packages/engine/src/action/action-remember.ts:2	Core/src/other/action/state/ActionForgetValue.java	ActionForgetValue	true
+typescript/packages/engine/src/action/action-remember.ts:1	Core/src/other/action/state/ActionRememberValue.java	ActionRememberValue	true
+typescript/packages/engine/src/action/action-set-amount.ts:1	Core/src/other/action/state/ActionSetAmount.java	ActionSetAmount	true
+typescript/packages/engine/src/action/action-set-count.ts:1	Core/src/other/action/state/ActionSetCount.java	ActionSetCount	true
+typescript/packages/engine/src/action/action-set-counter.ts:1	Core/src/other/action/state/ActionSetCounter.java	ActionSetCounter	true
+typescript/packages/engine/src/action/action-set-next-player.ts:1	Core/src/other/action/state/ActionSetNextPlayer.java	ActionSetNextPlayer	true
+typescript/packages/engine/src/action/action-set-pending.ts:1	Core/src/other/action/state/ActionSetPending.java	ActionSetPending	true
+typescript/packages/engine/src/action/action-set-pot.ts:1	Core/src/other/action/state/ActionSetPot.java	ActionSetPot	true
+typescript/packages/engine/src/action/action-set-rotation.ts:1	Core/src/other/action/state/ActionSetRotation.java	ActionSetRotation	true
+typescript/packages/engine/src/action/action-set-score.ts:1	Core/src/other/action/state/ActionSetScore.java	ActionSetScore	true
+typescript/packages/engine/src/action/action-set-state.ts:1	Core/src/other/action/state/ActionSetState.java	ActionSetState	true
+typescript/packages/engine/src/action/action-set-temp.ts:1	Core/src/other/action/state/ActionSetTemp.java	ActionSetTemp	true
+typescript/packages/engine/src/action/action-set-value.ts:1	Core/src/other/action/state/ActionSetValue.java	ActionSetValue	true
+typescript/packages/engine/src/action/action-set-var.ts:1	Core/src/other/action/state/ActionSetVar.java	ActionSetVar	true
+typescript/packages/engine/src/action/action-store-state.ts:1	Core/src/other/action/state/ActionStoreStateInContext.java	ActionStoreStateInContext	true
+typescript/packages/engine/src/action/action-trigger.ts:1	Core/src/other/action/state/ActionTrigger.java	ActionTrigger	true
+typescript/packages/engine/src/concept.ts:1	Core/src/other/concept/Concept.java	Concept	true
+typescript/packages/engine/src/context.ts:1	Core/src/other/context/Context.java	Context	true
+typescript/packages/engine/src/game-loader.ts:1	Core/src/other/GameLoader.java	GameLoader	true
+typescript/packages/engine/src/move.ts:1	Core/src/other/move/Move.java	Move	true
+typescript/packages/engine/src/state.ts:2	Core/src/other/state/container/ContainerState.java	ContainerState	true
+typescript/packages/engine/src/state.ts:1	Core/src/other/state/State.java	State	true
+typescript/packages/engine/src/topology.ts:1	Core/src/other/topology/Topology.java	Topology	true
+typescript/packages/engine/src/trial.ts:1	Core/src/other/trial/Trial.java	Trial	true
+typescript/packages/engine/src/builtin-defines.ts:1	Language/src/compiler/Compiler.java	Compiler	true
+typescript/packages/engine/src/lud-options.ts:1	Language/src/compiler/Compiler.java	Compiler	true
+typescript/packages/engine/src/lud-defines.ts:2	Language/src/parser/Expander.java	Expander	true

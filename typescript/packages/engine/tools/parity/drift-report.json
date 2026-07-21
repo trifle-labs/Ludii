@@ -1,0 +1,579 @@
+[
+ {
+  "jc": "game.util.graph.Situation",
+  "cls": "RCL",
+  "file": "src/ludemes/game/util/graph/Situation.ts",
+  "tsArity": 3,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.util.graph.GraphElement",
+  "cls": "VertexEl",
+  "file": "src/eval/graph/trajectory/graph-element.ts",
+  "tsArity": 2,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.util.graph.Trajectories",
+  "cls": "TrajectoriesCore",
+  "file": "src/eval/graph/trajectory/trajectories.ts",
+  "tsArity": 1,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.util.optimiser.Optimiser",
+  "cls": "Optimiser",
+  "file": "src/ludemes/game/util/optimiser/Optimiser.ts",
+  "tsArity": 1,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.rules.start.place.item.PlaceItem",
+  "cls": "PlaceItem",
+  "file": "src/ludemes/game/rules/start/place/item/PlaceItem.ts",
+  "tsArity": 13,
+  "javaArities": [
+   9
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.rules.play.moves.nonDecision.operators.logical.If",
+  "cls": "If1to1",
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/If1to1.ts",
+  "tsArity": 3,
+  "javaArities": [
+   4
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.rules.play.moves.nonDecision.operators.logical.Or",
+  "cls": "Or1to1",
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/operators/logical/Or1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   3,
+   2
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.rules.play.moves.nonDecision.effect.Directional",
+  "cls": "Directional",
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/Directional.ts",
+  "tsArity": 1,
+  "javaArities": [
+   4
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.graph.generators.basis.tiling.tiling488.Tiling488",
+  "cls": "Tiling488",
+  "file": "src/ludemes/game/functions/graph/generators/basis/tiling/tiling488/Tiling488.ts",
+  "tsArity": 2,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.hidden.SitesHidden",
+  "cls": "SitesHidden1to1",
+  "file": "src/ludemes/game/functions/region/sites/hidden/SitesHidden1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.hidden.SitesHiddenCount",
+  "cls": "SitesHiddenCount",
+  "file": "src/ludemes/game/functions/region/sites/hidden/SitesHiddenCount.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.group.SitesGroup",
+  "cls": "SitesGroup",
+  "file": "src/ludemes/game/functions/region/sites/group/SitesGroup.ts",
+  "tsArity": 4,
+  "javaArities": [
+   6
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.distance.SitesDistance",
+  "cls": "SitesDistance1to1",
+  "file": "src/ludemes/game/functions/region/sites/distance/SitesDistance1to1.ts",
+  "tsArity": 4,
+  "javaArities": [
+   6
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.pattern.SitesPattern",
+  "cls": "SitesPattern1to1",
+  "file": "src/ludemes/game/functions/region/sites/pattern/SitesPattern1to1.ts",
+  "tsArity": 3,
+  "javaArities": [
+   5
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.crossing.SitesCrossing",
+  "cls": "SitesCrossing",
+  "file": "src/ludemes/game/functions/region/sites/crossing/SitesCrossing.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.loop.SitesLoop",
+  "cls": "SitesLoop",
+  "file": "src/ludemes/game/functions/region/sites/loop/SitesLoop.ts",
+  "tsArity": 6,
+  "javaArities": [
+   8
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.incidents.SitesIncident",
+  "cls": "SitesIncident",
+  "file": "src/ludemes/game/functions/region/sites/incidents/SitesIncident.ts",
+  "tsArity": 4,
+  "javaArities": [
+   5
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.player.SitesWinning",
+  "cls": "SitesWinning",
+  "file": "src/ludemes/game/functions/region/sites/player/SitesWinning.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.region.sites.player.SitesEquipmentRegion",
+  "cls": "SitesEquipmentRegion",
+  "file": "src/ludemes/game/functions/region/sites/player/SitesEquipmentRegion.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.board.HandSite",
+  "cls": "HandSite",
+  "file": "src/ludemes/game/functions/ints/board/HandSite.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.liberties.CountLiberties",
+  "cls": "CountLiberties1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountLiberties1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   4
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.component.CountPieces",
+  "cls": "CountPieces1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountPieces1to1.ts",
+  "tsArity": 4,
+  "javaArities": [
+   6
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.groups.CountGroups",
+  "cls": "CountGroups1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountGroups1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   4
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.simple.CountCells",
+  "cls": "CountCells1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountSimpleExtra1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.sizeBiggestGroup.CountSizeBiggestGroup",
+  "cls": "CountSizeBiggestGroup1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountSizeBiggestGroup1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   5
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.steps.CountSteps",
+  "cls": "CountSteps1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountSteps1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   6
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.stepsOnTrack.CountStepsOnTrack",
+  "cls": "CountStepsOnTrack",
+  "file": "src/ludemes/game/functions/ints/count/stepsOnTrack/CountStepsOnTrack.ts",
+  "tsArity": 4,
+  "javaArities": [
+   5
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.site.CountAdjacent",
+  "cls": "CountSiteNeighbours1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountSiteNeighbours1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.site.CountOff",
+  "cls": "CountOff1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountOff1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.site.CountSites",
+  "cls": "CountSites1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountSites1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.count.stack.CountStack",
+  "cls": "CountStack1to1",
+  "file": "src/ludemes/game/functions/ints1to1/count/CountStack1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   5
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.state.Mover",
+  "cls": "Mover1to1",
+  "file": "src/ludemes/game/functions/ints1to1/state/State1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.math.Add",
+  "cls": "Add1to1",
+  "file": "src/ludemes/game/functions/ints1to1/math/Math1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   2
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.size.largePiece.SizeLargePiece",
+  "cls": "SizeLargePiece",
+  "file": "src/ludemes/game/functions/ints/size/largePiece/SizeLargePiece.ts",
+  "tsArity": 2,
+  "javaArities": [
+   3
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.ints.size.connection.SizeGroup",
+  "cls": "SizeGroup1to1",
+  "file": "src/ludemes/game/functions/ints1to1/size/Size1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   4
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.equipment.Equipment",
+  "cls": "Equipment",
+  "file": "src/ludemes/game/equipment/Equipment.ts",
+  "tsArity": 2,
+  "javaArities": [
+   1
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.equipment.component.Die",
+  "cls": "Die1to1",
+  "file": "src/ludemes/game/equipment/component/Die1to1.ts",
+  "tsArity": 4,
+  "javaArities": [
+   5,
+   1
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.equipment.component.Piece",
+  "cls": "Piece",
+  "file": "src/ludemes/game/equipment/component/Piece.ts",
+  "tsArity": 4,
+  "javaArities": [
+   8,
+   1
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.equipment.component.tile.Domino",
+  "cls": "Domino",
+  "file": "src/ludemes/game/equipment/component/tile/Domino.ts",
+  "tsArity": 6,
+  "javaArities": [
+   5,
+   1
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.equipment.component.Card",
+  "cls": "Card",
+  "file": "src/ludemes/game/equipment/component/Card.ts",
+  "tsArity": 6,
+  "javaArities": [
+   12,
+   1
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "metadata.graphics.others.StackType",
+  "cls": "StackType",
+  "file": "src/ludemes/metadata/graphics/others/StackType.ts",
+  "tsArity": 10,
+  "javaArities": [
+   11
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "metadata.graphics.region.colour.RegionColour",
+  "cls": "RegionColour",
+  "file": "src/ludemes/metadata/graphics/region/colour/RegionColour.ts",
+  "tsArity": 8,
+  "javaArities": [
+   9
+  ],
+  "javaConstructCount": 0,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.intArray.values.Values",
+  "cls": "ValuesRemembered1to1",
+  "file": "src/ludemes/game/functions/intArray/values/Values1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 1,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.rules.play.moves.nonDecision.effect.state.forget.Forget",
+  "cls": "Forget1to1",
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/state/forget/Forget1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 2,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.rules.play.moves.nonDecision.effect.state.remember.Remember",
+  "cls": "Remember",
+  "file": "src/ludemes/game/rules/play/moves/nonDecision/effect/state/remember/Remember.ts",
+  "tsArity": 4,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 2,
+  "hasConstructStatics": true
+ },
+ {
+  "jc": "game.functions.graph.generators.basis.mesh.Mesh",
+  "cls": "Mesh",
+  "file": "src/ludemes/game/functions/graph/generators/basis/mesh/Mesh.ts",
+  "tsArity": 2,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 2,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.graph.generators.basis.tiling.tiling3464.Tiling3464",
+  "cls": "Tiling3464",
+  "file": "src/ludemes/game/functions/graph/generators/basis/tiling/tiling3464/Tiling3464.ts",
+  "tsArity": 2,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 2,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.intArray.players.Players",
+  "cls": "PlayersTeam1to1",
+  "file": "src/ludemes/game/functions/intArray/players/Players1to1.ts",
+  "tsArity": 2,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 2,
+  "hasConstructStatics": false
+ },
+ {
+  "jc": "game.functions.booleans.all.All",
+  "cls": "All",
+  "file": "src/ludemes/game/functions/booleans/all/All.ts",
+  "tsArity": 4,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 4,
+  "hasConstructStatics": true
+ },
+ {
+  "jc": "game.functions.ints.count.Count",
+  "cls": "Count",
+  "file": "src/ludemes/game/functions/ints/count/Count.ts",
+  "tsArity": 1,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 10,
+  "hasConstructStatics": true
+ },
+ {
+  "jc": "game.rules.play.moves.decision.Move",
+  "cls": "Move1to1",
+  "file": "src/ludemes/game/rules/play/moves/decision/Move1to1.ts",
+  "tsArity": 1,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 18,
+  "hasConstructStatics": true
+ },
+ {
+  "jc": "game.functions.booleans.is.Is",
+  "cls": "Is",
+  "file": "src/ludemes/game/functions/booleans/is/Is.ts",
+  "tsArity": 3,
+  "javaArities": [
+   0
+  ],
+  "javaConstructCount": 23,
+  "hasConstructStatics": true
+ }
+]

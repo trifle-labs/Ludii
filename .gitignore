@@ -18,3 +18,6 @@ PlayerDesktop/src/app/display/dialogs/visual_editor/recs/tmp
 PlayerDesktop/src/app/display/dialogs/visual_editor/resources/recs/documents.txt
 /ludii.trl
 /ludii_preferences.json
+node_modules/
+typescript/packages/*/dist/
+*.tsbuildinfo

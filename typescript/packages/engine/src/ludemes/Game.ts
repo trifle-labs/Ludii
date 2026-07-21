@@ -1,0 +1,2355 @@
+/**
+ * @java game/Game.java Game (1:1 port subset)
+ *
+ * The core game object for the 1:1 Java→TS port.
+ *
+ * Supports placement, movement, and hand-based games, including phase games:
+ *   - start(): builds the initial Context applying start rules
+ *   - moves(ctx): generates legal moves via the current phase's play.eval(ctx)
+ *   - apply(ctx, move): applies a move, checks end conditions, advances mover,
+ *                       and runs phase-transition logic after every move.
+ *   - over(ctx): true if the trial is over
+ *
+ * Phase logic mirrors Java Game.apply() / applyInternal():
+ *   @java game/Game.java:3119–3141
+ *   After applying the move (and checking end conditions), if the game has
+ *   phases and the game is still active, iterate all players 1..numPlayers
+ *   and evaluate their current phase's nextPhase conditions in order;
+ *   the first condition whose eval != UNDEFINED fires and advances that
+ *   player to the returned phase index.
+ *
+ * Per-phase end rules:
+ *   @java game/Game.java:3061–3066
+ *   Before evaluating the global end rule, evaluate the current mover's
+ *   current phase's end rule (if present).
+ *
+ * Phase-aware move generation:
+ *   @java game/Game.java:2850–2852
+ *   For alternating-move games, look up phases[state.currentPhase(mover)].play.
+ *
+ * Start rules supported:
+ *   (place "PieceName1" {sites...})          — place pieces at given sites
+ *   (place "PieceName" "Hand" count:N)       — fill hand with N pieces
+ *   (place "PieceName" coord)                — place piece at named coord
+ *   (start (set Score ...))                  — no-op (scores default to 0)
+ *
+ * @java game/Game.java — create/start/moves/apply/over
+ */
+
+import { Context } from "../context.js";
+import type { Game as EngineGame } from "../game.js";
+import { Move } from "../move.js";
+import { SeededRng } from "../rng.js";
+import { ActionPass } from "../action/action-pass.js";
+import { ActionSwapPlayers } from "../action/action-swap-players.js";
+import { ActionSetNextPlayer } from "../action/action-set-next-player.js";
+import { ActionRemove } from "../action/action-remove.js";
+import { Gravity } from "./game/rules/meta/Gravity.js";
+import { Automove } from "./game/rules/meta/Automove.js";
+import { NoRepeat } from "./game/rules/meta/no/repeat/NoRepeat.js";
+import { SetTeam } from "./game/rules/start/set/players/SetTeam.js";
+import type { Action } from "../action/index.js";
+import { evalDeferredThens } from "./game/rules/play/moves/nonDecision/effect/Then.js";
+import { State } from "../state.js";
+import { Trial } from "../trial.js";
+import { buildTrackLocToIndex, buildInitialOnTrackIndices } from "../on-track-indices.js";
+
+import type { EquipmentSurface } from "./game/equipment/EquipmentSurface.js";
+import { Mode } from "./game/mode/Mode.js";
+import { GamePlayers } from "./game/players/GamePlayers.js";
+import type { Rules } from "./game/rules/Rules.js";
+import type { Phase } from "./game/rules/phase/Phase.js";
+import type { StartRule } from "./game/rules/start/StartRule.js";
+import type { CellFlatRadials } from "./topology-radials.js";
+import type { Trajectories } from "../eval/graph/trajectories.js";
+
+// ---------------------------------------------------------------------------
+// Extended context type for the 1:1 path
+// ---------------------------------------------------------------------------
+
+/**
+ * A Context augmented with the radials table and eval-scratch.
+ * The 1:1 ludemes access ctx._radials (board radials) and ctx._evalTo (pivot).
+ * For graph boards, _trajectories is also attached for direction-aware queries.
+ */
+export type Context1to1 = Context & {
+  _radials: readonly CellFlatRadials[];
+  /** Graph Trajectories object for non-square boards; null for square boards. */
+  _trajectories?: Trajectories | null;
+};
+
+function attachRadials(
+  ctx: Context,
+  radials: readonly CellFlatRadials[],
+  trajectories?: Trajectories | null,
+): Context1to1 {
+  const c = ctx as Context1to1;
+  c._radials = radials;
+  c._trajectories = trajectories ?? null;
+  c._evalTo = -1;
+  c._evalFrom = -1;
+  c._evalValue = 0;
+  return c;
+}
+
+// Java constant: UNDEFINED = -1
+const UNDEFINED = -1;
+
+interface Game1to1PortOptions {
+  readonly startRules?: readonly StartRule[];
+  readonly notAllPass?: boolean;
+  readonly usesSwapRule?: boolean;
+  readonly playerDirs?: Map<number, number>;
+}
+
+const GAME_PORT_OPTIONS = new WeakMap<Rules, Game1to1PortOptions>();
+
+type GameBoardSurface = EquipmentSurface["board"] & {
+  getTracks?: () => readonly unknown[];
+};
+
+type GamePieceSurface = EquipmentSurface["pieces"][number] & {
+  readonly generator?: unknown;
+};
+
+type GameEquipmentSurface = Omit<EquipmentSurface, "board" | "pieces"> & {
+  readonly board: GameBoardSurface;
+  readonly pieces: readonly GamePieceSurface[];
+  createItems?: (game: unknown) => void;
+  containers?: () => unknown[] | null;
+  components?: () => unknown[] | null;
+  maps?: () => unknown[] | null;
+  sitesFrom?: () => number[] | null;
+};
+
+const COMPASS_IDX_GAME: Record<string, number> = {
+  n: 0, ne: 1, e: 2, se: 3, s: 4, sw: 5, w: 6, nw: 7,
+};
+
+function equipmentNeedsCreate(equipment: GameEquipmentSurface): boolean {
+  if (typeof equipment.createItems !== "function") return false;
+  if (typeof equipment.containers === "function") return equipment.containers() === null;
+  return false;
+}
+
+function prepareFaithfulEquipment(equipment: GameEquipmentSurface, players: GamePlayers): void {
+  if (!equipmentNeedsCreate(equipment)) return;
+
+  const gameStub = {
+    players: () => players,
+    isDeductionPuzzle: () => false,
+    hasSubgames: () => false,
+    // @java Game.create() — Equipment.createItems(this), with track setup
+    // delegated to the just-created main board when tracks are present.
+    hasTrack: () => {
+      try {
+        return (equipment.board.getTracks?.().length ?? 0) > 0;
+      } catch {
+        return false;
+      }
+    },
+    board: () => equipment.board,
+    computeGameFlags: () => 0n,
+  };
+
+  equipment.createItems!(gameStub);
+
+  // @java Game.java:2545-2565 — "We add the index of the owner at the end
+  // of the name of each component." Runs once, immediately after
+  // Equipment.createItems(this), BEFORE mapComponent gets built (Game.java:
+  // 2617-2622) — so Game.getComponent(name) sees the SUFFIXED names below,
+  // not the bare declared ones. Never ported: multiple same-named pieces
+  // (e.g. Yavalanchor's (piece "Marker" Each) + (piece "Marker" Shared),
+  // all three literally named "Marker") collided in componentByName's plain
+  // name search, which silently picks the FIRST "Marker" (P1's) for
+  // (place "Marker" (handSite Shared)) instead of the Shared one — the
+  // Shared hand marker started the game owned by P1, not numPlayers+1
+  // (WINNER_MISMATCH once (sites Occupied by:Shared) started trusting owner).
+  {
+    const playerCount = players.count();
+    const comps = typeof equipment.components === "function" ? equipment.components() : null;
+    if (Array.isArray(comps)) {
+      const staticRoleOwner = staticRoleOwnerForNaming;
+      for (let i = 1; i < comps.length; i++) {
+        const component = comps[i] as unknown as {
+          name?: () => string | null;
+          setName?: (name: string) => void;
+          role?: () => string | null;
+        } | null;
+        if (!component || typeof component.name !== "function" || typeof component.setName !== "function") continue;
+        const componentName = component.name();
+        if (componentName === null || componentName === undefined) continue;
+        if (componentName.includes("Domino") || componentName.includes("Die")) continue;
+        const role = typeof component.role === "function" ? component.role() : null;
+        const staticOwner = staticRoleOwner(role);
+        if (staticOwner === null) continue;
+        if (playerCount !== 1) {
+          // Neutral or P1..P16/Team1..Team16 all get suffixed.
+          component.setName(componentName + staticOwner);
+        } else if (role === "Neutral") {
+          // @java Game.java:2561-2564 — 1-player (puzzle) games only suffix
+          // Neutral; P1's own pieces stay bare (no ambiguity to resolve).
+          component.setName(componentName + staticOwner);
+        }
+      }
+    }
+  }
+}
+
+/**
+ * @java RoleType.java:19-127 — the STATIC per-enum-value owner (not
+ * Item.owner(), which resolves Shared/All dynamically to numPlayers+1).
+ * Neutral=0; P1..P16=1..16; Team1..Team16=1..16; every other role (Shared/
+ * All/Each/Mover/Next/Prev/NonMover/Enemy/Friend/Ally/Player/TeamMover) is
+ * Constants.NOBODY=0 and is intentionally excluded (returns null) here.
+ */
+function staticRoleOwnerForNaming(role: string | null): number | null {
+  if (role === "Neutral") return 0;
+  const p = /^P(\d+)$/.exec(role ?? "");
+  if (p) return Number(p[1]);
+  const t = /^Team(\d+)$/.exec(role ?? "");
+  if (t) return Number(t[1]);
+  return null;
+}
+
+function startRulesFromRules(rules: Rules): readonly StartRule[] {
+  return rules.start?.rules ?? [];
+}
+
+function playerDirsFromPlayers(players: GamePlayers): Map<number, number> | undefined {
+  const dirs = new Map<number, number>();
+  for (let pid = 1; pid <= players.count(); pid++) {
+    const direction = players.get(pid)?.direction;
+    if (direction === null || direction === undefined) continue;
+    const dirIdx = COMPASS_IDX_GAME[direction.toLowerCase()];
+    if (dirIdx !== undefined) dirs.set(pid, dirIdx);
+  }
+  return dirs.size > 0 ? dirs : undefined;
+}
+
+function staticMapsFromEquipment(equipment: GameEquipmentSurface, numPlayers: number): Map<string, Map<number, number>> | undefined {
+  const pending = (equipment.board as unknown as { _pendingMaps?: Map<string, Map<number, number>> })._pendingMaps;
+  if (pending && pending.size > 0) return pending;
+
+  const rawMaps = typeof equipment.maps === "function" ? equipment.maps() : null;
+  if (!Array.isArray(rawMaps) || rawMaps.length === 0) return undefined;
+
+  const board = equipment.board as unknown as {
+    containerSpan?: number; numSites?: number; width?: number; height?: number;
+    topology?: unknown; topologyAdapter?: unknown;
+  };
+  const lastSite = (board.containerSpan ?? board.numSites ?? 0) - 1;
+  // Map pairs may be (coord "A1")-style functions needing the board (Sittuyin/Tai
+  // Shogi); Java computes maps with a real Context (@java Map.computeMap). Provide
+  // an equipment-derived eval context instead of {}.
+  const topo = board.topology ?? board.topologyAdapter ?? null;
+  const evalCtx = {
+    // @java Id.eval (game/functions/ints/board/Id.java) resolves RoleType.Shared/
+    // All/Each via ctx.game.numPlayers()+1 — without numPlayers here, (id "X"
+    // Shared) pair keys/values in (map ...) resolved to NaN-owner lookups that
+    // never matched any piece, so Id.eval fell through to -1 and every such pair
+    // got dropped (2048's "Promotion"/"Score" maps compiled empty; mapEntry
+    // silently returned the unmapped key, so merges never promoted the tile).
+    game: { width: board.width ?? 0, height: board.height ?? 0, equipment, numPlayers },
+    board: () => equipment.board,
+    topology: () => topo,
+  };
+  const result = new Map<string, Map<number, number>>();
+
+  // @java Game.create — equipment.maps()[i].computeMap(this): the faithful
+  // computeMap resolves string coordinates via SiteFinder against the board
+  // topology and component names against the components list (Ashtapada's
+  // (map "Entry" {(pair P1 "D1") …})). Run it before reading the table.
+  const boardForMap = equipment.board as unknown as {
+    topology?: () => unknown;
+    defaultSite?: (() => string) | string;
+  };
+  const gameForMap = {
+    numPlayers,
+    board: () => ({
+      defaultSite: () => (typeof boardForMap.defaultSite === "function"
+        ? boardForMap.defaultSite()
+        : (boardForMap.defaultSite ?? "Cell")),
+      topology: () => boardForMap.topology?.(),
+    }),
+    equipment: () => ({
+      // @java Map.computeMap reads component.name() (the OWNER-SUFFIXED name, e.g.
+      // "SquareLarge0"/"Pawn3d1") to resolve string-valued pairs. Expose owner and
+      // getNameWithoutNumber so the lookup can reconstruct that Java name; the old
+      // stub returned only the base name, so neutral-piece map values like
+      // (pair 0 "SquareLarge0") never matched and Santorini/Kos's level→building map
+      // compiled empty.
+      components: () => [null, ...equipment.pieces.map((p) => ({
+        name: () => `${p.name}`,
+        getNameWithoutNumber: () => `${p.name}`,
+        owner: () => p.owner ?? 0,
+      }))],
+    }),
+  };
+
+  for (const item of rawMaps) {
+    if (item === null || typeof item !== "object") continue;
+    const mapItem = item as {
+      name?: () => string | null;
+      map?: () => ReadonlyMap<number, number>;
+      _mapPairs?: readonly unknown[];
+      computeMap?: (game: unknown) => void;
+    };
+    if (typeof mapItem.computeMap === "function" && typeof boardForMap.topology === "function") {
+      try { mapItem.computeMap(gameForMap); } catch { /* fall through to the pair loop */ }
+    }
+    const entries = new Map<number, number>(mapItem.map?.() ?? []);
+    for (const pair of mapItem._mapPairs ?? []) {
+      const pairObj = pair as {
+        getIntKey?: () => { eval(ctx: unknown): number };
+        getIntValue?: () => { eval(ctx: unknown): number };
+        landmark?: number | null;
+      };
+      let key = -1; let value = -1;
+      try { key = pairObj.getIntKey?.().eval(evalCtx) ?? -1; } catch { key = -1; }
+      if (key < 0) continue;
+      try { value = pairObj.getIntValue?.().eval(evalCtx) ?? -1; } catch { value = -1; }
+      if ((value < 0 || value === undefined) && pairObj.landmark !== null && pairObj.landmark !== undefined) {
+        // @java LandmarkType.FirstSite / LastSite in Map.computeMap()
+        if (pairObj.landmark === 5) value = 0;
+        else if (pairObj.landmark === 6) value = lastSite;
+      }
+      if (value >= 0) entries.set(key, value);
+    }
+    const name = mapItem.name?.() ?? null;
+    result.set(name === null || name === "Map" ? "__default__" : name, entries);
+  }
+
+  return result.size > 0 ? result : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Game
+// ---------------------------------------------------------------------------
+
+export class Game implements Game {
+  /** @java Game.name */
+  public readonly name: string;
+  /** @java Game.id — same as name for 1:1 port */
+  public readonly id: string;
+  /** Number of players. @java Game.players().count() */
+  public readonly numPlayers: number;
+  /** @java Game.board().width() */
+  public readonly width: number;
+  /** @java Game.board().height() */
+  public readonly height: number;
+  /** @java Game.numSites() */
+  public readonly numSites: number;
+  /** Players record. @java Game.players */
+  private readonly playersRecord: GamePlayers;
+  /** Mode record. @java Game.mode */
+  private readonly modeRecord: Mode;
+  /** Equipment (board + pieces + hands). */
+  public readonly equipment: GameEquipmentSurface;
+  /** Rules (play + end + optional phases). */
+  public readonly rules: Rules;
+  /** Optional start rules. @java game/rules/start/StartRules.java */
+  public readonly startRules: readonly StartRule[];
+
+  /**
+   * Whether the game uses explicit (move Pass) ludemes.
+   * When true, the all-pass draw heuristic is disabled.
+   *
+   * @java game/rules/play/moves/nonDecision/effect/Pass.java — gameFlags |= GameType.NotAllPass
+   * @java game/Game.java:requiresAllPass() — returns false when NotAllPass is set
+   */
+  public readonly notAllPass: boolean;
+
+  /**
+   * Whether the game uses the swap (pie) rule: `(meta (swap))`.
+   * When true, on P2's first move, a SwapPlayers decision move is added.
+   *
+   * @java game/rules/meta/Swap.java — Swap.apply(context, legalMoves)
+   * @java game/Game.java:2855 — calls Swap.apply after generating regular moves
+   */
+  public readonly usesSwapRule: boolean;
+
+  /**
+   * Whether the game uses the pyramidal-drop gravity meta-rule:
+   * `(meta (gravity))`. When true, after every move any ball that is not
+   * fully supported falls one step `Downward` into an empty support pocket,
+   * repeating until the board is stable (Shibumi family: Spline+, Spought…).
+   *
+   * @java game/rules/meta/Gravity.java — Gravity.apply(context, move)
+   *   appends the drop actions as a `then` of the generated move. Because the
+   *   replay harness matches by the player's DECISION (from/to) and only the
+   *   resulting board state feeds the next ply, applying the same drops
+   *   post-hoc in {@link apply} yields the identical board.
+   */
+  public readonly usesGravity: boolean;
+  /** @java (meta (automove)) present — forced-unique-move chaining in moves(). */
+  public readonly usesAutomove: boolean;
+  /**
+   * @java game/rules/meta/no/repeat/NoRepeat.java — the `.type` of any
+   * `(meta (no Repeat <type>))` meta-rule, or null if absent. Only
+   * `"PositionalInTurn"` is enforced (see {@link passesNoRepeat});
+   * `Positional`/`Situational`/`SituationalInTurn` remain unimplemented
+   * no-ops, same as before this field existed — those cover the Go-family
+   * superko games and are intentionally out of scope here.
+   */
+  public readonly noRepeatType: string | null;
+
+  /**
+   * Team membership: `teamOf[pid]` is the 1-based team index of player `pid`,
+   * or 0 if the player is on no team. Harvested from the `(set Team …)` start
+   * rules (which fix membership at game start). Used to resolve RoleType.Team*
+   * (TeamMover/TeamNext) in end/no-pieces rules.
+   * @java other/state/State.java — getTeam(pid) / ActionAddPlayerToTeam
+   */
+  public readonly teamOf: readonly number[];
+
+  /** Component labels array (index 0 unused, 1-based). */
+  private readonly componentLabels: string[];
+
+  /**
+   * Static map table for (mapEntry ...) lookups.
+   * Keys: map name (or "__default__"), values: player-id→site-id maps.
+   * @java game/equipment/other/Map.java — Equipment.maps()
+   */
+  public readonly _maps?: Map<string, Map<number, number>>;
+
+  /**
+   * Per-player facing direction (0-indexed 45°-units: 0=N, 1=NE, 2=E, 3=SE,
+   * 4=S, 5=SW, 6=W, 7=NW). Only set when (players {(player SE) ...}) form is
+   * used; absent → default N/S for P1/P2.
+   * @java game/players/Player.java — Direction.direction()
+   */
+  public readonly _playerDirs?: Map<number, number>;
+
+  /**
+   * Carries TS-port-only construction details that are not Java Game constructor
+   * parameters. The next Game constructed with these Rules consumes them.
+   */
+  public static setPortOptions(rules: Rules, options: Game1to1PortOptions): void {
+    GAME_PORT_OPTIONS.set(rules, options);
+  }
+
+  public constructor(
+    name: string,
+    players: GamePlayers | null,
+    mode: Mode | null,
+    equipment: GameEquipmentSurface,
+    rules: Rules,
+  ) {
+    this.name = name;
+    this.id = name;
+    this.playersRecord = players ?? GamePlayers.fromCount(2);
+    this.numPlayers = this.playersRecord.count();
+    if (this.numPlayers === 0) {
+      this.modeRecord = new Mode("Simulation");
+    } else if (this.numPlayers === 1) {
+      this.modeRecord = new Mode("Alternating");
+    } else if (mode !== null && mode !== undefined) {
+      this.modeRecord = mode;
+    } else {
+      this.modeRecord = new Mode("Alternating");
+    }
+    prepareFaithfulEquipment(equipment, this.playersRecord);
+    this.equipment = equipment;
+    this.rules = rules;
+    const portOptions = GAME_PORT_OPTIONS.get(rules);
+    GAME_PORT_OPTIONS.delete(rules);
+    this.startRules = portOptions?.startRules ?? startRulesFromRules(rules);
+    // @java Game.java:1397-1398 — `if (hasHandDice()) flags |= GameType.NotAllPass;`
+    // Dice games never end by implicit all-pass draw (Dubblets records two
+    // consecutive passes mid-game and plays on). The portOptions flag carries
+    // the other Java sources (Pass.java:79, (passEnd NoEnd), PlayCard,
+    // SetTrumpSuit, AllPassed).
+    const hasHandDice = equipment.pieces.some(p => /^Die\d*$/.test(p.name));
+    this.notAllPass = (portOptions?.notAllPass ?? false) || hasHandDice;
+    this.usesSwapRule = portOptions?.usesSwapRule ?? false;
+    // @java Gravity.eval — context.game().metaRules().setGravityType(type).
+    // We detect the meta-rule directly off the compiled rules tree instead of
+    // a portOption: any (meta (gravity …)) enables pyramidal drop in apply().
+    this.usesGravity = (rules.meta?.rules ?? []).some(r => r instanceof Gravity);
+    // @java Automove.eval — context.game().metaRules().setAutomove(true);
+    // detected like usesGravity: presence in the compiled meta rules.
+    this.usesAutomove = (rules.meta?.rules ?? []).some(r => r instanceof Automove);
+    // @java NoRepeat.eval — context.game().metaRules().setRepetitionType(type).
+    // Detected like usesGravity/usesAutomove: presence in the compiled meta
+    // rules, off the actual (meta (no Repeat ...)) ludeme instance so we can
+    // read its `.type`.
+    {
+      const noRepeatRule = (rules.meta?.rules ?? []).find(
+        (r): r is NoRepeat => r instanceof NoRepeat,
+      );
+      this.noRepeatType = noRepeatRule ? noRepeatRule.type : null;
+    }
+    // @java SetTeam.eval — ActionAddPlayerToTeam(teamId, pid). Harvest the
+    // static team membership from the (set Team …) start rules.
+    {
+      const teams: number[] = [];
+      for (const sr of this.startRules) {
+        if (sr instanceof SetTeam) {
+          for (const pid of sr.players()) teams[pid] = sr.team();
+        }
+      }
+      this.teamOf = teams;
+    }
+    this.width = equipment.board.width;
+    this.height = equipment.board.height;
+    this.numSites = equipment.board.numSites;
+
+    // Build component labels: [unused, piece1label, piece2label, ...]
+    // @java Game.componentLabels() — used to populate State.componentLabels
+    const maxComponentIndex = equipment.pieces.reduce((max, piece) => Math.max(max, piece.index), 0);
+    this.componentLabels = new Array(maxComponentIndex + 1).fill("");
+    for (const piece of equipment.pieces) {
+      // The Game.java:2545-2565 owner-suffix pass now renames components to
+      // name+owner at create time, so a piece that already carries its owner
+      // suffix must not be suffixed AGAIN here ("Counter1" -> "Counter11"
+      // desynced every label-driven owner parse after the pass landed).
+      // Pieces the pass skips (Domino/Die, 1-player non-Neutral) keep the
+      // historical append.
+      const alreadySuffixed = piece.name.endsWith(String(piece.owner));
+      this.componentLabels[piece.index] = alreadySuffixed ? piece.name : `${piece.name}${piece.owner}`;
+    }
+
+    // Extract static map table from equipment (compiled from (map ...) equipment items).
+    // @java game/equipment/other/Map.java — Equipment.maps() lookup table
+    const staticMaps = staticMapsFromEquipment(equipment, this.numPlayers);
+    if (staticMaps && staticMaps.size > 0) {
+      this._maps = staticMaps;
+    }
+
+    // Store per-player facing directions (from (players {(player SE) ...})).
+    const playerDirs = portOptions?.playerDirs ?? playerDirsFromPlayers(this.playersRecord);
+    if (playerDirs && playerDirs.size > 0) {
+      this._playerDirs = playerDirs;
+    }
+
+    // Facing tables for relative-direction resolution ("set by the game
+    // compiler" per eval-context.ts; the bespoke compiler used to do this).
+    // @java Component.getDirn() (componentFacing, indexed by what id) and
+    // (player <Dir>) declarations (playerFacing, 1-based). A piece's own facing
+    // overrides its owner's; Dodgem's Cars face E/N with no player facings.
+    {
+      const boardAny = this.equipment.board as unknown as {
+        componentFacing?: (string | undefined)[];
+        playerFacing?: (string | undefined)[];
+      };
+      const compFacing: (string | undefined)[] = [];
+      for (const p of this.equipment.pieces) {
+        const dirn = (p as unknown as { dirn?: string }).dirn;
+        if (dirn !== undefined) compFacing[p.index] = dirn;
+      }
+      if (compFacing.some((v) => v !== undefined)) boardAny.componentFacing = compFacing;
+      const pf: (string | undefined)[] = [];
+      for (let pid = 1; pid <= this.numPlayers; pid++) {
+        const direction = this.playersRecord.get(pid)?.direction;
+        if (direction !== null && direction !== undefined) pf[pid] = direction;
+      }
+      if (pf.some((v) => v !== undefined)) boardAny.playerFacing = pf;
+    }
+  }
+
+  /**
+   * @java Game.handDice() — the list of Dice containers.
+   * Our equipment model keeps per-die specs (diceSpecs) + a base site
+   * (diceSiteBase); Java's typical (dice d:N num:M) is ONE container with M
+   * locs. Container index = 1 + number of hands (board=0, hands, dice).
+   */
+  /**
+   * @java Game.maximalRotationStates() (Game.java:1201) — the number of
+   * distinct supported directions of the board (square Vertex: 8). SetRotation
+   * ludemes cycle rotation values modulo this.
+   */
+  public maximalRotationStates(): number {
+    const n = this.equipment.board.trajectories?.supportedAdjacentDirNames().length ?? 0;
+    return n > 0 ? n : 1;
+  }
+
+  public handDice(): Array<{ index(): number; getNumFaces(): number; numLocs(): number; faces(): readonly number[] }> {
+    const specs = this.equipment.diceSpecs;
+    if (specs.length === 0) return [];
+    const idx = 1 + this.equipment.hands.length;
+    const diceFaces = specs[0]?.faces ?? [1, 2, 3, 4, 5, 6];
+    const numFaces = diceFaces.length;
+    return [{ index: () => idx, getNumFaces: () => numFaces, numLocs: () => specs.length, faces: () => diceFaces }];
+  }
+
+  /** @java Game.getHandDice(int) */
+  public getHandDice(i: number): { index(): number; getNumFaces(): number; numLocs(): number; faces(): readonly number[] } {
+    return this.handDice()[i]!;
+  }
+
+  /**
+   * @java Game.getMaxMoveLimit() — returns maxMovesLimit (default
+   * Constants.DEFAULT_MOVES_LIMIT = 10000). Used by (value MoveLimit) and the
+   * MoveLimit end check; its absence threw "getMaxMoveLimit is not a function"
+   * (Ludus Coriovalli). Matches the 10000 bound already used in apply()'s
+   * Step 4b move-limit draw.
+   */
+  public getMaxMoveLimit(): number {
+    return 10000;
+  }
+
+  /**
+   * @java Game.getMaxTurnLimit() — maxTurnLimit (default
+   * Constants.DEFAULT_TURN_LIMIT = 1250). Used by (value TurnLimit); its
+   * absence threw "getMaxTurnLimit is not a function". Matches the
+   * 1250*numPlayers bound apply()'s Step 4b uses.
+   */
+  public getMaxTurnLimit(): number {
+    return 1250;
+  }
+
+  /**
+   * @java Equipment.sitesFrom() — base site index per container:
+   * [0 (board), hand bases..., dice base].
+   */
+  public sitesFrom(): number[] {
+    const out: number[] = [0];
+    for (const hand of this.equipment.hands) {
+      out.push(this.equipment.handSiteFor(hand.owner, 0));
+    }
+    if (this.equipment.diceSpecs.length > 0) out.push(this.equipment.diceSiteBase);
+    return out;
+  }
+
+  /**
+   * @java Game.java:930 — `(gameFlags & GameType.InternalLoopInTrack) != 0L`
+   * True when any board track has an internal loop (Pachisi / Ludo / Barjis /
+   * Kints family): a track where the same site appears at two different ring
+   * positions, so `(trackSite Move …)` must use `OnTrackIndices` to
+   * disambiguate which ring-iteration the piece is currently on.
+   */
+  public hasInternalLoopInTrack(): boolean {
+    const rawTracks = this.equipment.board.getTracks?.() ?? [];
+    return (rawTracks as unknown as Array<{ hasInternalLoop?: () => boolean }>)
+      .some(t => t.hasInternalLoop?.() === true);
+  }
+
+  /**
+   * @java Game.java:946 `Game.isStacking()` — `(gameFlags() & GameType.Stacking)
+   * != 0L || hasCard() || board().largeStack()`.
+   *
+   * BUG FIX (Sik/Es-Sig family, ply-215-class divergence): the compiled-tree
+   * `usesStacking` flag was already harvested onto every Game instance by
+   * play1to1.ts (`game.usesStacking = compileFlags.usesStacking`) and several
+   * call sites inside this very file duck-type-read it directly off `this`.
+   * But no *method* of this name existed, so every OTHER caller that
+   * duck-types `(context.game as {isStacking?: () => boolean}).isStacking?.()`
+   * — WhereSite.eval()'s per-level stacking branch, WhereLevel.eval(),
+   * CountStepsOnTrack.eval() — always saw `undefined`, coalesced to `false`
+   * via `?? false`, and silently fell through to the FLAT (top-of-stack-only)
+   * scan branch even for genuine per-level stacking games. That made any
+   * `(where "X" P)`-style query permanently blind to a piece buried under
+   * another piece on the same site (Sik: mover 4's own Stick, once another
+   * player's Stick stacked on top of it at Center, became unfindable by
+   * `(where "Stick" Mover)`, so the `(= (Center) (where "Stick" Mover))`
+   * guard went false even though the piece was still correctly there).
+   */
+  public isStacking(): boolean {
+    return (this as unknown as { usesStacking?: boolean }).usesStacking === true;
+  }
+
+  /**
+   * @java Game.java:994-997 — `public boolean isBoardless() { return
+   * board().isBoardless(); }`. Delegates to the board's own isBoardless()
+   * (GameBoardSurface.isBoardless, Equipment.ts board Proxy) which is already
+   * implemented — this method itself was simply missing, so every duck-typed
+   * caller (SitesLineOfPlay.ts's `typeof game.isBoardless === "function"`
+   * check) always saw `undefined` and silently treated every game — boardless
+   * or not — as non-boardless, taking the wrong (Centre / around-occupied)
+   * branch instead of the real line-of-play isPlayable bitset branch
+   * (dominoes/Block: candidate anchor sites came from a 1-cell-adjacency
+   * heuristic instead of the true up-to-4-step line-of-play radial, so the
+   * recorded move `from=1705,to=844` was never offered).
+   */
+  public isBoardless(): boolean {
+    const b = this.equipment.board as unknown as { isBoardless?: () => boolean };
+    return typeof b.isBoardless === "function" && b.isBoardless();
+  }
+
+  /**
+   * @java Game.players()
+   */
+  public players(): GamePlayers {
+    return this.playersRecord;
+  }
+
+  /**
+   * @java Game.mode()
+   */
+  public mode(): Mode {
+    return this.modeRecord;
+  }
+
+  /** @java Game.voteStringsTable — registry of vote/proposition strings. */
+  private readonly _voteStringsTable: string[] = [];
+
+  /**
+   * @java Game.registerVoteString — returns the int index of a vote string,
+   * registering it on first sight. Crucial that registered indices are >= 0:
+   * (is Decided "End") compares state.isDecided() (UNDEFINED=-1 until a vote
+   * resolves) against this index; a -1 index made every mancala agree-to-end
+   * rule fire on move 1 (Oware and ~70 two_rows kin ended as instant draws).
+   */
+  public registerVoteString(voteString: string): number {
+    const existing = this._voteStringsTable.indexOf(voteString);
+    if (existing >= 0) return existing;
+    this._voteStringsTable.push(voteString);
+    return this._voteStringsTable.length - 1;
+  }
+
+  /**
+   * @java game/Game.java — start(context)
+   *
+   * Returns the initial Context for a new game. Applies start rules to
+   * set up the initial board position.
+   */
+  public start(startRng?: SeededRng): Context {
+    // Use totalSites to include hand slots in the state.
+    const totalSites = this.equipment.totalSites;
+    const cells = new Array<number>(totalSites).fill(0);
+    const whats = new Array<number>(totalSites).fill(0);
+    const countAt = new Array<number>(totalSites).fill(0);
+    // Dual-SiteType staging (@java per-type ContainerStates): start placements
+    // whose explicit type differs from the play type (Guerrilla Checkers'
+    // Cell pieces on a Vertex-play board) land here, keyed by type name.
+    const typedStaging = new Map<string, { who: number[]; what: number[]; count: number[] }>();
+    // @java Start.placePieces(onStack=true) is a repeated ActionAdd(onStacking):
+    // each (place Stack ...) on an already-stacked site PUSHES a new level
+    // (Seesaw starts Hex+Disc as a two-piece custom stack). Levels beyond the
+    // first stage here and replay as stack pushes after State construction;
+    // the first level keeps the flat path (count-based monotonous stacks).
+    const stackedStaging = new Map<number, Array<{ what: number; owner: number; count: number; state: number; value: number }>>();
+    // Per-site state and value arrays (from state:N / value:N in place rules).
+    // @java ActionAdd.apply() — setStateAt / setValueAt on the initial container state.
+    const stateAt = new Array<number>(totalSites).fill(0);
+    const valueAt = new Array<number>(totalSites).fill(0);
+    // @java (place … rotation:N) — initial piece rotations (Ploy's facings).
+    const rotAt = new Array<number>(totalSites).fill(0);
+    // Player-level start values (from (set Score ...) / (set Amount ...) rules).
+    // @java State.scores / State.amounts — initialised by ActionSetScore/SetAmount.
+    const scores = new Array<number>(this.numPlayers + 1).fill(0);
+    const amounts = new Array<number>(this.numPlayers + 1).fill(0);
+    // Per-site graph-element cost (from (set Cost N Vertex at:X) start rules).
+    // @java Topology element cost written by ActionSetCost; State.costAt here.
+    const costAt = new Array<number>(totalSites).fill(0);
+    // Bridge-owned start collections (STATE CONVERGENCE chunk 4 — the equipment
+    // side-channels fold into these; rules write via the ContainerState facade).
+    const startRemembered = new Map<string, number[]>();
+    const startHidden = new Map<string, boolean>();
+
+    // Place the die components at the dice container sites (@java Equipment
+    // create: each Die occupies its container loc; Roll reads what(loc) there).
+    // The Die components are REAL pieces (the recorded trials place what=1,2 at
+    // the dice sites) — use their actual component ids.
+    if (this.equipment.diceSpecs.length > 0) {
+      const dieIds = this.equipment.pieces
+        .filter((p) => /^Die\d*$/.test(p.name) || (p as unknown as { isDie?: () => boolean }).isDie?.() === true)
+        .map((p) => p.index);
+      for (let i = 0; i < this.equipment.diceSpecs.length; i++) {
+        const loc = this.equipment.diceSiteBase + i;
+        if (loc < whats.length && dieIds[i] !== undefined) whats[loc] = dieIds[i]!;
+      }
+    }
+
+    // Apply start rules.
+    // @java game/Game.java — start(): applies ActionAdd for each start placement
+    for (const rule of this.startRules) {
+      this.applyStartRule(rule, cells, whats, countAt, stateAt, valueAt, scores, amounts, startRemembered, startHidden, typedStaging, stackedStaging, startRng, costAt, rotAt);
+    }
+
+    // Check if any non-zero stateAt/valueAt were set (to avoid allocating sparse arrays).
+    const hasNonZeroState = stateAt.some(v => v !== 0);
+    const hasNonZeroValue = valueAt.some(v => v !== 0);
+    const hasNonZeroScores = scores.some(v => v !== 0);
+    const hasNonZeroAmounts = amounts.some(v => v !== 0);
+    const hasNonZeroCost = costAt.some(v => v !== 0);
+
+    // Compute initial phase indices for each player.
+    // @java other/state/State.java — initPhase(game)
+    // For each player, scan phases in order and assign the first matching one:
+    //   - phase.ownerPlayerId === pid → assign that phase
+    //   - phase.ownerPlayerId === 0 (Shared) → assign that phase
+    const initialPhases = new Array(this.numPlayers + 1).fill(0);
+    if (this.rules.phases !== null) {
+      const phases = this.rules.phases;
+      for (let pid = 1; pid <= this.numPlayers; pid++) {
+        for (let idx = 0; idx < phases.length; idx++) {
+          const phase = phases[idx]!;
+          const owner = phase.ownerPlayerId;
+          if (owner === pid || owner === 0) {
+            initialPhases[pid] = idx;
+            break;
+          }
+        }
+      }
+    }
+
+    // Initialize diceValues: one slot per die, pre-filled with 0 so
+    // ActionUpdateDice dice-value mode can write to diceValues[i].
+    // @java Game.java — start() initialises currentDice containers to 0.
+    const numDice = this.equipment.diceSpecs.length;
+    const initialDiceValues = numDice > 0 ? new Array(numDice).fill(0) : undefined;
+
+    // @java State.java:1059-1060 — `if (game.isBoardless() &&
+    // containerStates[0].isEmpty(centre)) containerStates[0].setPlayable(this,
+    // centre, true);` seeds the single board-centre cell as the line-of-play
+    // bootstrap so the very first domino has somewhere to land (dominoes/Block
+    // ply 0: with no seed, `(sites LineOfPlay)` — SitesLineOfPlay.java's
+    // boardless branch just scans `cs.isPlayable(index)` with nothing ever
+    // set — returned empty, and every board site failed FromTo.java:480's
+    // `!csTo.isPlayable(loc) && moveNumber()>0` check... except moveNumber()
+    // ===0 short-circuits that check true regardless, so ply 0 wasn't
+    // actually blocked by the missing seed; it matters starting ply 1+, once
+    // `(sites LineOfPlay)` must return real playable anchors derived from the
+    // ply-0 placement's own recompute). Gated on hasDominoes (mirrors
+    // SitesLineOfPlay.java's own `missingRequirement` — this bitset is
+    // meaningless for non-dominoes boardless games).
+    const bootstrapPlayableAt = (() => {
+      if (!this.isBoardless()) return undefined;
+      const hasDominoes = this.equipment.pieces.some(
+        (p) => typeof (p as unknown as { isDomino?: () => boolean }).isDomino === "function"
+          && (p as unknown as { isDomino: () => boolean }).isDomino(),
+      );
+      if (!hasDominoes) return undefined;
+      const W = this.equipment.board.width;
+      const H = this.equipment.board.height;
+      const centre = Math.floor(H / 2) * W + Math.floor(W / 2);
+      if (centre < 0 || centre >= totalSites || cells[centre] !== 0) return undefined;
+      const arr = new Array<boolean>(totalSites).fill(false);
+      arr[centre] = true;
+      return arr;
+    })();
+
+    let state = new State(1, cells, this.componentLabels, {
+      // @java Board.java — thread the board's declared `use:` type so the
+      // owned registry labels positions correctly (see State.defaultSiteType).
+      defaultSiteType: (() => {
+        const ds = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+        return typeof ds === "function" ? ds() : ds ?? "Cell";
+      })(),
+      numPlayers: this.numPlayers,
+      whats,
+      countAt,
+      phases: initialPhases,
+      diceValues: initialDiceValues,
+      stateAt: hasNonZeroState ? stateAt : undefined,
+      // @java (place … rotation:N) initial facings (Ploy).
+      rotationAt: rotAt.some((r) => r !== 0) ? rotAt : undefined,
+      valueAt: hasNonZeroValue ? valueAt : undefined,
+      playableAt: bootstrapPlayableAt,
+      scores: hasNonZeroScores ? scores : undefined,
+      amounts: hasNonZeroAmounts ? amounts : undefined,
+      costAt: hasNonZeroCost ? costAt : undefined,
+      typedSites: typedStaging.size > 0 ? typedStaging : undefined,
+      // @java GameType.Stacking — compiled-tree flag (play1to1 harvest).
+      stackingGame: (this as unknown as { usesStacking?: boolean }).usesStacking === true || undefined,
+      stackMovesGame: (this as unknown as { usesStackMoves?: boolean }).usesStackMoves === true || undefined,
+      // @java Game.requiresCount() (Game.java:893) — !isStacking() && (any hand
+      // container || (gameFlags & GameType.Count)). ActionAdd's occupied-site
+      // branch consumes it (accumulate vs force count=1, ActionAdd.java:310).
+      requiresCountGame:
+        ((this as unknown as { usesStacking?: boolean }).usesStacking !== true &&
+          (this.equipment.hands.length > 0 ||
+            this.equipment.diceSpecs.length > 0 ||
+            (this as unknown as { usesCount?: boolean }).usesCount === true)) ||
+        undefined,
+    });
+
+    // @java ActionAdd.apply (onStacking) — replay staged level-2+ start
+    // placements as stack pushes (withStackPush backfills level 0 from the
+    // flat write; withOwnedAdd no-ops until the owned registry materializes).
+    // @java ContainerStateStacks.addItemGeneric accepts who=0 (a Neutral
+    // component level): Sik/Es-Sig/Sig-family games place a Neutral "Bankor"
+    // token as the LAST level of the 5-piece start stack at the board's
+    // outer site (`(place Stack items:<Player:init> 85) (place Stack
+    // "Bankor0" 85)`). The old `owner < 1` guard here silently dropped that
+    // level during start-rule materialization — same TS-invented mistake the
+    // withStackPush Santorini fix already corrected at the push primitive
+    // itself, but this loop has its own independent guard that still had it.
+    // Losing the level meant the flat cell/what channel got stuck on the
+    // second-to-last pushed level's owner (never advanced to Bankor's owner
+    // 0), and stacks[]/whatStacks[] were one level short of Java's from turn
+    // 0 — surfacing ~200 plies later as a Pass-only ply once mover4 reached
+    // the board Center and tried to take control of the (already-vanished)
+    // Bankor piece. Reject only genuinely invalid (negative/undefined)
+    // owners, matching withStackPush's own `owner < 0` guard.
+    for (const [site, levels] of stackedStaging) {
+      for (let li = 1; li < levels.length; li += 1) {
+        const lv = levels[li]!;
+        if (lv.owner < 0) continue;
+        for (let c = 0; c < Math.max(1, lv.count); c += 1) {
+          // @java ActionAdd.applyStack (ActionAdd.java:324-334) threads a
+          // start-placed level's value into the SAME addItemGeneric call
+          // that pushes it (chunkStacks[...].setValue) — a stacked pyramid
+          // piece (e.g. Rithmomachia's Square/Triangle/Disc value:NN levels)
+          // otherwise reads back level value 0 from valueAtLevel/valueTop for
+          // every level above the base, breaking every value-comparing
+          // capture ludeme (Multiplication/Division/Addition/Subtraction
+          // WithDistance) for stacked start pieces.
+          state = state.withStackPush(site, lv.owner, lv.what, lv.value !== UNDEFINED ? lv.value : undefined);
+          state = state.withOwnedAdd(lv.owner, lv.what, site, state.stackSize(site) - 1);
+          if (lv.state !== UNDEFINED) state = state.withStateAt(site, lv.state);
+        }
+      }
+    }
+
+    // Apply remembered-value start rules (from (set RememberValue "name" <region>)).
+    // @java game/rules/start/set/remember/SetRememberValue.java — eval() calls ActionRememberValue.apply()
+    if (startRemembered.size > 0) {
+      for (const [key, values] of startRemembered) {
+        for (const v of values) {
+          state = state.withRemember(key, v);
+        }
+      }
+    }
+
+    // Apply hidden-info start rules (from (set Hidden ... to:P1)).
+    // @java game/rules/start/set/hidden/SetHidden.java — eval() calls ActionSetHidden.apply()
+    if (startHidden.size > 0) {
+      for (const [key, val] of startHidden) {
+        const colonIdx = key.indexOf(':');
+        const pidStr = key.slice(0, colonIdx);
+        const siteStr = key.slice(colonIdx + 1);
+        const pid = Number(pidStr);
+        const site = Number(siteStr);
+        if (pid >= 0 && pid < this.numPlayers + 1 && site >= 0 && site < totalSites) {
+          state = state.withHidden(pid, site, val);
+        }
+      }
+    }
+
+    // @java State.java:496 — OnTrackIndices allocated only when the game has an
+    // internal-loop track (Pachisi / Ludo / Barjis / Kints family). Java sets
+    // GameType.InternalLoopInTrack in Game.create() when any track reports
+    // hasInternalLoop(), then State.<init>:496 conditionally news up the
+    // OnTrackIndices. Here we initialise after start rules so whats[] is final.
+    if (this.hasInternalLoopInTrack()) {
+      const rawTracks = this.equipment.board.getTracks?.() ?? [];
+      type TrackLike = {
+        hasInternalLoop(): boolean;
+        elems(): Array<{ site: number }> | null;
+        trackIdx(): number;
+        islooped(): boolean;
+        name(): string;
+        owner(): number;
+      };
+      const mancalaTracks = (rawTracks as unknown as TrackLike[]).map(t => ({
+        name: t.name(),
+        sites: (t.elems() ?? []).map(e => e.site),
+        loop: t.islooped(),
+        owner: t.owner(),
+        trackIdx: t.trackIdx(),
+        internalLoop: t.hasInternalLoop(),
+      }));
+      const tli = buildTrackLocToIndex(mancalaTracks);
+      if (tli !== undefined) {
+        // @java ActionAdd.java onTrackIndices block — scans ALL container sites
+        // (board + hands + off-board start piles) because Pachisi-family tracks
+        // begin at sites beyond board.numSites (e.g. Kints site 46 is the
+        // player-1 start pile, still the first track element). Use totalSites
+        // rather than board.numSites so those start-pile pieces are counted.
+        const oti = buildInitialOnTrackIndices(
+          mancalaTracks,
+          tli,
+          this.componentLabels.length,
+          // Enumerate EVERY piece resting at a site. A genuine per-level start
+          // stack (Tugi-Epfe's `(place Stack items:{Horse2 Horse1})`) holds two
+          // differently-owned Horses on the one start corner; each level is a
+          // distinct component that must be recorded so its owner can later be
+          // disambiguated on the internal-loop track. Java records both because
+          // it runs one ActionAdd per placed item; the prior TS init read only
+          // the TOP piece (state.whatAtSite), so the buried piece (P2's Horse2)
+          // had no ring index and P2's very first move generated OFF → a
+          // spurious pass at ply 1. A flat site (single piece or mancala seed
+          // pile, stackSize ≤ 1) yields one {what, count} entry as before.
+          (site) => {
+            const size = state.stackSize(site);
+            if (size > 1) {
+              const out: Array<{ what: number; count: number }> = [];
+              for (let lvl = 0; lvl < size; lvl += 1) {
+                const w = state.whatAtSiteLevel(site, lvl);
+                if (w > 0) out.push({ what: w, count: 1 });
+              }
+              return out;
+            }
+            const w = state.whatAtSite(site);
+            return w > 0 ? [{ what: w, count: countAt[site] ?? 0 }] : [];
+          },
+          this.equipment.totalSites,
+          // @java Game.isStacking() gate for ActionAdd's double
+          // updateTrackIndices() fall-through bug (see
+          // buildInitialOnTrackIndices doc).
+          (this as unknown as { usesStacking?: boolean }).usesStacking === true,
+        );
+        state = state.withTrackIndices(oti, tli);
+      }
+    }
+
+    const trial = new Trial([], false, -1);
+
+    // Populate trial._startingPos: for each piece type (component index), record its initial sites.
+    // @java game/Game.java — start() → context.trial().startingPos() populated by Add.apply()
+    // In Java, ActionAdd.apply() adds each start site to trial.startingPos[componentIndex].
+    // Here we reconstruct it from the initial cells/whats arrays post start-rule application.
+    // This is needed for (sites Start (piece ...)) in defines like InitialPawnMove.
+    {
+      const startingPos: number[][] = [];
+      for (let site = 0; site < whats.length; site++) {
+        const what = whats[site]!;
+        if (what > 0) {
+          // Ensure array is long enough
+          while (startingPos.length <= what) startingPos.push([]);
+          startingPos[what]!.push(site);
+        }
+      }
+      trial._startingPos = startingPos;
+    }
+
+    const ctx = new Context(this, state, trial);
+
+    return attachRadials(ctx, this.equipment.board.radials, this.equipment.board.trajectories);
+  }
+
+  /**
+   * @java game/rules/meta/no/repeat/NoRepeat.java — apply(Context, Move).
+   * True if `move` does NOT reach a within-turn position already seen
+   * (only the PositionalInTurn case is implemented — see noRepeatType).
+   * Pass moves are always exempt. Shared by both {@link moves} (the
+   * top-level legal-move filter) and Moves.canMove() (the `(can Move ...)`
+   * ludeme, via the optional Game.passesNoRepeat hook it duck-types
+   * against) — Java's NoRepeat.apply is likewise consulted from both
+   * Trial.setLegalMoves AND Moves.canMove(context), and Football Chess's
+   * `(then (if (can Move (...)) (moveAgain)))` kick-chain continuation
+   * depends on the LATTER: without it, `(can Move ...)` sees an
+   * already-played-this-turn repeat kick as a legal candidate, wrongly
+   * concludes the chain can continue, and sets moveAgain — stranding the
+   * mover on a turn Java has already ended.
+   */
+  public passesNoRepeat(context: Context, move: Move): boolean {
+    if (this.noRepeatType !== "PositionalInTurn") return true;
+    if (move.isPass()) return true;
+    const ctx = context as Context1to1;
+    // @java NoRepeat.java — move.apply(context, true) / hash / undo. The TS
+    // port has no undo; simulate on a scratch context/rng clone instead so
+    // the real trial/state/rng are never touched by a discarded probe.
+    // apply() never mutates its input context, but move.applyTo() DOES
+    // mutate a SeededRng in place, so the clone keeps this discarded probe
+    // from consuming/perturbing the real game's RNG sequence.
+    const scratchCtx = ctx.withRng(ctx.rng.clone()) as Context1to1;
+    const resultCtx = this.apply(scratchCtx, move) as Context1to1;
+    // @java NoRepeat.java:91 — PositionalInTurn checks
+    // context.trial().previousStateWithinATurn().contains(context.state().stateHash()).
+    // `stateHash()` (State.java:198,283) is mover-EXCLUSIVE (container states
+    // + scores only) — unlike this port's `state.hash()`, which is the
+    // mover-INCLUSIVE `fullHash()`-equivalent. Simulating a candidate move
+    // via `this.apply()` above recursively resolves ITS OWN nested `then`
+    // (deferred-then) chain, including any kick-chain-continuation check,
+    // which can legitimately rotate the mover within this single probe —
+    // so a mover-inclusive hash would spuriously never match even when the
+    // underlying board position is identical to one already visited this
+    // turn. `positionalHash()` (mirrors `stateHash()`) and the dedicated
+    // `previousPositionalTurnHashes` array (populated the same way Java
+    // gates it in Game.java:3151-3162, see Game.apply below) avoid that.
+    const hash = resultCtx.state.positionalHash();
+    return !ctx.trial.previousPositionalTurnHashes.includes(hash);
+  }
+
+  /**
+   * @java game/Game.java — moves(context)
+   *
+   * Returns legal moves for the current state.
+   *
+   * For phase games: uses phases[state.currentPhase(mover)].play.
+   * @java game/Game.java:2849–2852
+   *
+   * If no moves are available, returns a single forced-pass move
+   * (Java's stalemated player behaviour).
+   */
+  public moves(context: Context): readonly Move[] {
+    const ctx = context as Context1to1;
+    // Ensure radials are always attached (survives withRng/withState copies).
+    ctx._radials = ctx._radials ?? this.equipment.board.radials;
+    ctx._trajectories = ctx._trajectories ?? this.equipment.board.trajectories;
+    ctx._evalTo = -1;
+    ctx._evalFrom = -1;
+    ctx._evalValue = 0;
+
+    const movesGen = this.getPlayForMover(ctx);
+    const generated: Move[] = [...movesGen.moves.eval(ctx)];
+
+    // @java Game.java:2863-2873 — for each raw candidate straight out of
+    // phase.play().moves().eval(), Automove.apply(context, legalMove) folds
+    // forced unique-site continuations into the move's then chain (recorded
+    // as ONE compound trial ply — Trax's paired tile placements).
+    if (this.usesAutomove) {
+      for (let i = 0; i < generated.length; i++) {
+        generated[i] = this.resolveAutomoveChain(ctx, generated[i]!);
+      }
+    }
+
+    // @java Trial.java:292-301 (Trial.setLegalMoves) / Game.java:2943 —
+    // NoRepeat.apply(context, move) filters the final legal-move list right
+    // before the stalemated-flag cache write below, so the cached flag
+    // reflects the POST-filter move count exactly like Java. Scoped to
+    // PositionalInTurn only (see noRepeatType derivation in the
+    // constructor and {@link passesNoRepeat}); Positional/Situational/
+    // SituationalInTurn remain unimplemented no-ops — out of scope here
+    // (Go-family superko etc.).
+    if (this.noRepeatType === "PositionalInTurn" && generated.length > 0) {
+      for (let i = generated.length - 1; i >= 0; i--) {
+        if (!this.passesNoRepeat(ctx, generated[i]!)) generated.splice(i, 1);
+      }
+    }
+
+    // @java Game.java:2948 — context.state().setStalemated(mover,
+    // legalMoves.moves().isEmpty()): the stalemated flag is a CACHE written
+    // during REAL move generation (with the real roll), read by
+    // (no Moves <player>). Eagerly recomputing it per-apply with a
+    // hypothetical roll flagged dice games stalemated whenever the sampled
+    // roll had no moves (Cab e Quinal drew at ply 4). Mutate in place —
+    // cache semantics, like Java.
+    {
+      const flags = ctx.state.stalemated as boolean[];
+      flags[ctx.state.mover] = generated.length === 0;
+    }
+
+    // @java game/Game.java:2855 — Swap.apply(context, legalMoves)
+    // @java game/rules/meta/Swap.java:apply — fires when usesSwapRule() &&
+    //   trial.moveNumber() == game.players().count() - 1 (i.e. P2's first move).
+    if (
+      this.usesSwapRule &&
+      ctx.trial.numMoves === this.numPlayers - 1
+    ) {
+      const mover = ctx.state.mover;
+      const moverLastTurn = ctx.trial.lastTurnMover(mover);
+      if (moverLastTurn !== -1 && moverLastTurn !== mover) {
+        // Build the SwapPlayers move: ActionSwap(pid1=mover, pid2=lastTurnMover)
+        // with decision=true, plus ActionSetNextPlayer(mover) to keep the same mover.
+        // @java game/rules/play/moves/nonDecision/effect/state/swap/players/SwapPlayers.java:eval()
+        const swapAction = new ActionSwapPlayers(mover, moverLastTurn);
+        swapAction.setDecision(true);
+        const setNextAction = new ActionSetNextPlayer(mover);
+        const swapMove = new Move({
+          id: "swap-players",
+          label: "Swap",
+          siteIndices: [],
+          mover,
+          placedOwner: mover,
+          actions: [swapAction, setNextAction],
+        });
+        generated.push(swapMove);
+      }
+    }
+
+    if (generated.length > 0) {
+      return generated;
+    }
+
+    // Stalemated: emit a forced pass.
+    // @java Game.java — forced pass when no legal moves
+    const passAction = new ActionPass();
+    const passMove = new Move({
+      id: "pass",
+      label: "Pass",
+      siteIndices: [0], // dummy site; Pass move is valid
+      mover: ctx.state.mover,
+      placedOwner: ctx.state.mover,
+      actions: [passAction],
+    });
+    return [passMove];
+  }
+
+  /**
+   * @java game/rules/meta/Automove.java:47-107 — apply(Context, Move):
+   * re-evaluates raw legal moves after speculatively applying `move`'s own
+   * actions; any target site left with EXACTLY ONE candidate is forced and
+   * folded into `move.then` so it plays in the SAME recorded ply (Java's
+   * Move.apply()/toTrialFormat() folds then consequences into one compound
+   * trial Move=[...] entry — confirmed against Trax RandomTrial_0 line 9).
+   * Iterates to a fixpoint; forcing one site can newly force another.
+   */
+  private resolveAutomoveChain(ctx: Context1to1, move: Move): Move {
+    let state = move.applyTo(ctx.state, ctx.rng);
+    const forced: Move[] = [];
+    let guard = 256;
+    while (guard-- > 0) {
+      const hypCtx = ctx.withState(state) as Context1to1;
+      const candidates = this.getPlayForMover(hypCtx).moves.eval(hypCtx);
+      if (candidates.length === 0) break;
+      const byTo = new Map<number, Move[]>();
+      for (const c of candidates) {
+        const to = c.toNonDecision();
+        const arr = byTo.get(to);
+        if (arr) arr.push(c);
+        else byTo.set(to, [c]);
+      }
+      const unique: Move[] = [];
+      for (const arr of byTo.values()) if (arr.length === 1) unique.push(arr[0]!);
+      if (unique.length === 0) break;
+      for (const u of unique) {
+        forced.push(u);
+        state = u.applyTo(state, ctx.rng);
+      }
+    }
+    if (forced.length === 0) return move;
+    return new Move({
+      id: move.id,
+      label: move.label,
+      siteIndices: [...move.siteIndices],
+      mover: move.mover,
+      placedOwner: move.placedOwner,
+      actions: [...move.actions],
+      // biome-ignore lint/suspicious/noThenProperty: Java-parity field name.
+      then: [...move.then, ...forced],
+      deferredThens: move.deferredThens,
+      moveAgain: move.moveAgain,
+      decisionIndex: move.decisionIndex,
+      fromSite: move.fromSite,
+      toSite: move.toSite,
+    });
+  }
+
+  /**
+   * @java game/Game.java — apply(context, move)
+   *
+   * Applies a move and returns the new Context.
+   *
+   * Play loop (mirroring Java Game.apply / applyInternal):
+   *   1. Apply move actions to state.
+   *   2. Set _evalTo to move.to() for end-rule evaluation.
+   *   3a. Evaluate per-phase end rule (if game has phases).   @java 3061–3066
+   *   3b. Evaluate global end rules.
+   *   4. If not over, check all-pass draw.
+   *   5. If still active, evaluate nextPhase conditions for all players.  @java 3119–3141
+   *   6. Advance mover (rotate).
+   *   7. Update stalemated flag for new mover.
+   *   8. Record move in trial.
+   */
+  /**
+   * Pyramidal-drop gravity: faithful port of Gravity.apply's inner loop.
+   *
+   * @java game/rules/meta/Gravity.java:81-109 — `do { … } while (pieceDropped)`
+   *   For each occupied Vertex (ascending id), take the first `Downward`
+   *   neighbour that is empty and relocate the ball there (an ActionMove from
+   *   level 0 to level 0); restart the full scan after every single drop.
+   *   The Java loop bounds on topology.vertices().size(); for a vertex board
+   *   that equals the board site count.
+   */
+  private applyPyramidalDrop(
+    state: State,
+    traj: { steps(site: number, dir: string): number[] } | null | undefined,
+  ): State {
+    if (!traj || typeof traj.steps !== "function") return state;
+    const n = this.equipment.board.numSites;
+    let newState = state;
+    let pieceDropped = true;
+    // Guard against pathological cycles (a ball can only ever move strictly
+    // downward, so the board count bounds the total number of drops).
+    let guard = n * n + 1;
+    while (pieceDropped && guard-- > 0) {
+      pieceDropped = false;
+      for (let site = 0; site < n; site++) {
+        if (newState.whatAtSite(site) === 0) continue;
+        // @java steps(Vertex, site, Vertex, Downward) — supports below `site`.
+        const downward = traj.steps(site, "Downward");
+        for (const toSite of downward) {
+          if (toSite < 0 || toSite >= n) continue;
+          if (newState.whatAtSite(toSite) !== 0) continue;
+          // @java ActionMove.construct(Vertex, site, 0, Vertex, toSite, 0, …)
+          // — relocate the whole ball (owner + what + count) one pocket down.
+          const who = newState.who(site);
+          const what = newState.whatAtSite(site);
+          const cnt = newState.countAtSite(site);
+          newState = newState
+            .withCell(site, 0).withWhatAt(site, 0).withCountAt(site, 0)
+            .withCell(toSite, who).withWhatAt(toSite, what)
+            .withCountAt(toSite, cnt > 0 ? cnt : 1);
+          // @java Core/src/other/action/move/ActionMove.java (owned-registry
+          // bookkeeping shared by every board-to-board relocation) — a
+          // pyramidal drop is just another single-piece, non-capturing
+          // board->board move (the `toSite` empty-guard above rules out a
+          // capture/merge here) and must keep the piece-position registry
+          // (Owned) in sync exactly like ActionMove.apply() does for a
+          // regular move (see action-move.ts lines ~1004-1026 / ~1041-1079,
+          // the same two registry-channel branches, mirrored here). Without
+          // this, `applyPyramidalDrop`'s direct cell/what mutation (above)
+          // desyncs `owned`/`flatOwned` from the live board — any later
+          // `(sites Occupied by:Mover)` move-generation candidate built from
+          // the stale registry then silently omits real occupied sites (or
+          // offers ghost ones), e.g. Spline+ ply 62 missing the from=8
+          // candidate after an earlier drop relocated a piece into site 8
+          // without registering it.
+          if (who > 0) {
+            if (newState.ownedEntries !== undefined) {
+              newState = newState.withOwnedSiteCleared(site);
+              newState = newState.withOwnedSiteCleared(toSite);
+              newState = newState.withOwnedAdd(who, what || who, toSite, 0);
+            } else if (!newState.stackingGame && newState.typedSites.size === 0) {
+              let fo = newState.withFlatOwnedMaterialized();
+              fo = fo.withFlatOwnedRemove(who, what || who, site);
+              fo = fo.withFlatOwnedAdd(who, what || who, toSite);
+              newState = fo;
+            }
+          }
+          pieceDropped = true;
+          break;
+        }
+        if (pieceDropped) break;
+      }
+    }
+    return newState;
+  }
+
+  public apply(context: Context, move: Move): Context {
+    if (context.over) {
+      throw new Error("Cannot apply a move to a finished game.");
+    }
+
+    const mover = context.state.mover;
+
+    // @java Game.java:3012-3014 — "If a decision was done previously we
+    // reset it." isDecided is a one-shot flag: Priority branches gated by
+    // `(is Decided "X")` only see it true for the ONE move-generation phase
+    // immediately after ActionVote resolves a majority vote; the instant
+    // ANY move is applied afterwards (regardless of which move), Game.apply()
+    // unconditionally clears it back to Constants.UNDEFINED before computing
+    // the new state.
+    let baseState = context.state;
+    if (baseState.decided !== null) {
+      baseState = baseState.withDecided(null);
+    }
+
+    // @java Game.java:3039-3044 — before applying a Pass, if the passing
+    // player's stalemated flag is not already set, Game.applyInternal() calls
+    // computeStalemated(context) on the REAL (uncloned) context/rng to verify
+    // the pass was actually forced. This can consume genuine RNG draws from
+    // stochastic ludemes probed while checking for legal moves (e.g. a Hop
+    // capture's SitesRandom side-effect draw) even though the probed move
+    // itself is discarded — see computeStalemated() below for details.
+    if (move.isPass() && !baseState.stalemated[mover]) {
+      baseState = this.computeStalemated(baseState, context as Context1to1);
+    }
+
+    // Step 1: Clear pending state then apply move actions.
+    // @java Game.java:3047 — state.rebootPending() before every move.apply()
+    // This ensures each apply() starts with a clean pending set; ActionSetPending
+    // in the current move may re-add to it.
+    let newState = move.applyTo(baseState.withPendingClear(), context.rng);
+
+    // Step 1a: Evaluate deferred (then …) consequences against the post-move
+    // state and fold their actions + moveAgain into the applied move.
+    // @java Core/src/other/move/Move.java:apply — actions apply first, then
+    // each entry of then() is evaluated in the post-move context and its
+    // moves applied (recursively). The trial records the realised move with
+    // the consequence actions appended (cf. recorded trials: the moveAgain
+    // SetNextPlayer is the LAST action of the move).
+    let appliedMove = move;
+    if (move.deferredThens.length > 0) {
+      const folded = this.applyDeferredThens(context, newState, move);
+      newState = folded.state;
+      appliedMove = folded.move;
+    }
+
+    // Step 1b: Flush deferred (at:EndOfTurn) captures when the turn ENDS.
+    // Java parity: Move.apply() lines 544-591 — when !containsReplayAction (turn ends),
+    // applies ActionRemove for each site in sitesToRemove, then calls reInitCapturedPiece().
+    // @java Core/src/other/move/Move.java lines 544-591
+    {
+      const setNextActEarly = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
+      const turningOver = !appliedMove.moveAgain && !(setNextActEarly !== undefined && setNextActEarly.who() === mover);
+      if (turningOver && newState.sitesToRemove.length > 0) {
+        if (process.env.TRACE_FLUSH) console.error(`[flush] sitesToRemove=${JSON.stringify([...newState.sitesToRemove])} ply=${(globalThis as Record<string, unknown>).__PLY}`);
+        if (newState.ownedEntries !== undefined) {
+          // @java Move.java:549-575 (stacking branch) — count queue entries
+          // per site, clamp to the CURRENT stack size, then apply level
+          // removes top-down. The clamp + FullOwned's decrement loop is what
+          // strands Java's stale owned ghosts (Fenix) — port verbatim.
+          const counts = new Map<number, number>();
+          for (const site of newState.sitesToRemove) counts.set(site, (counts.get(site) ?? 0) + 1);
+          for (const [site, queued] of [...counts.entries()].sort((a, b) => a[0] - b[0])) {
+            const numToRemove = Math.min(queued, newState.stackSize(site));
+            // ORACLE-EMPIRICAL (Update 169): the RUNNING binary applies the
+            // level removes ASCENDING (ghost signature: board [2,2]->[] with
+            // owned L0 surviving); Core/src reads descending — trust javap/
+            // observables over source.
+            for (let level = 0; level < numToRemove; level++) {
+              const sz = newState.stacks[site]?.length ?? 0;
+              const flatOccupied = sz === 0 && newState.who(site) > 0;
+              if (sz === 0 && !(flatOccupied && level === 0)) continue;
+              // @java cs.remove CLAMPS an out-of-range level to the top (the
+              // ascending pass shrinks the stack under the recorded levels;
+              // the board still empties — only Owned, matching by ORIGINAL
+              // level, strands the ghost). Skipping here left a live piece.
+              const readLvl = level < sz ? level : Math.max(0, sz - 1);
+              const own = sz > 0 ? newState.stackAt(site, readLvl) : newState.who(site);
+              const wht = sz > 0 ? newState.whatAtSiteLevel(site, readLvl) : newState.whatAtSite(site);
+              if (own <= 0) continue;
+              newState = newState.withOwnedRemoveLevel(own, wht, site, level);
+              if (sz > 0) {
+                newState = newState.withStackPop(site, level);
+                // @java cs.remove maintains the site count; withStackPop
+                // doesn't — a start-placed countAt=1 would survive the pop
+                // and keep (is Empty) false forever (Fenix ghost count).
+                if (newState.stackSize(site) === 0 && newState.countAtSite(site) > 0) {
+                  newState = newState.withCountAt(site, 0);
+                }
+              } else {
+                newState = newState.withCell(site, 0).withWhatAt(site, 0);
+                if (newState.countAtSite(site) > 0) newState = newState.withCountAt(site, 0);
+              }
+            }
+          }
+        } else {
+          // Remove all deferred capture sites.
+          for (const site of newState.sitesToRemove) {
+            if (!newState.isEmptySite(site)) {
+              newState = new ActionRemove({ to: site }).apply(newState);
+            }
+          }
+        }
+        newState = newState.withClearedSitesToRemove();
+      } else if (!turningOver) {
+        // Turn continues: keep sitesToRemove for the next hop (it's ToClear)
+      }
+    }
+
+    // Step 1c: Pyramidal-drop gravity. After the move's own actions have
+    // settled, any unsupported ball falls one step Downward into an empty
+    // support pocket, repeating until stable.
+    // @java game/rules/meta/Gravity.java — Gravity.apply(context, move)
+    if (this.usesGravity) {
+      const traj = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
+      newState = this.applyPyramidalDrop(newState, traj);
+    }
+
+    // Step 2: Build eval context with the move recorded.
+    // Set _evalTo so IsLine's (through: LastTo) resolves to the placed site.
+    const evalTrial = context.trial.withMove(appliedMove, false, -1);
+    // @java Game.java — the end rule is evaluated with state.next() ALREADY at
+    // the upcoming mover (setMoverAndImpliedPrevAndNext). Our State otherwise
+    // carries next=0 until Step 6 advances, so RoleType.Next / the (next) ludeme
+    // resolved to 0 inside the end rule: the chaturanga/shatranj Checkmate def's
+    //   (can Move (do (forEach Piece Next) ifAfterwards:(not ("IsInCheck" K Next))))
+    // iterated player 0 (no pieces) → no escape → a FALSE checkmate fired the
+    // instant the opponent was in check (Saxun/Shatranj at-Tamma/Tepong/Krida/
+    // Rumi Shatranj ended mid-game instead of playing on). Stamp the implied next
+    // onto the END-EVAL state ONLY, mirroring Step 6's nextMover.
+    //
+    // DICE GUARD: skip this for games with hand dice. There the end rule's
+    // opponent move generation (forEach Piece Next) consumes RNG during
+    // GENERATION (a separate latent issue), which would desync the recorded die
+    // roll on the next ply (Shatranj al-Mustatila is a dice shatranj). Leaving
+    // next=0 for dice games preserves their prior behaviour exactly — no
+    // regression — until the RNG-during-generation bug is fixed in its own pass.
+    let endEvalState = newState;
+    if (this.handDice().length === 0 && !(newState.next && newState.next > 0)) {
+      const endSetNext = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
+      const endNextOverride = endSetNext ? endSetNext.who() : 0;
+      const endImpliedNext = appliedMove.moveAgain
+        ? newState.mover
+        : (endNextOverride > 0 ? endNextOverride
+          // @java Game.java:3193-3206 — mover rotation is skipped when
+          // !context.active(); x % 0 is NaN for 0-player simulations.
+          : this.numPlayers > 0 ? (newState.mover % this.numPlayers) + 1 : newState.mover);
+      endEvalState = newState.withNext(endImpliedNext);
+    }
+    const evalCtx = new Context(this, endEvalState, evalTrial, context.rng) as Context1to1;
+    evalCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;
+    evalCtx._trajectories = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
+    evalCtx._evalTo = appliedMove.to();
+    evalCtx._evalFrom = appliedMove.from();
+    evalCtx._evalValue = 0;
+
+    // Step 3a: Evaluate per-phase end rule.
+    // @java game/Game.java:3061–3066 — end rule of current phase for mover
+    let over = false;
+    let winner = -1;
+    let ranking: readonly number[] | undefined;
+    // @java ByScore.java:63-70 — end-rule finalScore overrides persist to
+    // the state (context.setScore). Collected here, written after Step 3.
+    let endScores: ReadonlyMap<number, number> | undefined;
+
+    // @java End.java:249 + RankUtils — losers of a CONTINUING multi-player
+    // game arrive as endResult.eliminated (over=false or riding an over
+    // result); they must be marked inactive on the post-move state so the
+    // mover rotation (Game.java:3210-3215) skips them.
+    const eliminatedPlayers: number[] = [];
+    const collectEliminated = (r: { eliminated?: readonly number[] } | null): void => {
+      if (r?.eliminated && r.eliminated.length > 0) {
+        eliminatedPlayers.push(...r.eliminated);
+      }
+    };
+
+    if (this.rules.phases !== null) {
+      const phaseIdx = newState.phase(mover);
+      const phases = this.rules.phases;
+      if (phaseIdx >= 0 && phaseIdx < phases.length) {
+        const phaseEnd = phases[phaseIdx]!.end;
+        if (phaseEnd !== null) {
+          const phaseEndResult = phaseEnd.eval(evalCtx);
+          collectEliminated(phaseEndResult);
+          if (phaseEndResult !== null && phaseEndResult.over) {
+            over = true;
+            winner = phaseEndResult.winner;
+            ranking = phaseEndResult.ranking;
+            endScores = phaseEndResult.scores;
+          }
+        }
+      }
+    }
+
+    // Step 3b: Evaluate global end rules.
+    if (!over && this.rules.end !== null) {
+      const endResult = this.rules.end.eval(evalCtx);
+      collectEliminated(endResult);
+      if (endResult !== null && endResult.over) {
+        over = true;
+        winner = endResult.winner;
+        ranking = endResult.ranking;
+        endScores = endResult.scores;
+      }
+    }
+
+    // @java ByScore.java:63-70 — persist finalScore overrides to the state.
+    if (endScores !== undefined && endScores.size > 0) {
+      for (const [pid, v] of endScores) {
+        newState = newState.withScore(pid, v);
+      }
+    }
+
+    // Step 4: All-pass draw is now handled faithfully INSIDE End.eval
+    // (End.ts — @java End.java:113); firing it here unconditionally drew
+    // phases that have no (end …) but a (nextPhase (all Passed) …) transition.
+    void this.allPassed;
+
+    // Step 4b: Turn/move limits.
+    // @java game/Game.java:3075,3764 — checkMaxTurns(context): the game ends as a
+    // DRAW (winner 0, EndType TurnLimit/MoveLimit) when
+    //   state.numTurn() >= DEFAULT_TURN_LIMIT(1250) * numPlayers, or
+    //   trial.numMoves() - numInitialPlacementMoves >= DEFAULT_MOVES_LIMIT(10000).
+    // Our trial records only decision moves, so numMoves compares directly.
+    if (!over) {
+      const numTurn = (newState as unknown as { numTurn?: number }).numTurn ?? 1;
+      const numMoves = evalTrial.moves.length;
+      // @java Game.java:3076 gates checkMaxTurns on context.active() — a
+      // 0-player simulation (Game of Life) is never "active", so the turn
+      // limit must not fire (1250*0=0 ended the sim on its first step).
+      if ((this.numPlayers > 0 && numTurn >= 1250 * this.numPlayers) || numMoves >= 10000) {
+        over = true;
+        winner = 0; // draw
+      }
+    }
+
+    const setNextAct = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
+    const willContinueTurn = appliedMove.moveAgain || (setNextAct !== undefined && setNextAct.who() === mover);
+
+    // Step 5: Phase transitions (only when game is still active).
+    // @java game/Game.java:3117–3141
+    // "We update the current Phase for each player if this is a game with phases."
+    // NOTE: Java always evaluates phase transitions, even during moveAgain. The TS
+    // previously deferred them to prevent Placement→Movement flip during Morris
+    // mill removals, but that broke Nerenchi Keliya where the moveAgain causes
+    // a Movement→Capture transition. Java's SameTurn check handles the Morris
+    // case correctly without deferral. @java Game.java:3119-3141
+    let stateAfterPhase = newState;
+    // @java Context.setActive(who, false) via End.java:249 — apply the
+    // eliminations collected from the end rules BEFORE the mover advance so
+    // this very turn's rotation already skips the newly-inactive players.
+    if (eliminatedPlayers.length > 0 && !over) {
+      for (const p of eliminatedPlayers) {
+        stateAfterPhase = stateAfterPhase.withActivePlayer(p, false);
+      }
+    }
+    if (!over && this.rules.phases !== null) {
+      const phases = this.rules.phases;
+      for (let pid = 1; pid <= this.numPlayers; pid++) {
+        const currentPhaseIdx = stateAfterPhase.phase(pid);
+        if (currentPhaseIdx < 0 || currentPhaseIdx >= phases.length) continue;
+        const currentPhase = phases[currentPhaseIdx]!;
+
+        for (const np of currentPhase.nextPhases) {
+          // @java NextPhase.who().eval(context): who == players.count()+1 means Shared/All
+          const whoVal = np.who.eval(evalCtx);
+          const isShared = whoVal === this.numPlayers + 1;
+          if (!isShared && pid !== whoVal) continue;
+
+          // @java NextPhase.eval(context): returns targetPhaseIdx or UNDEFINED
+          if (np.cond.eval(evalCtx)) {
+            // Resolve target index
+            let targetIdx: number;
+            if (np.targetName === null) {
+              // Wrap to next in list
+              targetIdx = (currentPhaseIdx + 1) % phases.length;
+            } else {
+              targetIdx = np.targetIndex;
+            }
+            if (targetIdx !== UNDEFINED && targetIdx !== currentPhaseIdx) {
+              stateAfterPhase = stateAfterPhase.withPhase(pid, targetIdx);
+            }
+            break; // first firing condition wins
+          }
+        }
+      }
+    }
+
+    // Step 6: Advance mover.
+    // @java game/Game.java:3193–3206 — rotate mover unless move.moveAgain or
+    // the current move includes an ActionSetNextPlayer that overrides the player.
+    //
+    // Key: only use state.next if it was SET by the CURRENT MOVE's actions.
+    // This avoids picking up a stale next-player from a previous (then (moveAgain)).
+    let advanced = stateAfterPhase;
+    // @java Game.java:3145-3178 — the post-apply previousState /
+    // previousStateWithinATurn bookkeeping clears-vs-appends the within-turn
+    // history based on whether the mover actually changed. Hoisted here so
+    // Step 8 (trial.saveState) below can call trial.newTurn() at exactly the
+    // same turn boundary Java detects, whether or not the game declares
+    // `(meta (no Repeat PositionalInTurn))` — previousStatesWithinATurn is
+    // otherwise-inert bookkeeping for games that never consult it.
+    let turnChanged = false;
+    if (!over) {
+      // Find the ActionSetNextPlayer in the current move's actions, if any.
+      // @java Game.java:3195 — the "next" override from ActionSetNextPlayer
+      const setNextAction = appliedMove.actions.find(a => a.actionType() === "SetNextPlayer");
+      const dynamicNextOverride: number = setNextAction ? setNextAction.who() : 0;
+
+      // @java Game.java:3201 — state.setMover(state.next()). state.next holds the value
+      // of the LAST ActionSetNextPlayer applied this move (deferred thens included), so
+      // it wins over both the moveAgain flag and the FIRST SetNextPlayer. This matters
+      // when a sow's apply: fires (moveAgain) -> SetNextPlayer(mover) AND the outer then
+      // fires (no Moves Next) -> SetNextPlayer(winner): Java starts BetweenRounds with the
+      // winner, but the port kept the current mover (moveAgain took priority), handing the
+      // round to the wrong player (~40 two_rows sow MM). newState.next is this move's value
+      // — it is cleared to 0 after every move (line ~1160), so it is never stale; in the
+      // ordinary moveAgain case it equals mover and the result is unchanged.
+      const stateNext: number = (newState.next ?? 0) > 0 ? newState.next : 0;
+
+      let nextMover: number;
+      if (stateNext > 0) {
+        nextMover = stateNext;
+      } else if (appliedMove.moveAgain) {
+        // Static (then (moveAgain)) flag with no SetNextPlayer action: keep the player.
+        nextMover = newState.mover;
+      } else if (dynamicNextOverride > 0) {
+        nextMover = dynamicNextOverride;
+      } else {
+        nextMover = this.numPlayers > 0 ? (newState.mover % this.numPlayers) + 1 : newState.mover;
+        // @java Game.java:3210-3215 — while (!context.active(next)) next++
+        // (wrapping): eliminated players are skipped by the default rotation.
+        // Quendo/Mwendo/Thaayam handed the turn to an eliminated player and
+        // diverged (rec mover=4, ts mover=3 after P3 lost its pieces).
+        if (this.numPlayers > 0) {
+          let guard = this.numPlayers;
+          while (!stateAfterPhase.activePlayer(nextMover) && guard-- > 0) {
+            nextMover = (nextMover % this.numPlayers) + 1;
+          }
+        }
+      }
+      // @java Game.java:3200 — state.setPrev(mover) before mover advances.
+      // (value Player Prev) / MaxMoves' prev==mover replay check read this.
+      advanced = advanced.withPrev(newState.mover);
+      advanced = advanced.withMover(nextMover);
+      // Always clear state.next after consumption.
+      // @java ludeme-game.ts — advanced = phased.withMover(nextMover).withNext(0)
+      advanced = advanced.withNext(0);
+      if (nextMover !== newState.mover) {
+        turnChanged = true;
+        // @java Game.java:3207 reinitNumTurnSamePlayer() — new turn: bump
+        // numTurn, reset the same-player move counter.
+        advanced = advanced.withNewTurn().withNumTurnSamePlayer(0);
+        // @java Game.java:3183-3186 — turn passes: clear the visited scratch.
+        advanced = advanced.withVisitedCleared();
+      } else {
+        // @java Game.java:3205 incrementNumTurnSamePlayer() — same player
+        // moves again ((count MovesThisTurn) reads this).
+        advanced = advanced.withNumTurnSamePlayer(advanced.numTurnSamePlayer + 1);
+        // @java Game.java:3188-3193 — relay continues: visit the applied
+        // move's endpoints ((not (is Visited (to))) gates Fanorona chains).
+        advanced = advanced.withVisited(appliedMove.from(), appliedMove.to());
+      }
+      if (process.env.TRACE_TURNCNT) {
+        console.error(`[turncnt] ply=${(globalThis as Record<string, unknown>).__PLY} mover=${newState.mover} next=${nextMover} cnt=${advanced.numTurnSamePlayer}`);
+      }
+      // Increment counter (Java: state.incrCounter())
+      advanced = advanced.withCounter(advanced.counter + 1);
+    } else {
+      // @java Game.java:3112-3114 — !context.active(): state.setPrev(mover).
+      advanced = advanced.withPrev(newState.mover);
+      // Still increment counter even when over.
+      advanced = advanced.withCounter(advanced.counter + 1);
+    }
+
+    // Step 7 (removed): Java does NOT eagerly compute the new mover's
+    // stalemated flag on apply — the flag is a cache written by real move
+    // generation (Game.java:2948; see Game.moves above). NoMoves(Next)
+    // computes its own temporary check (@java NoMoves.java autoFail path).
+
+    // Step 8: Record move in trial.
+    const finalWinner = over ? winner : -1;
+    let trial = context.trial.withMove(appliedMove, over, finalWinner);
+    if (ranking !== undefined) trial = trial.withRanking(ranking);
+    // @java Game.java:3145-3178 — state.mover() == state.prev() (same player
+    // continues) appends to previousStateWithinATurn; a genuine new turn
+    // CLEARS it first. trial.newTurn() (previously implemented but never
+    // called anywhere — see trial.ts) performs that clear; call it here,
+    // before saveState() appends the freshly-applied state's hash, so the
+    // within-turn history never leaks across a turn boundary.
+    if (turnChanged) trial = trial.newTurn();
+    trial = trial.saveState(advanced);
+    // @java Game.java:3151-3162 — usesNoRepeatPositionalInTurn(): a SEPARATE
+    // mover-exclusive (State.stateHash()-equivalent) within-turn history,
+    // distinct from the mover-inclusive `previousStatesWithinATurn` above
+    // (fullHash-equivalent; serves SituationalInTurn / IsRepeat / IsCycle /
+    // Do-requirement consumers instead). Only PositionalInTurn NoRepeat is
+    // ported so far, so this is gated on that; inert for every other game.
+    if (this.noRepeatType === "PositionalInTurn") {
+      trial = trial.savePositionalTurnHash(advanced.positionalHash(), !turnChanged);
+    }
+
+    const newCtx = new Context(this, advanced, trial, context.rng) as Context1to1;
+    newCtx._radials = (context as Context1to1)._radials ?? this.equipment.board.radials;
+    newCtx._trajectories = (context as Context1to1)._trajectories ?? this.equipment.board.trajectories;
+    newCtx._evalTo = -1;
+    newCtx._evalFrom = -1;
+    newCtx._evalValue = 0;
+    return newCtx;
+  }
+
+  /**
+   * Evaluate a move's deferred `(then …)` clauses against the post-move state.
+   * @java Core/src/other/move/Move.java:apply — after the move's actions
+   * apply, each Moves in then() is evaluated in the post-move context (the
+   * move already on the trial) and every generated move is applied in order,
+   * recursing into ITS then() list. The consequence actions are appended to
+   * the realised move (recorded trials show e.g. the moveAgain SetNextPlayer
+   * as the move's last action) and are never decision actions.
+   */
+  private applyDeferredThens(
+    context: Context,
+    postState: State,
+    move: Move,
+  ): { state: State; move: Move } {
+    // Make sure the topology scratch is visible to the consequence subtree
+    // even when the incoming context predates it.
+    const src = context as Context1to1;
+    src._radials = src._radials ?? this.equipment.board.radials;
+    src._trajectories = src._trajectories ?? this.equipment.board.trajectories;
+    // @java the applied move's endpoints are VISITED before its consequences
+    // evaluate (oracle-proven on Fanorona: the chain probe's (not (is Visited
+    // (to))) sees {from, to}; the turn-pass reInit later clears them).
+    const preVisited = postState.withVisited(move.from(), move.to());
+    const { state, extraActions, moveAgain } = evalDeferredThens(context, preVisited, move);
+    if (extraActions.length === 0 && moveAgain === move.moveAgain) return { state, move };
+    return { state, move: move.withConsequence(extraActions as Action[], moveAgain) };
+  }
+
+  /** @java game/Game.java — over(context). Returns context.over. */
+  public over(context: Context): boolean {
+    return context.over;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Apply either the existing TS start-rule surface or a faithful Java-style
+   * StartRule with eval(Context).
+   * @java game/rules/start/Start.java — eval(Context)
+   */
+  private applyStartRule(
+    rule: StartRule,
+    cells: number[],
+    whats: number[],
+    countAt: number[],
+    stateAt: number[],
+    valueAt: number[],
+    scores?: number[],
+    amounts?: number[],
+    startRemembered?: Map<string, number[]>,
+    startHidden?: Map<string, boolean>,
+    typedStaging?: Map<string, { who: number[]; what: number[]; count: number[] }>,
+    stackedStaging?: Map<number, Array<{ what: number; owner: number; count: number; state: number; value: number }>>,
+    rng?: SeededRng,
+    costAt?: number[],
+    rotAt?: number[],
+  ): void {
+    const evalRule = rule as { eval?: (ctx: Context) => void };
+    if (typeof evalRule.eval !== "function") return;
+
+    const state = new State(1, cells, this.componentLabels, {
+      // @java Board.java — thread the board's declared `use:` type so the
+      // owned registry labels positions correctly (see State.defaultSiteType).
+      defaultSiteType: (() => {
+        const ds = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+        return typeof ds === "function" ? ds() : ds ?? "Cell";
+      })(),
+      numPlayers: this.numPlayers,
+      whats,
+      countAt,
+      stateAt,
+      valueAt,
+    });
+    const trial = new Trial([], false, -1);
+    const ctx = new Context(this.startGameFacade(), state, trial, rng) as Context & {
+      placePieces?: (
+        site: number,
+        what: number,
+        count: number,
+        state: number,
+        rotation: number,
+        value: number,
+        onStack: boolean,
+        type: string | null,
+        neverMergeStack?: boolean,
+      ) => void;
+    };
+    // @java the start rules evaluate on a full Context with the board topology
+    // visible. Without trajectories, direction-aware start regions fell to the
+    // square width/height fallback: Icebreaker's ship placements
+    // (sites Around (centrePoint) distance:N <dir>) on a hex board resolved
+    // garbage and 5 of 6 ships never placed.
+    (ctx as Context & { _trajectories?: unknown })._trajectories =
+      this.equipment.board.trajectories ?? null;
+    (ctx as Context & { _radials?: unknown })._radials = this.equipment.board.radials;
+
+    // Attach the board's trajectories/radials so Sites* region evals (Row/Left/Right/...)
+    // resolve on the start-rule bridge context exactly as they do in play.
+    (ctx as unknown as { _trajectories?: unknown })._trajectories = this.equipment.board.trajectories;
+    (ctx as unknown as { _radials?: unknown })._radials = this.equipment.board.radials;
+    // @java other/state/container/ContainerState.java — the MUTATION facade for
+    // start rules (STATE CONVERGENCE chunk 3). Java start rules apply actions that
+    // call ContainerState.setSite(...); converted rules speak this API instead of
+    // touching parallel arrays. UNDEFINED (-1) leaves a slot unchanged, as Java does.
+    // @java the play (default) SiteType of the board — a start rule targeting a
+    // DIFFERENT graph element (e.g. `(set Shared Edge …)` on a use:Vertex board)
+    // must write the typed Edge/Vertex/Cell channel, not the default cells[]
+    // arrays, exactly as ActionAdd does in play (placePieces typed routing below).
+    const startPlayType = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+    const startPlayTypeName = typeof startPlayType === "function" ? startPlayType() : startPlayType ?? null;
+    (ctx as unknown as { _startState?: unknown })._startState = {
+      /** @java ContainerState.setSite(state, site, who, what, count, state, rotation, value) */
+      setSite: (site: number, who: number, what: number, count: number, stateVal: number, value: number, type?: string | null): void => {
+        // @java non-default graph element → typed ContainerState channel.
+        if (type && startPlayTypeName && type !== startPlayTypeName && typedStaging) {
+          let ch = typedStaging.get(type);
+          if (!ch) { ch = { who: [], what: [], count: [] }; typedStaging.set(type, ch); }
+          while (ch.who.length <= site) { ch.who.push(0); ch.what.push(0); ch.count.push(0); }
+          if (who !== UNDEFINED) ch.who[site] = who;
+          if (what !== UNDEFINED) ch.what[site] = what;
+          if (count !== UNDEFINED) ch.count[site] = count;
+          return;
+        }
+        if (site < 0 || site >= cells.length) return;
+        if (who !== UNDEFINED) cells[site] = who;
+        if (what !== UNDEFINED) whats[site] = what;
+        if (count !== UNDEFINED) countAt[site] = count;
+        if (stateVal !== UNDEFINED) stateAt[site] = stateVal;
+        if (value !== UNDEFINED) valueAt[site] = value;
+      },
+      /** @java State.setScore(player, score) */
+      setScore: (pid: number, score: number): void => {
+        if (scores && pid >= 0 && pid < scores.length) scores[pid] = score;
+      },
+      /** @java State.setAmount(player, amount) */
+      setAmount: (pid: number, amount: number): void => {
+        if (amounts && pid >= 0 && pid < amounts.length) amounts[pid] = amount;
+      },
+      /** @java ActionSetCost.apply — Topology element cost (State.costAt here). */
+      setCost: (site: number, cost: number): void => {
+        if (costAt && site >= 0 && site < costAt.length) costAt[site] = cost;
+      },
+      /** @java State.remember(name, value) — ActionRememberValue.apply(context). */
+      rememberValue: (name: string | null, value: number, unique: boolean): void => {
+        if (!startRemembered) return;
+        const key = name ?? "";
+        const bucket = startRemembered.get(key) ?? [];
+        if (unique && bucket.includes(value)) return;
+        bucket.push(value);
+        startRemembered.set(key, bucket);
+      },
+      /** @java ActionSetHidden.apply(context) — State.setHidden(pid, site, value). */
+      setHidden: (pid: number, site: number, value: boolean): void => {
+        if (!startHidden) return;
+        startHidden.set(`${pid}:${site}`, value);
+      },
+      /** @java ContainerState.who(site) — LIVE read (the per-rule bridge State
+       * snapshots the arrays at construction; intra-rule reads need the live view). */
+      who: (site: number): number => (site >= 0 && site < cells.length ? cells[site]! : 0),
+      /** Total number of sites (board + hands). */
+      size: cells.length,
+      /** @java ContainerState.what(site) — LIVE read. */
+      what: (site: number): number => {
+        if (site < 0 || site >= cells.length) return 0;
+        const w = whats[site] ?? 0;
+        return w !== 0 ? w : (cells[site] ?? 0);
+      },
+    };
+    const playType = (this.equipment.board as unknown as { defaultSite?: string | (() => string) }).defaultSite;
+    const playTypeName = typeof playType === "function" ? playType() : playType ?? null;
+    ctx.placePieces = (site, what, count, stateValue, _rotation, value, _onStack, _type, _neverMergeStack) => {
+      if (process.env.TRACE_PLACE && site === 19) console.error("[place] site 19 what", what, new Error().stack?.split("\n").slice(2,5).join(" | "));
+      // @java per-type ContainerStates: an EXPLICIT type differing from the
+      // play type routes to the typed channel (Guerrilla Checkers places
+      // "Counter" pieces on Cells of a Vertex-play board).
+      if (_type && playTypeName && _type !== playTypeName && typedStaging) {
+        const component = this.equipment.componentAt(what);
+        const ownerT = component?.owner ?? 0;
+        let ch = typedStaging.get(_type);
+        if (!ch) { ch = { who: [], what: [], count: [] }; typedStaging.set(_type, ch); }
+        while (ch.who.length <= site) { ch.who.push(0); ch.what.push(0); ch.count.push(0); }
+        ch.who[site] = ownerT; ch.what[site] = what; ch.count[site] = count;
+        return;
+      }
+      if (site < 0 || site >= cells.length) return;
+      const component = this.equipment.componentAt(what);
+      const owner = component?.owner ?? 0;
+      if (_onStack && stackedStaging) {
+        const levels = stackedStaging.get(site);
+        if (levels && levels.length > 0) {
+          const last = levels[levels.length - 1]!;
+          // @java Start.placePieces(onStack=true) pushes ONE level per call
+          // (the place rules loop `count` times); a repeat of the SAME
+          // (what, owner) grows the homogeneous pile via countAt
+          // (Backgammon's 5-checker points), while a DIFFERENT component or
+          // owner is a genuine new level (PlaceCustomStack's Hex-then-Disc —
+          // Seesaw).
+          // NOTE: Java (ActionAdd.java:200,284,324-337) pushes a real level
+          // per call even for same-piece repeats in Stacking games; TS's
+          // count-pile model (countAt + height-1 stacks) is a deliberate
+          // engine-wide representation, and switching placement to real
+          // levels regressed the entire backgammon family (Backgammon/
+          // Plakoto/Dubblets MOVE_MISMATCH) — the Murus Gallicus fix must
+          // instead live where piles are CONSUMED. Keep the merge.
+          // @java PlaceRandom.java:358-359 — `if(stack) flags |= GameType
+          // .Stacking;` for the Count[]-driven hand-shuffle constructor
+          // (Chex's `(place Random {Count[]…} (handSite N))`), so
+          // Start.placePieces ALWAYS routes each shuffled draw through
+          // ActionAdd.applyStack (ActionAdd.java:200,284,324-337) as a real,
+          // individually-addressable level, even when two adjacent draws
+          // share the same component. Callers that need every level
+          // individually addressable opt out of the merge via neverMergeStack.
+          // @java ActionAdd.applyStack (ActionAdd.java:324-334) — a call
+          // carrying an explicit per-piece value ALWAYS routes through the
+          // generic addItemGeneric(..., value, ...) overload, which threads
+          // that exact value into the newly pushed level's own chunk column
+          // (never merged into a neighbour's). Rithmomachia's pyramids place
+          // the SAME component name back-to-back with DIFFERENT tier values
+          // ((place Stack "Square2" 119 value:64) (place Stack "Square2" 119
+          // value:49)) — collapsing those into one count-pile silently
+          // dropped the second tier's value (count-pile levels have no
+          // per-copy value channel), corrupting every value-comparing
+          // capture ludeme for that tier. Only merge when both calls are
+          // genuinely value-less (Backgammon's checkers) or share the exact
+          // same explicit value; anything else must materialise its own level.
+          const sameValue = last.value === value || (last.value === UNDEFINED && value === UNDEFINED);
+          if (!_neverMergeStack && last.what === what && last.owner === owner && sameValue) {
+            // @java ActionAdd.java:200,284,324-337 — repeat calls at the SAME
+            // (what, owner) push one real level each. When `last` IS the
+            // base/flat level (levels.length === 1), that pile's height is
+            // tracked by the flat `countAt[site]` scalar (Backgammon's
+            // 5-checker points). But when `last` is a level ABOVE the base
+            // (levels.length > 1, e.g. Myles: (place Stack "Disc1" 21
+            // count:4) then (place Stack "Disc2" 21 count:3) — Disc2's repeat
+            // calls onto its own freshly-pushed level), `countAt[site]` still
+            // belongs to the UNRELATED base pile (Disc1's count of 4) and
+            // must not be touched: incrementing it here corrupted Disc1's
+            // tracked height (4 -> 6) so withStackPush's backfill later
+            // materialized 6 phantom Disc1 levels instead of 4 (9-level
+            // stack instead of 7 at site 21). Track the non-base pile's own
+            // repeat count on the entry itself instead.
+            if (levels.length === 1) {
+              countAt[site] = (countAt[site] ?? 0) + 1;
+            } else {
+              last.count = (last.count ?? 1) + 1;
+            }
+            return;
+          }
+          levels.push({ what, owner, count: 1, state: stateValue, value });
+          return;
+        }
+        // First stacking call at this site. If a FLAT placement already put
+        // the SAME piece here (King And Courtesan: (place "Disc1" …) then
+        // (place Stack "Disc1" (sites Bottom)) marks the royals as 2-high),
+        // the push grows the pile instead of overwriting it back to 1.
+        if (cells[site] === owner && whats[site] === what && owner !== 0) {
+          stackedStaging.set(site, [{ what, owner, count, state: stateValue, value }]);
+          countAt[site] = (countAt[site] ?? 0) + 1;
+          return;
+        }
+        // @java ActionAdd.apply/applyStack (ActionAdd.java:200,284,324-337):
+        // in a genuine Stacking game every placement — flat `place` or
+        // `place Stack` — routes through the SAME ActionAdd and pushes a new
+        // level, even when a DIFFERENT piece already occupies the site. A
+        // prior FLAT placement of a different piece here (Diaballik:
+        // (place "Disc2" (sites Top)) then (place Stack "Ball2" (sites
+        // {45}))) is really level 0 of the eventual 2-level stack, not a
+        // piece to discard: the unconditional overwrite silently deleted the
+        // Disc, so when the Ball later threw away the site went empty
+        // instead of leaving the Disc behind.
+        if (
+          (this as unknown as { usesStacking?: boolean }).usesStacking === true &&
+          whats[site] !== 0 &&
+          whats[site] !== what &&
+          cells[site] !== 0
+        ) {
+          stackedStaging.set(site, [
+            {
+              what: whats[site]!,
+              owner: cells[site]!,
+              count: countAt[site] || 1,
+              state: stateAt[site] ?? UNDEFINED,
+              value: valueAt[site] ?? UNDEFINED,
+            },
+            { what, owner, count, state: stateValue, value },
+          ]);
+          // @java ActionAdd.applyStack backfills a stack's bottom level from
+          // the flat cells/whats/countAt channel (ContainerStateStacks) BEFORE
+          // pushing the new top level (see withStackPush). Overwriting
+          // cells[site]/whats[site]/countAt[site] to the INCOMING piece here
+          // (as this branch previously did) made that backfill read the
+          // incoming piece for BOTH the backfilled level 0 AND the freshly
+          // pushed level 1 — the stackedStaging-consuming push loop only ever
+          // pushes levels[1..] (assuming levels[0], the EXISTING piece, is
+          // already reflected in the flat channel), so overwriting here erased
+          // the existing piece's identity from the per-level `what` column
+          // entirely (Diaballik: Ball1 stacking onto Disc1 at site 3 produced
+          // whatStacks=[Ball,Ball] instead of [Disc,Ball]; a later pop of the
+          // top (the Ball being thrown away) left site 3 still reading "Ball"
+          // at height 1 instead of exposing the Disc, so the mover-owned-Disc
+          // `(from ...)` filter never re-admitted the site — MOVE_MISMATCH).
+          // Leave cells/whats/countAt untouched: they already hold the
+          // EXISTING piece's correct data, which withStackPush's backfill
+          // needs. state/rotation/value for the TOP piece are still applied
+          // below since those channels are not read by that backfill.
+          if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+          if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
+          if (value !== UNDEFINED) valueAt[site] = value;
+          return;
+        }
+        stackedStaging.set(site, [{ what, owner, count, state: stateValue, value }]);
+        cells[site] = owner;
+        whats[site] = what;
+        countAt[site] = 1;
+        if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+        if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
+        if (value !== UNDEFINED) valueAt[site] = value;
+        return;
+      }
+      // @java Start.placePieces -> ActionAdd.apply (ActionAdd.java:287-311): a
+      // flat Add onto an ALREADY-OCCUPIED site does NOT overwrite who/what — it
+      // keeps the existing piece and only updates the count (accumulate iff the
+      // game requiresCount, else force to 1). Shui Yen Ho-Shang places the monk
+      // ("Marker2" at C5) first, then fills the perimeter with water whose
+      // region still contains C5 — the second placement must leave the monk.
+      if ((whats[site] ?? 0) !== 0) {
+        const requiresCount =
+          (this as unknown as { usesStacking?: boolean }).usesStacking !== true &&
+          (this.equipment.hands.length > 0 ||
+            this.equipment.diceSpecs.length > 0 ||
+            (this as unknown as { usesCount?: boolean }).usesCount === true);
+        countAt[site] = requiresCount ? (countAt[site] ?? 0) + count : 1;
+        if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+        if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
+        if (value !== UNDEFINED) valueAt[site] = value;
+        return;
+      }
+      cells[site] = owner;
+      whats[site] = what;
+      countAt[site] = count;
+      if (stateValue !== UNDEFINED) stateAt[site] = stateValue;
+      if (rotAt && _rotation !== UNDEFINED && _rotation >= 0) rotAt[site] = _rotation;
+      if (value !== UNDEFINED) valueAt[site] = value;
+    };
+    const topologyAdapter = {
+      neighbours: (site: number, _siteType: string | null): number[] => {
+        const cellRadials = this.equipment.board.radials[site];
+        if (cellRadials === undefined) return [];
+        const out: number[] = [];
+        for (const axis of cellRadials.axes) {
+          const a = axis.ray[1];
+          const b = axis.opposite[1];
+          if (a !== undefined) out.push(a);
+          if (b !== undefined) out.push(b);
+        }
+        return out;
+      },
+      top: (_siteType: string): Array<{ index(): number }> => {
+        const start = (this.equipment.board.height - 1) * this.equipment.board.width;
+        return Array.from({ length: this.equipment.board.width }, (_, i) => ({ index: () => start + i }));
+      },
+      bottom: (_siteType: string): Array<{ index(): number }> =>
+        Array.from({ length: this.equipment.board.width }, (_, i) => ({ index: () => i })),
+    };
+    // Only shadow Context.topology()/containers() with the synthetic adapter when the
+    // board has NO faithful topology — otherwise the real Context methods (which resolve
+    // via the faithful Board topology, with real labels/rows) must stay visible. The
+    // shadowing collapsed start-rule regions like El Perro's
+    // (intersection (union (sites Left)(sites Right)) (sites Row 2)) to empty.
+    const boardHasFaithfulTopology = typeof (this.equipment.board as unknown as { topology?: () => unknown }).topology === "function";
+    if (!boardHasFaithfulTopology) {
+      (ctx as unknown as { containers: () => Array<{ topology: () => typeof topologyAdapter }> }).containers = () => [
+        { topology: () => topologyAdapter },
+      ];
+      (ctx as unknown as { topology: () => typeof topologyAdapter }).topology = () => topologyAdapter;
+    }
+
+    const placeItem = evalRule as unknown as {
+      constructor?: { name?: string };
+      item?: string;
+      siteId?: { eval(ctx: Context): unknown } | null;
+      countFn?: { eval(ctx: Context): number };
+      stateFn?: { eval(ctx: Context): number };
+      valueFn?: { eval(ctx: Context): number };
+      region?: unknown;
+      locationIds?: unknown;
+      coords?: unknown;
+      countsFn?: unknown;
+    };
+    if (
+      placeItem.constructor?.name === "PlaceItem" &&
+      typeof placeItem.item === "string" &&
+      placeItem.siteId != null &&
+      placeItem.region == null &&
+      placeItem.locationIds == null &&
+      placeItem.coords == null &&
+      placeItem.countsFn == null
+    ) {
+      const sites = placeItem.siteId.eval(ctx);
+      if (process.env.TRACE_PLACE) console.error("[place] region", (placeItem.siteId as object)?.constructor?.name, "->", JSON.stringify(sites));
+      if (Array.isArray(sites)) {
+        const component = this.componentByName(placeItem.item);
+        if (component !== null) {
+          const what = component.index();
+          const count = placeItem.countFn?.eval(ctx) ?? 1;
+          const stateValue = placeItem.stateFn?.eval(ctx) ?? UNDEFINED;
+          const value = placeItem.valueFn?.eval(ctx) ?? UNDEFINED;
+          // @java PlaceItem.eval — rotationFn rides every placement like
+          // state/value. This fast path hardcoded UNDEFINED, silently
+          // dropping (place ... rotation:R): There and Back's P2 discs lost
+          // their rotation-derived SOUTH facing, and once the global facing
+          // default became Java's N (Directions.java:467) P2 generated no
+          // Slide moves at all (ply-1 pass).
+          const rotation = (placeItem as unknown as { rotationFn?: { eval(c: Context): number } })
+            .rotationFn?.eval(ctx) ?? UNDEFINED;
+          const placementSites = sites.length > 0
+            ? sites
+            : this.facingStartStripSites(placeItem.item);
+          for (const site of placementSites) {
+            if (typeof site !== "number") continue;
+            // @java PlaceItem.java:369-371 — the placement ALWAYS carries the
+            // declared SiteType so ActionAdd routes to the right typed
+            // container. Passing null here dropped Russian Fortress Chess's
+            // (place "Disc" Edge (sites {...})) wall pieces into the flat
+            // cells[] channel: 6 phantom walls at wrong ids, 10 silently
+            // dropped past cells.length, and pawn moves at ply 18 were
+            // blocked by a "wall" that was really a board pawn.
+            ctx.placePieces?.(site, what, count, stateValue, rotation, value, false,
+              (placeItem as unknown as { type?: string | null }).type ?? null);
+          }
+        }
+        return;
+      }
+    }
+
+    evalRule.eval(ctx);
+  }
+
+  private facingStartStripSites(item: string): number[] {
+    const suffix = item.match(/(\d+)$/);
+    if (!suffix) return [];
+    const owner = Number(suffix[1]);
+    const dir = this._playerDirs?.get(owner);
+    const width = this.equipment.board.width;
+    const height = this.equipment.board.height;
+    if (width <= 0 || height <= 0) return [];
+
+    if (dir === 0) {
+      return Array.from({ length: Math.min(2, height) * width }, (_, site) => site);
+    }
+    if (dir === 4) {
+      const rows = Math.min(2, height);
+      const start = (height - rows) * width;
+      return Array.from({ length: rows * width }, (_, i) => start + i);
+    }
+    return [];
+  }
+
+  /**
+   * Minimal Java Game facade for faithful start-rule eval().
+   * @java game/Game.java — getComponent/mapContainer/equipment/players
+   */
+  private startGameFacade(): EngineGame {
+    const game = this;
+    const equipmentCallable = new Proxy(
+      function equipmentFn() { return game.equipment; },
+      {
+        get(_target, prop) {
+          return (game.equipment as unknown as Record<PropertyKey, unknown>)[prop];
+        },
+      },
+    );
+
+    return new Proxy(this as unknown as Record<PropertyKey, unknown>, {
+      get(target, prop) {
+        if (prop === "equipment") return equipmentCallable;
+        if (prop === "players") return () => game.playersRecord;
+        if (prop === "isDeductionPuzzle") return () => false;
+        if (prop === "getComponent") return (name: string) => game.componentByName(name);
+        if (prop === "mapContainer") return () => game.containerMap();
+        return target[prop];
+      },
+    }) as unknown as EngineGame;
+  }
+
+  private componentByName(name: string): { index(): number; role(): { equals(role: string): boolean } } | null {
+    // @java Game.java:547-550 — getComponent(nameC) is a plain exact-name
+    // lookup: `return mapComponent.get(nameC);`. The map is built at
+    // Game.java:2617-2622 (`mapComponent.put(equip.name(), equip)`) using
+    // each component's FINAL name, which by that point already has its
+    // owning player's index appended (Game.java:2545-2565, "We add the
+    // index of the owner at the end of the name of each component" —
+    // mirrored by Game.ts's prepareFaithfulEquipment). There is no
+    // name+owner reconstruction in Java's algorithm: exact match must be
+    // tried first. Re-concatenating an ALREADY-suffixed piece's own name
+    // with its own owner (the old `direct` check) is not faithful and, for
+    // double-digit owners, can coincidentally collide with a DIFFERENT
+    // player's real suffixed name — e.g. piece "Disc1" (owner 1):
+    // "Disc1"+"1" === "Disc11", colliding with player 11's actual "Disc11"
+    // piece — which broke 16-player games such as Pagade Kayi Ata
+    // (Sixteen-handed). `bySuffix` (bare-name + owner reconstructed from the
+    // QUERY string) is kept as a fallback for components whose name isn't
+    // suffixed yet.
+    const byName = this.equipment.pieces.find((piece) => piece.name === name);
+    const suffix = name.match(/^(.*?)(\d+)$/);
+    const bySuffix = suffix
+      ? this.equipment.pieces.find((piece) => piece.name === suffix[1] && piece.owner === Number(suffix[2]))
+      : undefined;
+    const piece = byName ?? bySuffix;
+    if (piece === undefined) return null;
+    const role = piece.owner === 0 ? "Neutral" : `P${piece.owner}`;
+    return {
+      index: () => piece.index,
+      role: () => ({ equals: (r: string) => r === role }),
+    };
+  }
+
+  private containerMap(): Map<string, { index(): number; numSites(): number }> {
+    const out = new Map<string, { index(): number; numSites(): number }>();
+    const containers = this.equipment.containers?.() ?? [];
+    for (const container of containers) {
+      const c = container as {
+        name?: () => string | null;
+        index?: () => number;
+        numSites?: () => number;
+        getNumSites?: () => number;
+      };
+      const name = c.name?.();
+      if (name === null || name === undefined) continue;
+      out.set(name, {
+        index: () => c.index?.() ?? 0,
+        numSites: () => c.numSites?.() ?? c.getNumSites?.() ?? 0,
+      });
+    }
+    return out;
+  }
+
+  /**
+   * Return the play rules for the current mover.
+   *
+   * For phase games: looks up phases[state.currentPhase(mover)].play.
+   * @java game/Game.java:2849–2852 — indexPhase = state.currentPhase(mover)
+   *
+   * For bare games: returns rules.play.
+   */
+  private getPlayForMover(ctx: Context1to1): Rules["play"] {
+    if (this.rules.phases !== null) {
+      const mover = ctx.state.mover;
+      const phaseIdx = ctx.state.phase(mover);
+      const phases = this.rules.phases;
+      if (phaseIdx >= 0 && phaseIdx < phases.length) {
+        return phases[phaseIdx]!.play;
+      }
+      // Fallback to phase 0 if index out of range
+      return phases[0]!.play;
+    }
+    return this.rules.play;
+  }
+
+  /**
+   * Detect all-pass draw: if the last `numPlayers` moves in the trial are all
+   * forced passes, the game is a draw.
+   *
+   * @java game/Game.java — allPassed (End.eval implicit draw for no-pass games)
+   */
+  private allPassed(trial: Trial): boolean {
+    const moves = trial.moves;
+    const n = this.numPlayers;
+    if (moves.length < n) return false;
+    for (let i = moves.length - 1; i >= moves.length - n; i--) {
+      const m = moves[i];
+      if (!m || !m.isPass()) return false;
+    }
+    return true;
+  }
+
+  /**
+   * Update the stalemated flag for the mover in the given state.
+   * @java Game.java:3298-3327 — computeStalemated(Context)
+   *
+   * Builds a temporary Context1to1 sharing the SAME (real, uncloned) rng as
+   * baseCtx and checks whether the mover has any legal moves, via the same
+   * generic moves-list fallback Java uses (Moves.java:283 movesIterator /
+   * Moves.java:320 canMove — the base-class implementation just calls
+   * eval(context).moves() on the real context; there is no cloned/TempContext
+   * RNG isolation anywhere in this path). This means the legal-move probe can
+   * consume genuine RNG draws from stochastic ludemes (e.g. a Hop capture's
+   * SitesRandom side-effect, or a race game's dice roll) even though the
+   * winning candidate move itself is discarded — this is surprising but is
+   * exactly Java's behaviour, and Suffragetto's recorded trials depend on it
+   * bit-for-bit (see the Pass-triggered call site in apply() above).
+   *
+   * Only called from apply() when a Pass is about to be applied and the
+   * passing player's stalemated flag is not already set — mirroring the
+   * gating condition at Game.java:3039-3044.
+   */
+  private computeStalemated(state: State, baseCtx: Context1to1): State {
+    const mover = state.mover;
+    // Share baseCtx's REAL rng (not a clone) — see doc comment above for why
+    // this is Java-faithful and required for byte-exact RNG-consumption parity.
+    const tempCtx = new Context(this, state, baseCtx.trial, baseCtx.rng) as Context1to1;
+    tempCtx._radials = baseCtx._radials;
+    tempCtx._trajectories = baseCtx._trajectories;
+    tempCtx._evalTo = -1;
+    tempCtx._evalFrom = -1;
+    tempCtx._evalValue = 0;
+
+    const playForMover = this.getPlayForMover(tempCtx);
+    // @java Game.java:3300-3328 — computeStalemated(Context): for
+    // alternating-move games (isAlternatingMoveGame(), the overwhelming
+    // majority, incl. Buffa de Baldrac), Java calls the CHEAP
+    // `phase.play().moves().canMove(context)` — Moves.canMove()'s default is
+    // a lazy "at least one move" iterator, and effect wrappers such as
+    // MaxMoves override canMove() to delegate straight to their un-maximized
+    // candidate set (MaxMoves.java:237-243: "Don't care about max moves
+    // here"), deliberately bypassing the expensive/recursive
+    // max-replay-count search. Calling eval() here unconditionally (as this
+    // code previously did) instead recurses through MaxMoves.eval ->
+    // Game.apply -> computeStalemated -> MaxMoves.eval without bound whenever
+    // a MaxMoves-wrapped game's own replay-count search applies a Pass move
+    // with the stalemated flag still unset (Buffa de Baldrac: RangeError
+    // "Maximum call stack size exceeded" mid-trial). Only simultaneous-move
+    // games fall back to a full moves() computation, matching Java's `else`
+    // branch (`game.moves(context)`, Game.java:3323-3328).
+    const movesFn = playForMover.moves as unknown as {
+      canMove?(c: Context1to1): boolean;
+      eval(c: Context1to1): Move[];
+    };
+    const isStalemated = this.modeRecord.mode() === "Alternating"
+      ? !(typeof movesFn.canMove === "function" ? movesFn.canMove(tempCtx) : movesFn.eval(tempCtx).length > 0)
+      : movesFn.eval(tempCtx).length === 0;
+
+    return state.withStalemated(mover, isStalemated);
+  }
+}

@@ -1,0 +1,245 @@
+// @java Core/src/game/functions/intArray/state/Rotations.java
+
+/**
+ * Returns the list of rotation indices according to a tiling type.
+ *
+ * @java game/functions/intArray/state/Rotations.java
+ *
+ * Java parity: Rotations holds one-or-more AbsoluteDirection values and
+ * eval() converts each to a rotation index using:
+ *   rotation = DirectionFacing.index() / (numSupportedDirections / numEdges)
+ * then deduplicates and returns them as an int[].
+ *
+ * TS parity: The TS engine's Context does not expose a topology() / numEdges()
+ * surface on the lightweight context.ts Context. The full topology is available
+ * via the other/context/Context.ts path, but that type is not used by these
+ * ludeme classes. This port stores the direction names faithfully and resolves
+ * rotation indices on a best-effort basis: for standard orthogonal boards
+ * (4 edges / 4 orthogonal directions) each AbsoluteDirection maps to index 0–3
+ * using the compass order N=0, E=1, S=2, W=3, NE=0, SE=1, SW=2, NW=3.
+ * When the topology is available as an any-typed object, the Java path is taken
+ * exactly.
+ */
+
+import type { Context } from "../../../../../context.js";
+import type { EvalScratch } from "../../../../base.js";
+import { BaseIntArrayFunction } from "../BaseIntArrayFunction.js";
+
+/**
+ * Standard compass-direction index table for 4-edge tilings.
+ * Java: AbsoluteDirection.convert(dir).index() / ratio
+ * where ratio = supportedDirections.size() / numEdges.
+ *
+ * For square boards (4 edges, 4 orthogonal = ratio 1):
+ *   N→0, E→1, S→2, W→3
+ * For hex boards (6 edges, 6 directions = ratio 1):
+ *   E→0, NE→1, NW→2, W→3, SW→4, SE→5  (Java hex order)
+ *
+ * When the full topology is not available we fall back to the square-board
+ * indices; this is correct for the vast majority of games that use
+ * (rotations Orthogonal) on a square board.
+ */
+const SQUARE_INDEX: Readonly<Record<string, number>> = {
+  N:          0,
+  E:          1,
+  S:          2,
+  W:          3,
+  NE:         0,
+  SE:         1,
+  SW:         2,
+  NW:         3,
+  Orthogonal: -1, // multi-direction — expanded below
+  Diagonal:   -1,
+  Adjacent:   -1,
+};
+
+/** Orthogonal expansion for square board: N, E, S, W → indices 0,1,2,3 */
+const ORTHOGONAL_SQUARE = [0, 1, 2, 3] as const;
+/** Diagonal expansion for square board: NE, SE, SW, NW → indices 0,1,2,3 */
+const DIAGONAL_SQUARE   = [0, 1, 2, 3] as const;
+/** Adjacent expansion for square board: all 4 orthogonal + 4 diagonal */
+const ADJACENT_SQUARE   = [0, 1, 2, 3] as const;
+
+type AbsoluteDirection = string;
+
+/**
+ * @java game.functions.intArray.state.Rotations
+ */
+export class Rotations extends BaseIntArrayFunction {
+  /** @java Rotations — final AbsoluteDirection[] directionsOfRotation */
+  private readonly directionsOfRotation: AbsoluteDirection[];
+
+  /** @java Rotations — private int[] precomputedDirection */
+  private precomputedDirection: number[] | null = null;
+
+  /**
+   * @java Rotations(AbsoluteDirection directionOfRotation, AbsoluteDirection[] directionsOfRotation)
+   * @param directionOfRotation @Or single AbsoluteDirection.
+   * @param directionsOfRotation @Or array of AbsoluteDirection values.
+   */
+  public constructor(
+    directionOfRotation: AbsoluteDirection | null,
+    directionsOfRotation: AbsoluteDirection[] | null,
+  ) {
+    super();
+
+    let numNonNull = 0;
+    if (directionOfRotation != null) numNonNull++;
+    if (directionsOfRotation != null) numNonNull++;
+
+    if (numNonNull !== 1) {
+      throw new Error("Only one Or should be non-null.");
+    }
+
+    this.directionsOfRotation = directionsOfRotation != null
+      ? directionsOfRotation
+      : [directionOfRotation as AbsoluteDirection];
+  }
+
+  /**
+   * @java Rotations.eval(Context)
+   *
+   * Returns the unique rotation indices for the specified directions.
+   * When a precomputed result is available it is returned directly (isStatic).
+   */
+  public override eval(ctx: Context & EvalScratch): number[] {
+    if (this.precomputedDirection !== null) return this.precomputedDirection;
+
+    // Attempt to use the full topology if available (other/context/Context path).
+    const ctxAny = ctx as unknown as Record<string, unknown>;
+    const topology = typeof ctxAny["topology"] === "function"
+      ? (ctxAny["topology"] as () => unknown)()
+      : null;
+
+    const result: number[] = [];
+
+    if (topology !== null) {
+      // Full topology path — mirrors Java exactly.
+      //
+      // IMPORTANT: Topology.supportedDirections() is OVERLOADED in the real
+      // engine: a 1-arg call is treated as a SiteType lookup
+      // (_supportedDirections.get(type)); only the 2-arg form
+      // (relation, type) routes to the specialized per-relation maps
+      // (_supportedOrthogonalDirections / _supportedDiagonalDirections /
+      // etc). Calling supportedDirections("Orthogonal") with a single arg
+      // silently mis-routes to the SiteType overload and returns [] (since
+      // "Orthogonal" is not a SiteType key) — both call sites below MUST
+      // pass defaultSite as the second argument.
+      //
+      // Also: for the "Cell" SiteType the real compiled Topology returns
+      // raw direction-name STRINGS ("N", "E", "S", "W", ...), not
+      // DirectionFacing objects with an .index() method — confirmed via a
+      // live probe against the built dist. Facings are therefore converted
+      // through the same compass-index table as the single-direction case
+      // rather than calling `.index()` on them.
+      const topo = topology as {
+        numEdges(): number;
+        supportedDirections(type: string): Array<string | { index(): number; toAbsolute(): string }>;
+        supportedDirections(relation: string, type: string): Array<string | { index(): number; toAbsolute(): string }>;
+      };
+      const board = typeof ctxAny["board"] === "function"
+        ? (ctxAny["board"] as () => unknown)()
+        : null;
+      const defaultSite = board !== null
+        ? (board as { defaultSite(): string }).defaultSite()
+        : "Cell";
+
+      const numEdges = topo.numEdges();
+      const supportedSize = topo.supportedDirections(defaultSite).length;
+      // @java Rotations.java ratio = supportedDirections.size()/numEdges,
+      // where Java's supportedDirections derives ONLY from real trajectory
+      // steps: a (boardless Square) with no (diagonals …) has 4 orthogonal
+      // directions (ratio 4/4 = 1, raw AbsoluteDirection indices {0,2,4,6} —
+      // exactly Trax's recorded SetRotation values). TS's Topology
+      // computeRelation geometric fallback over-detects diagonal ADJACENCY
+      // from shared vertices even when no diagonal EDGE exists, inflating
+      // supportedSize to 8 (ratio 2, halved indices). Until the topology
+      // derivation is fixed, clamp: when the ORTHOGONAL direction count
+      // equals numEdges, diagonal support is spurious by construction.
+      const orthoSize = topo.supportedDirections("Orthogonal" as never, defaultSite)?.length ?? 0;
+      const spuriousDiagonals = orthoSize > 0 && orthoSize === numEdges && supportedSize > numEdges;
+      const ratio = numEdges > 0 && !spuriousDiagonals ? supportedSize / numEdges : 1;
+
+      for (const absDir of this.directionsOfRotation) {
+        // Try direct AbsoluteDirection → DirectionFacing conversion.
+        const directFacing = this._convertToFacing(absDir);
+        if (directFacing !== null) {
+          const rotation = Math.floor(directFacing / ratio);
+          if (!result.includes(rotation)) result.push(rotation);
+        } else {
+          // Multi-direction: expand to set of facing directions.
+          const relation = this._toRelation(absDir);
+          if (relation === null) continue;
+          const facings = topo.supportedDirections(relation, defaultSite);
+          for (const facing of facings) {
+            const idx = typeof facing === "string"
+              ? this._convertToFacing(facing)
+              : facing.index();
+            if (idx === null || idx === undefined) continue;
+            const rotation = Math.floor(idx / ratio);
+            if (!result.includes(rotation)) result.push(rotation);
+          }
+        }
+      }
+    } else {
+      // Fallback: square-board heuristic.
+      for (const absDir of this.directionsOfRotation) {
+        const upper = absDir.toUpperCase();
+        if (upper === "ORTHOGONAL") {
+          for (const r of ORTHOGONAL_SQUARE) {
+            if (!result.includes(r)) result.push(r);
+          }
+        } else if (upper === "DIAGONAL") {
+          for (const r of DIAGONAL_SQUARE) {
+            if (!result.includes(r)) result.push(r);
+          }
+        } else if (upper === "ADJACENT" || upper === "ALL") {
+          for (const r of ADJACENT_SQUARE) {
+            if (!result.includes(r)) result.push(r);
+          }
+        } else {
+          const idx = SQUARE_INDEX[upper] ?? SQUARE_INDEX[absDir];
+          if (idx !== undefined && idx >= 0 && !result.includes(idx)) {
+            result.push(idx);
+          }
+        }
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Precompute when static.
+   * @java Rotations.preprocess(Game)
+   */
+  public preprocess(ctx: Context & EvalScratch): void {
+    this.precomputedDirection = this.eval(ctx);
+  }
+
+  /**
+   * @java AbsoluteDirection.convert(AbsoluteDirection) — returns numeric index
+   * when the direction has a single DirectionFacing equivalent, else null.
+   */
+  private _convertToFacing(dir: string): number | null {
+    const map: Readonly<Record<string, number>> = {
+      N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7,
+    };
+    return map[dir] ?? null;
+  }
+
+  /** @java AbsoluteDirection.converToRelationType — maps to a RelationType name. */
+  private _toRelation(dir: string): string | null {
+    const map: Readonly<Record<string, string>> = {
+      Orthogonal: "Orthogonal",
+      Diagonal:   "Diagonal",
+      Adjacent:   "Adjacent",
+      All:        "All",
+    };
+    return map[dir] ?? null;
+  }
+
+  public override toString(): string {
+    return "Rotations";
+  }
+}

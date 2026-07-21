@@ -632,6 +632,7 @@ public class ArgClass extends Arg
 					report.addLogLine(pre + "Compiled object " + object + " (key=" + key + ") successfully.");
 					report.addLogLine(pre + "------------------------------");
 				}
+				if (System.getProperty("argtrace") != null) System.err.println("ARGTRACE " + this.symbolName + " => " + object.getClass().getName());
 				instance.setObject(object);
 
 				// Expected class was compiled (but possibly as return type!)

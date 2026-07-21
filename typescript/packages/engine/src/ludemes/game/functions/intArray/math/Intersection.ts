@@ -1,0 +1,54 @@
+/**
+ * Intersection.ts
+ * @java game/functions/intArray/math/Intersection.java
+ *
+ * (intersection <a1> <a2>) or (intersection {<a1> ...}) — elements common to all arrays.
+ */
+
+import type { Context } from "../../../../../context.js";
+import type { IntArrayFunction } from "../../../../base.js";
+import { isList } from "@ludii/typescript-language";
+import type { LudNode, LudList } from "@ludii/typescript-language";
+
+export class Intersection implements IntArrayFunction {
+  private readonly arrays: IntArrayFunction[];
+
+  /**
+   * @java Intersection has TWO ctors — Intersection(array1, array2) and
+   * Intersection(IntArrayFunction[]). The reflection compiler invokes the
+   * 2-arg form for `(intersection A B)`; our array-only ctor collapsed it to
+   * a single non-array operand (same bug as Union). Normalize both forms.
+   */
+  // `= undefined` default (not a bare `?`) so ctor.length===1, matching the
+  // truly-required arity — otherwise the single-list form `(intersection {a b …})`
+  // (one bound arg) fails the compiler's `args < ctor.length` drift check (same
+  // class as the Union fix).
+  constructor(arraysOrFirst: IntArrayFunction[] | IntArrayFunction, second: IntArrayFunction | undefined = undefined) {
+    if (second !== undefined) {
+      this.arrays = [arraysOrFirst as IntArrayFunction, second];
+    } else if (Array.isArray(arraysOrFirst)) {
+      this.arrays = arraysOrFirst;
+    } else {
+      this.arrays = [arraysOrFirst];
+    }
+  }
+
+  public eval(ctx: Context): number[] {
+    // @java Intersection.java:73-108
+    if (this.arrays.length === 0) return [];
+    if (this.arrays.length === 2) {
+      // two-array form: filter second array by membership in first
+      const values1 = this.arrays[0]!.eval(ctx);
+      const values2 = [...this.arrays[1]!.eval(ctx)];
+      return values2.filter(v => values1.includes(v));
+    }
+    // many-array form: start with first, remove elements absent from each subsequent
+    let out = [...this.arrays[0]!.eval(ctx)];
+    for (let i = 1; i < this.arrays.length; i++) {
+      const values = this.arrays[i]!.eval(ctx);
+      out = out.filter(v => values.includes(v));
+    }
+    return out;
+  }
+}
+

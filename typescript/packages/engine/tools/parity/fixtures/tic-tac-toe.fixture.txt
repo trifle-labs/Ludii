@@ -1,0 +1,26 @@
+game=Tic-Tac-Toe
+lud=/Users/billy/GitHub/trifle-labs/Ludii/Common/res/lud/board/space/line/Tic-Tac-Toe.lud
+rng=0,0,0,0,0,0,0,1
+total_moves=9
+
+ply=0 move=[Move:mover=1,from=6,to=6,actions=[Add:type=Cell,to=6,what=1,decision=true]]
+ply=0 hash=8160161046215260151
+ply=1 move=[Move:mover=2,from=7,to=7,actions=[Add:type=Cell,to=7,what=2,decision=true]]
+ply=1 hash=5115462464541413477
+ply=2 move=[Move:mover=1,from=4,to=4,actions=[Add:type=Cell,to=4,what=1,decision=true]]
+ply=2 hash=3719337555916405710
+ply=3 move=[Move:mover=2,from=8,to=8,actions=[Add:type=Cell,to=8,what=2,decision=true]]
+ply=3 hash=719058409826227710
+ply=4 move=[Move:mover=1,from=0,to=0,actions=[Add:type=Cell,to=0,what=1,decision=true]]
+ply=4 hash=1059075248241160535
+ply=5 move=[Move:mover=2,from=2,to=2,actions=[Add:type=Cell,to=2,what=2,decision=true]]
+ply=5 hash=-5403325831208729446
+ply=6 move=[Move:mover=1,from=5,to=5,actions=[Add:type=Cell,to=5,what=1,decision=true]]
+ply=6 hash=1433195706411504532
+ply=7 move=[Move:mover=2,from=1,to=1,actions=[Add:type=Cell,to=1,what=2,decision=true]]
+ply=7 hash=-8583157413389543044
+ply=8 move=[Move:mover=1,from=3,to=3,actions=[Add:type=Cell,to=3,what=1,decision=true]]
+ply=8 hash=-5753274999709008414
+
+winners=1
+rankings=1.0,2.0

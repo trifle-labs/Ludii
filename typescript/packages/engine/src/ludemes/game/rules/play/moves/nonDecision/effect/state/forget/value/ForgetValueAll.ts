@@ -1,0 +1,89 @@
+// @java Core/src/game/rules/play/moves/nonDecision/effect/state/forget/value/ForgetValueAll.java
+/**
+ * Forgets all the values remembered before.
+ *
+ * Java parity: game/rules/play/moves/nonDecision/effect/state/forget/value/ForgetValueAll.java
+ */
+
+import type { Context } from "../../../../../../../../../../context.js";
+import type { MovesFunction } from "../../../../../../../../../base.js";
+import type { Move } from "../../../../../../../../../../move.js";
+import { applyPostStateThen, type Then } from "../../../Then.js";
+import { ActionForgetValue } from "../../../../../../../../../../action/action-remember.js";
+import { Move as LudiiMove } from "../../../../../../../../../../move.js";
+
+export class ForgetValueAll implements MovesFunction {
+  /** @java ForgetValueAll.name — name of the remembering values (may be null) */
+  private readonly name: string | null;
+
+  /** @java Effect.then */
+  private readonly thenClause: Then | null;
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/state/forget/value/ForgetValueAll.java — constructor
+   * @param name       Name of the remembering values [null = forget all]
+   * @param thenClause Subsequent moves
+   */
+  public constructor(name: string | null = null, thenClause: Then | null = null) {
+    this.name = name;
+    this.thenClause = thenClause;
+  }
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/state/forget/value/ForgetValueAll.java — eval(Context)
+   *
+   * Creates a move with ActionForgetValue for each remembered value:
+   *   - if name != null: forget all values in context.state.mapRememberingValues[name]
+   *   - if name == null: forget all values in rememberingValues AND all named maps
+   */
+  public eval(ctx: Context): Move[] {
+    const actions: import("../../../../../../../../../../action/index.js").Action[] = [];
+    const mover = ctx.state.mover;
+
+    // The live State keeps remembered values in `remembered`
+    // (ReadonlyMap<string, number[]>; "" = the unnamed list) — the old
+    // rememberingValues/mapRememberingValues reads matched nothing and
+    // (forget Value All) produced ZERO moves (Seesaw's capture-flush `do`
+    // chain died with it).
+    const remembered = (ctx.state as unknown as { remembered?: ReadonlyMap<string, readonly number[]> }).remembered;
+
+    if (this.name != null) {
+      // @java ForgetValueAll.java:59-69 — named map only
+      const rememberingValue = remembered?.get(this.name);
+      if (rememberingValue) {
+        for (const value of rememberingValue) {
+          actions.push(new ActionForgetValue(this.name, value));
+        }
+      }
+    } else {
+      // @java ForgetValueAll.java:73-99 — forget unnamed and all named
+      if (remembered) {
+        for (const [key, vals] of remembered.entries()) {
+          for (const value of vals) {
+            actions.push(new ActionForgetValue(key, value));
+          }
+        }
+      }
+    }
+
+    // @java ForgetValueAll.java:102-104 — only add move if there are actions
+    if (actions.length === 0) return [];
+
+    const move = new LudiiMove({
+      id: `forgetValueAll:${mover}`,
+      label: "ForgetValueAll",
+      siteIndices: [],
+      mover,
+      placedOwner: mover,
+      actions,
+    });
+
+    // @java ForgetValue (All): the (then …) consequents run POST-apply — see
+    // ForgetValue.ts (eager eval read pre-forget state and dropped nested thens).
+    if (this.thenClause != null) {
+      return [applyPostStateThen(this.thenClause, ctx, move)];
+    }
+
+    return [move];
+  }
+}

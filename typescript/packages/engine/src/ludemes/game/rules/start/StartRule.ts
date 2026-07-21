@@ -1,0 +1,30 @@
+/**
+ * StartRule interface for the 1:1 Java→TS port.
+ *
+ * A start rule modifies the initial state (cells[], whats[], countAt[])
+ * before the game begins. Applied in order during Game.start().
+ *
+ * @java game/rules/start/StartRule.java — start(Context)
+ */
+
+import type { EquipmentSurface } from "../../equipment/EquipmentSurface.js";
+import type { Context } from "../../../../context.js";
+
+/**
+ * A start-placement rule that modifies the initial state arrays.
+ * This is called during game.start() to place pieces, fill hands, etc.
+ *
+ * @java game/rules/start/StartRule.java
+ */
+export interface StartRule {
+  /**
+   * Apply this start rule through the start-bridge Context.
+   * @java game/rules/start/StartRule.java — eval(Context)
+   *
+   * Migrated rules implement THIS — the Java signature. The bridge context
+   * (Game.applyStartRule) carries placePieces, the board trajectories and
+   * the ContainerState mutation facade (ctx._startState) until State convergence.
+   */
+  eval(context: Context): void;
+
+}

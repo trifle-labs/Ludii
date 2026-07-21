@@ -1,0 +1,34 @@
+{
+  "summary": {
+    "totalTrials": 2,
+    "elapsed_s": 0.4,
+    "buckets": {
+      "COMPILE_FAIL": 0,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 0,
+      "WINNER_MISMATCH": 0,
+      "OUTCOME_OK": 2,
+      "REPLAY_OK_NO_OUTCOME": 0,
+      "TIMEOUT": 0
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [],
+    "MOVE_MISMATCH": []
+  },
+  "exampleMismatches": [],
+  "perTrial": [
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Cage",
+      "plyReplayed": 148,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Cage/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Cage",
+      "plyReplayed": 159,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Cage/RandomTrial_1.txt"
+    }
+  ]
+}

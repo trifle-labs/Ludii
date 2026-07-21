@@ -1,0 +1,311 @@
+// @java Core/src/game/util/graph/GraphElement.java GraphElement
+// @java Core/src/game/util/graph/Vertex.java Vertex
+// @java Core/src/game/util/graph/Edge.java Edge
+// @java Core/src/game/util/graph/Face.java Face
+//
+// The incidence substrate the trajectory generator walks. Our base Graph
+// (graph.ts) stores only vertex/edge/face lists; Java's Vertex/Edge/Face carry
+// the cross-references (vertex.edges()/faces(), edge's two faces, face.edges())
+// that Face.stepsTo / Vertex.stepsTo traverse. This module derives those
+// references once, so the generated topology matches Java element-for-element.
+
+import { type Graph } from "../graph.js";
+
+/** SiteType ordinals, faithful to Java game.types.board.SiteType. */
+export enum SiteType {
+  Vertex = 0,
+  Edge = 1,
+  Cell = 2,
+}
+
+export const NUM_SITE_TYPES = 3;
+
+/** 3-D point; planar boards use z = 0. */
+export interface Pt3 {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+}
+
+/** Common interface for a vertex, edge, or face acting as a graph element. */
+export interface GElement {
+  readonly id: number;
+  readonly siteType: SiteType;
+  readonly pt: Pt3;
+  /** This element's pivot vertex (concentric boards), else null. */
+  pivot(): VertexEl | null;
+}
+
+export class VertexEl implements GElement {
+  public readonly siteType = SiteType.Vertex;
+  public readonly edges: EdgeEl[] = [];
+  public readonly faces: FaceEl[] = [];
+  /** @java Vertex.cells() — the incident cells (faces). */
+  public get cells(): FaceEl[] { return this.faces; }
+  private pivotVertex: VertexEl | null = null;
+
+  public constructor(
+    public readonly id: number,
+    public readonly pt: Pt3,
+  ) {}
+
+  public pivot(): VertexEl | null {
+    return this.pivotVertex;
+  }
+  public setPivot(v: VertexEl | null): void {
+    this.pivotVertex = v;
+  }
+
+  /** @java Vertex.edgeAwayFrom(Face) */
+  public edgeAwayFrom(face: FaceEl): VertexEl | null {
+    for (const edge of this.edges) {
+      if (!face.containsEdge(edge)) return edge.otherVertex(this.id);
+    }
+    return null;
+  }
+}
+
+export class EdgeEl implements GElement {
+  public readonly siteType = SiteType.Edge;
+  // @java Edge.java:20-27 — exactly two SINGLE-VALUE slots, not an
+  // unbounded accumulating list. Graph.findOrAddFace (Graph.java:1167-1230)
+  // calls setLeft/setRight UNCONDITIONALLY, so a face that reuses an
+  // already-existing edge (Celtic's corner-rounding pass reusing a
+  // perimeter edge as a rounded-corner triangle's closing side,
+  // Celtic.java:205-277) OVERWRITES whichever slot a previously-built face
+  // had claimed. "Last claimant wins, eviction is silent" is authoritative
+  // reference behaviour: Java's own celtic(4) reports boundary cell 7's
+  // edges to cells 3/4 as one-sided (otherFace == null) even though those
+  // cells geometrically touch.
+  public left: FaceEl | null = null;
+  public right: FaceEl | null = null;
+  /** @java Edge.cells() — the incident cells (faces) bordering this edge. */
+  public get cells(): FaceEl[] {
+    const out: FaceEl[] = [];
+    if (this.left) out.push(this.left);
+    if (this.right) out.push(this.right);
+    return out;
+  }
+  public get faces(): FaceEl[] { return this.cells; }
+
+  public constructor(
+    public readonly id: number,
+    public readonly va: VertexEl,
+    public readonly vb: VertexEl,
+    public readonly pt: Pt3,
+    /**
+     * @java Edge.curved() — true only for a ring's tangential-arc edges (see
+     * `Graph.addEdge`'s `curved` param / `GEdge.curved` doc comment). Carried
+     * through 1:1 from the source `GEdge`; consumed by
+     * `Trajectories.setCircularDirections`'s curved-edge-only CW/CCW guard.
+     */
+    public readonly curved: boolean = false,
+  ) {}
+
+  public pivot(): VertexEl | null {
+    return null;
+  }
+
+  /** @java Edge.otherVertex(int) */
+  public otherVertex(vid: number): VertexEl {
+    return this.va.id === vid ? this.vb : this.va;
+  }
+
+  /**
+   * @java Graph.findOrAddFace (Graph.java:~1216-1224):
+   *   if (edge.vertexA().id() == vert.id()) edge.setRight(newFace);
+   *   else                                  edge.setLeft(newFace);
+   * `vert` is the FROM vertex of this edge in the face's cyclic winding
+   * order. Overwrites unconditionally, exactly like Java.
+   */
+  public claim(face: FaceEl, fromVertexId: number): void {
+    if (this.va.id === fromVertexId) this.right = face;
+    else this.left = face;
+  }
+
+  /** @java Edge.otherFace(int) */
+  public otherFace(faceId: number): FaceEl | null {
+    if (this.left !== null && this.left.id === faceId) return this.right;
+    if (this.right !== null && this.right.id === faceId) return this.left;
+    return null;
+  }
+}
+
+export class FaceEl implements GElement {
+  public readonly siteType = SiteType.Cell;
+  public readonly vertices: VertexEl[] = [];
+  public readonly edges: EdgeEl[] = [];
+
+  public constructor(
+    public readonly id: number,
+    public readonly pt: Pt3,
+  ) {}
+
+  /** @java Core/src/game/util/graph/Face.java pivot */
+  public pivot(): VertexEl | null {
+    // First vertex with a pivot (concentric boards).
+    for (const v of this.vertices) {
+      const p = v.pivot();
+      if (p !== null) return p;
+    }
+    return null;
+  }
+
+  public containsVertex(v: VertexEl): boolean {
+    for (const vv of this.vertices) if (vv.id === v.id) return true;
+    return false;
+  }
+  public containsEdge(e: EdgeEl): boolean {
+    for (const ee of this.edges) if (ee.id === e.id) return true;
+    return false;
+  }
+}
+
+/**
+ * Derived topology: VertexEl / EdgeEl / FaceEl with their cross-references,
+ * built once from a planar Graph. `elements(siteType)` mirrors Java
+ * `graph.elements(SiteType)`.
+ */
+export class GraphTopology {
+  public readonly verts: VertexEl[] = [];
+  public readonly edgeEls: EdgeEl[] = [];
+  public readonly faceEls: FaceEl[] = [];
+
+  public constructor(graph: Graph) {
+    // Vertices.
+    for (const v of graph.vertices) {
+      this.verts.push(new VertexEl(v.id, { x: v.x, y: v.y, z: v.z ?? 0 }));
+    }
+
+    // Pivots (circular/concentric basis): wire each ring vertex to its pivot
+    // so Trajectories.setCircularDirections can derive In/Out/CW/CCW.
+    for (const [vid, pivotId] of graph.pivots) {
+      const v = this.verts[vid];
+      const p = this.verts[pivotId];
+      if (v && p) v.setPivot(p);
+    }
+
+    // Edges — midpoint as pt; record an undirected key → EdgeEl for face wiring.
+    const edgeByKey = new Map<string, EdgeEl>();
+    const key = (a: number, b: number): string =>
+      a < b ? `${a}:${b}` : `${b}:${a}`;
+    for (const e of graph.edges) {
+      const va = this.verts[e.a];
+      const vb = this.verts[e.b];
+      if (!va || !vb) continue;
+      const mid: Pt3 = {
+        x: (va.pt.x + vb.pt.x) / 2,
+        y: (va.pt.y + vb.pt.y) / 2,
+        z: 0,
+      };
+      const edge = new EdgeEl(e.id, va, vb, mid, e.curved ?? false);
+      this.edgeEls.push(edge);
+      edgeByKey.set(key(e.a, e.b), edge);
+      va.edges.push(edge);
+      vb.edges.push(edge);
+    }
+
+    // Faces — vertices in polygon order, edges between consecutive vertices.
+    //
+    // `graph.faces` iterates in canonical id order (Java `reorder(Cell)`'s
+    // centroid-score renumbering) — that IS the correct order for
+    // `this.faceEls` (board cell indices the recorded trials reference) and
+    // for `face.vertices`/`face.edges` (a face's own boundary is unaffected
+    // by renumbering). It is NOT, however, the order Java incident faces
+    // appear in at a shared VERTEX: `Vertex.addFace` (Vertex.java:161-174)
+    // appends each face to a plain `List<Face>` of object references as
+    // faces are incrementally created, and — for every board generator,
+    // which all build graphs incrementally — that per-vertex list is never
+    // re-sorted afterwards (`Vertex.sortFaces` only runs from
+    // `Graph.assemble`, itself only reachable from two constructors no
+    // generator uses; confirmed by instrumentation). So `vertex.faces()`
+    // reflects face CREATION order, immune to later id renumbering, while
+    // `graph.faces` here reflects final CANONICAL order. Collecting
+    // `(face, f.seq)` per vertex and sorting by `seq` before assigning
+    // `v.faces` reproduces Java's true incidence order without disturbing
+    // `faceEls`/`face.vertices`/`face.edges`, which must stay in canonical
+    // order. This matters for `Face.stepsTo`'s diagonal tie-break
+    // (Face.java:320-325, strict `dist < bestDistance`): at an exact
+    // geometric tie, whichever candidate face is first in `vertex.faces()`
+    // wins, and only creation order reproduces Java's winner (e.g. Celtic's
+    // rounded-corner faces, where two triangular corner faces sharing a
+    // lattice vertex are created in perimeter-walk order, not final
+    // spatial order).
+    const vertexFaceEntries = new Map<number, { face: FaceEl; seq: number }[]>();
+    for (const f of graph.faces) {
+      const face = new FaceEl(f.id, { x: f.cx, y: f.cy, z: 0 });
+      for (const vid of f.vertices) {
+        const v = this.verts[vid];
+        if (v) {
+          face.vertices.push(v);
+          let entries = vertexFaceEntries.get(vid);
+          if (!entries) {
+            entries = [];
+            vertexFaceEntries.set(vid, entries);
+          }
+          entries.push({ face, seq: f.seq });
+        }
+      }
+      const k = f.vertices.length;
+      for (let i = 0; i < k; i += 1) {
+        const a = f.vertices[i] as number;
+        const b = f.vertices[(i + 1) % k] as number;
+        const edge = edgeByKey.get(key(a, b));
+        if (edge) {
+          face.edges.push(edge);
+          // @java Graph.findOrAddFace: setRight/setLeft keyed off which
+          // endpoint is vertexA of the (single, shared) Edge object —
+          // NOT off which face got here first. Unconditional, like Java.
+          edge.claim(face, a);
+        }
+      }
+      this.faceEls.push(face);
+    }
+    for (const v of this.verts) {
+      const entries = vertexFaceEntries.get(v.id);
+      if (!entries) continue;
+      entries.sort((p, q) => p.seq - q.seq);
+      for (const e of entries) v.faces.push(e.face);
+    }
+  }
+
+  public elements(siteType: SiteType): GElement[] {
+    if (siteType === SiteType.Vertex) return this.verts;
+    if (siteType === SiteType.Edge) return this.edgeEls;
+    return this.faceEls;
+  }
+
+  /**
+   * @java Graph.findEdge(idA, idB, curved) — linear scan of the underlying
+   * vertex-vertex edge list for one whose two endpoint ids match `idA`/`idB`
+   * (unordered) and, when `curvedOnly`, whose `Edge.curved()` is true.
+   * Faithful to Java's literal id lookup: Trajectories.setCircularDirections
+   * calls this with `from.id()`/`step.to().id()` for elements of ANY
+   * SiteType (Vertex, Edge, or Cell) — Java's single shared `graph.edges`
+   * list is keyed purely by vertex ids, so a Cell (Face) id is matched
+   * against those same vertex ids with no remapping (see
+   * `Trajectories.java:566`). Returns null when no such edge exists.
+   */
+  public findEdge(idA: number, idB: number, curvedOnly = false): EdgeEl | null {
+    for (const edge of this.edgeEls) {
+      const matches =
+        (edge.va.id === idA && edge.vb.id === idB) ||
+        (edge.va.id === idB && edge.vb.id === idA);
+      if (matches && (!curvedOnly || edge.curved)) return edge;
+    }
+    return null;
+  }
+
+  /** Mean edge length — @java Graph.averageEdgeLength(). */
+  public averageEdgeLength(): number {
+    if (this.edgeEls.length === 0) return 0;
+    let total = 0;
+    for (const e of this.edgeEls) {
+      const dx = e.vb.pt.x - e.va.pt.x;
+      const dy = e.vb.pt.y - e.va.pt.y;
+      const dz = e.vb.pt.z - e.va.pt.z;
+      total += Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+    return total / this.edgeEls.length;
+  }
+}

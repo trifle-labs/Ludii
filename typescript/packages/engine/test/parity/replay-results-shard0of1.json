@@ -1,0 +1,957 @@
+{
+  "summary": {
+    "totalTrials": 135,
+    "elapsed_s": 185.6,
+    "buckets": {
+      "COMPILE_FAIL": 0,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 3,
+      "WINNER_MISMATCH": 3,
+      "OUTCOME_OK": 122,
+      "REPLAY_OK_NO_OUTCOME": 0,
+      "TIMEOUT": 7
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [],
+    "MOVE_MISMATCH": [
+      [
+        "board/race/escape/Tsun K'i",
+        1
+      ],
+      [
+        "board/race/reach/Chonpa",
+        1
+      ],
+      [
+        "board/war/custodial/AlmaTafl",
+        1
+      ]
+    ]
+  },
+  "exampleMismatches": [
+    {
+      "game": "board/race/escape/Tsun K'i",
+      "ply": 27,
+      "recMove": "mover=1,from=8,to=4",
+      "tsMoveCount": 34,
+      "sampleTsMoves": [
+        "fromTo|mover=1,from=1,to=11,isPass=false",
+        "fromTo|mover=1,from=1,to=5,isPass=false",
+        "fromTo|mover=1,from=1,to=11,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/race/reach/Chonpa",
+      "ply": 28,
+      "recMove": "mover=3,from=78,to=51",
+      "tsMoveCount": 2,
+      "sampleTsMoves": [
+        "fromTo|mover=2,from=6,to=7,isPass=false",
+        "fromTo|mover=2,from=54,to=55,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/war/custodial/AlmaTafl",
+      "ply": 90,
+      "recMove": "mover=1,from=46,to=43",
+      "tsMoveCount": 13,
+      "sampleTsMoves": [
+        "fromTo|mover=2,from=18,to=2,isPass=false",
+        "fromTo|mover=2,from=33,to=42,isPass=false",
+        "fromTo|mover=2,from=33,to=25,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
+  "perTrial": [
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Adugo",
+      "plyReplayed": 359,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Adugo/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Bam Blang Beh Khla",
+      "plyReplayed": 223,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Bam Blang Beh Khla/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/El Zorro",
+      "plyReplayed": 2500,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/El Zorro/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Go with the Floe",
+      "plyReplayed": 51,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Go with the Floe/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Jeu Militaire",
+      "plyReplayed": 5,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Jeu Militaire/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Komikan",
+      "plyReplayed": 80,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Komikan/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Manu",
+      "plyReplayed": 413,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Manu/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Mysore Tiger Game (Two Tigers)",
+      "plyReplayed": 857,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Mysore Tiger Game (Two Tigers)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Renard et les Poules",
+      "plyReplayed": 133,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Renard et les Poules/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Shui Yen Ho-Shang",
+      "plyReplayed": 2500,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Shui Yen Ho-Shang/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/hunt/Yeung Luk Sz' Kon Tseung Kwan",
+      "plyReplayed": 900,
+      "trialFile": "../../../Player/res/random_trials/board/hunt/Yeung Luk Sz' Kon Tseung Kwan/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Backgammon",
+      "plyReplayed": 165,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Backgammon/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Doblet",
+      "plyReplayed": 127,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Doblet/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Frangieh",
+      "plyReplayed": 128,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Frangieh/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Julbahar",
+      "plyReplayed": 1069,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Julbahar/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Kotra",
+      "plyReplayed": 473,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Kotra/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Medio Emperador",
+      "plyReplayed": 404,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Medio Emperador/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Pachesi",
+      "plyReplayed": 332,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Pachesi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Paumecary",
+      "plyReplayed": 134,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Paumecary/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Romavoa",
+      "plyReplayed": 65,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Romavoa/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/escape/Tables Rabbatuees",
+      "plyReplayed": 74,
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Tables Rabbatuees/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/escape/Tsun K'i",
+      "ply": 27,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=8,to=4",
+      "tsMoveCount": 34,
+      "tsLudemes": [
+        "fromTo"
+      ],
+      "sampleTsMoves": [
+        "fromTo|mover=1,from=1,to=11,isPass=false",
+        "fromTo|mover=1,from=1,to=5,isPass=false",
+        "fromTo|mover=1,from=1,to=11,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/escape/Tsun K'i/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/fill/Azteka",
+      "plyReplayed": 50,
+      "trialFile": "../../../Player/res/random_trials/board/race/fill/Azteka/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/fill/Conspirateurs",
+      "plyReplayed": 2674,
+      "trialFile": "../../../Player/res/random_trials/board/race/fill/Conspirateurs/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "TIMEOUT",
+      "game": "board/race/fill/Suffragetto",
+      "plyReplayed": 2881,
+      "detail": "per-trial time budget (15000ms) exceeded at ply 2881",
+      "trialFile": "../../../Player/res/random_trials/board/race/fill/Suffragetto/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/Ashere",
+      "plyReplayed": 42,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Ashere/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/race/reach/Chonpa",
+      "ply": 28,
+      "detail": "No matching TS move",
+      "recMove": "mover=3,from=78,to=51",
+      "tsMoveCount": 2,
+      "tsLudemes": [
+        "fromTo"
+      ],
+      "sampleTsMoves": [
+        "fromTo|mover=2,from=6,to=7,isPass=false",
+        "fromTo|mover=2,from=54,to=55,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Chonpa/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/Gavalata",
+      "plyReplayed": 161,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Gavalata/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/King's Valley",
+      "plyReplayed": 142,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/King's Valley/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/Neutron",
+      "plyReplayed": 18,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Neutron/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/Reach Chess",
+      "plyReplayed": 105,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Reach Chess/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/race/reach/Sig wa Duqqan (Houmt Taourit)",
+      "plyReplayed": 1244,
+      "recWinner": 2,
+      "tsWinner": 1,
+      "recRankings": [
+        0,
+        4,
+        1,
+        2,
+        3
+      ],
+      "tsRankings": [
+        0,
+        1,
+        2,
+        2,
+        2
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Sig wa Duqqan (Houmt Taourit)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/Stairs",
+      "plyReplayed": 35,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Stairs/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/reach/Tri EinStein Wurfelt Nicht",
+      "plyReplayed": 57,
+      "trialFile": "../../../Player/res/random_trials/board/race/reach/Tri EinStein Wurfelt Nicht/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/race/score/Pasa",
+      "plyReplayed": 96,
+      "trialFile": "../../../Player/res/random_trials/board/race/score/Pasa/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Chiana wa Bwalo",
+      "plyReplayed": 393,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Chiana wa Bwalo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Hus (Nama)",
+      "plyReplayed": 383,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Hus (Nama)/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Kisolo",
+      "plyReplayed": 659,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Kisolo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Misoro Tsoro",
+      "plyReplayed": 145,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Misoro Tsoro/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Muvalavala (Quioco)",
+      "plyReplayed": 77,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Muvalavala (Quioco)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Ngolo",
+      "plyReplayed": 34,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Ngolo/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Otep",
+      "plyReplayed": 141,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Otep/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/four_rows/Sute",
+      "plyReplayed": 2500,
+      "trialFile": "../../../Player/res/random_trials/board/sow/four_rows/Sute/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/other/Cirgol",
+      "plyReplayed": 27,
+      "trialFile": "../../../Player/res/random_trials/board/sow/other/Cirgol/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/three_rows/Gabata (Adowa)",
+      "plyReplayed": 4664,
+      "trialFile": "../../../Player/res/random_trials/board/sow/three_rows/Gabata (Adowa)/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Adidada",
+      "plyReplayed": 140,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Adidada/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Awari",
+      "plyReplayed": 121,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Awari/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Buqruru",
+      "plyReplayed": 3,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Buqruru/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Deka",
+      "plyReplayed": 20,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Deka/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/FairKalah",
+      "plyReplayed": 23,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/FairKalah/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Gabata (Oromo)",
+      "plyReplayed": 3478,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Gabata (Oromo)/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Gifia",
+      "plyReplayed": 2500,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Gifia/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/J'erin",
+      "plyReplayed": 10000,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/J'erin/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Katrayo",
+      "plyReplayed": 14,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Katrayo/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/La'b Akila",
+      "plyReplayed": 89,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/La'b Akila/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/sow/two_rows/Li'b al-'Aqil",
+      "plyReplayed": 6383,
+      "recWinner": 0,
+      "tsWinner": -1,
+      "recRankings": [
+        0,
+        1.5,
+        1.5
+      ],
+      "tsRankings": [],
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Li'b al-'Aqil/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Mank",
+      "plyReplayed": 66,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Mank/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Ntyenge",
+      "plyReplayed": 698,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Ntyenge/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Pachgarhwa",
+      "plyReplayed": 37,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Pachgarhwa/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Rio Kadalis",
+      "plyReplayed": 1134,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Rio Kadalis/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Tuz",
+      "plyReplayed": 3376,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Tuz/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Uthi",
+      "plyReplayed": 753,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Uthi/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/sow/two_rows/Wore",
+      "plyReplayed": 64,
+      "trialFile": "../../../Player/res/random_trials/board/sow/two_rows/Wore/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Amazons",
+      "plyReplayed": 120,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Amazons/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Do Guti",
+      "plyReplayed": 89,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Do Guti/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/First Attack",
+      "plyReplayed": 6,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/First Attack/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Isolation",
+      "plyReplayed": 74,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Isolation/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Mu Torere",
+      "plyReplayed": 160,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Mu Torere/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Quantum Leap",
+      "plyReplayed": 45,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Quantum Leap/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Snailtrail",
+      "plyReplayed": 62,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Snailtrail/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/blocking/Toads and Frogs",
+      "plyReplayed": 5,
+      "trialFile": "../../../Player/res/random_trials/board/space/blocking/Toads and Frogs/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/connection/Atoll",
+      "plyReplayed": 101,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Atoll/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/connection/Crossway",
+      "plyReplayed": 267,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Crossway/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "WINNER_MISMATCH",
+      "game": "board/space/connection/Gonnect",
+      "plyReplayed": 136,
+      "recWinner": 1,
+      "tsWinner": 2,
+      "recRankings": [
+        0,
+        1,
+        2
+      ],
+      "tsRankings": [
+        0,
+        2,
+        1
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Gonnect/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/connection/Pippinzip",
+      "plyReplayed": 73,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Pippinzip/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/connection/Sponnect",
+      "plyReplayed": 23,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Sponnect/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/connection/Weave",
+      "plyReplayed": 100,
+      "trialFile": "../../../Player/res/random_trials/board/space/connection/Weave/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "experimental/Brain Coral",
+      "plyReplayed": 33,
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Brain Coral/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/group/Lines of Action",
+      "plyReplayed": 387,
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Lines of Action/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/group/Omega",
+      "plyReplayed": 60,
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Omega/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/group/Speedo",
+      "plyReplayed": 88,
+      "trialFile": "../../../Player/res/random_trials/board/space/group/Speedo/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/3D Tic-Tac-Toe",
+      "plyReplayed": 9,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/3D Tic-Tac-Toe/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Andantino",
+      "plyReplayed": 36,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Andantino/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Centrifugal Force",
+      "plyReplayed": 71,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Centrifugal Force/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Dara",
+      "plyReplayed": 122,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Dara/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Epelle",
+      "plyReplayed": 65,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Epelle/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Gobblet Gobblers",
+      "plyReplayed": 7,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Gobblet Gobblers/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Ketatu",
+      "plyReplayed": 62,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Ketatu/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Minefield",
+      "plyReplayed": 7,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Minefield/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Nerenchi Keliya",
+      "plyReplayed": 184,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Nerenchi Keliya/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Nzengue (Small)",
+      "plyReplayed": 8,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Nzengue (Small)/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Pushing Me XO",
+      "plyReplayed": 158,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Pushing Me XO/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Sam K'i",
+      "plyReplayed": 30,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Sam K'i/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Six Insect Game",
+      "plyReplayed": 184,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Six Insect Game/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Spline",
+      "plyReplayed": 16,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Spline/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Taktik",
+      "plyReplayed": 2500,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Taktik/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Tic-Tac-Chess",
+      "plyReplayed": 13,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Tic-Tac-Chess/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Trianon",
+      "plyReplayed": 7,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Trianon/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Tule Paid",
+      "plyReplayed": 118,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Tule Paid/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Winkers",
+      "plyReplayed": 29,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Winkers/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/line/Yavalax",
+      "plyReplayed": 107,
+      "trialFile": "../../../Player/res/random_trials/board/space/line/Yavalax/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/pattern/Quantik",
+      "plyReplayed": 12,
+      "trialFile": "../../../Player/res/random_trials/board/space/pattern/Quantik/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/Cavity",
+      "plyReplayed": 143,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Cavity/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/Goats Wintering",
+      "plyReplayed": 11,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Goats Wintering/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/MacBeth",
+      "plyReplayed": 74,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/MacBeth/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/Phantom Go",
+      "plyReplayed": 481,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Phantom Go/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/Rolit",
+      "plyReplayed": 64,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/Rolit/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/space/territory/SupplyChains",
+      "plyReplayed": 37,
+      "trialFile": "../../../Player/res/random_trials/board/space/territory/SupplyChains/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/custodial/AlmaTafl",
+      "ply": 90,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=46,to=43",
+      "tsMoveCount": 13,
+      "tsLudemes": [
+        "fromTo",
+        "pass"
+      ],
+      "sampleTsMoves": [
+        "fromTo|mover=2,from=18,to=2,isPass=false",
+        "fromTo|mover=2,from=33,to=42,isPass=false",
+        "fromTo|mover=2,from=33,to=25,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/custodial/AlmaTafl/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/custodial/Castello",
+      "plyReplayed": 2667,
+      "trialFile": "../../../Player/res/random_trials/board/war/custodial/Castello/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/custodial/Ludus Latrunculorum",
+      "plyReplayed": 2664,
+      "trialFile": "../../../Player/res/random_trials/board/war/custodial/Ludus Latrunculorum/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/custodial/Tawlbwrdd",
+      "plyReplayed": 150,
+      "trialFile": "../../../Player/res/random_trials/board/war/custodial/Tawlbwrdd/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/diagonal/Canadian Draughts",
+      "plyReplayed": 184,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Canadian Draughts/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/diagonal/Damspel",
+      "plyReplayed": 108,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Damspel/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/diagonal/Jekab",
+      "plyReplayed": 54,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Jekab/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/diagonal/Seesaw Draughts",
+      "plyReplayed": 54,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/diagonal/Seesaw Draughts/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Bara Guti (Bihar)",
+      "plyReplayed": 174,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Bara Guti (Bihar)/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Dam (Singapore)",
+      "plyReplayed": 538,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Dam (Singapore)/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Game of Solomon",
+      "plyReplayed": 26,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Game of Solomon/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Kotu Ellima",
+      "plyReplayed": 572,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Kotu Ellima/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Padaivettu",
+      "plyReplayed": 509,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Padaivettu/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Ratti-Chitti-Bakri",
+      "plyReplayed": 1889,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Ratti-Chitti-Bakri/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/lines/Tsukkalavde",
+      "plyReplayed": 147,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/lines/Tsukkalavde/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Choko",
+      "plyReplayed": 197,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Choko/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Konane",
+      "plyReplayed": 91,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Konane/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Omnidirectional Draughts",
+      "plyReplayed": 122,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Omnidirectional Draughts/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/leaping/orthogonal/Xarajlt",
+      "plyReplayed": 37,
+      "trialFile": "../../../Player/res/random_trials/board/war/leaping/orthogonal/Xarajlt/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chaturanga/Chaturanga",
+      "plyReplayed": 409,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Chaturanga/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "TIMEOUT",
+      "game": "board/war/replacement/checkmate/chaturanga/Krida Buddhibalasrita",
+      "plyReplayed": 110,
+      "detail": "per-trial time budget (15000ms) exceeded at ply 110",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Krida Buddhibalasrita/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "TIMEOUT",
+      "game": "board/war/replacement/checkmate/chaturanga/Persian Chess with a Queen",
+      "plyReplayed": 613,
+      "detail": "per-trial time budget (15000ms) exceeded at ply 613",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Persian Chess with a Queen/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "TIMEOUT",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj",
+      "plyReplayed": 352,
+      "detail": "per-trial time budget (15000ms) exceeded at ply 352",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "TIMEOUT",
+      "game": "board/war/replacement/checkmate/chaturanga/Shatranj al-Husun",
+      "plyReplayed": 64,
+      "detail": "per-trial time budget (15000ms) exceeded at ply 64",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Shatranj al-Husun/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "TIMEOUT",
+      "game": "board/war/replacement/checkmate/chaturanga/Tepong",
+      "plyReplayed": 197,
+      "detail": "per-trial time budget (15000ms) exceeded at ply 197",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chaturanga/Tepong/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "OUTCOME_OK",
+      "game": "board/war/replacement/checkmate/chess/Atomic Chess",
+      "plyReplayed": 46,
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/Atomic Chess/RandomTrial_1.txt"
+    },
+    {
+      "bucket": "TIMEOUT",
+      "game": "board/war/replacement/checkmate/chess/De Vasa Chess",
+      "plyReplayed": 46,
+      "detail": "per-trial time budget (15000ms) exceeded at ply 46",
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/checkmate/chess/De Vasa Chess/RandomTrial_0.txt"
+    }
+  ]
+}

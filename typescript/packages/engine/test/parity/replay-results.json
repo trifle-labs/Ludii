@@ -1,0 +1,86 @@
+{
+  "summary": {
+    "totalTrials": 2,
+    "elapsed_s": 0.2,
+    "buckets": {
+      "COMPILE_FAIL": 0,
+      "START_FAIL": 0,
+      "MOVE_MISMATCH": 2,
+      "WINNER_MISMATCH": 0,
+      "OUTCOME_OK": 0,
+      "REPLAY_OK_NO_OUTCOME": 0,
+      "TIMEOUT": 0
+    }
+  },
+  "top15FailureReasons": {
+    "COMPILE_FAIL": [],
+    "MOVE_MISMATCH": [
+      [
+        "board/war/replacement/eliminate/all/MensaSpiel",
+        2
+      ]
+    ]
+  },
+  "exampleMismatches": [
+    {
+      "game": "board/war/replacement/eliminate/all/MensaSpiel",
+      "ply": 16,
+      "recMove": "mover=1,from=18,to=11",
+      "tsMoveCount": 7,
+      "sampleTsMoves": [
+        "fromTo|mover=1,from=21,to=7,isPass=false",
+        "fromTo|mover=1,from=21,to=23,isPass=false",
+        "fromTo|mover=1,from=21,to=6,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    },
+    {
+      "game": "board/war/replacement/eliminate/all/MensaSpiel",
+      "ply": 17,
+      "recMove": "mover=2,from=19,to=7",
+      "tsMoveCount": 3,
+      "sampleTsMoves": [
+        "fromTo|mover=2,from=24,to=9,isPass=false",
+        "fromTo|mover=2,from=24,to=20,isPass=false",
+        "fromTo|mover=2,from=19,to=8,isPass=false"
+      ],
+      "detail": "No matching TS move"
+    }
+  ],
+  "perTrial": [
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/MensaSpiel",
+      "ply": 16,
+      "detail": "No matching TS move",
+      "recMove": "mover=1,from=18,to=11",
+      "tsMoveCount": 7,
+      "tsLudemes": [
+        "fromTo"
+      ],
+      "sampleTsMoves": [
+        "fromTo|mover=1,from=21,to=7,isPass=false",
+        "fromTo|mover=1,from=21,to=23,isPass=false",
+        "fromTo|mover=1,from=21,to=6,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/MensaSpiel/RandomTrial_0.txt"
+    },
+    {
+      "bucket": "MOVE_MISMATCH",
+      "game": "board/war/replacement/eliminate/all/MensaSpiel",
+      "ply": 17,
+      "detail": "No matching TS move",
+      "recMove": "mover=2,from=19,to=7",
+      "tsMoveCount": 3,
+      "tsLudemes": [
+        "fromTo"
+      ],
+      "sampleTsMoves": [
+        "fromTo|mover=2,from=24,to=9,isPass=false",
+        "fromTo|mover=2,from=24,to=20,isPass=false",
+        "fromTo|mover=2,from=19,to=8,isPass=false"
+      ],
+      "trialFile": "../../../Player/res/random_trials/board/war/replacement/eliminate/all/MensaSpiel/RandomTrial_1.txt"
+    }
+  ]
+}

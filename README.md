@@ -1,93 +1,114 @@
 <img align="right" src="./resources/ludii-logo-64x64.png">
 
-# The Ludii General Game System
+# Ludii
 
-<!--[![Documentation Status](https://readthedocs.org/projects/ludiitutorials/badge/?version=latest)](https://ludiitutorials.readthedocs.io/en/latest/?badge=latest)-->
-[![Build Status](https://travis-ci.com/Ludeme/Ludii.svg?branch=master)](https://travis-ci.com/Ludeme/Ludii)
-![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)
-[![twitter](https://img.shields.io/twitter/follow/ludiigames?style=social)](https://twitter.com/intent/follow?screen_name=ludiigames)
+This fork keeps the original Java Ludii codebase in place while actively building a TypeScript port in the same repository.
 
-Ludii is a general game system being developed as part of the [ERC-funded Digital Ludeme Project (DLP)](http://ludeme.eu/). This repository hosts the publicly available source code for Ludii. A precompiled build (Ludii.JAR) can be downloaded from [Ludii's downloads page](https://ludii.games/download.php).
+## Repository layout
+
+- `/home/runner/work/Ludii/Ludii/Common` through `/home/runner/work/Ludii/Ludii/PlayerDesktop`: the upstream-style Java implementation
+- `/home/runner/work/Ludii/Ludii/typescript`: the TypeScript workspace for the port
+- `/home/runner/work/Ludii/Ludii/typescript/packages/common`: shared utility ports, currently including a broad `FVector` port
+- `/home/runner/work/Ludii/Ludii/typescript/packages/browser-player`: a browser-facing package and demo surface for web delivery experiments
+
+## Current direction
+
+The Java code remains the canonical reference for behavior and data structures.
+The TypeScript workspace is where new porting work happens in this fork.
+
+This repository is intentionally not trying to keep the top-level documentation in upstream parity. The README should explain how this fork works today.
 
 ## Requirements
 
-Working with Ludii's source code requires Java Development Kit (JDK) version 8 or higher.
+### Java
 
-## Getting Started
+- JDK 8 or higher
+- Ant
 
-### Eclipse (recommended)
-1. Clone (and optionally fork) this repository.
-2. Import the whole `Ludii/` folder to your workspace.
-3. To start the GUI, right click on `/Ludii/PlayerDesktop/src/app/StartDesktopApp` and launch it as a Java Application
+### TypeScript
 
-Eclipse should recognise each folder as a separate project and automatically apply the `-parameters` compiler flag.
+- Node.js 20+
+- npm 10+
 
-### IntelliJ IDEA
-1. Clone (and optionally fork) this repository.
-2. Import the whole `Ludii/` folder as an Eclipse project. We recommend following the [official instructions on importing Eclipse projects](https://www.jetbrains.com/help/idea/import-project-from-eclipse-page-1.html). 
-Make sure to import each capitalised folder (`AI/`, ..., `View Controller/`) as a separate module.
-3. In `Settings | Build, Execution, Deployment | Compiler | Java Compiler`, under `Additional command line parameters`, type `-parameters`. 
-4. To start the GUI, create a new run configuration under `Run | Edit Configurations | + | Application`.
-   1. Set the module to `PlayerDesktop` and use java 1.8 or above.
-   2. Set the main class to `app.StartDesktopApp`.
-   3. **Change the working directory from `.../Ludii` to `.../Ludii/PlayerDesktop`**
+## Getting started
 
-Every time you want to run a class, edit the run configuration such that the working directory is `.../Ludii/%Module%/` as opposed to `.../Ludii/`.
+### Java application
 
-### Other IDEs
-1. Keep in mind that each capitalised folder is meant to be a different module/project.
-2. The Core module needs to be compiled using the `-parameters` flag. It's also okay to compile all the modules with it.
-3. When executing a main method, set the working directory to the class's module, not the Ludii folder or the file location. 
-For example `StartDesktopApp` should have as working directory `.../Ludii/PlayerDesktop`.
+Build the existing desktop application from the repository root:
 
-## Build & Run
-The main method to launch Ludii from your IDE is located in `/Ludii/PlayerDesktop/src/app/StartDesktopApp`. At this time we do not use any more sophisticated build tools (such as Maven) in our day-to-day programming with Ludii. There are some relatively simple Ant build scripts, but we only use these -- specifically, the `/Ludii/PlayerDesktop/build.xml` script -- for generating the releases published on the [Ludii downloads page](https://ludii.games/download.php).
+```bash
+cd /home/runner/work/Ludii/Ludii/PlayerDesktop
+ant clean build
+```
 
-## Other Resources
+The main desktop entry point remains `app.StartDesktopApp` in `/home/runner/work/Ludii/Ludii/PlayerDesktop/src/app/StartDesktopApp.java`.
 
-We have various other resources available at the following links:
+### TypeScript workspace
 
-- [Ludii Tutorials](https://ludiitutorials.readthedocs.io/en/latest/): various tutorials on aspects ranging from game design (using Ludii's game description language) to programming with Ludii as a programmatic library. The source files for these tutorials are [also available on GitHub](https://github.com/Ludeme/LudiiTutorials).
-- [Ludii Documentation](https://ludii.games/download.php): the Ludii downloads page provides links to additional documentation, such as the [Ludii User Guide](https://ludii.games/downloads/LudiiUserGuide.pdf), [Ludii Game Logic Guide](https://ludii.games/downloads/LudiiGameLogicGuide.pdf), [Ludii Language Reference](https://ludii.games/downloads/LudiiLanguageReference.pdf), and [DLP Database Guide](https://ludii.games/downloads/DLP_Database_Guide.pdf).
-- [Ludii Example AI](https://github.com/Ludeme/LudiiExampleAI): an example project for implementing Java-based AIs that can play Ludii games.
-- [Ludii Python AI](https://github.com/Ludeme/LudiiPythonAI): an example project for implementing Python-based AIs that can play Ludii games.
-- [Ludii AI Competition](https://github.com/Ludeme/LudiiAICompetition): a supporting project for Ludii AI competitions.
-- [Ludii AI](https://github.com/Ludeme/LudiiAI): a repository used to hold the source code of built-in Ludii AIs before the entirety of the project was open-sourced. This repository is now deprecated, since the source code is also included in this repo.
+From the repository root:
 
-## Contributing Guidelines
+```bash
+cd /home/runner/work/Ludii/Ludii
+npm install
+npm run lint
+npm run build
+npm test
+```
 
-While we of course cannot guarantee that we will accept every suggested change or contribution, in principle we welcome contributions and are excited to see what you come up with! Please send contributions on GitHub as [new Pull Requests](https://github.com/Ludeme/Ludii/pulls), and provide brief descriptions of what has changed and in what ways these changes improve Ludii (or other aspects of the repo, such as documentation). Please ensure that any new or changed code follows the same code style as the rest of the repository.
+These commands validate every workspace package.
 
-**Note**: pull requests should be used for *code* or *documentation* contributions, but **not** for *new games* (i.e., `.lud` files). We prefer that new games are [submitted through our forums](https://ludii.games/forums/forumdisplay.php?fid=23).
+## TypeScript port status
 
-## Citing Information
+The TypeScript port is still incremental, but it now has two concrete foundations:
 
-When using Ludii's source code in any publications, please cite our paper describing Ludii: https://ecai2020.eu/papers/1248_paper.pdf
+1. **Common utilities**
+   - `/home/runner/work/Ludii/Ludii/typescript/packages/common/src/fvector.ts` ports the Java `Common/src/main/collections/FVector.java` API broadly enough to support numeric experiments and parity-oriented tests.
+2. **Browser delivery**
+   - `/home/runner/work/Ludii/Ludii/typescript/packages/browser-player` provides a minimal embeddable browser game surface so the port has a web-first target while engine work continues.
 
-The following `.bib` entry may be used for citing the use of Ludii in papers:
+The port is not yet a full replacement for the Java runtime, parser, or game engine.
 
+## Browser demo
 
-	@inproceedings{Piette2020Ludii,
-            author      = "{\'E}. Piette and D. J. N. J. Soemers and M. Stephenson and C. F. Sironi and M. H. M. Winands and C. Browne",
-            booktitle   = "Proceedings of the 24th European Conference on Artificial Intelligence (ECAI 2020)",
-            title       = "Ludii -- The Ludemic General Game System",
-            pages       = "411-418",
-            year        = "2020",
-            editor      = "G. De Giacomo and A. Catala and B. Dilkina and M. Milano and S. Barro and A. Bugarín and J. Lang",
-            series      = "Frontiers in Artificial Intelligence and Applications",
-            volume      = "325",
-	    publisher	= "IOS Press"
-    }
+Build the browser player package:
 
-## Contact Info
+```bash
+cd /home/runner/work/Ludii/Ludii
+npm run build --workspace @ludii/typescript-browser-player
+```
 
-The preferred method for getting help with troubleshooting, suggesting or
-requesting additional functionality, or asking other questions about Ludii's source code, 
-is posting a message on the [Ludii Forum](https://ludii.games/forums/).
-Alternatively, the following email address may be used: `ludii(dot)games(at)gmail(dot)com`.
+Then open `/home/runner/work/Ludii/Ludii/typescript/packages/browser-player/demo/index.html` in a browser.
 
-## Acknowledgements
+## Porting workflow
 
-This repository is part of the European Research Council-funded Digital Ludeme Project (ERC Consolidator Grant \#771292) run by Cameron Browne at [Maastricht University's Department of Advanced Computing Sciences](https://www.maastrichtuniversity.nl/dacs). 
+When adding new TypeScript ports:
 
-<a href="https://erc.europa.eu/"><img src="./resources/LOGO_ERC-FLAG_EU_.jpg" title="Funded by the European Research Council" alt="European Research Council Logo" height="384"></a>
+1. Use the Java implementation as the source of truth.
+2. Keep the TypeScript work isolated under `/home/runner/work/Ludii/Ludii/typescript/packages`.
+3. Add parity-oriented tests for every behavior that is being ported.
+4. Update documentation when the port surface changes.
+
+## Other resources
+
+- [Ludii Tutorials](https://ludiitutorials.readthedocs.io/en/latest/)
+- [Ludii downloads and manuals](https://ludii.games/download.php)
+- [Ludii Example AI](https://github.com/Ludeme/LudiiExampleAI)
+- [Ludii Python AI](https://github.com/Ludeme/LudiiPythonAI)
+- [Ludii AI Competition](https://github.com/Ludeme/LudiiAICompetition)
+
+## Contributing
+
+Contributions are welcome for both the Java code and the TypeScript port.
+
+- Use pull requests for code and documentation changes.
+- Keep TypeScript changes scoped to the workspace when possible.
+- Treat the Java implementation as the behavioral reference unless the fork explicitly decides otherwise for a given module.
+
+## Citation
+
+When citing Ludii in academic work, use the project paper:
+https://ecai2020.eu/papers/1248_paper.pdf
+
+## Contact
+
+For help with the upstream Ludii project, use the [Ludii Forum](https://ludii.games/forums/) or `ludii(dot)games(at)gmail(dot)com`.

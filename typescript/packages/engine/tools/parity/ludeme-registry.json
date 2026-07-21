@@ -1,0 +1,4138 @@
+{
+  "generated": "2026-05-20T19:11:07.438Z",
+  "ludemes": [
+    {
+      "name": "All",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/all/All.java",
+      "source": "classtree",
+      "grammarToken": "all"
+    },
+    {
+      "name": "All",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/deductionPuzzle/all/All.java",
+      "source": "classtree",
+      "grammarToken": "all"
+    },
+    {
+      "name": "AllDiceEqual",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "DiceEqual"
+    },
+    {
+      "name": "AllDiceUsed",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "DiceUsed"
+    },
+    {
+      "name": "AllDifferent",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Different"
+    },
+    {
+      "name": "AllGroups",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Groups"
+    },
+    {
+      "name": "AllPassed",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Passed"
+    },
+    {
+      "name": "AllSites",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Sites",
+      "signature": "(sites <sitesEdgeType>) | (sites Group [<siteType>] (at:<int> | from:<sites>) [<direction>] [if:<boolean>]) | (sites Crossing at:<int> [<moves.player> | <roleType>]) | (sites ({<int>} | <ints>)) | (sites <sitesMoveType> <moves>) | (sites [<siteType>] {<string>}) | (sites <sitesSimpleType> [<siteType>]) | (sites) | (sites Loop [inside:<boolean>] [<siteType>] [surround:<roleType> | {<roleType>}] [<direction>] [<int>] [<int> | <sites>]) | (sites Pattern {<stepType>} [<siteType>] [from:<int>] [what:<int> | whats:{<int>}]) | (sites Random [<sites>] [num:<int>]) | (sites LargePiece [<siteType>] at:<int>) | (sites Between [<direction>] [<siteType>] from:<int> [fromIncluded:<boolean>] to:<int> [toIncluded:<boolean>] [cond:<boolean>]) | (sites Hidden [<hiddenData>] [<siteType>] (to:<moves.player> | to:<roleType>)) | (sites Start <moves.piece>) | (sites Occupied (by:<moves.player> | by:<roleType>) [container:<int> | container:<string>] [component:<int> | component:<string> | components:{<string>}] [top:<boolean>] [on:<siteType>]) | (sites Incident <siteType> of:<siteType> at:<int> [owner:<moves.player> | <roleType>]) | (sites Around [<siteType>] (<int> | <sites>) [<regionTypeDynamic>] [distance:<int>] [<absoluteDirection>] [if:<boolean>] [includeSelf:<boolean>]) | (sites Direction (from:<int> | from:<sites>) [<direction>] [included:<boolean>] [stop:<boolean>] [stopIncluded:<boolean>] [distance:<int>] [<siteType>]) | (sites LineOfSight [<lineOfSightType>] [<siteType>] [at:<int>] [<direction>]) | (sites [<siteType>] [<int>] {{<stepType>}} [rotations:<boolean>]) | (sites <sitesIndexType> [<siteType>] [<int>]) | (sites Side [<siteType>] [<moves.player> | <roleType> | <compassDirection>]) | (sites <sitesPlayerType> [<siteType>] [<moves.player> | <roleType>] [<nonDecision>] [<string>]) | (sites Track [<moves.player> | <roleType>] [<string>] [from:<int>] [to:<int>]) | (sites Distance [<siteType>] [<relationType>] [<effect.step>] [newRotation:<int>] from:<int> <range>) | (sites [<moves.player> | <roleType>] [<siteType>] [<string>]) | (region <equipment.region>) | (region) | (region int) | (region <string> <container.board.board> {<string>}) | (region) | (region) | (region {int}) | (region) | <region.math.difference> | <expand> | <region.foreach.forEach> | <region.math.if> | <region.math.intersection> | <region.last.last> | <region.math.union>"
+    },
+    {
+      "name": "AllValues",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Values"
+    },
+    {
+      "name": "And",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/And.java",
+      "source": "classtree",
+      "grammarToken": "and"
+    },
+    {
+      "name": "Can",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/can/Can.java",
+      "source": "both",
+      "grammarToken": "can",
+      "signature": "(can Move <moves>)"
+    },
+    {
+      "name": "Equals",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/Equals.java",
+      "source": "both",
+      "grammarToken": "=",
+      "signature": "(= <sites> <sites>) | (= <int> (<int> | <roleType>))"
+    },
+    {
+      "name": "ForAll",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/deductionPuzzle/ForAll.java",
+      "source": "both",
+      "grammarToken": "forAll",
+      "signature": "(forAll <puzzleElementType> <boolean>)"
+    },
+    {
+      "name": "Ge",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/Ge.java",
+      "source": "classtree",
+      "grammarToken": ">="
+    },
+    {
+      "name": "Gt",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/Gt.java",
+      "source": "classtree",
+      "grammarToken": ">"
+    },
+    {
+      "name": "If",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/If.java",
+      "source": "classtree",
+      "grammarToken": "if"
+    },
+    {
+      "name": "Is",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/deductionPuzzle/is/Is.java",
+      "source": "classtree",
+      "grammarToken": "is"
+    },
+    {
+      "name": "Is",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/is/Is.java",
+      "source": "classtree",
+      "grammarToken": "is"
+    },
+    {
+      "name": "IsActive",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Active"
+    },
+    {
+      "name": "IsAnyDie",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "AnyDie"
+    },
+    {
+      "name": "IsBlocked",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Blocked"
+    },
+    {
+      "name": "IsCaterpillarTree",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "CaterpillarTree"
+    },
+    {
+      "name": "IsConnected",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Connected"
+    },
+    {
+      "name": "IsCount",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Count"
+    },
+    {
+      "name": "IsCycle",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Cycle"
+    },
+    {
+      "name": "IsDecided",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Decided"
+    },
+    {
+      "name": "IsEmpty",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Empty"
+    },
+    {
+      "name": "IsEnemy",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Enemy"
+    },
+    {
+      "name": "IsEven",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Even"
+    },
+    {
+      "name": "IsFlat",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Flat"
+    },
+    {
+      "name": "IsFriend",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Friend"
+    },
+    {
+      "name": "IsFull",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Full"
+    },
+    {
+      "name": "IsHidden",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Hidden"
+    },
+    {
+      "name": "IsIn",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "In"
+    },
+    {
+      "name": "IsLastFrom",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LastFrom"
+    },
+    {
+      "name": "IsLastTo",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LastTo"
+    },
+    {
+      "name": "IsLine",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Line",
+      "signature": "(is Triggered <string> (<int> | <roleType>)) | (is <isSimpleType>) | (is Crossing <int> <int>) | (is <isStringType> <string>) | (is <isGraphType> <siteType>) | (is Hidden [<hiddenData>] [<siteType>] at:<int> [level:<int>] (to:<moves.player> | to:<roleType>)) | (is Repeat [<repetitionType>]) | (is Pattern {<stepType>} [<siteType>] [from:<int>] [what:<int> | whats:{<int>}]) | (is <isTreeType> (<moves.player> | <roleType>)) | (is RegularGraph (<moves.player> | <roleType>) [k:<int> | odd:<boolean> | even:<boolean>]) | (is <isPlayerType> (<int> | <roleType>)) | (is Line [<siteType>] <int> [<absoluteDirection>] [through:<int> | throughAny:<sites>] [<roleType> | what:<int> | whats:{<int>}] [exact:<boolean>] [contiguous:<boolean>] [if:<boolean>] [byLevel:<boolean>]) | (is Loop [<siteType>] [surround:<roleType> | {<roleType>}] [<direction>] [<int>] [<int> | <sites>] [path:<boolean>]) | (is Path <siteType> [from:<int>] (<moves.player> | <roleType>) length:<range> [closed:<boolean>]) | (is <isSiteType> [<siteType>] <int>) | (is In [<int> | {<int>}] (<sites> | <ints>)) | (is <isIntegerType> [<int>]) | (is <isComponentType> [<int>] [<siteType>] [at:<int> | in:<sites>] [<moves>]) | (is <isConnectType> [<int>] [<siteType>] [at:<int>] [<direction>] ({<sites>} | <roleType> | <regionTypeStatic>)) | (is Related <relationType> [<siteType>] <int> (<int> | <sites>)) | (is Target [<int> | <string>] {<int>} [<int> | {<int>}])"
+    },
+    {
+      "name": "IsLoop",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Loop"
+    },
+    {
+      "name": "IsMover",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Mover",
+      "signature": "(mover)"
+    },
+    {
+      "name": "IsNext",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Next",
+      "signature": "(next)"
+    },
+    {
+      "name": "IsOccupied",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Occupied"
+    },
+    {
+      "name": "IsOdd",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Odd"
+    },
+    {
+      "name": "IsPath",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Path",
+      "signature": "(path from:<int> [slotsFrom:<int>] to:<int> [slotsTo:<int>] colour:<int>)"
+    },
+    {
+      "name": "IsPattern",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pattern"
+    },
+    {
+      "name": "IsPending",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pending"
+    },
+    {
+      "name": "IsPipsMatch",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "PipsMatch"
+    },
+    {
+      "name": "IsPrev",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Prev",
+      "signature": "(prev [<prevType>])"
+    },
+    {
+      "name": "IsProposed",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Proposed"
+    },
+    {
+      "name": "IsPyramidCorners",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "PyramidCorners"
+    },
+    {
+      "name": "IsRegularGraph",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "RegularGraph"
+    },
+    {
+      "name": "IsRelated",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Related"
+    },
+    {
+      "name": "IsRepeat",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Repeat",
+      "signature": "(repeat <dim> <dim> step:{{<float>}} (<poly> | {<poly>}))"
+    },
+    {
+      "name": "IsSolved",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Solved"
+    },
+    {
+      "name": "IsSpanningTree",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "SpanningTree"
+    },
+    {
+      "name": "IsSum",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Sum"
+    },
+    {
+      "name": "IsTarget",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Target"
+    },
+    {
+      "name": "IsThreatened",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Threatened"
+    },
+    {
+      "name": "IsTree",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Tree"
+    },
+    {
+      "name": "IsTreeCentre",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "TreeCentre"
+    },
+    {
+      "name": "IsTriggered",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Triggered"
+    },
+    {
+      "name": "IsUnique",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Unique"
+    },
+    {
+      "name": "IsVisited",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Visited"
+    },
+    {
+      "name": "IsWithin",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Within"
+    },
+    {
+      "name": "Le",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/Le.java",
+      "source": "both",
+      "grammarToken": "<=",
+      "signature": "(<= <int> <int>)"
+    },
+    {
+      "name": "Lt",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/Lt.java",
+      "source": "both",
+      "grammarToken": "<",
+      "signature": "(< <int> <int>)"
+    },
+    {
+      "name": "No",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/no/No.java",
+      "source": "classtree",
+      "grammarToken": "no"
+    },
+    {
+      "name": "NoMoves",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Moves",
+      "signature": "<effect.add> | <addScore> | <allCombinations> | <logical.and> | <append> | <apply> | <attract> | <avoidStoredState> | <bet> | <claim> | <custodial> | <effect.deal> | <decision> | <directional> | <do> | <effect> | <enclose> | <firstMoveOnTrack> | <flip> | <operators.foreach.forEach> | <forget> | <fromTo> | <hop> | <logical.if> | <intervene> | <leap> | <max.max> | <move> | <moveAgain> | <nonDecision> | <note> | <operator> | <logical.or> | <pass> | <playCard> | <priority> | <promote> | <propose> | <push> | <random> | <remember> | <effect.remove> | <roll> | <satisfy> | <select> | <effect.set.set> | <shoot> | <slide> | <sow> | <effect.step> | <surround> | <swap.swap> | <take> | <trigger> | <vote> | <while>"
+    },
+    {
+      "name": "NoPieces",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pieces"
+    },
+    {
+      "name": "Not",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/Not.java",
+      "source": "both",
+      "grammarToken": "not",
+      "signature": "(not <boolean>)"
+    },
+    {
+      "name": "NotEqual",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/NotEqual.java",
+      "source": "both",
+      "grammarToken": "!=",
+      "signature": "(!= <sites> <sites>) | (!= <int> (<int> | <roleType>))"
+    },
+    {
+      "name": "Or",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/Or.java",
+      "source": "classtree",
+      "grammarToken": "or"
+    },
+    {
+      "name": "ToBool",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/ToBool.java",
+      "source": "both",
+      "grammarToken": "toBool",
+      "signature": "(toBool (<int> | <float>))"
+    },
+    {
+      "name": "Was",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/was/Was.java",
+      "source": "both",
+      "grammarToken": "was",
+      "signature": "(was Pass)"
+    },
+    {
+      "name": "WasPass",
+      "category": "booleans",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pass",
+      "signature": "(pass [<then>])"
+    },
+    {
+      "name": "Xor",
+      "category": "booleans",
+      "javaClass": "game/functions/booleans/math/Xor.java",
+      "source": "both",
+      "grammarToken": "xor",
+      "signature": "(xor <boolean> <boolean>)"
+    },
+    {
+      "name": "Difference",
+      "category": "directions",
+      "javaClass": "game/functions/directions/Difference.java",
+      "source": "classtree",
+      "grammarToken": "difference"
+    },
+    {
+      "name": "Directions",
+      "category": "directions",
+      "javaClass": "game/functions/directions/Directions.java",
+      "source": "both",
+      "grammarToken": "directions",
+      "signature": "(directions (<absoluteDirection> | {<absoluteDirection>})) | (directions [<relativeDirection> | {<relativeDirection>}] [of:<relationType>] [bySite:<boolean>]) | (directions <siteType> from:<int> to:<int>) | (directions Random <direction> num:<int>)"
+    },
+    {
+      "name": "If",
+      "category": "directions",
+      "javaClass": "game/functions/directions/If.java",
+      "source": "classtree",
+      "grammarToken": "if"
+    },
+    {
+      "name": "Union",
+      "category": "directions",
+      "javaClass": "game/functions/directions/Union.java",
+      "source": "classtree",
+      "grammarToken": "union"
+    },
+    {
+      "name": "ByScore",
+      "category": "end",
+      "javaClass": "game/rules/end/ByScore.java",
+      "source": "both",
+      "grammarToken": "byScore",
+      "signature": "(byScore [{<end.score>}])"
+    },
+    {
+      "name": "End",
+      "category": "end",
+      "javaClass": "game/rules/end/End.java",
+      "source": "both",
+      "grammarToken": "end",
+      "signature": "(end (<endRule> | {<endRule>}))"
+    },
+    {
+      "name": "ForEach",
+      "category": "end",
+      "javaClass": "game/rules/end/ForEach.java",
+      "source": "both",
+      "grammarToken": "forEach",
+      "signature": "(forEach Player <startRule>) | (forEach Value min:<int> max:<int> <startRule>) | (forEach Site <sites> [if:<boolean>] <startRule>) | (forEach Team <startRule>) | (forEach <ints> <startRule>)"
+    },
+    {
+      "name": "If",
+      "category": "end",
+      "javaClass": "game/rules/end/If.java",
+      "source": "classtree",
+      "grammarToken": "if"
+    },
+    {
+      "name": "Payoffs",
+      "category": "end",
+      "javaClass": "game/rules/end/Payoffs.java",
+      "source": "both",
+      "grammarToken": "payoffs",
+      "signature": "(payoffs {<payoff>})"
+    },
+    {
+      "name": "Result",
+      "category": "end",
+      "javaClass": "game/rules/end/Result.java",
+      "source": "both",
+      "grammarToken": "result",
+      "signature": "(result <roleType> <resultType>) | <byScore> | <payoffs>"
+    },
+    {
+      "name": "Board",
+      "category": "equipment",
+      "javaClass": "game/equipment/container/board/Board.java",
+      "source": "classtree",
+      "grammarToken": "board"
+    },
+    {
+      "name": "Boardless",
+      "category": "equipment",
+      "javaClass": "game/equipment/container/board/Boardless.java",
+      "source": "both",
+      "grammarToken": "boardless",
+      "signature": "(boardless <tilingBoardlessType> [<dim>] [largeStack:<boolean>])"
+    },
+    {
+      "name": "Card",
+      "category": "equipment",
+      "javaClass": "game/equipment/component/Card.java",
+      "source": "both",
+      "grammarToken": "card",
+      "signature": "(card <cardSiteType> at:<int> [level:<int>]) | (card TrumpSuit)"
+    },
+    {
+      "name": "Card",
+      "category": "equipment",
+      "javaClass": "game/util/equipment/Card.java",
+      "source": "both",
+      "grammarToken": "card",
+      "signature": "(card <cardSiteType> at:<int> [level:<int>]) | (card TrumpSuit)"
+    },
+    {
+      "name": "Deck",
+      "category": "equipment",
+      "javaClass": "game/equipment/container/other/Deck.java",
+      "source": "both",
+      "grammarToken": "deck",
+      "signature": "(deck [<roleType>] [cardsBySuit:<int>] [suits:<int>] [{<equipment.card>}])"
+    },
+    {
+      "name": "Dice",
+      "category": "equipment",
+      "javaClass": "game/equipment/container/other/Dice.java",
+      "source": "both",
+      "grammarToken": "dice",
+      "signature": "(dice [d:<int>] [faces:{<int>} | facesByDie:{{<int>}} | from:<int>] [<roleType>] num:<int> [biased:{<int>}])"
+    },
+    {
+      "name": "Die",
+      "category": "equipment",
+      "javaClass": "game/equipment/component/Die.java",
+      "source": "both",
+      "grammarToken": "die",
+      "signature": "(die <string> <roleType> numFaces:<int> [<directionFacing>] [<moves>])"
+    },
+    {
+      "name": "Domino",
+      "category": "equipment",
+      "javaClass": "game/equipment/component/tile/Domino.java",
+      "source": "both",
+      "grammarToken": "domino",
+      "signature": "(domino <string> <roleType> value:<int> value2:<int> [<moves>])"
+    },
+    {
+      "name": "Dominoes",
+      "category": "equipment",
+      "javaClass": "game/equipment/other/Dominoes.java",
+      "source": "both",
+      "grammarToken": "dominoes",
+      "signature": "(dominoes [upTo:<int>])"
+    },
+    {
+      "name": "Equipment",
+      "category": "equipment",
+      "javaClass": "game/equipment/Equipment.java",
+      "source": "both",
+      "grammarToken": "equipment",
+      "signature": "(equipment {<item>})"
+    },
+    {
+      "name": "Hand",
+      "category": "equipment",
+      "javaClass": "game/equipment/container/other/Hand.java",
+      "source": "classtree",
+      "grammarToken": "hand"
+    },
+    {
+      "name": "Hint",
+      "category": "equipment",
+      "javaClass": "game/util/equipment/Hint.java",
+      "source": "classtree",
+      "grammarToken": "hint"
+    },
+    {
+      "name": "Hints",
+      "category": "equipment",
+      "javaClass": "game/equipment/other/Hints.java",
+      "source": "both",
+      "grammarToken": "hints",
+      "signature": "(hints [<string>] {<equipment.hint>} [<siteType>])"
+    },
+    {
+      "name": "MancalaBoard",
+      "category": "equipment",
+      "javaClass": "game/equipment/container/board/custom/MancalaBoard.java",
+      "source": "both",
+      "grammarToken": "mancalaBoard",
+      "signature": "(mancalaBoard <int> <int> [store:<storeType>] [numStores:<int>] [largeStack:<boolean>] [<board.track> | {<board.track>}])"
+    },
+    {
+      "name": "Map",
+      "category": "equipment",
+      "javaClass": "game/equipment/other/Map.java",
+      "source": "both",
+      "grammarToken": "map",
+      "signature": "(map [<string>] {<int>} {<int>}) | (map [<string>] {<math.pair>})"
+    },
+    {
+      "name": "Path",
+      "category": "equipment",
+      "javaClass": "game/equipment/component/tile/Path.java",
+      "source": "both",
+      "grammarToken": "path",
+      "signature": "(path from:<int> [slotsFrom:<int>] to:<int> [slotsTo:<int>] colour:<int>)"
+    },
+    {
+      "name": "Piece",
+      "category": "equipment",
+      "javaClass": "game/equipment/component/Piece.java",
+      "source": "classtree",
+      "grammarToken": "piece"
+    },
+    {
+      "name": "Player",
+      "category": "equipment",
+      "javaClass": "game/players/Player.java",
+      "source": "classtree",
+      "grammarToken": "player"
+    },
+    {
+      "name": "Players",
+      "category": "equipment",
+      "javaClass": "game/players/Players.java",
+      "source": "both",
+      "grammarToken": "players",
+      "signature": "(players <int>) | (players {<players.player>})"
+    },
+    {
+      "name": "Regions",
+      "category": "equipment",
+      "javaClass": "game/equipment/other/Regions.java",
+      "source": "both",
+      "grammarToken": "regions",
+      "signature": "(regions [<string>] [<roleType>] ({<int>} | <sites> | {<sites>} | <regionTypeStatic> | {<regionTypeStatic>}) [<string>])"
+    },
+    {
+      "name": "SurakartaBoard",
+      "category": "equipment",
+      "javaClass": "game/equipment/container/board/custom/SurakartaBoard.java",
+      "source": "both",
+      "grammarToken": "surakartaBoard",
+      "signature": "(surakartaBoard <graph> [loops:<int>] [from:<int>] [largeStack:<boolean>])"
+    },
+    {
+      "name": "Tile",
+      "category": "equipment",
+      "javaClass": "game/equipment/component/tile/Tile.java",
+      "source": "both",
+      "grammarToken": "tile",
+      "signature": "(tile <string> [<roleType>] [{<stepType>} | {{<stepType>}}] [numSides:<int>] [slots:{<int>} | slotsPerSide:<int>] [{<path>}] [<flips>] [<moves>] [maxState:<int>] [maxCount:<int>] [maxValue:<int>])"
+    },
+    {
+      "name": "Track",
+      "category": "equipment",
+      "javaClass": "game/equipment/container/board/Track.java",
+      "source": "classtree",
+      "grammarToken": "track"
+    },
+    {
+      "name": "Values",
+      "category": "equipment",
+      "javaClass": "game/util/equipment/Values.java",
+      "source": "both",
+      "grammarToken": "values",
+      "signature": "(values Remembered [<string>])"
+    },
+    {
+      "name": "Brick",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/basis/brick/Brick.java",
+      "source": "both",
+      "grammarToken": "brick",
+      "signature": "(brick [<brickShapeType>] <dim> [<dim>] [trim:<boolean>])"
+    },
+    {
+      "name": "Celtic",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/basis/celtic/Celtic.java",
+      "source": "both",
+      "grammarToken": "celtic",
+      "signature": "(celtic (<poly> | {<dim>})) | (celtic <dim> [<dim>])"
+    },
+    {
+      "name": "Concentric",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/shape/concentric/Concentric.java",
+      "source": "both",
+      "grammarToken": "concentric",
+      "signature": "(concentric (<concentricShapeType> | sides:<dim> | {<dim>}) [rings:<dim>] [steps:<dim>] [midpoints:<boolean>] [joinMidpoints:<boolean>] [joinCorners:<boolean>] [stagger:<boolean>])"
+    },
+    {
+      "name": "Hex",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/basis/hex/Hex.java",
+      "source": "both",
+      "grammarToken": "hex",
+      "signature": "(hex (<poly> | {<dim>})) | (hex [<hexShapeType>] <dim> [<dim>])"
+    },
+    {
+      "name": "Quadhex",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/basis/quadhex/Quadhex.java",
+      "source": "both",
+      "grammarToken": "quadhex",
+      "signature": "(quadhex <dim> [thirds:<boolean>])"
+    },
+    {
+      "name": "Rectangle",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/shape/Rectangle.java",
+      "source": "both",
+      "grammarToken": "rectangle",
+      "signature": "(rectangle <dim> [<dim>] [diagonals:<diagonalsType>])"
+    },
+    {
+      "name": "Repeat",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/shape/Repeat.java",
+      "source": "both",
+      "grammarToken": "repeat",
+      "signature": "(repeat <dim> <dim> step:{{<float>}} (<poly> | {<poly>}))"
+    },
+    {
+      "name": "Spiral",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/shape/Spiral.java",
+      "source": "both",
+      "grammarToken": "spiral",
+      "signature": "(spiral turns:<dim> sites:<dim> [clockwise:<boolean>])"
+    },
+    {
+      "name": "Square",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/basis/square/Square.java",
+      "source": "both",
+      "grammarToken": "square",
+      "signature": "(square (<poly> | {<dim>}) [diagonals:<diagonalsType>]) | (square [<squareShapeType>] <dim> [diagonals:<diagonalsType> | pyramidal:<boolean>])"
+    },
+    {
+      "name": "Tri",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/basis/tri/Tri.java",
+      "source": "both",
+      "grammarToken": "tri",
+      "signature": "(tri (<poly> | {<dim>})) | (tri [<triShapeType>] <dim> [<dim>])"
+    },
+    {
+      "name": "Wedge",
+      "category": "graph-generators",
+      "javaClass": "game/functions/graph/generators/shape/Wedge.java",
+      "source": "both",
+      "grammarToken": "wedge",
+      "signature": "(wedge <dim> [<dim>])"
+    },
+    {
+      "name": "Add",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Add.java",
+      "source": "classtree",
+      "grammarToken": "add"
+    },
+    {
+      "name": "Clip",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Clip.java",
+      "source": "both",
+      "grammarToken": "clip",
+      "signature": "(clip <graph> <poly>)"
+    },
+    {
+      "name": "Complete",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Complete.java",
+      "source": "both",
+      "grammarToken": "complete",
+      "signature": "(complete <graph> [eachCell:<boolean>])"
+    },
+    {
+      "name": "Dual",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Dual.java",
+      "source": "both",
+      "grammarToken": "dual",
+      "signature": "(dual <graph>)"
+    },
+    {
+      "name": "Hole",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Hole.java",
+      "source": "both",
+      "grammarToken": "hole",
+      "signature": "(hole <graph> <poly>)"
+    },
+    {
+      "name": "Intersect",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Intersect.java",
+      "source": "both",
+      "grammarToken": "intersect",
+      "signature": "(intersect {<graph>}) | (intersect <graph> <graph>)"
+    },
+    {
+      "name": "Keep",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Keep.java",
+      "source": "both",
+      "grammarToken": "keep",
+      "signature": "(keep <graph> <poly>)"
+    },
+    {
+      "name": "Layers",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Layers.java",
+      "source": "both",
+      "grammarToken": "layers",
+      "signature": "(layers <dim> <graph>)"
+    },
+    {
+      "name": "MakeFaces",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/MakeFaces.java",
+      "source": "both",
+      "grammarToken": "makeFaces",
+      "signature": "(makeFaces <graph>)"
+    },
+    {
+      "name": "Merge",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Merge.java",
+      "source": "both",
+      "grammarToken": "merge",
+      "signature": "(merge {<graph>} [connect:<boolean>]) | (merge <graph> <graph> [connect:<boolean>])"
+    },
+    {
+      "name": "Recoordinate",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Recoordinate.java",
+      "source": "both",
+      "grammarToken": "recoordinate",
+      "signature": "(recoordinate [<siteType>] [<siteType>] [<siteType>] <graph>)"
+    },
+    {
+      "name": "Remove",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Remove.java",
+      "source": "classtree",
+      "grammarToken": "remove"
+    },
+    {
+      "name": "Renumber",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Renumber.java",
+      "source": "both",
+      "grammarToken": "renumber",
+      "signature": "(renumber [<siteType>] [<siteType>] [<siteType>] <graph>)"
+    },
+    {
+      "name": "Rotate",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Rotate.java",
+      "source": "both",
+      "grammarToken": "rotate",
+      "signature": "(rotate <float> <graph>)"
+    },
+    {
+      "name": "Scale",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Scale.java",
+      "source": "both",
+      "grammarToken": "scale",
+      "signature": "(scale <float> [<float>] [<float>] <graph>)"
+    },
+    {
+      "name": "Shift",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Shift.java",
+      "source": "both",
+      "grammarToken": "shift",
+      "signature": "(shift <float> <float> [<float>] <graph>)"
+    },
+    {
+      "name": "Skew",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Skew.java",
+      "source": "both",
+      "grammarToken": "skew",
+      "signature": "(skew <float> <graph>)"
+    },
+    {
+      "name": "SplitCrossings",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/SplitCrossings.java",
+      "source": "both",
+      "grammarToken": "splitCrossings",
+      "signature": "(splitCrossings <graph>)"
+    },
+    {
+      "name": "Subdivide",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Subdivide.java",
+      "source": "both",
+      "grammarToken": "subdivide",
+      "signature": "(subdivide <graph> [min:<dim>])"
+    },
+    {
+      "name": "Trim",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Trim.java",
+      "source": "both",
+      "grammarToken": "trim",
+      "signature": "(trim <graph>)"
+    },
+    {
+      "name": "Union",
+      "category": "graph-operators",
+      "javaClass": "game/functions/graph/operators/Union.java",
+      "source": "classtree",
+      "grammarToken": "union"
+    },
+    {
+      "name": "Abs",
+      "category": "ints",
+      "javaClass": "game/functions/dim/math/Abs.java",
+      "source": "classtree",
+      "grammarToken": "abs"
+    },
+    {
+      "name": "Abs",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Abs.java",
+      "source": "classtree",
+      "grammarToken": "abs"
+    },
+    {
+      "name": "Abs",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Abs.java",
+      "source": "classtree",
+      "grammarToken": "abs"
+    },
+    {
+      "name": "Add",
+      "category": "ints",
+      "javaClass": "game/functions/dim/math/Add.java",
+      "source": "classtree",
+      "grammarToken": "add"
+    },
+    {
+      "name": "Add",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Add.java",
+      "source": "classtree",
+      "grammarToken": "add"
+    },
+    {
+      "name": "Add",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Add.java",
+      "source": "classtree",
+      "grammarToken": "add"
+    },
+    {
+      "name": "Ahead",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/Ahead.java",
+      "source": "both",
+      "grammarToken": "ahead",
+      "signature": "(ahead [<siteType>] <int> [steps:<int>] [<direction>])"
+    },
+    {
+      "name": "Amount",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Amount.java",
+      "source": "both",
+      "grammarToken": "amount",
+      "signature": "(amount (<roleType> | <moves.player>))"
+    },
+    {
+      "name": "Array",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/array/Array.java",
+      "source": "both",
+      "grammarToken": "array",
+      "signature": "(array {<int>}) | (array <sites>)"
+    },
+    {
+      "name": "ArrayValue",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/ArrayValue.java",
+      "source": "both",
+      "grammarToken": "arrayValue",
+      "signature": "(arrayValue <ints> index:<int>)"
+    },
+    {
+      "name": "Between",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/Between.java",
+      "source": "classtree",
+      "grammarToken": "between"
+    },
+    {
+      "name": "Card",
+      "category": "ints",
+      "javaClass": "game/functions/ints/card/Card.java",
+      "source": "both",
+      "grammarToken": "card",
+      "signature": "(card <cardSiteType> at:<int> [level:<int>]) | (card TrumpSuit)"
+    },
+    {
+      "name": "CentrePoint",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/CentrePoint.java",
+      "source": "both",
+      "grammarToken": "centrePoint",
+      "signature": "(centrePoint [<siteType>])"
+    },
+    {
+      "name": "Column",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/Column.java",
+      "source": "both",
+      "grammarToken": "column",
+      "signature": "(column [<siteType>] of:<int>)"
+    },
+    {
+      "name": "Coord",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/Coord.java",
+      "source": "both",
+      "grammarToken": "coord",
+      "signature": "(coord [<siteType>] row:<int> column:<int>) | (coord [<siteType>] <string>)"
+    },
+    {
+      "name": "Cos",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Cos.java",
+      "source": "both",
+      "grammarToken": "cos",
+      "signature": "(cos <float>)"
+    },
+    {
+      "name": "Cost",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/Cost.java",
+      "source": "both",
+      "grammarToken": "cost",
+      "signature": "(cost [<siteType>] (at:<int> | in:<sites>))"
+    },
+    {
+      "name": "Count",
+      "category": "ints",
+      "javaClass": "game/functions/ints/count/Count.java",
+      "source": "both",
+      "grammarToken": "count",
+      "signature": "(count <countComponentType> [<siteType>] [<roleType> | of:<int>] [<string>] [in:<sites>] [if:<boolean>]) | (count [<countSiteType>] [<siteType>] [in:<sites> | at:<int> | <string>]) | (count <countSimpleType> [<siteType>]) | (count Stack [<stackDirection>] [<siteType>] (at:<int> | to:<sites>) [if:<boolean>] [stop:<boolean>]) | (count Value <int> in:<ints>) | (count StepsOnTrack [<roleType> | <moves.player> | <string>] [<int>] [<int>]) | (count Steps [<siteType>] [<relationType>] [<effect.step>] [newRotation:<int>] <int> (<int> | <sites>)) | (count Groups [<siteType>] [<direction>] [if:<boolean>] [min:<int>]) | (count Liberties [<siteType>] [at:<int>] [<direction>] [if:<boolean>])"
+    },
+    {
+      "name": "CountActive",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Active"
+    },
+    {
+      "name": "CountAdjacent",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Adjacent"
+    },
+    {
+      "name": "CountCells",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Cells"
+    },
+    {
+      "name": "CountColumns",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Columns"
+    },
+    {
+      "name": "CountDiagonal",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Diagonal"
+    },
+    {
+      "name": "CountEdges",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Edges"
+    },
+    {
+      "name": "Counter",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Counter.java",
+      "source": "both",
+      "grammarToken": "counter",
+      "signature": "(counter)"
+    },
+    {
+      "name": "CountGroups",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Groups"
+    },
+    {
+      "name": "CountLegalMoves",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LegalMoves"
+    },
+    {
+      "name": "CountLiberties",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Liberties"
+    },
+    {
+      "name": "CountMoves",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Moves",
+      "signature": "<effect.add> | <addScore> | <allCombinations> | <logical.and> | <append> | <apply> | <attract> | <avoidStoredState> | <bet> | <claim> | <custodial> | <effect.deal> | <decision> | <directional> | <do> | <effect> | <enclose> | <firstMoveOnTrack> | <flip> | <operators.foreach.forEach> | <forget> | <fromTo> | <hop> | <logical.if> | <intervene> | <leap> | <max.max> | <move> | <moveAgain> | <nonDecision> | <note> | <operator> | <logical.or> | <pass> | <playCard> | <priority> | <promote> | <propose> | <push> | <random> | <remember> | <effect.remove> | <roll> | <satisfy> | <select> | <effect.set.set> | <shoot> | <slide> | <sow> | <effect.step> | <surround> | <swap.swap> | <take> | <trigger> | <vote> | <while>"
+    },
+    {
+      "name": "CountMovesThisTurn",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "MovesThisTurn"
+    },
+    {
+      "name": "CountNeighbours",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Neighbours"
+    },
+    {
+      "name": "CountOff",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Off"
+    },
+    {
+      "name": "CountOrthogonal",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Orthogonal"
+    },
+    {
+      "name": "CountPhases",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Phases"
+    },
+    {
+      "name": "CountPieces",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pieces"
+    },
+    {
+      "name": "CountPips",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pips",
+      "signature": "(pips)"
+    },
+    {
+      "name": "CountPlayers",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Players",
+      "signature": "(players <int>) | (players {<players.player>})"
+    },
+    {
+      "name": "CountRows",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Rows"
+    },
+    {
+      "name": "CountSites",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Sites",
+      "signature": "(sites <sitesEdgeType>) | (sites Group [<siteType>] (at:<int> | from:<sites>) [<direction>] [if:<boolean>]) | (sites Crossing at:<int> [<moves.player> | <roleType>]) | (sites ({<int>} | <ints>)) | (sites <sitesMoveType> <moves>) | (sites [<siteType>] {<string>}) | (sites <sitesSimpleType> [<siteType>]) | (sites) | (sites Loop [inside:<boolean>] [<siteType>] [surround:<roleType> | {<roleType>}] [<direction>] [<int>] [<int> | <sites>]) | (sites Pattern {<stepType>} [<siteType>] [from:<int>] [what:<int> | whats:{<int>}]) | (sites Random [<sites>] [num:<int>]) | (sites LargePiece [<siteType>] at:<int>) | (sites Between [<direction>] [<siteType>] from:<int> [fromIncluded:<boolean>] to:<int> [toIncluded:<boolean>] [cond:<boolean>]) | (sites Hidden [<hiddenData>] [<siteType>] (to:<moves.player> | to:<roleType>)) | (sites Start <moves.piece>) | (sites Occupied (by:<moves.player> | by:<roleType>) [container:<int> | container:<string>] [component:<int> | component:<string> | components:{<string>}] [top:<boolean>] [on:<siteType>]) | (sites Incident <siteType> of:<siteType> at:<int> [owner:<moves.player> | <roleType>]) | (sites Around [<siteType>] (<int> | <sites>) [<regionTypeDynamic>] [distance:<int>] [<absoluteDirection>] [if:<boolean>] [includeSelf:<boolean>]) | (sites Direction (from:<int> | from:<sites>) [<direction>] [included:<boolean>] [stop:<boolean>] [stopIncluded:<boolean>] [distance:<int>] [<siteType>]) | (sites LineOfSight [<lineOfSightType>] [<siteType>] [at:<int>] [<direction>]) | (sites [<siteType>] [<int>] {{<stepType>}} [rotations:<boolean>]) | (sites <sitesIndexType> [<siteType>] [<int>]) | (sites Side [<siteType>] [<moves.player> | <roleType> | <compassDirection>]) | (sites <sitesPlayerType> [<siteType>] [<moves.player> | <roleType>] [<nonDecision>] [<string>]) | (sites Track [<moves.player> | <roleType>] [<string>] [from:<int>] [to:<int>]) | (sites Distance [<siteType>] [<relationType>] [<effect.step>] [newRotation:<int>] from:<int> <range>) | (sites [<moves.player> | <roleType>] [<siteType>] [<string>]) | (region <equipment.region>) | (region) | (region int) | (region <string> <container.board.board> {<string>}) | (region) | (region) | (region {int}) | (region) | <region.math.difference> | <expand> | <region.foreach.forEach> | <region.math.if> | <region.math.intersection> | <region.last.last> | <region.math.union>"
+    },
+    {
+      "name": "CountSizeBiggestGroup",
+      "category": "ints",
+      "javaClass": "game/functions/ints/count/sizeBiggestGroup/CountSizeBiggestGroup.java",
+      "source": "both",
+      "grammarToken": "count",
+      "signature": "(count <countComponentType> [<siteType>] [<roleType> | of:<int>] [<string>] [in:<sites>] [if:<boolean>]) | (count [<countSiteType>] [<siteType>] [in:<sites> | at:<int> | <string>]) | (count <countSimpleType> [<siteType>]) | (count Stack [<stackDirection>] [<siteType>] (at:<int> | to:<sites>) [if:<boolean>] [stop:<boolean>]) | (count Value <int> in:<ints>) | (count StepsOnTrack [<roleType> | <moves.player> | <string>] [<int>] [<int>]) | (count Steps [<siteType>] [<relationType>] [<effect.step>] [newRotation:<int>] <int> (<int> | <sites>)) | (count Groups [<siteType>] [<direction>] [if:<boolean>] [min:<int>]) | (count Liberties [<siteType>] [at:<int>] [<direction>] [if:<boolean>])"
+    },
+    {
+      "name": "CountStack",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Stack"
+    },
+    {
+      "name": "CountSteps",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Steps"
+    },
+    {
+      "name": "CountStepsOnTrack",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "StepsOnTrack"
+    },
+    {
+      "name": "CountTrials",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Trials"
+    },
+    {
+      "name": "CountTurns",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Turns"
+    },
+    {
+      "name": "CountValue",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Value",
+      "signature": "(value Piece [<siteType>] at:<int> [level:<int>]) | (value Player (<int> | <roleType>)) | (value <valueSimpleType>) | (value Random <range>) | (value)"
+    },
+    {
+      "name": "CountVertices",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Vertices"
+    },
+    {
+      "name": "Difference",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/math/Difference.java",
+      "source": "classtree",
+      "grammarToken": "difference"
+    },
+    {
+      "name": "Div",
+      "category": "ints",
+      "javaClass": "game/functions/dim/math/Div.java",
+      "source": "classtree",
+      "grammarToken": "/"
+    },
+    {
+      "name": "Div",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Div.java",
+      "source": "classtree",
+      "grammarToken": "/"
+    },
+    {
+      "name": "Div",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Div.java",
+      "source": "classtree",
+      "grammarToken": "/"
+    },
+    {
+      "name": "Edge",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/Edge.java",
+      "source": "classtree",
+      "grammarToken": "edge"
+    },
+    {
+      "name": "Exact",
+      "category": "ints",
+      "javaClass": "game/functions/range/math/Exact.java",
+      "source": "both",
+      "grammarToken": "exact",
+      "signature": "(exact <int>)"
+    },
+    {
+      "name": "Exp",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Exp.java",
+      "source": "both",
+      "grammarToken": "exp",
+      "signature": "(exp <float>)"
+    },
+    {
+      "name": "Face",
+      "category": "ints",
+      "javaClass": "game/functions/ints/dice/Face.java",
+      "source": "classtree",
+      "grammarToken": "face"
+    },
+    {
+      "name": "From",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/From.java",
+      "source": "classtree",
+      "grammarToken": "from"
+    },
+    {
+      "name": "HandSite",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/HandSite.java",
+      "source": "both",
+      "grammarToken": "handSite",
+      "signature": "(handSite (<int> | <roleType>) [<int>])"
+    },
+    {
+      "name": "Hint",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/Hint.java",
+      "source": "classtree",
+      "grammarToken": "hint"
+    },
+    {
+      "name": "Id",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/Id.java",
+      "source": "classtree",
+      "grammarToken": "id"
+    },
+    {
+      "name": "If",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/math/If.java",
+      "source": "classtree",
+      "grammarToken": "if"
+    },
+    {
+      "name": "If",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/If.java",
+      "source": "classtree",
+      "grammarToken": "if"
+    },
+    {
+      "name": "Intersection",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/math/Intersection.java",
+      "source": "classtree",
+      "grammarToken": "intersection"
+    },
+    {
+      "name": "Last",
+      "category": "ints",
+      "javaClass": "game/functions/ints/last/Last.java",
+      "source": "classtree",
+      "grammarToken": "last"
+    },
+    {
+      "name": "LastFrom",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "From"
+    },
+    {
+      "name": "LastLevelFrom",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LevelFrom"
+    },
+    {
+      "name": "LastLevelTo",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LevelTo"
+    },
+    {
+      "name": "LastTo",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "To"
+    },
+    {
+      "name": "Layer",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/Layer.java",
+      "source": "both",
+      "grammarToken": "layer",
+      "signature": "(layer of:<int> [<siteType>])"
+    },
+    {
+      "name": "Level",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/Level.java",
+      "source": "both",
+      "grammarToken": "level",
+      "signature": "(level)"
+    },
+    {
+      "name": "Log",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Log.java",
+      "source": "both",
+      "grammarToken": "log",
+      "signature": "(log <float>)"
+    },
+    {
+      "name": "Log10",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Log10.java",
+      "source": "both",
+      "grammarToken": "log10",
+      "signature": "(log10 <float>)"
+    },
+    {
+      "name": "MapEntry",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/MapEntry.java",
+      "source": "both",
+      "grammarToken": "mapEntry",
+      "signature": "(mapEntry [<string>] (<int> | <roleType>))"
+    },
+    {
+      "name": "MatchScore",
+      "category": "ints",
+      "javaClass": "game/functions/ints/match/MatchScore.java",
+      "source": "both",
+      "grammarToken": "matchScore",
+      "signature": "(matchScore <roleType>)"
+    },
+    {
+      "name": "Max",
+      "category": "ints",
+      "javaClass": "game/functions/dim/math/Max.java",
+      "source": "both",
+      "grammarToken": "max",
+      "signature": "(max Distance [<string>] [<roleType>] <moves> [<then>]) | (max <maxMovesType> [withValue:<boolean>] <moves> [<then>])"
+    },
+    {
+      "name": "Max",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Max.java",
+      "source": "both",
+      "grammarToken": "max",
+      "signature": "(max Distance [<string>] [<roleType>] <moves> [<then>]) | (max <maxMovesType> [withValue:<boolean>] <moves> [<then>])"
+    },
+    {
+      "name": "Max",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Max.java",
+      "source": "both",
+      "grammarToken": "max",
+      "signature": "(max Distance [<string>] [<roleType>] <moves> [<then>]) | (max <maxMovesType> [withValue:<boolean>] <moves> [<then>])"
+    },
+    {
+      "name": "Max",
+      "category": "ints",
+      "javaClass": "game/functions/range/math/Max.java",
+      "source": "both",
+      "grammarToken": "max",
+      "signature": "(max Distance [<string>] [<roleType>] <moves> [<then>]) | (max <maxMovesType> [withValue:<boolean>] <moves> [<then>])"
+    },
+    {
+      "name": "Min",
+      "category": "ints",
+      "javaClass": "game/functions/dim/math/Min.java",
+      "source": "classtree",
+      "grammarToken": "min"
+    },
+    {
+      "name": "Min",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Min.java",
+      "source": "classtree",
+      "grammarToken": "min"
+    },
+    {
+      "name": "Min",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Min.java",
+      "source": "classtree",
+      "grammarToken": "min"
+    },
+    {
+      "name": "Min",
+      "category": "ints",
+      "javaClass": "game/functions/range/math/Min.java",
+      "source": "classtree",
+      "grammarToken": "min"
+    },
+    {
+      "name": "Mod",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Mod.java",
+      "source": "both",
+      "grammarToken": "%",
+      "signature": "(% <int> <int>)"
+    },
+    {
+      "name": "Mover",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Mover.java",
+      "source": "both",
+      "grammarToken": "mover",
+      "signature": "(mover)"
+    },
+    {
+      "name": "Mul",
+      "category": "ints",
+      "javaClass": "game/functions/dim/math/Mul.java",
+      "source": "classtree",
+      "grammarToken": "*"
+    },
+    {
+      "name": "Mul",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Mul.java",
+      "source": "classtree",
+      "grammarToken": "*"
+    },
+    {
+      "name": "Mul",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Mul.java",
+      "source": "classtree",
+      "grammarToken": "*"
+    },
+    {
+      "name": "Next",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Next.java",
+      "source": "both",
+      "grammarToken": "next",
+      "signature": "(next)"
+    },
+    {
+      "name": "PathExtent",
+      "category": "ints",
+      "javaClass": "game/functions/ints/tile/PathExtent.java",
+      "source": "both",
+      "grammarToken": "pathExtent",
+      "signature": "(pathExtent [<int>] [<int> | <sites>])"
+    },
+    {
+      "name": "Phase",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/Phase.java",
+      "source": "both",
+      "grammarToken": "phase",
+      "signature": "(phase <string> [<roleType>] [<mode>] <play> [<end>] [<nextPhase> | {<nextPhase>}])"
+    },
+    {
+      "name": "Pips",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/Pips.java",
+      "source": "both",
+      "grammarToken": "pips",
+      "signature": "(pips)"
+    },
+    {
+      "name": "Player",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/Player.java",
+      "source": "classtree",
+      "grammarToken": "player"
+    },
+    {
+      "name": "Players",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/players/Players.java",
+      "source": "both",
+      "grammarToken": "players",
+      "signature": "(players <int>) | (players {<players.player>})"
+    },
+    {
+      "name": "Pot",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Pot.java",
+      "source": "both",
+      "grammarToken": "pot",
+      "signature": "(pot)"
+    },
+    {
+      "name": "Pow",
+      "category": "ints",
+      "javaClass": "game/functions/dim/math/Pow.java",
+      "source": "classtree",
+      "grammarToken": "^"
+    },
+    {
+      "name": "Pow",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Pow.java",
+      "source": "classtree",
+      "grammarToken": "^"
+    },
+    {
+      "name": "Pow",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Pow.java",
+      "source": "classtree",
+      "grammarToken": "^"
+    },
+    {
+      "name": "Prev",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Prev.java",
+      "source": "both",
+      "grammarToken": "prev",
+      "signature": "(prev [<prevType>])"
+    },
+    {
+      "name": "Range",
+      "category": "ints",
+      "javaClass": "game/functions/range/Range.java",
+      "source": "both",
+      "grammarToken": "range",
+      "signature": "(range <int> [<int>]) | <exact> | <range.math.max> | <range.math.min>"
+    },
+    {
+      "name": "RegionSite",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/RegionSite.java",
+      "source": "both",
+      "grammarToken": "regionSite",
+      "signature": "(regionSite <sites> index:<int>)"
+    },
+    {
+      "name": "Results",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/math/Results.java",
+      "source": "both",
+      "grammarToken": "results",
+      "signature": "(results (from:<int> | from:<sites>) (to:<int> | to:<sites>) <int>)"
+    },
+    {
+      "name": "Rotation",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Rotation.java",
+      "source": "both",
+      "grammarToken": "rotation",
+      "signature": "(rotation [<siteType>] at:<int> [level:<int>])"
+    },
+    {
+      "name": "Rotations",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/state/Rotations.java",
+      "source": "both",
+      "grammarToken": "rotations",
+      "signature": "(rotations (<absoluteDirection> | {<absoluteDirection>}))"
+    },
+    {
+      "name": "Row",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/Row.java",
+      "source": "both",
+      "grammarToken": "row",
+      "signature": "(row [<siteType>] of:<int>)"
+    },
+    {
+      "name": "Score",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Score.java",
+      "source": "classtree",
+      "grammarToken": "score"
+    },
+    {
+      "name": "Sin",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Sin.java",
+      "source": "both",
+      "grammarToken": "sin",
+      "signature": "(sin <float>)"
+    },
+    {
+      "name": "Site",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/Site.java",
+      "source": "both",
+      "grammarToken": "site",
+      "signature": "(site)"
+    },
+    {
+      "name": "Size",
+      "category": "ints",
+      "javaClass": "game/functions/ints/size/Size.java",
+      "source": "both",
+      "grammarToken": "size",
+      "signature": "(size Group [<siteType>] at:<int> [<direction>] [if:<boolean>]) | (size LargePiece [<siteType>] (in:<sites> | at:<int>)) | (size Stack [<siteType>] [in:<sites> | at:<int>]) | (size Array <ints>) | (size Territory [<siteType>] (<roleType> | <moves.player>) [<absoluteDirection>])"
+    },
+    {
+      "name": "SizeArray",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Array",
+      "signature": "(array {<int>}) | (array <sites>)"
+    },
+    {
+      "name": "SizeGroup",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Group"
+    },
+    {
+      "name": "SizeLargePiece",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LargePiece"
+    },
+    {
+      "name": "Sizes",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/sizes/Sizes.java",
+      "source": "both",
+      "grammarToken": "sizes",
+      "signature": "(sizes Group [<siteType>] [<direction>] [<roleType> | of:<int> | if:<boolean>] [min:<int>])"
+    },
+    {
+      "name": "SizeStack",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Stack"
+    },
+    {
+      "name": "SizeTerritory",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Territory"
+    },
+    {
+      "name": "Sqrt",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Sqrt.java",
+      "source": "both",
+      "grammarToken": "sqrt",
+      "signature": "(sqrt <float>)"
+    },
+    {
+      "name": "State",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/State.java",
+      "source": "both",
+      "grammarToken": "state",
+      "signature": "(state [<siteType>] at:<int> [level:<int>])"
+    },
+    {
+      "name": "Sub",
+      "category": "ints",
+      "javaClass": "game/functions/dim/math/Sub.java",
+      "source": "classtree",
+      "grammarToken": "-"
+    },
+    {
+      "name": "Sub",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Sub.java",
+      "source": "classtree",
+      "grammarToken": "-"
+    },
+    {
+      "name": "Sub",
+      "category": "ints",
+      "javaClass": "game/functions/ints/math/Sub.java",
+      "source": "classtree",
+      "grammarToken": "-"
+    },
+    {
+      "name": "Tan",
+      "category": "ints",
+      "javaClass": "game/functions/floats/math/Tan.java",
+      "source": "both",
+      "grammarToken": "tan",
+      "signature": "(tan <float>)"
+    },
+    {
+      "name": "Team",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/iteraror/Team.java",
+      "source": "both",
+      "grammarToken": "team",
+      "signature": "(team)"
+    },
+    {
+      "name": "To",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/To.java",
+      "source": "classtree",
+      "grammarToken": "to"
+    },
+    {
+      "name": "ToFloat",
+      "category": "ints",
+      "javaClass": "game/functions/floats/ToFloat.java",
+      "source": "both",
+      "grammarToken": "toFloat",
+      "signature": "(toFloat (<boolean> | <int>))"
+    },
+    {
+      "name": "ToInt",
+      "category": "ints",
+      "javaClass": "game/functions/ints/ToInt.java",
+      "source": "both",
+      "grammarToken": "toInt",
+      "signature": "(toInt (<boolean> | <float>))"
+    },
+    {
+      "name": "TopLevel",
+      "category": "ints",
+      "javaClass": "game/functions/ints/stacking/TopLevel.java",
+      "source": "both",
+      "grammarToken": "topLevel",
+      "signature": "(topLevel [<siteType>] at:<int>)"
+    },
+    {
+      "name": "Track",
+      "category": "ints",
+      "javaClass": "game/functions/ints/iterator/Track.java",
+      "source": "classtree",
+      "grammarToken": "track"
+    },
+    {
+      "name": "TrackSite",
+      "category": "ints",
+      "javaClass": "game/functions/ints/trackSite/TrackSite.java",
+      "source": "both",
+      "grammarToken": "trackSite",
+      "signature": "(trackSite Move [from:<int>] [<roleType> | <moves.player> | <string>] steps:<int>) | (trackSite EndSite [<moves.player> | <roleType>] [<string>]) | (trackSite FirstSite [<moves.player> | <roleType>] [<string>] [from:<int>] [if:<boolean>])"
+    },
+    {
+      "name": "TrackSiteEndSite",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "EndSite"
+    },
+    {
+      "name": "TrackSiteFirstSite",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "FirstSite"
+    },
+    {
+      "name": "TrackSiteMove",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Move",
+      "signature": "(move Set Rotation [<moves.to>] [{<int>} | <int>] [previous:<boolean>] [next:<boolean>] [<then>]) | (move Step [<moves.from>] [<direction>] <moves.to> [stack:<boolean>] [<then>]) | (move Slide [<moves.from>] [<string>] [<direction>] [<moves.between>] [<moves.to>] [stack:<boolean>] [<then>]) | (move Shoot <moves.piece> [<moves.from>] [<absoluteDirection>] [<moves.between>] [<moves.to>] [<then>]) | (move Select <moves.from> [<moves.to>] [<roleType>] [<then>]) | (move Swap Players (<int> <roleType>) (<int> <roleType>) [<then>]) | (move Swap Pieces [<int>] [<int>] [<then>]) | (move Remove [<siteType>] (<int> | <sites>) [level:<int>] [at:<whenType>] [count:<int>] [<then>]) | (move Set TrumpSuit (<int> | <intArray.math.difference>) [<then>]) | (move Set NextPlayer (<moves.player> | <ints>) [<then>]) | (move Hop [<moves.from>] [<direction>] [<moves.between>] <moves.to> [stack:<boolean>] [<then>]) | (move <moves.from> <moves.to> [count:<int>] [copy:<boolean>] [stack:<boolean>] [<roleType>] [<then>]) | (move Bet (<moves.player> | <roleType>) <range> [<then>]) | (move <moveSiteType> [<moves.piece>] <moves.to> [count:<int>] [stack:<boolean>] [<then>]) | (move <moveMessageType> (<string> | {<string>}) [<then>]) | (move Promote [<siteType>] [<int>] <moves.piece> [<moves.player> | <roleType>] [<then>]) | (move Leap [<moves.from>] {{<stepType>}} [forward:<boolean>] [rotations:<boolean>] <moves.to> [<then>]) | (move <moveSimpleType> [<then>])"
+    },
+    {
+      "name": "Union",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/math/Union.java",
+      "source": "classtree",
+      "grammarToken": "union"
+    },
+    {
+      "name": "Value",
+      "category": "ints",
+      "javaClass": "game/functions/ints/value/Value.java",
+      "source": "both",
+      "grammarToken": "value",
+      "signature": "(value Piece [<siteType>] at:<int> [level:<int>]) | (value Player (<int> | <roleType>)) | (value <valueSimpleType>) | (value Random <range>) | (value)"
+    },
+    {
+      "name": "ValueMoveLimit",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "MoveLimit"
+    },
+    {
+      "name": "ValuePending",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pending"
+    },
+    {
+      "name": "ValuePiece",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Piece"
+    },
+    {
+      "name": "ValuePlayer",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Player"
+    },
+    {
+      "name": "ValueRandom",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Random",
+      "signature": "(random <moves> num:<int>) | (random {<float>} {<moves>})"
+    },
+    {
+      "name": "Values",
+      "category": "ints",
+      "javaClass": "game/functions/intArray/values/Values.java",
+      "source": "both",
+      "grammarToken": "values",
+      "signature": "(values Remembered [<string>])"
+    },
+    {
+      "name": "ValueTurnLimit",
+      "category": "ints",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "TurnLimit"
+    },
+    {
+      "name": "Var",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Var.java",
+      "source": "both",
+      "grammarToken": "var",
+      "signature": "(var [<string>])"
+    },
+    {
+      "name": "What",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/What.java",
+      "source": "both",
+      "grammarToken": "what",
+      "signature": "(what [<siteType>] at:<int> [level:<int>])"
+    },
+    {
+      "name": "Where",
+      "category": "ints",
+      "javaClass": "game/functions/ints/board/where/Where.java",
+      "source": "both",
+      "grammarToken": "where",
+      "signature": "(where Level <string> (<int> | <roleType>) [state:<int>] [<siteType>] at:<int> [fromTop:<boolean>]) | (where <int> [<siteType>]) | (where <string> (<int> | <roleType>) [state:<int>] [<siteType>]) | (where Level <int> [<siteType>] at:<int> [fromTop:<boolean>])"
+    },
+    {
+      "name": "Who",
+      "category": "ints",
+      "javaClass": "game/functions/ints/state/Who.java",
+      "source": "both",
+      "grammarToken": "who",
+      "signature": "(who [<siteType>] at:<int> [level:<int>])"
+    },
+    {
+      "name": "Automove",
+      "category": "meta",
+      "javaClass": "game/rules/meta/Automove.java",
+      "source": "both",
+      "grammarToken": "automove",
+      "signature": "(automove)"
+    },
+    {
+      "name": "Games",
+      "category": "meta",
+      "javaClass": "game/match/Games.java",
+      "source": "both",
+      "grammarToken": "games",
+      "signature": "(games (<subgame> | {<subgame>}))"
+    },
+    {
+      "name": "Gravity",
+      "category": "meta",
+      "javaClass": "game/rules/meta/Gravity.java",
+      "source": "both",
+      "grammarToken": "gravity",
+      "signature": "(gravity [PyramidalDrop])"
+    },
+    {
+      "name": "Meta",
+      "category": "meta",
+      "javaClass": "game/rules/meta/Meta.java",
+      "source": "both",
+      "grammarToken": "meta",
+      "signature": "(meta ({<metaRule>} | <metaRule>))"
+    },
+    {
+      "name": "Mode",
+      "category": "meta",
+      "javaClass": "game/mode/Mode.java",
+      "source": "both",
+      "grammarToken": "mode",
+      "signature": "(mode <modeType>)"
+    },
+    {
+      "name": "NextPhase",
+      "category": "meta",
+      "javaClass": "game/rules/phase/NextPhase.java",
+      "source": "both",
+      "grammarToken": "nextPhase",
+      "signature": "(nextPhase [<roleType> | <moves.player>] [<boolean>] [<string>])"
+    },
+    {
+      "name": "No",
+      "category": "meta",
+      "javaClass": "game/rules/meta/no/No.java",
+      "source": "classtree",
+      "grammarToken": "no"
+    },
+    {
+      "name": "NoStackOn",
+      "category": "meta",
+      "javaClass": "game/rules/meta/NoStackOn.java",
+      "source": "classtree",
+      "grammarToken": "noStackOn"
+    },
+    {
+      "name": "PassEnd",
+      "category": "meta",
+      "javaClass": "game/rules/meta/PassEnd.java",
+      "source": "both",
+      "grammarToken": "passEnd",
+      "signature": "(passEnd <passEndType>)"
+    },
+    {
+      "name": "Phase",
+      "category": "meta",
+      "javaClass": "game/rules/phase/Phase.java",
+      "source": "both",
+      "grammarToken": "phase",
+      "signature": "(phase <string> [<roleType>] [<mode>] <play> [<end>] [<nextPhase> | {<nextPhase>}])"
+    },
+    {
+      "name": "Pin",
+      "category": "meta",
+      "javaClass": "game/rules/meta/Pin.java",
+      "source": "both",
+      "grammarToken": "pin",
+      "signature": "(pin SupportMultiple)"
+    },
+    {
+      "name": "Play",
+      "category": "meta",
+      "javaClass": "game/rules/play/Play.java",
+      "source": "both",
+      "grammarToken": "play",
+      "signature": "(play <moves>)"
+    },
+    {
+      "name": "Rules",
+      "category": "meta",
+      "javaClass": "game/rules/Rules.java",
+      "source": "both",
+      "grammarToken": "rules",
+      "signature": "(rules [<meta>] [<start>] [<play>] phases:{<phase.phase>} [<end>]) | (rules [<meta>] [<start>] <play> <end>)"
+    },
+    {
+      "name": "Subgame",
+      "category": "meta",
+      "javaClass": "game/match/Subgame.java",
+      "source": "both",
+      "grammarToken": "subgame",
+      "signature": "(subgame <string> [<string>] [next:<int>] [result:<int>])"
+    },
+    {
+      "name": "Swap",
+      "category": "meta",
+      "javaClass": "game/rules/meta/Swap.java",
+      "source": "both",
+      "grammarToken": "swap",
+      "signature": "(swap Players (<int> | <roleType>) (<int> | <roleType>) [<then>]) | (swap Pieces [<int> <int>] [<then>])"
+    },
+    {
+      "name": "Add",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Add.java",
+      "source": "classtree",
+      "grammarToken": "add"
+    },
+    {
+      "name": "AddScore",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/state/AddScore.java",
+      "source": "both",
+      "grammarToken": "addScore",
+      "signature": "(addScore ({<int>} | {<roleType>}) {<int>} [<then>]) | (addScore (<moves.player> | <roleType>) <int> [<then>])"
+    },
+    {
+      "name": "AllCombinations",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/operators/logical/AllCombinations.java",
+      "source": "both",
+      "grammarToken": "allCombinations",
+      "signature": "(allCombinations <moves> <moves> [<then>])"
+    },
+    {
+      "name": "And",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/operators/logical/And.java",
+      "source": "classtree",
+      "grammarToken": "and"
+    },
+    {
+      "name": "Append",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/operators/logical/Append.java",
+      "source": "both",
+      "grammarToken": "append",
+      "signature": "(append <nonDecision> [<then>])"
+    },
+    {
+      "name": "Apply",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Apply.java",
+      "source": "both",
+      "grammarToken": "apply",
+      "signature": "(apply if:<boolean>) | (apply <nonDecision>) | (apply if:<boolean> <nonDecision>)"
+    },
+    {
+      "name": "Attract",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Attract.java",
+      "source": "both",
+      "grammarToken": "attract",
+      "signature": "(attract [<moves.from>] [<absoluteDirection>] [<then>])"
+    },
+    {
+      "name": "AvoidStoredState",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/requirement/AvoidStoredState.java",
+      "source": "both",
+      "grammarToken": "avoidStoredState",
+      "signature": "(avoidStoredState <moves> [<then>])"
+    },
+    {
+      "name": "Bet",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Bet.java",
+      "source": "both",
+      "grammarToken": "bet",
+      "signature": "(bet (<moves.player> | <roleType>) <range> [<then>])"
+    },
+    {
+      "name": "Claim",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Claim.java",
+      "source": "both",
+      "grammarToken": "claim",
+      "signature": "(claim [<moves.piece>] <moves.to> [<then>])"
+    },
+    {
+      "name": "Custodial",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Custodial.java",
+      "source": "both",
+      "grammarToken": "custodial",
+      "signature": "(custodial [<moves.from>] [<absoluteDirection>] [<moves.between>] [<moves.to>] [<then>])"
+    },
+    {
+      "name": "Deal",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Deal.java",
+      "source": "classtree",
+      "grammarToken": "deal"
+    },
+    {
+      "name": "Directional",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Directional.java",
+      "source": "both",
+      "grammarToken": "directional",
+      "signature": "(directional [<moves.from>] [<direction>] [<moves.to>] [<then>])"
+    },
+    {
+      "name": "Do",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/requirement/Do.java",
+      "source": "both",
+      "grammarToken": "do",
+      "signature": "(do <moves> [next:<moves>] [ifAfterwards:<boolean>] [<then>])"
+    },
+    {
+      "name": "Enclose",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Enclose.java",
+      "source": "both",
+      "grammarToken": "enclose",
+      "signature": "(enclose [<siteType>] [<moves.from>] [<direction>] [<moves.between>] [numException:<int>] [<then>])"
+    },
+    {
+      "name": "FirstMoveOnTrack",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/requirement/FirstMoveOnTrack.java",
+      "source": "both",
+      "grammarToken": "firstMoveOnTrack",
+      "signature": "(firstMoveOnTrack [<string>] [<roleType>] <moves> [<then>])"
+    },
+    {
+      "name": "Flip",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Flip.java",
+      "source": "both",
+      "grammarToken": "flip",
+      "signature": "(flip [<siteType>] [<int>] [<then>])"
+    },
+    {
+      "name": "ForEach",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/operators/foreach/ForEach.java",
+      "source": "both",
+      "grammarToken": "forEach",
+      "signature": "(forEach Player <startRule>) | (forEach Value min:<int> max:<int> <startRule>) | (forEach Site <sites> [if:<boolean>] <startRule>) | (forEach Team <startRule>) | (forEach <ints> <startRule>)"
+    },
+    {
+      "name": "ForEachDie",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Die",
+      "signature": "(die <string> <roleType> numFaces:<int> [<directionFacing>] [<moves>])"
+    },
+    {
+      "name": "ForEachDirection",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Direction",
+      "signature": "<absoluteDirection> | <directions.difference> | <directions> | <directions.if> | <relativeDirection> | <directions.union>"
+    },
+    {
+      "name": "ForEachGroup",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Group"
+    },
+    {
+      "name": "ForEachLevel",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Level",
+      "signature": "(level)"
+    },
+    {
+      "name": "ForEachPiece",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Piece"
+    },
+    {
+      "name": "ForEachPlayer",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Player"
+    },
+    {
+      "name": "ForEachSite",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Site",
+      "signature": "(site)"
+    },
+    {
+      "name": "ForEachTeam",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Team",
+      "signature": "(team)"
+    },
+    {
+      "name": "ForEachValue",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Value",
+      "signature": "(value Piece [<siteType>] at:<int> [level:<int>]) | (value Player (<int> | <roleType>)) | (value <valueSimpleType>) | (value Random <range>) | (value)"
+    },
+    {
+      "name": "Forget",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/state/forget/Forget.java",
+      "source": "both",
+      "grammarToken": "forget",
+      "signature": "(forget Value [<string>] <int> [<then>]) | (forget Value [<string>] All [<then>])"
+    },
+    {
+      "name": "ForgetValue",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Value",
+      "signature": "(value Piece [<siteType>] at:<int> [level:<int>]) | (value Player (<int> | <roleType>)) | (value <valueSimpleType>) | (value Random <range>) | (value)"
+    },
+    {
+      "name": "FromTo",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/FromTo.java",
+      "source": "both",
+      "grammarToken": "fromTo",
+      "signature": "(fromTo <moves.from> <moves.to> [count:<int>] [copy:<boolean>] [stack:<boolean>] [<roleType>] [<then>])"
+    },
+    {
+      "name": "Hop",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Hop.java",
+      "source": "both",
+      "grammarToken": "hop",
+      "signature": "(hop [<moves.from>] [<direction>] [<moves.between>] <moves.to> [stack:<boolean>] [<then>])"
+    },
+    {
+      "name": "If",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/operators/logical/If.java",
+      "source": "classtree",
+      "grammarToken": "if"
+    },
+    {
+      "name": "Intervene",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Intervene.java",
+      "source": "both",
+      "grammarToken": "intervene",
+      "signature": "(intervene [<moves.from>] [<absoluteDirection>] [<moves.between>] [<moves.to>] [<then>])"
+    },
+    {
+      "name": "Leap",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Leap.java",
+      "source": "both",
+      "grammarToken": "leap",
+      "signature": "(leap [<moves.from>] {{<stepType>}} [forward:<boolean>] [rotations:<boolean>] <moves.to> [<then>])"
+    },
+    {
+      "name": "Max",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/requirement/max/Max.java",
+      "source": "both",
+      "grammarToken": "max",
+      "signature": "(max Distance [<string>] [<roleType>] <moves> [<then>]) | (max <maxMovesType> [withValue:<boolean>] <moves> [<then>])"
+    },
+    {
+      "name": "MaxCaptures",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Captures"
+    },
+    {
+      "name": "MaxDistance",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Distance"
+    },
+    {
+      "name": "MaxMoves",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Moves",
+      "signature": "<effect.add> | <addScore> | <allCombinations> | <logical.and> | <append> | <apply> | <attract> | <avoidStoredState> | <bet> | <claim> | <custodial> | <effect.deal> | <decision> | <directional> | <do> | <effect> | <enclose> | <firstMoveOnTrack> | <flip> | <operators.foreach.forEach> | <forget> | <fromTo> | <hop> | <logical.if> | <intervene> | <leap> | <max.max> | <move> | <moveAgain> | <nonDecision> | <note> | <operator> | <logical.or> | <pass> | <playCard> | <priority> | <promote> | <propose> | <push> | <random> | <remember> | <effect.remove> | <roll> | <satisfy> | <select> | <effect.set.set> | <shoot> | <slide> | <sow> | <effect.step> | <surround> | <swap.swap> | <take> | <trigger> | <vote> | <while>"
+    },
+    {
+      "name": "Move",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/decision/Move.java",
+      "source": "both",
+      "grammarToken": "move",
+      "signature": "(move Set Rotation [<moves.to>] [{<int>} | <int>] [previous:<boolean>] [next:<boolean>] [<then>]) | (move Step [<moves.from>] [<direction>] <moves.to> [stack:<boolean>] [<then>]) | (move Slide [<moves.from>] [<string>] [<direction>] [<moves.between>] [<moves.to>] [stack:<boolean>] [<then>]) | (move Shoot <moves.piece> [<moves.from>] [<absoluteDirection>] [<moves.between>] [<moves.to>] [<then>]) | (move Select <moves.from> [<moves.to>] [<roleType>] [<then>]) | (move Swap Players (<int> <roleType>) (<int> <roleType>) [<then>]) | (move Swap Pieces [<int>] [<int>] [<then>]) | (move Remove [<siteType>] (<int> | <sites>) [level:<int>] [at:<whenType>] [count:<int>] [<then>]) | (move Set TrumpSuit (<int> | <intArray.math.difference>) [<then>]) | (move Set NextPlayer (<moves.player> | <ints>) [<then>]) | (move Hop [<moves.from>] [<direction>] [<moves.between>] <moves.to> [stack:<boolean>] [<then>]) | (move <moves.from> <moves.to> [count:<int>] [copy:<boolean>] [stack:<boolean>] [<roleType>] [<then>]) | (move Bet (<moves.player> | <roleType>) <range> [<then>]) | (move <moveSiteType> [<moves.piece>] <moves.to> [count:<int>] [stack:<boolean>] [<then>]) | (move <moveMessageType> (<string> | {<string>}) [<then>]) | (move Promote [<siteType>] [<int>] <moves.piece> [<moves.player> | <roleType>] [<then>]) | (move Leap [<moves.from>] {{<stepType>}} [forward:<boolean>] [rotations:<boolean>] <moves.to> [<then>]) | (move <moveSimpleType> [<then>])"
+    },
+    {
+      "name": "MoveAdd",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Add"
+    },
+    {
+      "name": "MoveAgain",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/state/MoveAgain.java",
+      "source": "both",
+      "grammarToken": "moveAgain",
+      "signature": "(moveAgain [<then>])"
+    },
+    {
+      "name": "MoveBet",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Bet",
+      "signature": "(bet (<moves.player> | <roleType>) <range> [<then>])"
+    },
+    {
+      "name": "MoveClaim",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Claim",
+      "signature": "(claim [<moves.piece>] <moves.to> [<then>])"
+    },
+    {
+      "name": "MoveHop",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Hop",
+      "signature": "(hop [<moves.from>] [<direction>] [<moves.between>] <moves.to> [stack:<boolean>] [<then>])"
+    },
+    {
+      "name": "MoveLeap",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Leap",
+      "signature": "(leap [<moves.from>] {{<stepType>}} [forward:<boolean>] [rotations:<boolean>] <moves.to> [<then>])"
+    },
+    {
+      "name": "MovePass",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pass",
+      "signature": "(pass [<then>])"
+    },
+    {
+      "name": "MovePlayCard",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "PlayCard"
+    },
+    {
+      "name": "MovePromote",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Promote",
+      "signature": "(promote [<siteType>] [<int>] <moves.piece> [<moves.player> | <roleType>] [<then>])"
+    },
+    {
+      "name": "MovePropose",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Propose",
+      "signature": "(propose (<string> | {<string>}) [<then>])"
+    },
+    {
+      "name": "MoveRemove",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Remove"
+    },
+    {
+      "name": "MoveSelect",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Select",
+      "signature": "(select <moves.from> [<moves.to>] [<roleType>] [<then>])"
+    },
+    {
+      "name": "MoveSetNextPlayer",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "SetNextPlayer"
+    },
+    {
+      "name": "MoveSetRotation",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "SetRotation"
+    },
+    {
+      "name": "MoveSetTrumpSuit",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "SetTrumpSuit"
+    },
+    {
+      "name": "MoveShoot",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Shoot",
+      "signature": "(shoot <moves.piece> [<moves.from>] [<absoluteDirection>] [<moves.between>] [<moves.to>] [<then>])"
+    },
+    {
+      "name": "MoveSlide",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Slide",
+      "signature": "(slide [<moves.from>] [<string>] [<direction>] [<moves.between>] [<moves.to>] [stack:<boolean>] [<then>])"
+    },
+    {
+      "name": "MoveStep",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Step"
+    },
+    {
+      "name": "MoveSwapPieces",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "SwapPieces"
+    },
+    {
+      "name": "MoveSwapPlayers",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "SwapPlayers"
+    },
+    {
+      "name": "MoveVote",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Vote",
+      "signature": "(vote (<string> | {<string>}) [<then>])"
+    },
+    {
+      "name": "Note",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Note.java",
+      "source": "both",
+      "grammarToken": "note",
+      "signature": "(note [player:<int> | player:<roleType>] (<string> | <int> | <ints> | <float> | <boolean> | <sites> | <range> | <direction> | <graph>) [to:<moves.player> | to:<roleType>])"
+    },
+    {
+      "name": "Or",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/operators/logical/Or.java",
+      "source": "classtree",
+      "grammarToken": "or"
+    },
+    {
+      "name": "Pass",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Pass.java",
+      "source": "both",
+      "grammarToken": "pass",
+      "signature": "(pass [<then>])"
+    },
+    {
+      "name": "PlayCard",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/PlayCard.java",
+      "source": "both",
+      "grammarToken": "playCard",
+      "signature": "(playCard [<then>])"
+    },
+    {
+      "name": "Priority",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/requirement/Priority.java",
+      "source": "both",
+      "grammarToken": "priority",
+      "signature": "(priority <moves> <moves> [<then>]) | (priority {<moves>} [<then>])"
+    },
+    {
+      "name": "Promote",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Promote.java",
+      "source": "both",
+      "grammarToken": "promote",
+      "signature": "(promote [<siteType>] [<int>] <moves.piece> [<moves.player> | <roleType>] [<then>])"
+    },
+    {
+      "name": "Propose",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Propose.java",
+      "source": "both",
+      "grammarToken": "propose",
+      "signature": "(propose (<string> | {<string>}) [<then>])"
+    },
+    {
+      "name": "Push",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Push.java",
+      "source": "both",
+      "grammarToken": "push",
+      "signature": "(push [<moves.from>] <direction> [<then>])"
+    },
+    {
+      "name": "Random",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Random.java",
+      "source": "both",
+      "grammarToken": "random",
+      "signature": "(random <moves> num:<int>) | (random {<float>} {<moves>})"
+    },
+    {
+      "name": "Remember",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/state/remember/Remember.java",
+      "source": "both",
+      "grammarToken": "remember",
+      "signature": "(remember State [<then>]) | (remember Value [<string>] <int> [unique:<boolean>] [<then>])"
+    },
+    {
+      "name": "RememberValue",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Value",
+      "signature": "(value Piece [<siteType>] at:<int> [level:<int>]) | (value Player (<int> | <roleType>)) | (value <valueSimpleType>) | (value Random <range>) | (value)"
+    },
+    {
+      "name": "Remove",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Remove.java",
+      "source": "classtree",
+      "grammarToken": "remove"
+    },
+    {
+      "name": "Roll",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Roll.java",
+      "source": "both",
+      "grammarToken": "roll",
+      "signature": "(roll [<then>])"
+    },
+    {
+      "name": "Satisfy",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Satisfy.java",
+      "source": "both",
+      "grammarToken": "satisfy",
+      "signature": "(satisfy (<boolean> | {<boolean>}))"
+    },
+    {
+      "name": "Select",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Select.java",
+      "source": "both",
+      "grammarToken": "select",
+      "signature": "(select <moves.from> [<moves.to>] [<roleType>] [<then>])"
+    },
+    {
+      "name": "Seq",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/operators/logical/Seq.java",
+      "source": "classtree",
+      "grammarToken": "seq"
+    },
+    {
+      "name": "Set",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/set/Set.java",
+      "source": "classtree",
+      "grammarToken": "set"
+    },
+    {
+      "name": "SetCount",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Count"
+    },
+    {
+      "name": "SetCounter",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Counter",
+      "signature": "(counter)"
+    },
+    {
+      "name": "SetHidden",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Hidden"
+    },
+    {
+      "name": "SetNextPlayer",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "NextPlayer"
+    },
+    {
+      "name": "SetPending",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pending"
+    },
+    {
+      "name": "SetPot",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pot",
+      "signature": "(pot)"
+    },
+    {
+      "name": "SetRotation",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Rotation",
+      "signature": "(rotation [<siteType>] at:<int> [level:<int>])"
+    },
+    {
+      "name": "SetScore",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Score"
+    },
+    {
+      "name": "SetState",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "State",
+      "signature": "(state [<siteType>] at:<int> [level:<int>])"
+    },
+    {
+      "name": "SetTeam",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Team",
+      "signature": "(team)"
+    },
+    {
+      "name": "SetTrumpSuit",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "TrumpSuit"
+    },
+    {
+      "name": "SetValue",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Value",
+      "signature": "(value Piece [<siteType>] at:<int> [level:<int>]) | (value Player (<int> | <roleType>)) | (value <valueSimpleType>) | (value Random <range>) | (value)"
+    },
+    {
+      "name": "SetVar",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Var",
+      "signature": "(var [<string>])"
+    },
+    {
+      "name": "Shoot",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Shoot.java",
+      "source": "both",
+      "grammarToken": "shoot",
+      "signature": "(shoot <moves.piece> [<moves.from>] [<absoluteDirection>] [<moves.between>] [<moves.to>] [<then>])"
+    },
+    {
+      "name": "Slide",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Slide.java",
+      "source": "both",
+      "grammarToken": "slide",
+      "signature": "(slide [<moves.from>] [<string>] [<direction>] [<moves.between>] [<moves.to>] [stack:<boolean>] [<then>])"
+    },
+    {
+      "name": "Sow",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Sow.java",
+      "source": "both",
+      "grammarToken": "sow",
+      "signature": "(sow [<siteType>] [<int>] [count:<int>] [numPerHole:<int>] [<string>] [owner:<int>] [if:<boolean>] [sowEffect:<moves>] [apply:<nonDecision>] [includeSelf:<boolean>] [origin:<boolean>] [skipIf:<boolean>] [backtracking:<boolean> | forward:<boolean>] [<then>])"
+    },
+    {
+      "name": "Step",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Step.java",
+      "source": "classtree",
+      "grammarToken": "step"
+    },
+    {
+      "name": "Surround",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Surround.java",
+      "source": "both",
+      "grammarToken": "surround",
+      "signature": "(surround [<moves.from>] [<relationType>] [<moves.between>] [<moves.to>] [except:<int>] [with:<moves.piece>] [<then>])"
+    },
+    {
+      "name": "Swap",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/state/swap/Swap.java",
+      "source": "both",
+      "grammarToken": "swap",
+      "signature": "(swap Players (<int> | <roleType>) (<int> | <roleType>) [<then>]) | (swap Pieces [<int> <int>] [<then>])"
+    },
+    {
+      "name": "SwapPieces",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pieces"
+    },
+    {
+      "name": "SwapPlayers",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Players",
+      "signature": "(players <int>) | (players {<players.player>})"
+    },
+    {
+      "name": "Take",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/take/Take.java",
+      "source": "both",
+      "grammarToken": "take",
+      "signature": "(take Control (of:<roleType> | of:<int>) (by:<roleType> | by:<int>) [at:<int> | to:<sites>] [<siteType>] [<then>]) | (take Domino [<then>])"
+    },
+    {
+      "name": "TakeControl",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Control"
+    },
+    {
+      "name": "TakeDomino",
+      "category": "moves",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Domino",
+      "signature": "(domino <string> <roleType> value:<int> value2:<int> [<moves>])"
+    },
+    {
+      "name": "Then",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Then.java",
+      "source": "both",
+      "grammarToken": "then",
+      "signature": "(then <nonDecision> [applyAfterAllMoves:<boolean>])"
+    },
+    {
+      "name": "Trigger",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Trigger.java",
+      "source": "both",
+      "grammarToken": "trigger",
+      "signature": "(trigger <string> (<int> | <roleType>) [<then>])"
+    },
+    {
+      "name": "Vote",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/Vote.java",
+      "source": "both",
+      "grammarToken": "vote",
+      "signature": "(vote (<string> | {<string>}) [<then>])"
+    },
+    {
+      "name": "While",
+      "category": "moves",
+      "javaClass": "game/rules/play/moves/nonDecision/effect/requirement/While.java",
+      "source": "both",
+      "grammarToken": "while",
+      "signature": "(while <boolean> <moves> [<then>])"
+    },
+    {
+      "name": "Between",
+      "category": "other",
+      "javaClass": "game/util/moves/Between.java",
+      "source": "classtree",
+      "grammarToken": "between"
+    },
+    {
+      "name": "Bucket",
+      "category": "other",
+      "javaClass": "game/util/graph/Bucket.java",
+      "source": "classtree"
+    },
+    {
+      "name": "DirectionType",
+      "category": "other",
+      "javaClass": "game/util/directions/DirectionType.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Edge",
+      "category": "other",
+      "javaClass": "game/util/graph/Edge.java",
+      "source": "classtree",
+      "grammarToken": "edge"
+    },
+    {
+      "name": "Face",
+      "category": "other",
+      "javaClass": "game/util/graph/Face.java",
+      "source": "classtree",
+      "grammarToken": "face"
+    },
+    {
+      "name": "Flips",
+      "category": "other",
+      "javaClass": "game/util/moves/Flips.java",
+      "source": "both",
+      "grammarToken": "flips",
+      "signature": "(flips <int> <int>)"
+    },
+    {
+      "name": "From",
+      "category": "other",
+      "javaClass": "game/util/moves/From.java",
+      "source": "classtree",
+      "grammarToken": "from"
+    },
+    {
+      "name": "ItemScore",
+      "category": "other",
+      "javaClass": "game/util/graph/ItemScore.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Optimiser",
+      "category": "other",
+      "javaClass": "game/util/optimiser/Optimiser.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Pair",
+      "category": "other",
+      "javaClass": "game/util/math/Pair.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Payoff",
+      "category": "other",
+      "javaClass": "game/util/end/Payoff.java",
+      "source": "both",
+      "grammarToken": "payoff",
+      "signature": "(payoff <roleType> <float>)"
+    },
+    {
+      "name": "Perimeter",
+      "category": "other",
+      "javaClass": "game/util/graph/Perimeter.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Piece",
+      "category": "other",
+      "javaClass": "game/util/moves/Piece.java",
+      "source": "classtree",
+      "grammarToken": "piece"
+    },
+    {
+      "name": "Player",
+      "category": "other",
+      "javaClass": "game/util/moves/Player.java",
+      "source": "classtree",
+      "grammarToken": "player"
+    },
+    {
+      "name": "Poly",
+      "category": "other",
+      "javaClass": "game/util/graph/Poly.java",
+      "source": "both",
+      "grammarToken": "poly",
+      "signature": "(poly {{<dim>}}) | (poly {{<float>}})"
+    },
+    {
+      "name": "Properties",
+      "category": "other",
+      "javaClass": "game/util/graph/Properties.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Radial",
+      "category": "other",
+      "javaClass": "game/util/graph/Radial.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Radials",
+      "category": "other",
+      "javaClass": "game/util/graph/Radials.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Score",
+      "category": "other",
+      "javaClass": "game/util/end/Score.java",
+      "source": "classtree",
+      "grammarToken": "score"
+    },
+    {
+      "name": "Situation",
+      "category": "other",
+      "javaClass": "game/util/graph/Situation.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Step",
+      "category": "other",
+      "javaClass": "game/util/graph/Step.java",
+      "source": "classtree",
+      "grammarToken": "step"
+    },
+    {
+      "name": "Steps",
+      "category": "other",
+      "javaClass": "game/util/graph/Steps.java",
+      "source": "classtree"
+    },
+    {
+      "name": "To",
+      "category": "other",
+      "javaClass": "game/util/moves/To.java",
+      "source": "classtree",
+      "grammarToken": "to"
+    },
+    {
+      "name": "Trajectories",
+      "category": "other",
+      "javaClass": "game/util/graph/Trajectories.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Vertex",
+      "category": "other",
+      "javaClass": "game/util/graph/Vertex.java",
+      "source": "classtree"
+    },
+    {
+      "name": "Difference",
+      "category": "regions",
+      "javaClass": "game/functions/region/math/Difference.java",
+      "source": "classtree",
+      "grammarToken": "difference"
+    },
+    {
+      "name": "Expand",
+      "category": "regions",
+      "javaClass": "game/functions/region/math/Expand.java",
+      "source": "both",
+      "grammarToken": "expand",
+      "signature": "(expand [<int> | <string>] (<sites> | origin:<int>) [steps:<int>] [<absoluteDirection>] [<siteType>])"
+    },
+    {
+      "name": "ForEach",
+      "category": "regions",
+      "javaClass": "game/functions/region/foreach/ForEach.java",
+      "source": "both",
+      "grammarToken": "forEach",
+      "signature": "(forEach Player <startRule>) | (forEach Value min:<int> max:<int> <startRule>) | (forEach Site <sites> [if:<boolean>] <startRule>) | (forEach Team <startRule>) | (forEach <ints> <startRule>)"
+    },
+    {
+      "name": "If",
+      "category": "regions",
+      "javaClass": "game/functions/region/math/If.java",
+      "source": "classtree",
+      "grammarToken": "if"
+    },
+    {
+      "name": "Intersection",
+      "category": "regions",
+      "javaClass": "game/functions/region/math/Intersection.java",
+      "source": "classtree",
+      "grammarToken": "intersection"
+    },
+    {
+      "name": "Last",
+      "category": "regions",
+      "javaClass": "game/functions/region/last/Last.java",
+      "source": "classtree",
+      "grammarToken": "last"
+    },
+    {
+      "name": "Sites",
+      "category": "regions",
+      "javaClass": "game/functions/region/sites/Sites.java",
+      "source": "both",
+      "grammarToken": "sites",
+      "signature": "(sites <sitesEdgeType>) | (sites Group [<siteType>] (at:<int> | from:<sites>) [<direction>] [if:<boolean>]) | (sites Crossing at:<int> [<moves.player> | <roleType>]) | (sites ({<int>} | <ints>)) | (sites <sitesMoveType> <moves>) | (sites [<siteType>] {<string>}) | (sites <sitesSimpleType> [<siteType>]) | (sites) | (sites Loop [inside:<boolean>] [<siteType>] [surround:<roleType> | {<roleType>}] [<direction>] [<int>] [<int> | <sites>]) | (sites Pattern {<stepType>} [<siteType>] [from:<int>] [what:<int> | whats:{<int>}]) | (sites Random [<sites>] [num:<int>]) | (sites LargePiece [<siteType>] at:<int>) | (sites Between [<direction>] [<siteType>] from:<int> [fromIncluded:<boolean>] to:<int> [toIncluded:<boolean>] [cond:<boolean>]) | (sites Hidden [<hiddenData>] [<siteType>] (to:<moves.player> | to:<roleType>)) | (sites Start <moves.piece>) | (sites Occupied (by:<moves.player> | by:<roleType>) [container:<int> | container:<string>] [component:<int> | component:<string> | components:{<string>}] [top:<boolean>] [on:<siteType>]) | (sites Incident <siteType> of:<siteType> at:<int> [owner:<moves.player> | <roleType>]) | (sites Around [<siteType>] (<int> | <sites>) [<regionTypeDynamic>] [distance:<int>] [<absoluteDirection>] [if:<boolean>] [includeSelf:<boolean>]) | (sites Direction (from:<int> | from:<sites>) [<direction>] [included:<boolean>] [stop:<boolean>] [stopIncluded:<boolean>] [distance:<int>] [<siteType>]) | (sites LineOfSight [<lineOfSightType>] [<siteType>] [at:<int>] [<direction>]) | (sites [<siteType>] [<int>] {{<stepType>}} [rotations:<boolean>]) | (sites <sitesIndexType> [<siteType>] [<int>]) | (sites Side [<siteType>] [<moves.player> | <roleType> | <compassDirection>]) | (sites <sitesPlayerType> [<siteType>] [<moves.player> | <roleType>] [<nonDecision>] [<string>]) | (sites Track [<moves.player> | <roleType>] [<string>] [from:<int>] [to:<int>]) | (sites Distance [<siteType>] [<relationType>] [<effect.step>] [newRotation:<int>] from:<int> <range>) | (sites [<moves.player> | <roleType>] [<siteType>] [<string>]) | (region <equipment.region>) | (region) | (region int) | (region <string> <container.board.board> {<string>}) | (region) | (region) | (region {int}) | (region) | <region.math.difference> | <expand> | <region.foreach.forEach> | <region.math.if> | <region.math.intersection> | <region.last.last> | <region.math.union>"
+    },
+    {
+      "name": "SitesAngled",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Angled"
+    },
+    {
+      "name": "SitesAround",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Around"
+    },
+    {
+      "name": "SitesAxial",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Axial"
+    },
+    {
+      "name": "SitesBetween",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Between"
+    },
+    {
+      "name": "SitesBoard",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Board"
+    },
+    {
+      "name": "SitesBottom",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Bottom"
+    },
+    {
+      "name": "SitesCell",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Cell"
+    },
+    {
+      "name": "SitesCentre",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Centre"
+    },
+    {
+      "name": "SitesColumn",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Column",
+      "signature": "(column [<siteType>] of:<int>)"
+    },
+    {
+      "name": "SitesConcaveCorners",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "ConcaveCorners"
+    },
+    {
+      "name": "SitesConvexCorners",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "ConvexCorners"
+    },
+    {
+      "name": "SitesCorners",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Corners"
+    },
+    {
+      "name": "SitesCrossing",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Crossing"
+    },
+    {
+      "name": "SitesDirection",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Direction",
+      "signature": "<absoluteDirection> | <directions.difference> | <directions> | <directions.if> | <relativeDirection> | <directions.union>"
+    },
+    {
+      "name": "SitesDistance",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Distance"
+    },
+    {
+      "name": "SitesEdge",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Edge"
+    },
+    {
+      "name": "SitesEmpty",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Empty"
+    },
+    {
+      "name": "SitesGroup",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Group"
+    },
+    {
+      "name": "SitesHand",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Hand"
+    },
+    {
+      "name": "SitesHidden",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Hidden"
+    },
+    {
+      "name": "SitesHorizontal",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Horizontal"
+    },
+    {
+      "name": "SitesIncident",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Incident"
+    },
+    {
+      "name": "SitesInner",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Inner"
+    },
+    {
+      "name": "SitesLargePiece",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LargePiece"
+    },
+    {
+      "name": "SitesLastFrom",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LastFrom"
+    },
+    {
+      "name": "SitesLastTo",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LastTo"
+    },
+    {
+      "name": "SitesLayer",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Layer",
+      "signature": "(layer of:<int> [<siteType>])"
+    },
+    {
+      "name": "SitesLeft",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Left"
+    },
+    {
+      "name": "SitesLineOfPlay",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LineOfPlay"
+    },
+    {
+      "name": "SitesLineOfSight",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "LineOfSight"
+    },
+    {
+      "name": "SitesLoop",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Loop"
+    },
+    {
+      "name": "SitesMajor",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Major"
+    },
+    {
+      "name": "SitesMinor",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Minor"
+    },
+    {
+      "name": "SitesMoveBetween",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Between"
+    },
+    {
+      "name": "SitesMoveFrom",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "From"
+    },
+    {
+      "name": "SitesMoveTo",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "To"
+    },
+    {
+      "name": "SitesOccupied",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Occupied"
+    },
+    {
+      "name": "SitesOuter",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Outer"
+    },
+    {
+      "name": "SitesPattern",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pattern"
+    },
+    {
+      "name": "SitesPending",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Pending"
+    },
+    {
+      "name": "SitesPerimeter",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Perimeter"
+    },
+    {
+      "name": "SitesPhase",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Phase"
+    },
+    {
+      "name": "SitesPlayable",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Playable"
+    },
+    {
+      "name": "SitesRandom",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Random",
+      "signature": "(random <moves> num:<int>) | (random {<float>} {<moves>})"
+    },
+    {
+      "name": "SitesRight",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Right"
+    },
+    {
+      "name": "SitesRow",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Row",
+      "signature": "(row [<siteType>] of:<int>)"
+    },
+    {
+      "name": "SitesSide",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Side"
+    },
+    {
+      "name": "SitesSlash",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Slash"
+    },
+    {
+      "name": "SitesSlosh",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Slosh"
+    },
+    {
+      "name": "SitesStart",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Start",
+      "signature": "(start ({<startRule>} | <startRule>))"
+    },
+    {
+      "name": "SitesState",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "State",
+      "signature": "(state [<siteType>] at:<int> [level:<int>])"
+    },
+    {
+      "name": "SitesToClear",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "ToClear"
+    },
+    {
+      "name": "SitesTop",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Top"
+    },
+    {
+      "name": "SitesTrack",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Track"
+    },
+    {
+      "name": "SitesVertex",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Vertex"
+    },
+    {
+      "name": "SitesVertical",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Vertical"
+    },
+    {
+      "name": "SitesWinning",
+      "category": "regions",
+      "javaClass": "game/functions/... (dispatcher)",
+      "source": "grammar",
+      "grammarToken": "Winning"
+    },
+    {
+      "name": "Union",
+      "category": "regions",
+      "javaClass": "game/functions/region/math/Union.java",
+      "source": "classtree",
+      "grammarToken": "union"
+    },
+    {
+      "name": "Deal",
+      "category": "start",
+      "javaClass": "game/rules/start/Deal.java",
+      "source": "classtree",
+      "grammarToken": "deal"
+    },
+    {
+      "name": "ForEach",
+      "category": "start",
+      "javaClass": "game/rules/start/forEach/ForEach.java",
+      "source": "both",
+      "grammarToken": "forEach",
+      "signature": "(forEach Player <startRule>) | (forEach Value min:<int> max:<int> <startRule>) | (forEach Site <sites> [if:<boolean>] <startRule>) | (forEach Team <startRule>) | (forEach <ints> <startRule>)"
+    },
+    {
+      "name": "Place",
+      "category": "start",
+      "javaClass": "game/rules/start/place/Place.java",
+      "source": "both",
+      "grammarToken": "place",
+      "signature": "(place Random [<sites>] {<string>} [count:<int>] [state:<int>] [value:<int>] [<siteType>]) | (place Stack (<string> | items:{<string>}) [<string>] [<siteType>] [<int> | {<int>} | <sites> | coord:<string> | {<string>}] [count:<int> | counts:{<int>}] [state:<int>] [rotation:<int>] [value:<int>]) | (place <string> [<siteType>] [{<int>}] [<sites>] [{<string>}] [counts:{<int>}] [state:<int>] [rotation:<int>] [value:<int>]) | (place <string> [<string>] [<siteType>] [<int>] [coord:<string>] [count:<int>] [state:<int>] [rotation:<int>] [value:<int>]) | (place Random {<math.count>} <int> [<siteType>]) | (place Random {<string>} [count:{<int>}] [state:<int>] [value:<int>] <int> [<siteType>])"
+    },
+    {
+      "name": "Set",
+      "category": "start",
+      "javaClass": "game/rules/start/deductionPuzzle/Set.java",
+      "source": "classtree",
+      "grammarToken": "set"
+    },
+    {
+      "name": "Set",
+      "category": "start",
+      "javaClass": "game/rules/start/set/Set.java",
+      "source": "classtree",
+      "grammarToken": "set"
+    },
+    {
+      "name": "Split",
+      "category": "start",
+      "javaClass": "game/rules/start/split/Split.java",
+      "source": "both",
+      "grammarToken": "split",
+      "signature": "(split Deck)"
+    },
+    {
+      "name": "Start",
+      "category": "start",
+      "javaClass": "game/rules/start/Start.java",
+      "source": "both",
+      "grammarToken": "start",
+      "signature": "(start ({<startRule>} | <startRule>))"
+    }
+  ],
+  "enums": {
+    "BasisType": [
+      "NoBasis",
+      "Triangular",
+      "Square",
+      "Hexagonal",
+      "T33336",
+      "T33344",
+      "T33434",
+      "T3464",
+      "T3636",
+      "T4612",
+      "T488",
+      "T31212",
+      "T333333_33434",
+      "SquarePyramidal",
+      "HexagonalPyramidal",
+      "Concentric",
+      "Circle",
+      "Spiral",
+      "Dual",
+      "Brick",
+      "Mesh",
+      "Morris",
+      "Celtic",
+      "QuadHex"
+    ],
+    "HiddenData": [
+      "What",
+      "Who",
+      "State",
+      "Count",
+      "Rotation",
+      "Value"
+    ],
+    "LandmarkType": [
+      "CentreSite",
+      "LeftSite",
+      "RightSite",
+      "Topsite",
+      "BottomSite",
+      "FirstSite",
+      "LastSite"
+    ],
+    "PuzzleElementType": [
+      "Cell",
+      "Edge",
+      "Vertex",
+      "Hint"
+    ],
+    "RegionTypeDynamic": [
+      "Empty",
+      "NotEmpty",
+      "Own",
+      "NotOwn",
+      "Enemy",
+      "NotEnemy"
+    ],
+    "RegionTypeStatic": [
+      "Rows",
+      "Columns",
+      "AllDirections",
+      "HintRegions",
+      "Layers",
+      "Diagonals",
+      "SubGrids",
+      "Regions",
+      "Vertices",
+      "Corners",
+      "Sides",
+      "SidesNoCorners",
+      "AllSites"
+    ],
+    "RelationType": [
+      "Orthogonal",
+      "Diagonal",
+      "OffDiagonal",
+      "Adjacent",
+      "All"
+    ],
+    "ShapeType": [
+      "NoShape",
+      "Custom",
+      "Square",
+      "Rectangle",
+      "Triangle",
+      "Hexagon",
+      "Cross",
+      "Diamond",
+      "Prism",
+      "Quadrilateral",
+      "Rhombus",
+      "Wheel",
+      "Circle",
+      "Spiral",
+      "Wedge",
+      "Star",
+      "Limping",
+      "Regular",
+      "Polygon"
+    ],
+    "SiteType": [
+      "Vertex",
+      "Edge",
+      "Cell"
+    ],
+    "StepType": [
+      "F",
+      "L",
+      "R"
+    ],
+    "StoreType": [
+      "None",
+      "Outer",
+      "Inner"
+    ],
+    "TilingBoardlessType": [
+      "Square",
+      "Triangular",
+      "Hexagonal"
+    ],
+    "TrackStepType": [
+      "Off",
+      "End",
+      "Repeat"
+    ],
+    "CardType": [
+      "Joker",
+      "Ace",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+      "Ten",
+      "Jack",
+      "Queen",
+      "King"
+    ],
+    "DealableType": [
+      "Dominoes",
+      "Cards"
+    ],
+    "SuitType": [
+      "Clubs",
+      "Spades",
+      "Diamonds",
+      "Hearts"
+    ],
+    "GravityType": [
+      "PyramidalDrop"
+    ],
+    "ModeType": [
+      "Alternating",
+      "Simultaneous",
+      "Simulation"
+    ],
+    "NoStackOnType": [
+      "Fallen"
+    ],
+    "PassEndType": [
+      "Draw"
+    ],
+    "PinType": [
+      "SupportMultiple"
+    ],
+    "PrevType": [
+      "Mover",
+      "MoverLastTurn"
+    ],
+    "RepetitionType": [
+      "SituationalInTurn",
+      "PositionalInTurn",
+      "Positional"
+    ],
+    "ResultType": [
+      "Win",
+      "Loss",
+      "Draw",
+      "Tie",
+      "Abandon",
+      "Crash"
+    ],
+    "RoleType": [
+      "Neutral",
+      "P1",
+      "P2",
+      "P3",
+      "P4",
+      "P5",
+      "P6",
+      "P7",
+      "P8",
+      "P9",
+      "P10",
+      "P11",
+      "P12",
+      "P13",
+      "P14",
+      "P15",
+      "P16",
+      "Team1",
+      "Team2",
+      "Team3",
+      "Team4",
+      "Team5",
+      "Team6",
+      "Team7",
+      "Team8",
+      "Team9",
+      "Team10",
+      "Team11",
+      "Team12",
+      "Team13",
+      "Team14",
+      "Team15",
+      "Team16",
+      "TeamMover",
+      "Each",
+      "Shared",
+      "All",
+      "Mover",
+      "Next",
+      "Prev",
+      "NonMover",
+      "Enemy",
+      "Friend",
+      "Ally",
+      "Player"
+    ],
+    "WhenType": [
+      "StartOfTurn",
+      "EndOfTurn"
+    ],
+    "AbsoluteDirection": [
+      "All",
+      "Angled",
+      "Adjacent",
+      "Axial",
+      "Orthogonal",
+      "Diagonal",
+      "OffDiagonal",
+      "SameLayer",
+      "Upward",
+      "Downward",
+      "Rotational",
+      "Base",
+      "Support",
+      "N",
+      "E",
+      "S",
+      "W",
+      "NE",
+      "SE",
+      "NW",
+      "SW",
+      "NNW",
+      "WNW",
+      "WSW",
+      "SSW",
+      "SSE",
+      "ESE",
+      "ENE",
+      "NNE",
+      "CW",
+      "CCW",
+      "In",
+      "Out",
+      "U",
+      "UN",
+      "UNE",
+      "UE",
+      "USE",
+      "US",
+      "USW",
+      "UW",
+      "UNW",
+      "D",
+      "DN",
+      "DNE",
+      "DE",
+      "DSE",
+      "DS",
+      "DSW",
+      "DW",
+      "DNW"
+    ],
+    "CompassDirection": [
+      "N",
+      "NNE",
+      "NE",
+      "ENE",
+      "E",
+      "ESE",
+      "SE",
+      "SSE",
+      "S",
+      "SSW",
+      "SW",
+      "WSW",
+      "W",
+      "WNW",
+      "NW",
+      "NNW"
+    ],
+    "DirectionUniqueName": [
+      "N",
+      "NNE",
+      "NE",
+      "E",
+      "SSE",
+      "SE",
+      "S",
+      "SSW",
+      "SW",
+      "W",
+      "NW",
+      "NNW",
+      "WNW",
+      "ENE",
+      "ESE",
+      "WSW",
+      "CW",
+      "Out",
+      "CCW",
+      "In",
+      "UNW",
+      "UNE",
+      "USE",
+      "USW",
+      "DNW",
+      "DNE",
+      "DSE",
+      "DSW",
+      "U",
+      "UN",
+      "UW",
+      "UE",
+      "US",
+      "D",
+      "DN",
+      "DW",
+      "DE",
+      "DS"
+    ],
+    "RelativeDirection": [
+      "Forward",
+      "Backward",
+      "Rightward",
+      "Leftward",
+      "Forwards",
+      "Backwards",
+      "Rightwards",
+      "Leftwards",
+      "FL",
+      "FLL",
+      "FLLL",
+      "BL",
+      "BLL",
+      "BLLL",
+      "FR",
+      "FRR",
+      "FRRR",
+      "BR",
+      "BRR",
+      "BRRR",
+      "SameDirection",
+      "OppositeDirection"
+    ],
+    "RotationalDirection": [
+      "Out",
+      "CW",
+      "In",
+      "CCW"
+    ],
+    "SpatialDirection": [
+      "D",
+      "DN",
+      "DNE",
+      "DE",
+      "DSE",
+      "DS",
+      "DSW",
+      "DW",
+      "DNW",
+      "U",
+      "UN",
+      "UNE",
+      "UE",
+      "USE",
+      "US",
+      "USW",
+      "UW",
+      "UNW"
+    ],
+    "StackDirection": [
+      "FromBottom",
+      "FromTop"
+    ]
+  }
+}

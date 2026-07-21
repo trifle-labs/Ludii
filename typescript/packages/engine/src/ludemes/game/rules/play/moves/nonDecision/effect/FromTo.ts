@@ -1,0 +1,775 @@
+// @java Core/src/game/rules/play/moves/nonDecision/effect/FromTo.java
+/**
+ * Moves a piece from one site to another, possibly in another container, with
+ * no direction link between the ``from'' and ``to'' sites.
+ *
+ * Java parity: game/rules/play/moves/nonDecision/effect/FromTo.java
+ *
+ * @remarks Coverage-only transliteration. NOT registered in the 1:1 moves registry.
+ *          The live path is handled by FromTo1to1.ts.
+ */
+
+import type { Context } from "../../../../../../../context.js";
+import type { BooleanFunction, IntFunction, MovesFunction, RegionFunction } from "../../../../../../base.js";
+import type { Move } from "../../../../../../../move.js";
+import { applyPostStateThen, type Then } from "./Then.js";
+import { compileFlags } from "../../../../../../../ludii/compiler/compile-flags.js";
+import { ActionMove } from "../../../../../../../action/action-move.js";
+import { ActionMoveLevelFrom, ActionMoveLevelTo, ActionMoveLevelFromLevelTo } from "../../../../../../../action/action-move-level.js";
+import { ActionCopy } from "../../../../../../../action/action-copy.js";
+import { ActionRemove } from "../../../../../../../action/action-remove.js";
+import { ActionSetRotation } from "../../../../../../../action/action-set-rotation.js";
+import { Move as LudiiMove, type DeferredThen } from "../../../../../../../move.js";
+import { Add as AddEffect } from "./Add.js";
+import { isNonDefaultTyped } from "../../../../../functions/region/sites/index/SitesEmpty.js";
+import type { RotationsLike } from "../../../../../util/moves/To.js";
+
+/** OFF constant matching Java's Constants.OFF = -1 */
+const OFF = -1;
+const UNDEFINED_LEVEL = -2;
+
+export class FromTo implements MovesFunction {
+  /** @java FromTo.locFrom */
+  private readonly locFrom: IntFunction | null;
+  /** @java FromTo.levelFrom */
+  private readonly levelFrom: IntFunction | null;
+  /** @java FromTo.countFn */
+  private readonly countFn: IntFunction | null;
+
+  /** @java From.type() — explicit (from Cell ...) declaration. */
+  private readonly declaredFromType: string | null;
+  /** @java To.type() — explicit (to Edge/Vertex ...) declaration (typeTo). */
+  private readonly declaredToType: string | null;
+  /** @java FromTo.locTo */
+  private readonly locTo: IntFunction;
+  /** @java FromTo.levelTo */
+  private readonly levelTo: IntFunction | null;
+  /** @java FromTo.rotationTo — To.rotations(), consumed only when non-null
+   *  (FromTo.java:396-406): fans one candidate move out per (site, rotation). */
+  private readonly rotationsTo: RotationsLike | null;
+  /** @java FromTo.regionFrom */
+  private readonly regionFrom: RegionFunction | null;
+  /** @java FromTo.regionTo */
+  private readonly regionTo: RegionFunction | null;
+  /** @java FromTo.fromCondition */
+  private readonly fromCondition: BooleanFunction | null;
+  /** @java FromTo.moveRule */
+  private readonly moveRule: BooleanFunction | null;
+  /** @java FromTo.captureRule */
+  private readonly captureRule: BooleanFunction | null;
+  /** @java FromTo.captureEffect */
+  private readonly captureEffect: MovesFunction | null;
+  /** @java FromTo.stack */
+  private readonly stack: boolean;
+  /** @java FromTo.copy */
+  private readonly copy: BooleanFunction;
+  /** @java Effect.then */
+  private readonly thenClause: Then | null;
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/FromTo.java — constructor
+   */
+  public constructor(opts: {
+    locFrom?: IntFunction | null;
+    levelFrom?: IntFunction | null;
+    countFn?: IntFunction | null;
+    declaredFromType?: string | null;
+    declaredToType?: string | null;
+    locTo: IntFunction;
+    levelTo?: IntFunction | null;
+    rotations?: RotationsLike | null;
+    regionFrom?: RegionFunction | null;
+    regionTo?: RegionFunction | null;
+    fromCondition?: BooleanFunction | null;
+    moveRule?: BooleanFunction | null;
+    captureRule?: BooleanFunction | null;
+    captureEffect?: MovesFunction | null;
+    stack?: boolean;
+    copy?: BooleanFunction;
+    then?: Then | null;
+  }) {
+    this.locFrom = opts.locFrom ?? null;
+    this.levelFrom = opts.levelFrom ?? null;
+    this.countFn = opts.countFn ?? null;
+    this.declaredFromType = opts.declaredFromType ?? null;
+    this.declaredToType = opts.declaredToType ?? null;
+    this.locTo = opts.locTo;
+    this.levelTo = opts.levelTo ?? null;
+    this.rotationsTo = opts.rotations ?? null;
+    this.regionFrom = opts.regionFrom ?? null;
+    this.regionTo = opts.regionTo ?? null;
+    // Raw-literal trap: lud True/False reach these BooleanFunction slots raw
+    // (Pachih's (fromTo ... if:True) threw `this.moveRule.eval is not a
+    // function` at ply 0). Wrap with the standard typeof guard.
+    const wrapBoolFn = (b: unknown): BooleanFunction | null =>
+      typeof b === "boolean" ? ({ eval: () => b } as BooleanFunction) : ((b as BooleanFunction | null) ?? null);
+    this.fromCondition = wrapBoolFn(opts.fromCondition);
+    this.moveRule = wrapBoolFn(opts.moveRule);
+    this.captureRule = wrapBoolFn(opts.captureRule);
+    this.captureEffect = opts.captureEffect ?? null;
+    this.stack = opts.stack ?? false;
+    // @java FromTo.java:567-568 — `if (levelFrom != null || stack) gameFlags |=
+    // GameType.Stacking`. A level-addressable from-clause (or an explicit
+    // stack:True) makes the whole game stacking, so a plain single-piece move
+    // landing on an occupied site PUSHES a level rather than overwriting the
+    // occupant (ActionMove's state.stackingGame branch). Kawasukuts' Marker move
+    // `(move (from (from) level:(level)) (to …))` is the flag's only trigger;
+    // without it two markers entering the same gate overwrote (the lower one was
+    // lost) and that player then had no piece to race, forcing a spurious Pass.
+    if (this.levelFrom !== null || this.stack) compileFlags.usesStacking = true;
+    this.copy = opts.copy ?? { eval: () => false };
+    this.thenClause = opts.then ?? null;
+  }
+
+  /**
+   * @java game/rules/play/moves/nonDecision/effect/FromTo.java — eval(Context)
+   *
+   * Generates moves from each site in the from-region to each site in the to-region,
+   * checking conditions and applying capture effects.
+   */
+  public eval(ctx: Context): Move[] {
+    // @java FromTo.java:163 — sitesFrom
+    const sitesFrom: number[] = (this.regionFrom != null)
+      ? this.regionFrom.eval(ctx)
+      : [this.locFrom != null ? this.locFrom.eval(ctx) : ctx._evalFrom];
+
+    const origFrom = ctx._evalFrom;
+    const origTo = ctx._evalTo;
+
+    const mover = ctx.state.mover;
+    const moves: LudiiMove[] = [];
+
+    for (const from of sitesFrom) {
+      if (from <= OFF) continue;
+
+      // @java FromTo.java:183-185 — `if (cs.what(from, realTypeFrom) <= 0)
+      // continue;` is the ONLY source-occupancy gate Java applies, and it is
+      // unconditional (not branched on countFn/stack). The prior TS logic
+      // swapped to a count-ONLY check whenever countFn != null, which broke
+      // ordinary piece-based captures whose `count:` merely computes how many
+      // pieces to relocate (Panchi's "CaptureEnemyPiece": (fromTo (from (to))
+      // (to (handSite …)) count:(count at:(to))) captures a single Pawn —
+      // cs.what(from) > 0 but countAt(from) = 0, since only the HAND pile is
+      // countAt-backed): the capture's own FromTo silently produced zero
+      // moves every time, so a captured piece was overwritten by the outer
+      // move but never routed back to hand — hand occupancy hit 0 too soon
+      // and blocked re-entry (Panchi trial 0 ply 98 / trial 1 ply 69
+      // MOVE_MISMATCH). OR the two checks: what > 0 covers ordinary
+      // component-based sources (matches Java exactly); the count > 0
+      // fallback preserves the count-only seed-pit games (mancala captures
+      // with no component `what`) this branch was originally added for.
+      let hasSource = ctx.state.what(from) > 0
+        || (this.countFn !== null && !this.stack && ctx.state.count(from) > 0);
+      // Dual-SiteType (@java cs.what(from, type)): a piece on a typed channel
+      // (Guerrilla's Cell counters) is a valid source too.
+      if (!hasSource) {
+        const typed = (ctx.state as unknown as { typedSites?: ReadonlyMap<string, { what: readonly number[]; count: readonly number[] }> }).typedSites;
+        if (typed) for (const ch of typed.values()) {
+          if ((ch.what[from] ?? 0) > 0 || (ch.count[from] ?? 0) > 0) { hasSource = true; break; }
+        }
+      }
+      if (!hasSource) continue;
+
+      ctx._evalFrom = from;
+
+      if (this.fromCondition != null && !this.fromCondition.eval(ctx)) {
+        continue;
+      }
+
+      const sitesTo: number[] = (this.regionTo != null)
+        ? this.regionTo.eval(ctx)
+        : [this.locTo.eval(ctx)];
+
+      // @java FromTo.evalLargePiece: when `from` holds a LARGE tile piece (walks),
+      // a board→board move must lay the tile's whole footprint at `to` for each
+      // valid (anchor, rotation), not just transfer the anchor cell. Mirrors
+      // Add.ts's large-piece path. Without this a pentomino move filled only the
+      // anchor (Pentomino's (no Moves) end never fired; the L-tile in L Game).
+      const lpWhat = ctx.state.whatAtSite(from);
+      type DominoPieceSurface = {
+        index: number;
+        walks?: readonly (readonly string[])[];
+        isDomino?: () => boolean;
+        getValue?: () => number;
+        getValue2?: () => number;
+        isDoubleDomino?: () => boolean;
+      };
+      const equipmentPieces = (ctx.game as unknown as { equipment?: { pieces?: readonly DominoPieceSurface[] } })
+        .equipment?.pieces;
+      const largePiece = equipmentPieces?.find((p) => p.index === lpWhat && p.walks && p.walks.length > 0);
+      if (largePiece?.walks) {
+        const walks = largePiece.walks;
+        const nbPossibleStates = walks.length * 4;
+        // @java FromTo.java:449-486 — a board→board tile move is NOT gated on the
+        // footprint being empty. Java (a) computes the piece's CURRENT footprint
+        // currentLocs = piece.locs(from, localState) and appends currentLocs[1..]
+        // to the candidate to-anchors (newSitesTo), and (b) validates a candidate
+        // placement by requiring every footprint cell to land on a to-region site
+        // OR on one of the piece's own current cells (or the from-anchor). The old
+        // `isEmptySite(loc)` test rejected any orientation whose footprint overlapped
+        // the moving L-piece's own cells, dropping valid moves (L Game to=15/to=11).
+        const localState = ctx.state.stateAtSite(from);
+        const currentLocs = AddEffect.locsLargePiece(ctx, from, localState, walks);
+        const newSitesTo = new Set<number>(sitesTo);
+        for (let i = 1; i < currentLocs.length; i++) {
+          const c = currentLocs[i];
+          if (c !== undefined) newSitesTo.add(c);
+        }
+        // @java FromTo.java:472 largePiece.isDomino() — Equipment.ts now
+        // forwards isDomino()/getValue()/getValue2()/isDoubleDomino() from the
+        // real Domino component, so this resolves true for dominoes games.
+        const isDomino = typeof largePiece.isDomino === "function" && largePiece.isDomino();
+        // @java FromTo.java:480 `context.trial().moveNumber() > 0` — ply 0
+        // (the very first domino) skips the isPlayable gate entirely, since
+        // the line-of-play bitset only seeds a single centre cell
+        // (State.java:1059-1060 / Game.ts start()) that can't itself cover
+        // an 8-cell footprint.
+        const moveNumber = (ctx.trial as unknown as { moveNumber?: number; numMoves?: number }).moveNumber
+          ?? (ctx.trial as unknown as { numMoves?: number }).numMoves
+          ?? 0;
+        // @java ActionMoveTopPiece.java:1410-1457 — thread the board geometry
+        // and per-component pip/walk data an isDomino placement needs at
+        // APPLY time (pip-value writes + full line-of-play recompute).
+        // `apply(state)` has no Context, so this is baked into the action here
+        // where ctx is still in scope.
+        const boardGeom = (ctx.game as unknown as {
+          equipment?: { board?: { width: number; height: number; numSites: number } };
+        }).equipment?.board;
+        const lineOfPlay = isDomino
+          ? {
+            boardWidth: boardGeom?.width ?? 0,
+            boardHeight: boardGeom?.height ?? 0,
+            numSites: boardGeom?.numSites ?? ctx.state.cells.length,
+            components: new Map(
+              (equipmentPieces ?? [])
+                .filter((p) => p.walks && p.walks.length > 0 && typeof p.isDomino === "function" && p.isDomino())
+                .map((p) => [
+                  p.index,
+                  {
+                    value: p.getValue?.() ?? 0,
+                    value2: p.getValue2?.() ?? 0,
+                    isDoubleDomino: p.isDoubleDomino?.() ?? false,
+                    walks: p.walks!,
+                  },
+                ]),
+            ),
+          }
+          : undefined;
+        for (const to of newSitesTo) {
+          if (to <= OFF) continue;
+          for (let st = 0; st < nbPossibleStates; st++) {
+            const locs = AddEffect.locsLargePiece(ctx, to, st, walks);
+            if (locs.length === 0) continue;
+            // @java valid iff every footprint cell is a to-site / own-cell /
+            // from-anchor (non-domino tiles), or is-playable (dominoes,
+            // FromTo.java:480: `!csTo.isPlayable(loc) && moveNumber()>0`).
+            let valid = true;
+            for (const loc of locs) {
+              if (!isDomino) {
+                if (!newSitesTo.has(loc) && loc !== from) { valid = false; break; }
+              } else if (!ctx.state.isPlayableAtSite(loc) && moveNumber > 0) {
+                valid = false;
+                break;
+              }
+            }
+            // @java (from != to || localState != state) — skip the identity no-op.
+            if (!valid || (from === to && localState === st)) continue;
+            // @java ActionMove.applyLargePiece vacates the piece's WHOLE current
+            // footprint (currentLocs), not just the anchor, before laying the new
+            // footprint — self-overlap is fine (clearing precedes laying). Omitting
+            // clearFootprint left the old body cells count=1 (phantom occupancy),
+            // which corrupted (sites Empty) on later plies (the earlier regression).
+            const action = new ActionMove({ from, to, state: st, footprint: locs, clearFootprint: currentLocs, lineOfPlay });
+            const move = new LudiiMove({
+              id: `move:${mover}:${from}:${to}:${st}`,
+              label: `Move(${from}->${to},r${st})`,
+              siteIndices: [from, to],
+              mover,
+              placedOwner: mover,
+              actions: [action],
+              fromSite: from,
+              toSite: to,
+            });
+            // @java FromTo.java:427 — the then clause is applied ONCE for all
+            // moves at the end of eval (line ~433 below); applying it here too
+            // double-tagged the deferredThens (Morra's copy/large-piece moves
+            // scored 2 per hit and (= (score P1) 3) never fired).
+            moves.push(move);
+          }
+        }
+        ctx._evalFrom = origFrom;
+        continue;
+      }
+
+      ctx._evalFrom = origFrom;
+
+      for (const to of sitesTo) {
+        if (to <= OFF) continue;
+
+        ctx._evalFrom = from;
+        ctx._evalTo = to;
+
+        // @java FromTo.java:365 — check move rule
+        if (this.moveRule != null && !this.moveRule.eval(ctx)) {
+          ctx._evalFrom = origFrom;
+          continue;
+        }
+        ctx._evalFrom = origFrom;
+
+        // Build the primary move action
+        const actions: import("../../../../../../../action/index.js").Action[] = [];
+        let moveAction: import("../../../../../../../action/index.js").Action;
+        // @java FromTo copy:True -> ActionCopy: place a copy of the source at
+        // `to` and leave `from` intact (Odd's (move (from (sites Hand Shared))
+        // (to (sites Empty)) copy:True) — a regular ActionMove vacated the
+        // shared hand, so the second placement found an empty source).
+        const copyOn = (() => { try { return this.copy.eval(ctx); } catch { return false; } })();
+        if (copyOn) {
+          // @java FromTo.java:396-406 — when the `(to … (rotations …))` clause
+          // is present, generation fans out to ONE candidate move PER (site,
+          // rotation) pair: the base ActionCopy plus an ActionSetRotation(to,
+          // rotation) appended to the SAME move (apply order: copy the tile in,
+          // THEN stamp its rotation — matches `moveWithRotation.actions().add(
+          // actionRotation)` after the base `move` already carries the copy).
+          // Trax is the only ported game exercising this (`(rotations {N E})`
+          // / `(rotations Orthogonal)` on its two tile placements, both
+          // copy:True); the downstream `(do … ifAfterwards:(is SidesMatch))`
+          // wrapper then prunes candidates whose rotation doesn't line up
+          // colours with already-placed neighbours (IsSidesMatch.ts reads the
+          // same rotationAt channel ActionSetRotation writes via
+          // Context.containerState().rotation()). Before this fix, `to.rotations()`
+          // was stored on To.ts but never consumed here, so only one
+          // un-rotated candidate was ever emitted per site — SidesMatch had no
+          // orientation to accept/reject and Trax's move generation diverged
+          // from ply 0 of the recorded trial (MOVE_MISMATCH @4, once the
+          // un-rotated candidate ran out of legal continuations).
+          if (this.rotationsTo != null) {
+            const rotations = (this.rotationsTo.eval(ctx) as number[] | undefined) ?? [];
+            for (const rotation of rotations) {
+              const rotMove = new LudiiMove({
+                id: `copy:${mover}:${from}:${to}:r${rotation}`,
+                label: `Copy(${from}->${to})+SetRotation(${to}=${rotation})`,
+                siteIndices: [from, to],
+                mover,
+                placedOwner: mover,
+                actions: [new ActionCopy(from, to), new ActionSetRotation({ to, rotation })],
+                fromSite: from,
+                toSite: to,
+                fromNonDecisionSite: from,
+                toNonDecisionSite: to,
+              });
+              moves.push(rotMove);
+            }
+            ctx._evalFrom = origFrom;
+            ctx._evalTo = origTo;
+            continue;
+          }
+          actions.push(new ActionCopy(from, to));
+          const move = new LudiiMove({
+            id: `copy:${mover}:${from}:${to}`,
+            label: `Copy(${from}->${to})`,
+            siteIndices: [from, to],
+            mover,
+            placedOwner: mover,
+            actions,
+            fromSite: from,
+            toSite: to,
+            fromNonDecisionSite: from,
+            toNonDecisionSite: to,
+          });
+          // @java FromTo.java:427 — then applied once at the end of eval; the
+          // inline apply here duplicated Morra's ShowHand deferredThen.
+          moves.push(move);
+          ctx._evalFrom = origFrom;
+          ctx._evalTo = origTo;
+          continue;
+        }
+        // @java MoveUtilities.chainRuleWithAction (MoveUtilities.java:80-121)
+        // prepends the capture effect's actions ahead of the mover's own
+        // ActionMove, so at APPLY time the capture executes FIRST. If the
+        // capture sends the victim BACK ONTO the mover's own `from` site
+        // (HittingCapture -> victim's StartingPoint == the mover's current
+        // site: Gavalata ply 18, Main Pacheh), a plain top-popping ActionMove
+        // chosen below (because `lv` looked like the stack top AT GENERATION
+        // TIME) grabs the just-arrived victim instead of the mover's own
+        // piece — a silent identity swap surfacing plies later. Precompute
+        // the capture (single eval, just moved earlier) so the level-branch
+        // decision can see the hazard.
+        //
+        // @java FromTo.java:264/303 — levelFrom.eval(context) is read while
+        // constructing the base ActionMove, chronologically BEFORE
+        // MoveUtilities.chainRuleWithAction (FromTo.java:407) ever runs the
+        // capture effect. Java's captureEffect (e.g. a nested `(forEach Level
+        // (to) ...)`) is free to mutate context.level() because levelFrom has
+        // ALREADY been read and baked into the action by the time it runs.
+        // Cache the value here, before the capture-effect precompute below
+        // touches ctx, so a leak from the capture effect's own ForEachLevel
+        // (which does NOT restore context.level() — ForEachLevel.java:110-111)
+        // can't corrupt this read. Reading a stale/leaked context.level() here
+        // picked the WRONG stacked piece to move (Aj T'iwil ply44: a 2-height
+        // team-shared stack's own top piece, level 1, was silently swapped for
+        // its teammate's piece at level 0 whenever CaptureMove's ForEachLevel
+        // ran a single-level capture on the destination first and left
+        // context.level() at 0).
+        const levelFromValue = this.levelFrom !== null ? this.levelFrom.eval(ctx) : null;
+        const captureThens: DeferredThen[] = [];
+        let captureActions: import("../../../../../../../action/index.js").Action[] = [];
+        if (this.captureEffect != null &&
+            (this.captureRule == null || this.captureRule.eval(ctx))) {
+          ctx._evalFrom = from;
+          ctx._evalTo = to;
+          const captureMoves = this.captureEffect.eval(ctx);
+          captureActions = captureMoves.flatMap(m => [...m.actions]);
+          // @java chainRuleWithAction(..., decision=false)
+          for (const a of captureActions) (a as { setDecision?: (d: boolean) => void }).setDecision?.(false);
+          // @java chainRuleWithAction also chains the capture effect's then()
+          // onto the move's then() list.
+          for (const m of captureMoves) for (const dt of m.deferredThens) captureThens.push(dt);
+          ctx._evalFrom = origFrom;
+          ctx._evalTo = origTo;
+        }
+        const captureReturnsToFrom = captureActions.some(a => {
+          try { return a.to() === from; } catch { return false; }
+        });
+        // @java FromTo.java:233-269 — `levelTo != null` is checked FIRST,
+        // ahead of (and independent of) the `stack` flag: an explicit
+        // destination level always wins, only the `!stack` sub-case matters
+        // for the ported corpus (no census game combines `stack:True` with a
+        // `(to … level:)` directive, so the `stack` sub-branch at line
+        // 271-287 — ActionMove.construct(..., stack=true) with a forced
+        // setLevelFrom(0) — is left unhandled and falls through unchanged
+        // to the existing `this.stack` branch below). Within `!stack`:
+        // `levelFrom == null` builds an ActionMove with levelFrom=UNDEFINED,
+        // levelTo=X, which ActionMove.construct's static levelFrom>=0/
+        // levelTo>=0 test (ActionMove.java:79-134) routes to
+        // ActionMoveLevelTo alone; Java then does `actionMove.setLevelFrom(
+        // cs.sizeStack(from)-1)` afterward purely as move metadata (the
+        // class already defaults its own vacate-level to the CURRENT top
+        // when none is recorded — ActionMoveLevelTo has no fromLevel
+        // constructor arg at all), which TS's ActionMoveLevelBase.apply()
+        // already mirrors via its `sourceLevel` fallback (fromLevelIndex
+        // undefined -> stackSize-1), so no extra call is needed here.
+        // `levelFrom != null` (both directives present — Ringo's MoveDisc:
+        // `(from (from) level:(level)) (to … level:0 …)`) routes to
+        // ActionMoveLevelFromLevelTo, whose apply() (shared with
+        // ActionMoveLevelTo via ActionMoveLevelBase) performs a genuine
+        // insert-and-shift at the destination — see action-move-level.ts.
+        if (this.levelTo !== null && !this.stack) {
+          const lvTo = this.levelTo.eval(ctx);
+          if (this.levelFrom !== null) {
+            const lvFrom = levelFromValue as number;
+            moveAction = new ActionMoveLevelFromLevelTo(from, lvFrom, to, lvTo);
+          } else {
+            moveAction = new ActionMoveLevelTo(from, to, lvTo);
+          }
+        } else if (this.stack && this.levelFrom !== null) {
+          // @java FromTo.java:328-340 — when levelFrom is given, Java creates a
+          // SINGLE-LEVEL ActionMove(from, levelFrom, to, …, stack=false) even
+          // with stack:True; the stack flag only governs whole-stack moves when
+          // levelFrom is ABSENT. largeStack mancala sows with
+          //   (forEach Value … (fromTo (from site level:(- stackSize value))
+          //                              (to …) stack:True))
+          // — one seed per value. Treating it as a whole-stack move piled ALL
+          // seeds into the first hole (Ceelkoqyuqkoqiji/O An Quan/Laomuzhu/
+          // Yucebao diverged from ply 0). Route through ActionMoveLevelFrom,
+          // whose count-backed branch moves exactly one seed per call.
+          const lv = levelFromValue as number;
+          moveAction = new ActionMoveLevelFrom(from, lv, to);
+        } else if (this.stack) {
+          // @java FromTo.java:346-360 — stackingGame||stack with a count is an
+          // ActionSubStackMove(numLevel=count): only the TOP `count` levels
+          // relocate (Seesaw's (move ... count:("StackSize" (from)) stack:True)
+          // records "StackMove numLevel=1"). Without a count the WHOLE stack
+          // moves. The countFn must NOT fall into the mancala transferCount
+          // path (state.count(from)=0 on plain pieces killed every capture).
+          let numLevel: number | undefined;
+          if (this.countFn !== null) {
+            const savedFrom = ctx._evalFrom;
+            const savedTo = ctx._evalTo;
+            ctx._evalFrom = from;
+            ctx._evalTo = origTo;
+            numLevel = this.countFn.eval(ctx);
+            ctx._evalFrom = savedFrom;
+            ctx._evalTo = savedTo;
+          }
+          moveAction = new ActionMove({ from, to, stack: true, numLevel });
+        } else if (this.countFn !== null) {
+          // @java FromTo.java:189-196 — count evaluates with FROM bound
+          // (context.setFrom(from) before countFn.eval): Chisolo's
+          // count:(count at:(from)) hand-collection read count 0 with the
+          // outer (-1) binding and the capture became a silent no-op.
+          const savedFrom = ctx._evalFrom;
+          const savedTo = ctx._evalTo;
+          ctx._evalFrom = from;
+          ctx._evalTo = origTo;
+          const count = this.countFn.eval(ctx);
+          ctx._evalFrom = savedFrom;
+          ctx._evalTo = savedTo;
+          // @java the count-move places OWNED pieces (cs.setSite who =
+          // component owner). A HAND-sourced placement (T'oki's (move (from
+          // (handSite Mover)) (to (sites Empty)) count:2)) must stamp the
+          // mover's ownership on the pile or (forEach Piece) never iterates
+          // it; pit-to-pit sows/transfers keep the neutral-pit model (Hus).
+          const boardSites = (ctx.game as unknown as { equipment?: { board?: { numSites?: number } } }).equipment?.board?.numSites ?? Number.MAX_SAFE_INTEGER;
+          let seedOwner = 0;
+          if (from >= boardSites) {
+            const movedWhat = ctx.state.whats[from] ?? 0;
+            const label = (ctx.state.componentLabels[movedWhat] ?? "");
+            seedOwner = Number(label.match(/(\d+)$/)?.[1] ?? 0) || 0;
+          }
+          moveAction = seedOwner > 0
+            ? new ActionMove({ from, to, count, transferCount: true, seedOwner })
+            : new ActionMove({ from, to, count, transferCount: true });
+        } else {
+          // @java FromTo with `(from … level:(level))` removes the piece at THAT
+          // level (ActionMoveLevelFrom → csFrom.remove(state, from, levelFrom)),
+          // not the stack top. The plain ActionMove always pops the top, so a
+          // non-top piece (Gyan Chaupar: P2 at level 0 under P3 at level 1 on a
+          // shared site) relocated the WRONG piece. Route an explicit, in-range
+          // levelFrom through ActionMoveLevelFrom; otherwise (no level / -1) keep
+          // the top-pop ActionMove unchanged.
+          // Route through ActionMoveLevelFrom for ANY explicit, in-range level
+          // on a genuine multi-ENTRY stack (distinct pieces per level), whether
+          // or not that level happens to be the current top. @java
+          // FromTo.java:328-343 / ActionMove.construct (levelFrom>=0 branch)
+          // dispatch to ActionMoveLevelFrom purely on whether `level:` is
+          // SYNTACTICALLY present — a STATIC, ludeme-syntax decision, never
+          // conditioned on whether the popped level equals the runtime stack
+          // top. Collapsing a top-level `level:` move to a plain top-popping
+          // ActionMove (as this code used to do) diverges from Java's dirty,
+          // explicit-level `remove(state,site,level,type)` overload, which
+          // clears what/who at the vacated top but leaves `state` physically
+          // stale there (Common/src/main/collections/ChunkStack.java: per-level
+          // accessors are guarded by `level < size`, so a stale byte written
+          // while size was larger becomes visible again once the stack regrows
+          // to that depth) — Boolik's "CapturedPiecesFollowCapturingPiece"
+          // `(forEach Level … FromTop (fromTo (from (last From) level:(level))
+          // (to (last To))))` drains a 3-level stack top-down via 3 separate
+          // ActionMoveLevelFrom relocations (levelFrom=2,1,0); the first of
+          // those has levelFrom EQUAL to the then-current top, so it was
+          // wrongly routed to plain ActionMove here, silently losing the
+          // faithful stale-state residue and desyncing site2 several plies
+          // later when the site regrew (ply244/RandomTrial_1.txt).
+          //
+          // Require a genuine multi-ENTRY stack (distinct pieces per level), not
+          // a count-backed pile (stacks.length<=1 with countAt>1):
+          // ActionMoveLevelFrom's count-pile branch differs from plain
+          // ActionMove's, which Ashta-kashte's count-backed level: moves rely
+          // on — that case is excluded by `fromStackLen > 1` alone, independent
+          // of whether `lv` is the top. Keep the capture-return hazard escape
+          // hatch (Gavalata/Main Pacheh): even on a single-entry site
+          // (fromStackLen<=1) a HittingCapture can re-occupy `from`'s top
+          // between generation and apply time, so force the explicit-level
+          // path there regardless of fromStackLen.
+          const lv = levelFromValue !== null ? levelFromValue : -1;
+          const fromStackLen = ctx.state.stacks[from]?.length ?? 0;
+          if (lv >= 0 && (captureReturnsToFrom || fromStackLen > 1)) {
+            moveAction = new ActionMoveLevelFrom(from, lv, to);
+          } else {
+            // Dual-SiteType: stamp the declared types so application routes
+            // through the typed channel (gated downstream on channel existence).
+            // @java FromTo typeFrom=from.type(), typeTo=to.type() are SEPARATE:
+            // Quoridor's wall `(move (from (handSite Mover)) (to Edge …))` has no
+            // from-type (Cell hand) but an explicit to-type Edge — the destination
+            // must land in the Edge channel, not cells[]. When no to-type is
+            // declared, fall back to the from-type so same-type graph moves
+            // (Guerrilla Vertex board) are unchanged.
+            const dft = this.declaredFromType;
+            const dtt = this.declaredToType;
+            // @java Equipment.containerId() (Equipment.java:69/762-777/871-873)
+            // — a per-site array recording which CONTAINER each global site
+            // index belongs to; the board is always container 0, every hand
+            // (and any other non-board container) is a distinct nonzero id.
+            // Ported 1:1 as `Equipment.containerId(): number[] | null`
+            // (Equipment.ts:1251-1252). This is the authoritative "is this a
+            // board site" test — robust to any container layout — used below
+            // to keep the typed-channel routing decision (isNonDefaultTyped,
+            // which compares a DECLARED site type against the BOARD's own
+            // default type) scoped to genuine on-board sites only.
+            const containerIds = (ctx.game as unknown as { equipment?: { containerId?: () => (number[] | null) } }).equipment?.containerId?.() ?? null;
+            const isBoardSite = (site: number): boolean => containerIds === null || site < 0 || site >= containerIds.length || containerIds[site] === 0;
+            // @java csTo is the Edge/Vertex ContainerState ONLY when the to-type is
+            // a genuinely NON-DEFAULT graph element on this board. On a `use:Vertex`
+            // board a `(to Vertex …)` names the DEFAULT element (written to cells[]),
+            // so a Cell→Vertex relocation (Guerrilla's hand→Vertex marker) must NOT
+            // route to a typed channel. Compute the decision here (apply() has no
+            // Context) and pass it as a flag.
+            //
+            // Forced false when `to` is NOT a board site (a hand, dice, or
+            // other non-board container): the TS flat model stores every such
+            // container's occupancy in the SAME flat cells[]/whats[] arrays as
+            // the board (appended index range, confirmed by inspection), never
+            // in the typedSites side-channel, regardless of what type keyword
+            // the ludeme happens to declare — see the fromNonDefault citation
+            // below (the destination-side analogue; a "to hand" case, e.g. a
+            // captured piece returned to a typed hand reference, would
+            // otherwise be wrongly routed the same way the source was).
+            const toNonDefault = !isBoardSite(to) ? false : isNonDefaultTyped(ctx, dtt);
+            // @java symmetric counterpart: csFrom is the Cell/Edge/Vertex
+            // ContainerState ONLY when the from-type is a genuinely NON-DEFAULT
+            // graph element on this board. `"MoveCellToVertex"` on a `use:Vertex`
+            // board (Triple Tangle) sources from the non-default Cell channel;
+            // without this flag ActionMove.apply read/cleared the flat/default
+            // (Vertex) layer at the from-index instead of the typed Cell channel,
+            // silently no-opping the relocation (empty-source guard) and leaving
+            // the source Cell entry uncleared.
+            //
+            // Forced false when `from` is NOT a board site (a hand, dice, or
+            // other non-board container — @java game/equipment/container/
+            // other/Hand.java:103-124: a Hand's own topology is ALWAYS built
+            // with `SiteType.Cell` regardless of the game's board `use:`
+            // choice, and it is its own Container distinct from the board;
+            // Equipment.containerId() is exactly the field Java itself uses to
+            // route a site to its owning ContainerState — see citation above):
+            // Quarto's Select/Place move declares `(from Cell (last From))`
+            // sourcing a `(hand Shared size:16)` piece on a `use:Vertex`
+            // board — `dft` is explicitly "Cell", so `isNonDefaultTyped(ctx,
+            // "Cell")` compared it against the BOARD's default type (Vertex)
+            // and wrongly returned true, routing the hand-site read through
+            // `state.whoTyped('Cell', from)`/`whatTyped(...)` — the
+            // typedSites channel, which nothing ever populates for a hand
+            // (hand data lives in the flat cells[]/whats[] arrays, see the
+            // Hand.java citation above). That read back 0/0, tripping
+            // ActionMove.apply's empty-source no-op guard (`movingOwner ===
+            // 0 && movingWhat === 0 → return state`) and silently dropping
+            // EVERY Place move: the board's flat cells[] stayed all-zero and
+            // the hand's flat slots stayed at their untouched start values
+            // for the whole trial (confirmed via a DEBUG_END dump), while the
+            // unrelated flatOwned registry bookkeeping (action-move.ts:1004-
+            // 1080, which reads `state.cellAt`/`whatAtSite` unconditionally,
+            // never gated on this flag) correctly tracked placements — the
+            // registry/board split this produced masked every downstream
+            // win-condition check (`(is Line 4 … (state at:(to)) …)` etc. all
+            // read an always-empty board), producing WINNER_MISMATCH instead
+            // of a MOVE_MISMATCH (RandomTrial_0/_1, both trials, immediately
+            // after the final recorded move).
+            //
+            // An earlier draft of this fix used a numeric threshold
+            // (`board.numSites`, later `board.containerSpan`) instead of the
+            // real per-site container id. Both were wrong: `board.numSites`
+            // ("vertices for vertex-play boards" — BoardSurface.numSites's own
+            // doc comment) undercounts a dual-type board that plays BOTH Cell
+            // and Vertex elements on the SAME container (Triple Tangle: 18
+            // board sites all container 0, no hand at all — a genuine
+            // `board.numSites`-vs-`board.containerSpan` gap exists there in
+            // principle but wasn't even the discriminator; the real culprit
+            // was that this whole numeric-threshold approach conflates "past
+            // the board's own site count" with "in a different container",
+            // which only coincide for single-type boards) — and
+            // `EquipmentSurface.handSiteBase`, it turns out, belongs to an
+            // entirely different, unused `Equipment` class than the one
+            // `ctx.game.equipment` actually is at runtime (`Equipment.ts`'s
+            // `Equipment` class, constructed via the 1:1 ludeme-object
+            // compiler `play1to1` — confirmed by inspecting a live compiled
+            // Quarto instance: `equipment.handSiteBase` is `undefined`,
+            // `equipment.containerId()` is the real, populated field).
+            // `containerId()` sidesteps both problems: it is the literal
+            // per-site container assignment Java itself computes, not a
+            // derived numeric boundary.
+            const fromNonDefault = !isBoardSite(from) ? false : isNonDefaultTyped(ctx, dft);
+            // @java FromTo.java:328-340 — Java's ActionMoveTopPiece-vs-
+            // ActionMoveLevelFrom choice is a STATIC, ludeme-syntax decision
+            // keyed on whether `level:` is present on the `(from …)` term at
+            // all, not on whether the popped level happens to be the current
+            // stack top at runtime. A K'aak'il's board-or-hand move ludeme
+            // declares `(from (from) level:(level) if:…)` — `level:` IS
+            // syntactically present — so Java ALWAYS builds ActionMoveLevelFrom
+            // for it, even for a hand-site source, even though it pops what is
+            // currently the hand pile's top (matching the `lv >= fromStackLen -
+            // 1` narrowing above that keeps this on the plain, top-popping
+            // ActionMove for OTHER practical reasons — Ashta-kashte). Boolik's
+            // dedicated "EnterAPiece" = `(from (handSite Mover))` has NO
+            // `level:` at all (`this.levelFrom === null` unconditionally for
+            // that ludeme), so Java genuinely builds the level-less
+            // ActionMoveTopPiece there. `fromHandSite` feeds ActionMove's
+            // state-less/residual-prone hand-entry branches (action-move.ts) —
+            // those branches must fire ONLY for a genuine ActionMoveTopPiece
+            // dispatch. Requiring `this.levelFrom === null` here keeps Boolik's
+            // EnterAPiece unchanged (levelFrom is always null for it) while
+            // correcting A K'aak'il/Aj Sayil/Aj Sakakil/Bul's `level:`-bearing
+            // hand moves — those genuinely go through ActionMoveLevelFrom in
+            // Java, whose TO-side addItemGeneric properly CARRIES the source's
+            // own state (ActionMoveLevelFrom's 7-arg addItemGeneric), so they
+            // must not be treated as state-less hand entries.
+            const fromHandSite = !isBoardSite(from) && this.levelFrom === null;
+            moveAction = (dft || dtt)
+              ? new ActionMove({ from, to, fromType: (dft ?? "Cell") as never, toType: (dtt ?? dft ?? "Cell") as never, toTypedNonDefault: toNonDefault, fromTypedNonDefault: fromNonDefault, fromHandSite })
+              : new ActionMove({ from, to, fromHandSite });
+            // @java FromTo.java:289-327 — even when this branch falls through
+            // to the plain top-popping ActionMove (levelFrom either absent or
+            // equal to the current top), Java UNCONDITIONALLY stamps the
+            // popped level via `actionMove.setLevelFrom(cs.sizeStack(from,
+            // typeFrom) - 1)` (or `levelFrom.eval(context)` directly at
+            // FromTo.java:328-343 when an explicit level: was given). TS's
+            // plain ActionMove left levelFromValue at its ACTION_UNDEFINED
+            // (-1) default here, so `.levelFrom()` reported -1 even for a
+            // genuine top-of-stack decision — Puluc's ply31 (RandomTrial_0.txt
+            // line 50: from=5,levelFrom=2 while stackSize=3, i.e. level 2 IS
+            // the top) lost this metadata, which starves the parity harness's
+            // byLevel disambiguation tier (recordedDecisionLevelFrom /
+            // tsMoveDecisionLevelFrom in replay-trials.mjs) of the signal it
+            // needs to pick the correct same-from/to candidate, so a later,
+            // less-precise tier picks the wrong stack-level candidate and
+            // desyncs stateStacks[5] (MOVE_MISMATCH @38). This assignment is
+            // PURE METADATA: ActionMove.apply() (action-move.ts) never reads
+            // levelFrom()/levelFromValue, so it cannot change which piece is
+            // actually moved or any state mutation — only what `.levelFrom()`
+            // reports afterward, matching Java's always-populated field.
+            moveAction.setLevelFrom(lv >= 0 ? lv : fromStackLen - 1);
+          }
+        }
+        actions.push(moveAction);
+
+        // @java FromTo.java:406-414 — capture effect prepended ahead of the
+        // mover's own action so it executes FIRST at apply time (Backgammon
+        // dec9: the victim's relocation precedes the attacker's move). The
+        // eval itself moved above the level-branch decision (see precompute).
+        actions.unshift(...captureActions);
+
+        const move = new LudiiMove({
+          id: `fromTo:${mover}:${from}:${to}`,
+          label: `FromTo(${from}→${to})`,
+          siteIndices: [from, to],
+          mover,
+          placedOwner: mover,
+          actions,
+          deferredThens: captureThens,
+          // Pin the DECISION from/to — a prepended capture action would
+          // otherwise shift what from()/to() report (the recorded move keeps
+          // the movement's sites: Move:mover=1,from=20,to=25,[victim,attacker]).
+          fromSite: from,
+          toSite: to,
+          fromNonDecisionSite: from,
+          toNonDecisionSite: to,
+        });
+        moves.push(move);
+      }
+    }
+
+    ctx._evalTo = origTo;
+    ctx._evalFrom = origFrom;
+
+    // @java FromTo.java:427 — then clause.
+    // Java's Then consequence is evaluated in the POST-MOVE context (Game.applyInternal
+    // applies the move's actions, records it on the trial, THEN evaluates `then`), so
+    // conditions like (is Line 3) see the just-placed piece. Evaluate per move against
+    // a simulated post-state, mirroring Then.java semantics.
+    // @java game/rules/play/moves/nonDecision/effect/Then.java — eval in post-move context
+    if (this.thenClause != null) {
+      return moves.map(m => applyPostStateThen(this.thenClause, ctx, m));
+    }
+
+    return moves;
+  }
+
+  /** @java FromTo.locFrom() */
+  public getLocFrom(): IntFunction | null { return this.locFrom; }
+  /** @java FromTo.locTo() */
+  public getLocTo(): IntFunction { return this.locTo; }
+  /** @java FromTo.regionFrom() */
+  public getRegionFrom(): RegionFunction | null { return this.regionFrom; }
+  /** @java FromTo.regionTo() */
+  public getRegionTo(): RegionFunction | null { return this.regionTo; }
+  /** @java FromTo.moveRule() */
+  public getMoveRule(): BooleanFunction | null { return this.moveRule; }
+}
