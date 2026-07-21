@@ -652,9 +652,29 @@ export class State {
     }
     const n = cells.length;
     this.mover = mover;
-    this.cells = Object.freeze([...cells]);
+    // Fast path: `cells` was already frozen by a prior State construction
+    // (State.with()'s pass-through case, i.e. this derivation's patch never
+    // touched `cells`, so `with()` handed back `this.cells` verbatim).
+    // Object.freeze always freezes the array itself (not deep, but `cells`
+    // holds only numbers so shallow freeze is exactly what re-spreading +
+    // freezing produced anyway) — an already-frozen array is safe to reuse
+    // by reference with no re-copy. Every OTHER call site into this
+    // constructor (initial game start, syncStacks-driven cells patches,
+    // etc.) hands in a fresh unfrozen array, so those still fall through to
+    // the defensive copy.
+    this.cells = Object.isFrozen(cells)
+      ? (cells as readonly number[])
+      : Object.freeze([...cells]);
     this.whats = Object.freeze(fillSlot(options.whats, n, 0));
-    this.componentLabels = Object.freeze([...componentLabels]);
+    // Fast path: `componentLabels` is threaded through `with()` by
+    // reference (`this.componentLabels`, never patchable) and is only ever
+    // constructed once per Game at start — it is always already frozen on
+    // every derivation after the first. Re-spreading + re-freezing an
+    // immutable array of piece-label strings on every single State.with()
+    // call was pure redundant work.
+    this.componentLabels = Object.isFrozen(componentLabels)
+      ? (componentLabels as readonly string[])
+      : Object.freeze([...componentLabels]);
     this.scores = Object.freeze(fillSlot(options.scores, numPlayers + 1, 0));
     // Java State.java:491 fills the per-player value array with UNDEFINED (-1),
     // not 0, so an unset `(value Player …)` reads -1 (see valuePlayer()).
@@ -2449,7 +2469,16 @@ function fillStacks(
     if (Object.isFrozen(source) && source.length === cells.length) {
       return source as (readonly number[])[];
     }
-    return source.map((s) => Object.freeze([...s]));
+    // `source` here is syncStacks()'s fresh (unfrozen) OUTER array, but
+    // syncStacks reuses each per-site INNER array BY REFERENCE (`out.push(prev)`)
+    // for every site whose top owner didn't change — i.e. the vast majority
+    // of the board on a typical single-piece move. Those reused inner
+    // arrays are already frozen (this constructor froze them last time
+    // around); only the handful of sites syncStacks actually rebuilt
+    // (`prev.slice(...)`, `[top]`, etc.) are fresh and need copying. Per-
+    // element frozen checks turn an O(boardSize) copy into an O(changedSites)
+    // one without changing a single output value.
+    return source.map((s) => (Object.isFrozen(s) ? s : Object.freeze([...s])));
   }
   return cells.map((c) => Object.freeze(c === 0 ? [] : [c]));
 }
@@ -2470,7 +2499,11 @@ function fillWhatStacks(
     if (Object.isFrozen(source) && source.length === n) {
       return source as (readonly number[])[];
     }
-    const out = source.map((s) => Object.freeze([...s]));
+    // Same per-element reuse as fillStacks above: syncWhatStacks() reuses
+    // each site's inner array by reference (`out.push(prevWhat)`) whenever
+    // that site's component column didn't collapse, so only the sites it
+    // actually rebuilt are unfrozen and need a fresh copy+freeze.
+    const out = source.map((s) => (Object.isFrozen(s) ? s : Object.freeze([...s])));
     while (out.length < n) out.push(Object.freeze([]));
     return out;
   }
@@ -2516,7 +2549,19 @@ function fillSlot(
   fill: number,
 ): number[] {
   if (source === undefined) return new Array<number>(length).fill(fill);
-  if (source.length === length) return [...source];
+  if (source.length === length) {
+    // Fast path: pass-through of an already-frozen same-length array. Every
+    // State.with() derivation that doesn't touch this particular field
+    // hands `this.<field>` (frozen by a prior constructor call) straight
+    // back in as `source`; the caller always freezes the *result* of this
+    // function again, so returning the identical frozen array is
+    // indistinguishable from re-spreading + re-freezing a copy — except it
+    // skips an O(length) allocation + copy on every single derivation.
+    // Fresh (unfrozen) sources — real edits, or the very first construction
+    // — still fall through to the defensive copy below.
+    if (Object.isFrozen(source)) return source as number[];
+    return [...source];
+  }
   const out = new Array<number>(length).fill(fill);
   for (let i = 0; i < Math.min(length, source.length); i += 1) {
     out[i] = source[i] ?? fill;
@@ -2542,7 +2587,12 @@ function fillBoolSlot(
   length: number,
 ): boolean[] {
   if (source === undefined) return new Array<boolean>(length).fill(false);
-  if (source.length === length) return [...source];
+  if (source.length === length) {
+    // Fast path: see fillSlot above — same reasoning for boolean slots
+    // (playableAt).
+    if (Object.isFrozen(source)) return source as boolean[];
+    return [...source];
+  }
   const out = new Array<boolean>(length).fill(false);
   for (let i = 0; i < Math.min(length, source.length); i += 1) {
     out[i] = source[i] ?? false;
